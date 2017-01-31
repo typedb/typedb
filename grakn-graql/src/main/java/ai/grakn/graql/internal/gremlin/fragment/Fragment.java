@@ -46,6 +46,8 @@ import java.util.stream.Stream;
  * <p>
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code EquivalentFragmentSet} describing the {@code Query}.
+ *
+ * @author Felix Chapman
  */
 public interface Fragment {
 

@@ -18,6 +18,14 @@
 
 package ai.grakn.graql.admin;
 
+/**
+ * A unique property of a {@link ai.grakn.graql.Var}.
+ *
+ * This property is unique in that each {@link ai.grakn.graql.Var} may have exactly zero or one of each
+ * {@link UniqueVarProperty}.
+ *
+ * @author Felix Chapman
+ */
 public interface UniqueVarProperty extends VarProperty {
 
     default boolean isUnique() {

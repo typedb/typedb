@@ -19,7 +19,9 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
@@ -40,6 +42,18 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
 
+/**
+ * Represents the {@code has-resource} and {@code has-key} properties on a {@link Type}.
+ *
+ * This property can be queried or inserted. Whether this is a key is indicated by the
+ * {@link HasResourceTypeProperty#required} field.
+ *
+ * This property is defined as an implicit ontological structure between a {@link Type} and a {@link ResourceType},
+ * including one implicit {@link RelationType} and two implicit {@link RoleType}s. The names of these types are derived
+ * from the name of the {@link ResourceType}.
+ *
+ * @author Felix Chapman
+ */
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin resourceType;

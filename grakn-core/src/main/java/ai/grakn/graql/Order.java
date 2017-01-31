@@ -20,6 +20,8 @@ package ai.grakn.graql;
 
 /**
  * Ordering for match query results
+ *
+ * @author Felix Chapman
  */
 public enum Order {
     /**

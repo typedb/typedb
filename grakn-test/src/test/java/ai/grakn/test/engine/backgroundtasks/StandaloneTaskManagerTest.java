@@ -19,17 +19,12 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
-import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.ClassRule;
+import mjson.Json;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -45,27 +40,24 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
-import static java.util.Collections.singletonMap;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class StandaloneTaskManagerTest {
-    private TaskManager taskManager;
+    private static TaskManager taskManager;
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
-
-    @Before
-    public void setUp() {
-        taskManager = StandaloneTaskManager.getInstance();
-        ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
+    @BeforeClass
+    public static void setUp() {
+        hideLogs();
+        taskManager = new StandaloneTaskManager() ;
     }
 
     @Test
     public void testRunSingle() {
         TestTask task = new TestTask();
         String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 0,
-                new JSONObject(singletonMap("name", "task" + 1)));
+                Json.object("name", "task"));
 
         // Wait for task to be executed.
         waitToFinish(id);
@@ -74,7 +66,7 @@ public class StandaloneTaskManagerTest {
     }
 
     private void waitToFinish(String id) {
-        StateStorage storage = taskManager.storage();
+        TaskStateStorage storage = taskManager.storage();
         final long initial = new Date().getTime();
 
         while ((new Date().getTime())-initial < 10000) {
@@ -100,7 +92,7 @@ public class StandaloneTaskManagerTest {
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
             ids.add(taskManager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0,
-                    new JSONObject(singletonMap("name", "task" + i))));
+                    Json.object("name", "task" + i)));
         }
 
         // Check that they all finished
@@ -127,7 +119,7 @@ public class StandaloneTaskManagerTest {
         TestTask task = new TestTask();
 
         String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 100,
-                new JSONObject(singletonMap("name", "task" + 1)));
+                Json.object("name", "task" + 1));
         Thread.sleep(2000);
 
         assertTrue(TestTask.startedCounter.get() > 1);
@@ -140,7 +132,7 @@ public class StandaloneTaskManagerTest {
     public void testStopSingle() {
         BackgroundTask task = new LongRunningTask();
         String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 0,
-                new JSONObject(singletonMap("name", "task" + 1)));
+                Json.object("name", "task" + 1));
 
         TaskStatus status = taskManager.storage().getState(id).status();
         assertTrue(status == SCHEDULED || status == RUNNING);

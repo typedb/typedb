@@ -82,7 +82,7 @@ public class GraqlTest {
     private String relationId24;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startServer();
+    public static final EngineContext context = EngineContext.startDistributedServer();
 
     @Before
     public void setUp() {

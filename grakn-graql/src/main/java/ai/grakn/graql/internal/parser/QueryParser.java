@@ -51,6 +51,8 @@ import java.util.stream.StreamSupport;
 
 /**
  * Class for parsing query strings into valid queries
+ *
+ * @author Felix Chapman
  */
 public class QueryParser {
 

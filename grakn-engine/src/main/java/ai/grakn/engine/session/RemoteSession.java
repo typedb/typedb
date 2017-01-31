@@ -44,6 +44,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 
 /**
  * Web socket for running a Graql shell
+ *
+ * @author Felix Chapman
  */
 @WebSocket
 public class RemoteSession {

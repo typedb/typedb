@@ -28,6 +28,8 @@ import java.util.Set;
 
 /**
  * Compute the number of relations that each instance takes part in.
+ *
+ * @author Jason Liu
  */
 public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
 

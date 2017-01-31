@@ -21,7 +21,7 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
 import ai.grakn.test.EngineContext;
-import org.json.JSONObject;
+import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -33,27 +33,24 @@ import java.util.HashSet;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class TaskManagerTest {
+public class DistributedTaskManagerTest {
     private DistributedTaskManager manager;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void setup() throws Exception {
-        assumeFalse(usingTinker());
-        manager = engine.getClusterManager().getTaskManager();
-        Thread.sleep(5000);
+        manager = (DistributedTaskManager) engine.getTaskManager();
     }
 
     private void waitToFinish(String id) {
         while (true) {
-            TaskStatus status = manager.getState(id);
+            TaskStatus status = manager.storage().getState(id).status();
             if (status == COMPLETED || status == FAILED) {
                 System.out.println(id + " ------> " + status);
                 break;
@@ -79,14 +76,14 @@ public class TaskManagerTest {
         final int startCount = TestTask.startedCounter.get();
 
         for(int i = 0; i < 20; i++) {
-            String taskId = manager.scheduleTask(new TestTask(), TaskManagerTest.class.getName(),
-                    Instant.now(), 0, new JSONObject(singletonMap("name", "task"+i)));
+            String taskId = manager.scheduleTask(new TestTask(), DistributedTaskManagerTest.class.getName(),
+                    Instant.now(), 0, Json.object("name", "task" + i));
 
             ids.add(taskId);
         }
 
         ids.forEach(this::waitToFinish);
-        assertTrue(ids.stream().map(manager::getState).allMatch(s -> s == COMPLETED));
+        assertTrue(ids.stream().map(m -> manager.storage().getState(m).status()).allMatch(s -> s == COMPLETED));
         assertEquals(20, TestTask.startedCounter.get()-startCount);
     }
 }

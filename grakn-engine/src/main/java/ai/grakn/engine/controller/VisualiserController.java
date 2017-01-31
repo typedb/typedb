@@ -74,6 +74,13 @@ import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.toList;
 import static spark.Spark.get;
 
+/**
+ * <p>
+ *     Endpoints used to query the graph by ID or Graql match query and build a HAL or Graql response.
+ * </p>
+ *
+ * @author Marco Scoppetta, alexandraorth
+ */
 @Path("/graph")
 @Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
 @Produces({"application/json", "text/plain"})

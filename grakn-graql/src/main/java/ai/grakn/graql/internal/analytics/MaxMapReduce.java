@@ -26,6 +26,14 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * The MapReduce program for computing the max value of given resource.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class MaxMapReduce extends GraknMapReduce<Number> {
 
     // Needed internally for OLAP tasks

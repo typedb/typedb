@@ -23,6 +23,8 @@ import ai.grakn.graql.MatchQuery;
 
 /**
  * Admin class for inspecting and manipulating an AskQuery
+ *
+ * @author Felix Chapman
  */
 public interface AskQueryAdmin extends AskQuery {
     /**

@@ -34,7 +34,12 @@ import java.util.Set;
 
 /**
  * A map reduce task specific to Grakn with common method implementations.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
  */
+
 public abstract class GraknMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
 

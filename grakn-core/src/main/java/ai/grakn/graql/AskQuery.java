@@ -25,6 +25,8 @@ import ai.grakn.GraknGraph;
  * A query that will return whether a match query can be found in the graph.
  * <p>
  * An {@code AskQuery} is created from a {@code MatchQuery}, which describes what patterns it should find.
+ *
+ * @author Felix Chapman
  */
 public interface AskQuery extends Query<Boolean> {
 
@@ -32,6 +34,7 @@ public interface AskQuery extends Query<Boolean> {
      * @param graph the graph to execute the query on
      * @return a new AskQuery with the graph set
      */
+    @Override
     AskQuery withGraph(GraknGraph graph);
 
     /**

@@ -44,6 +44,8 @@ import static spark.Spark.post;
 
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
+ *
+ * @author Filipe Teixeira
  */
 public class CommitLogController {
     private final EngineCacheImpl cache = EngineCacheImpl.getInstance();

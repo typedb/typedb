@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
@@ -42,6 +43,18 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
+/**
+ * Represents the {@code isa} property on a {@link Instance}.
+ *
+ * This property can be queried and inserted.
+ *
+ * THe property is defined as a relationship between an {@link Instance} and a {@link Type}.
+ *
+ * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
+ * {@code person sub entity} then it follows that {@ode $bob isa person} and {@bob isa entity}.
+ *
+ * @author Felix Chapman
+ */
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
     private final VarAdmin type;

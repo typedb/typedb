@@ -62,7 +62,7 @@ public class MigratorTestUtils {
     }
 
     public static void migrate(GraknGraph graph, Migrator migrator){
-        MigrationLoader.load(GraknEngineServer.getClusterManager(), graph.getKeyspace(), migrator);
+        MigrationLoader.load(GraknEngineServer.getTaskManager(), graph.getKeyspace(), migrator);
     }
 
     public static void load(GraknGraph graph, File ontology) {

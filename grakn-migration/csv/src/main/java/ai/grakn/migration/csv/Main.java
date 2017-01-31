@@ -18,7 +18,8 @@
 
 package ai.grakn.migration.csv;
 
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
 
@@ -45,20 +46,19 @@ public class Main {
         start(null, args);
     }
 
-    public static void start(ClusterManager manager, String[] args){
+    public static void start(TaskManager manager, String[] args){
         if(manager == null){
-            newClusterManager = true;
-            manager = new ClusterManager();
+            manager = new DistributedTaskManager();
         }
 
-        ClusterManager finalManager = manager;
+        TaskManager finalManager = manager;
         MigrationCLI.init(args, CSVMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .forEach((options) -> runCSV(finalManager, options));
     }
 
-    public static void runCSV(ClusterManager manager, CSVMigrationOptions options){
+    public static void runCSV(TaskManager manager, CSVMigrationOptions options){
         // get files
         File csvDataFile = new File(options.getInput());
         File csvTemplate = new File(options.getTemplate());
@@ -90,13 +90,13 @@ public class Main {
             }
         } catch (Throwable throwable) {
             die(throwable);
-        }
-
-        if (newClusterManager) {
-            try {
-                manager.stop();
-            } catch (Exception e) {
-                e.printStackTrace();
+        } finally {
+            if (newClusterManager) {
+                try {
+                    manager.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

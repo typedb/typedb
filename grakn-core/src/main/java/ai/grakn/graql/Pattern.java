@@ -30,6 +30,8 @@ import ai.grakn.graql.admin.PatternAdmin;
  * A pattern can also be a conjunction: {@code and(var("x").isa("movie"), var("x").value("Titanic"))}, or a disjunction:
  * {@code or(var("x").isa("movie"), var("x").isa("tv-show"))}. These can be used to combine other patterns together
  * into larger patterns.
+ *
+ * @author Felix Chapman
  */
 public interface Pattern {
 

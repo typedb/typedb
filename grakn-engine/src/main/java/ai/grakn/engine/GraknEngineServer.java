@@ -17,9 +17,9 @@
  */
 package ai.grakn.engine;
 
-
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
@@ -35,7 +35,7 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
-import org.json.JSONObject;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -62,6 +62,8 @@ import static spark.Spark.webSocketIdleTimeoutMillis;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
+ *
+ * @author Marco Scoppetta
  */
 
 public class GraknEngineServer {
@@ -75,13 +77,36 @@ public class GraknEngineServer {
             REST.WebPath.IS_PASSWORD_PROTECTED_URI));
 
     public static final boolean isPasswordProtected = prop.getPropertyAsBool(ConfigProperties.PASSWORD_PROTECTED_PROPERTY);
-    private static ClusterManager clusterManager;
+    private static TaskManager taskManager;
 
     public static void main(String[] args) {
-        startCluster();
+        start(true);
+    }
+
+    public static void start(boolean inMemory){
+        startTaskManager(inMemory);
         startHTTP();
         startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
+    }
+
+    public static void stop() throws Exception {
+        //TODO there is a bug where clear() on graphs still submits to the commit log (#12388). We
+        //TODO cannot stop http here until that is fixed, because in tests after stopping engine
+        //TODO we need to clear the graphs
+//        stopHTTP();
+        stopTaskManager();
+    }
+
+    /**
+     * Check in with the properties file to decide which type of task manager should be started
+     */
+    private static void startTaskManager(boolean inMemory) {
+        if(inMemory){
+            taskManager = new StandaloneTaskManager();
+        } else {
+            taskManager = new DistributedTaskManager();
+        }
     }
 
     public static void startHTTP() {
@@ -105,8 +130,8 @@ public class GraknEngineServer {
         new StatusController();
         new AuthController();
         new UserController();
-        new TasksController(clusterManager);
-        new ImportController(clusterManager);
+        new TasksController(taskManager);
+        new ImportController(taskManager);
 
         //Register filter to check authentication token in each request
         before((req, res) -> checkAuthorization(req));
@@ -121,20 +146,13 @@ public class GraknEngineServer {
         awaitInitialization();
     }
 
-    public static void startCluster() {
-        // Start background task cluster.
-        clusterManager = new ClusterManager();
-    }
-
-    public static void startPostprocessing(){
+    private static void startPostprocessing(){
         // Submit a recurring post processing task
-        //FIXME: other things open and close this too
-        DistributedTaskManager manager = clusterManager.getTaskManager();
-        manager.scheduleTask(new PostProcessingTask(),
-                             GraknEngineServer.class.getName(),
-                             Instant.now(),
-                             prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
-                             new JSONObject());
+        taskManager.scheduleTask(new PostProcessingTask(),
+                GraknEngineServer.class.getName(),
+                Instant.now(),
+                prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
+                Json.object());
 
     }
 
@@ -155,13 +173,13 @@ public class GraknEngineServer {
         }
     }
 
-    public static ClusterManager getClusterManager(){
-        return clusterManager;
+    private static void stopTaskManager() throws Exception {
+        PostProcessing.getInstance().stop();
+        taskManager.close();
     }
 
-    public static void stopCluster() throws Exception {
-        PostProcessing.getInstance().stop();
-        clusterManager.stop();
+    public static TaskManager getTaskManager(){
+        return taskManager;
     }
 
     /**

@@ -35,6 +35,8 @@ import static ai.grakn.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type
+ *
+ * @author Felix Chapman
  */
 public class Autocomplete {
 

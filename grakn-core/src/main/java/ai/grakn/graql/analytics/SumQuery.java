@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Compute the sum of the selected resource-type.
+ *
+ * @author Jason Liu
  */
 public interface SumQuery extends ComputeQuery<Optional<Number>> {
 

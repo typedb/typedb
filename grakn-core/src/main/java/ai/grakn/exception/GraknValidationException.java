@@ -20,6 +20,8 @@ package ai.grakn.exception;
 
 /**
  * Thrown when a grakn validation rule is broken. {@see ai.grakn.core.implementation.Validator} for more details
+ *
+ * @author Filipe Teixeira
  */
 public class GraknValidationException extends Exception{
     public GraknValidationException(String error) {

@@ -31,6 +31,17 @@ import java.util.Set;
 
 import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
 
+/**
+ * The MapReduce program for collecting the result of a clustering query.
+ * <p>
+ * It returns a map, the key being the cluster id, the value being a vertex id set containing all the vertices
+ * in the given cluster
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";

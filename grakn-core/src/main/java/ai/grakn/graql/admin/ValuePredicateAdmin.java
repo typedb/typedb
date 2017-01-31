@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Admin class for inspecting a ValuePredicate
+ *
+ * @author Felix Chapman
  */
 public interface ValuePredicateAdmin extends ValuePredicate {
 
@@ -54,7 +56,15 @@ public interface ValuePredicateAdmin extends ValuePredicate {
      */
     Optional<P<Object>> getPredicate();
 
+    /**
+     * Get the inner variable that this predicate refers to, if one is present
+     * @return the inner variable that this predicate refers to, if one is present
+     */
     Optional<VarAdmin> getInnerVar();
 
+    /**
+     * Apply the predicate to the gremlin traversal, so the traversal will filter things that don't meet the predicate
+     * @param traversal the traversal to apply the predicate to
+     */
     void applyPredicate(GraphTraversal<Vertex, Vertex> traversal);
 }

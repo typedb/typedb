@@ -28,13 +28,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -72,7 +80,21 @@ public class JsonSessionTest {
     }
 
     @Test
-    public void whenCreatingAJsonSessionNoNewNonDaemonThreadsShouldBeCreated() {
+    public void whenSessionThrowsACheckedExceptionThenConstructorShouldThrowARuntimeException() throws Exception {
+        client = mock(GraqlClient.class);
+        CompletableFuture<Session> future = mock(CompletableFuture.class);
+        when(client.connect(any(), any())).thenReturn(future);
+        ExecutionException executionException = new ExecutionException(new ConnectException());
+        when(future.get()).thenThrow(executionException);
+
+        exception.expect(RuntimeException.class);
+        exception.expectCause(is(executionException));
+
+        new JsonSession(client, uri);
+    }
+
+    @Test
+    public void whenCreatingAJsonSessionNoNewNonDaemonThreadsShouldBeCreated() throws IOException {
         long activeNonDaemonThreadsBefore =
                 Thread.getAllStackTraces().keySet().stream().filter(thread -> !thread.isDaemon()).count();
 
@@ -82,5 +104,27 @@ public class JsonSessionTest {
                 Thread.getAllStackTraces().keySet().stream().filter(thread -> !thread.isDaemon()).count();
 
         assertEquals(activeNonDaemonThreadsBefore, activeNonDaemonThreadsAfter);
+    }
+
+    @Test
+    public void whenEngineTimesOutThenJsonSessionShouldReturnAllMessagesUpToThatPoint() {
+        long timeout = 0;
+        Json dummyMessage = Json.object("dummy", "message");
+        JsonSession jsonSession = new JsonSession(client, uri, timeout);
+
+        jsonSession.onMessage(dummyMessage.toString());
+        List<Json> messages = jsonSession.getMessagesUntilEnd().collect(toList());
+        assertThat(messages, contains(dummyMessage));
+    }
+
+    @Test
+    public void whenSendJsonSeesAnEOFExceptionThenItShouldThrowItBack() throws IOException {
+        doThrow(EOFException.class).when(remote).sendString(any());
+
+        JsonSession jsonSession = new JsonSession(client, uri);
+
+        exception.expect(EOFException.class);
+
+        jsonSession.sendJson(Json.object(ACTION, ACTION_END));
     }
 }
