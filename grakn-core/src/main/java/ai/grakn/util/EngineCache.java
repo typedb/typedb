@@ -38,6 +38,18 @@ import java.util.Set;
  * @author fppt
  */
 public interface EngineCache {
+    /**
+     *
+     * @return All keyspaces which require post processing at this stage
+     */
+    Set<String> getKeyspaces();
+
+    /**
+     *
+     * @param keyspace The ksyepace with post processing jobs
+     * @return The number of jobs currently pending for that keyspace
+     */
+    long getNumJobs(String keyspace);
 
     //-------------------- Casting Jobs
     /**
@@ -46,14 +58,6 @@ public interface EngineCache {
      * @return Casting Ids which require post processing
      */
     Set<String> getCastingJobs(String keyspace);
-
-    //TODO: REMOVE THIS
-    /**
-     *
-     * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @param castingIds Casting Ids which require post processing
-     */
-    void addJobCasting(String keyspace, Set<String> castingIds);
 
     /**
      *
@@ -77,14 +81,6 @@ public interface EngineCache {
      * @return Resources Ids which require post processing
      */
     Set<String> getResourceJobs(String keyspace);
-
-    //TODO: REMOVE THIS
-    /**
-     *
-     * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @param resourceIds Resources Ids which require post processing
-     */
-    void addJobResource(String keyspace, Set<String> resourceIds);
 
     /**
      *

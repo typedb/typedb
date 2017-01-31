@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.util.EngineCache;
 
 import java.util.HashSet;
@@ -43,10 +44,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author fppt
  */
 public class EngineCacheImpl implements EngineCache {
-    private final Map<String, Set<String>> castings;
-    private final Map<String, Set<String>> resources;
-    private final AtomicBoolean saveInProgress;
+    //These are maps of keyspaces to indices to vertex ids
+    private final Map<String, Map<String, Set<ConceptId>>> castings;
+    private final Map<String, Map<String, Set<ConceptId>>> resources;
 
+    private final AtomicBoolean saveInProgress;
     private static EngineCacheImpl instance=null;
     private final AtomicLong lastTimeModified;
 
@@ -66,6 +68,7 @@ public class EngineCacheImpl implements EngineCache {
         return saveInProgress.get();
     }
 
+    @Override
     public Set<String> getKeyspaces(){
         Set<String> keyspaces = new HashSet<>();
         keyspaces.addAll(castings.keySet());
@@ -73,36 +76,50 @@ public class EngineCacheImpl implements EngineCache {
         return keyspaces;
     }
 
+    @Override
+    public long getNumJobs(String keyspace) {
+        //TODO
+        return 0;
+    }
+
     //-------------------- Casting Jobs
     @Override
     public Set<String> getCastingJobs(String keyspace) {
-        keyspace = keyspace.toLowerCase();
-        return castings.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
+        //TODO
     }
+
     @Override
-    public void addJobCasting(String keyspace, Set<String> castingIds) {
-        getCastingJobs(keyspace).addAll(castingIds);
-        updateLastTimeJobAdded();
+    public void addJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
+        addJob(castings, keyspace, castingIndex, castingId);
     }
+
     @Override
     public void deleteJobCasting(String keyspace, String castingId) {
-        getCastingJobs(keyspace).remove(castingId);
+        //TODO
     }
 
     //-------------------- Resource Jobs
     @Override
     public Set<String> getResourceJobs(String keyspace) {
-        keyspace = keyspace.toLowerCase();
-        return resources.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
+        //TODO
     }
+
     @Override
-    public void addJobResource(String keyspace, Set<String> resourceIds) {
-        getResourceJobs(keyspace).addAll(resourceIds);
-        updateLastTimeJobAdded();
+    public void addJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
+        addJob(resources, keyspace, resourceIndex, resourceId);
     }
+
     @Override
     public void deleteJobResource(String keyspace, String resourceId) {
-        getResourceJobs(keyspace).remove(resourceId);
+        //TODO
+    }
+
+    private void addJob(Map<String, Map<String, Set<ConceptId>>> cache, String keyspace, String index, ConceptId vertexId){
+        updateLastTimeJobAdded();
+
+        Map<String, Set<ConceptId>> keyspaceSpecificCache = cache.computeIfAbsent(keyspace, key -> new ConcurrentHashMap<>());
+        Set<ConceptId> indexSpecificSet = keyspaceSpecificCache.computeIfAbsent(index, i -> ConcurrentHashMap.newKeySet());
+        indexSpecificSet.add(vertexId);
     }
 
     /**
