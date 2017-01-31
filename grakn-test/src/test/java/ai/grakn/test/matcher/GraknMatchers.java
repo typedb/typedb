@@ -194,63 +194,6 @@ public class GraknMatchers {
         };
     }
 
-    static Matcher<MatchableConcept> type(String type) {
-        return type(TypeName.of(type));
-    }
-
-    static Matcher<MatchableConcept> type(TypeName expectedName) {
-        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
-            @Override
-            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
-                TypeName typeName = concept.get().asType().getName();
-
-                if (typeName.equals(expectedName)) {
-                    return true;
-                } else {
-                    mismatch.appendText("type(").appendText(typeNameToString(typeName)).appendText(")");
-                    return false;
-                }
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("type(").appendValue(typeNameToString(expectedName)).appendText(")");
-            }
-        };
-    }
-
-    static Matcher<MatchableConcept> instance(Object value) {
-        return instance(hasValue(value));
-    }
-
-    static Matcher<MatchableConcept> instance(Matcher<MatchableConcept> matcher) {
-        Matcher<Iterable<? super MatchableConcept>> matchResources = hasItem(matcher);
-
-        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
-            @Override
-            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
-                Set<MatchableConcept> resources = concept.get().asInstance().resources().stream()
-                        .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
-                        .map(MatchableConcept::new)
-                        .collect(toSet());
-
-                if (matchResources.matches(resources)) {
-                    return true;
-                } else {
-                    mismatch.appendText("instance(");
-                    matchResources.describeMismatch(resources, mismatch);
-                    mismatch.appendText(")");
-                    return false;
-                }
-            }
-
-            @Override
-            public void describeTo(Description description) {
-                description.appendText("instance(").appendDescriptionOf(matcher).appendText(")");
-            }
-        };
-    }
-
     public static Matcher<MatchableConcept> hasValue(Object expectedValue) {
         return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
             @Override
@@ -322,6 +265,63 @@ public class GraknMatchers {
             @Override
             public void describeTo(Description description) {
                 description.appendText("isInstance()");
+            }
+        };
+    }
+
+    private static Matcher<MatchableConcept> type(String type) {
+        return type(TypeName.of(type));
+    }
+
+    private static Matcher<MatchableConcept> type(TypeName expectedName) {
+        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
+            @Override
+            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
+                TypeName typeName = concept.get().asType().getName();
+
+                if (typeName.equals(expectedName)) {
+                    return true;
+                } else {
+                    mismatch.appendText("type(").appendText(typeNameToString(typeName)).appendText(")");
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("type(").appendValue(typeNameToString(expectedName)).appendText(")");
+            }
+        };
+    }
+
+    private static Matcher<MatchableConcept> instance(Object value) {
+        return instance(hasValue(value));
+    }
+
+    private static Matcher<MatchableConcept> instance(Matcher<MatchableConcept> matcher) {
+        Matcher<Iterable<? super MatchableConcept>> matchResources = hasItem(matcher);
+
+        return new TypeSafeDiagnosingMatcher<MatchableConcept>() {
+            @Override
+            protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
+                Set<MatchableConcept> resources = concept.get().asInstance().resources().stream()
+                        .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
+                        .map(MatchableConcept::new)
+                        .collect(toSet());
+
+                if (matchResources.matches(resources)) {
+                    return true;
+                } else {
+                    mismatch.appendText("instance(");
+                    matchResources.describeMismatch(resources, mismatch);
+                    mismatch.appendText(")");
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("instance(").appendDescriptionOf(matcher).appendText(")");
             }
         };
     }
