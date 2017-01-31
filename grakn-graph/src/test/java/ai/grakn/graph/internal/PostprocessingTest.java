@@ -146,21 +146,19 @@ public class PostprocessingTest extends GraphTestBase{
         ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Create fake resources
-        Set<Object> resourceIds = new HashSet<>();
-        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "2").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "3").getBaseIdentifier());
+        Set<String> resourceIds = new HashSet<>();
+        resourceIds.add(createFakeResource(resourceType, "1").getId().getValue());
+        resourceIds.add(createFakeResource(resourceType, "1").getId().getValue());
+        resourceIds.add(createFakeResource(resourceType, "1").getId().getValue());
 
         //Check we have duplicate resources
-        assertEquals(5, resourceType.instances().size());
+        assertEquals(3, resourceType.instances().size());
 
         //Fix duplicates
         graknGraph.fixDuplicateResources(resourceIds);
 
         //Check we no longer have duplicates
-        assertEquals(3, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().size());
     }
 
     @Test
@@ -175,18 +173,14 @@ public class PostprocessingTest extends GraphTestBase{
         Entity e3 = entityType.addEntity();
 
         //Create fake resources
-        Set<Object> resourceIds = new HashSet<>();
+        Set<String> resourceIds = new HashSet<>();
         ResourceImpl<?> r1 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r11 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r111 = createFakeResource(resourceType, "1");
-        ResourceImpl<?> r2 = createFakeResource(resourceType, "2");
-        ResourceImpl<?> r3 = createFakeResource(resourceType, "3");
 
-        resourceIds.add(r1.getBaseIdentifier());
-        resourceIds.add(r11.getBaseIdentifier());
-        resourceIds.add(r111.getBaseIdentifier());
-        resourceIds.add(r2.getBaseIdentifier());
-        resourceIds.add(r3.getBaseIdentifier());
+        resourceIds.add(r1.getId().getValue());
+        resourceIds.add(r11.getId().getValue());
+        resourceIds.add(r111.getId().getValue());
 
         //Give resources some relationships
         relationType.addRelation().putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
@@ -196,7 +190,7 @@ public class PostprocessingTest extends GraphTestBase{
         relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
 
         //Check everything is broken
-        assertEquals(5, resourceType.instances().size());
+        assertEquals(3, resourceType.instances().size());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
@@ -208,7 +202,7 @@ public class PostprocessingTest extends GraphTestBase{
         graknGraph.fixDuplicateResources(resourceIds);
 
         //Check everything is in order
-        assertEquals(3, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().size());
 
         //Get back the surviving resource
         Resource<String> foundR1 = null;

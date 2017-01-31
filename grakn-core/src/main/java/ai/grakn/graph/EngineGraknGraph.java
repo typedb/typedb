@@ -57,8 +57,8 @@ public interface EngineGraknGraph extends BaseGraknGraph {
 
     /**
      *
-     * @param resourceIds The resourceIDs which possible contain duplicates.
+     * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
-    boolean fixDuplicateResources(Set<Object> resourceIds);
+    boolean fixDuplicateResources(Set<String> resourceVertexIds);
 }

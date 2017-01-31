@@ -894,69 +894,32 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     /**
      *
-     * @param resourceIds The resourceIDs which possible contain duplicates.
+     * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
     @Override
-    public boolean fixDuplicateResources(Set<Object> resourceIds){
-        boolean commitRequired = false;
+    public boolean fixDuplicateResources(Set<String> resourceVertexIds){
+        Set<ResourceImpl> duplicates = resourceVertexIds.stream().map(this::<ResourceImpl>getConceptByBaseIdentifier).collect(Collectors.toSet());
 
-        Set<ResourceImpl> resources = new HashSet<>();
-        for (Object resourceId : resourceIds) {
-            ConceptImpl concept = getConceptByBaseIdentifier(resourceId);
-            if(concept != null && concept.isResource()){
-                resources.add((ResourceImpl) concept);
-            }
-        }
+        if(duplicates.size() > 1){
+            Iterator<ResourceImpl> it = duplicates.iterator();
+            ResourceImpl<?> mainResource = it.next();
 
-        Map<String, Set<ResourceImpl>> resourceMap = formatResourcesByType(resources);
+            while(it.hasNext()){
+                ResourceImpl<?> otherResource = it.next();
+                Collection<Relation> otherRelations = otherResource.relations();
 
-        for (Map.Entry<String, Set<ResourceImpl>> entry : resourceMap.entrySet()) {
-            Set<ResourceImpl> dups = entry.getValue();
-            if(dups.size() > 1){ //Found Duplicate
-                mergeResources(dups);
-                commitRequired = true;
-            }
-        }
+                for (Relation otherRelation : otherRelations) {
+                    copyRelation(mainResource, otherResource, otherRelation);
+                }
 
-        return commitRequired;
-    }
-
-    /**
-     *
-     * @param resources A list of resources containing possible duplicates.
-     * @return A map of resource indices to resources. If there is more than one resource for a specific
-     *         resource index then there are duplicate resources which need to be merged.
-     */
-    private Map<String, Set<ResourceImpl>> formatResourcesByType(Set<ResourceImpl> resources){
-        Map<String, Set<ResourceImpl>> resourceMap = new HashMap<>();
-
-        resources.forEach(resource -> {
-            String resourceKey = resource.getProperty(Schema.ConceptProperty.INDEX).toString();
-            resourceMap.computeIfAbsent(resourceKey, (key) -> new HashSet<>()).add(resource);
-        });
-
-        return resourceMap;
-    }
-
-    /**
-     *
-     * @param resources A set of resources which should all be merged.
-     */
-    private void mergeResources(Set<ResourceImpl> resources){
-        Iterator<ResourceImpl> it = resources.iterator();
-        ResourceImpl<?> mainResource = it.next();
-
-        while(it.hasNext()){
-            ResourceImpl<?> otherResource = it.next();
-            Collection<Relation> otherRelations = otherResource.relations();
-
-            for (Relation otherRelation : otherRelations) {
-                copyRelation(mainResource, otherResource, otherRelation);
+                otherResource.delete();
             }
 
-            otherResource.delete();
+            return true;
         }
+
+        return false;
     }
 
     /**
