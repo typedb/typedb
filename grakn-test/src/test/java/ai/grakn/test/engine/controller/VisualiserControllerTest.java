@@ -68,9 +68,13 @@ public class VisualiserControllerTest {
 
         assertEquals(4,resultArray.size());
         assertEquals(9,resultArray.get("entities").asList().size());
+        assertEquals(true, resultArray.get("entities").asList().contains("christening"));
         assertEquals(35,resultArray.get("roles").asList().size());
+        assertEquals(true, resultArray.get("roles").asList().contains("daughter-in-law"));
         assertEquals(18,resultArray.get("resources").asList().size());
+        assertEquals(true, resultArray.get("resources").asList().contains("name"));
         assertEquals(10,resultArray.get("relations").asList().size());
+        assertEquals(true, resultArray.get("relations").asList().contains("relatives"));
     }
 
     @Test
@@ -174,4 +178,5 @@ public class VisualiserControllerTest {
         assertEquals(message.at("_links").at("self").at("href").asString(),"/graph/concept/"+graph.getType(TypeName.of("person")).getId().getValue()+"?keyspace="+graph.getKeyspace());
         assertEquals(60,message.at("_embedded").at("isa").asJsonList().size());
     }
+    
 }
