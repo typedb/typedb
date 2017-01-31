@@ -48,7 +48,7 @@ public class SQLMigratorTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup(){

@@ -34,6 +34,14 @@ import ai.grakn.graql.analytics.SumQuery;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * This class implements ComputeQueryBuilder.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class ComputeQueryBuilderImpl implements ComputeQueryBuilder {
 
     private Optional<GraknGraph> graph;

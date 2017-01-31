@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This Exception is thrown by Grakn Engine web server when operations accessible through APIs go wrong.
+ *
+ * @author Marco Scoppetta
  */
 public class GraknEngineServerException extends RuntimeException {
 

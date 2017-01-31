@@ -26,6 +26,8 @@ import java.util.Collection;
 
 /**
  * Count the number of instances in the subgraph.
+ *
+ * @author Jason Liu
  */
 
 public interface CountQuery extends ComputeQuery<Long> {

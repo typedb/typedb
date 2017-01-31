@@ -52,7 +52,7 @@ public class CommitLogControllerTest {
     private final EngineCacheImpl cache = EngineCacheImpl.getInstance();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void setUp() throws Exception {

@@ -18,8 +18,16 @@
 
 package ai.grakn.util;
 
+/**
+ * Class containing strings describing the REST API, including URIs and fields.
+ *
+ * @author Marco Scoppetta
+ */
 public class REST {
 
+    /**
+     * Class containing URIs to REST endpoints.
+     */
     public static class WebPath{
         public static final String IMPORT_DATA_URI =  "/import/batch/data";
         public static final String GRAPH_FACTORY_URI = "/graph_factory";
@@ -48,6 +56,9 @@ public class REST {
         public static final String ONE_USER = "/user/one";
     }
 
+    /**
+     * Class containing request fields and content types.
+     */
     public static class Request {
         public static final String PATH_FIELD = "path";
         public static final String HOSTS_FIELD = "hosts";
@@ -71,11 +82,17 @@ public class REST {
         public static final String GRAQL_CONTENTTYPE = "application/graql";
     }
 
+    /**
+     * Class listing possible graph configuration options.
+     */
     public static class GraphConfig{
         public static final String DEFAULT = "default";
         public static final String COMPUTER = "computer";
     }
 
+    /**
+     * Class listing various HTTP connection strings.
+     */
     public static class HttpConn{
         public static final String INSERT_PREFIX = "insert ";
         public static final int OK = 200;
@@ -88,6 +105,9 @@ public class REST {
         public static final String APPLICATION_POST_TYPE = "application/POST";
     }
 
+    /**
+     * Class listing various strings found in responses from the REST API.
+     */
     public static class Response{
 
         public static final String ENTITIES_JSON_FIELD = "entities";
@@ -97,6 +117,9 @@ public class REST {
 
     }
 
+    /**
+     * Class listing various strings used in the JSON messages sent using websockets for the remote Graql shell.
+     */
     public static class RemoteShell {
         public static final String ACTION = "action";
         public static final String ACTION_INIT = "init";

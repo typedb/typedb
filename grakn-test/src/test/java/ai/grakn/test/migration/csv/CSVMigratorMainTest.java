@@ -40,7 +40,7 @@ public class CSVMigratorMainTest {
     private final String templateFile = getFile("csv", "pets/template.gql").getAbsolutePath();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -130,7 +130,7 @@ public class CSVMigratorMainTest {
     }
 
     private void run(String... args){
-        start(engine.getClusterManager(), args);
+        start(engine.getTaskManager(), args);
     }
 
     private void runAndAssertDataCorrect(String... args){

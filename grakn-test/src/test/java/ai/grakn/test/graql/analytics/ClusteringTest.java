@@ -74,7 +74,7 @@ public class ClusteringTest {
     private List<ConceptId> instanceIds;
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startServer();
+    public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknGraph graph;
 
     @Before

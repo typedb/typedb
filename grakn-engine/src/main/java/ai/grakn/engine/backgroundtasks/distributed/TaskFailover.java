@@ -18,10 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.StateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -46,25 +44,30 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATC
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
+/**
+ * <p>
+ * Re-schedule tasks that were running when an instance of Engine failed
+ * </p>
+ *
+ * @author Denis lobanov
+ */
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
+    private final TaskStateStorage stateStorage;
+
     private Map<String, ChildData> current;
     private TreeCache cache;
     private KafkaProducer<String, String> producer;
-    private StateStorage stateStorage;
-    private SynchronizedStateStorage synchronizedStateStorage;
 
-    public TaskFailover(CuratorFramework client, TreeCache cache, SynchronizedStateStorage synchronizedStateStorage) throws Exception {
+    public TaskFailover(CuratorFramework client, TreeCache cache, TaskStateStorage stateStorage) throws Exception {
+        this.stateStorage = stateStorage;
+
         if(OPENED.compareAndSet(false, true)) {
             this.cache = cache;
             current = cache.getCurrentChildren(RUNNERS_WATCH);
             producer = kafkaProducer();
-
-            stateStorage = new GraknStateStorage();
-
-            this.synchronizedStateStorage = synchronizedStateStorage;
 
             scanStaleStates(client);
         }
@@ -136,14 +139,11 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         for(Object o: ids) {
             String id = (String)o;
 
-            // Mark task as SCHEDULED again.
-            synchronizedStateStorage.updateState(id, SCHEDULED, "", null);
+            // Mark task as SCHEDULED again
+            TaskState taskState = stateStorage.getState(id);
 
-            String configuration = stateStorage.getState(id)
-                                               .configuration()
-                                               .toString();
-
-            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, configuration));
+            stateStorage.updateState(taskState.status(SCHEDULED));
+            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState.configuration().toString()));
         }
     }
 
@@ -156,7 +156,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         Set<String> deadRunners = new HashSet<>();
 
         for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
-            SynchronizedState state = synchronizedStateStorage.getState(id);
+            TaskState state = stateStorage.getState(id);
 
             if(state.status() != RUNNING) {
                 break;

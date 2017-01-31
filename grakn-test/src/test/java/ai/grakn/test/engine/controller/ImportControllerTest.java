@@ -45,7 +45,7 @@ import static org.junit.Assert.assertNotNull;
 public class ImportControllerTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Test
     @Ignore

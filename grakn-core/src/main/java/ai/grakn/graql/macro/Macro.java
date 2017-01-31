@@ -22,6 +22,8 @@ import java.util.List;
 
 /**
  * A macro function to perform on a template.
+ *
+ * @author Alexandra Orth
  */
 public interface Macro<T> {
 

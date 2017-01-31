@@ -32,14 +32,24 @@ import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting and manipulating a MatchQuery
+ *
+ * @author Felix Chapman
  */
 public interface MatchQueryAdmin extends MatchQuery {
 
+    /**
+     * Get a list of results. This differs from {@code MatchQuery#execute} because the keys are instances of
+     * {@code VarName}.
+     * @return a list of results
+     */
     List<Map<VarName, Concept>> results();
 
+    /**
+     * Get a stream of results. This differs from {@code MatchQuery#execute} because the keys are instances of
+     * {@code VarName}.
+     * @return a stream of results
+     */
     Stream<Map<VarName, Concept>> streamWithVarNames();
-
-    MatchQueryAdmin admin();
 
     /**
      * @param graph the graph to use to get types from

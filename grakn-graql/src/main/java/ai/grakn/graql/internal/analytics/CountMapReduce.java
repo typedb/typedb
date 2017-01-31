@@ -26,6 +26,14 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * The MapReduce program for counting the number of instances in a graph
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
+ */
+
 public class CountMapReduce extends GraknMapReduce<Long> {
 
     // Needed internally for OLAP tasks

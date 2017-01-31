@@ -22,6 +22,8 @@ import ai.grakn.util.ErrorMessage;
 
 /**
  * The exception thrown when an edge is expected between two concepts.
+ *
+ * @author Filipe Teixeira
  */
 public class NoEdgeException extends GraphRuntimeException {
     public NoEdgeException(String id, String target) {

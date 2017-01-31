@@ -21,6 +21,15 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
 
+/**
+ * Abstract implementation of an {@link Aggregate}, providing an implementation of the {@link Aggregate#as(String)}}
+ * method.
+ *
+ * @param <T> The input type to the aggregate.
+ * @param <S> The result type of the aggregate.
+ *
+ * @author Felix Chapman
+ */
 public abstract class AbstractAggregate<T, S> implements Aggregate<T, S> {
 
     @Override

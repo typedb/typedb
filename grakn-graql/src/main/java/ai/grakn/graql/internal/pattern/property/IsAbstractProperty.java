@@ -30,6 +30,15 @@ import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
 import java.util.Set;
 
+/**
+ * Represents the {@code is-abstract} property on a {@link ai.grakn.concept.Type}.
+ *
+ * This property can be matched or inserted.
+ *
+ * This property states that a type cannot have direct instances.
+ *
+ * @author Felix Chapman
+ */
 public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty {
 
     @Override

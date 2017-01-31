@@ -30,6 +30,8 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Methods that will be used by all of the controllers.
+ *
+ * @author Alexandra Orth
  */
 public abstract class Utilities {
     private final static ConfigProperties properties = ConfigProperties.getInstance();

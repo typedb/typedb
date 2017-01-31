@@ -30,6 +30,14 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
 import java.util.Set;
 
+/**
+ * Represents the {@code id} property on a {@link ai.grakn.concept.Concept}.
+ *
+ * This property can be queried. While this property cannot be inserted, if used in an insert query any existing concept
+ * with the given ID will be retrieved.
+ *
+ * @author Felix Chapman
+ */
 public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
     private final ConceptId id;

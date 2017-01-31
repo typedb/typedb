@@ -28,6 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Factory for making {@link Aggregate} implementations.
+ *
+ * @author Felix Chapman
+ */
 public class Aggregates {
 
     private Aggregates() {}

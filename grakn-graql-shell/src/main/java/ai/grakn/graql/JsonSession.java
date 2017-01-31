@@ -46,11 +46,14 @@ import static java.util.Spliterator.IMMUTABLE;
 
 /**
  * Websocket session for sending and receiving JSON
+ *
+ * @author Felix Chapman
  */
 @WebSocket
 public class JsonSession {
 
     private final Session session;
+    private static final long DEFAULT_TIMEOUT = 1;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = Executors.defaultThreadFactory().newThread(runnable);
@@ -59,14 +62,19 @@ public class JsonSession {
     });
 
     private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
+    private final long timeout;
 
     JsonSession(GraqlClient client, URI uri) {
+        this(client, uri, DEFAULT_TIMEOUT);
+    }
+
+    JsonSession(GraqlClient client, URI uri, long timeout) {
+        this.timeout = timeout;
+
         try {
             this.session = client.connect(this, uri).get();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
         }
     }
 
@@ -85,7 +93,12 @@ public class JsonSession {
             @Override
             public boolean tryAdvance(Consumer<? super Json> action) {
                 Json message = getMessage();
-                if (message.is(ACTION, ACTION_END)) {
+
+                if (message == null) {
+                    System.err.println("Timeout while contacting engine");
+                }
+
+                if (message == null || message.is(ACTION, ACTION_END)) {
                     return false;
                 } else {
                     action.accept(message);
@@ -99,13 +112,13 @@ public class JsonSession {
 
     private Json getMessage() {
         try {
-            return messages.poll(5, TimeUnit.MINUTES);
+            return messages.poll(timeout, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    void sendJson(Json json) throws WebSocketException {
+    void sendJson(Json json) throws WebSocketException, IOException {
         try {
             executor.submit(() -> {
                 try {
@@ -117,7 +130,13 @@ public class JsonSession {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
+            RuntimeException inner = (RuntimeException) e.getCause();
+            Throwable cause = inner.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            } else {
+                throw inner;
+            }
         }
     }
 

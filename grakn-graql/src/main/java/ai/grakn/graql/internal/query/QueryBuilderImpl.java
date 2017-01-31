@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.graql.internal.query;
@@ -56,6 +57,8 @@ import java.util.stream.Stream;
  * graph. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilderImpl} also provides static methods for creating {@code Vars}.
+ *
+ * @author Felix Chapman
  */
 public class QueryBuilderImpl implements QueryBuilder {
 

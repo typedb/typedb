@@ -38,7 +38,7 @@ import static org.junit.Assert.assertFalse;
 public class GraknEngineRunningTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void resetLogs() {
@@ -57,13 +57,14 @@ public class GraknEngineRunningTest {
     
     @Test
     public void graknEngineNotRunning() throws Exception {
+        GraknEngineServer.stop();
         GraknEngineServer.stopHTTP();
         Thread.sleep(5000);
 
         boolean running = GraknEngineServer.isRunning();
         assertFalse(running);
 
-        GraknEngineServer.startHTTP();
+        GraknEngineServer.start(false);
         Thread.sleep(5000);
     }
 }

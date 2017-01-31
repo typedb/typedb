@@ -34,6 +34,8 @@ import java.util.Map;
  * you can obtain multiple concurrent graph connections, represented by the {@link GraknGraph}
  * interface.
  * </p>
+ *
+ * @author Filipe Teixeira
  */
 public class Grakn {
     /**

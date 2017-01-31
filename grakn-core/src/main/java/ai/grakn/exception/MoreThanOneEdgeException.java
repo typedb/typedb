@@ -25,6 +25,8 @@ import ai.grakn.concept.Concept;
 /**
  * Thrown when more than one edge appears between two oncepts when it should not be the case.
  * For example if 2 isa edges appear between the same concepts.
+ *
+ * @author Filipe Teixeira
  */
 public class MoreThanOneEdgeException extends GraphRuntimeException {
     public MoreThanOneEdgeException(Concept concept, Schema.EdgeLabel edgeType) {

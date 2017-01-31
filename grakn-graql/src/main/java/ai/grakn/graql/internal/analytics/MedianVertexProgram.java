@@ -34,7 +34,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * This class implements quick select algorithm to find the median.
+ * The vertex program for computing the median of given resource using quick select algorithm.
+ * <p>
+ *
+ * @author Jason Liu
+ * @author Sheldon Hall
  */
 
 public class MedianVertexProgram extends GraknVertexProgram<Long> {
@@ -44,15 +48,15 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     private static final String RESOURCE_TYPE = "medianVertexProgram.statisticsResourceType";
 
     // element key
-    public static final String DEGREE = "medianVertexProgram.degree";
+    private static final String DEGREE = "medianVertexProgram.degree";
     private static final String LABEL = "medianVertexProgram.label";
 
     // memory key
-    public static final String COUNT = "medianVertexProgram.count";
+    public static final String MEDIAN = "medianVertexProgram.median";
+    private static final String COUNT = "medianVertexProgram.count";
     private static final String INDEX_START = "medianVertexProgram.indexStart";
     private static final String INDEX_END = "medianVertexProgram.indexEnd";
     private static final String INDEX_MEDIAN = "medianVertexProgram.indexMedian";
-    public static final String MEDIAN = "medianVertexProgram.median";
     private static final String PIVOT = "medianVertexProgram.pivot";
     private static final String PIVOT_POSITIVE = "medianVertexProgram.pivotPositive";
     private static final String PIVOT_NEGATIVE = "medianVertexProgram.pivotNegative";

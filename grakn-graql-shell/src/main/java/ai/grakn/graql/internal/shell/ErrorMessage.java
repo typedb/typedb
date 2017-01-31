@@ -20,6 +20,8 @@ package ai.grakn.graql.internal.shell;
 
 /**
  * Error message strings for shell
+ *
+ * @author Felix Chapman
  */
 public enum ErrorMessage {
 

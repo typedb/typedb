@@ -18,7 +18,6 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.test.EngineContext;
@@ -28,6 +27,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
+import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -57,7 +57,7 @@ public class TasksControllerTest {
     private String singleTask;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startServer();
+    public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @BeforeClass
     public static void startEngine() throws Exception{
@@ -67,8 +67,8 @@ public class TasksControllerTest {
     @Before
     public void setUp() throws Exception {
         assumeFalse(usingTinker());
-        DistributedTaskManager manager = engine.getClusterManager().getTaskManager();
-        singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0, new JSONObject());
+        DistributedTaskManager manager = (DistributedTaskManager) engine.getTaskManager();
+        singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0, Json.object());
     }
 
     @Test

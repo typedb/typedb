@@ -27,6 +27,8 @@ import java.util.Optional;
 
 /**
  * Compute the maximum value of the selected resource-type.
+ *
+ * @author Jason Liu
  */
 public interface MaxQuery extends ComputeQuery<Optional<Number>> {
 

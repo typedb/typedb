@@ -18,6 +18,11 @@
 
 package ai.grakn.exception;
 
+/**
+ * Exception when parsing Graql templates.
+ *
+ * @author Filipe Teixiera
+ */
 public class GraqlParsingException extends RuntimeException {
     public GraqlParsingException(String message) {
         super(message);
