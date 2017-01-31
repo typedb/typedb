@@ -99,16 +99,16 @@ public class ConceptLog {
      *
      * @return All the castings which have been affected within the transaction in some way
      */
-    public Set<String> getModifiedCastingIds() {
-        return modifiedCastings.stream().filter(ConceptImpl::isAlive).map(concept -> concept.getBaseIdentifier().toString()).collect(Collectors.toSet());
+    public Set<CastingImpl> getModifiedCastings() {
+        return modifiedCastings.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
     }
 
     /**
      *
      * @return All the castings which have been affected within the transaction in some way
      */
-    public Set<String> getModifiedResourceIds() {
-        return modifiedResources.stream().filter(ConceptImpl::isAlive).map(concept -> concept.getBaseIdentifier().toString()).collect(Collectors.toSet());
+    public Set<ResourceImpl> getModifiedResources() {
+        return modifiedResources.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
     }
 
     /**

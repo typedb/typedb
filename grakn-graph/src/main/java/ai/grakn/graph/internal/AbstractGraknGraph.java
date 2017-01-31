@@ -53,6 +53,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.javatuples.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -60,7 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -700,18 +700,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void commit() throws GraknValidationException {
-        commit((castings, resources) -> {
-            Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
-            if(castings.size() > 0) {
-                modifiedConcepts.put(Schema.BaseType.CASTING, castings);
-            }
-            if(resources.size() > 0) {
-                modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
-            }
-            if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && modifiedConcepts.size() > 0) {
-                submitCommitLogs(modifiedConcepts);
-            }
-        });
+        commit(this::submitCommitLogs);
     }
 
     /**
@@ -721,26 +710,30 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit(EngineCache cache) throws GraknValidationException{
         commit((castings, resources) -> {
-            String keyspace = getKeyspace();
-            if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-                cache.addJobCasting(keyspace, castings);
-                cache.addJobResource(keyspace, resources);
-            }
+            castings.forEach(pair -> cache.addJobCasting(keyspace, pair.getValue0(), pair.getValue1()));
+            resources.forEach(pair -> cache.addJobResource(keyspace, pair.getValue0(), pair.getValue1()));
         });
     }
 
-    public void commit(BiConsumer<Set<String>, Set<String>> conceptLogger) throws GraknValidationException {
+    public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
-        Set<String> castings = getConceptLog().getModifiedCastingIds();
-        Set<String> resources = getConceptLog().getModifiedResourceIds();
+        Set<Pair<String, ConceptId>> castings = getConceptLog().getModifiedCastings().stream().
+                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(Collectors.toSet());
+
+        Set<Pair<String, ConceptId>> resources = getConceptLog().getModifiedResources().stream().
+                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(Collectors.toSet());
+
 
         LOG.debug("Graph is valid. Committing graph . . . ");
         commitTransaction();
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        conceptLogger.accept(castings, resources);
+        //No post processing should ever be done for the system keyspace
+        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
+            conceptLogger.accept(castings, resources);
+        }
     }
 
     protected void commitTransaction(){
@@ -766,25 +759,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
+    private void submitCommitLogs(Set<Pair<String, ConceptId>> castings, Set<Pair<String, ConceptId>> resources){
         JSONArray jsonArray = new JSONArray();
-        for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
-            Schema.BaseType type = entry.getKey();
 
-            for (String vertexId : entry.getValue()) {
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("id", vertexId);
-                jsonObject.put("type", type.name());
-                jsonArray.put(jsonObject);
-            }
-
-        }
+        loadCommitLogConcepts(jsonArray, Schema.BaseType.CASTING, castings);
+        loadCommitLogConcepts(jsonArray, Schema.BaseType.RESOURCE, resources);
 
         JSONObject postObject = new JSONObject();
         postObject.put("concepts", jsonArray);
+        LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString()) + "]");
 
-        String result = EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString());
-        LOG.debug("Response from engine [" + result + "]");
+    }
+    private void loadCommitLogConcepts(JSONArray jsonArray, Schema.BaseType baseType, Set<Pair<String, ConceptId>> concepts){
+        concepts.forEach(concept -> {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("concept-base-type", baseType.name());
+            jsonObject.put("concept-index", concept.getValue0());
+            jsonObject.put("concept-vertex-id", concept.getValue1().getValue());
+            jsonArray.put(jsonObject);
+        });
     }
     private String getCommitLogEndPoint(){
         if(Grakn.IN_MEMORY.equals(engine)) {

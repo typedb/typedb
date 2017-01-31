@@ -18,6 +18,8 @@
 
 package ai.grakn.util;
 
+import ai.grakn.concept.ConceptId;
+
 import java.util.Set;
 
 /**
@@ -45,12 +47,21 @@ public interface EngineCache {
      */
     Set<String> getCastingJobs(String keyspace);
 
+    //TODO: REMOVE THIS
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
      * @param castingIds Casting Ids which require post processing
      */
     void addJobCasting(String keyspace, Set<String> castingIds);
+
+    /**
+     *
+     * @param keyspace The keyspace containing casting jobs which need to be post processed
+     * @param castingIndex The unique index of this casting
+     * @param castingId The casting vertex id
+     */
+    void addJobCasting(String keyspace, String castingIndex, ConceptId castingId);
 
     /**
      *
@@ -67,12 +78,21 @@ public interface EngineCache {
      */
     Set<String> getResourceJobs(String keyspace);
 
+    //TODO: REMOVE THIS
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
      * @param resourceIds Resources Ids which require post processing
      */
     void addJobResource(String keyspace, Set<String> resourceIds);
+
+    /**
+     *
+     * @param keyspace The keyspace containing casting jobs which need to be post processed
+     * @param resourceIndex The unique index of this resource
+     * @param resourceId The resource vertex id
+     */
+    void addJobResource(String keyspace, String resourceIndex, ConceptId resourceId);
 
     /**
      *
