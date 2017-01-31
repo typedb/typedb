@@ -19,14 +19,11 @@
 
 package ai.grakn.test.matcher;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -35,13 +32,12 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
+import static ai.grakn.test.matcher.MatchableConcept.NAME_TYPES;
 import static ai.grakn.util.Schema.MetaSchema.CONCEPT;
 import static ai.grakn.util.Schema.MetaSchema.CONSTRAINT_RULE;
 import static ai.grakn.util.Schema.MetaSchema.ENTITY;
@@ -54,8 +50,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 
 public class GraknMatchers {
-
-    private static final ImmutableSet<TypeName> nameTypes = ImmutableSet.of(TypeName.of("name"), TypeName.of("title"));
 
     public static final Matcher<MatchableConcept> concept = type(CONCEPT.getName());
     public static final Matcher<MatchableConcept> entity = type(ENTITY.getName());
@@ -236,7 +230,7 @@ public class GraknMatchers {
             @Override
             protected boolean matchesSafely(MatchableConcept concept, Description mismatch) {
                 Set<MatchableConcept> resources = concept.get().asInstance().resources().stream()
-                        .filter(resource -> nameTypes.contains(resource.type().getName()))
+                        .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
                         .map(MatchableConcept::new)
                         .collect(toSet());
 
@@ -344,30 +338,4 @@ public class GraknMatchers {
         return types;
     }
 
-    static class MatchableConcept {
-        private final Concept concept;
-
-        MatchableConcept(Concept concept) {
-            this.concept = concept;
-        }
-
-        private Concept get() {
-            return concept;
-        }
-
-        @Override
-        public String toString() {
-            if (concept.isInstance()) {
-
-                Collection<Resource<?>> resources = concept.asInstance().resources();
-                Optional<?> value = resources.stream()
-                        .filter(resource -> nameTypes.contains(resource.type().getName()))
-                        .map(Resource::getValue).findFirst();
-
-                return "instance(" + value.map(StringConverter::valueToString).orElse("") + ")";
-            } else {
-                return "type(" + typeNameToString(concept.asType().getName()) + ")";
-            }
-        }
-    }
 }
