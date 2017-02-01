@@ -63,7 +63,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
         this(graknGraph, v);
-        if(!Schema.MetaSchema.isMetaName(superType.getName())) superType(superType);
+        if(superType() == null) superType(superType);
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType, Boolean isImplicit) {
