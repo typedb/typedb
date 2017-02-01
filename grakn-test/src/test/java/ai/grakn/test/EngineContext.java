@@ -84,11 +84,11 @@ public class EngineContext extends ExternalResource {
         }
 
         if (startDistributedEngine){
-            startEngine(false);
+            startEngine(true);
         }
 
         if (startInMemoryEngine){
-            startEngine(true);
+            startEngine(false);
         }
     }
 
