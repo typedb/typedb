@@ -543,4 +543,14 @@ public class EntityTypeTest extends GraphTestBase{
         assertTrue(entityTypeA.subTypes().contains(entityTypeB));
         assertTrue(entityTypeA.subTypes().contains(entityTypeC));
     }
+
+    @Test
+    public void testChangingSuperTypeBackToMetaType(){
+        EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
+        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB").superType(entityTypeA);
+        assertEquals(entityTypeA, entityTypeB.superType());
+
+        entityTypeB.superType(graknGraph.getMetaEntityType());
+        assertEquals(graknGraph.getMetaEntityType(), entityTypeB.superType());
+    }
 }
