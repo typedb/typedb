@@ -21,10 +21,11 @@ package ai.grakn.engine.backgroundtasks.taskstatestorage;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import javafx.util.Pair;
 import org.apache.curator.framework.CuratorFramework;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
@@ -48,7 +49,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class TaskStateZookeeperStore implements TaskStateStorage {
     private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s" + TASK_STATE_SUFFIX;
 
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final Logger LOG = LoggerFactory.getLogger(TaskStateZookeeperStore.class);
     private final CuratorFramework zookeeperConnection;
 
     public TaskStateZookeeperStore(ZookeeperConnection connection) throws Exception {
