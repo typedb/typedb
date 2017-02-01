@@ -123,8 +123,8 @@ public class PostProcessing {
     private void performCastingFix() {
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                cache.getCastingJobs(keyspace).entrySet().
-                        forEach(entry -> futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, entry.getKey(), entry.getValue()))));
+                cache.getCastingJobs(keyspace).
+                        forEach((index, ids) -> futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, index, ids))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
@@ -134,8 +134,8 @@ public class PostProcessing {
     private void performResourceFix(){
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                cache.getResourceJobs(keyspace).entrySet().
-                        forEach(entry -> futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, entry.getKey(), entry.getValue()))));
+                cache.getResourceJobs(keyspace).
+                        forEach((index, ids) -> futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }

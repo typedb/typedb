@@ -85,7 +85,7 @@ class ConceptFixer {
                 BiConsumer<EngineCache, String> jobFinaliser = postProcessor.apply(graph, conceptIds);
 
                 //Check if the fix worked
-                validateFix(graph, conceptIndex, conceptIds).
+                validateMerged(graph, conceptIndex, conceptIds).
                         ifPresent(message -> {
                             throw new RuntimeException(message);
                         });
@@ -121,7 +121,7 @@ class ConceptFixer {
      * @param conceptIds The concpet ids which should only return 1 valid concept
      * @return An error if one of the above rules are not satisfied.
      */
-    private static Optional<String> validateFix(EngineGraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
+    private static Optional<String> validateMerged(EngineGraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
         //Check number of valid concept Ids
         int numConceptFound = 0;
         for (ConceptId conceptId : conceptIds) {
