@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -154,9 +155,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
             return new QueryAnswers();
         }
         QueryAnswers join = new QueryAnswers();
-        Set<VarName> joinVars = new HashSet<>(this.getVars());
-        joinVars.retainAll(localTuples.getVars());
-
+        Set<VarName> joinVars = Sets.intersection(this.getVars(), localTuples.getVars());
         for( Map<VarName, Concept> lanswer : localTuples){
             for (Map<VarName, Concept> answer : this){
                 boolean isCompatible = true;

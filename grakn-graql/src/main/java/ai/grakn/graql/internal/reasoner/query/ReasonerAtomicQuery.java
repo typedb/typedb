@@ -278,7 +278,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subs = subs.join(localSubs);
         }
 
-        QueryAnswers answers = subs
+        QueryAnswers answers = ruleHead.propagateIdPredicates(subs)
                 .filterNonEquals(ruleBody.getFilters())
                 .filterVars(ruleHead.getVarNames())
                 .filterKnown(this.getAnswers());
@@ -294,8 +294,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                         atom.getUnmappedIdPredicates(),
                         atom.getUnmappedTypeConstraints());
 
+        filteredAnswers.stream()
+                .filter(ans -> !this.getAnswers().contains(ans))
+                .forEach(newAnswers::add);
         this.getAnswers().addAll(filteredAnswers);
-        this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
     }
 
@@ -395,9 +397,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         /**
          * @return single answer to the query
          */
-        public Map<VarName, Concept> next() {
-            return answerIterator.next();
-        }
+        public Map<VarName, Concept> next() { return answerIterator.next();}
         private ReasonerAtomicQuery outer(){ return ReasonerAtomicQuery.this;}
         private int size(){
             return cache.keySet().stream().map(q -> q.getAnswers().size()).mapToInt(Integer::intValue).sum();

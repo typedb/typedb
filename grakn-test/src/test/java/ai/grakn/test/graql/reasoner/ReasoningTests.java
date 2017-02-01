@@ -152,8 +152,8 @@ public class ReasoningTests {
 
         Assert.assertEquals(answers.size(), 3);
     }
-    
-    @Test
+
+    @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         QueryBuilder qb = testSet7.graph().graql().infer(true);
         String queryString = "match $x isa relation1; limit 10;";
@@ -162,7 +162,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved1() {
         QueryBuilder qb = testSet8.graph().graql().infer(true);
         String queryString = "match (role2:$x, role3:$y) isa relation2;";

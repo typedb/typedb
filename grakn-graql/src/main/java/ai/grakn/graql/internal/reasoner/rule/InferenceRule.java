@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
 import javafx.util.Pair;
@@ -113,8 +114,7 @@ public class InferenceRule {
             unify(rewriteUnifiers);
 
             //resolve captures
-            Set<VarName> varIntersection = body.getVarNames();
-            varIntersection.retainAll(parentAtom.getVarNames());
+            Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
