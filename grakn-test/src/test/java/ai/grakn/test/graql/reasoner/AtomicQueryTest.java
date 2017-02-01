@@ -146,7 +146,6 @@ public class AtomicQueryTest {
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
-    /*
     @Test
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -160,12 +159,18 @@ public class AtomicQueryTest {
         Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
         Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
 
-        QueryAnswers permutedAnswers = answers.permute(mappedAtom, mappedAtom);
-        QueryAnswers permutedAnswers2 = answers.permute(unmappedAtom, unmappedAtom);
+        QueryAnswers permutedAnswers = answers.permute(
+                mappedAtom.getPermutationUnifiers(mappedAtom),
+                mappedAtom.getUnmappedIdPredicates(),
+                mappedAtom.getUnmappedTypeConstraints());
+        QueryAnswers permutedAnswers2 = answers.permute(
+                unmappedAtom.getPermutationUnifiers(mappedAtom),
+                unmappedAtom.getUnmappedIdPredicates(),
+                unmappedAtom.getUnmappedTypeConstraints());
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }
-    */
+
 
     private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
         Set<VarAdmin> vars = pattern
