@@ -82,8 +82,12 @@ public class ReasoningTests {
     }
 
 
+    //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
+    //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
+    //as specified in the respective comments below.
+
     @Ignore
-    @Test
+    @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationWithVarDuplicates() {
         QueryBuilder qb = testSet1.graph().graql().infer(true);
         String query1String = "match (role1:$x, role2:$x);";
@@ -96,7 +100,7 @@ public class ReasoningTests {
         answers1.forEach(x -> Assert.assertTrue(x.keySet().size() ==1));
     }
 
-    @Test
+    @Test //Expected result: The query should return a unique match.
     public void generatingMultipleIsaEdges() {
         QueryBuilder qb = testSet2.graph().graql().infer(true);
         String query1String = "match $x isa entity2;";
@@ -106,7 +110,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The queries should return different matches, unique per query.
     public void generatingFreshEntity() {
         QueryBuilder qb = testSet3.graph().graql().infer(true);
         String query1String = "match $x isa entity1;";
@@ -116,7 +120,7 @@ public class ReasoningTests {
         Assert.assertTrue(!(answers1.containsAll(answers2)&&answers2.containsAll(answers1)));
     }
 
-    @Test
+    @Test //Expected result: The queries should return the same two matches.
     public void generatingIsaEdge() {
         QueryBuilder qb = testSet4.graph().graql().infer(true);
         String query1String = "match $x isa entity1;";
@@ -127,7 +131,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The query should return a unique match (or possibly nothing if we enforce range-restriction).
     public void generatingFreshEntity2() {
         QueryBuilder qb = testSet5.graph().graql().infer(false);
         QueryBuilder iqb = testSet5.graph().graql().infer(true);
@@ -141,7 +145,8 @@ public class ReasoningTests {
         Assert.assertEquals(answers2.size(), 3);
     }
 
-    @Test
+
+    @Test //Expected result: The query should return three different instances of relation1 with unique ids.
     public void generatingFreshRelation() {
         QueryBuilder qb = testSet6.graph().graql().infer(true);
         String queryString = "match $x isa relation1;";
@@ -151,7 +156,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The query should return 50 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         QueryBuilder qb = testSet7.graph().graql().infer(true);
         String queryString = "match $x isa relation1; limit 50;";
@@ -160,7 +165,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved1() {
         QueryBuilder qb = testSet8.graph().graql().infer(true);
         String queryString = "match (role2:$x, role3:$y) isa relation2;";
@@ -169,7 +174,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved2() {
         QueryBuilder qb = testSet9.graph().graql().infer(true);
         String queryString = "match (role1:$x, role1:$y) isa relation1;";
@@ -177,14 +182,8 @@ public class ReasoningTests {
         answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
     }
 
-    /**
-     * recursive relation having same type for different role players
-     * tests for handling recursivity and equivalence of queries and relations
-     */
 
-
-
-    @Test
+    @Test //Expected result: The query should return a unique match
     public void transRelationWithEntityGuardsAtBothEnds() {
         QueryBuilder iqb = testSet10.graph().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation2;";
@@ -194,7 +193,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation3;";
@@ -202,7 +201,7 @@ public class ReasoningTests {
         Assert.assertEquals(answers.size(), 1);
     }
 
-    @Test
+    @Test //Expected result: The query should return two unique matches
     public void circularRuleDependencies() {
         QueryBuilder qb = testSet12.graph().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation3;";
@@ -211,7 +210,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test
+    @Test //Expected result: The query should return a unique match
     public void rulesInteractingWithTypeHierarchy() {
         QueryBuilder qb = testSet13.graph().graql().infer(true);
         String queryString = "match (role1:$x, role2:$y) isa relation2;";
