@@ -82,6 +82,18 @@ public class GraqlTraversal {
 
     /**
      * Create a semi-optimal traversal plan using a greedy approach
+     *
+     * We can interpret building a plan as a decision tree, where each branch represents selecting a fragment to
+     * traverse next. A path from the root to a leaf of the tree represents a traversal plan.
+     *
+     * Under this definition, this traversal optimisation plan takes a brute-force approach. It traverses a certain
+     * number of branches (defined in MAX_TRAVERSAL_ATTEMPTS) and calculates the estimated complexity of each partial
+     * plan produced. The lowest complexity partial plan is chosen, then the brute-force search is re-started from that
+     * position until a full plan is produced.
+     *
+     * With fixed MAX_TRAVERSAL_ATTEMPTS, this method is O(n) where n is the size of the query. In general, it produces
+     * optimal or nearly-optimal results, so a 'smarter' method may not be necessary.
+     *
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */

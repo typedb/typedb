@@ -21,8 +21,8 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
-import ai.grakn.example.MovieGraphFactory;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
@@ -113,7 +113,7 @@ public class ImportControllerTest {
     private void runAndAssertCorrect(File file, List<String> findByResource, String keyspace)
             throws GraknValidationException {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
-        MovieGraphFactory.loadGraph(graph);
+        MovieGraph.get().accept(graph);
         graph.commit();
 
         Response dataResponse = given()

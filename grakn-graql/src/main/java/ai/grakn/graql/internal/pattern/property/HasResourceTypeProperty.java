@@ -25,6 +25,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
@@ -74,10 +75,10 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName))
-                .sub(name(Schema.MetaSchema.ROLE.getName())).admin();
-        valueRole = name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName))
-                .sub(name(Schema.MetaSchema.ROLE.getName())).admin();
+        Var role = name(Schema.MetaSchema.ROLE.getName());
+
+        ownerRole = name(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName)).sub(role).admin();
+        valueRole = name(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName)).sub(role).admin();
 
         relationType = name(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName))
                 .sub(name(Schema.MetaSchema.RELATION.getName()))

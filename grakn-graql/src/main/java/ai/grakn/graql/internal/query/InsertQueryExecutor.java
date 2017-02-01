@@ -186,7 +186,8 @@ public class InsertQueryExecutor {
 
         // If type provided, then 'put' the concept, else 'get' it by ID or name
         if (sub.isPresent()) {
-            return putType(typeName, var, sub.get());
+            TypeName name = getTypeNameOrThrow(typeName);
+            return putType(name, var, sub.get());
         } else if (type.isPresent()) {
             return putInstance(id, var, type.get());
         } else if (id.isPresent()) {
@@ -274,19 +275,19 @@ public class InsertQueryExecutor {
      * @param sub the supertype property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Type putType(Optional<TypeName> name, VarAdmin var, SubProperty sub) {
+    private Type putType(TypeName name, VarAdmin var, SubProperty sub) {
         Type superType = getConcept(sub.getSuperType()).asType();
 
         if (superType.isEntityType()) {
-            return graph.putEntityType(getTypeNameOrThrow(name)).superType(superType.asEntityType());
+            return graph.putEntityType(name).superType(superType.asEntityType());
         } else if (superType.isRelationType()) {
-            return graph.putRelationType(getTypeNameOrThrow(name)).superType(superType.asRelationType());
+            return graph.putRelationType(name).superType(superType.asRelationType());
         } else if (superType.isRoleType()) {
-            return graph.putRoleType(getTypeNameOrThrow(name)).superType(superType.asRoleType());
+            return graph.putRoleType(name).superType(superType.asRoleType());
         } else if (superType.isResourceType()) {
-            return graph.putResourceType(getTypeNameOrThrow(name), getDataType(var)).superType(superType.asResourceType());
+            return graph.putResourceType(name, getDataType(var)).superType(superType.asResourceType());
         } else if (superType.isRuleType()) {
-            return graph.putRuleType(getTypeNameOrThrow(name)).superType(superType.asRuleType());
+            return graph.putRuleType(name).superType(superType.asRuleType());
         } else {
             throw new RuntimeException("Unrecognized type " + superType.getName());
         }

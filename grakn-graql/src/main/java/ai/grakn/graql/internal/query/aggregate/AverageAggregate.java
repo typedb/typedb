@@ -62,4 +62,19 @@ class AverageAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional
     public String toString() {
         return "average " + varName;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AverageAggregate that = (AverageAggregate) o;
+
+        return varName.equals(that.varName);
+    }
+
+    @Override
+    public int hashCode() {
+        return varName.hashCode();
+    }
 }

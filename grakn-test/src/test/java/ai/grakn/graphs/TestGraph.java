@@ -52,6 +52,12 @@ public abstract class TestGraph {
             buildInstances(graph);
             buildRelations(graph);
             buildRules(graph);
+
+            try {
+                graph.commit();
+            } catch (GraknValidationException e) {
+                throw new RuntimeException(e);
+            }
         };
     }
 

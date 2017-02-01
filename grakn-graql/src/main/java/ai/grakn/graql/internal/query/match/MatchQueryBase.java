@@ -208,5 +208,20 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
         return !type.isImplicit() || typeNames.contains(type.getName());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MatchQueryBase maps = (MatchQueryBase) o;
+
+        return pattern.equals(maps.pattern);
+    }
+
+    @Override
+    public int hashCode() {
+        return pattern.hashCode();
+    }
 }
 

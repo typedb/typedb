@@ -64,4 +64,22 @@ class MatchQueryGraph extends MatchQueryModifier {
     protected String modifierString() {
         return "";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        MatchQueryGraph maps = (MatchQueryGraph) o;
+
+        return graph.equals(maps.graph);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + graph.hashCode();
+        return result;
+    }
 }

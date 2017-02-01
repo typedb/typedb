@@ -166,4 +166,15 @@ public class QueryErrorTest {
         ));
         qb.match(Graql.var("x").isa("actor")).stream();
     }
+
+    @Test
+    public void testAdditionalSemicolon() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("id"), containsString("plays-role product-type")));
+        qb.parse(
+                "insert " +
+                        "tag-group sub role; product-type sub role;" +
+                        "category sub entity, plays-role tag-group; plays-role product-type;"
+        ).execute();
+    }
 }

@@ -14,34 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql.internal.query.aggregate;
+package ai.grakn.graql.internal.query.predicate;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.junit.Test;
 
-/**
- * An aggregate that changes match query results into a list.
- * @param <T> the type of the results of the match query
- */
-class ListAggregate<T> extends AbstractAggregate<T, List<T>> {
+import static org.junit.Assert.assertEquals;
 
-    @Override
-    public List<T> apply(Stream<? extends T> stream) {
-        return stream.collect(Collectors.toList());
-    }
+public class EqPredicateTest {
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        return true;
-    }
+    @Test
+    public void predicatesEqualEvenWhenContainingIntegersAndLongs() {
+        int intNum = 20;
+        long longNum = 20L;
 
-    @Override
-    public int hashCode() {
-        return 31;
+        EqPredicate intPredicate = new EqPredicate(intNum);
+        EqPredicate longPredicate = new EqPredicate(longNum);
+
+        assertEquals(intPredicate, longPredicate);
+        assertEquals(intPredicate.hashCode(), longPredicate.hashCode());
     }
 }

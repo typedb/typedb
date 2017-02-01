@@ -33,4 +33,16 @@ class CountAggregate extends AbstractAggregate<Object, Long> {
     public String toString() {
         return "count";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return 37;
+    }
 }

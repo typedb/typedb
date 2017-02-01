@@ -20,6 +20,7 @@ package ai.grakn.graql.template;
 
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Query;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -29,6 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ai.grakn.graql.Graql.parse;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 
@@ -707,7 +709,7 @@ public class TemplateParserTest {
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        String result = Graql.parseTemplate(template, data).toString();
-        assertEquals(expected, result);
+        Query<?> result = Graql.parseTemplate(template, data);
+        assertEquals(parse(expected), result);
     }
 }
