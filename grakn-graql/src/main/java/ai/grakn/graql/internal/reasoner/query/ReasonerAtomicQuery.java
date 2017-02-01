@@ -70,7 +70,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     final private QueryAnswers newAnswers = new QueryAnswers();
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
-
     public ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph){
         super(pattern, graph);
         atom = selectAtoms().iterator().next();
@@ -140,43 +139,27 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
     
     public QueryAnswers getAnswers(){ return answers;}
-    public QueryAnswers getNewAnswers(){ return newAnswers;}
+    private QueryAnswers getNewAnswers(){ return newAnswers;}
+
 
     /**
      * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
      * @param cache container of already performed query resolutions
      */
-    public void lookup(QueryCache cache){
+    public QueryAnswers lookup(QueryCache cache){
         boolean queryVisited = cache.contains(this);
-        if (!queryVisited){
-            this.DBlookup();
-            cache.record(this);
-        }
-        else this.memoryLookup(cache);
+        QueryAnswers lookup = queryVisited? cache.getAnswers(this) : DBlookup();
+        if (!queryVisited) cache.record(this);
+        lookup.stream().filter(ans -> !answers.contains(ans)).forEach(newAnswers::add);
+        answers.addAll(lookup);
+        return lookup;
     }
 
     /**
      * resolve the query by performing a db lookup
      */
-    public void DBlookup() {
-        QueryAnswers lookup = new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
-        lookup.removeAll(answers);
-        answers.addAll(lookup);
-        newAnswers.addAll(lookup);
-    }
-
-    /**
-     * resolve the query by performing a memory (cache) lookup
-     * @param cache container of already performed query resolutions
-     */
-    public void memoryLookup(QueryCache cache) {
-        ReasonerAtomicQuery equivalentQuery = cache.get(this);
-        if(equivalentQuery != null) {
-            QueryAnswers lookup = QueryAnswers.getUnifiedAnswers(this, equivalentQuery);
-            lookup.removeAll(answers);
-            answers.addAll(lookup);
-            newAnswers.addAll(lookup);
-        }
+    public QueryAnswers DBlookup() {
+        return new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
     }
 
     /**
@@ -277,8 +260,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             QueryAnswers localSubs = childAtomicQuery.answer(subGoals, cache, materialise);
             subs = subs.join(localSubs);
         }
-
-        QueryAnswers answers = ruleHead.propagateIdPredicates(subs)
+        QueryAnswers answers = subs
                 .filterNonEquals(ruleBody.getFilters())
                 .filterVars(ruleHead.getVarNames())
                 .filterKnown(this.getAnswers());
@@ -294,9 +276,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                         atom.getUnmappedIdPredicates(),
                         atom.getUnmappedTypeConstraints());
 
-        filteredAnswers.stream()
-                .filter(ans -> !this.getAnswers().contains(ans))
-                .forEach(newAnswers::add);
+        filteredAnswers.stream().filter(ans -> !this.getAnswers().contains(ans)).forEach(newAnswers::add);
         this.getAnswers().addAll(filteredAnswers);
         cache.record(this);
     }

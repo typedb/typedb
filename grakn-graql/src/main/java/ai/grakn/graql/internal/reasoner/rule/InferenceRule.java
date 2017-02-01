@@ -105,7 +105,7 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, head);
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(head);
         Map<VarName, VarName> rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
@@ -146,7 +146,7 @@ public class InferenceRule {
      * @param parentAtom atom the rule should be unified with
      */
    public void unify(Atom parentAtom) {
-        rewriteHead(parentAtom);
+        if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
         if(parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);
