@@ -149,7 +149,7 @@ public class RuleTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("lhs", rule.getId(), rule.type().getName(), "Your-Type"));
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("LHS", rule.getId(), rule.type().getName(), "Your-Type"));
 
         graknGraph.commit();
     }
@@ -164,7 +164,7 @@ public class RuleTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("rhs", rule.getId(), rule.type().getName(), "Your-Type"));
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("RHS", rule.getId(), rule.type().getName(), "Your-Type"));
 
         graknGraph.commit();
     }

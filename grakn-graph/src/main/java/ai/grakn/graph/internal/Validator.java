@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.util.Schema;
 
 import java.util.ArrayList;
@@ -68,6 +69,8 @@ class Validator {
                     validateInstance((InstanceImpl) nextToValidate);
                     if (nextToValidate.isRelation()) {
                         validateRelation((RelationImpl) nextToValidate);
+                    } else if(nextToValidate.isRule()){
+                        validateRule(graknGraph, (RuleImpl) nextToValidate);
                     }
                 } else if (nextToValidate.isCasting()) {
                     validateCasting((CastingImpl) nextToValidate);
@@ -86,6 +89,14 @@ class Validator {
         return errorsFound.size() == 0;
     }
 
+    /**
+     * Validation rules exclusive to rules
+     * @param graph the graph to query against
+     * @param rule the rule which needs to be validated
+     */
+    private void validateRule(GraknGraph graph, RuleImpl rule){
+        errorsFound.addAll(ValidateGlobalRules.validateRuleOntologyElementsExist(graph, rule));
+    }
 
     /**
      * Validation rules exclusive to relations
