@@ -40,11 +40,6 @@ public class GraknEngineRunningTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startDistributedServer();
 
-    @Before
-    public void resetLogs() {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-    }
-
     @Test
     public void graknEngineRunning() throws Exception {
         boolean running = GraknEngineServer.isRunning();

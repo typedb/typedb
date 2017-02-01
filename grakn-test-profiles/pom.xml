@@ -70,6 +70,7 @@
             <id>titan</id>
             <properties>
                 <grakn.test-profile>titan</grakn.test-profile>
+                <grakn.skip-bash-tests>false</grakn.skip-bash-tests>
             </properties>
             <dependencies>
                 <dependency>

@@ -150,11 +150,9 @@ public class LoaderTest {
         }
 
         loader.waitToFinish(timeout);
-        System.out.println("ended");
 
-        System.out.println("Time to load:");
         long duration = System.currentTimeMillis() - startTime;
-        System.out.println(duration);
+        System.out.println("Time to load: " + duration);
 
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 

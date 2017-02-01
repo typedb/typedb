@@ -122,44 +122,6 @@ public class QueryParser {
         return parseQueryFragment(GraqlParser::pattern, QueryVisitor::visitPattern, patternString);
     }
 
-    public Stream<Object> parseBatchLoad(InputStream inputStream) {
-        GraqlLexer lexer = new GraqlLexer(new UnbufferedCharStream(inputStream));
-        lexer.setTokenFactory(new CommonTokenFactory(true));
-        UnbufferedTokenStream tokens = new UnbufferedTokenStream(lexer);
-
-        // Create an iterable that will keep parsing until EOF
-        Iterable<Object> iterable = () -> new Iterator<Object>() {
-
-            private Object pattern = null;
-
-            private Optional<Object> getNext() {
-
-                if (pattern == null) {
-                    if (tokens.get(tokens.index()).getType() == Token.EOF) {
-                        return Optional.empty();
-                    }
-
-                    pattern = parseQueryFragment(GraqlParser::batchPattern, QueryVisitor::visitBatchPattern, tokens);
-                }
-                return Optional.of(pattern);
-            }
-
-            @Override
-            public boolean hasNext() {
-                return getNext().isPresent();
-            }
-
-            @Override
-            public Object next() {
-                Optional<Object> result = getNext();
-                pattern = null;
-                return result.orElseThrow(NoSuchElementException::new);
-            }
-        };
-
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
-
     /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns

@@ -18,29 +18,40 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.concept.Entity;
-import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.graph.EngineGraknGraph;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Resource;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import com.jayway.restassured.response.Response;
+import javafx.util.Pair;
 import mjson.Json;
-import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.IntStream;
 
-import static ai.grakn.test.engine.loader.LoaderTest.loadOntology;
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.match;
+import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.PATH_FIELD;
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.post;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 public class ImportControllerTest {
 
@@ -48,62 +59,79 @@ public class ImportControllerTest {
     public static final EngineContext engine = EngineContext.startDistributedServer();
 
     @Test
-    @Ignore
-    /* TODO: Fix this test
-     * Probably caused by not waiting properly until tasks are finished.
-     *
-     * java.lang.AssertionError: expected:<0> but was:<10>
-	 * at ai.grakn.test.engine.controller.ImportControllerTest.runAndAssertCorrect(ImportControllerTest.java:88)
-	 * at ai.grakn.test.engine.controller.ImportControllerTest.testLoadOntologyAndData(ImportControllerTest.java:53)*
-     */
-    public void testLoadOntologyAndData() {
-        String dataPath = getPath("smaller_nametags.gql");
-        Json body = Json.object("path", dataPath);
-        runAndAssertCorrect(body, "test");
+    public void loadInserts() throws Exception {
+        List<String> movieNames = IntStream.range(0, 30)
+                .mapToObj(t -> UUID.randomUUID().toString())
+                .collect(toList());
+
+        List<InsertQuery> inserts =  movieNames.stream()
+                .map(this::insertQuery)
+                .collect(toList());
+
+        File file = createTemporaryFile(inserts);
+
+        runAndAssertCorrect(file, movieNames, "grakn");
     }
 
     @Test
-    @Ignore
-    /* TODO: Fix this test
-     * Probably caused by not waiting properly until tasks are finished.
-     *
-     * java.lang.AssertionError: expected:<0> but was:<10>
-	 * at ai.grakn.test.engine.controller.ImportControllerTest.runAndAssertCorrect(ImportControllerTest.java:88)
-	 * at ai.grakn.test.engine.controller.ImportControllerTest.testLoadOntologyAndDataOnCustomKeyspace(ImportControllerTest.java:62)     *
-     */
-    public void testLoadOntologyAndDataOnCustomKeyspace(){
-        String dataPath = getPath("smaller_nametags.gql");
-        String customGraph = "importgraph";
-        Json body = Json.object("path", dataPath);
+    public void loadInsertsInDifferentKeyspace() throws Exception {
+        List<String> movieNames = IntStream.range(0, 10)
+                .mapToObj(t -> UUID.randomUUID().toString())
+                .collect(toList());
 
-        runAndAssertCorrect(body, customGraph);
+        List<InsertQuery> inserts =  movieNames.stream()
+                .map(this::insertQuery)
+                .collect(toList());
+
+        File file = createTemporaryFile(inserts);
+
+        runAndAssertCorrect(file, movieNames, "other");
     }
 
-    private void runAndAssertCorrect(Json body, String keyspace){
-        loadOntology(keyspace);
+    @Test
+    public void loadMatchInserts() throws Exception {
+        List<Pair<String, String>> movieAndPeopleNames = IntStream.range(0, 30)
+                .mapToObj(t -> new Pair<>(UUID.randomUUID().toString(), UUID.randomUUID().toString()))
+                .collect(toList());
 
-        Response dataResponse = given().
-                contentType("application/json").
-                queryParam(KEYSPACE_PARAM, keyspace).
-                body(body.toString()).when().
-                post(REST.WebPath.IMPORT_DATA_URI);
+        List<InsertQuery> inserts =  movieAndPeopleNames.stream()
+                .map(Pair::getKey)
+                .map(this::insertQuery)
+                .collect(toList());
+
+        List<InsertQuery> matchInserts = movieAndPeopleNames.stream()
+                .map(p -> matchInsertQuery(p.getKey(), p.getValue()))
+                .collect(toList());
+
+        File insertFile = createTemporaryFile(inserts);
+        runAndAssertCorrect(insertFile, movieAndPeopleNames.stream().map(Pair::getKey).collect(toList()), "grakn");
+
+        File matchInsertFile = createTemporaryFile(matchInserts);
+        runAndAssertCorrect(matchInsertFile, movieAndPeopleNames.stream().map(Pair::getValue).collect(toList()), "grakn");
+    }
+
+    private void runAndAssertCorrect(File file, List<String> findByResource, String keyspace)
+            throws GraknValidationException {
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        MovieGraph.get().accept(graph);
+        graph.commit();
+
+        Response dataResponse = given()
+                .contentType("application/json")
+                .queryParam(KEYSPACE_PARAM, keyspace)
+                .body(Json.object(PATH_FIELD, file.getAbsolutePath()).toString())
+                .when().post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);
 
-        try {
-            Thread.sleep(500);
-        }
-        catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         waitToFinish();
 
-        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
+        findByResource.forEach(r -> {
+            Collection<Resource<String>> resources = graph.getResourcesByValue(r);
+            resources.forEach(Assert::assertNotNull);
+            resources.stream().map(Resource::owner).forEach(Assert::assertNotNull);
+        });
 
-        Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
-        assertEquals(nameTags.size(), 10);
-        assertNotNull(graph.getResourcesByValue("X4a656e6e69666572204d656c6f6f6e").iterator().next().getId());
         graph.clear();
         graph.close();
     }
@@ -125,17 +153,31 @@ public class ImportControllerTest {
         }
     }
 
-    protected static String getPath(String file) {
-        return ImportControllerTest.class.getResource("/"+file).getPath();
+    private InsertQuery insertQuery(String name){
+        return insert(
+                var("movie").isa("movie").has("title", var("name")),
+                var("name").value(name));
     }
 
-    public static String readFileAsString(String file) {
-        InputStream stream = ImportControllerTest.class.getResourceAsStream("/"+file);
+    private InsertQuery matchInsertQuery(String movieName, String personName){
 
+        return match(var("movie").isa("movie").has("title", movieName))
+                .insert(
+                        var("person").isa("person").has("name", personName),
+                        var().rel(var("movie")).rel(var("person")).isa("has-cast")
+                );
+    }
+
+    private File createTemporaryFile(List<InsertQuery> queries){
         try {
-            return IOUtils.toString(stream);
-        }
-        catch (IOException e) {
+            File temp = File.createTempFile("queries" + UUID.randomUUID().toString(), ".gql");
+
+            BufferedWriter writer = new BufferedWriter(new FileWriter(temp));
+            writer.write(queries.stream().map(InsertQuery::toString).collect(joining("\n")));
+            writer.close();
+
+            return temp;
+        } catch (IOException e){
             throw new RuntimeException(e);
         }
     }
