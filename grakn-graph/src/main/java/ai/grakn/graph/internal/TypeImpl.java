@@ -63,7 +63,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
         this(graknGraph, v);
-        superType(superType);
+        if(!Schema.MetaSchema.isMetaName(superType.getName())) superType(superType);
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType, Boolean isImplicit) {
@@ -261,7 +261,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
 
         Type currentSuperType = superType();
-        if(currentSuperType == null || (!currentSuperType.equals(superType) && !Schema.MetaSchema.isMetaName(superType.getName()))) {
+        if(currentSuperType == null || (!currentSuperType.equals(superType))) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             putEdge(superType, Schema.EdgeLabel.SUB);
 
