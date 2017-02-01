@@ -120,6 +120,19 @@ public class SchedulerTest {
                 .allMatch(t -> t.equals(SCHEDULED));
     }
 
+    @Test
+    public void testRecurringTasksRestarted(){
+        // persist a recurring task
+        TaskState recurring = createTask(storage, )
+
+
+    }
+
+    @Test
+    public void testRecurringTaskStartedWithCorrectInterval(){
+
+    }
+
     private void sendTasksToNewTasksQueue(Set<TaskState> tasks) {
         tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), t.configuration().toString())));
         producer.flush();
