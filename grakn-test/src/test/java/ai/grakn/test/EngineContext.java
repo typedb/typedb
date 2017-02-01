@@ -76,7 +76,7 @@ public class EngineContext extends ExternalResource {
     }
 
     @Override
-    protected void before() throws Throwable {
+    public void before() throws Throwable {
         hideLogs();
 
         if(startKafka){
@@ -93,7 +93,7 @@ public class EngineContext extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void after() {
         try {
             if(startDistributedEngine | startInMemoryEngine){
                 stopEngine();

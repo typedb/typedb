@@ -19,47 +19,66 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
 import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class GraknEngineRunningTest {
+public class GraknEngineServerTest {
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void graknEngineRunning() throws Exception {
+    public void graknEngineRunning() throws Throwable {
+        EngineContext engine = EngineContext.startDistributedServer();
+        engine.before();
+
         boolean running = GraknEngineServer.isRunning();
         assertTrue(running);
 
         // Check that we've loaded the ontology
         EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
+
+        engine.after();
     }
     
     @Test
     public void graknEngineNotRunning() throws Exception {
-        GraknEngineServer.stop();
-        GraknEngineServer.stopHTTP();
-        Thread.sleep(5000);
-
         boolean running = GraknEngineServer.isRunning();
         assertFalse(running);
+    }
 
-        GraknEngineServer.start(false);
-        Thread.sleep(5000);
+    @Test
+    public void testInMemoryMain() throws Exception {
+        // Should start engine with in-memory server
+        ConfigProperties.getInstance().setConfigProperty(DISTRIBUTED_TASK_MANAGER, "false");
+
+        GraknEngineServer.main(new String[]{});
+        assertTrue(GraknEngineServer.getTaskManager() instanceof StandaloneTaskManager);
+        GraknEngineServer.stop();
+    }
+
+    @Test
+    public void testDistributedMain() {
+        // Should start engine with distributed server, which means we will get a cannot
+        // connect to Zookeeper exception (that has not been started)
+        ConfigProperties.getInstance().setConfigProperty(DISTRIBUTED_TASK_MANAGER, "true");
+
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Could not connect to zookeeper");
+        GraknEngineServer.main(new String[]{});
     }
 }

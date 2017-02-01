@@ -37,8 +37,6 @@ import java.util.Properties;
 public class ConfigProperties {
 
     //Test Configs
-    public static final String TEST_CONFIG_FILE = "../conf/test/tinker/grakn-engine.properties";
-
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn-engine.properties";
     public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
@@ -84,6 +82,10 @@ public class ConfigProperties {
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
+
+    // Engine Config
+    public static final String DISTRIBUTED_TASK_MANAGER = "taskmanager.distributed";
+
     public static final String KAFKA_BOOTSTRAP_SERVERS = "tasks.kafka.bootstrap-servers";
     public static final String KAFKA_SESSION_TIMEOUT = "tasks.kafka.consumer.session-timeout";
     public static final String KAFKA_RETRIES = "tasks.kafka.producer.retries";
@@ -99,7 +101,6 @@ public class ConfigProperties {
 
     public static final String SCHEDULER_POLLING_FREQ = "tasks.scheduler.polling-frequency";
     public static final String TASKRUNNER_POLLING_FREQ = "tasks.runner.polling-frequency";
-    public static final String TASK_MANAGER_INSTANCE = "tasks.task-manager";
 
     private Logger LOG;
 
