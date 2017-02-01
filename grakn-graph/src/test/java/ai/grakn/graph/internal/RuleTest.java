@@ -21,8 +21,10 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -137,4 +139,33 @@ public class RuleTest extends GraphTestBase{
         assertTrue(rule.getConclusionTypes().contains(ct2));
     }
 
+    @Test
+    public void addRuleWithNonExistentEntityType() throws GraknValidationException {
+        graknGraph.putEntityType("My-Type");
+
+        lhs = graknGraph.graql().parsePattern("$x isa Your-Type");
+        rhs = graknGraph.graql().parsePattern("$x isa My-Type");
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("lhs", rule.getId(), rule.type().getName(), "Your-Type"));
+
+        graknGraph.commit();
+    }
+
+    @Test
+    public void addRuleWithNonExistentRoleType() throws GraknValidationException {
+        graknGraph.putEntityType("My-Type");
+
+        lhs = graknGraph.graql().parsePattern("$x isa My-Type");
+        rhs = graknGraph.graql().parsePattern("$x has-role Your-Type");
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("rhs", rule.getId(), rule.type().getName(), "Your-Type"));
+
+        graknGraph.commit();
+    }
 }
