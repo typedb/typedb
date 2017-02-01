@@ -115,6 +115,8 @@ public class ImportControllerTest {
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         MovieGraphFactory.loadGraph(graph);
         graph.commit();
+        
+        post(REST.WebPath.IMPORT_DATA_URI).then().assertThat().statusCode(200);
 
         Response dataResponse = given()
                 .contentType("application/json")
@@ -122,7 +124,6 @@ public class ImportControllerTest {
                 .body(Json.object(PATH_FIELD, file.getAbsolutePath()).toString())
                 .when().post(REST.WebPath.IMPORT_DATA_URI);
 
-        dataResponse.then().assertThat().statusCode(200);
 
         waitToFinish();
 
@@ -157,7 +158,7 @@ public class ImportControllerTest {
                 var("name").value(name));
     }
 
-    private InsertQuery matchInsertQuery(String movieName, String personName){
+    private InsertQuery matchInsertQuery(String movieName, String personName) {
 
         return match(var("movie").isa("movie").has("title", movieName))
                 .insert(
