@@ -114,7 +114,13 @@ public class Scheduler implements Runnable, AutoCloseable {
                 printConsumerStatus(records);
 
                 for(ConsumerRecord<String, String> record:records) {
-                    scheduleTask(record.key(), record.value());
+                    TaskState taskState = TaskState.deserialize(record.value());
+
+                    // mark the task as created
+                    storage.newState(taskState);
+
+                    // schedule the task
+                    scheduleTask(taskState);
 
                     //acknowledge that the record was read to the consumer
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
@@ -158,33 +164,21 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     /**
      * Schedule a task to be submitted to the work queue when it is supposed to be run
-     * @param id id of the task to be scheduled
-     * @param configuration configuration of task to be scheduled, will be copied to WORK_QUEUE_TOPIC
-     */
-    private void scheduleTask(String id, String configuration) {
-        TaskState state = storage.getState(id);
-        scheduleTask(id, configuration, state);
-    }
-
-    /**
-     * Schedule a task to be submitted to the work queue when it is supposed to be run
-     * @param id id of the task to be scheduled
-     * @param configuration configuration of task to be scheduled, will be copied to WORK_QUEUE_TOPIC
      * @param state state of the task
      */
-    private void scheduleTask(String id,  String configuration, TaskState state) {
+    private void scheduleTask(TaskState state) {
         long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
         markAsScheduled(state);
         if(state.isRecurring()) {
             Runnable submit = () -> {
                 markAsScheduled(state);
-                sendToWorkQueue(id, configuration);
+                sendToWorkQueue(state);
             };
             schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
         }
         else {
-            Runnable submit = () -> sendToWorkQueue(id, configuration);
+            Runnable submit = () -> sendToWorkQueue(state);
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
     }
@@ -200,12 +194,11 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     /**
      * Submit a task to the work queue
-     * @param taskId id of the task to be submitted
-     * @param configuration task to be submitted
+     * @param state task to be submitted
      */
-    private void sendToWorkQueue(String taskId, String configuration) {
-        LOG.debug("Sending to work queue " + taskId);
-        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, taskId, configuration), new KafkaLoggingCallback());
+    private void sendToWorkQueue(TaskState state) {
+        LOG.debug("Sending to work queue " + state.getId());
+        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, state.getId(), TaskState.serialize(state)), new KafkaLoggingCallback());
         producer.flush();
     }
 
@@ -217,13 +210,7 @@ public class Scheduler implements Runnable, AutoCloseable {
         tasks.stream()
                 .filter(p -> p.getValue().isRecurring())
                 .filter(p -> p.getValue().status() != STOPPED)
-                .forEach(p -> {
-                    // Not sure what is the right format for "no configuration", but somehow the configuration
-                    // here for a postprocessing task is "null": if we say that the configuration of a task
-                    // is a JSONObject, then an empty configuration ought to be {}
-                    String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
-                    scheduleTask(p.getKey(), config, p.getValue());
-                });
+                .forEach(p -> scheduleTask(p.getValue()));
     }
 
     private void printConsumerStatus(ConsumerRecords<String, String> records){

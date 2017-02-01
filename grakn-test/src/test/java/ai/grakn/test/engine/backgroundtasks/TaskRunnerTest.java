@@ -83,7 +83,8 @@ public class TaskRunnerTest {
     public void testSendReceive() throws Exception {
         TestTask.startedCounter.set(0);
 
-        Set<TaskState> tasks = createTasks(storage, 5, SCHEDULED);
+        Set<TaskState> tasks = createTasks(5, SCHEDULED);
+        tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         waitForStatus(storage, tasks, COMPLETED);
 
@@ -94,7 +95,8 @@ public class TaskRunnerTest {
     public void testSendDuplicate() throws Exception {
         TestTask.startedCounter.set(0);
 
-        Set<TaskState> tasks = createTasks(storage, 5, SCHEDULED);
+        Set<TaskState> tasks = createTasks(5, SCHEDULED);
+        tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         sendTasksToWorkQueue(tasks);
 
@@ -103,7 +105,7 @@ public class TaskRunnerTest {
     }
 
     private void sendTasksToWorkQueue(Set<TaskState> tasks) {
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), t.configuration().toString())));
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), TaskState.serialize(t))));
         producer.flush();
     }
 }
