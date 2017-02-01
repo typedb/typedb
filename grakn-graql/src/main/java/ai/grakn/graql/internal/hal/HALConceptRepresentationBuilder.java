@@ -60,6 +60,13 @@ public class HALConceptRepresentationBuilder {
     private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;";
     private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
+    // - State properties
+
+    private final static String ID_PROPERTY = "_id";
+    private final static String TYPE_PROPERTY = "_type";
+    private final static String BASETYPE_PROPERTY = "_baseType";
+    private final static String VALUE_PROPERTY = "value";
+
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace) {
 
         //Stores connections between variables in Graql result [varName:List<VarAdmin> (only VarAdmins that contain a relation)]
@@ -219,6 +226,24 @@ public class HALConceptRepresentationBuilder {
             return Schema.BaseType.TYPE;
         } else {
             throw new RuntimeException("Unrecognized base type of " + type);
+        }
+    }
+
+    static void generateConceptState(Representation resource, Concept concept){
+
+        if (concept.isInstance()) {
+            Instance instance = concept.asInstance();
+            resource.withProperty(ID_PROPERTY, instance.getId().getValue())
+                    .withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
+        } else {
+            Type type = concept.asType();
+            resource.withProperty(ID_PROPERTY, type.getName().getValue())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
+
+        }
+        if (concept.isResource()) {
+            resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
         }
     }
 }
