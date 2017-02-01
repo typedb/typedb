@@ -26,7 +26,6 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
@@ -37,6 +36,8 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
 import javafx.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Base64;
 import java.util.Date;
@@ -82,7 +83,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     private final static String TASK_VAR = "task";
     private final static int retries = 10;
 
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final Logger LOG = LoggerFactory.getLogger(TaskStateGraphStore.class);
 
     public TaskStateGraphStore() {}
 
