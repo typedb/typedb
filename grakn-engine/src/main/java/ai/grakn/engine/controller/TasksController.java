@@ -27,7 +27,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import javafx.util.Pair;
 import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -114,8 +113,8 @@ public class TasksController {
         }
 
         JSONArray result = new JSONArray();
-        for (Pair<String, TaskState> pair : manager.storage().getTasks(status, className, creator, limit, offset)) {
-            result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
+        for (TaskState state : manager.storage().getTasks(status, className, creator, limit, offset)) {
+            result.put(serialiseStateSubset(state));
         }
 
         response.type("application/json");
@@ -129,7 +128,7 @@ public class TasksController {
     private String getTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            JSONObject result = serialiseStateFull(id, manager.storage().getState(id));
+            JSONObject result = serialiseStateFull(manager.storage().getState(id));
             response.type("application/json");
 
             return result.toString();
@@ -210,8 +209,8 @@ public class TasksController {
     }
 
 
-    private JSONObject serialiseStateSubset(String id, TaskState state) {
-        return new JSONObject().put("id", id)
+    private JSONObject serialiseStateSubset(TaskState state) {
+        return new JSONObject().put("id", state.getId())
                 .put("status", state.status())
                 .put("creator", state.creator())
                 .put("className", state.taskClassName())
@@ -219,8 +218,8 @@ public class TasksController {
                 .put("recurring", state.isRecurring());
     }
 
-    private JSONObject serialiseStateFull(String id, TaskState state) {
-        return serialiseStateSubset(id, state)
+    private JSONObject serialiseStateFull(TaskState state) {
+        return serialiseStateSubset(state)
                        .put("interval", state.interval())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())

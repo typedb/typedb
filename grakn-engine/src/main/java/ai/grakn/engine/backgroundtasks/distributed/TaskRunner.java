@@ -54,7 +54,6 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STAT
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -108,8 +107,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
     public void run()  {
         try {
             while (true) {
-                LOG.debug("TaskRunner polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(WORK_QUEUE_TOPIC).stream().map(i -> new TopicPartition(WORK_QUEUE_TOPIC, i.partition())).collect(toSet())));
-
                 // Poll for new tasks only when we know we have space to accept them.
                 if (getRunningTasksCount() < EXECUTOR_SIZE) {
                     processRecords(consumer.poll(POLLING_FREQUENCY));

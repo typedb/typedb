@@ -191,9 +191,8 @@ public class LoaderTest {
         when(fakeTaskManager.storage()).thenReturn(fakeStorage);
         when(fakeStorage.getState(fakeTaskId)).thenReturn(fakeTaskState);
         when(fakeStorage.getState(fakeTaskId).status()).thenAnswer(answer);
-        Set<Pair<String,TaskState>> fakeTasks = new HashSet<>();
-        Pair<String, TaskState> fakePair =  new Pair<String,TaskState>(fakeTaskId, null);
-        fakeTasks.add(fakePair);
+        Set<TaskState> fakeTasks = new HashSet<>();
+        fakeTasks.add(null);
         when(fakeStorage.getTasks(null, LoaderTask.class.getName(), graph.getKeyspace(), 100000, 0)).thenReturn(fakeTasks);
         return fakeTaskManager;
     }
