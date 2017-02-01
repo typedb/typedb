@@ -89,17 +89,20 @@ public class VisualiserControllerTest {
 
         Json resultArray = Json.read(response.getBody().asString());
         assertEquals(60,resultArray.asJsonList().size());
-        checkHALStructureOfPerson(resultArray.at(0));
 
         Json firstPerson = resultArray.at(0);
-        Json samePerson = retrieveConceptById(firstPerson.at("_id").asString());
+        String firstPersonId = firstPerson.at("_id").asString();
+
+        checkHALStructureOfPerson(resultArray.at(0),firstPersonId);
+
+        Json samePerson = retrieveConceptById(firstPersonId);
 
         assertEquals(firstPerson.at("_id"),samePerson.at("_id"));
     }
 
-    private void checkHALStructureOfPerson(Json person){
+    private void checkHALStructureOfPerson(Json person, String id){
         assertEquals(person.at("_type").asString(), "person");
-        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_id").getValue(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -112,10 +115,10 @@ public class VisualiserControllerTest {
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), embeddedType.at("_baseType").asString());
     }
 
-    private void checkHALStructureOfPersonWithoutEmbedded(Json person){
+    private void checkHALStructureOfPersonWithoutEmbedded(Json person, String id){
 
         assertEquals(person.at("_type").asString(), "person");
-        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_id").getValue(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -130,7 +133,7 @@ public class VisualiserControllerTest {
                 .then().statusCode(200).extract().response().andReturn();
 
         Json samePerson =Json.read(response.getBody().asString());
-        checkHALStructureOfPersonWithoutEmbedded(samePerson);
+        checkHALStructureOfPersonWithoutEmbedded(samePerson,id);
 
         return samePerson;
     }

@@ -85,12 +85,12 @@ class HALConceptOntology {
         //State
         if (concept.isInstance()) {
             Instance instance = concept.asInstance();
-            resource.withProperty(ID_PROPERTY, instance.getId())
-                    .withProperty(TYPE_PROPERTY, instance.type().getName())
+            resource.withProperty(ID_PROPERTY, instance.getId().getValue())
+                    .withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else { // temp fix until a new behaviour is defined
             Type type = concept.asType();
-            resource.withProperty(ID_PROPERTY, concept.asType().getName())
+            resource.withProperty(ID_PROPERTY, concept.asType().getName().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
         }
 
