@@ -116,14 +116,11 @@ public class ImportControllerTest {
         MovieGraphFactory.loadGraph(graph);
         graph.commit();
         
-        post(REST.WebPath.IMPORT_DATA_URI).then().assertThat().statusCode(200);
-
         Response dataResponse = given()
                 .contentType("application/json")
                 .queryParam(KEYSPACE_PARAM, keyspace)
                 .body(Json.object(PATH_FIELD, file.getAbsolutePath()).toString())
                 .when().post(REST.WebPath.IMPORT_DATA_URI);
-
 
         waitToFinish();
 
