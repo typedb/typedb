@@ -197,7 +197,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         }
         catch(Throwable t) {
             storage.updateState(state.status(FAILED));
-            LOG.debug("Failed task - "+state.getId()+": "+getFullStackTrace(t));
+            LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(t));
         }
         finally {
             removeRunningTask(state.getId());
