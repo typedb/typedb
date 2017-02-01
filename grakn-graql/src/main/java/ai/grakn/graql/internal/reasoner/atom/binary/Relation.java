@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -63,7 +64,9 @@ import java.util.stream.Collectors;
 import static ai.grakn.graql.internal.reasoner.Utility.capture;
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRelationTypes;
+import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
+import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.roleToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
 
@@ -202,9 +205,7 @@ public class Relation extends TypeAtom {
                 .collect(Collectors.toMap(AtomBase::getVarName, pred -> pred));
         Map<RoleType, VarName> roleMap = getRoleMap();
 
-        roleMap.forEach( (role, var) -> {
-            roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
-        });
+        roleMap.forEach( (role, var) -> roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : ""));
         return roleConceptMap;
     }
 
@@ -242,16 +243,16 @@ public class Relation extends TypeAtom {
     private boolean isRuleApplicableViaAtom(Atom childAtom, InferenceRule child) {
         boolean ruleRelevant = true;
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        Map<RoleType, Pair<VarName, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
-        Map<RoleType, Pair<VarName, Type>> parentRoleVarTypeMap = getRoleVarTypeMap();
+        Map<RoleType, Pair<VarName, Type>> childRoleMap = childAtom.getRoleVarTypeMap();
+        Map<RoleType, Pair<VarName, Type>> parentRoleMap = getRoleVarTypeMap();
 
-        Iterator<Map.Entry<RoleType, Pair<VarName, Type>>> it = parentRoleVarTypeMap.entrySet().iterator();
+        Iterator<Map.Entry<RoleType, Pair<VarName, Type>>> it = parentRoleMap.entrySet().iterator();
         while (it.hasNext() && ruleRelevant) {
             Map.Entry<RoleType, Pair<VarName, Type>> entry = it.next();
             RoleType parentRole = entry.getKey();
 
             //check roletypes compatible
-            Iterator<RoleType> childRolesIt = childRoleVarTypeMap.keySet().iterator();
+            Iterator<RoleType> childRolesIt = childRoleMap.keySet().iterator();
             //if child roles are unspecified then compatible
             boolean roleCompatible = !childRolesIt.hasNext();
             while (childRolesIt.hasNext() && !roleCompatible) {
@@ -259,17 +260,18 @@ public class Relation extends TypeAtom {
             }
             ruleRelevant = roleCompatible;
 
+            //TODO check types based on role-mapping between parent and child
             //check type compatibility
             Type pType = entry.getValue().getValue();
             //vars can be matched by role types
-            if (pType != null && ruleRelevant && childRoleVarTypeMap.containsKey(parentRole)) {
-                Type chType = childRoleVarTypeMap.get(parentRole).getValue();
+            if (pType != null && ruleRelevant && childRoleMap.containsKey(parentRole)) {
+                Type chType = childRoleMap.get(parentRole).getValue();
                 //check type compatibility
                 if (chType != null) {
                     ruleRelevant = checkTypesCompatible(pType, chType);
 
                     //Check for any constraints on the variables
-                    VarName chVar = childRoleVarTypeMap.get(parentRole).getKey();
+                    VarName chVar = childRoleMap.get(parentRole).getKey();
                     VarName pVar = entry.getValue().getKey();
                     Predicate childPredicate = child.getBody().getIdPredicate(chVar);
                     Predicate parentPredicate = parent.getIdPredicate(pVar);
@@ -279,6 +281,7 @@ public class Relation extends TypeAtom {
                 }
             }
         }
+        
         return ruleRelevant;
     }
 
@@ -453,6 +456,38 @@ public class Relation extends TypeAtom {
         Set<VarName> unmappedVars = getRolePlayers();
         unmappedVars.removeAll(getMappedRolePlayers());
         return unmappedVars;
+    }
+
+    @Override
+    public Set<IdPredicate> getUnmappedIdPredicates(){
+        Set<VarName> unmappedVars = getUnmappedRolePlayers();
+        //filter by checking substitutions
+        return getIdPredicates().stream()
+                .filter(pred -> unmappedVars.contains(pred.getVarName()))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<TypeAtom> getUnmappedTypeConstraints(){
+        Set<VarName> unmappedVars = getUnmappedRolePlayers();
+        return getTypeConstraints().stream()
+                .filter(t -> unmappedVars.contains(t.getVarName()))
+                .filter(t -> Objects.nonNull(t.getType()))
+                .collect(Collectors.toSet());
+    }
+
+    //move to relation
+    @Override
+    public Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom) {
+        if (!headAtom.isRelation()) return new HashSet<>();
+        List<VarName> permuteVars = new ArrayList<>();
+        //if atom is match all atom, add type from rule head and find unmapped roles
+        Relation relAtom = getValueVariable().getValue().isEmpty() ?
+                ((Relation) AtomicFactory.create(this, getParentQuery())).addType(headAtom.getType()) : this;
+        relAtom.getUnmappedRolePlayers().forEach(permuteVars::add);
+
+        List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
+        return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
     /**

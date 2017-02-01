@@ -146,6 +146,7 @@ public class AtomicQueryTest {
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
+    /*
     @Test
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -164,6 +165,7 @@ public class AtomicQueryTest {
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }
+    */
 
     private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
         Set<VarAdmin> vars = pattern

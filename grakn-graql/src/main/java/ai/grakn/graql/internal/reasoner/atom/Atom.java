@@ -190,6 +190,10 @@ public abstract class Atom extends AtomBase {
         return relevantTypes;
     }
 
+    public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
+    public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
+    public Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+
     /**
      * @return map of role type- (var name, var type) pairs
      */

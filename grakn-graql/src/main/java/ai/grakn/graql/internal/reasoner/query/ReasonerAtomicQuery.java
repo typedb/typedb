@@ -243,22 +243,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         });
         return fullAnswers;
     }
-    
+
     private QueryAnswers propagateIdPredicates(QueryAnswers answers){
-        QueryAnswers newAnswers = new QueryAnswers();
-        if(answers.isEmpty()) return newAnswers;
-
-        Set<IdPredicate> extraSubs = new HashSet<>();
-        this.getTypeConstraints().stream()
+        Map<VarName, Concept> newAns = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate).filter(Objects::nonNull)
-                .forEach(extraSubs::add);
-
-        answers.forEach( map -> {
-            Map<VarName, Concept> newAns = new HashMap<>(map);
-            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph().getConcept(sub.getPredicate())) );
-            newAnswers.add(newAns);
-        });
-        return newAnswers;
+                .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
+        if (answers.isEmpty() || newAns.isEmpty()) return answers;
+        return answers.join(new QueryAnswers(Sets.newHashSet(Collections.singletonList(newAns))));
     }
     
     /**
@@ -288,7 +279,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         QueryAnswers answers = subs
-                .filterNonEquals(ruleBody)
+                .filterNonEquals(ruleBody.getFilters())
                 .filterVars(ruleHead.getVarNames())
                 .filterKnown(this.getAnswers());
 
@@ -298,7 +289,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         QueryAnswers filteredAnswers = this.propagateIdPredicates(answers)
                 .filterVars(this.getVarNames())
-                .permute(this.getAtom(), ruleHead.getAtom());
+                .permute(
+                        atom.getPermutationUnifiers(ruleHead.getAtom()),
+                        atom.getUnmappedIdPredicates(),
+                        atom.getUnmappedTypeConstraints());
+
         this.getAnswers().addAll(filteredAnswers);
         this.newAnswers.addAll(filteredAnswers);
         cache.record(this);
@@ -400,8 +395,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         /**
          * @return single answer to the query
          */
-        public Map<VarName, Concept> next() { return answerIterator.next();}
+        public Map<VarName, Concept> next() {
+            return answerIterator.next();
+        }
         private ReasonerAtomicQuery outer(){ return ReasonerAtomicQuery.this;}
-        private int size(){ return outer().getAnswers().size();}
+        private int size(){
+            return cache.keySet().stream().map(q -> q.getAnswers().size()).mapToInt(Integer::intValue).sum();
+        }
     }
 }
