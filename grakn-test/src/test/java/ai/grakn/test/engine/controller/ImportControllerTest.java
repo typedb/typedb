@@ -137,9 +137,7 @@ public class ImportControllerTest {
     }
 
     private void waitToFinish() {
-        final long initial = new Date().getTime();
-
-        while ((new Date().getTime())-initial < 2*60*60000) {
+        while (true) {
             Response response = post(REST.WebPath.IMPORT_DATA_URI);
             if (response.statusCode() != 423)
                 break;
