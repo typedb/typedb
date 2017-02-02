@@ -581,14 +581,14 @@ public class GraknGraphPropertyTest {
         assertFalse(resource.isUnique());
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenCreateInstanceOfMetaResourceTypeThenThrow(
             GraknGraph graph, @From(ResourceValues.class) Object value) {
+        assumeFalse(graph.isClosed());
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        // TODO: Test for a better error message
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getName()));
 
         resource.putResource(value);
     }
