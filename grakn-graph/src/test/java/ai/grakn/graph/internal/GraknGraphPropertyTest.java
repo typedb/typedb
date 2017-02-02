@@ -468,13 +468,14 @@ public class GraknGraphPropertyTest {
         entity.delete();
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenSetRegexOnMetaResourceTypeThenThrow(GraknGraph graph, String regex) {
+        assumeFalse(graph.isClosed());
+
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        // TODO: Test for a better error message
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(UnsupportedOperationException.class);
+        exception.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(resource.getName()));
 
         resource.setRegex(regex);
     }
