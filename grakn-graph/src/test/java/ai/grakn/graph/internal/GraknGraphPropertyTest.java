@@ -31,6 +31,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -197,8 +198,12 @@ public class GraknGraphPropertyTest {
         TypeName typeName = resourceType.getName();
         assumeThat(dataType, not(is(resourceType.getDataType())));
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptException.class);
+        if(Schema.MetaSchema.isMetaName(typeName)) {
+            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
+        } else {
+            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+        }
 
         graph.putResourceType(typeName, dataType);
     }
