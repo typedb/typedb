@@ -68,21 +68,23 @@ public class PostprocessingTest extends GraphTestBase{
     @Test
     public void testMergingDuplicateCasting(){
         Set<ConceptId> castingVertexIds = new HashSet<>();
-        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId());
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4).getId().getValue()));
+        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
+        castingVertexIds.add(mainCasting.getId());
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4).getId().getValue()));
         assertEquals(3, instance1.castings().size());
 
         graknGraph.fixDuplicateCastings(castingVertexIds);
         assertEquals(1, instance1.castings().size());
     }
 
-    private CastingImpl buildDuplicateCastingWithNewRelation(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
+    private CastingImpl buildDuplicateCastingWithNewRelation(CastingImpl mainCasting, RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
         RelationImpl relation = (RelationImpl) relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
         Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
         castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
+        castingVertex.property(Schema.ConceptProperty.INDEX.name(), mainCasting.getIndex());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
@@ -120,9 +122,10 @@ public class PostprocessingTest extends GraphTestBase{
     public void testMergingDuplicateRelationsDueToDuplicateCastings() {
         Set<ConceptId> castingVertexIds = new HashSet<>();
 
-        castingVertexIds.add(((CastingImpl) instance1.castings().iterator().next()).getId());
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue()));
-        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
+        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
+        castingVertexIds.add(mainCasting.getId());
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue()));
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
 
         assertEquals(3, instance1.relations().size());
         assertEquals(2, instance2.relations().size());
