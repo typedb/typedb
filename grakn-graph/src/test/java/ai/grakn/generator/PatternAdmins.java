@@ -19,28 +19,17 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import com.google.common.collect.Sets;
 
-import java.util.Set;
+public class PatternAdmins extends AbstractGenerator<PatternAdmin> {
 
-public class Conjunctions extends AbstractGenerator<Conjunction> {
-
-    public Conjunctions() {
-        super(Conjunction.class);
+    public PatternAdmins() {
+        super(PatternAdmin.class);
     }
 
     @Override
-    public Conjunction<PatternAdmin> generate() {
-        Set<PatternAdmin> patterns = Sets.newHashSet();
-
-        int size = random.nextInt(status.size());
-        for (int i = 0; i < size; i ++) {
-            patterns.add(gen(PatternAdmin.class));
-        }
-
-        return Patterns.conjunction(patterns);
+    protected PatternAdmin generate() {
+        return gen(Pattern.class).admin();
     }
 }

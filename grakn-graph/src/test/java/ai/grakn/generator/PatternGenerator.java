@@ -21,8 +21,6 @@ package ai.grakn.generator;
 
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.Disjunction;
 
 public class PatternGenerator extends AbstractGenerator<Pattern> {
 
@@ -32,6 +30,8 @@ public class PatternGenerator extends AbstractGenerator<Pattern> {
 
     @Override
     protected Pattern generate() {
-        return gen().oneOf(Disjunction.class, Conjunction.class, Var.class).generate(random, status);
+        // TODO: Make this produce conjunctions and disjunctions
+        return gen(Var.class);
+        // return gen().oneOf(Disjunction.class, Conjunction.class, Var.class).generate(random, status);
     }
 }
