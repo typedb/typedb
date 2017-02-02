@@ -110,11 +110,21 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
             Stream<TaskState> stream = zookeeperConnection.getChildren()
                     .forPath(TASKS_PATH_PREFIX).stream()
-                    .map(this::getState)
-                    .filter(t -> taskStatus != null && t.status().equals(taskStatus))
-                    .filter(t -> taskClassName != null && t.taskClassName().equals(taskClassName))
-                    .filter(t -> createdBy != null && t.creator().equals(createdBy))
-                    .skip(offset);
+                    .map(this::getState);
+
+            if (taskStatus != null) {
+                stream = stream.filter(t -> t.status().equals(taskStatus));
+            }
+
+            if (taskClassName != null) {
+                stream = stream.filter(t -> t.taskClassName().equals(taskClassName));
+            }
+
+            if (createdBy != null) {
+                stream = stream.filter(t -> t.creator().equals(createdBy));
+            }
+
+            stream = stream.skip(offset);
 
             if(limit > 0){
                 stream = stream.limit(limit);
