@@ -457,13 +457,13 @@ public class GraknGraphPropertyTest {
         graph.putRoleType(typeName);
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenDeletingMetaEntityTypeThenThrow(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
         EntityType entity = graph.admin().getMetaEntityType();
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(entity.getName()));
+        exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(entity.getName()));
 
         entity.delete();
     }
