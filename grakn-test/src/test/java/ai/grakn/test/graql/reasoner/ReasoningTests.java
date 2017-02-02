@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import org.junit.Assert;
 import org.junit.Before;
@@ -80,7 +81,6 @@ public class ReasoningTests {
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
     }
-
 
     //The tests validate the correctness of the rule reasoning implementation w.r.t. the intended semantics of rules.
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
@@ -145,7 +145,6 @@ public class ReasoningTests {
         Assert.assertEquals(answers2.size(), 3);
     }
 
-
     @Test //Expected result: The query should return three different instances of relation1 with unique ids.
     public void generatingFreshRelation() {
         QueryBuilder qb = testSet6.graph().graql().infer(true);
@@ -155,13 +154,12 @@ public class ReasoningTests {
         Assert.assertEquals(answers.size(), 3);
     }
 
-    @Ignore
-    @Test //Expected result: The query should return 50 unique matches (no duplicates).
+    @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         QueryBuilder qb = testSet7.graph().graql().infer(true);
-        String queryString = "match $x isa relation1; limit 50;";
+        String queryString = "match $x isa relation1; limit 10;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
-        Assert.assertEquals(answers.size(), 50);
+        Assert.assertEquals(answers.size(), 10);
     }
 
     @Ignore
@@ -182,7 +180,10 @@ public class ReasoningTests {
         answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
     }
 
-
+    /**
+     * recursive relation having same type for different role players
+     * tests for handling recursivity and equivalence of queries and relations
+     */
     @Test //Expected result: The query should return a unique match
     public void transRelationWithEntityGuardsAtBothEnds() {
         QueryBuilder iqb = testSet10.graph().graql().infer(true);
@@ -192,7 +193,6 @@ public class ReasoningTests {
         Assert.assertTrue(!answers.isEmpty());
     }
 
-    @Ignore
     @Test //Expected result: The query should return a unique match
     public void transRelationWithRelationGuardsAtBothEnds() {
         QueryBuilder qb = testSet11.graph().graql().infer(true);
