@@ -333,7 +333,6 @@ public class GraknGraphPropertyTest {
         assertEquals(graph.admin().getMetaRuleType(), ruleType.superType());
     }
 
-    @Ignore // TODO: Fix this when called with "rule"
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeNameThenItReturnsThatType(GraknGraph graph) {
         assumeFalse(graph.isClosed());
