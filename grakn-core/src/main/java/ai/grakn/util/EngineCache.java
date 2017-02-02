@@ -18,6 +18,9 @@
 
 package ai.grakn.util;
 
+import ai.grakn.concept.ConceptId;
+
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -36,48 +39,79 @@ import java.util.Set;
  * @author fppt
  */
 public interface EngineCache {
+    /**
+     *
+     * @return All keyspaces which require post processing at this stage
+     */
+    Set<String> getKeyspaces();
+
+    /**
+     *
+     * @param keyspace The keyspace with post processing jobs
+     * @return The number of jobs currently pending for that keyspace
+     */
+    long getNumJobs(String keyspace);
+
+    /**
+     *
+     * @param keyspace The keyspace with casting post processing jobs
+     * @return The number of jobs currently pending for that keyspace
+     */
+    long getNumCastingJobs(String keyspace);
+
+    /**
+     *
+     * @param keyspace The keyspace with resource post processing jobs
+     * @return The number of jobs currently pending for that keyspace
+     */
+    long getNumResourceJobs(String keyspace);
 
     //-------------------- Casting Jobs
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @return Casting Ids which require post processing
+     * @return Casting Indices and Ids which require post processing
      */
-    Set<String> getCastingJobs(String keyspace);
+    Map<String, Set<ConceptId>> getCastingJobs(String keyspace);
 
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @param castingIds Casting Ids which require post processing
+     * @param castingIndex The unique index of this casting
+     * @param castingId The casting vertex id
      */
-    void addJobCasting(String keyspace, Set<String> castingIds);
+    void addJobCasting(String keyspace, String castingIndex, ConceptId castingId);
 
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
+     * @param castingIndex The index of the casting id which has been post processed
      * @param castingId The castingId which has been post processed
      */
-    void deleteJobCasting(String keyspace, String castingId);
+    void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId);
 
     //-------------------- Resource Jobs
-    /**
-     *
-     * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @return Resources Ids which require post processing
-     */
-    Set<String> getResourceJobs(String keyspace);
 
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
-     * @param resourceIds Resources Ids which require post processing
+     * @return Resources Indices and Ids which require post processing
      */
-    void addJobResource(String keyspace, Set<String> resourceIds);
+    Map<String, Set<ConceptId>> getResourceJobs(String keyspace);
 
     /**
      *
      * @param keyspace The keyspace containing casting jobs which need to be post processed
+     * @param resourceIndex The unique index of this resource
+     * @param resourceId The resource vertex id
+     */
+    void addJobResource(String keyspace, String resourceIndex, ConceptId resourceId);
+
+    /**
+     *
+     * @param keyspace The keyspace containing casting jobs which need to be post processed
+     * @param resourceIndex The index of the resource id which has been post processed
      * @param resourceId The resourceId which has been post processed
      */
-    void deleteJobResource(String keyspace, String resourceId);
+    void deleteJobResource(String keyspace, String resourceIndex, ConceptId resourceId);
 }

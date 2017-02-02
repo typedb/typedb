@@ -53,6 +53,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.javatuples.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -60,7 +61,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -243,6 +243,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return ((ConceptImpl)from).addEdge((ConceptImpl) to, type);
     }
 
+    @Override
     public <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
@@ -700,18 +701,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void commit() throws GraknValidationException {
-        commit((castings, resources) -> {
-            Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
-            if(castings.size() > 0) {
-                modifiedConcepts.put(Schema.BaseType.CASTING, castings);
-            }
-            if(resources.size() > 0) {
-                modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
-            }
-            if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && modifiedConcepts.size() > 0) {
-                submitCommitLogs(modifiedConcepts);
-            }
-        });
+        commit(this::submitCommitLogs);
     }
 
     /**
@@ -721,26 +711,32 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit(EngineCache cache) throws GraknValidationException{
         commit((castings, resources) -> {
-            String keyspace = getKeyspace();
-            if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
-                cache.addJobCasting(keyspace, castings);
-                cache.addJobResource(keyspace, resources);
+            if(cache != null) {
+                castings.forEach(pair -> cache.addJobCasting(keyspace, pair.getValue0(), pair.getValue1()));
+                resources.forEach(pair -> cache.addJobResource(keyspace, pair.getValue0(), pair.getValue1()));
             }
         });
     }
 
-    public void commit(BiConsumer<Set<String>, Set<String>> conceptLogger) throws GraknValidationException {
+    public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
-        Set<String> castings = getConceptLog().getModifiedCastingIds();
-        Set<String> resources = getConceptLog().getModifiedResourceIds();
+        Set<Pair<String, ConceptId>> castings = getConceptLog().getModifiedCastings().stream().
+                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(Collectors.toSet());
+
+        Set<Pair<String, ConceptId>> resources = getConceptLog().getModifiedResources().stream().
+                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(Collectors.toSet());
+
 
         LOG.debug("Graph is valid. Committing graph . . . ");
         commitTransaction();
         LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
-        conceptLogger.accept(castings, resources);
+        //No post processing should ever be done for the system keyspace
+        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
+            conceptLogger.accept(castings, resources);
+        }
     }
 
     protected void commitTransaction(){
@@ -766,25 +762,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
+    private void submitCommitLogs(Set<Pair<String, ConceptId>> castings, Set<Pair<String, ConceptId>> resources){
         JSONArray jsonArray = new JSONArray();
-        for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
-            Schema.BaseType type = entry.getKey();
 
-            for (String vertexId : entry.getValue()) {
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("id", vertexId);
-                jsonObject.put("type", type.name());
-                jsonArray.put(jsonObject);
-            }
-
-        }
+        loadCommitLogConcepts(jsonArray, Schema.BaseType.CASTING, castings);
+        loadCommitLogConcepts(jsonArray, Schema.BaseType.RESOURCE, resources);
 
         JSONObject postObject = new JSONObject();
         postObject.put("concepts", jsonArray);
+        LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString()) + "]");
 
-        String result = EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString());
-        LOG.debug("Response from engine [" + result + "]");
+    }
+    private void loadCommitLogConcepts(JSONArray jsonArray, Schema.BaseType baseType, Set<Pair<String, ConceptId>> concepts){
+        concepts.forEach(concept -> {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put(REST.Request.COMMIT_LOG_TYPE, baseType.name());
+            jsonObject.put(REST.Request.COMMIT_LOG_INDEX, concept.getValue0());
+            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().getValue());
+            jsonArray.put(jsonObject);
+        });
     }
     private String getCommitLogEndPoint(){
         if(Grakn.IN_MEMORY.equals(engine)) {
@@ -795,42 +791,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
     /**
-     * Merges duplicate castings if one is found.
-     * @param castingId The id of the casting to check for duplicates
-     * @return true if some castings were merged
+     * Merges the provided duplicate castings.
+     *
+     * @param castingVertexIds The vertex Ids of the duplicate castings
+     * @return if castings were merged and a commit is required.
      */
     @Override
-    public boolean fixDuplicateCasting(Object castingId){
-        //Get the Casting
-        ConceptImpl concept = getConceptByBaseIdentifier(castingId);
-        if(concept == null || !concept.isCasting()) {
-            return false;
+    public boolean fixDuplicateCastings(Set<ConceptId> castingVertexIds){
+        Set<CastingImpl> castings = castingVertexIds.stream().
+                map(id -> this.<CastingImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
+        if(castings.size() > 1){
+            CastingImpl mainCasting = castings.iterator().next();
+            castings.remove(mainCasting);
+
+            //Fix the duplicates
+            Set<RelationImpl> duplicateRelations = mergeCastings(mainCasting, castings);
+
+            //Remove Redundant Relations
+            deleteRelations(duplicateRelations);
+
+            return true;
         }
 
-        //Check if the casting has duplicates
-        CastingImpl casting = concept.asCasting();
-        InstanceImpl rolePlayer = casting.getRolePlayer();
-        RoleType role = casting.getRole();
-
-        //Traversal here is used to take advantage of vertex centric index
-        List<Vertex> castingVertices = getTinkerPopGraph().traversal().V(rolePlayer.getBaseIdentifier()).
-                inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
-
-        Set<CastingImpl> castings = castingVertices.stream().map( elementFactory::<CastingImpl>buildConcept).collect(Collectors.toSet());
-
-        if(castings.size() < 2){
-            return false;
-        }
-
-        //Fix the duplicates
-        castings.remove(casting);
-        Set<RelationImpl> duplicateRelations = mergeCastings(casting, castings);
-
-        //Remove Redundant Relations
-        deleteRelations(duplicateRelations);
-
-        return true;
+        return false;
     }
 
     /**
@@ -908,69 +891,33 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     /**
      *
-     * @param resourceIds The resourceIDs which possible contain duplicates.
+     * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
     @Override
-    public boolean fixDuplicateResources(Set<Object> resourceIds){
-        boolean commitRequired = false;
+    public boolean fixDuplicateResources(Set<ConceptId> resourceVertexIds){
+        Set<ResourceImpl> duplicates = resourceVertexIds.stream().
+                map(id -> this.<ResourceImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
 
-        Set<ResourceImpl> resources = new HashSet<>();
-        for (Object resourceId : resourceIds) {
-            ConceptImpl concept = getConceptByBaseIdentifier(resourceId);
-            if(concept != null && concept.isResource()){
-                resources.add((ResourceImpl) concept);
-            }
-        }
+        if(duplicates.size() > 1){
+            Iterator<ResourceImpl> it = duplicates.iterator();
+            ResourceImpl<?> mainResource = it.next();
 
-        Map<String, Set<ResourceImpl>> resourceMap = formatResourcesByType(resources);
+            while(it.hasNext()){
+                ResourceImpl<?> otherResource = it.next();
+                Collection<Relation> otherRelations = otherResource.relations();
 
-        for (Map.Entry<String, Set<ResourceImpl>> entry : resourceMap.entrySet()) {
-            Set<ResourceImpl> dups = entry.getValue();
-            if(dups.size() > 1){ //Found Duplicate
-                mergeResources(dups);
-                commitRequired = true;
-            }
-        }
+                for (Relation otherRelation : otherRelations) {
+                    copyRelation(mainResource, otherResource, otherRelation);
+                }
 
-        return commitRequired;
-    }
-
-    /**
-     *
-     * @param resources A list of resources containing possible duplicates.
-     * @return A map of resource indices to resources. If there is more than one resource for a specific
-     *         resource index then there are duplicate resources which need to be merged.
-     */
-    private Map<String, Set<ResourceImpl>> formatResourcesByType(Set<ResourceImpl> resources){
-        Map<String, Set<ResourceImpl>> resourceMap = new HashMap<>();
-
-        resources.forEach(resource -> {
-            String resourceKey = resource.getProperty(Schema.ConceptProperty.INDEX).toString();
-            resourceMap.computeIfAbsent(resourceKey, (key) -> new HashSet<>()).add(resource);
-        });
-
-        return resourceMap;
-    }
-
-    /**
-     *
-     * @param resources A set of resources which should all be merged.
-     */
-    private void mergeResources(Set<ResourceImpl> resources){
-        Iterator<ResourceImpl> it = resources.iterator();
-        ResourceImpl<?> mainResource = it.next();
-
-        while(it.hasNext()){
-            ResourceImpl<?> otherResource = it.next();
-            Collection<Relation> otherRelations = otherResource.relations();
-
-            for (Relation otherRelation : otherRelations) {
-                copyRelation(mainResource, otherResource, otherRelation);
+                otherResource.delete();
             }
 
-            otherResource.delete();
+            return true;
         }
+
+        return false;
     }
 
     /**

@@ -58,7 +58,6 @@ public class ConfigProperties {
     public static final String HAL_DEGREE_PROPERTY = "halBuilder.degree";
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
-
     public static final String POST_PROCESSING_DELAY = "backgroundTasks.post-processing-delay";
     public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
 
@@ -79,6 +78,8 @@ public class ConfigProperties {
     public static final String LOG_NAME_POSTPROCESSING_DEFAULT = "post-processing";
     public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING = "grakn.log.file.postprocessing";
     public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
+
+    public static final String POST_PROCESSING_THREADS = "postprocessing.threads";
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
