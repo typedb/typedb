@@ -23,31 +23,24 @@ import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.Sets;
-import com.pholser.junit.quickcheck.generator.ComponentizedGenerator;
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 import java.util.Set;
 
-public class Disjunctions extends ComponentizedGenerator<Disjunction> {
+public class Disjunctions extends AbstractGenerator<Disjunction> {
 
     public Disjunctions() {
         super(Disjunction.class);
     }
 
     @Override
-    public Disjunction<?> generate(SourceOfRandomness random, GenerationStatus status) {
+    public Disjunction<?> generate() {
         Set<PatternAdmin> patterns = Sets.newHashSet();
 
-        for (int i = 0; i < status.size(); i ++) {
-            patterns.add((PatternAdmin) componentGenerators().get(0).generate(random, status));
+        int size = random.nextInt(status.size());
+        for (int i = 0; i < size; i ++) {
+            patterns.add(gen(PatternAdmin.class));
         }
 
         return Patterns.disjunction(patterns);
-    }
-
-    @Override
-    public int numberOfNeededComponents() {
-        return 1;
     }
 }
