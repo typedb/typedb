@@ -36,10 +36,11 @@ public class Disjunctions extends AbstractGenerator<Disjunction> {
     public Disjunction<?> generate() {
         Set<PatternAdmin> patterns = Sets.newHashSet();
 
-        int size = random.nextInt(status.size());
-        for (int i = 0; i < size; i ++) {
-            patterns.add(gen(PatternAdmin.class));
-        }
+        // TODO: actually fill disjunctions
+//        int size = random.nextInt(status.size());
+//        for (int i = 0; i < size; i ++) {
+//            patterns.add(gen(PatternAdmin.class));
+//        }
 
         return Patterns.disjunction(patterns);
     }
