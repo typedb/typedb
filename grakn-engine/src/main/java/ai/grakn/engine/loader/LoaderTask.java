@@ -27,7 +27,6 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
 import mjson.Json;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +53,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class LoaderTask implements BackgroundTask {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Loader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LoaderClient.class);
     private static final int repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 

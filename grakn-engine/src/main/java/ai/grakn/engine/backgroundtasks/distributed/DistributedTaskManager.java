@@ -117,23 +117,4 @@ public final class DistributedTaskManager implements TaskManager {
     public TaskStateStorage storage() {
         return stateStorage;
     }
-
-    @Override
-    public CompletableFuture completableFuture(String taskId) {
-        return CompletableFuture.runAsync(() -> {
-
-            while (true) {
-                TaskStatus status = stateStorage.getState(taskId).status();
-                if (status == COMPLETED || status == FAILED || status ==  STOPPED) {
-                    break;
-                }
-
-                try {
-                    Thread.sleep(5000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-    }
 }

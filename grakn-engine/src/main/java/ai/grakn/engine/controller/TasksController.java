@@ -220,7 +220,8 @@ public class TasksController {
 
     private JSONObject serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                       .put("interval", state.interval())
+                       .put("status", state.status())
+                        .put("interval", state.interval())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
                        .put("engineID", state.engineID())

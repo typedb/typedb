@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderClient;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -106,14 +106,14 @@ public class ImportController {
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
             }
 
-            Loader loader = new Loader(manager, keyspace);
+//            LoaderClient loader = new LoaderClient(manager, keyspace);
 
             // Spawn threads to load and check status of loader
-            ScheduledFuture scheduledFuture = scheduledPrinting(loader);
+//            ScheduledFuture scheduledFuture = scheduledPrinting(loader);
 
             // Submit task to parse and load data in another thread
-            Thread importDataThread = new Thread(() -> importDataFromFile(file, loader, scheduledFuture));
-            importDataThread.start();
+//            Thread importDataThread = new Thread(() -> importDataFromFile(file, loader, scheduledFuture));
+//            importDataThread.start();
 
         } catch (FileNotFoundException j) {
             throw new GraknEngineServerException(400, j);
@@ -129,31 +129,31 @@ public class ImportController {
      * @param loader loader the task will print the status of
      * @return a ScheduledFuture representing printing task
      */
-    private ScheduledFuture scheduledPrinting(Loader loader){
-        return Executors.newSingleThreadScheduledExecutor()
-                .scheduleAtFixedRate(loader::printLoaderState, 10, 10, SECONDS);
-    }
+//    private ScheduledFuture scheduledPrinting(LoaderClient loader){
+//        return Executors.newSingleThreadScheduledExecutor()
+//                .scheduleAtFixedRate(loader::printLoaderState, 10, 10, SECONDS);
+//    }
 
-    private void importDataFromFile(File file, Loader loader, Future statusPrinter) {
-        LOG.info("Data loading started.");
-        loadingInProgress.set(true);
-
-        try {
-            String fileAsString = Files.readAllLines(file.toPath()).stream().collect(joining("\n"));
-
-            Graql.withoutGraph()
-                    .parseList(fileAsString).stream()
-                    .map(p -> (InsertQuery) p)
-                    .forEach(loader::add);
-
-            loader.waitToFinish(60000);
-
-            LOG.info("Loading complete.");
-        } catch (IOException e) {
-            LOG.error("Exception while parsing data for batch load" + e);
-        } finally {
-            statusPrinter.cancel(true);
-            loadingInProgress.set(false);
-        }
-    }
+//    private void importDataFromFile(File file, LoaderClient loader, Future statusPrinter) {
+//        LOG.info("Data loading started.");
+//        loadingInProgress.set(true);
+//
+//        try {
+//            String fileAsString = Files.readAllLines(file.toPath()).stream().collect(joining("\n"));
+//
+//            Graql.withoutGraph()
+//                    .parseList(fileAsString).stream()
+//                    .map(p -> (InsertQuery) p)
+//                    .forEach(loader::add);
+//
+//            loader.waitToFinish(60000);
+//
+//            LOG.info("Loading complete.");
+//        } catch (IOException e) {
+//            LOG.error("Exception while parsing data for batch load" + e);
+//        } finally {
+//            statusPrinter.cancel(true);
+//            loadingInProgress.set(false);
+//        }
+//    }
 }

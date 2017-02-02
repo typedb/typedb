@@ -18,8 +18,6 @@
 
 package ai.grakn.migration.json;
 
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.base.io.MigrationCLI;
 
@@ -43,22 +41,13 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
 public class Main {
 
     public static void main(String[] args) {
-        start(null, args);
-    }
-
-    public static void start(TaskManager manager, String[] args){
-        if(manager == null){
-            manager = new DistributedTaskManager();
-        }
-
-        TaskManager finalManager = manager;
         MigrationCLI.init(args, JsonMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .forEach((options) -> runJson(finalManager, options));
+                .forEach(Main::runJson);
     }
 
-    public static void runJson(TaskManager manager, JsonMigrationOptions options){
+    public static void runJson(JsonMigrationOptions options){
         File jsonDataFile = new File(options.getInput());
         File jsonTemplateFile = new File(options.getTemplate());
 
@@ -78,7 +67,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(jsonMigrator.migrate());
             } else {
-                MigrationLoader.load(manager, options.getKeyspace(), options.getBatch(), jsonMigrator);
+                MigrationLoader.load(options.getUri(), options.getKeyspace(), options.getBatch(), jsonMigrator);
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable){

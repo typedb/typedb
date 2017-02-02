@@ -18,8 +18,7 @@
 
 package ai.grakn.migration.base.io;
 
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderClient;
 import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.base.Migrator;
 
@@ -29,19 +28,19 @@ import ai.grakn.migration.base.Migrator;
  */
 public class MigrationLoader {
 
-    public static void load(TaskManager manager, String keyspace, int batchSize, Migrator migrator){
-        Loader loader = new Loader(manager, keyspace);
+    public static void load(String uri, String keyspace, int batchSize, Migrator migrator){
+        LoaderClient loader = new LoaderClient(keyspace, uri);
         loader.setBatchSize(batchSize);
 
         try{
             migrator.migrate().forEach(loader::add);
         } finally {
-            loader.waitToFinish(60000);
-            loader.printLoaderState();
+            loader.waitToFinish();
+//            loader.printLoaderState();
         }
     }
 
-    public static void load(TaskManager manager, String keyspace, Migrator migrator) {
-        load(manager, keyspace, AbstractMigrator.BATCH_SIZE, migrator);
+    public static void load(String uri, String keyspace, Migrator migrator) {
+        load(uri, keyspace, AbstractMigrator.BATCH_SIZE, migrator);
     }
 }

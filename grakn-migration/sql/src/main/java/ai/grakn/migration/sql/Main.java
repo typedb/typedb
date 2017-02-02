@@ -18,8 +18,6 @@
 
 package ai.grakn.migration.sql;
 
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.migration.base.io.MigrationCLI;
 import ai.grakn.migration.base.io.MigrationLoader;
 
@@ -43,22 +41,13 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
 public class Main {
 
     public static void main(String[] args) {
-        start(null, args);
-    }
-
-    public static void start(TaskManager manager, String[] args){
-        if(manager == null){
-            manager = new DistributedTaskManager();
-        }
-
-        TaskManager finalManager = manager;
         MigrationCLI.init(args, SQLMigrationOptions::new).stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .forEach((options) -> runSQL(finalManager, options));
+                .forEach(Main::runSQL);
     }
 
-    public static void runSQL(TaskManager manager, SQLMigrationOptions options) {
+    public static void runSQL(SQLMigrationOptions options) {
         File sqlTemplate = new File(options.getTemplate());
 
         if(!sqlTemplate.exists()){
@@ -76,7 +65,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(sqlMigrator.migrate());
             } else {
-                MigrationLoader.load(manager, options.getKeyspace(), options.getBatch(), sqlMigrator);
+                MigrationLoader.load(options.getUri(), options.getKeyspace(), options.getBatch(), sqlMigrator);
                 printWholeCompletionMessage(options);
             }
 

@@ -173,7 +173,7 @@ public enum ErrorMessage {
     UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concepts [%s] part of job [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
-    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] "),
+    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host. Message:[%s] \n Transaction string: [%s] "),
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     LOADER_WAIT_TIMEOUT("Exception thrown due to timeout being exceeded while waiting for loading to complete"),
     STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),

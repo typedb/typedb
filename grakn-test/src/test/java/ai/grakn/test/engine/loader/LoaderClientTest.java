@@ -28,14 +28,13 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
-import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderClient;
 import ai.grakn.engine.loader.LoaderTask;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.ErrorMessage;
-import javafx.util.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -57,11 +56,10 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LoaderTest {
+public class LoaderClientTest {
 
-    private Loader loader;
+    private LoaderClient loader;
     private GraknGraph graph;
-    private int numberOfTimesFakeLoaderCalled = 0;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -72,25 +70,25 @@ public class LoaderTest {
     @Before
     public void setup() {
         graph = engine.graphWithNewKeyspace();
-        loader = new Loader(engine.getTaskManager(), graph.getKeyspace());
+        loader = new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
         loadOntology(graph.getKeyspace());
     }
 
     @Test
     public void loaderDefaultBatchSizeTest() {
-        loadAndTime(60000);
+        loadAndTime();
     }
 
     @Test
     public void loaderNewBatchSizeTest() {
         loader.setBatchSize(20);
-        loadAndTime(60000);
+        loadAndTime();
     }
 
     @Test
     public void loadWithSmallQueueSizeToBlockTest(){
         loader.setQueueSize(1);
-        loadAndTime(60000);
+        loadAndTime();
     }
 
     @Test
@@ -99,10 +97,10 @@ public class LoaderTest {
         // however, the individual tasks will be completing faster than the timeout
         int timeout = 100;
 
-        Loader loaderWithFakeTaskManager = getFakeNormalLoader();
+        LoaderClient loaderWithFakeTaskManager = getFakeNormalLoader();
 
         long startTime = System.currentTimeMillis();
-        loaderWithFakeTaskManager.waitToFinish(timeout);
+        loaderWithFakeTaskManager.waitToFinish();
         long endTime = System.currentTimeMillis();
         assertThat(endTime-startTime, greaterThan(Integer.toUnsignedLong(timeout)));
     }
@@ -110,8 +108,8 @@ public class LoaderTest {
     @Test
     public void whenLoadingDataExceedsTimeoutThenTimeout(){
         exception.expectMessage(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage());
-        Loader loaderWithFakeTaskManager = getFakeTimeoutLoader();
-        loaderWithFakeTaskManager.waitToFinish(100);
+        LoaderClient loaderWithFakeTaskManager = getFakeTimeoutLoader();
+        loaderWithFakeTaskManager.waitToFinish();
     }
 
     public static void loadOntology(String keyspace){
@@ -131,7 +129,7 @@ public class LoaderTest {
         }
     }
 
-    private long loadAndTime(int timeout){
+    private long loadAndTime(){
         long startTime = System.currentTimeMillis();
 
         Collection<String> ids = new ArrayList<>();
@@ -149,7 +147,7 @@ public class LoaderTest {
             loader.add(query);
         }
 
-        loader.waitToFinish(timeout);
+        loader.waitToFinish();
 
         long duration = System.currentTimeMillis() - startTime;
         System.out.println("Time to load: " + duration);
@@ -162,25 +160,13 @@ public class LoaderTest {
         return duration;
     }
 
-    private Loader getFakeNormalLoader() {
-        TaskManager fakeTaskManager = getFakeTaskManager(invocation -> {
-            switch (numberOfTimesFakeLoaderCalled) {
-                case 0:
-                    numberOfTimesFakeLoaderCalled++;
-                    return TaskStatus.CREATED;
-                case 1:
-                    numberOfTimesFakeLoaderCalled++;
-                    return TaskStatus.SCHEDULED;
-                default:
-                    return TaskStatus.COMPLETED;
-            }
-        });
-        return new Loader(fakeTaskManager,graph.getKeyspace());
+    private LoaderClient getFakeNormalLoader() {
+        return new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
     }
 
-    private Loader getFakeTimeoutLoader() {
+    private LoaderClient getFakeTimeoutLoader() {
         TaskManager fakeClusterManager = getFakeTaskManager(invocation -> TaskStatus.CREATED);
-        return new Loader(fakeClusterManager,graph.getKeyspace());
+        return new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
     }
 
     private TaskManager getFakeTaskManager(Answer answer) {

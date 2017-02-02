@@ -26,7 +26,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderClient;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
@@ -273,7 +273,7 @@ public class ScalingTestIT {
         // create the ontology
         simpleOntology(keyspace);
 
-        Loader loader = new Loader(GraknEngineServer.getTaskManager(), keyspace);
+        LoaderClient loader = new LoaderClient(Grakn.DEFAULT_URI, keyspace);
 
         for (int g=1; g<totalSteps+1; g++) {
             LOGGER.info("starting step: " + g);
@@ -286,7 +286,7 @@ public class ScalingTestIT {
                 v_m--;
                 V_m+=2;
             }
-            loader.waitToFinish(60000);
+            loader.waitToFinish();
             LOGGER.info("stop loading data");
             GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
             LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
@@ -410,7 +410,7 @@ public class ScalingTestIT {
 
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
-        Loader loader = new Loader(GraknEngineServer.getTaskManager(), keyspace);
+        LoaderClient loader = new LoaderClient(Grakn.DEFAULT_URI, keyspace);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             List<Var> insertQuery = new ArrayList<>();
@@ -424,7 +424,7 @@ public class ScalingTestIT {
             loader.add(insert(insertQuery));
         }
 
-        loader.waitToFinish(60000);
+        loader.waitToFinish();
     }
 
     private CountQueryImplMock getCountQuery(String uri, String keyspace, int numWorkers) {
