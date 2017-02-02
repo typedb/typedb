@@ -511,10 +511,11 @@ public class GraknGraphPropertyTest {
     @Ignore // TODO: Fix this
     @Property
     public void whenDeletingMetaEntityTypeThenThrow(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
         EntityType entity = graph.admin().getMetaEntityType();
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(entity.getName()));
+        exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(entity.getName()));
 
         entity.delete();
     }
@@ -563,7 +564,7 @@ public class GraknGraphPropertyTest {
     private static boolean typeNameExists(GraknGraph graph, TypeName typeName) {
         return graph.getType(typeName) != null;
     }
-    
+
     private static List<Concept> allConceptsFrom(GraknGraph graph) {
         List<Concept> concepts = Lists.newArrayList(graph.admin().getMetaConcept().subTypes());
         concepts.addAll(graph.admin().getMetaConcept().instances());
