@@ -358,7 +358,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     public T setAbstract(Boolean isAbstract) {
-        checkTypeMutation();
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract) {
             getGraknGraph().getConceptLog().putConcept(this);
@@ -366,17 +365,21 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return getThis();
     }
 
+    @Override
+    T setProperty(Schema.ConceptProperty key, Object value){
+        checkTypeMutation();
+        return super.setProperty(key, value);
+    }
+
     /**
      * Checks if we are mutating a type in a valid way. Type mutations are valid if:
      * 1. The type is not a meta-type
      * 2. The graph is not batch loading
      */
-    protected void checkTypeMutation(){
+    void checkTypeMutation(){
         getGraknGraph().checkOntologyMutation();
-        for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
-            if(metaSchema.getName().equals(getName())){
-                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getName()));
-            }
+        if(Schema.MetaSchema.isMetaName(getName())){
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
         }
     }
 
