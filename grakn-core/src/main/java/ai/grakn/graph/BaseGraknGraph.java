@@ -207,10 +207,12 @@ public interface BaseGraknGraph extends AutoCloseable {
 
     //------------------------------------- Concept Lookup ----------------------------------
     /**
-     * Get the Concept with identifier provided, if it exists.
+     * Get the {@link Concept} with identifier provided, if it exists.
      *
-     * @param id A unique identifier for the Concept in the graph.
-     * @return The Concept with the provided id or null if no such Concept exists.
+     * @param id A unique identifier for the {@link Concept} in the graph.
+     * @return The Concept with the provided id or null if no such {@link Concept} exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     <T extends Concept> T getConcept(ConceptId id);
 

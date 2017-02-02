@@ -24,3 +24,4 @@ ai.grakn.generator.PatternGenerator
 ai.grakn.generator.Disjunctions
 ai.grakn.generator.Conjunctions
 ai.grakn.generator.Vars
+ai.grakn.generator.ConceptIds
