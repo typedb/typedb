@@ -36,6 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -57,6 +58,9 @@ import java.util.stream.Collectors;
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
+    private Optional<T> cachedSuperType = Optional.empty();
+
+
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
     }
@@ -120,12 +124,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return This type's super type
      */
     public T superType() {
-        T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-        if(concept == null) {
-            return null;
-        } else {
-            return concept;
+        if(!cachedSuperType.isPresent()){
+            T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
+            if(concept == null) {
+                return null;
+            }
+            cachedSuperType = Optional.of(concept);
         }
+        return cachedSuperType.get();
     }
 
     /**
@@ -264,6 +270,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(currentSuperType == null || (!currentSuperType.equals(superType))) {
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
             putEdge(superType, Schema.EdgeLabel.SUB);
+            cachedSuperType = Optional.of(superType);
 
             checkForLoop(Schema.EdgeLabel.SUB);
 
