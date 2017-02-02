@@ -33,6 +33,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -124,7 +125,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             // () -> resourceType().putResource(gen(Object.class)), TODO: Enable this when doesn't throw a NPE
             // () -> resourceType().setRegex(gen(String.class)), TODO: Enable this when doesn't throw a NPE
             () -> ruleType().superType(ruleType()),
-            // () -> ruleType().addRule(null, null), TODO: Generate patterns
+            () -> ruleType().addRule(gen(Pattern.class), gen(Pattern.class)),
             () -> instance().hasResource(resource()),
             () -> relation().scope(instance()),
             () -> relation().putRolePlayer(roleType(), instance()),
