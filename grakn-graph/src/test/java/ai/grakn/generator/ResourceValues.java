@@ -32,17 +32,19 @@ public class ResourceValues extends AbstractGenerator<Object> {
 
     @Override
     public Object generate() {
-        switch (random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet())) {
-            case "String":
+        String type = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
+        switch (type) {
+            case "java.lang.String":
                 return gen(String.class);
-            case "Boolean":
+            case "java.lang.Boolean":
                 return gen(Boolean.class);
-            case "Long":
+            case "java.lang.Integer":
+            case "java.lang.Long":
                 return gen(Long.class);
-            case "Double":
+            case "java.lang.Double":
                 return gen(Double.class);
             default:
-                throw new RuntimeException("unreachable");
+                throw new RuntimeException("unreachable: " + type);
         }
     }
 }
