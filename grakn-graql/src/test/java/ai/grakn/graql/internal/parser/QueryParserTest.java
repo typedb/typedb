@@ -34,7 +34,8 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Lists;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -43,6 +44,7 @@ import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -70,6 +72,7 @@ import static ai.grakn.graql.Graql.select;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
+import static com.google.common.collect.Lists.newArrayList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
@@ -583,10 +586,7 @@ public class QueryParserTest {
 
         List<Query<?>> queries = parseList(matchString);
 
-        assertEquals(1, queries.size());
-
-        Query<?> match = queries.get(0);
-        assertEquals(matchString, match.toString());
+        assertEquals(ImmutableList.of(match(var("y").isa("movie")).limit(1)), queries);
     }
 
     @Test
@@ -595,10 +595,7 @@ public class QueryParserTest {
 
         List<Query<?>> queries = parseList(insertString);
 
-        assertEquals(1, queries.size());
-
-        Query<?> insert = queries.get(0);
-        assertEquals(insertString, insert.toString());
+        assertEquals(ImmutableList.of(insert(var("x").isa("movie"))), queries);
     }
 
     @Test
@@ -608,13 +605,10 @@ public class QueryParserTest {
 
         List<Query<?>> queries = parseList(insertString + matchString);
 
-        assertEquals(2, queries.size());
-
-        Query<?> insert = queries.get(0);
-        assertEquals(insertString, insert.toString());
-
-        Query<?> match = queries.get(1);
-        assertEquals(matchString, match.toString());
+        assertEquals(ImmutableList.of(
+                insert(var("x").isa("movie")),
+                match(var("y").isa("movie")).limit(1)
+        ), queries);
     }
 
     @Test
@@ -624,10 +618,9 @@ public class QueryParserTest {
 
         List<Query<?>> queries = parseList(matchString + insertString);
 
-        assertEquals(1, queries.size());
-
-        Query<?> insert = queries.get(0);
-        assertEquals(matchString + "\n" + insertString, insert.toString());
+        assertEquals(ImmutableList.of(
+                match(var("y").isa("movie")).limit(1).insert(var("x").isa("movie"))
+        ), queries);
     }
 
     @Test
@@ -636,7 +629,7 @@ public class QueryParserTest {
         String insertString = "insert $x isa movie;";
         String matchInsert = matchString + insertString;
 
-        List<String> options = Lists.newArrayList(
+        List<String> options = newArrayList(
                 matchString + matchInsert,
                 insertString + matchInsert,
                 matchInsert + matchString,
@@ -647,6 +640,18 @@ public class QueryParserTest {
             List<Query<?>> queries = parseList(option);
             assertEquals(option, 2, queries.size());
         });
+    }
+
+    @Test
+    public void testParseManyMatchInsertWithoutStackOverflow() {
+        int numQueries = 10_000;
+        String matchInsertString = "match $x; insert $y;";
+        String longQueryString = Strings.repeat(matchInsertString, numQueries);
+        Query<?> matchInsert = match(var("x")).insert(var("y"));
+
+        List<Query<?>> queries = parseList(longQueryString);
+
+        assertEquals(Collections.nCopies(numQueries, matchInsert), queries);
     }
 
     @Test(expected = IllegalArgumentException.class)

@@ -1,14 +1,11 @@
 grammar Graql;
 
-queryList : queryElems ;
+queryList : queryListElem* ;
 
-// These rules exist to parse match-insert queries unambiguously
-queryElems     : matchQuery (queryNotInsert queryElems)?  # queryElemsNotInsert
-               | queryNotMatch queryElems                 # queryElemsNotMatch
-               | EOF                                      # queryElemsEOF
-               ;
-queryNotMatch  : insertQuery | simpleQuery ;
-queryNotInsert : matchInsert | matchQuery | simpleQuery ;
+// This rule exists so query lists never parse "match...insert" style queries,
+// because it is ambiguous.
+// TODO: Fix this by changing the syntax
+queryListElem : matchQuery | insertOnly | simpleQuery ;
 
 queryEOF       : query EOF ;
 query          : matchQuery | insertQuery | simpleQuery ;
