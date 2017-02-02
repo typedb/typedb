@@ -550,7 +550,6 @@ public class GraknGraphPropertyTest {
         RoleType roleType = graph.getType(typeName);
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenDeletingMetaEntityTypeThenThrow(GraknGraph graph) {
         assumeFalse(graph.isClosed());
