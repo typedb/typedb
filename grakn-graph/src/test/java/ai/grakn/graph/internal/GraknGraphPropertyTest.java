@@ -163,13 +163,15 @@ public class GraknGraphPropertyTest {
         assertFalse(resourceType.isUnique());
     }
 
-    @Ignore // TODO: Fix this when called on "resource"
     @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingNonUniqueResourceTypeThenItReturnsThatType(
             GraknGraph graph) {
         assumeFalse(graph.isClosed());
         ResourceType<?> resourceType = nonUniqueResourceTypeFrom(graph);
         TypeName typeName = resourceType.getName();
+
+        assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
+
         ResourceType.DataType<?> dataType = resourceType.getDataType();
 
         ResourceType<?> newType = graph.putResourceType(typeName, dataType);
