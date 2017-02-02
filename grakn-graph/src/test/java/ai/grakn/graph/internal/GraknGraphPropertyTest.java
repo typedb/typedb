@@ -20,6 +20,8 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
@@ -31,6 +33,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -40,7 +43,9 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.Predicate;
 
 import static org.hamcrest.Matchers.is;
@@ -450,6 +455,15 @@ public class GraknGraphPropertyTest {
         graph.putRoleType(typeName);
     }
 
+    @Property
+    public void whenCallingGetConceptWithAnExistingConceptIdThenItReturnsThatConcept(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
+        Concept concept = anyConceptFrom(graph);
+        ConceptId id = concept.getId();
+
+        assertEquals(concept, graph.getConcept(id));
+    }
+
     @Ignore // TODO: Fix this
     @Property
     public void whenDeletingMetaEntityTypeThenThrow(GraknGraph graph) {
@@ -504,6 +518,13 @@ public class GraknGraphPropertyTest {
 
     private static boolean typeNameExists(GraknGraph graph, TypeName typeName) {
         return graph.getType(typeName) != null;
+    }
+
+    private static Concept anyConceptFrom(GraknGraph graph) {
+        List<Concept> concepts = Lists.newArrayList(graph.admin().getMetaConcept().subTypes());
+        concepts.addAll(graph.admin().getMetaConcept().instances());
+        int index = new Random().nextInt(concepts.size());
+        return concepts.get(index);
     }
 
     private static ResourceType<?> nonUniqueResourceTypeFrom(GraknGraph graph) {
