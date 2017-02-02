@@ -801,7 +801,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Set<CastingImpl> castings = castingVertexIds.stream().
                 map(id -> this.<CastingImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
         if(castings.size() > 1){
-            CastingImpl mainCasting = castings.iterator().next();
+            CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX,castings.iterator().next().getIndex()); //This is done to ensure we merge into the indexed casting
             castings.remove(mainCasting);
 
             //Fix the duplicates
@@ -900,8 +900,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 map(id -> this.<ResourceImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
 
         if(duplicates.size() > 1){
+            ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, duplicates.iterator().next().getIndex()); //This is done to ensure we merge into the indexed resource
+            duplicates.remove(mainResource);
             Iterator<ResourceImpl> it = duplicates.iterator();
-            ResourceImpl<?> mainResource = it.next();
 
             while(it.hasNext()){
                 ResourceImpl<?> otherResource = it.next();
