@@ -309,9 +309,4 @@ public class ConceptTest extends GraphTestBase{
         expectedException.expectMessage(ID_RESERVED.getMessage("concept"));
         graknGraph.putEntityType("concept");
     }
-
-    @Test
-    public void name(){
-        System.out.println(graknGraph.getMetaConcept().superType());
-    }
 }
