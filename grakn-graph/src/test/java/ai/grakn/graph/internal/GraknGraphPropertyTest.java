@@ -193,6 +193,7 @@ public class GraknGraphPropertyTest {
             GraknGraph graph, ResourceType.DataType<?> dataType) {
         assumeFalse(graph.isClosed());
         ResourceType<?> resourceType = nonUniqueResourceTypeFrom(graph);
+
         TypeName typeName = resourceType.getName();
         assumeThat(dataType, not(is(resourceType.getDataType())));
 
@@ -428,7 +429,6 @@ public class GraknGraphPropertyTest {
         assertEquals(graph.admin().getMetaRoleType(), roleType.superType());
     }
 
-    @Ignore // TODO: Fix this when called with "relation"
     @Property
     public void whenCallingPutRoleTypeWithAnExistingRoleTypeNameThenItReturnsThatType(GraknGraph graph) {
         assumeFalse(graph.isClosed());

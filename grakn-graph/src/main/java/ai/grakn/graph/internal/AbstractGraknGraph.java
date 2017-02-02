@@ -32,7 +32,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
-import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
@@ -178,14 +177,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
-            Vertex type = putVertexInternal(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
-            Vertex entityType = putVertexInternal(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
-            Vertex relationType = putVertexInternal(Schema.MetaSchema.RELATION.getName(), Schema.BaseType.RELATION_TYPE);
-            Vertex resourceType = putVertexInternal(Schema.MetaSchema.RESOURCE.getName(), Schema.BaseType.RESOURCE_TYPE);
-            Vertex roleType = putVertexInternal(Schema.MetaSchema.ROLE.getName(), Schema.BaseType.ROLE_TYPE);
-            Vertex ruleType = putVertexInternal(Schema.MetaSchema.RULE.getName(), Schema.BaseType.RULE_TYPE);
-            Vertex inferenceRuleType = putVertexInternal(Schema.MetaSchema.INFERENCE_RULE.getName(), Schema.BaseType.RULE_TYPE);
-            Vertex constraintRuleType = putVertexInternal(Schema.MetaSchema.CONSTRAINT_RULE.getName(), Schema.BaseType.RULE_TYPE);
+            Vertex type = putVertex(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
+            Vertex entityType = putVertex(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
+            Vertex relationType = putVertex(Schema.MetaSchema.RELATION.getName(), Schema.BaseType.RELATION_TYPE);
+            Vertex resourceType = putVertex(Schema.MetaSchema.RESOURCE.getName(), Schema.BaseType.RESOURCE_TYPE);
+            Vertex roleType = putVertex(Schema.MetaSchema.ROLE.getName(), Schema.BaseType.ROLE_TYPE);
+            Vertex ruleType = putVertex(Schema.MetaSchema.RULE.getName(), Schema.BaseType.RULE_TYPE);
+            Vertex inferenceRuleType = putVertex(Schema.MetaSchema.INFERENCE_RULE.getName(), Schema.BaseType.RULE_TYPE);
+            Vertex constraintRuleType = putVertex(Schema.MetaSchema.CONSTRAINT_RULE.getName(), Schema.BaseType.RULE_TYPE);
 
             relationType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
             roleType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
@@ -290,12 +289,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private Vertex putVertex(TypeName name, Schema.BaseType baseType){
-        if(Schema.MetaSchema.isMetaName(name)){
-            throw new ConceptException(ErrorMessage.ID_RESERVED.getMessage(name));
-        }
-        return putVertexInternal(name, baseType);
-    }
-    private Vertex putVertexInternal(TypeName name, Schema.BaseType baseType){
         Vertex vertex;
         ConceptImpl concept = getConcept(Schema.ConceptProperty.NAME, name.getValue());
         if(concept == null) {
