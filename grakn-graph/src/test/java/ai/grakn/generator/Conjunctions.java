@@ -36,10 +36,11 @@ public class Conjunctions extends AbstractGenerator<Conjunction> {
     public Conjunction<PatternAdmin> generate() {
         Set<PatternAdmin> patterns = Sets.newHashSet();
 
-        int size = random.nextInt(status.size());
-        for (int i = 0; i < size; i ++) {
-            patterns.add(gen(PatternAdmin.class));
-        }
+        // TODO: actuall fill conjunctions
+//        int size = random.nextInt(status.size());
+//        for (int i = 0; i < size; i ++) {
+//            patterns.add(gen(PatternAdmin.class));
+//        }
 
         return Patterns.conjunction(patterns);
     }
