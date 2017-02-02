@@ -530,9 +530,9 @@ public class GraknGraphPropertyTest {
         resource.setRegex(regex);
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenCallingIsUniqueOnMetaResourceTypeThenResultIsFalse(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
         ResourceType resource = graph.admin().getMetaResourceType();
         assertFalse(resource.isUnique());
     }
