@@ -47,7 +47,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
@@ -453,14 +452,7 @@ public class GraknGraphPropertyTest {
 
     @Ignore // TODO: Fix this
     @Property
-    public void whenCallingGetMetaEntityTypeTheResultIsNonNull(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
-        assertNotNull(graph.admin().getMetaEntityType());
-    }
-
-    @Ignore // TODO: Fix this
-    @Property
-    public void whenDeletingMetaEntityThenThrow(GraknGraph graph) {
+    public void whenDeletingMetaEntityTypeThenThrow(GraknGraph graph) {
         EntityType entity = graph.admin().getMetaEntityType();
 
         exception.expect(ConceptException.class);
@@ -471,9 +463,10 @@ public class GraknGraphPropertyTest {
 
     @Ignore // TODO: Fix this
     @Property
-    public void whenSetRegexOnMetaResourceThenThrow(GraknGraph graph, String regex) {
+    public void whenSetRegexOnMetaResourceTypeThenThrow(GraknGraph graph, String regex) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
+        // TODO: Test for a better error message
         exception.expect(GraphRuntimeException.class);
 
         resource.setRegex(regex);
@@ -481,27 +474,32 @@ public class GraknGraphPropertyTest {
 
     @Ignore // TODO: Fix this
     @Property
-    public void whenCallingIsUniqueOnMetaResourceThenResultIsFalse(GraknGraph graph) {
+    public void whenCallingIsUniqueOnMetaResourceTypeThenResultIsFalse(GraknGraph graph) {
         ResourceType resource = graph.admin().getMetaResourceType();
         assertFalse(resource.isUnique());
     }
 
     @Ignore // TODO: Fix this
     @Property
-    public void whenCreateInstanceOfMetaResourceThenThrow(
+    public void whenCreateInstanceOfMetaResourceTypeThenThrow(
             GraknGraph graph, @From(ResourceValues.class) Object value) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
+        // TODO: Test for a better error message
         exception.expect(GraphRuntimeException.class);
 
         resource.putResource(value);
     }
 
-    @Ignore // TODO: Write this test properly
+    @Ignore // TODO: Fix this
     @Property
-    public void whenCallingSuperTypeOnMetaResourceThenNothingBadHappens(GraknGraph graph) {
+    public void whenCallingSuperTypeOnMetaResourceTypeThenThrow(GraknGraph graph) {
         ResourceType resource = graph.admin().getMetaResourceType();
-        ResourceType resourceType = resource.superType();
+
+        // TODO: Test for a better error message
+        exception.expect(GraphRuntimeException.class);
+
+        resource.superType();
     }
 
     private static boolean typeNameExists(GraknGraph graph, TypeName typeName) {
