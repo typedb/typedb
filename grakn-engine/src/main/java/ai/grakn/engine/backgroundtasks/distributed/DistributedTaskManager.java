@@ -24,7 +24,7 @@ import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -59,8 +59,8 @@ public final class DistributedTaskManager implements TaskManager {
     private Thread taskRunnerThread;
 
     public DistributedTaskManager() {
-        stateStorage = new TaskStateGraphStore();
         connection = new ZookeeperConnection();
+        stateStorage = new TaskStateZookeeperStore(connection);
 
         // run the TaskRunner in a thread
         taskRunner = new TaskRunner(stateStorage, connection);

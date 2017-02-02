@@ -25,7 +25,6 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
-import javafx.util.Pair;
 import mjson.Json;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -239,9 +238,7 @@ public class Loader {
      * @return IDs of tasks in this keyspace
      */
     private Collection<String> getTasks(){
-        return manager.storage().getTasks(null, LoaderTask.class.getName(), keyspace, 100000, 0).stream()
-                .map(Pair::getKey)
-                .collect(toSet());
+        return getTasks(null);
     }
 
     /**
@@ -251,7 +248,7 @@ public class Loader {
      */
     private Collection<String> getTasks(TaskStatus status){
         return manager.storage().getTasks(status, LoaderTask.class.getName(), keyspace, 100000, 0).stream()
-                .map(Pair::getKey)
+                .map(TaskState::getId)
                 .collect(toSet());
     }
 

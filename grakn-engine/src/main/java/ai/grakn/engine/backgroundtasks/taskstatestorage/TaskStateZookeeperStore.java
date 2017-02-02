@@ -22,16 +22,18 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
-import javafx.util.Pair;
+import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
 import static org.apache.commons.lang.SerializationUtils.serialize;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -52,7 +54,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     private final Logger LOG = LoggerFactory.getLogger(TaskStateZookeeperStore.class);
     private final CuratorFramework zookeeperConnection;
 
-    public TaskStateZookeeperStore(ZookeeperConnection connection) throws Exception {
+    public TaskStateZookeeperStore(ZookeeperConnection connection) {
         zookeeperConnection = connection.connection();
     }
 
@@ -64,9 +66,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
                     .forPath(format(ZK_TASK_PATH, task.getId()), serialize(task));
 
         } catch (Exception exception){
-            LOG.error("Could not write task state to Zookeeper");
-            //TODO do not throw runtime exception
-            throw new RuntimeException("Could not write state to storage " + getFullStackTrace(exception));
+            throw new EngineStorageException("Could not write state to storage " + getFullStackTrace(exception));
         }
 
         return task.getId();
@@ -93,13 +93,46 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
             return (TaskState) deserialize(b);
         }
         catch (Exception e) {
-            //TODO do not throw runtime exception
-            throw new RuntimeException("Could not get state from storage " + getFullStackTrace(e));
+            throw new EngineStorageException("Could not get state from storage " + getFullStackTrace(e));
         }
     }
 
+    /**
+     * This implementation will fetch all of the tasks from zookeeper and then
+     * filer them out.
+     *
+     * ZK stores tasks by ID, so at the moment there is no more efficient way to search
+     * within the storage itself.
+     */
     @Override
-    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
-        throw new UnsupportedOperationException("Task retrieval not supported");
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
+        try {
+
+            Stream<TaskState> stream = zookeeperConnection.getChildren()
+                    .forPath(TASKS_PATH_PREFIX).stream()
+                    .map(this::getState);
+
+            if (taskStatus != null) {
+                stream = stream.filter(t -> t.status().equals(taskStatus));
+            }
+
+            if (taskClassName != null) {
+                stream = stream.filter(t -> t.taskClassName().equals(taskClassName));
+            }
+
+            if (createdBy != null) {
+                stream = stream.filter(t -> t.creator().equals(createdBy));
+            }
+
+            stream = stream.skip(offset);
+
+            if(limit > 0){
+                stream = stream.limit(limit);
+            }
+
+            return stream.collect(toSet());
+        } catch (Exception e){
+            throw new EngineStorageException("Could not get state from storage " + getFullStackTrace(e));
+        }
     }
 }
