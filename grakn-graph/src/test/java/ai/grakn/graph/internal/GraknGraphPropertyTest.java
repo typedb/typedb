@@ -28,6 +28,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
@@ -348,8 +349,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isRuleType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putRuleType(typeName);
     }
