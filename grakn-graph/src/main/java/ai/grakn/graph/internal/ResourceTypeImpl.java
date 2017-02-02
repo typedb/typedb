@@ -130,6 +130,6 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public Boolean isUnique() {
-        return getProperty(Schema.ConceptProperty.IS_UNIQUE);
+        return getPropertyBoolean(Schema.ConceptProperty.IS_UNIQUE);
     }
 }
