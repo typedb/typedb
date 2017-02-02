@@ -20,9 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
 import spark.Spark;
@@ -30,7 +28,6 @@ import spark.Spark;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
@@ -86,7 +83,6 @@ public class GraphContext extends ExternalResource {
         ensureCassandraRunning();
 
         //TODO remove when Bug #12029 fixed
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, StandaloneTaskManager.class.getName());
         if (numberActiveContexts.getAndIncrement() == 0) {
             new CommitLogController();
             Spark.awaitInitialization();
