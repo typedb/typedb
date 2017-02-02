@@ -384,7 +384,6 @@ public class GraknGraphPropertyTest {
         assertEquals(graph.admin().getMetaRelationType(), relationType.superType());
     }
 
-    @Ignore // TODO: Fix this when called with "relation"
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeNameThenItReturnsThatType(GraknGraph graph) {
         assumeFalse(graph.isClosed());
