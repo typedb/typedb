@@ -24,6 +24,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
@@ -35,8 +36,8 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Lists;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -526,7 +527,6 @@ public class GraknGraphPropertyTest {
         assertEquals(type, graph.getType(typeName));
     }
 
-
     @Property
     public void whenCallingGetTypeWithANonExistingTypeNameThenItReturnsNull(GraknGraph graph, TypeName typeName) {
         assumeFalse(graph.isClosed());
@@ -548,6 +548,34 @@ public class GraknGraphPropertyTest {
         // We have to assign the result for the cast to happen
         //noinspection unused
         RoleType roleType = graph.getType(typeName);
+    }
+
+    @Property
+    public void whenCallingGetResourcesByValueAndTheGraphIsClosedThenThrow(
+            GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
+        assumeTrue(graph.isClosed());
+
+        exception.expect(GraphRuntimeException.class);
+        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
+
+        graph.getResourcesByValue(resourceValue);
+    }
+
+    @Ignore // TODO: Fix bug when calling `putResource` on meta resource type
+    @Property
+    public void whenCallingGetResourcesByValueAfterAddingAResourceThenTheResultIncludesTheResource(
+            GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
+        assumeFalse(graph.isClosed());
+        ResourceType resourceType = anySubTypeOf(graph.admin().getMetaResourceType());
+
+        Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(resourceValue);
+
+        Resource resource = resourceType.putResource(resourceValue);
+        expectedResources.add(resource);
+
+        Collection<Resource<Object>> resourcesAfter = graph.getResourcesByValue(resourceValue);
+
+        assertEquals(expectedResources, resourcesAfter);
     }
 
     @Property
