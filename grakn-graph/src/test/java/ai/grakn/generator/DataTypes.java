@@ -24,6 +24,9 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+/**
+ * Generator that produces random valid resource data types.
+ */
 public class DataTypes extends Generator<ResourceType.DataType> {
 
     public DataTypes() {

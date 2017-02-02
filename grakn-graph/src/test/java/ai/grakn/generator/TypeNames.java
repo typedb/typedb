@@ -24,6 +24,9 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
+/**
+ * Generator that generates totally random type names
+ */
 public class TypeNames extends Generator<TypeName> {
 
     public TypeNames() {
