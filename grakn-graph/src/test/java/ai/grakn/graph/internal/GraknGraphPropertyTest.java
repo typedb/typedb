@@ -98,7 +98,6 @@ public class GraknGraphPropertyTest {
         assertEquals(graph.admin().getMetaEntityType(), entityType.superType());
     }
 
-    @Ignore // TODO: Fix this when called with "entity"
     @Property
     public void whenCallingPutEntityTypeWithAnExistingEntityTypeNameThenItReturnsThatType(GraknGraph graph) {
         assumeFalse(graph.isClosed());
