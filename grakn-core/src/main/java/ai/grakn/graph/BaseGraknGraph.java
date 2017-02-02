@@ -210,17 +210,21 @@ public interface BaseGraknGraph extends AutoCloseable {
      * Get the {@link Concept} with identifier provided, if it exists.
      *
      * @param id A unique identifier for the {@link Concept} in the graph.
-     * @return The Concept with the provided id or null if no such {@link Concept} exists.
+     * @return The {@link Concept} with the provided id or null if no such {@link Concept} exists.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ClassCastException if the concept is not an instance of {@link T}
      */
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
-     * Get the Type with the name provided, if it exists.
+     * Get the {@link Type} with the name provided, if it exists.
      *
-     * @param name A unique name which identifies the Type in the graph.
-     * @return The Type with the provided name or null if no such Type exists.
+     * @param name A unique name which identifies the {@link Type} in the graph.
+     * @return The {@link Type} with the provided name or null if no such {@link Type} exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
+     * @throws ClassCastException if the type is not an instance of {@link T}
      */
     <T extends Type> T getType(TypeName name);
 
