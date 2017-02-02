@@ -114,8 +114,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isEntityType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putEntityType(typeName);
     }
