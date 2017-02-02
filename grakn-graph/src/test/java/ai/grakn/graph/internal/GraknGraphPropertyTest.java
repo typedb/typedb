@@ -30,7 +30,9 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Lists;
@@ -97,7 +99,6 @@ public class GraknGraphPropertyTest {
         assertEquals(graph.admin().getMetaEntityType(), entityType.superType());
     }
 
-    @Ignore // TODO: Fix this when called with "entity"
     @Property
     public void whenCallingPutEntityTypeWithAnExistingEntityTypeNameThenItReturnsThatType(GraknGraph graph) {
         assumeFalse(graph.isClosed());
@@ -113,8 +114,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isEntityType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putEntityType(typeName);
     }
@@ -194,8 +195,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isResourceType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putResourceType(typeName, dataType);
     }
@@ -293,8 +294,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isResourceType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putResourceTypeUnique(typeName, dataType);
     }
@@ -307,8 +308,8 @@ public class GraknGraphPropertyTest {
         TypeName typeName = resourceType.getName();
         assumeThat(dataType, not(is(resourceType.getDataType())));
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(InvalidConceptValueException.class);
+        exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType().getName(), resourceType, dataType.getName(), Schema.ConceptProperty.DATA_TYPE.name()));
 
         graph.putResourceTypeUnique(typeName, dataType);
     }
@@ -342,7 +343,6 @@ public class GraknGraphPropertyTest {
         assertEquals(graph.admin().getMetaRuleType(), ruleType.superType());
     }
 
-    @Ignore // TODO: Fix this when called with "rule"
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeNameThenItReturnsThatType(GraknGraph graph) {
         assumeFalse(graph.isClosed());
@@ -358,8 +358,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isRuleType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putRuleType(typeName);
     }
@@ -393,7 +393,6 @@ public class GraknGraphPropertyTest {
         assertEquals(graph.admin().getMetaRelationType(), relationType.superType());
     }
 
-    @Ignore // TODO: Fix this when called with "relation"
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeNameThenItReturnsThatType(GraknGraph graph) {
         assumeFalse(graph.isClosed());
@@ -409,8 +408,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isRelationType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putRelationType(typeName);
     }
@@ -460,8 +459,8 @@ public class GraknGraphPropertyTest {
         assumeFalse(graph.isClosed());
         TypeName typeName = anyTypeNameExcept(graph, Type::isRoleType);
 
-        // TODO: Refine the kind of error expected
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptNotUniqueException.class);
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putRoleType(typeName);
     }
@@ -563,13 +562,14 @@ public class GraknGraphPropertyTest {
         entity.delete();
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenSetRegexOnMetaResourceTypeThenThrow(GraknGraph graph, String regex) {
+        assumeFalse(graph.isClosed());
+
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        // TODO: Test for a better error message
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(UnsupportedOperationException.class);
+        exception.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(resource.getName()));
 
         resource.setRegex(regex);
     }
@@ -581,14 +581,14 @@ public class GraknGraphPropertyTest {
         assertFalse(resource.isUnique());
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenCreateInstanceOfMetaResourceTypeThenThrow(
             GraknGraph graph, @From(ResourceValues.class) Object value) {
+        assumeFalse(graph.isClosed());
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        // TODO: Test for a better error message
-        exception.expect(GraphRuntimeException.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getName()));
 
         resource.putResource(value);
     }
@@ -626,12 +626,12 @@ public class GraknGraphPropertyTest {
 
     private static ResourceType<?> nonUniqueResourceTypeFrom(GraknGraph graph) {
         return ((Collection<ResourceType>) graph.admin().getMetaResourceType().subTypes()).stream()
-                .filter(resourceType -> !nullAsFalse(resourceType.isUnique())).findAny().get();
+                .filter(resourceType -> !resourceType.isUnique()).findAny().get();
     }
 
     private static Optional<ResourceType> uniqueResourceTypeFrom(GraknGraph graph) {
         return ((Collection<ResourceType>) graph.admin().getMetaResourceType().subTypes()).stream()
-                .filter(resourceType -> nullAsFalse(resourceType.isUnique())).findAny();
+                .filter(resourceType -> resourceType.isUnique()).findAny();
     }
 
     private static TypeName anyTypeNameExcept(GraknGraph graph, Predicate<Type> predicate) {
@@ -651,10 +651,5 @@ public class GraknGraphPropertyTest {
         assumeTrue(optional.isPresent());
         assert optional.isPresent();
         return optional.get();
-    }
-
-    // TODO: Remove hacky fix to handle null isUnique property
-    private static boolean nullAsFalse(Boolean bool) {
-        return bool == null ? false : bool ;
     }
 }

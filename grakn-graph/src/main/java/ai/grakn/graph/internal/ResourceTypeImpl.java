@@ -65,8 +65,8 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public ResourceType<D> setRegex(String regex) {
-        if(!getDataType().equals(DataType.STRING)){
-            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(toString()));
+        if(getDataType() == null || !getDataType().equals(DataType.STRING)){
+            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getName()));
         }
 
         if(regex != null) {
@@ -87,6 +87,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
+        checkTypeMutation();
         Resource<D> resource = getResource(value);
         if(resource == null){
             resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->
