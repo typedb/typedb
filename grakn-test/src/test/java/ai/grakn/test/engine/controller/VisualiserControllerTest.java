@@ -30,7 +30,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
@@ -96,6 +99,25 @@ public class VisualiserControllerTest {
 
         assertEquals(firstPerson.at("_id"),samePerson.at("_id"));
     }
+
+    //Test that we don't get an error 500 when asking for relationships without specifying their types
+    @Test
+    public void testGeneratedRelationshipsWithoutType(){
+
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .queryParam(QUERY_FIELD, "match (protagonist: $x, happening: $y); limit 10;")
+                .accept(HAL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+        System.out.println(response.getBody().asString());
+
+        Json resultArray = Json.read(response.getBody().asString());
+        //Asking for 10 relations that have 2 role-players each will give us an array of 20 nodes to show in the visualiser.
+        assertEquals(20,resultArray.asJsonList().size());
+
+    }
+
 
     private void checkHALStructureOfPerson(Json person){
         assertEquals(person.at("_type").asString(), "person");

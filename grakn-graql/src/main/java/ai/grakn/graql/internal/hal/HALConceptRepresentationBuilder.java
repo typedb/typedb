@@ -48,8 +48,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
-
 /**
  * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
  *
