@@ -47,12 +47,16 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Predicate;
 
+import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
@@ -463,12 +467,45 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
+    public void whenCallingGetConceptAndTheGraphIsClosedThenThrow(GraknGraph graph, ConceptId id) {
+        assumeTrue(graph.isClosed());
+
+        exception.expect(GraphRuntimeException.class);
+        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
+
+        graph.getConcept(id);
+    }
+
+    @Property
     public void whenCallingGetConceptWithAnExistingConceptIdThenItReturnsThatConcept(GraknGraph graph) {
         assumeFalse(graph.isClosed());
         Concept concept = anyConceptFrom(graph);
         ConceptId id = concept.getId();
 
         assertEquals(concept, graph.getConcept(id));
+    }
+
+    @Property
+    public void whenCallingGetConceptWithANonExistingConceptIdThenItReturnsNull(GraknGraph graph, ConceptId id) {
+        assumeFalse(graph.isClosed());
+        Set<ConceptId> allIds = allConceptsFrom(graph).stream().map(Concept::getId).collect(toSet());
+        assumeThat(allIds, not(hasItem(id)));
+
+        assertNull(graph.getConcept(id));
+    }
+
+    @Property
+    public void whenCallingGetConceptWithAnIncorrectGenericThenItThrows(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
+        Concept concept = anyConceptFrom(graph);
+        assumeFalse(concept.isRoleType());
+        ConceptId id = concept.getId();
+
+        exception.expect(ClassCastException.class);
+
+        // We have to assign the result for the cast to happen
+        //noinspection unused
+        RoleType roleType = graph.getConcept(id);
     }
 
     @Ignore // TODO: Fix this
@@ -526,10 +563,15 @@ public class GraknGraphPropertyTest {
     private static boolean typeNameExists(GraknGraph graph, TypeName typeName) {
         return graph.getType(typeName) != null;
     }
-
-    private static Concept anyConceptFrom(GraknGraph graph) {
+    
+    private static List<Concept> allConceptsFrom(GraknGraph graph) {
         List<Concept> concepts = Lists.newArrayList(graph.admin().getMetaConcept().subTypes());
         concepts.addAll(graph.admin().getMetaConcept().instances());
+        return concepts;
+    }
+
+    private static Concept anyConceptFrom(GraknGraph graph) {
+        List<Concept> concepts = allConceptsFrom(graph);
         int index = new Random().nextInt(concepts.size());
         return concepts.get(index);
     }
