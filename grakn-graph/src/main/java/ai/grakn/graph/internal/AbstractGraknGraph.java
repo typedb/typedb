@@ -245,11 +245,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value) {
+        return getConcept(key, value, isBatchLoadingEnabled());
+    }
+    private  <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value, Boolean byPassDuplicates) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
-            if(!isBatchLoadingEnabled() && vertices.hasNext()) {
+            if(!byPassDuplicates && vertices.hasNext()) {
                 throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
             return elementFactory.buildConcept(vertex);
@@ -801,7 +804,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Set<CastingImpl> castings = castingVertexIds.stream().
                 map(id -> this.<CastingImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
         if(castings.size() > 1){
-            CastingImpl mainCasting = castings.iterator().next();
+            //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
+            CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX,castings.iterator().next().getIndex(), true);
             castings.remove(mainCasting);
 
             //Fix the duplicates
@@ -900,8 +904,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 map(id -> this.<ResourceImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
 
         if(duplicates.size() > 1){
+            //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
+            ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, duplicates.iterator().next().getIndex(), true);
+            duplicates.remove(mainResource);
             Iterator<ResourceImpl> it = duplicates.iterator();
-            ResourceImpl<?> mainResource = it.next();
 
             while(it.hasNext()){
                 ResourceImpl<?> otherResource = it.next();
