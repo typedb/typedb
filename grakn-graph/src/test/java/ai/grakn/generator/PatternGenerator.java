@@ -19,19 +19,19 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Disjunction;
 
-/**
- * Generator that generates totally random type names
- */
-public class TypeNames extends AbstractGenerator<TypeName> {
+public class PatternGenerator extends AbstractGenerator<Pattern> {
 
-    public TypeNames() {
-        super(TypeName.class);
+    public PatternGenerator() {
+        super(Pattern.class);
     }
 
     @Override
-    public TypeName generate() {
-        return TypeName.of(gen(String.class));
+    protected Pattern generate() {
+        return gen().oneOf(Disjunction.class, Conjunction.class, Var.class).generate(random, status);
     }
 }

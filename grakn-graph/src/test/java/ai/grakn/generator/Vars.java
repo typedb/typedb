@@ -19,19 +19,18 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
 
-/**
- * Generator that generates totally random type names
- */
-public class TypeNames extends AbstractGenerator<TypeName> {
+public class Vars extends AbstractGenerator<Var> {
 
-    public TypeNames() {
-        super(TypeName.class);
+    public Vars() {
+        super(Var.class);
     }
 
     @Override
-    public TypeName generate() {
-        return TypeName.of(gen(String.class));
+    public Var generate() {
+        // TODO: Add random properties to variable patterns
+        return Graql.var();
     }
 }
