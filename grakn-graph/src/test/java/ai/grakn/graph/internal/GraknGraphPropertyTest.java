@@ -501,6 +501,49 @@ public class GraknGraphPropertyTest {
         RoleType roleType = graph.getConcept(id);
     }
 
+    @Property
+    public void whenCallingGetTypeAndTheGraphIsClosedThenThrow(GraknGraph graph, TypeName typeName) {
+        assumeTrue(graph.isClosed());
+
+        exception.expect(GraphRuntimeException.class);
+        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
+
+        graph.getType(typeName);
+    }
+
+    @Property
+    public void whenCallingGetTypeWithAnExistingTypeNameThenItReturnsThatType(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
+        Type type = anyTypeFrom(graph);
+        TypeName typeName = type.getName();
+
+        assertEquals(type, graph.getType(typeName));
+    }
+
+
+    @Property
+    public void whenCallingGetTypeWithANonExistingTypeNameThenItReturnsNull(GraknGraph graph, TypeName typeName) {
+        assumeFalse(graph.isClosed());
+        Set<TypeName> allTypes = allTypesFrom(graph).stream().map(Type::getName).collect(toSet());
+        assumeThat(allTypes, not(hasItem(typeName)));
+
+        assertNull(graph.getType(typeName));
+    }
+
+    @Property
+    public void whenCallingGetTypeWithAnIncorrectGenericThenItThrows(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
+        Type type = anyTypeFrom(graph);
+        assumeFalse(type.isRoleType());
+        TypeName typeName = type.getName();
+
+        exception.expect(ClassCastException.class);
+
+        // We have to assign the result for the cast to happen
+        //noinspection unused
+        RoleType roleType = graph.getType(typeName);
+    }
+
     @Ignore // TODO: Fix this
     @Property
     public void whenDeletingMetaEntityTypeThenThrow(GraknGraph graph) {
@@ -556,9 +599,13 @@ public class GraknGraphPropertyTest {
     private static boolean typeNameExists(GraknGraph graph, TypeName typeName) {
         return graph.getType(typeName) != null;
     }
+
+    private static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
+        return graph.admin().getMetaConcept().subTypes();
+    }
     
     private static List<Concept> allConceptsFrom(GraknGraph graph) {
-        List<Concept> concepts = Lists.newArrayList(graph.admin().getMetaConcept().subTypes());
+        List<Concept> concepts = Lists.newArrayList(allTypesFrom(graph));
         concepts.addAll(graph.admin().getMetaConcept().instances());
         return concepts;
     }
@@ -586,6 +633,10 @@ public class GraknGraphPropertyTest {
 
     private static <T extends Type> T anySubTypeOf(T type) {
         return (T) type.subTypes().stream().findAny().get();
+    }
+
+    private static Type anyTypeFrom(GraknGraph graph) {
+        return anySubTypeOf(graph.admin().getMetaConcept());
     }
 
     private static <T> T assumePresent(Optional<T> optional) {
