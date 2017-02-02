@@ -65,8 +65,8 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public ResourceType<D> setRegex(String regex) {
-        if(!getDataType().equals(DataType.STRING)){
-            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(toString()));
+        if(getDataType() == null || !getDataType().equals(DataType.STRING)){
+            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getName()));
         }
 
         if(regex != null) {
