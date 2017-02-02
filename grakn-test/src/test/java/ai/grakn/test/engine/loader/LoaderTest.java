@@ -184,7 +184,8 @@ public class LoaderTest {
     }
 
     private TaskManager getFakeTaskManager(Answer answer) {
-        String fakeTaskId = "task001";
+        TaskState fakeTask = new TaskState(LoaderTask.class.getName());
+        String fakeTaskId = fakeTask.getId();
         StandaloneTaskManager fakeTaskManager = mock(StandaloneTaskManager.class);
         TaskStateGraphStore fakeStorage = mock(TaskStateGraphStore.class);
         TaskState fakeTaskState = mock(TaskState.class);
@@ -192,7 +193,7 @@ public class LoaderTest {
         when(fakeStorage.getState(fakeTaskId)).thenReturn(fakeTaskState);
         when(fakeStorage.getState(fakeTaskId).status()).thenAnswer(answer);
         Set<TaskState> fakeTasks = new HashSet<>();
-        fakeTasks.add(null);
+        fakeTasks.add(fakeTask);
         when(fakeStorage.getTasks(null, LoaderTask.class.getName(), graph.getKeyspace(), 100000, 0)).thenReturn(fakeTasks);
         return fakeTaskManager;
     }
