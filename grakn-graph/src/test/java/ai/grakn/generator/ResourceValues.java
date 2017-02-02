@@ -21,6 +21,9 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.ResourceType;
 
+/**
+ * Generator that generates random valid resource values.
+ */
 public class ResourceValues extends AbstractGenerator<Object> {
 
     public ResourceValues() {
@@ -29,6 +32,17 @@ public class ResourceValues extends AbstractGenerator<Object> {
 
     @Override
     public Object generate() {
-        return gen(gen(ResourceType.DataType.class).getClass());
+        switch (random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet())) {
+            case "String":
+                return gen(String.class);
+            case "Boolean":
+                return gen(Boolean.class);
+            case "Long":
+                return gen(Long.class);
+            case "Double":
+                return gen(Double.class);
+            default:
+                throw new RuntimeException("unreachable");
+        }
     }
 }
