@@ -61,6 +61,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
@@ -629,6 +630,21 @@ public class GraknGraphPropertyTest {
         exception.expect(GraphRuntimeException.class);
 
         resource.superType();
+    }
+
+    @Ignore // TODO: Fix this and write test properly!
+    @Property
+    public void whenCallingHasResourceWithMetaResourceTypeThenDontThrowClassCastException(GraknGraph graph) {
+        assumeFalse(graph.isClosed());
+
+        ResourceType resource = graph.admin().getMetaResourceType();
+        Type type = anyTypeFrom(graph);
+
+        try {
+            type.hasResource(resource);
+        } catch (ClassCastException e) {
+            fail();
+        }
     }
 
     private static boolean typeNameExists(GraknGraph graph, TypeName typeName) {
