@@ -19,7 +19,6 @@
 package ai.grakn.migration.csv;
 
 import ai.grakn.migration.base.io.MigrationCLI;
-import ai.grakn.migration.base.io.MigrationLoader;
 
 import java.io.File;
 import java.util.Optional;
@@ -72,7 +71,7 @@ public class Main {
             if (options.isNo()) {
                 writeToSout(csvMigrator.migrate());
             } else {
-                MigrationLoader.load(options.getUri(), options.getKeyspace(), options.getBatch(), csvMigrator);
+                csvMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch());
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable) {

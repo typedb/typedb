@@ -18,12 +18,14 @@
 
 package ai.grakn.migration.base;
 
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.loader.LoaderClient;
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.graql.macro.Macro;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +34,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -45,8 +49,7 @@ import java.util.stream.StreamSupport;
  */
 public abstract class AbstractMigrator implements Migrator {
 
-    private static final ConfigProperties properties = ConfigProperties.getInstance();
-
+    private final static AtomicInteger numberQueriedSubmitted = new AtomicInteger(0);
     private final static Logger LOG = LoggerFactory.getLogger(AbstractMigrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
@@ -60,6 +63,35 @@ public abstract class AbstractMigrator implements Migrator {
     }
 
     /**
+     * Load using the default batch size
+     *
+     * @param uri Uri where one instance of Grakn Engine is running
+     * @param keyspace The name of the keyspace where the data should be persisted
+     */
+    public void load(String uri, String keyspace) {
+        load(uri, keyspace, AbstractMigrator.BATCH_SIZE);
+    }
+
+    /**
+     * Migrate data constrained by this migrator using a loader configured
+     * by the provided parameters.
+     *
+     * @param uri Uri where one instance of Grakn Engine is running
+     * @param keyspace The name of the keyspace where the data should be persisted
+     * @param batchSize The number of queries to execute in one transaction
+     */
+    public void load(String uri, String keyspace, int batchSize){
+        LoaderClient loader = new LoaderClient(keyspace, uri, recordMigrationStates());
+        loader.setBatchSize(batchSize);
+
+        migrate().forEach(q -> {
+            numberQueriedSubmitted.incrementAndGet();
+            loader.add(q);
+        });
+        loader.waitToFinish();
+    }
+
+    /**
      * @param template a string representing a templated graql query
      * @param data data used in the template
      * @return an insert query
@@ -69,7 +101,7 @@ public abstract class AbstractMigrator implements Migrator {
             return Optional.of(queryBuilder.parseTemplate(template, data));
         } catch (GraqlTemplateParsingException e){
             LOG.warn("Query was not sent to loader- " + e.getMessage());
-            LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces: " + properties.getLogFilePath());
+            LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
         }
 
         return Optional.empty();
@@ -94,5 +126,23 @@ public abstract class AbstractMigrator implements Migrator {
      */
     protected boolean validValue(Object value){
         return value != null;
+    }
+
+    /**
+     * Consumer function which will operate on the results of the loader
+     * and print the current status of the migrator.
+     *
+     * @return function that operates on completion of a task
+     */
+    private Consumer<Json> recordMigrationStates(){
+        return (Json json) -> {
+            TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
+            Json configuration = Json.read(json.at("configuration").asString());
+            int batchNumber = configuration.at("batchNumber").asInteger();
+
+            LOG.info("Status of finished batch: " + status);
+            LOG.info("Batches finished: " + batchNumber);
+            LOG.info("Number Queries finished: " + numberQueriedSubmitted.get());
+        };
     }
 }

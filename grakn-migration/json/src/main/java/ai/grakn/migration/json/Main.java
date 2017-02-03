@@ -18,7 +18,6 @@
 
 package ai.grakn.migration.json;
 
-import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.migration.base.io.MigrationCLI;
 
 import java.io.File;
@@ -67,7 +66,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(jsonMigrator.migrate());
             } else {
-                MigrationLoader.load(options.getUri(), options.getKeyspace(), options.getBatch(), jsonMigrator);
+                jsonMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch());
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable){

@@ -30,7 +30,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
-import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -62,7 +61,7 @@ public class MigratorTestUtils {
     }
 
     public static void migrate(GraknGraph graph, Migrator migrator){
-        MigrationLoader.load(Grakn.DEFAULT_URI, graph.getKeyspace(), migrator);
+        migrator.load(Grakn.DEFAULT_URI, graph.getKeyspace());
     }
 
     public static void load(GraknGraph graph, File ontology) {

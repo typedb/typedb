@@ -19,7 +19,6 @@
 package ai.grakn.migration.sql;
 
 import ai.grakn.migration.base.io.MigrationCLI;
-import ai.grakn.migration.base.io.MigrationLoader;
 
 import java.io.File;
 import java.sql.Connection;
@@ -65,7 +64,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(sqlMigrator.migrate());
             } else {
-                MigrationLoader.load(options.getUri(), options.getKeyspace(), options.getBatch(), sqlMigrator);
+                sqlMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch());
                 printWholeCompletionMessage(options);
             }
 

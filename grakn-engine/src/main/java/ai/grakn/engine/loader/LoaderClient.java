@@ -35,6 +35,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
@@ -61,19 +63,27 @@ public class LoaderClient {
     private final String POST = "http://%s" + TASKS_SCHEDULE_URI;
     private final String GET = "http://%s" + TASKS_URI + "/%s";
 
+    private final Consumer<Json> onCompletionOfTask;
     private final Collection<CompletableFuture> futures;
     private final Collection<InsertQuery> queries;
     private final String keyspace;
     private final String uri;
 
+    private AtomicInteger batchNumber;
     private Semaphore blocker;
     private int batchSize;
 
     public LoaderClient(String keyspace, String uri) {
+        this(keyspace, uri, (Json t) -> {});
+    }
+
+    public LoaderClient(String keyspace, String uri, Consumer<Json> onCompletionOfTask){
         this.uri = uri;
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
         this.futures = new HashSet<>();
+        this.onCompletionOfTask = onCompletionOfTask;
+        this.batchNumber = new AtomicInteger(0);
 
         setBatchSize(25);
         setQueueSize(25);
@@ -148,7 +158,7 @@ public class LoaderClient {
             throw new RuntimeException(e);
         }
 
-        CompletableFuture<TaskStatus> status = executePost(getConfiguration(queries));
+        CompletableFuture<Json> status = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
 
         if(status == null){
             LOG.error("Could not send to host: " + queries);
@@ -159,9 +169,10 @@ public class LoaderClient {
         futures.add(status);
 
         // When this task completes release the semaphore
-        status.thenAccept(i -> {
+        status.thenAccept(finalTaskStatus -> {
             blocker.release();
             futures.remove(status);
+            onCompletionOfTask.accept(finalTaskStatus);
         });
     }
 
@@ -171,7 +182,7 @@ public class LoaderClient {
      *
      * @return A Completable future that terminates when the task is finished
      */
-    private CompletableFuture<TaskStatus> executePost(String body){
+    private CompletableFuture<Json> executePost(String body){
         HttpURLConnection connection = null;
         try {
             URL url = new URL(String.format(POST, uri) + "?" + getPostParams());
@@ -208,9 +219,9 @@ public class LoaderClient {
     /**
      * Fetch the status of a single task from the Tasks Controller
      * @param id ID of the task to be fetched
-     * @return Status of the given task
+     * @return Json object containing status of the task
      */
-    private TaskStatus getStatus(String id){
+    private Json getStatus(String id){
         HttpURLConnection connection = null;
         try {
             URL url = new URL(String.format(GET, uri, id));
@@ -222,8 +233,7 @@ public class LoaderClient {
             connection.setRequestMethod(REST.HttpConn.GET_METHOD);
 
             // get response
-            Json response = Json.read(IOUtils.toString(connection.getInputStream()));
-            return TaskStatus.valueOf(response.at("status").asString());
+            return Json.read(IOUtils.toString(connection.getInputStream()));
         }
         catch (IOException e){
             LOG.error(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(getResponseMessage(connection)));
@@ -243,12 +253,13 @@ public class LoaderClient {
      * @param id ID of the task to wait on completion
      * @return Completable future that will await completion of the given task
      */
-    private CompletableFuture<TaskStatus> await(String id){
+    private CompletableFuture<Json> await(String id){
         return CompletableFuture.supplyAsync(() -> {
             while (true) {
-                TaskStatus status = getStatus(id);
+                Json taskState = getStatus(id);
+                TaskStatus status = TaskStatus.valueOf(taskState.at("status").asString());
                 if (status == COMPLETED || status == FAILED || status == STOPPED) {
-                    return status;
+                    return taskState;
                 }
 
                 try {
@@ -284,11 +295,13 @@ public class LoaderClient {
     /**
      * Transform queries into Json configuration needed by the Loader task
      * @param queries queries to include in configuration
+     * @param batchNumber number of the current batch being sent
      * @return configuration for the loader task
      */
-    private String getConfiguration(Collection<InsertQuery> queries){
+    private String getConfiguration(Collection<InsertQuery> queries, int batchNumber){
         return Json.object()
                 .set(KEYSPACE_PARAM, keyspace)
+                .set("batchNumber", batchNumber)
                 .set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
                 .toString();
     }
