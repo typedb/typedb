@@ -256,7 +256,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             cache.record(ruleHead, answers);
             answers = answers.filterByEntityTypes(atom.getMappedTypeConstraints());
         }
-        else answers = answers.filterKnown(cache.getAnswers(this));
 
         QueryAnswers filteredAnswers = this.propagateIdPredicates(answers)
                 .filterVars(this.getVarNames())
