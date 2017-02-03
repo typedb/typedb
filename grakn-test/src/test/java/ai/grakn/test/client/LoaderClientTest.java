@@ -91,27 +91,6 @@ public class LoaderClientTest {
         loadAndTime();
     }
 
-    @Test
-    public void whenLoadingNormalDataThenDontTimeout(){
-        // test the the total duration is longer than the timeout
-        // however, the individual tasks will be completing faster than the timeout
-        int timeout = 100;
-
-        LoaderClient loaderWithFakeTaskManager = getFakeNormalLoader();
-
-        long startTime = System.currentTimeMillis();
-        loaderWithFakeTaskManager.waitToFinish();
-        long endTime = System.currentTimeMillis();
-        assertThat(endTime-startTime, greaterThan(Integer.toUnsignedLong(timeout)));
-    }
-
-    @Test
-    public void whenLoadingDataExceedsTimeoutThenTimeout(){
-        exception.expectMessage(ErrorMessage.LOADER_WAIT_TIMEOUT.getMessage());
-        LoaderClient loaderWithFakeTaskManager = getFakeTimeoutLoader();
-        loaderWithFakeTaskManager.waitToFinish();
-    }
-
     public static void loadOntology(String keyspace){
         GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
@@ -158,29 +137,5 @@ public class LoaderClientTest {
         ids.stream().map(graph::getResourcesByValue).forEach(Assert::assertNotNull);
 
         return duration;
-    }
-
-    private LoaderClient getFakeNormalLoader() {
-        return new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
-    }
-
-    private LoaderClient getFakeTimeoutLoader() {
-        TaskManager fakeClusterManager = getFakeTaskManager(invocation -> TaskStatus.CREATED);
-        return new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
-    }
-
-    private TaskManager getFakeTaskManager(Answer answer) {
-        TaskState fakeTask = new TaskState(LoaderTask.class.getName());
-        String fakeTaskId = fakeTask.getId();
-        StandaloneTaskManager fakeTaskManager = mock(StandaloneTaskManager.class);
-        TaskStateGraphStore fakeStorage = mock(TaskStateGraphStore.class);
-        TaskState fakeTaskState = mock(TaskState.class);
-        when(fakeTaskManager.storage()).thenReturn(fakeStorage);
-        when(fakeStorage.getState(fakeTaskId)).thenReturn(fakeTaskState);
-        when(fakeStorage.getState(fakeTaskId).status()).thenAnswer(answer);
-        Set<TaskState> fakeTasks = new HashSet<>();
-        fakeTasks.add(fakeTask);
-        when(fakeStorage.getTasks(null, LoaderTask.class.getName(), graph.getKeyspace(), 100000, 0)).thenReturn(fakeTasks);
-        return fakeTaskManager;
     }
 }

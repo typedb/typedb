@@ -139,6 +139,8 @@ public class LoaderClient {
 
     /**
      * Wait for all of the submitted tasks to have been completed
+     * TODO If the submitted tasks are never marked as COMPLETED/STOPPED/FAILED this
+     * TODO wait will hang forever. We may want to consider adding a timeout
      */
     public void waitToFinish(){
         flush();

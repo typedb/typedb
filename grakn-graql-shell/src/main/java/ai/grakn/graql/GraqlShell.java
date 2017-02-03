@@ -18,15 +18,14 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.engine.client.LoaderClient;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
 import ai.grakn.util.GraknVersion;
-import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.io.CharStreams;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
@@ -40,16 +39,12 @@ import org.apache.commons.cli.ParseException;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -60,7 +55,6 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
@@ -85,10 +79,9 @@ import static ai.grakn.util.REST.RemoteShell.QUERY;
 import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static ai.grakn.util.REST.RemoteShell.USERNAME;
-import static ai.grakn.util.REST.WebPath.IMPORT_DATA_URI;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -253,38 +246,20 @@ public class GraqlShell {
 
     private static String loadQuery(String filePath) throws IOException {
             List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
-            return lines.stream().collect(Collectors.joining("\n"));
+            return lines.stream().collect(joining("\n"));
     }
 
     private static void sendBatchRequest(String uriString, String graqlPath, String keyspace) throws IOException {
-        byte[] out = ("{\"path\": \"" + escapeJavaScript(graqlPath) + "\"}").getBytes(StandardCharsets.UTF_8);
+        LoaderClient loaderClient = new LoaderClient(keyspace, uriString);
 
-        URL url = new URL("http://" + uriString + IMPORT_DATA_URI + "?keyspace=" + keyspace);
-        URLConnection con = url.openConnection();
-        HttpURLConnection http = (HttpURLConnection) con;
-        http.setRequestMethod("POST");
-        http.setDoOutput(true);
-        http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-        http.setFixedLengthStreamingMode(out.length);
+        List<String> queries = loadQueries(new String[]{graqlPath});
 
-        http.connect();
+        queries.stream()
+                .map(s -> Graql.withoutGraph().parse(s))
+                .map(p -> (InsertQuery) p)
+                .forEach(loaderClient::add);
 
-        try (OutputStream os = http.getOutputStream()) {
-            os.write(out);
-        }
-
-        int statusCode = http.getResponseCode();
-        if (statusCode >= 200 && statusCode < 400) {
-            try (InputStream is = http.getInputStream()) {
-                String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
-                System.out.println(response);
-            }
-        } else {
-            try (InputStream is = http.getErrorStream()) {
-                String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
-                System.out.println(response);
-            }
-        }
+        loaderClient.waitToFinish();
     }
 
     /**
