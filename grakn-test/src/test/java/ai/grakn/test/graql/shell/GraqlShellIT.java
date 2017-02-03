@@ -174,7 +174,7 @@ public class GraqlShellIT {
     @Test
     public void testInsertQuery() throws Exception {
         String result = testShell(
-                "match $x isa entity; ask;\ninsert $x isa entity;\nmatch $x isa entity; ask;\n"
+                "insert entity2 sub entity; match $x isa entity2; ask;\ninsert $x isa entity2;\nmatch $x isa entity2; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
