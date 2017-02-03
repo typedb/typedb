@@ -251,10 +251,10 @@ public class GraqlShell {
     private static void sendBatchRequest(String uriString, String graqlPath, String keyspace) throws IOException {
         LoaderClient loaderClient = new LoaderClient(keyspace, uriString);
 
-        List<String> queries = loadQueries(new String[]{graqlPath});
+        String queries = loadQuery(graqlPath);
 
-        queries.stream()
-                .map(s -> Graql.withoutGraph().parse(s))
+        Graql.withoutGraph()
+                .parseList(queries).stream()
                 .map(p -> (InsertQuery) p)
                 .forEach(loaderClient::add);
 
