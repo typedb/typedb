@@ -23,38 +23,26 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
-import ai.grakn.engine.client.LoaderClient;
-import ai.grakn.engine.loader.LoaderTask;
+import ai.grakn.client.LoaderClient;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
-import ai.grakn.util.ErrorMessage;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class LoaderClientTest {
 

@@ -18,7 +18,7 @@
 
 package ai.grakn.graql;
 
-import ai.grakn.engine.client.LoaderClient;
+import ai.grakn.client.LoaderClient;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
@@ -39,7 +39,6 @@ import org.apache.commons.cli.ParseException;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;

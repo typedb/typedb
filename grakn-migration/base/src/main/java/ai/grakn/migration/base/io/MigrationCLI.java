@@ -20,7 +20,7 @@ package ai.grakn.migration.base.io;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.client.Client;
+import ai.grakn.client.Client;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;

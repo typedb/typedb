@@ -19,7 +19,7 @@
 package ai.grakn.test.client;
 
 import ai.grakn.Grakn;
-import ai.grakn.engine.client.Client;
+import ai.grakn.client.Client;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.EngineGraknGraph;
