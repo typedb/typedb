@@ -622,7 +622,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof ConceptImpl && ((ConceptImpl) object).getVertex().equals(vertex);
+        //Id comparison is equivalent to  the vertex comparison because vertex comparison just checks the ids anyway
+        return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
     @Override
