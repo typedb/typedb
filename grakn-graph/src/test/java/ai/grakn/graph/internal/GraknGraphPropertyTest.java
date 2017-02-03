@@ -138,6 +138,8 @@ public class GraknGraphPropertyTest {
             GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(graph.isClosed());
 
+        assumeFalse(typeNameExists(graph, typeName));
+
         ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
 
         assertEquals(typeName, resourceType.getName());
