@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -59,11 +60,12 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v){
+    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<Vertex, ConceptImpl> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
-        if(conceptCache.containsKey(conceptId))){
-
+        if(!conceptCache.containsKey(conceptId)){
+            ConceptImpl newConcept = conceptBuilder.apply(v);
+            conceptCache.put(newConcept.getId(), newConcept);
         }
 
         //noinspection unchecked
