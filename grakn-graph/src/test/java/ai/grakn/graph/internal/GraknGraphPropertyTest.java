@@ -19,10 +19,13 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -113,6 +116,8 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutEntityType_CreateATypeWithTheGivenName(@Open GraknGraph graph, TypeName typeName) {
+        assumeFalse(typeNameExists(graph, typeName));
+
         EntityType entityType = graph.putEntityType(typeName);
 
         assertEquals(typeName, entityType.getName());
@@ -467,20 +472,111 @@ public class GraknGraphPropertyTest {
         RoleType roleType = graph.getType(typeName);
     }
 
-    @Ignore // TODO: Fix bug when calling `putResource` on meta resource type
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
         ResourceType resourceType = anySubTypeOf(graph.admin().getMetaResourceType());
+        assumeThat(resourceType, is(not(graph.admin().getMetaResourceType())));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(resourceValue);
-
         Resource resource = resourceType.putResource(resourceValue);
-        expectedResources.add(resource);
-
         Collection<Resource<Object>> resourcesAfter = graph.getResourcesByValue(resourceValue);
 
+        expectedResources.add(resource);
+
         assertEquals(expectedResources, resourcesAfter);
+    }
+
+    @Property
+    public void whenCallingGetResourcesByValueAfterDeletingAResource_TheResultDoesNotIncludesTheResource(
+            @Open GraknGraph graph) {
+        Resource resource = assumePresent(anyInstanceOf(graph.admin().getMetaResourceType())).asResource();
+        Object resourceValue = resource.getValue();
+
+        Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(resourceValue);
+        resource.delete();
+        Collection<Resource<Object>> resourcesAfter = graph.getResourcesByValue(resourceValue);
+
+        expectedResources.remove(resource);
+
+        assertEquals(expectedResources, resourcesAfter);
+    }
+
+    @Property
+    public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
+            @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
+        Collection<Resource<?>> allResources = graph.admin().getMetaResourceType().instances();
+
+        Set<Resource<?>> allResourcesOfValue =
+                allResources.stream().filter(resource -> resource.getValue().equals(resourceValue)).collect(toSet());
+
+        assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
+    }
+
+    @Property
+    public void whenCallingGetRelationAndTheRelationExists_ReturnThatRelation(@Open GraknGraph graph) {
+        Relation relation = assumePresent(anyInstanceOf(graph.admin().getMetaRelationType())).asRelation();
+
+        assertEquals(relation, graph.getRelation(relation.type(), relation.rolePlayers()));
+    }
+
+    @Property
+    public void whenCallingGetRelationAndTheRelationDoesntExist_ReturnNull(@Open GraknGraph graph) {
+        RelationType relationType = anySubTypeOf(graph.admin().getMetaRelationType());
+        // TODO: Write something to generate a role map
+    }
+
+    @Property
+    public void whenCallingAdmin_TheResultIsTheSameGraph(GraknGraph graph) {
+        assertEquals(graph, graph.admin());
+    }
+
+    @Property
+    public void whenCallingShowImplicitConcepts_ImplicitConceptsVisibleIsTheSame(GraknGraph graph, boolean flag) {
+        graph.showImplicitConcepts(flag);
+
+        assertEquals(flag, graph.implicitConceptsVisible());
+    }
+
+    @Property
+    public void whenCallingClear_TheResultIsTheSameAsACleanGraph() {
+        // TODO: need something to check graph equality
+    }
+
+    @Property
+    public void whenCallingGetKeySpace_ReturnTheKeyspaceOfTheGraph(String keyspace) {
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
+
+        assertEquals(keyspace, graph.getKeyspace());
+    }
+
+    @Property
+    public void whenCallingIsClosedOnAClosedGraph_ReturnTrue(@Closed GraknGraph graph) {
+        assertTrue(graph.isClosed());
+    }
+
+    @Property
+    public void whenCallingIsClosedOnAnOpenGraph_ReturnFalse(@Open GraknGraph graph) {
+        assertFalse(graph.isClosed());
+    }
+
+    @Property
+    public void whenCallingRollbackOnAnUncommittedGraph_TheResultIsTheSameAsACleanGraph() {
+        // TODO: need something to check graph equality
+    }
+
+    @Property
+    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) {
+        graph.close();
+
+        assertTrue(graph.isClosed());
+    }
+
+    @Property
+    public void whenCallingOpen_TheGraphIsOpen(GraknGraph graph) {
+        graph.open();
+
+        assertFalse(graph.isClosed());
     }
 
     @Property
@@ -577,6 +673,10 @@ public class GraknGraphPropertyTest {
     private static TypeName anyTypeNameExcept(GraknGraph graph, Predicate<Type> predicate) {
         return graph.admin().getMetaConcept().subTypes().stream()
                 .filter(predicate.negate()).findAny().get().getName();
+    }
+
+    private static Optional<? extends Instance> anyInstanceOf(Type type) {
+        return type.instances().stream().findAny();
     }
 
     private static <T extends Type> T anySubTypeOf(T type) {
