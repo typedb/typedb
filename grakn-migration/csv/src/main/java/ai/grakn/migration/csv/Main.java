@@ -40,22 +40,32 @@ import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
  */
 public class Main {
 
-    static boolean newClusterManager = false;
-
     public static void main(String[] args) {
         start(null, args);
     }
 
     public static void start(TaskManager manager, String[] args){
+        boolean isNewClusterManager = false;
         if(manager == null){
+            isNewClusterManager = true;
             manager = new DistributedTaskManager();
         }
 
-        TaskManager finalManager = manager;
-        MigrationCLI.init(args, CSVMigrationOptions::new).stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach((options) -> runCSV(finalManager, options));
+        try {
+            TaskManager finalManager = manager;
+            MigrationCLI.init(args, CSVMigrationOptions::new).stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .forEach((options) -> runCSV(finalManager, options));
+        } finally {
+            if (isNewClusterManager) {
+                try {
+                    manager.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public static void runCSV(TaskManager manager, CSVMigrationOptions options){
@@ -90,14 +100,6 @@ public class Main {
             }
         } catch (Throwable throwable) {
             die(throwable);
-        } finally {
-            if (newClusterManager) {
-                try {
-                    manager.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 }

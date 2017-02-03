@@ -20,6 +20,8 @@ package ai.grakn.graql.internal.parser;
 
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
@@ -28,6 +30,7 @@ import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenFactory;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -103,7 +106,30 @@ public class QueryParser {
      * @return a list of queries
      */
     public List<Query<?>> parseList(String queryString) {
-        return parseQueryFragment(GraqlParser::queryList, QueryVisitor::visitQueryList, queryString);
+        List<Query<?>> queries = parseQueryFragment(GraqlParser::queryList, QueryVisitor::visitQueryList, queryString);
+
+        // Merge any match...insert queries together
+        // TODO: Find a way to NOT do this horrid thing
+        List<Query<?>> merged = Lists.newArrayList();
+
+        if (queries.isEmpty()) return queries;
+
+        Query<?> previous = queries.get(0);
+
+        for (int i = 1; i < queries.size(); i ++) {
+            Query<?> current = queries.get(i);
+
+            if (previous instanceof MatchQuery && current instanceof InsertQuery) {
+                previous = ((MatchQuery) previous).insert(((InsertQuery) current).admin().getVars());
+            } else {
+                merged.add(previous);
+                previous = current;
+            }
+        }
+
+        merged.add(previous);
+
+        return merged;
     }
 
     /**

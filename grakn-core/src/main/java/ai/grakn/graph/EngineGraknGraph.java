@@ -19,8 +19,11 @@
 package ai.grakn.graph;
 
 
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.EngineCache;
+import ai.grakn.util.Schema;
 
 import java.util.Set;
 
@@ -48,16 +51,25 @@ public interface EngineGraknGraph extends BaseGraknGraph {
     void commit(EngineCache cache) throws GraknValidationException;
 
     /**
-     * Merges duplicate castings if one is found.
-     * @param castingId The id of the casting to check for duplicates
-     * @return true if some castings were merged
+     * Merges the provided duplicate castings.
+     *
+     * @param castingVertexIds The vertex Ids of the duplicate castings
+     * @return if castings were merged and a commit is required.
      */
-    boolean fixDuplicateCasting(Object castingId);
+    boolean fixDuplicateCastings(Set<ConceptId> castingVertexIds);
 
     /**
      *
-     * @param resourceIds The resourceIDs which possible contain duplicates.
+     * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
-    boolean fixDuplicateResources(Set<Object> resourceIds);
+    boolean fixDuplicateResources(Set<ConceptId> resourceVertexIds);
+
+    /**
+     *
+     * @param key The concept property tp search by.
+     * @param value The value of the concept
+     * @return A concept with the matching key and value
+     */
+    <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value);
 }

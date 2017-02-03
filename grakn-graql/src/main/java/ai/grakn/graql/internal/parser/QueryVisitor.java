@@ -86,39 +86,12 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public List<Query<?>> visitQueryList(GraqlParser.QueryListContext ctx) {
-        return visitQueryElems(ctx.queryElems()).collect(toList());
+        return ctx.queryListElem().stream().map(this::visitQueryListElem).collect(toList());
     }
 
     @Override
-    public Stream<Query<?>> visitQueryElemsNotMatch(GraqlParser.QueryElemsNotMatchContext ctx) {
-        Query<?> query = visitQueryNotMatch(ctx.queryNotMatch());
-        return Stream.concat(Stream.of(query), visitQueryElems(ctx.queryElems()));
-    }
-
-    @Override
-    public Stream<Query<?>> visitQueryElemsNotInsert(GraqlParser.QueryElemsNotInsertContext ctx) {
-        MatchQuery query = visitMatchQuery(ctx.matchQuery());
-        if (ctx.queryNotInsert() != null) {
-            Query<?> nextQuery = visitQueryNotInsert(ctx.queryNotInsert());
-            return Stream.concat(Stream.of(query, nextQuery), visitQueryElems(ctx.queryElems()));
-        } else {
-            return Stream.of(query);
-        }
-    }
-
-    @Override
-    public Stream<Query<?>> visitQueryElemsEOF(GraqlParser.QueryElemsEOFContext ctx) {
-        return Stream.empty();
-    }
-
-    @Override
-    public Query<?> visitQueryNotMatch(GraqlParser.QueryNotMatchContext ctx) {
-        return (Query<?>) super.visitQueryNotMatch(ctx);
-    }
-
-    @Override
-    public Query<?> visitQueryNotInsert(GraqlParser.QueryNotInsertContext ctx) {
-        return (Query<?>) super.visitQueryNotInsert(ctx);
+    public Query<?> visitQueryListElem(GraqlParser.QueryListElemContext ctx) {
+        return (Query<?>) super.visitQueryListElem(ctx);
     }
 
     @Override
@@ -688,10 +661,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         } else {
             return ctx.getText();
         }
-    }
-
-    private Stream<Query<?>> visitQueryElems(GraqlParser.QueryElemsContext ctx) {
-        return (Stream<Query<?>>) visit(ctx);
     }
 
     private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {

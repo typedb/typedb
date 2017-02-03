@@ -30,7 +30,9 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
@@ -342,6 +344,24 @@ public class EntityTypeTest extends GraphTestBase{
         entityType3.superType(entityType1);
     }
 
+    @Test
+    public void testSetTypeName(){
+        EntityType entityType = graknGraph.putEntityType("Bob");
+        assertEquals("Bob", entityType.getName().getValue());
+        entityType.setName("Tim");
+        assertEquals("Tim", entityType.getName().getValue());
+    }
+
+    @Test
+    public void testSetTypeNameWithNameAlreadyTaken(){
+        EntityType entityType = graknGraph.putEntityType("Bob");
+        EntityType entityType2 = graknGraph.putEntityType("Tim");
+
+        expectedException.expect(ConceptNotUniqueException.class);
+        expectedException.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage("Bob", entityType));
+
+        entityType2.setName("Bob");
+    }
 
     @Test
     public void testMetaTypeIsAbstractImmutable(){

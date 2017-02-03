@@ -47,4 +47,12 @@ public class QueryCache extends HashMap<ReasonerAtomicQuery, ReasonerAtomicQuery
             put(atomicQuery, atomicQuery);
         }
     }
+
+    public QueryAnswers getAnswers(ReasonerAtomicQuery q){
+        ReasonerAtomicQuery equivalentQuery = get(q);
+        if (equivalentQuery != null) {
+            return QueryAnswers.getUnifiedAnswers(q, equivalentQuery);
+        }
+        else return new QueryAnswers();
+    }
 }
