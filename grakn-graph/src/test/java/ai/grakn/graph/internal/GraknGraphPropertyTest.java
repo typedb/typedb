@@ -34,6 +34,8 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.generator.GraknGraphs.Closed;
+import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -73,9 +75,7 @@ public class GraknGraphPropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenCallingPutEntityTypeAndTheGraphIsClosedThenThrow(GraknGraph graph, TypeName typeName) {
-        assumeTrue(graph.isClosed());
-
+    public void whenCallingPutEntityTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -83,17 +83,14 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutEntityTypeThenCreateATypeWithTheGivenName(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
-
+    public void whenCallingPutEntityTypeThenCreateATypeWithTheGivenName(@Open GraknGraph graph, TypeName typeName) {
         EntityType entityType = graph.putEntityType(typeName);
 
         assertEquals(typeName, entityType.getName());
     }
 
     @Property
-    public void whenCallingPutEntityTypeThenCreateATypeWithSuperTypeEntity(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutEntityTypeThenCreateATypeWithSuperTypeEntity(@Open GraknGraph graph, TypeName typeName) {
         assumeFalse(typeNameExists(graph, typeName));
 
         EntityType entityType = graph.putEntityType(typeName);
@@ -102,8 +99,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutEntityTypeWithAnExistingEntityTypeNameThenItReturnsThatType(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutEntityTypeWithAnExistingEntityTypeNameThenItReturnsThatType(@Open GraknGraph graph) {
         EntityType entityType = anySubTypeOf(graph.admin().getMetaEntityType());
 
         EntityType newType = graph.putEntityType(entityType.getName());
@@ -112,8 +108,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutEntityTypeWithAnExistingNonEntityTypeNameThenThrow(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutEntityTypeWithAnExistingNonEntityTypeNameThenThrow(@Open GraknGraph graph) {
         TypeName typeName = anyTypeNameExcept(graph, Type::isEntityType);
 
         exception.expect(ConceptNotUniqueException.class);
@@ -124,9 +119,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeAndTheGraphIsClosedThenThrow(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeTrue(graph.isClosed());
-
+            @Closed GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -135,9 +128,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeThenCreateATypeWithTheGivenName(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
-
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
 
         assertEquals(typeName, resourceType.getName());
@@ -145,9 +136,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeThenCreateATypeWithSuperTypeResource(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
-
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
 
         assertEquals(graph.admin().getMetaResourceType(), resourceType.superType());
@@ -155,8 +144,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeThenCreateATypeWithTheGivenDataType(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(typeNameExists(graph, typeName));
 
         ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
@@ -166,8 +154,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeThenTheResultingTypeIsNotUnique(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(typeNameExists(graph, typeName));
 
         ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
@@ -177,8 +164,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingNonUniqueResourceTypeThenItReturnsThatType(
-            GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph) {
         ResourceType<?> resourceType = nonUniqueResourceTypeFrom(graph);
         TypeName typeName = resourceType.getName();
 
@@ -193,8 +179,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeNameThenThrow(
-            GraknGraph graph, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, ResourceType.DataType<?> dataType) {
         TypeName typeName = anyTypeNameExcept(graph, Type::isResourceType);
 
         exception.expect(ConceptNotUniqueException.class);
@@ -205,8 +190,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeNameButADifferentDataTypeThenThrow(
-            GraknGraph graph, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = nonUniqueResourceTypeFrom(graph);
 
         TypeName typeName = resourceType.getName();
@@ -224,9 +208,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueAndTheGraphIsClosedThenThrow(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeTrue(graph.isClosed());
-
+            @Closed GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -235,8 +217,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueThenCreateATypeWithTheGivenName(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(typeNameExists(graph, typeName));
 
         ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
@@ -246,8 +227,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueThenCreateATypeWithSuperTypeResource(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(typeNameExists(graph, typeName));
 
         ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
@@ -257,8 +237,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueThenCreateATypeWithTheGivenDataType(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(typeNameExists(graph, typeName));
 
         ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
@@ -268,8 +247,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueThenTheResultingTypeIsUnique(
-            GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(typeNameExists(graph, typeName));
 
         ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
@@ -279,8 +257,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueWithThePropertiesOfAnExistingUniqueResourceTypeThenItReturnsThatType(
-            GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph) {
         ResourceType<?> resourceType = assumePresent(uniqueResourceTypeFrom(graph));
         TypeName typeName = resourceType.getName();
         ResourceType.DataType<?> dataType = resourceType.getDataType();
@@ -292,8 +269,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueWithAnExistingNonResourceTypeNameThenThrow(
-            GraknGraph graph, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, ResourceType.DataType<?> dataType) {
         TypeName typeName = anyTypeNameExcept(graph, Type::isResourceType);
 
         exception.expect(ConceptNotUniqueException.class);
@@ -304,8 +280,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeUniqueWithAnExistingUniqueResourceTypeNameButADifferentDataTypeThenThrow(
-            GraknGraph graph, ResourceType.DataType<?> dataType) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = assumePresent(uniqueResourceTypeFrom(graph));
         TypeName typeName = resourceType.getName();
         assumeThat(dataType, not(is(resourceType.getDataType())));
@@ -317,9 +292,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleTypeAndTheGraphIsClosedThenThrow(GraknGraph graph, TypeName typeName) {
-        assumeTrue(graph.isClosed());
-
+    public void whenCallingPutRuleTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -327,17 +300,14 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleTypeThenCreateATypeWithTheGivenName(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
-
+    public void whenCallingPutRuleTypeThenCreateATypeWithTheGivenName(@Open GraknGraph graph, TypeName typeName) {
         RuleType ruleType = graph.putRuleType(typeName);
 
         assertEquals(typeName, ruleType.getName());
     }
 
     @Property
-    public void whenCallingPutRuleTypeThenCreateATypeWithSuperTypeRule(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRuleTypeThenCreateATypeWithSuperTypeRule(@Open GraknGraph graph, TypeName typeName) {
         assumeFalse(typeNameExists(graph, typeName));
 
         RuleType ruleType = graph.putRuleType(typeName);
@@ -346,8 +316,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingRuleTypeNameThenItReturnsThatType(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRuleTypeWithAnExistingRuleTypeNameThenItReturnsThatType(@Open GraknGraph graph) {
         RuleType ruleType = anySubTypeOf(graph.admin().getMetaRuleType());
 
         RuleType newType = graph.putRuleType(ruleType.getName());
@@ -356,8 +325,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeNameThenThrow(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeNameThenThrow(@Open GraknGraph graph) {
         TypeName typeName = anyTypeNameExcept(graph, Type::isRuleType);
 
         exception.expect(ConceptNotUniqueException.class);
@@ -367,9 +335,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRelationTypeAndTheGraphIsClosedThenThrow(GraknGraph graph, TypeName typeName) {
-        assumeTrue(graph.isClosed());
-
+    public void whenCallingPutRelationTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -377,8 +343,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRelationTypeThenCreateATypeWithTheGivenName(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRelationTypeThenCreateATypeWithTheGivenName(@Open GraknGraph graph, TypeName typeName) {
         assumeFalse(typeNameExists(graph, typeName));
 
         RelationType relationType = graph.putRelationType(typeName);
@@ -387,17 +352,15 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRelationTypeThenCreateATypeWithSuperTypeRelation(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
-
+    public void whenCallingPutRelationTypeThenCreateATypeWithSuperTypeRelation(
+            @Open GraknGraph graph, TypeName typeName) {
         RelationType relationType = graph.putRelationType(typeName);
 
         assertEquals(graph.admin().getMetaRelationType(), relationType.superType());
     }
 
     @Property
-    public void whenCallingPutRelationTypeWithAnExistingRelationTypeNameThenItReturnsThatType(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRelationTypeWithAnExistingRelationTypeNameThenItReturnsThatType(@Open GraknGraph graph) {
         RelationType relationType = anySubTypeOf(graph.admin().getMetaRelationType());
 
         RelationType newType = graph.putRelationType(relationType.getName());
@@ -406,8 +369,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeNameThenThrow(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeNameThenThrow(@Open GraknGraph graph) {
         TypeName typeName = anyTypeNameExcept(graph, Type::isRelationType);
 
         exception.expect(ConceptNotUniqueException.class);
@@ -417,9 +379,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleTypeAndTheGraphIsClosedThenThrow(GraknGraph graph, TypeName typeName) {
-        assumeTrue(graph.isClosed());
-
+    public void whenCallingPutRoleTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -427,8 +387,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleTypeThenCreateATypeWithTheGivenName(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRoleTypeThenCreateATypeWithTheGivenName(@Open GraknGraph graph, TypeName typeName) {
         assumeFalse(typeNameExists(graph, typeName));
 
         RoleType roleType = graph.putRoleType(typeName);
@@ -437,8 +396,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleTypeThenCreateATypeWithSuperTypeRole(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRoleTypeThenCreateATypeWithSuperTypeRole(@Open GraknGraph graph, TypeName typeName) {
         assumeFalse(typeNameExists(graph, typeName));
 
         RoleType roleType = graph.putRoleType(typeName);
@@ -447,8 +405,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleTypeWithAnExistingRoleTypeNameThenItReturnsThatType(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRoleTypeWithAnExistingRoleTypeNameThenItReturnsThatType(@Open GraknGraph graph) {
         RoleType roleType = anySubTypeOf(graph.admin().getMetaRoleType());
 
         RoleType newType = graph.putRoleType(roleType.getName());
@@ -457,8 +414,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleTypeWithAnExistingNonRoleTypeNameThenThrow(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingPutRoleTypeWithAnExistingNonRoleTypeNameThenThrow(@Open GraknGraph graph) {
         TypeName typeName = anyTypeNameExcept(graph, Type::isRoleType);
 
         exception.expect(ConceptNotUniqueException.class);
@@ -468,9 +424,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetConceptAndTheGraphIsClosedThenThrow(GraknGraph graph, ConceptId id) {
-        assumeTrue(graph.isClosed());
-
+    public void whenCallingGetConceptAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, ConceptId id) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -478,8 +432,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetConceptWithAnExistingConceptIdThenItReturnsThatConcept(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingGetConceptWithAnExistingConceptIdThenItReturnsThatConcept(@Open GraknGraph graph) {
         Concept concept = anyConceptFrom(graph);
         ConceptId id = concept.getId();
 
@@ -487,8 +440,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetConceptWithANonExistingConceptIdThenItReturnsNull(GraknGraph graph, ConceptId id) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingGetConceptWithANonExistingConceptIdThenItReturnsNull(@Open GraknGraph graph, ConceptId id) {
         Set<ConceptId> allIds = allConceptsFrom(graph).stream().map(Concept::getId).collect(toSet());
         assumeThat(allIds, not(hasItem(id)));
 
@@ -496,8 +448,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetConceptWithAnIncorrectGenericThenItThrows(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingGetConceptWithAnIncorrectGenericThenItThrows(@Open GraknGraph graph) {
         Concept concept = anyConceptFrom(graph);
         assumeFalse(concept.isRoleType());
         ConceptId id = concept.getId();
@@ -510,9 +461,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeAndTheGraphIsClosedThenThrow(GraknGraph graph, TypeName typeName) {
-        assumeTrue(graph.isClosed());
-
+    public void whenCallingGetTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -520,8 +469,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeWithAnExistingTypeNameThenItReturnsThatType(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingGetTypeWithAnExistingTypeNameThenItReturnsThatType(@Open GraknGraph graph) {
         Type type = anyTypeFrom(graph);
         TypeName typeName = type.getName();
 
@@ -529,8 +477,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeWithANonExistingTypeNameThenItReturnsNull(GraknGraph graph, TypeName typeName) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingGetTypeWithANonExistingTypeNameThenItReturnsNull(@Open GraknGraph graph, TypeName typeName) {
         Set<TypeName> allTypes = allTypesFrom(graph).stream().map(Type::getName).collect(toSet());
         assumeThat(allTypes, not(hasItem(typeName)));
 
@@ -538,8 +485,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeWithAnIncorrectGenericThenItThrows(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingGetTypeWithAnIncorrectGenericThenItThrows(@Open GraknGraph graph) {
         Type type = anyTypeFrom(graph);
         assumeFalse(type.isRoleType());
         TypeName typeName = type.getName();
@@ -553,9 +499,7 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetResourcesByValueAndTheGraphIsClosedThenThrow(
-            GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
-        assumeTrue(graph.isClosed());
-
+            @Closed GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
         exception.expect(GraphRuntimeException.class);
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
@@ -565,8 +509,7 @@ public class GraknGraphPropertyTest {
     @Ignore // TODO: Fix bug when calling `putResource` on meta resource type
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResourceThenTheResultIncludesTheResource(
-            GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
         ResourceType resourceType = anySubTypeOf(graph.admin().getMetaResourceType());
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(resourceValue);
@@ -580,8 +523,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenDeletingMetaEntityTypeThenThrow(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenDeletingMetaEntityTypeThenThrow(@Open GraknGraph graph) {
         EntityType entity = graph.admin().getMetaEntityType();
 
         exception.expect(ConceptException.class);
@@ -591,9 +533,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenSetRegexOnMetaResourceTypeThenThrow(GraknGraph graph, String regex) {
-        assumeFalse(graph.isClosed());
-
+    public void whenSetRegexOnMetaResourceTypeThenThrow(@Open GraknGraph graph, String regex) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
         exception.expect(UnsupportedOperationException.class);
@@ -603,16 +543,14 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingIsUniqueOnMetaResourceTypeThenResultIsFalse(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
+    public void whenCallingIsUniqueOnMetaResourceTypeThenResultIsFalse(@Open GraknGraph graph) {
         ResourceType resource = graph.admin().getMetaResourceType();
         assertFalse(resource.isUnique());
     }
 
     @Property
     public void whenCreateInstanceOfMetaResourceTypeThenThrow(
-            GraknGraph graph, @From(ResourceValues.class) Object value) {
-        assumeFalse(graph.isClosed());
+            @Open GraknGraph graph, @From(ResourceValues.class) Object value) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
         exception.expect(ConceptException.class);
@@ -623,7 +561,7 @@ public class GraknGraphPropertyTest {
 
     @Ignore // TODO: Fix this
     @Property
-    public void whenCallingSuperTypeOnMetaResourceTypeThenThrow(GraknGraph graph) {
+    public void whenCallingSuperTypeOnMetaResourceTypeThenThrow(@Open GraknGraph graph) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
         // TODO: Test for a better error message
@@ -634,9 +572,7 @@ public class GraknGraphPropertyTest {
 
     @Ignore // TODO: Fix this and write test properly!
     @Property
-    public void whenCallingHasResourceWithMetaResourceTypeThenDontThrowClassCastException(GraknGraph graph) {
-        assumeFalse(graph.isClosed());
-
+    public void whenCallingHasResourceWithMetaResourceTypeThenDontThrowClassCastException(@Open GraknGraph graph) {
         ResourceType resource = graph.admin().getMetaResourceType();
         Type type = anyTypeFrom(graph);
 

@@ -36,12 +36,21 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Generator to create random {@link GraknGraph}s.
@@ -55,6 +64,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     // Used to speed up testing.
     private static Map<Integer, Set<GraknGraph>> GRAPH_CACHE = new HashMap<>();
 
+    private boolean shouldBeOpen = false;
+    private boolean shouldBeClosed = false;
     private GraknGraph graph;
 
     public GraknGraphs() {
@@ -85,7 +96,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         Set<GraknGraph> cache = GRAPH_CACHE.computeIfAbsent(status.size(), key -> Sets.newHashSet());
 
         if (cache.size() >= MAX_CACHED_GRAPHS) {
-            return random.choose(cache);
+            graph = random.choose(cache);
         } else {
             String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
             graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
@@ -95,9 +106,30 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             }
 
             cache.add(graph);
-
-            return graph;
         }
+
+        // Close graphs randomly, unless parameter is set
+        if (shouldBeOpen && shouldBeClosed) {
+            throw new IllegalStateException("Cannot specify a graph is open and closed at once");
+        } else if (shouldBeOpen) {
+            graph.open();
+        } else if (shouldBeClosed) {
+            graph.close();
+        } else if (random.nextBoolean()) {
+            graph.open();
+        } else {
+            graph.close();
+        }
+
+        return graph;
+    }
+
+    public void configure(Open open) {
+        shouldBeOpen = true;
+    }
+
+    public void configure(Closed closed) {
+        shouldBeClosed = true;
     }
 
     // A list of methods that will mutate the graph in some random way when called
@@ -108,9 +140,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> graph.putRoleType(gen(TypeName.class)),
             () -> graph.putRelationType(gen(TypeName.class)),
             () -> graph.showImplicitConcepts(gen(Boolean.class)),
-            () -> graph.rollback(),
-            () -> graph.close(),
-            () -> graph.open(),
             () -> type().playsRole(roleType()),
             () -> type().hasResource(resourceType()),
             () -> type().key(resourceType()),
@@ -181,6 +210,18 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         } else {
             return random.choose(collection);
         }
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface Open {
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface Closed {
     }
 }
 
