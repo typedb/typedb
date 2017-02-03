@@ -477,6 +477,7 @@ public class GraknGraphPropertyTest {
             @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
         ResourceType resourceType = anySubTypeOf(graph.admin().getMetaResourceType());
         assumeThat(resourceType, is(not(graph.admin().getMetaResourceType())));
+        assumeThat(resourceValue.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(resourceValue);
         Resource resource = resourceType.putResource(resourceValue);
