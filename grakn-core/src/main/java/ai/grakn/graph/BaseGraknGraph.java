@@ -234,6 +234,8 @@ public interface BaseGraknGraph extends AutoCloseable {
      * @param value A value which a Resource in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The Resources holding the provided value or an empty collection if no such Resource exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     <V> Collection<Resource<V>> getResourcesByValue(V value);
 
@@ -242,6 +244,8 @@ public interface BaseGraknGraph extends AutoCloseable {
      *
      * @param name A unique name which identifies the Entity Type in the graph.
      * @return The Entity Type  with the provided name or null if no such Entity Type exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     EntityType getEntityType(String name);
 
@@ -250,6 +254,8 @@ public interface BaseGraknGraph extends AutoCloseable {
      *
      * @param name A unique name which identifies the Relation Type in the graph.
      * @return The Relation Type with the provided name or null if no such Relation Type exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RelationType getRelationType(String name);
 
@@ -259,6 +265,8 @@ public interface BaseGraknGraph extends AutoCloseable {
      * @param name A unique name which identifies the Resource Type in the graph.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The Resource Type with the provided name or null if no such Resource Type exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     <V> ResourceType<V> getResourceType(String name);
 
@@ -267,6 +275,8 @@ public interface BaseGraknGraph extends AutoCloseable {
      *
      * @param name A unique name which identifies the Role Type in the graph.
      * @return The Role Type  with the provided name or null if no such Role Type exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RoleType getRoleType(String name);
 
@@ -275,6 +285,8 @@ public interface BaseGraknGraph extends AutoCloseable {
      *
      * @param name A unique name which identifies the Rule Type in the graph.
      * @return The Rule Type with the provided name or null if no such Rule Type exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RuleType getRuleType(String name);
 
@@ -285,10 +297,13 @@ public interface BaseGraknGraph extends AutoCloseable {
      * @param relationType The Relation Type which we wish to find a Relation instance of.
      * @param roleMap A role map specifying the rolePlayers (Instances or Resources) in the relationship and the roles (Role Types) they play.
      * @return A collection of Relations which meet the above requirements or an empty collection is no relationship exists fulfilling the above requirements.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
     //------------------------------------- Utilities ----------------------------------
+    // TODO: what does this do when the graph is closed?
     /**
      * Returns access to the low-level details of the graph via GraknAdmin
      * @see GraknAdmin
@@ -297,12 +312,14 @@ public interface BaseGraknGraph extends AutoCloseable {
      */
     GraknAdmin admin();
 
+    // TODO: what does this do when the graph is closed?
     /**
      * Utility function to specify whether implicit and system-generated types should be returned.
      * @param flag Specifies if implicit and system-generated types should be returned.
      */
     void showImplicitConcepts(boolean flag);
 
+    // TODO: what does this do when the graph is closed?
     /**
      * Utility function to specify whether implicit concepts should be exposed.
      *
@@ -312,9 +329,12 @@ public interface BaseGraknGraph extends AutoCloseable {
 
     /**
      * Closes and clears the current graph.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     void clear();
 
+    // TODO: what does this do when the graph is closed?
     /**
      * Utility function to get the name of the keyspace where the graph is persisted.
      *
@@ -329,6 +349,7 @@ public interface BaseGraknGraph extends AutoCloseable {
      */
     boolean isClosed();
 
+    // TODO: what does this do when the graph is closed?
     /**
      * Returns a QueryBuilder
      *
@@ -340,9 +361,11 @@ public interface BaseGraknGraph extends AutoCloseable {
     /**
      * Resets the current transaction without committing.
      *
+     * @throws GraphRuntimeException if the graph is closed
      */
     void rollback();
 
+    // TODO: what does this do when the graph is closed?
     /**
      * Closes the current transaction. If no transactions remain open the graph connection is closed permanently and
      * the {@link GraknGraphFactory} must be used to get a new connection.

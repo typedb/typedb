@@ -34,6 +34,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.generator.GraknGraphMethods;
 import ai.grakn.generator.GraknGraphs.Closed;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.ResourceValues;
@@ -47,17 +48,24 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -75,11 +83,18 @@ public class GraknGraphPropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenCallingPutEntityTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
-        exception.expect(GraphRuntimeException.class);
+    public void whenCallingMostMethodOnAClosedGraphThenThrow(
+            @Closed GraknGraph graph, @From(GraknGraphMethods.class) Method method) throws Throwable {
+
+        // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
+        assumeThat(method.getName(), not(isOneOf("open", "close", "admin", "isClosed", "implicitConceptsVisible", "showImplicitConcepts", "getKeyspace", "graql")));
+        Object[] params = Stream.of(method.getParameters()).map(Parameter::getType).map(this::mock).toArray();
+
+        exception.expect(InvocationTargetException.class);
+        exception.expectCause(isA(GraphRuntimeException.class));
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
-        graph.putEntityType(typeName);
+        method.invoke(graph, params);
     }
 
     @Property
@@ -115,15 +130,6 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putEntityType(typeName);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeAndTheGraphIsClosedThenThrow(
-            @Closed GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.putResourceType(typeName, dataType);
     }
 
     @Property
@@ -207,15 +213,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutResourceTypeUniqueAndTheGraphIsClosedThenThrow(
-            @Closed GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.putResourceTypeUnique(typeName, dataType);
-    }
-
-    @Property
     public void whenCallingPutResourceTypeUniqueThenCreateATypeWithTheGivenName(
             @Open GraknGraph graph, TypeName typeName, ResourceType.DataType<?> dataType) {
         assumeFalse(typeNameExists(graph, typeName));
@@ -292,14 +289,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.putRuleType(typeName);
-    }
-
-    @Property
     public void whenCallingPutRuleTypeThenCreateATypeWithTheGivenName(@Open GraknGraph graph, TypeName typeName) {
         RuleType ruleType = graph.putRuleType(typeName);
 
@@ -332,14 +321,6 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putRuleType(typeName);
-    }
-
-    @Property
-    public void whenCallingPutRelationTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.putRelationType(typeName);
     }
 
     @Property
@@ -376,14 +357,6 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(typeName, graph.getType(typeName)));
 
         graph.putRelationType(typeName);
-    }
-
-    @Property
-    public void whenCallingPutRoleTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.putRoleType(typeName);
     }
 
     @Property
@@ -424,14 +397,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetConceptAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, ConceptId id) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.getConcept(id);
-    }
-
-    @Property
     public void whenCallingGetConceptWithAnExistingConceptIdThenItReturnsThatConcept(@Open GraknGraph graph) {
         Concept concept = anyConceptFrom(graph);
         ConceptId id = concept.getId();
@@ -461,14 +426,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeAndTheGraphIsClosedThenThrow(@Closed GraknGraph graph, TypeName typeName) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.getType(typeName);
-    }
-
-    @Property
     public void whenCallingGetTypeWithAnExistingTypeNameThenItReturnsThatType(@Open GraknGraph graph) {
         Type type = anyTypeFrom(graph);
         TypeName typeName = type.getName();
@@ -495,15 +452,6 @@ public class GraknGraphPropertyTest {
         // We have to assign the result for the cast to happen
         //noinspection unused
         RoleType roleType = graph.getType(typeName);
-    }
-
-    @Property
-    public void whenCallingGetResourcesByValueAndTheGraphIsClosedThenThrow(
-            @Closed GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
-        exception.expect(GraphRuntimeException.class);
-        exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
-
-        graph.getResourcesByValue(resourceValue);
     }
 
     @Ignore // TODO: Fix bug when calling `putResource` on meta resource type
@@ -630,5 +578,15 @@ public class GraknGraphPropertyTest {
         assumeTrue(optional.isPresent());
         assert optional.isPresent();
         return optional.get();
+    }
+
+    private <T> T mock(Class<T> clazz) {
+        if (clazz.equals(boolean.class)) {
+            return (T) Boolean.FALSE;
+        } else if (clazz.equals(String.class)) {
+            return (T) "";
+        } else {
+            return Mockito.mock(clazz);
+        }
     }
 }
