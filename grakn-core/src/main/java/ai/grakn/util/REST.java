@@ -80,6 +80,9 @@ public class REST {
         public static final String OFFSET_PARAM = "offset";
         public static final String HAL_CONTENTTYPE = "application/hal+json";
         public static final String GRAQL_CONTENTTYPE = "application/graql";
+        public static final String COMMIT_LOG_TYPE = "concept-base-type";
+        public static final String COMMIT_LOG_ID = "concept-vertex-id";
+        public static final String COMMIT_LOG_INDEX = "concept-index";
     }
 
     /**

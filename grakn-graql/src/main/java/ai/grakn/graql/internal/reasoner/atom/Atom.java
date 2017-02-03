@@ -190,6 +190,10 @@ public abstract class Atom extends AtomBase {
         return relevantTypes;
     }
 
+    public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
+    public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
+    public Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+
     /**
      * @return map of role type- (var name, var type) pairs
      */
@@ -202,9 +206,8 @@ public abstract class Atom extends AtomBase {
 
     /**
      * rewrites the atom to be compatible with parent atom
-     * @param parent atom to be compatible with
      * @param q query the rewritten atom should belong to
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parent, ReasonerQuery q){ return new Pair<>(this, new HashMap<>());}
+    public Pair<Atom, Map<VarName, VarName>> rewrite(ReasonerQuery q){ return new Pair<>(this, new HashMap<>());}
 }

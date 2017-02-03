@@ -21,7 +21,6 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
-import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -213,16 +212,16 @@ public class Scheduler implements Runnable, AutoCloseable {
      * Get all recurring tasks from the graph and schedule them
      */
     private void restartRecurringTasks() {
-        Set<Pair<String, TaskState>> tasks = storage.getTasks(null, null, null, 0, 0);
+        Set<TaskState> tasks = storage.getTasks(null, null, null, 0, 0);
         tasks.stream()
-                .filter(p -> p.getValue().isRecurring())
-                .filter(p -> p.getValue().status() != STOPPED)
+                .filter(TaskState::isRecurring)
+                .filter(p -> p.status() != STOPPED)
                 .forEach(p -> {
                     // Not sure what is the right format for "no configuration", but somehow the configuration
                     // here for a postprocessing task is "null": if we say that the configuration of a task
                     // is a JSONObject, then an empty configuration ought to be {}
-                    String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
-                    scheduleTask(p.getKey(), config, p.getValue());
+                    String config = p.configuration() == null ? "{}" : p.configuration().toString();
+                    scheduleTask(p.getId(), config, p);
                 });
     }
 

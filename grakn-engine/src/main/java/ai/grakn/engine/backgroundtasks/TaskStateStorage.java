@@ -19,7 +19,6 @@
 package ai.grakn.engine.backgroundtasks;
 
 import ai.grakn.exception.EngineStorageException;
-import javafx.util.Pair;
 
 import java.util.Set;
 
@@ -70,9 +69,9 @@ public interface TaskStateStorage {
      * @param createdBy String containing created by. See TaskState.
      * @param limit Limit the returned result set to @limit amount of entries.
      * @param offset Use in conjunction with @limit for pagination.
-     * @return Set<Pair<String, TaskState>> of task IDs and corresponding TaskState *copies*.
+     * @return Set<TaskState> of TaskStates corresponding to search
      */
-    Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus,
+    Set<TaskState> getTasks(TaskStatus taskStatus,
                                           String taskClassName,
                                           String createdBy,
                                           int limit,

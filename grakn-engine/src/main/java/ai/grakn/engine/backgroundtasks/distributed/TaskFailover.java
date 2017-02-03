@@ -28,6 +28,8 @@ import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -52,7 +54,7 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
  * @author Denis lobanov
  */
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final Logger LOG = LoggerFactory.getLogger(TaskFailover.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final TaskStateStorage stateStorage;
