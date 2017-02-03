@@ -41,6 +41,7 @@
         <module>grakn-core</module>
         <module>grakn-test-profiles</module>
         <module>grakn-factory</module>
+        <module>grakn-engine-client</module>
     </modules>
 
     <properties>

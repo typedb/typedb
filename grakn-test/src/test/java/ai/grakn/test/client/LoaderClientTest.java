@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.loader;
+package ai.grakn.test.client;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -28,7 +28,7 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
-import ai.grakn.engine.loader.LoaderClient;
+import ai.grakn.engine.client.LoaderClient;
 import ai.grakn.engine.loader.LoaderTask;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;

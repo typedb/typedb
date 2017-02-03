@@ -72,17 +72,24 @@ public class SQLMigratorMainTest {
     }
 
     @Test
+    public void sqlMainNoKeyspace(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Keyspace missing (-k)");
+        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
+    }
+
+    @Test
     public void sqlMainNoUserTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No username specified (-user)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
+        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", graph.getKeyspace());
     }
 
     @Test
     public void sqlMainNoPassTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No password specified (-pass)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query );
+        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", graph.getKeyspace());
     }
 
     @Test

@@ -184,32 +184,6 @@ public class GraknEngineServer {
         return taskManager;
     }
 
-    /**
-     * Check if Grakn Engine has been started
-     *
-     * @return true if Grakn Engine running, false otherwise
-     */
-    public static boolean isRunning() {
-        try {
-            String host = prop.getProperty(ConfigProperties.SERVER_HOST_NAME);
-            String port = prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER);
-
-            HttpURLConnection connection = (HttpURLConnection)
-                    new URL("http://" + host + ":" + port + REST.WebPath.GRAPH_FACTORY_URI).openConnection();
-            connection.setRequestMethod("GET");
-            connection.connect();
-
-            InputStream inputStream = connection.getInputStream();
-            if (inputStream.available() == 0) {
-                return false;
-            }
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
-
-
     private static void checkAuthorization(Request request) {
         if(!isPasswordProtected) return;
 

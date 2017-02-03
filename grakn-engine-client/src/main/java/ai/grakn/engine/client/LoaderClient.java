@@ -16,18 +16,20 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.loader;
+package ai.grakn.engine.client;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
-import com.auth0.jwt.internal.org.apache.commons.io.IOUtils;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collection;
@@ -43,6 +45,7 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
+import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.TASKS_URI;
 import static java.util.stream.Collectors.toList;
 
@@ -54,7 +57,12 @@ import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 
 /**
- * Client to load t
+ * Client to load qraql queries into Grakn.
+ *
+ * Provides methods to batch insert queries. Optionally can provide a consumer
+ * that will execute when a batch finishes loading.
+ *
+ * @author alexandraorth
  */
 public class LoaderClient {
 
@@ -200,7 +208,7 @@ public class LoaderClient {
             connection.getOutputStream().flush();
 
             // get response
-            Json response = Json.read(IOUtils.toString(connection.getInputStream()));
+            Json response = Json.read(readResponse(connection.getInputStream()));
             String id = response.at("id").asString();
 
             return await(id);
@@ -233,7 +241,7 @@ public class LoaderClient {
             connection.setRequestMethod(REST.HttpConn.GET_METHOD);
 
             // get response
-            return Json.read(IOUtils.toString(connection.getInputStream()));
+            return Json.read(readResponse(connection.getInputStream()));
         }
         catch (IOException e){
             LOG.error(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(getResponseMessage(connection)));
@@ -257,7 +265,7 @@ public class LoaderClient {
         return CompletableFuture.supplyAsync(() -> {
             while (true) {
                 Json taskState = getStatus(id);
-                TaskStatus status = TaskStatus.valueOf(taskState.at("status").asString());
+                TaskStatus status = TaskStatus.valueOf(taskState.at(TASK_STATUS_PARAMETER).asString());
                 if (status == COMPLETED || status == FAILED || status == STOPPED) {
                     return taskState;
                 }
@@ -286,7 +294,7 @@ public class LoaderClient {
     }
 
     private String getPostParams(){
-        return TASK_CLASS_NAME_PARAMETER + "=" + LoaderTask.class.getName() + "&" +
+        return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.LoaderTask&" +
                 TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
                 LIMIT_PARAM + "=" + 10000 + "&" +
                 TASK_CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
@@ -304,6 +312,24 @@ public class LoaderClient {
                 .set("batchNumber", batchNumber)
                 .set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
                 .toString();
+    }
+
+    /**
+     * Read the input stream from a HttpURLConnection into a String
+     * @result String containing response from the server
+     */
+    private String readResponse(InputStream inputStream){
+        String response = "";
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))){
+            String inputLine;
+            while ((inputLine = reader.readLine()) != null) {
+                response += inputLine;
+            }
+        } catch (IOException e){
+            LOG.error("Error reading response from the server: " + e.getMessage());
+        }
+
+        return response;
     }
 }
 
