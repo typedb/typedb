@@ -842,6 +842,7 @@ public class ReasonerTest {
         QueryAnswers answers = queryAnswers(qb.infer(true).materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(qb.infer(true).materialise(true).parse(queryString));
         QueryAnswers answers3 = queryAnswers(qb.infer(false).parse(queryString2));
+        assertEquals(answers.size(), answers2.size());
         assertEquals(answers, answers2);
         assertEquals(answers2, answers3);
     }

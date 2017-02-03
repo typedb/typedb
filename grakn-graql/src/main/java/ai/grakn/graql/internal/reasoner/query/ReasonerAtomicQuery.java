@@ -166,16 +166,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private QueryAnswers insert() {
-        QueryAnswers insertAnswers = new QueryAnswers(getMatchQuery().admin().streamWithVarNames().collect(Collectors.toList()));
-        if(insertAnswers.isEmpty()){
-            InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
-            insert.stream()
-                    .map( m ->
-                        m.entrySet().stream()
+        QueryAnswers insertAnswers = new QueryAnswers();
+        InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
+        insert.stream()
+                .map( m -> m.entrySet().stream()
                         .collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
-                    .forEach(insertAnswers::add);
-       }
-       return insertAnswers;
+                .forEach(insertAnswers::add);
+        return insertAnswers;
     }
     
     private QueryAnswers materialiseDirect() {
@@ -262,12 +259,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
         QueryAnswers answers = subs
                 .filterNonEquals(ruleBody.getFilters())
-                .filterVars(ruleHead.getVarNames())
-                .filterKnown(this.getAnswers());
+                .filterVars(ruleHead.getVarNames());
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()){
-            answers = new ReasonerAtomicQuery(ruleHead, answers).materialise();
+            QueryAnswers knownAnswers = cache.contains(ruleHead)? cache.getAnswers(ruleHead) : ruleHead.DBlookup();
+            answers = new ReasonerAtomicQuery(ruleHead, answers.filterKnown(knownAnswers)).materialise();
+            answers.addAll(knownAnswers);
+            cache.record(new ReasonerAtomicQuery(ruleHead, answers));
+            answers = answers.filterByEntityTypes(atom.getMappedTypeConstraints());
         }
+        else answers = answers.filterKnown(this.getAnswers());
 
         QueryAnswers filteredAnswers = this.propagateIdPredicates(answers)
                 .filterVars(this.getVarNames())
@@ -276,9 +277,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                         atom.getUnmappedIdPredicates(),
                         atom.getUnmappedTypeConstraints());
 
-        filteredAnswers.stream().filter(ans -> !this.getAnswers().contains(ans)).forEach(newAnswers::add);
+        this.newAnswers.addAll(filteredAnswers);
         this.getAnswers().addAll(filteredAnswers);
         cache.record(this);
+
     }
 
     /**
@@ -345,7 +347,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         private void completeIteration(){
-            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + size());
+            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + getAnswers().size() + " size: " + size());
             dAns = size() - dAns;
             iter++;
         }

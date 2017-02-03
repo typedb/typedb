@@ -192,6 +192,7 @@ public abstract class Atom extends AtomBase {
 
     public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
     public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
+    public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
     public Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
 
     /**
@@ -205,9 +206,15 @@ public abstract class Atom extends AtomBase {
     public void inferTypes(){}
 
     /**
-     * rewrites the atom to be compatible with parent atom
-     * @param q query the rewritten atom should belong to
+     * rewrites the atom to one with user defined name
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Pair<Atom, Map<VarName, VarName>> rewrite(ReasonerQuery q){ return new Pair<>(this, new HashMap<>());}
+    public Atom rewriteToUserDefined(){ return this;}
+
+    /**
+     * rewrites the atom to one with user defined name, need unifiers for cases when we have variable clashes
+     * between the relation variable and relation players
+     * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
+     */
+    public Pair<Atom, Map<VarName, VarName>> rewriteToUserDefinedWithUnifiers(){ return new Pair<>(this, new HashMap<>());}
 }

@@ -205,13 +205,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if query contains an equivalent atom
      */
     public boolean containsEquivalentAtom(Atomic atom){
-        boolean isContained = false;
-        Iterator<Atomic> it = atomSet.iterator();
-        while( it.hasNext() && !isContained) {
-            Atomic at = it.next();
-            isContained = atom.isEquivalent(at);
-        }
-        return isContained;
+        return !getEquivalentAtoms(atom).isEmpty();
+    }
+
+    public Set<Atomic> getEquivalentAtoms(Atomic atom){
+        return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
     }
 
     private void exchangeRelVarNames(VarName from, VarName to){
