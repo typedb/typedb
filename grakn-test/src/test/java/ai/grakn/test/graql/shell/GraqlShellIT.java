@@ -174,7 +174,7 @@ public class GraqlShellIT {
     @Test
     public void testInsertQuery() throws Exception {
         String result = testShell(
-                "match $x isa entity; ask;\ninsert $x isa entity;\nmatch $x isa entity; ask;\n"
+                "insert entity2 sub entity; match $x isa entity2; ask;\ninsert $x isa entity2;\nmatch $x isa entity2; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
@@ -347,7 +347,7 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String result = testShell("insert $x isa entity;\nrollback;\nmatch $x isa entity;\n");
+        String result = testShell("insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n");
         String[] lines = result.split("\n");
 
         // Make sure there are no results for match query

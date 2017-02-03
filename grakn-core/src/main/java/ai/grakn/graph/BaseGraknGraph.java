@@ -31,6 +31,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graql.QueryBuilder;
 
 import java.util.Collection;
@@ -51,133 +52,179 @@ import java.util.Map;
  */
 public interface BaseGraknGraph extends AutoCloseable {
     //------------------------------------- Concept Construction ----------------------------------
+    // TODO: For all 'put' methods state the expected behaviour when there is a type with the same name but a different
+    // kind or params (e.g. putRelationType("person"), putResourceType("name", BOOLEAN))
+
     /**
-     * Create a new Entity Type, or return a pre-existing Entity Type, with the specified name.
+     * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
+     * with the specified name.
      *
-     * @param name A unique name for the Entity Type
-     * @return A new or existing Entity Type with the provided name
+     * @param name A unique name for the {@link EntityType}
+     * @return A new or existing {@link EntityType} with the provided name
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     EntityType putEntityType(String name);
 
     /**
-     * Create a new Entity Type, or return a pre-existing Entity Type, with the specified name.
+     * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
+     * with the specified name.
      *
-     * @param name A unique name for the Entity Type
-     * @return A new or existing Entity Type with the provided name
+     * @param name A unique name for the {@link EntityType}
+     * @return A new or existing {@link EntityType} with the provided name
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     EntityType putEntityType(TypeName name);
 
     /**
-     * Create a Resource Type, or return a pre-existing Resource Type, with the specified name.
+     * Create a new non-unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
+     * non-unique {@link ResourceType}, with the specified name and data type.
      *
-     * @param name A unique name for the Resource Type
-     * @param dataType The data type of the resource type.
+     * @param name A unique name for the {@link ResourceType}
+     * @param dataType The data type of the {@link ResourceType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing Resource Type with the provided name.
+     * @return A new or existing {@link ResourceType} with the provided name and data type.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType);
 
     /**
-     * Create a Resource Type, or return a pre-existing Resource Type, with the specified name.
+     * Create a new non-unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
+     * non-unique {@link ResourceType}, with the specified name and data type.
      *
-     * @param name A unique name for the Resource Type
-     * @param dataType The data type of the resource type.
+     * @param name A unique name for the {@link ResourceType}
+     * @param dataType The data type of the {@link ResourceType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing Resource Type with the provided name.
+     * @return A new or existing {@link ResourceType} with the provided name and data type.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType);
 
     /**
-     * Create a unique Resource Type, or return a pre-existing Resource Type, with the specified name.
-     * The Resource Type is guaranteed to be unique, in that its instances can be connected to one entity.
+     * Create a unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
+     * unique {@link ResourceType}, with the specified name and data type.
+     * The {@link ResourceType} is guaranteed to be unique, in that its instances can be connected to one entity.
      *
-     * @param name A unique name for the Resource Type
-     * @param dataType The data type of the resource type.
+     * @param name A unique name for the {@link ResourceType}
+     * @param dataType The data type of the {@link ResourceType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing Resource Type with the provided name.
+     * @return A new or existing {@link ResourceType} with the provided name.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType);
+
     /**
-     * Create a unique Resource Type, or return a pre-existing Resource Type, with the specified name.
-     * The Resource Type is guaranteed to be unique, in that its instances can be connected to one entity.
+     * Create a unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
+     * unique {@link ResourceType}, with the specified name and data type.
+     * The {@link ResourceType} is guaranteed to be unique, in that its instances can be connected to one entity.
      *
-     * @param name A unique name for the Resource Type
-     * @param dataType The data type of the resource type.
+     * @param name A unique name for the {@link ResourceType}
+     * @param dataType The data type of the {@link ResourceType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing Resource Type with the provided name.
+     * @return A new or existing {@link ResourceType} with the provided name.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     <V> ResourceType <V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType);
 
     /**
-     * Create a Rule Type, or return a pre-existing Rule Type, with the specified name.
+     * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
+     * specified name.
      *
-     * @param name A unique name for the Rule Type
-     * @return new or existing Rule Type with the provided Id.
+     * @param name A unique name for the {@link RuleType}
+     * @return new or existing {@link RuleType} with the provided name.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RuleType putRuleType(String name);
 
     /**
-     * Create a Rule Type, or return a pre-existing Rule Type, with the specified name.
+     * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
+     * specified name.
      *
-     * @param name A unique name for the Rule Type
-     * @return new or existing Rule Type with the provided Id.
+     * @param name A unique name for the {@link RuleType}
+     * @return new or existing {@link RuleType} with the provided name.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RuleType putRuleType(TypeName name);
 
     /**
-     * Create a Relation Type, or return a pre-existing Relation Type, with the specified name.
+     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
+     * with the specified name.
      *
-     * @param name A unique name for the Relation Type
-     * @return A new or existing Relation Type with the provided Id.
+     * @param name A unique name for the {@link RelationType}
+     * @return A new or existing {@link RelationType} with the provided name.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RelationType putRelationType(String name);
 
     /**
-     * Create a Relation Type, or return a pre-existing Relation Type, with the specified name.
+     * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
+     * with the specified name.
      *
-     * @param name A unique name for the Relation Type
-     * @return A new or existing Relation Type with the provided Id.
+     * @param name A unique name for the {@link RelationType}
+     * @return A new or existing {@link RelationType} with the provided name.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RelationType putRelationType(TypeName name);
 
     /**
-     * Create a Role Type, or return a pre-existing Role Type, with the specified name.
+     * Create a {@link RoleType} with super-type {@code role}, or return a pre-existing {@link RoleType}, with the
+     * specified name.
      *
-     * @param name A unique name for the Role Type
-     * @return new or existing Role Type with the provided Id.
+     * @param name A unique name for the {@link RoleType}
+     * @return new or existing {@link RoleType} with the provided Id.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RoleType putRoleType(String name);
 
     /**
-     * Create a Role Type, or return a pre-existing Role Type, with the specified name.
+     * Create a {@link RoleType} with super-type {@code role}, or return a pre-existing {@link RoleType}, with the
+     * specified name.
      *
-     * @param name A unique name for the Role Type
-     * @return new or existing Role Type with the provided Id.
+     * @param name A unique name for the {@link RoleType}
+     * @return new or existing {@link RoleType} with the provided Id.
+     *
+     * @throws GraphRuntimeException if the graph is closed
      */
     RoleType putRoleType(TypeName name);
 
     //------------------------------------- Concept Lookup ----------------------------------
     /**
-     * Get the Concept with identifier provided, if it exists.
+     * Get the {@link Concept} with identifier provided, if it exists.
      *
-     * @param id A unique identifier for the Concept in the graph.
-     * @return The Concept with the provided id or null if no such Concept exists.
+     * @param id A unique identifier for the {@link Concept} in the graph.
+     * @return The {@link Concept} with the provided id or null if no such {@link Concept} exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
+     * @throws ClassCastException if the concept is not an instance of {@link T}
      */
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
-     * Get the Type with the name provided, if it exists.
+     * Get the {@link Type} with the name provided, if it exists.
      *
-     * @param name A unique name which identifies the Type in the graph.
-     * @return The Type with the provided name or null if no such Type exists.
+     * @param name A unique name which identifies the {@link Type} in the graph.
+     * @return The {@link Type} with the provided name or null if no such {@link Type} exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
+     * @throws ClassCastException if the type is not an instance of {@link T}
      */
     <T extends Type> T getType(TypeName name);
 

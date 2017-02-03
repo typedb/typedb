@@ -188,5 +188,10 @@ public interface ResourceType<D> extends Type {
         public Schema.ConceptProperty getConceptProperty(){
             return conceptProperty;
         }
+
+        @Override
+        public String toString(){
+            return getName();
+        }
     }
 }
