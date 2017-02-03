@@ -62,6 +62,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
@@ -95,6 +96,19 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
 
         method.invoke(graph, params);
+    }
+
+    @Property
+    public void whenCallingAnyMethodWithNullThenThrow(
+            @Open GraknGraph graph, @From(GraknGraphMethods.class) Method method) throws Throwable {
+        int numParameters = method.getParameterCount();
+        assumeThat(numParameters, greaterThan(0));
+        Object[] nulls = new Object[numParameters];
+
+        exception.expect(InvocationTargetException.class);
+        exception.expectCause(isA(NullPointerException.class));
+
+        method.invoke(graph, nulls);
     }
 
     @Property
