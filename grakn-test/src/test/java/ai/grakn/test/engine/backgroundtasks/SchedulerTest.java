@@ -129,7 +129,8 @@ public class SchedulerTest {
         stopScheduler();
 
         // persist a recurring task
-        TaskState recurring = createTask(storage, 1, CREATED, true, 10000);
+        TaskState recurring = createTask(1, CREATED, true, 10000);
+        storage.newState(recurring);
 
         // check the task actually exists and is recurring
         TaskState recurringPersisted = storage.getState(recurring.getId());
