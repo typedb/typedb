@@ -347,7 +347,7 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String result = testShell("insert $x isa entity;\nrollback;\nmatch $x isa entity;\n");
+        String result = testShell("insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n");
         String[] lines = result.split("\n");
 
         // Make sure there are no results for match query
