@@ -125,14 +125,16 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return This type's super type
      */
     public T superType() {
-        if(!cachedSuperType.isPresent()){
+        //TODO: Restore caching properly
+        /*if(!cachedSuperType.isPresent()){
             T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
             if(concept == null) {
                 return null;
             }
             cachedSuperType = Optional.of(concept);
         }
-        return cachedSuperType.get();
+        return cachedSuperType.get();*/
+        return getOutgoingNeighbour(Schema.EdgeLabel.SUB);
     }
 
     /**
@@ -423,22 +425,20 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
-        if(resourceTypeSuper != null){
-            TypeName superName = resourceTypeSuper.getName();
-            if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
-                RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
-                RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
-                RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
-                        hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
+        TypeName superName = resourceTypeSuper.getName();
+        if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
+            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
+            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
+            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
+                    hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
 
-                //Create the super type edges from sub role/relations to super roles/relation
-                ownerRole.superType(ownerRoleSuper);
-                valueRole.superType(valueRoleSuper);
-                relationType.superType(relationTypeSuper);
+            //Create the super type edges from sub role/relations to super roles/relation
+            ownerRole.superType(ownerRoleSuper);
+            valueRole.superType(valueRoleSuper);
+            relationType.superType(relationTypeSuper);
 
-                //Make sure the supertype resource is linked with the role as well
-                ((ResourceTypeImpl) resourceTypeSuper).playsRole(valueRoleSuper);
-            }
+            //Make sure the supertype resource is linked with the role as well
+            ((ResourceTypeImpl) resourceTypeSuper).playsRole(valueRoleSuper);
         }
 
         this.playsRole(ownerRole, required);
