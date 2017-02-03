@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
 import ai.grakn.test.EngineContext;
 import mjson.Json;
@@ -30,9 +30,8 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;

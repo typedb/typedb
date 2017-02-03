@@ -18,7 +18,7 @@
 
 package ai.grakn.migration.base;
 
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.loader.LoaderClient;
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;

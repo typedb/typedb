@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.loader;
 
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -38,9 +38,9 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.WebPath.TASKS_URI;

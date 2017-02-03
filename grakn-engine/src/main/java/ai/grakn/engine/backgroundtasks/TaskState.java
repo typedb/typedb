@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import ai.grakn.engine.TaskStatus;
 import mjson.Json;
 
 import java.io.Serializable;

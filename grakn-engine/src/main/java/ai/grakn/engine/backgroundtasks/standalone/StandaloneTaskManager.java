@@ -41,11 +41,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 

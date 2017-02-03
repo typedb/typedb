@@ -27,8 +27,8 @@ import org.junit.Test;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.junit.Assert.assertEquals;
