@@ -36,7 +36,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -56,6 +59,7 @@ import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Client to load qraql queries into Grakn.
@@ -73,7 +77,7 @@ public class LoaderClient {
     private final String GET = "http://%s" + TASKS_URI + "/%s";
 
     private final Consumer<Json> onCompletionOfTask;
-    private final Collection<CompletableFuture> futures;
+    private final Map<Integer,CompletableFuture> futures;
     private final Collection<InsertQuery> queries;
     private final String keyspace;
     private final String uri;
@@ -81,6 +85,7 @@ public class LoaderClient {
     private AtomicInteger batchNumber;
     private Semaphore blocker;
     private int batchSize;
+    private int blockerSize;
 
     public LoaderClient(String keyspace, String uri) {
         this(keyspace, uri, (Json t) -> {});
@@ -90,7 +95,7 @@ public class LoaderClient {
         this.uri = uri;
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
-        this.futures = new HashSet<>();
+        this.futures = new ConcurrentHashMap<>();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
 
@@ -112,6 +117,7 @@ public class LoaderClient {
      * @param size the size of the queue
      */
     public LoaderClient setQueueSize(int size){
+        this.blockerSize = size;
         this.blocker = new Semaphore(size);
         return this;
     }
@@ -145,20 +151,30 @@ public class LoaderClient {
      */
     public void waitToFinish(){
         flush();
-        while(!futures.stream().allMatch(CompletableFuture::isDone)){
+        while(!futures.values().stream().allMatch(CompletableFuture::isDone)
+                && blocker.availablePermits() != blockerSize){
             try {
-                Thread.sleep(100);
+                Thread.sleep(500);
             } catch (InterruptedException e) {
                 LOG.error(e.getMessage());
             }
         }
+
+        futures.values().forEach(future -> {
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     /**
      * Send a collection of insert queries to the TasksController, blocking until
      * there is availability to send.
      *
-     * Release the semaphore when a task completes
+     * Release the semaphore when a task completes.
+     * If there was an error communicating with the host to get the status, throw an exception.
      *
      * @param queries Queries to be inserted
      */
@@ -169,17 +185,34 @@ public class LoaderClient {
             throw new RuntimeException(e);
         }
 
-        CompletableFuture<Json> status = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
+        try {
 
-        // Add this status to the set of completable futures
-        futures.add(status);
+            CompletableFuture<Json> status = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
 
-        // When this task completes release the semaphore
-        status.thenAccept(finalTaskStatus -> {
+            // Add this status to the set of completable futures
+            futures.put(status.hashCode(), status);
+
+            // When this task completes release the semaphore
+            status.thenAcceptAsync(finalTaskStatus -> {
+                unblock(status);
+                onCompletionOfTask.accept(finalTaskStatus);
+            });
+
+            // If there was an error getting the status from the host
+            status.exceptionally(throwable -> {
+                unblock(status);
+                LOG.error(getFullStackTrace(throwable));
+                throw new RuntimeException(throwable);
+            });
+        } catch (Throwable throwable){
+            LOG.error(getFullStackTrace(throwable));
             blocker.release();
-            futures.remove(status);
-            onCompletionOfTask.accept(finalTaskStatus);
-        });
+        }
+    }
+
+    private void unblock(CompletableFuture<Json> status){
+        blocker.release();
+        futures.remove(status.hashCode());
     }
 
     /**
@@ -209,7 +242,7 @@ public class LoaderClient {
             Json response = Json.read(readResponse(connection.getInputStream()));
             String id = response.at("id").asString();
 
-            return await(id);
+            return makeTaskCompletionFuture(id);
         }
         catch (IOException e){
             throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
@@ -255,20 +288,19 @@ public class LoaderClient {
      * @param id ID of the task to wait on completion
      * @return Completable future that will await completion of the given task
      */
-    private CompletableFuture<Json> await(String id){
+    private CompletableFuture<Json> makeTaskCompletionFuture(String id){
         return CompletableFuture.supplyAsync(() -> {
             while (true) {
-                Json taskState = getStatus(id);
-
-                TaskStatus status = TaskStatus.valueOf(taskState.at(TASK_STATUS_PARAMETER).asString());
-                if (status == COMPLETED || status == FAILED || status == STOPPED) {
-                    return taskState;
-                }
-
                 try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    LOG.error(e.getMessage());
+                    Json taskState = getStatus(id);
+                    TaskStatus status = TaskStatus.valueOf(taskState.at(TASK_STATUS_PARAMETER).asString());
+                    if (status == COMPLETED || status == FAILED || status == STOPPED) {
+                        return taskState;
+                    }
+
+                    Thread.sleep(1000);
+                } catch (Throwable t) {
+                    throw new RuntimeException(t);
                 }
             }
         });

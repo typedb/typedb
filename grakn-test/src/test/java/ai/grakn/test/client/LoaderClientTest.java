@@ -28,9 +28,11 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -41,8 +43,6 @@ import java.util.UUID;
 
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class LoaderClientTest {
 
@@ -52,11 +52,13 @@ public class LoaderClientTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    @Rule
+    public final EngineContext engine = EngineContext.startDistributedServer();
 
     @Before
     public void setup() {
+        ((Logger) org.slf4j.LoggerFactory.getLogger(LoaderClient.class)).setLevel(Level.DEBUG);
+
         graph = engine.graphWithNewKeyspace();
         loader = new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
         loadOntology(graph.getKeyspace());
