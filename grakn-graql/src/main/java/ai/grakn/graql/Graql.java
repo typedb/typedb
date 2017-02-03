@@ -266,6 +266,14 @@ public class Graql {
     }
 
     /**
+     * Create an aggregate that will find the standard deviation of a variable's values.
+     * @param name the variable to find the standard deviation of
+     */
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> stdev(String name) {
+        return Aggregates.stdev(VarName.of(name));
+    }
+
+    /**
      * Create an aggregate that will group a query by a variable name.
      * @param varName the variable name to group results by
      */

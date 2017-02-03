@@ -69,6 +69,7 @@ import static ai.grakn.graql.Graql.parseList;
 import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.select;
+import static ai.grakn.graql.Graql.stdev;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
@@ -435,6 +436,16 @@ public class QueryParserTest {
 
         AggregateQuery<Map<String, Object>> parsed =
                 parse("match $x isa movie; aggregate (count as c, group $x as g);");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseStdev() {
+        AggregateQuery<?> expected = match(var("x").isa("movie")).aggregate(stdev("x"));
+
+        AggregateQuery<Map<String, Object>> parsed =
+                parse("match $x isa movie; aggregate stdev $x;");
 
         assertEquals(expected, parsed);
     }

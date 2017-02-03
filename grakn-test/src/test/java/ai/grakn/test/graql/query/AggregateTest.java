@@ -42,8 +42,11 @@ import static ai.grakn.graql.Graql.max;
 import static ai.grakn.graql.Graql.median;
 import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.select;
+import static ai.grakn.graql.Graql.stdev;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
 
 public class AggregateTest {
@@ -193,5 +196,33 @@ public class AggregateTest {
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(8.0d, query.execute().get().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testStdevLong() {
+        AggregateQuery<Optional<Double>> query = qb
+                .match(var("x").isa("movie").has("tmdb-vote-count", var("y")))
+                .aggregate(stdev("y"));
+
+        double mean = (1000d + 100d + 400d + 435d) / 4d;
+        double variance =
+                (pow(1000d - mean, 2d) + pow(100d - mean, 2d) + pow(400d - mean, 2d) + pow(435d - mean, 2d)) / 4d;
+        double expected = sqrt(variance);
+
+        assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testStdevDouble() {
+        AggregateQuery<Optional<Double>> query = qb
+                .match(var("x").isa("movie").has("tmdb-vote-average", var("y")))
+                .aggregate(stdev("y"));
+
+        double mean = (8.6d + 8.4d + 7.6d + 3.1d) / 4d;
+        double variance =
+                (pow(8.6d - mean, 2d) + pow(8.4d - mean, 2d) + pow(7.6d - mean, 2d) + pow(3.1d - mean, 2d)) / 4d;
+        double expected = sqrt(variance);
+
+        assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
     }
 }

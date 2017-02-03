@@ -92,6 +92,13 @@ public class Aggregates {
     }
 
     /**
+     * Aggregate that finds standard deviation of a match query
+     */
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> stdev(VarName varName) {
+        return new StdevAggregate(varName);
+    }
+
+    /**
      * Aggregate that finds minimum of a match query.
      */
     public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> min(VarName varName) {
