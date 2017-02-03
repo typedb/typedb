@@ -189,6 +189,8 @@ final class ElementFactory {
                 case RULE_TYPE:
                     concept = new RuleTypeImpl(graknGraph, v);
                     break;
+                default:
+                    throw new RuntimeException("Unknown base type");
             }
             conceptCache.put(concept.getId(), concept);
         }
