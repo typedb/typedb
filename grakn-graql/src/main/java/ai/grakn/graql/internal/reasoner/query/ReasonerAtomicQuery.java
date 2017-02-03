@@ -37,7 +37,6 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import java.util.Objects;
