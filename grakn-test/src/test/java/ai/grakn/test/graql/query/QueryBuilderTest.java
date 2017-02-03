@@ -34,7 +34,10 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.graql.Graql.insert;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
+import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class QueryBuilderTest {
@@ -53,13 +56,13 @@ public class QueryBuilderTest {
     @Test
     public void testBuildQueryGraphFirst() {
         MatchQuery query = movieGraph.graph().graql().match(var("x").isa("movie"));
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), QueryUtil.movies);
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
     public void testBuildMatchQueryGraphLast() {
         MatchQuery query = match(var("x").isa("movie")).withGraph(movieGraph.graph());
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), QueryUtil.movies);
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test

@@ -27,6 +27,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -127,6 +128,25 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         } else {
             return concept;
         }
+    }
+
+    /**
+     * Changes the name of the type
+     *
+     * @param name The new name of the type
+     * @return The Type name
+     */
+    public TypeName setName(String name){
+        TypeName typeName = TypeName.of(name);
+        Type foundType = getGraknGraph().getType(typeName);
+
+        if(foundType == null) {
+            setProperty(Schema.ConceptProperty.NAME, name);
+        } else if (!equals(foundType)){
+            throw new ConceptNotUniqueException(foundType, name);
+        }
+
+        return typeName;
     }
 
     /**

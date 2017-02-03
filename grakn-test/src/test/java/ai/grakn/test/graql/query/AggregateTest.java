@@ -25,6 +25,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.matcher.MovieMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -63,7 +64,7 @@ public class AggregateTest {
 
         long count = countQuery.execute();
 
-        Assert.assertEquals(QueryUtil.movies.length, count);
+        Assert.assertEquals(MovieMatchers.movies.size(), count);
     }
 
     @Test
@@ -73,7 +74,7 @@ public class AggregateTest {
 
         Map<Concept, List<Map<VarName, Concept>>> groups = groupQuery.execute();
 
-        Assert.assertEquals(QueryUtil.movies.length, groups.size());
+        Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
 
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
@@ -107,7 +108,7 @@ public class AggregateTest {
         // We can't guarantee the generic type is correct here
         @SuppressWarnings("unchecked") Map<Concept, List<Map<String, Concept>>> groups = (Map) results.get("g");
 
-        Assert.assertEquals(QueryUtil.movies.length, groups.size());
+        Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
 
         long groupedResults = groups.values().stream().mapToInt(List::size).sum();
 

@@ -44,4 +44,22 @@ class NamedAggregateImpl<T, S> implements NamedAggregate<T, S> {
     public String toString() {
         return getAggregate() + " as " + getName();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        NamedAggregateImpl<?, ?> that = (NamedAggregateImpl<?, ?>) o;
+
+        if (!aggregate.equals(that.aggregate)) return false;
+        return name.equals(that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = aggregate.hashCode();
+        result = 31 * result + name.hashCode();
+        return result;
+    }
 }

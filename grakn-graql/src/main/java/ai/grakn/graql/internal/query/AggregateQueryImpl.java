@@ -68,4 +68,22 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     public String toString() {
         return matchQuery.toString() + " aggregate " + aggregate.toString() + ";";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AggregateQueryImpl<?> that = (AggregateQueryImpl<?>) o;
+
+        if (!matchQuery.equals(that.matchQuery)) return false;
+        return aggregate.equals(that.aggregate);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = matchQuery.hashCode();
+        result = 31 * result + aggregate.hashCode();
+        return result;
+    }
 }

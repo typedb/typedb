@@ -31,7 +31,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -50,7 +49,6 @@ import java.util.stream.Collectors;
 public class PostProcessing {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
-
     private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
     private static PostProcessing instance = null;
@@ -63,7 +61,7 @@ public class PostProcessing {
     private final EngineCacheImpl cache;
 
     private PostProcessing() {
-        postpool = Executors.newFixedThreadPool(1);
+        postpool = Executors.newFixedThreadPool(Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
         cache = EngineCacheImpl.getInstance();
         futures = ConcurrentHashMap.newKeySet();
@@ -125,24 +123,19 @@ public class PostProcessing {
     private void performCastingFix() {
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                for (String castingId : cache.getCastingJobs(keyspace)) {
-                    futures.add(postpool.submit(() ->
-                            ConceptFixer.checkCasting(cache, keyspace, castingId)));
-                }
+                cache.getCastingJobs(keyspace).
+                        forEach((index, ids) -> futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, index, ids))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
-
         });
     }
 
     private void performResourceFix(){
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                futures.add(postpool.submit(() -> {
-                    Set<String> deepCopy = cache.getResourceJobs(keyspace).stream().map(String::new).collect(Collectors.toSet());
-                    ConceptFixer.checkResources(cache, keyspace, deepCopy);
-                }));
+                cache.getResourceJobs(keyspace).
+                        forEach((index, ids) -> futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids))));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }

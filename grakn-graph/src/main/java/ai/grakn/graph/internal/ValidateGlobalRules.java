@@ -18,12 +18,15 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -273,5 +276,33 @@ class ValidateGlobalRules {
         } catch (ConceptNotUniqueException e){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relation));
         }
+    }
+
+    /**
+     *
+     * @param rule The rule to be validated
+     * @return Error messages if the lhs or rhs of a rule refers to a non existent type
+     */
+    static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, RuleImpl rule){
+        Set<String> errors = new HashSet<>();
+        errors.addAll(checkRuleSideInvalid(graph, rule, "LHS", rule.getLHS()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, "RHS", rule.getRHS()));
+        return errors;
+    }
+
+    /**
+     *
+     * @param graph The graph to query against
+     * @param rule The rule the pattern was extracted from
+     * @param side The side from which the pattern was extracted
+     * @param pattern The pattern from which we will extract the types in the pattern
+     * @return A list of errors if the pattern refers to any non-existent types in the graph
+     */
+    private static Set<String> checkRuleSideInvalid(GraknGraph graph, RuleImpl rule, String side, Pattern pattern) {
+        return pattern.admin().getVars().stream()
+                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.getTypeNames().stream())
+                .filter(typeName -> graph.getType(typeName) == null)
+                .map(typeName -> ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getName(), typeName)).collect(Collectors.toSet());
     }
 }

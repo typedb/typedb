@@ -51,7 +51,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  * THe property is defined as a relationship between an {@link Instance} and a {@link Type}.
  *
  * When matching, any subtyping is respected. For example, if we have {@code $bob isa man}, {@code man sub person},
- * {@code person sub entity} then it follows that {@ode $bob isa person} and {@bob isa entity}.
+ * {@code person sub entity} then it follows that {@code $bob isa person} and {@code bob isa entity}.
  *
  * @author Felix Chapman
  */

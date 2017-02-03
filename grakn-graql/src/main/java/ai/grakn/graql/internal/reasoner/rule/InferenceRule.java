@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
 import javafx.util.Pair;
@@ -104,7 +105,7 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, head);
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(head);
         Map<VarName, VarName> rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
@@ -113,8 +114,7 @@ public class InferenceRule {
             unify(rewriteUnifiers);
 
             //resolve captures
-            Set<VarName> varIntersection = body.getVarNames();
-            varIntersection.retainAll(parentAtom.getVarNames());
+            Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
@@ -146,7 +146,7 @@ public class InferenceRule {
      * @param parentAtom atom the rule should be unified with
      */
    public void unify(Atom parentAtom) {
-        rewriteHead(parentAtom);
+        if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
         if(parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);

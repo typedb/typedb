@@ -76,4 +76,19 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     public final String toString() {
         return inner.toString() + modifierString();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MatchQueryModifier maps = (MatchQueryModifier) o;
+
+        return inner.equals(maps.inner);
+    }
+
+    @Override
+    public int hashCode() {
+        return inner.hashCode();
+    }
 }

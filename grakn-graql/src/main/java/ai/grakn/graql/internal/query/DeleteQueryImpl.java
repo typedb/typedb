@@ -120,4 +120,22 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     public MatchQuery getMatchQuery() {
         return matchQuery;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DeleteQueryImpl that = (DeleteQueryImpl) o;
+
+        if (!deleters.equals(that.deleters)) return false;
+        return matchQuery.equals(that.matchQuery);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = deleters.hashCode();
+        result = 31 * result + matchQuery.hashCode();
+        return result;
+    }
 }
