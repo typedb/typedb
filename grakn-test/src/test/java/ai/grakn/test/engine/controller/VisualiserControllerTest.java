@@ -19,8 +19,8 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.EngineContext;
 import ai.grakn.concept.TypeName;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.jayway.restassured.response.Response;
@@ -30,21 +30,14 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
-import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
-import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.QUERY_FIELD;
+import static ai.grakn.util.REST.Request.*;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest {
@@ -92,7 +85,7 @@ public class VisualiserControllerTest {
                 .then().statusCode(200).extract().response().andReturn();
 
         Json resultArray = Json.read(response.getBody().asString());
-        assertEquals(60, resultArray.asJsonList().size());
+        assertEquals(60,resultArray.asJsonList().size());
 
         Json firstPerson = resultArray.at(0);
         String firstPersonId = firstPerson.at("_id").asString();
@@ -100,6 +93,7 @@ public class VisualiserControllerTest {
         checkHALStructureOfPerson(resultArray.at(0), firstPersonId);
 
         Json samePerson = retrieveConceptById(firstPersonId);
+
 
         assertEquals(firstPerson.at("_id"), samePerson.at("_id"));
     }
@@ -126,20 +120,18 @@ public class VisualiserControllerTest {
             mappedEmbedded.keySet().forEach(key -> {
                 //Foreach element of the json array we check if it is a generated relation
                 mappedEmbedded.get(key).asJsonList().forEach(element -> {
-                    if (element.at("_baseType").asString().equals("generated-relation")){
+                    if (element.at("_baseType").asString().equals("generated-relation")) {
                         assertFalse(element.at("_links").at("self").at("href").asString().contains("isa"));
                     }
                 });
 
             });
         });
-
     }
 
-
-    private void checkHALStructureOfPerson(Json person, String id) {
+    private void checkHALStructureOfPerson(Json person, String id){
         assertEquals(person.at("_type").asString(), "person");
-        assertEquals(person.at("_id").getValue(), id);
+        assertEquals(person.at("_id").getValue(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -152,10 +144,10 @@ public class VisualiserControllerTest {
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), embeddedType.at("_baseType").asString());
     }
 
-    private void checkHALStructureOfPersonWithoutEmbedded(Json person, String id) {
+    private void checkHALStructureOfPersonWithoutEmbedded(Json person, String id){
 
         assertEquals(person.at("_type").asString(), "person");
-        assertEquals(person.at("_id").getValue(), id);
+        assertEquals(person.at("_id").getValue(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -169,8 +161,8 @@ public class VisualiserControllerTest {
                 .get(REST.WebPath.CONCEPT_BY_ID_URI + id)
                 .then().statusCode(200).extract().response().andReturn();
 
-        Json samePerson = Json.read(response.getBody().asString());
-        checkHALStructureOfPersonWithoutEmbedded(samePerson, id);
+        Json samePerson =Json.read(response.getBody().asString());
+        checkHALStructureOfPersonWithoutEmbedded(samePerson,id);
 
         return samePerson;
     }
