@@ -314,12 +314,12 @@ public class GenealogyTest {
         MatchQuery query3 = iqb.parse(queryString3);
         MatchQuery query4 = iqb.parse(queryString4);
         
-        //QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
-        QueryAnswers answers3 =queryAnswers(query3);
+        QueryAnswers answers3 = queryAnswers(query3);
         QueryAnswers answers4 = queryAnswers(query4);
 
-        //assertEquals(answers.size(), 22);
+        assertEquals(answers.size(), 22);
         assertEquals(answers2.size(), 92);
         assertEquals(answers3.size(), 50);
         assertEquals(answers3.size(), answers4.size());
@@ -327,52 +327,39 @@ public class GenealogyTest {
 
     @Test
     public void testMotherInLaw() {
-        String queryString = "match (parent-in-law: $x) isa in-laws;" +
-                "$x has gender $g;$g value 'female';$x has identifier $id;";
-        MatchQuery query = iqb.parse(queryString);
-        QueryAnswers answers = queryAnswers(query);
-        assertTrue(checkResource(answers, "g", "female"));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
-    }
-
-    @Test
-    public void testMotherInLaw2() {
-        String queryString = "match (mother-in-law: $x);$x has identifier $id;$x has gender $g;";
-        String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
-                "$x has gender $g;$g value 'female';$x has identifier $id; select $x, $g, $id;";
+        String queryString = "match (mother-in-law: $x);$x has gender $g;";
+        String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g value 'female'; select $x, $g;";
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers.size(), 8);
         assertEquals(answers, answers2);
+        assertTrue(checkResource(answers, "g", "female"));
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
-        assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testFatherInLaw() {
-        String queryString = "match (father-in-law: $x); $x has identifier $id;";
-        String queryString2 = "match (parent-in-law: $x, $y) isa in-laws;" +
-                "$x has gender 'male';$x has identifier $id; select $x, $id;";
+        String queryString = "match (father-in-law: $x);$x has gender $g;";
+        String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g value'male'; select $x, $g;";
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers.size(), 9);
         assertEquals(answers, answers2);
+        assertTrue(checkResource(answers, "g", "male"));
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
-        assertTrue(!answers.isEmpty());
     }
 
     @Test
     public void testSonInLaw() {
         String queryString = "match (son-in-law: $x);$x has gender $g;";
         MatchQuery query = iqb.parse(queryString);
-
         QueryAnswers answers = queryAnswers(query);
-        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertEquals(answers.size(), 11);
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
@@ -486,7 +473,6 @@ public class GenealogyTest {
         assertEquals(answers.size(), 18);
         assertTrue(checkResource(answers, "g", "female"));
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
-        assertTrue(!answers.isEmpty());
     }
 
     private boolean checkResource(QueryAnswers answers, String var, String value){
