@@ -23,7 +23,6 @@ import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
-import ai.grakn.engine.controller.ImportController;
 import ai.grakn.engine.controller.StatusController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
@@ -135,7 +134,6 @@ public class GraknEngineServer {
         new AuthController();
         new UserController();
         new TasksController(taskManager);
-        new ImportController(taskManager);
 
         //Register filter to check authentication token in each request
         before((req, res) -> checkAuthorization(req));
