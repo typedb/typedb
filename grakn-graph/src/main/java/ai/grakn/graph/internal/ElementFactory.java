@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
@@ -29,6 +30,9 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * <p>
@@ -47,11 +51,23 @@ import org.slf4j.LoggerFactory;
  * @author fppt
  */
 final class ElementFactory {
+    private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
     private final AbstractGraknGraph graknGraph;
 
     ElementFactory(AbstractGraknGraph graknGraph){
         this.graknGraph = graknGraph;
+    }
+
+    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v){
+        ConceptId conceptId = ConceptId.of(v.id().toString());
+
+        if(conceptCache.containsKey(conceptId))){
+
+        }
+
+        //noinspection unchecked
+        return (X) conceptCache.get(conceptId);
     }
 
     // ------------------------------------------- Building Castings  --------------------------------------------------
@@ -128,48 +144,51 @@ final class ElementFactory {
             return null;
         }
 
-        ConceptImpl concept = null;
-        switch (type){
-            case RELATION:
-                concept = new RelationImpl(graknGraph, v);
-                break;
-            case CASTING:
-                concept = new CastingImpl(graknGraph, v);
-                break;
-            case TYPE:
-                concept = new TypeImpl<>(graknGraph, v);
-                break;
-            case ROLE_TYPE:
-                concept = new RoleTypeImpl(graknGraph, v);
-                break;
-            case RELATION_TYPE:
-                concept = new RelationTypeImpl(graknGraph, v);
-                break;
-            case ENTITY:
-                concept = new EntityImpl(graknGraph, v);
-                break;
-            case ENTITY_TYPE:
-                concept = new EntityTypeImpl(graknGraph, v);
-                break;
-            case RESOURCE_TYPE:
-                concept = new ResourceTypeImpl<>(graknGraph, v);
-                break;
-            case RESOURCE:
-                concept = new ResourceImpl<>(graknGraph, v);
-                break;
-            case RULE:
-                concept = new RuleImpl(graknGraph, v);
-                break;
-            case RULE_TYPE:
-                concept = new RuleTypeImpl(graknGraph, v);
-                break;
+        ConceptImpl concept = conceptCache.get(ConceptId.of(v.id().toString()));
+        if(concept == null) { //Build concept only if it is not cached
+            switch (type) {
+                case RELATION:
+                    concept = new RelationImpl(graknGraph, v);
+                    break;
+                case CASTING:
+                    concept = new CastingImpl(graknGraph, v);
+                    break;
+                case TYPE:
+                    concept = new TypeImpl<>(graknGraph, v);
+                    break;
+                case ROLE_TYPE:
+                    concept = new RoleTypeImpl(graknGraph, v);
+                    break;
+                case RELATION_TYPE:
+                    concept = new RelationTypeImpl(graknGraph, v);
+                    break;
+                case ENTITY:
+                    concept = new EntityImpl(graknGraph, v);
+                    break;
+                case ENTITY_TYPE:
+                    concept = new EntityTypeImpl(graknGraph, v);
+                    break;
+                case RESOURCE_TYPE:
+                    concept = new ResourceTypeImpl<>(graknGraph, v);
+                    break;
+                case RESOURCE:
+                    concept = new ResourceImpl<>(graknGraph, v);
+                    break;
+                case RULE:
+                    concept = new RuleImpl(graknGraph, v);
+                    break;
+                case RULE_TYPE:
+                    concept = new RuleTypeImpl(graknGraph, v);
+                    break;
+            }
+            conceptCache.put(concept.getId(), concept);
         }
 
         //noinspection unchecked
         return (X) concept;
     }
 
-    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
+    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
         return new EdgeImpl(edge, graknGraph);
     }
 
@@ -177,6 +196,7 @@ final class ElementFactory {
         if(graknGraph.isConceptModified(concept)) { //Only track concepts which have been modified.
             graknGraph.getConceptLog().putConcept(concept);
         }
+        conceptCache.put(concept.getId(), concept);
         return concept;
     }
 }
