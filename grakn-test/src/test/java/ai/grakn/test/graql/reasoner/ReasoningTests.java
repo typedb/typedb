@@ -154,7 +154,6 @@ public class ReasoningTests {
     }
 
     //TODO get rid of newAnswers and initialize iterator to answer difference
-    @Ignore
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         QueryBuilder iqb = testSet7.graph().graql().infer(true);

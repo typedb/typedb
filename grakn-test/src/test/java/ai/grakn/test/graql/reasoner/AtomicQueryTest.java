@@ -108,8 +108,7 @@ public class AtomicQueryTest {
                 VarName.of("x"), getConcept("Bob"),
                 VarName.of("y"), getConcept("Colour of Magic")));
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, snbGraph.graph());
-        atomicQuery.getAnswers().addAll(answers);
-        atomicQuery.materialise();
+        atomicQuery.materialise(answers);
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
 

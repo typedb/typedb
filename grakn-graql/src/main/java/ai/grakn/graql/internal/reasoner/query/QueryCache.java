@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import java.util.HashMap;
+import javafx.util.Pair;
 
 /**
  *
@@ -29,7 +30,7 @@ import java.util.HashMap;
  * @author Kasper Piskorski
  *
  */
-public class QueryCache extends HashMap<ReasonerAtomicQuery, ReasonerAtomicQuery> {
+public class QueryCache extends HashMap<ReasonerAtomicQuery, Pair<ReasonerAtomicQuery, QueryAnswers>> {
 
     public QueryCache(){ super();}
     public boolean contains(ReasonerAtomicQuery query){ return this.containsKey(query);}
@@ -38,21 +39,25 @@ public class QueryCache extends HashMap<ReasonerAtomicQuery, ReasonerAtomicQuery
      * updates the cache by the specified query
      * @param atomicQuery query to be added/updated
      */
-    public void record(ReasonerAtomicQuery atomicQuery){
-        ReasonerAtomicQuery equivalentQuery = get(atomicQuery);
+    public void record(ReasonerAtomicQuery atomicQuery, QueryAnswers answers){
+        ReasonerAtomicQuery equivalentQuery = contains(atomicQuery)? get(atomicQuery).getKey() : null;
         if (equivalentQuery != null) {
-            QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, atomicQuery);
-            get(atomicQuery).getAnswers().addAll(unifiedAnswers);
+            QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, atomicQuery, answers);
+            get(atomicQuery).getValue().addAll(unifiedAnswers);
         } else {
-            put(atomicQuery, atomicQuery);
+            put(atomicQuery, new Pair<>(atomicQuery, answers));
         }
     }
 
     public QueryAnswers getAnswers(ReasonerAtomicQuery q){
-        ReasonerAtomicQuery equivalentQuery = get(q);
+        ReasonerAtomicQuery equivalentQuery = contains(q)? get(q).getKey() : null;
         if (equivalentQuery != null) {
-            return QueryAnswers.getUnifiedAnswers(q, equivalentQuery);
+            return QueryAnswers.getUnifiedAnswers(q, equivalentQuery, get(q).getValue());
         }
         else return new QueryAnswers();
+    }
+
+    public int size(){
+        return keySet().stream().map(q -> get(q).getValue().size()).mapToInt(Integer::intValue).sum();
     }
 }

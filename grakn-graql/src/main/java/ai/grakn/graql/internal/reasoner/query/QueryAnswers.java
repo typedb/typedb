@@ -192,8 +192,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @param parentQuery parent atomic query containing target variables
      * @return unified answers
      */
-    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
-        QueryAnswers answers = childQuery.getAnswers();
+    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
         Atom childAtom = childQuery.getAtom();
         Atom parentAtom = parentQuery.getAtom();
