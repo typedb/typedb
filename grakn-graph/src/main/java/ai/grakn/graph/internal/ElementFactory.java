@@ -60,73 +60,80 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
-    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<Vertex, ConceptImpl> conceptBuilder){
+    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<Vertex, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
         if(!conceptCache.containsKey(conceptId)){
-            ConceptImpl newConcept = conceptBuilder.apply(v);
+            X newConcept = conceptBuilder.apply(v);
             conceptCache.put(newConcept.getId(), newConcept);
         }
 
         //noinspection unchecked
-        return (X) conceptCache.get(conceptId);
+        X concept = (X) conceptCache.get(conceptId);
+
+        //Only track concepts which have been modified.
+        if(graknGraph.isConceptModified(concept)) {
+            graknGraph.getConceptLog().putConcept(concept);
+        }
+
+        return concept;
     }
 
     // ------------------------------------------- Building Castings  --------------------------------------------------
-    CastingImpl buildCasting(Vertex v, RoleType type){
-        return trackConcept(new CastingImpl(graknGraph, v, type));
+    CastingImpl buildCasting(Vertex vertex, RoleType type){
+        return getOrBuildConcept(vertex, (v) -> new CastingImpl(graknGraph, v, type));
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
-        return trackConcept(new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex vertex, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
+        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
-        return trackConcept(new ResourceImpl<>(graknGraph, v, type, value));
+    <V> ResourceImpl <V> buildResource(Vertex vertex, ResourceType<V> type, V value){
+        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(graknGraph, v, type, value));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
+    RelationTypeImpl buildRelationType(Vertex vertex, RelationType type, Boolean isImplicit){
         if(isImplicit) {
-            return trackConcept(new RelationTypeImpl(graknGraph, v, type, true));
+            return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type, true));
         } else {
-            return trackConcept(new RelationTypeImpl(graknGraph, v, type)); //No need to save something as non-implicit.
+            return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type)); //No need to save something as non-implicit.
         }
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(Vertex v, RelationType type){
-        return trackConcept(new RelationImpl(graknGraph, v, type));
+    RelationImpl buildRelation(Vertex vertex, RelationType type){
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    EntityTypeImpl buildEntityType(Vertex v, EntityType type){
-        return trackConcept(new EntityTypeImpl(graknGraph, v, type));
+    EntityTypeImpl buildEntityType(Vertex vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(graknGraph, v, type));
     }
 
     // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(Vertex v, EntityType type){
-        return trackConcept(new EntityImpl(graknGraph, v, type));
+    EntityImpl buildEntity(Vertex vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    RuleTypeImpl buildRuleType(Vertex v, RuleType type){
-        return trackConcept(new RuleTypeImpl(graknGraph, v, type));
+    RuleTypeImpl buildRuleType(Vertex vertex, RuleType type){
+        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(graknGraph, v, type));
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
-        return trackConcept(new RuleImpl(graknGraph, v, type, lhs, rhs));
+    RuleImpl buildRule(Vertex vertex, RuleType type, Pattern lhs, Pattern rhs){
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(graknGraph, v, type, lhs, rhs));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
+    RoleTypeImpl buildRoleType(Vertex vertex, RoleType type, Boolean isImplicit){
         if(isImplicit) {
-            return trackConcept(new RoleTypeImpl(graknGraph, v, type, true));
+            return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type, true));
         } else {
-            return trackConcept(new RoleTypeImpl(graknGraph, v, type));
+            return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type));
         }
     }
 
@@ -194,11 +201,10 @@ final class ElementFactory {
         return new EdgeImpl(edge, graknGraph);
     }
 
-    private <X extends ConceptImpl> X trackConcept(X concept){
+    /*private <X extends ConceptImpl> X getOrBuildConcept(X concept){
         if(graknGraph.isConceptModified(concept)) { //Only track concepts which have been modified.
             graknGraph.getConceptLog().putConcept(concept);
         }
-        conceptCache.put(concept.getId(), concept);
         return concept;
-    }
+    }*/
 }
