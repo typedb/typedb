@@ -35,6 +35,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds standard deviation of a match query.
  */
+// TODO: Rename this to `std` to match analytics
 class StdevAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Double>> {
 
     private final VarName varName;
