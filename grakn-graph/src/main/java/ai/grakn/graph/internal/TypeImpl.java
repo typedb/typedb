@@ -80,6 +80,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The instance required
      */
     protected V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
+        if(Schema.MetaSchema.isMetaName(getName())){
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
+        }
+
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
         return producer.apply(instanceVertex, getThis());
     }
