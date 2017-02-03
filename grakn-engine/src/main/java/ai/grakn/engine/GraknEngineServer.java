@@ -40,10 +40,6 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Spark;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;

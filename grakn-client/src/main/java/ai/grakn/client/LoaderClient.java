@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -170,11 +171,6 @@ public class LoaderClient {
 
         CompletableFuture<Json> status = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
 
-        if(status == null){
-            LOG.error("Could not send to host: " + queries);
-            return;
-        }
-
         // Add this status to the set of completable futures
         futures.add(status);
 
@@ -216,14 +212,12 @@ public class LoaderClient {
             return await(id);
         }
         catch (IOException e){
-            LOG.error(ErrorMessage.ERROR_IN_DISTRIBUTED_TRANSACTION.getMessage(getResponseMessage(connection)));
+            throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
         }
-
-        return null;
     }
 
     /**
@@ -246,14 +240,12 @@ public class LoaderClient {
             return Json.read(readResponse(connection.getInputStream()));
         }
         catch (IOException e){
-            LOG.error(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(getResponseMessage(connection)));
+            throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
         }
-
-        return null;
     }
 
     /**
@@ -267,6 +259,7 @@ public class LoaderClient {
         return CompletableFuture.supplyAsync(() -> {
             while (true) {
                 Json taskState = getStatus(id);
+
                 TaskStatus status = TaskStatus.valueOf(taskState.at(TASK_STATUS_PARAMETER).asString());
                 if (status == COMPLETED || status == FAILED || status == STOPPED) {
                     return taskState;
@@ -279,20 +272,6 @@ public class LoaderClient {
                 }
             }
         });
-    }
-
-    /**
-     * Get the response message from an http connection
-     * @param connection to get response message from
-     * @return the response message
-     */
-    private String getResponseMessage(HttpURLConnection connection){
-        try {
-            return connection.getResponseMessage();
-        } catch (IOException e) {
-            LOG.error(e.getMessage());
-        }
-        return null;
     }
 
     private String getPostParams(){
@@ -318,20 +297,20 @@ public class LoaderClient {
 
     /**
      * Read the input stream from a HttpURLConnection into a String
-     * @result String containing response from the server
+     * @return String containing response from the server
      */
     private String readResponse(InputStream inputStream){
-        String response = "";
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))){
+        StringBuilder response = new StringBuilder();
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))){
             String inputLine;
             while ((inputLine = reader.readLine()) != null) {
-                response += inputLine;
+                response.append(inputLine);
             }
         } catch (IOException e){
             LOG.error("Error reading response from the server: " + e.getMessage());
         }
 
-        return response;
+        return response.toString();
     }
 }
 

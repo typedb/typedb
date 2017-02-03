@@ -21,7 +21,6 @@ package ai.grakn.engine.backgroundtasks;
 import mjson.Json;
 
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * <p>
