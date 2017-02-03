@@ -225,6 +225,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param subGoals set of visited subqueries
      * @param cache collection of performed query resolutions
      * @param materialise materialisation flag
+     * @return answers from rule resolution
      */
     private QueryAnswers resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, QueryCache cache, boolean materialise){
         Atom atom = this.getAtom();
@@ -341,7 +342,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         private void computeNext(){
             if (!hasNextRule()) initIteration();
-            newAnswers.clear();
             Rule rule = nextRule();
             LOG.debug("Resolving rule: " + rule.getId() + " answers: " + size());
             newAnswers = outer().resolveViaRule(rule, subGoals, cache, materialise);

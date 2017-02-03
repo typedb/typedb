@@ -38,6 +38,7 @@ public class QueryCache extends HashMap<ReasonerAtomicQuery, Pair<ReasonerAtomic
     /**
      * updates the cache by the specified query
      * @param atomicQuery query to be added/updated
+     * @param answers answers to the query
      */
     public void record(ReasonerAtomicQuery atomicQuery, QueryAnswers answers){
         ReasonerAtomicQuery equivalentQuery = contains(atomicQuery)? get(atomicQuery).getKey() : null;
