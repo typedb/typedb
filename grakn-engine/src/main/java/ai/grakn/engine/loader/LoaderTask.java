@@ -18,11 +18,13 @@
 
 package ai.grakn.engine.loader;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
+import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -43,11 +45,13 @@ import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
-import static ai.grakn.util.REST.Request.URI_PARAM;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Task that will load data into the graph
+ * Task that will load data into a graph. It uses the engine running on the
+ * engine executing the task.
+ *
+ * The task will then submit all modified concepts for post processing.
  *
  * @author Alexandra Orth
  */
@@ -60,7 +64,6 @@ public class LoaderTask implements BackgroundTask {
     @Override
     public void start(Consumer<String> saveCheckpoint, Json configuration) {
         attemptInsertions(
-                getURI(configuration),
                 getKeyspace(configuration),
                 getInserts(configuration));
     }
@@ -80,8 +83,8 @@ public class LoaderTask implements BackgroundTask {
         throw new UnsupportedOperationException("Loader task cannot be resumed");
     }
 
-    private void attemptInsertions(String uri, String keyspace, Collection<InsertQuery> inserts) {
-        try(GraknGraph graph = Grakn.factory(uri, keyspace).getGraphBatchLoading()) {
+    private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts) {
+        try(EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraphBatchLoading(keyspace)) {
             for (int i = 0; i < repeatCommits; i++) {
                 if(insertQueriesInOneTransaction(graph, inserts)){
                     return;
@@ -98,16 +101,15 @@ public class LoaderTask implements BackgroundTask {
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<InsertQuery> inserts) {
+    private boolean insertQueriesInOneTransaction(EngineGraknGraph graph, Collection<InsertQuery> inserts) {
 
         try {
             graph.showImplicitConcepts(true);
 
-            // execute each of the insert queries
-            inserts.forEach(q -> q.withGraph(graph).execute());
+            inserts.forEach(q -> q.withGraph((GraknGraph) graph).execute());
 
             // commit the transaction
-            graph.commit();
+            graph.commit(EngineCacheImpl.getInstance());
         } catch (GraknValidationException e) {
             //If it's a validation exception there is no point in re-trying
             throwException(FAILED_VALIDATION.getMessage(e.getMessage()), inserts);
@@ -182,18 +184,5 @@ public class LoaderTask implements BackgroundTask {
 
         //TODO default graph name
         throw new IllegalArgumentException(ILLEGAL_ARGUMENT_EXCEPTION.getMessage("No keyspace", configuration));
-    }
-
-    /**
-     * Extract the URI from a configuration object
-     * @param configuration JSONObject containing configuration
-     * @return uri from the configuration or default
-     */
-    private String getURI(Json configuration){
-        if(configuration.has(URI_PARAM)){
-            return configuration.at(URI_PARAM).asString();
-        }
-
-        return Grakn.DEFAULT_URI;
     }
 }
