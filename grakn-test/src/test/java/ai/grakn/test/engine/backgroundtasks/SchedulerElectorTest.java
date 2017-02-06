@@ -48,6 +48,7 @@ public class SchedulerElectorTest {
 
     @AfterClass
     public static void teardown(){
+        elector.stop();
         connection.close();
     }
 
