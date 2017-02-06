@@ -222,7 +222,7 @@ public class EntityTypeTest extends GraphTestBase{
 
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
-        graknGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
+        graknGraph.getTinkerPopGraph().traversal().V(conceptType.getId().getValue()).
                 out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(graknGraph.getRoleType(r.value(Schema.ConceptProperty.NAME.name()))));
 
         assertEquals(2, foundRoles.size());

@@ -21,7 +21,6 @@ package ai.grakn.test.graql.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -201,7 +200,7 @@ public class GraqlTest {
 
         Optional<List<Concept>> path = query.execute();
         assert path.isPresent();
-        List<String> result = path.get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+        List<String> result = path.get().stream().map(Object::toString).collect(Collectors.toList());
 
         List<String> expected = Lists.newArrayList(entityId1, relationId12, entityId2);
 
@@ -258,10 +257,10 @@ public class GraqlTest {
         Entity entity3 = entityType1.addEntity();
         Entity entity4 = entityType2.addEntity();
 
-        entityId1 = entity1.getId().getValue();
-        entityId2 = entity2.getId().getValue();
-        entityId3 = entity3.getId().getValue();
-        entityId4 = entity4.getId().getValue();
+        entityId1 = entity1.toString();
+        entityId2 = entity2.toString();
+        entityId3 = entity3.toString();
+        entityId4 = entity4.toString();
 
         RoleType role1 = graph.putRoleType("role1");
         RoleType role2 = graph.putRoleType("role2");
@@ -271,10 +270,10 @@ public class GraqlTest {
 
         relationId12 = relationType.addRelation()
                 .putRolePlayer(role1, entity1)
-                .putRolePlayer(role2, entity2).getId().getValue();
+                .putRolePlayer(role2, entity2).toString();
         relationId24 = relationType.addRelation()
                 .putRolePlayer(role1, entity2)
-                .putRolePlayer(role2, entity4).getId().getValue();
+                .putRolePlayer(role2, entity4).toString();
 
         graph.commit();
         graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();

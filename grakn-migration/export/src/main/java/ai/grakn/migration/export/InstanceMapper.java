@@ -132,7 +132,7 @@ public class InstanceMapper {
      */
     private static  Var roleplayers(Var var, Relation relation){
         for(RoleType role:relation.rolePlayers().keySet()){
-            var = var.rel(name(role.getName()), relation.rolePlayers().get(role).getId().getValue());
+            var = var.rel(name(role.getName()), relation.rolePlayers().get(role).getId().toString());
         }
         return var;
     }
@@ -143,7 +143,7 @@ public class InstanceMapper {
      * @return var patterns representing given instance
      */
     private static  Var base(Instance instance){
-        Var var = var(instance.getId().getValue()).isa(name(instance.type().getName()));
+        Var var = var(instance.getId().toString()).isa(name(instance.type().getName()));
         return hasResources(var, instance);
     }
 

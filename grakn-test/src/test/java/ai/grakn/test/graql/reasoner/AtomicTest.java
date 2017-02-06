@@ -19,26 +19,26 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graphs.CWGraph;
+import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graphs.CWGraph;
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
@@ -180,20 +181,21 @@ public class AtomicTest {
 
     @Test
     public void testTypeInference(){
-        String typeId = snbGraph.graph().getType(TypeName.of("recommendation")).getId().getValue();
+        ConceptId typeId = snbGraph.graph().getType(TypeName.of("recommendation")).getId();
+
         String patternString = "{($x, $y); $x isa person; $y isa product;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().getValue().equals(typeId));
+        assertTrue(atom.getTypeId().equals(typeId));
     }
 
     @Test
     public void testTypeInference2(){
-        String typeId = cwGraph.graph().getType(TypeName.of("transaction")).getId().getValue();
+        ConceptId typeId = cwGraph.graph().getType(TypeName.of("transaction")).getId();
         String patternString = "{($z, $y, $x);$z isa country;$x isa rocket;$y isa person;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, cwGraph.graph()), cwGraph.graph());
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().getValue().equals(typeId));
+        assertTrue(atom.getTypeId().equals(typeId));
     }
 
     @Test

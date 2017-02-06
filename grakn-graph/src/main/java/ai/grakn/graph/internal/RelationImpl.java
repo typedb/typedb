@@ -86,13 +86,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
-        hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
+        hash.append("RelationType_").append(relationType.getId().toString().replace("_", "\\_")).append("_Relation");
 
         for(RoleType role: sortedRoleIds){
-            hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
+            hash.append("_").append(role.getId().toString().replace("_", "\\_"));
             Instance instance = roleMap.get(role);
             if(instance != null){
-                hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
+                hash.append("_").append(instance.getId().toString().replace("_", "\\_"));
             }
         }
         return hash.toString();
@@ -223,7 +223,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             InstanceImpl<?, ?> instance = casting.getRolePlayer();
             if(instance != null) {
                 for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT)) {
-                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId().getValue())){
+                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId().toString())){
                         edge.delete();
                     }
                 }

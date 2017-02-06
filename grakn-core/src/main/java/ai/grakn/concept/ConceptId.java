@@ -33,13 +33,13 @@ import java.io.Serializable;
  * @author fppt
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
-    private String conceptId;
+    private Object conceptId;
 
-    private ConceptId(String conceptId){
+    private ConceptId(Object conceptId){
         this.conceptId = conceptId;
     }
 
-    public String getValue(){
+    public Object getValue(){
         return conceptId;
     }
 
@@ -50,12 +50,19 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     @Override
     public int compareTo(ConceptId o) {
-        return getValue().compareTo(o.getValue());
+        if(o.getValue() instanceof Comparable){
+            //Most vendor ids implement comparable so this should work most of the time.
+            //noinspection unchecked
+            return ((Comparable) o.getValue()).compareTo(getValue());
+        } else {
+            //When vendor Id's are not comparable we fallback to toString  comparison
+            return getValue().toString().compareTo(o.getValue().toString());
+        }
     }
 
     @Override
     public String toString(){
-        return conceptId;
+        return conceptId.toString();
     }
 
     @Override
@@ -68,7 +75,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      * @param value The string which potentially represents a Concept
      * @return The matching concept ID
      */
-    public static ConceptId of(String value){
+    public static ConceptId of(Object value){
         return new ConceptId(value);
     }
 }

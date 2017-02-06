@@ -107,63 +107,63 @@ public class ShortestPathTest {
         addOntologyAndEntities();
 
         // directly connected vertices
-        correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue());
+        correctPath = Lists.newArrayList(entityId1.toString(), relationId12.toString());
         result = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = Graql.compute().withGraph(graph).path().to(entityId1).from(relationId12).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
         // entities connected by a relation
-        correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue(), entityId2.getValue());
+        correctPath = Lists.newArrayList(entityId1.toString(), relationId12.toString(), entityId2.toString());
         result = graph.graql().compute().path().from(entityId1).to(entityId2).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().to(entityId1).from(entityId2).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
         // only one path exists with given subtypes
-        correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
+        correctPath = Lists.newArrayList(entityId2.toString(), relationId12.toString(), entityId1.toString(), relationId13.toString(), entityId3.toString());
         result = Graql.compute().withGraph(graph).path().to(entityId3).from(entityId2).in(thing, related).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId3).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
-        correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue(), entityId2.getValue());
+        correctPath = Lists.newArrayList(entityId1.toString(), relationId12.toString(), entityId2.toString());
         result = graph.graql().compute().path().in(thing, related).to(entityId2).from(entityId1).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().in(thing, related).from(entityId2).to(entityId1).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
@@ -179,31 +179,31 @@ public class ShortestPathTest {
         List<String> result;
         addOntologyAndEntities2();
 
-        correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
+        correctPath = Lists.newArrayList(entityId2.toString(), relationId12.toString(), entityId1.toString(), relationId13.toString(), entityId3.toString());
         result = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().to(entityId2).from(entityId3).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
 
-        correctPath = Lists.newArrayList(relationId1A12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
+        correctPath = Lists.newArrayList(relationId1A12.toString(), entityId1.toString(), relationId13.toString(), entityId3.toString());
         result = graph.graql().compute().path().from(relationId1A12).to(entityId3).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));
         }
         Collections.reverse(correctPath);
         result = graph.graql().compute().path().to(relationId1A12).from(entityId3).execute()
-                .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
+                .get().stream().map(Object::toString).collect(Collectors.toList());
         assertEquals(correctPath.size(), result.size());
         for (int i = 0; i < result.size(); i++) {
             assertEquals(correctPath.get(i), result.get(i));

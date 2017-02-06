@@ -87,12 +87,12 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin, EngineGraknGraph {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
-    private final ElementFactory elementFactory;
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
 
+    private final ThreadLocal<ElementFactory> localElementFactory = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
@@ -105,7 +105,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.keyspace = keyspace;
         this.engine = engine;
         localIsOpen.set(true);
-        elementFactory = new ElementFactory(this);
 
         if(initialiseMetaConcepts()) {
             try {
@@ -162,7 +161,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T buildConcept(Vertex vertex) {
-        return elementFactory.buildConcept(vertex);
+        return getElementFactory().buildConcept(vertex);
     }
 
     public boolean hasCommitted(){
@@ -234,6 +233,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     ElementFactory getElementFactory(){
+        ElementFactory elementFactory = localElementFactory.get();
+        if(elementFactory == null){
+            localElementFactory.set(elementFactory = new ElementFactory(this));
+        }
         return elementFactory;
     }
 
@@ -254,7 +257,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             if(!byPassDuplicates && vertices.hasNext()) {
                 throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             }
-            return elementFactory.buildConcept(vertex);
+            return getElementFactory().buildConcept(vertex);
         } else {
             return null;
         }
@@ -264,7 +267,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Set<ConceptImpl> concepts = new HashSet<>();
         getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> {
-                concepts.add(elementFactory.buildConcept(v));
+                concepts.add(getElementFactory().buildConcept(v));
             });
         return concepts;
     }
@@ -315,7 +318,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public EntityType putEntityType(TypeName name) {
         return putType(name, Schema.BaseType.ENTITY_TYPE,
-                v -> elementFactory.buildEntityType(v, getMetaEntityType()));
+                v -> getElementFactory().buildEntityType(v, getMetaEntityType()));
     }
 
     private <V extends Type> V putType(TypeName name, Schema.BaseType baseType, Function<Vertex, V> factory){
@@ -331,12 +334,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RelationType putRelationType(TypeName name) {
         return putType(name, Schema.BaseType.RELATION_TYPE,
-                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
+                v -> getElementFactory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
     }
 
     RelationType putRelationTypeImplicit(TypeName name) {
         return putType(name, Schema.BaseType.RELATION_TYPE,
-                v -> elementFactory.buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
+                v -> getElementFactory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
     }
 
     @Override
@@ -347,12 +350,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RoleType putRoleType(TypeName name) {
         return putType(name, Schema.BaseType.ROLE_TYPE,
-                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
+                v -> getElementFactory().buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
     RoleType putRoleTypeImplicit(TypeName name) {
         return putType(name, Schema.BaseType.ROLE_TYPE,
-                v -> elementFactory.buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
+                v -> getElementFactory().buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
     @Override
@@ -364,7 +367,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
         return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.FALSE)).asResourceType();
+                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType, Boolean.FALSE)).asResourceType();
     }
 
     @Override
@@ -376,7 +379,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
         return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> elementFactory.buildResourceType(v, getMetaResourceType(), dataType, Boolean.TRUE)).asResourceType();
+                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType, Boolean.TRUE)).asResourceType();
     }
 
     @Override
@@ -387,7 +390,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public RuleType putRuleType(TypeName name) {
         return putType(name, Schema.BaseType.RULE_TYPE,
-                v ->  elementFactory.buildRuleType(v, getMetaRuleType()));
+                v ->  getElementFactory().buildRuleType(v, getMetaRuleType()));
     }
 
     //------------------------------------ Lookup
@@ -401,7 +404,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
         if (traversal.hasNext()) {
-            return elementFactory.buildConcept(traversal.next());
+            return getElementFactory().buildConcept(traversal.next());
         } else {
             return null;
         }
@@ -409,7 +412,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        return getConcept(Schema.ConceptProperty.ID, id.getValue());
+        return getConcept(Schema.ConceptProperty.ID, id.toString());
     }
     private <T extends Type> T getTypeByName(TypeName name){
         return getConcept(Schema.ConceptProperty.NAME, name.getValue());
@@ -503,10 +506,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //-----------------------------------------------Casting Functionality----------------------------------------------
     //------------------------------------ Construction
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
+        CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.toString());
         }
         return casting;
     }
@@ -522,7 +525,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         // Relation To Casting
         EdgeImpl relationToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().toString());
         getConceptLog().putConcept(relation); //The relation is explicitly tracked so we can look them up without committing
 
         putShortcutEdges(relation, relation.type());
@@ -568,22 +571,22 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         InstanceImpl toRolePlayer = (InstanceImpl) to;
 
         String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getBaseIdentifier()).
+        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getId().getValue()).
                     local(outE(Schema.EdgeLabel.SHORTCUT.getLabel()).has(Schema.EdgeProperty.SHORTCUT_HASH.name(), hash)).
                     hasNext();
 
         if (!exists) {
             EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
+            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().toString());
 
             if (fromRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
+                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().toString());
             }
             edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
 
             if (toRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
+                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().toString());
             }
             edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
 
@@ -595,12 +598,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private String calculateShortcutHash(Relation relation, RelationType relationType, RoleType fromRole, Instance fromRolePlayer, RoleType toRole, Instance toRolePlayer){
         String hash = "";
-        String relationIdValue = relationType.getId().getValue();
-        String fromIdValue = fromRolePlayer.getId().getValue();
-        String fromRoleValue = fromRole.getId().getValue();
-        String toIdValue = toRolePlayer.getId().getValue();
-        String toRoleValue = toRole.getId().getValue();
-        String assertionIdValue = relation.getId().getValue();
+        String relationIdValue = relationType.getId().toString();
+        String fromIdValue = fromRolePlayer.getId().toString();
+        String fromRoleValue = fromRole.getId().toString();
+        String toIdValue = toRolePlayer.getId().toString();
+        String toRoleValue = toRole.getId().toString();
+        String assertionIdValue = relation.getId().toString();
 
         if(relationIdValue != null) hash += relationIdValue;
         if(fromIdValue != null) hash += fromIdValue;
@@ -656,7 +659,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void close() {
-        getConceptLog().clearTransaction();
         closeGraph(ErrorMessage.CLOSED_USER.getMessage());
     }
 
@@ -672,6 +674,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //Standard Close Operation Overridden by Vendor
     public void closeGraph(String closedReason){
+        clearLocalVariables();
         finaliseClose(this::closePermanent, closedReason);
     }
 
@@ -698,6 +701,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit() throws GraknValidationException {
         commit(this::submitCommitLogs);
+        clearLocalVariables();
     }
 
     /**
@@ -712,6 +716,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 resources.forEach(pair -> cache.addJobResource(keyspace, pair.getValue0(), pair.getValue1()));
             }
         });
+    }
+
+    private void clearLocalVariables(){
+        localElementFactory.remove();
+        localConceptLog.remove();
     }
 
     public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
@@ -774,7 +783,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             JSONObject jsonObject = new JSONObject();
             jsonObject.put(REST.Request.COMMIT_LOG_TYPE, baseType.name());
             jsonObject.put(REST.Request.COMMIT_LOG_INDEX, concept.getValue0());
-            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().getValue());
+            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().toString());
             jsonArray.put(jsonObject);
         });
     }
@@ -819,13 +828,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void deleteRelations(Set<RelationImpl> relations){
         for (RelationImpl relation : relations) {
-            String relationID = relation.getId().getValue();
+            String relationID = relation.getId().toString();
 
             //Kill Shortcut Edges
             relation.rolePlayers().values().forEach(instance -> {
                 if(instance != null) {
                     List<Edge> edges = getTinkerTraversal().
-                            hasId(instance.getId().getValue()).
+                            hasId(instance.getId().toString()).
                             bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                             has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
 
@@ -865,11 +874,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //Perform the transfer
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().toString());
                 }
             }
 
-            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
+            getTinkerPopGraph().traversal().V(otherCasting.getId().getValue()).next().remove();
         }
 
         return relationsToClean;
