@@ -159,14 +159,6 @@ public class LoaderClient {
                 LOG.error(e.getMessage());
             }
         }
-
-        futures.values().forEach(future -> {
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        });
     }
 
     /**
@@ -186,7 +178,6 @@ public class LoaderClient {
         }
 
         try {
-
             CompletableFuture<Json> status = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
 
             // Add this status to the set of completable futures
@@ -269,6 +260,10 @@ public class LoaderClient {
             // create post
             connection.setRequestMethod(REST.HttpConn.GET_METHOD);
 
+            if(connection.getResponseCode() == 404){
+                throw new IllegalArgumentException("Not found in Grakn task storage: " + id);
+            }
+
             // get response
             return Json.read(readResponse(connection.getInputStream()));
         }
@@ -299,6 +294,9 @@ public class LoaderClient {
                     }
 
                     Thread.sleep(1000);
+                } catch (IllegalArgumentException e){
+                   // Means the task has not yet been stored: we want to log the error, but continue looping
+                    LOG.debug(getFullStackTrace(e));
                 } catch (Throwable t) {
                     throw new RuntimeException(t);
                 }
@@ -331,18 +329,16 @@ public class LoaderClient {
      * Read the input stream from a HttpURLConnection into a String
      * @return String containing response from the server
      */
-    private String readResponse(InputStream inputStream){
-        StringBuilder response = new StringBuilder();
+    private String readResponse(InputStream inputStream) throws IOException {
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))){
+            StringBuilder response = new StringBuilder();
             String inputLine;
             while ((inputLine = reader.readLine()) != null) {
                 response.append(inputLine);
             }
-        } catch (IOException e){
-            LOG.error("Error reading response from the server: " + e.getMessage());
-        }
 
-        return response.toString();
+            return response.toString();
+        }
     }
 }
 
