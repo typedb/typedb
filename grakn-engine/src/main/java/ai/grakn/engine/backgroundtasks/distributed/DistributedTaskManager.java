@@ -22,7 +22,6 @@ import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
 import mjson.Json;
@@ -32,11 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 
 /**
@@ -116,24 +111,5 @@ public final class DistributedTaskManager implements TaskManager {
     @Override
     public TaskStateStorage storage() {
         return stateStorage;
-    }
-
-    @Override
-    public CompletableFuture completableFuture(String taskId) {
-        return CompletableFuture.runAsync(() -> {
-
-            while (true) {
-                TaskStatus status = stateStorage.getState(taskId).status();
-                if (status == COMPLETED || status == FAILED || status ==  STOPPED) {
-                    break;
-                }
-
-                try {
-                    Thread.sleep(5000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
     }
 }

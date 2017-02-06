@@ -29,7 +29,6 @@ public class REST {
      * Class containing URIs to REST endpoints.
      */
     public static class WebPath{
-        public static final String IMPORT_DATA_URI =  "/import/batch/data";
         public static final String GRAPH_FACTORY_URI = "/graph_factory";
         public static final String KEYSPACE_LIST = "/keyspaces";
         
@@ -97,7 +96,6 @@ public class REST {
      * Class listing various HTTP connection strings.
      */
     public static class HttpConn{
-        public static final String INSERT_PREFIX = "insert ";
         public static final int OK = 200;
         public static final String UTF8 = "UTF8";
         public static final String CONTENT_LENGTH = "Content-Length";

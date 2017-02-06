@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.migration.sql.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
 import org.junit.Before;
@@ -38,7 +39,6 @@ import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.DRIVER;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
-import static ai.grakn.migration.sql.Main.start;
 
 public class SQLMigratorMainTest {
 
@@ -72,17 +72,24 @@ public class SQLMigratorMainTest {
     }
 
     @Test
+    public void sqlMainNoKeyspace(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Keyspace missing (-k)");
+        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
+    }
+
+    @Test
     public void sqlMainNoUserTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No username specified (-user)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile);
+        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", graph.getKeyspace());
     }
 
     @Test
     public void sqlMainNoPassTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No password specified (-pass)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query );
+        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", graph.getKeyspace());
     }
 
     @Test
@@ -130,7 +137,7 @@ public class SQLMigratorMainTest {
     }
 
     private void run(String... args){
-        start(engine.getTaskManager(), args);
+        Main.main(args);
     }
 
     private void runAndAssertDataCorrect(String... args){

@@ -25,7 +25,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
@@ -45,7 +45,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
 import static ai.grakn.engine.util.SystemOntologyElements.ENGINE_ID;
 import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;

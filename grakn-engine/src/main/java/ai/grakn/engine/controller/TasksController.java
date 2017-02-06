@@ -21,7 +21,8 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -132,7 +133,9 @@ public class TasksController {
             response.type("application/json");
 
             return result.toString();
-        } catch(Exception e) {
+        } catch (EngineStorageException e){
+           throw new GraknEngineServerException(404, e);
+        } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -220,7 +223,8 @@ public class TasksController {
 
     private JSONObject serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                       .put("interval", state.interval())
+                       .put("status", state.status())
+                        .put("interval", state.interval())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
                        .put("engineID", state.engineID())

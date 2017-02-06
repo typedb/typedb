@@ -44,8 +44,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
