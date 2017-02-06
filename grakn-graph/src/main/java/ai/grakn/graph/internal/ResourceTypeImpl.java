@@ -94,7 +94,6 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                     getGraknGraph().getElementFactory().buildResource(vertex, type, value));
         }
         return resource;
-
     }
 
     @Override

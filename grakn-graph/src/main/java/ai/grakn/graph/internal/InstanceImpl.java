@@ -29,7 +29,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -37,6 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,6 +59,8 @@ import java.util.stream.Collectors;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
+    private Optional<V> cachedType = Optional.empty();
+
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
     }
@@ -194,14 +196,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The concept itself casted to the correct interface
      */
     protected T type(V type) {
-        if(type != null && type() == null){
-            V currentIsa = type();
-            if(currentIsa == null){
-                setType(String.valueOf(type.getName()));
-                putEdge(type, Schema.EdgeLabel.ISA);
-            } else if(!currentIsa.equals(type)){
-                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
-            }
+        if(type != null){
+            setType(String.valueOf(type.getName()));
+            putEdge(type, Schema.EdgeLabel.ISA);
+            cachedType = Optional.of(type);
         }
         return getThis();
     }
@@ -211,7 +209,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The type of the concept casted to the correct interface
      */
     public V type() {
-        return getOutgoingNeighbour(Schema.EdgeLabel.ISA);
+        if(!cachedType.isPresent()) {
+            cachedType = Optional.of(getOutgoingNeighbour(Schema.EdgeLabel.ISA));
+        }
+        return cachedType.get();
     }
 
 }

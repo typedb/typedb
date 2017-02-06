@@ -30,7 +30,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
@@ -89,17 +92,39 @@ public class VisualiserControllerTest {
 
         Json resultArray = Json.read(response.getBody().asString());
         assertEquals(60,resultArray.asJsonList().size());
-        checkHALStructureOfPerson(resultArray.at(0));
 
         Json firstPerson = resultArray.at(0);
-        Json samePerson = retrieveConceptById(firstPerson.at("_id").asString());
+        String firstPersonId = firstPerson.at("_id").asString();
+
+        checkHALStructureOfPerson(resultArray.at(0),firstPersonId);
+
+        Json samePerson = retrieveConceptById(firstPersonId);
 
         assertEquals(firstPerson.at("_id"),samePerson.at("_id"));
     }
 
-    private void checkHALStructureOfPerson(Json person){
+    //Test that we don't get an error 500 when asking for relationships without specifying their types
+    @Test
+    public void testGeneratedRelationshipsWithoutType(){
+
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .queryParam(QUERY_FIELD, "match (protagonist: $x, happening: $y); limit 10;")
+                .accept(HAL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+        System.out.println(response.getBody().asString());
+
+        Json resultArray = Json.read(response.getBody().asString());
+        //Asking for 10 relations that have 2 role-players each will give us an array of 20 nodes to show in the visualiser.
+        assertEquals(20,resultArray.asJsonList().size());
+
+    }
+
+
+    private void checkHALStructureOfPerson(Json person, String id){
         assertEquals(person.at("_type").asString(), "person");
-        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_id").getValue(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -112,10 +137,10 @@ public class VisualiserControllerTest {
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), embeddedType.at("_baseType").asString());
     }
 
-    private void checkHALStructureOfPersonWithoutEmbedded(Json person){
+    private void checkHALStructureOfPersonWithoutEmbedded(Json person, String id){
 
         assertEquals(person.at("_type").asString(), "person");
-        assertNotNull(person.at("_id"));
+        assertEquals(person.at("_id").getValue(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -130,7 +155,7 @@ public class VisualiserControllerTest {
                 .then().statusCode(200).extract().response().andReturn();
 
         Json samePerson =Json.read(response.getBody().asString());
-        checkHALStructureOfPersonWithoutEmbedded(samePerson);
+        checkHALStructureOfPersonWithoutEmbedded(samePerson,id);
 
         return samePerson;
     }

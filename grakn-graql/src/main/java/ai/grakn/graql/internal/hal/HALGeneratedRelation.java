@@ -23,6 +23,8 @@ import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
+import java.util.Optional;
+
 class HALGeneratedRelation {
 
     private final RepresentationFactory factory;
@@ -41,12 +43,15 @@ class HALGeneratedRelation {
         this.factory = new StandardRepresentationFactory();
     }
 
-    Representation getNewGeneratedRelation(String assertionID, TypeName relationType) {
-        return factory.newRepresentation(assertionID)
+    Representation getNewGeneratedRelation(String assertionID, Optional<TypeName> relationType) {
+        Representation representation = factory.newRepresentation(assertionID)
                 .withProperty(ID_PROPERTY, "temp-assertion")
-                .withProperty(TYPE_PROPERTY, relationType.getValue())
                 .withProperty(BASETYPE_PROPERTY, "generated-relation")
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, "");
+
+        relationType.ifPresent(typeName -> representation.withProperty(TYPE_PROPERTY, typeName.getValue()));
+
+        return representation;
     }
 }

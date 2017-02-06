@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.getBaseType;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.generateConceptState;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -188,21 +188,7 @@ class HALConceptData {
 
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + this.keyspace);
 
-        //State
-        if (concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            resource.withProperty(ID_PROPERTY, instance.getId().getValue())
-                    .withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
-        } else { // temp fix until a new behaviour is defined
-            Type type = concept.asType();
-            resource.withProperty(ID_PROPERTY, type.getName().getValue())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
-
-        }
-        if (concept.isResource()) {
-            resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
-        }
+       generateConceptState(resource,concept);
 
         //Resources and links
         if (concept.isEntity()) {
