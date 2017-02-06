@@ -40,7 +40,7 @@ class IdFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         // Whenever looking up by ID, we have to confirm this is not a casting
-        traversal.has(Schema.ConceptProperty.ID.name(), id.getValue()).not(__.hasLabel(CASTING.name()));
+        traversal.has(Schema.ConceptProperty.ID.name(), id.toString()).not(__.hasLabel(CASTING.name()));
     }
 
     @Override
