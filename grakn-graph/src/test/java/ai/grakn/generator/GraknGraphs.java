@@ -234,10 +234,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     public @interface Open {
         boolean value() default true;
     }
+
+    private class GraphGeneratorException extends RuntimeException {
+
+    }
 }
-
-class GraphGeneratorException extends RuntimeException {
-
-}
-
-
