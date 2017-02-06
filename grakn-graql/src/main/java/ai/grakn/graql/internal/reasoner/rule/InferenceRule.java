@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -105,7 +106,7 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(head);
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
         Map<VarName, VarName> rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
@@ -118,6 +119,19 @@ public class InferenceRule {
             varIntersection.removeAll(rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
+    }
+
+    private void rewriteBody(){
+        body.getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> !at.isUserDefinedName())
+                .forEach(at -> {
+                    Atom rewrite = at.rewriteToUserDefined();
+                    if (rewrite.isEquivalent(getHead().getAtom())) {
+                        body.removeAtom(at);
+                        body.addAtom(rewrite);
+                    }
+                });
     }
 
     private void unify(Map<VarName, VarName> unifiers){
@@ -148,6 +162,7 @@ public class InferenceRule {
    public void unify(Atom parentAtom) {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
+        rewriteBody();
         if(parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);
         }

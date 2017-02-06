@@ -173,7 +173,8 @@ public class Relation extends TypeAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
-        return Objects.equals(this.typeId, a2.getTypeId())
+        return (isUserDefinedName() == a2.isUserDefinedName() ) &&
+                Objects.equals(this.typeId, a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap());
     }
@@ -467,6 +468,15 @@ public class Relation extends TypeAtom {
     }
 
     @Override
+    public Set<TypeAtom> getMappedTypeConstraints() {
+        Set<VarName> mappedVars = getMappedRolePlayers();
+        return getTypeConstraints().stream()
+                .filter(t -> mappedVars.contains(t.getVarName()))
+                .filter(t -> Objects.nonNull(t.getType()))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
     public Set<TypeAtom> getUnmappedTypeConstraints() {
         Set<VarName> unmappedVars = getUnmappedRolePlayers();
         return getTypeConstraints().stream()
@@ -667,13 +677,29 @@ public class Relation extends TypeAtom {
         return unifiers;
     }
 
+    @Override
+    public Atom rewriteToUserDefined(){
+        Var relVar = Graql.var(VarName.anon());
+        getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+        getRelationPlayers()
+                .forEach(c -> {
+                    VarAdmin roleType = c.getRoleType().orElse(null);
+                    if (roleType != null) {
+                        relVar.rel(roleType, c.getRolePlayer());
+                    } else {
+                        relVar.rel(c.getRolePlayer());
+                    }
+                });
+        return new Relation(relVar.admin(), getPredicate(), getParentQuery());
+    }
+
     /**
-     * rewrites the atom to one with user defined name
-     * @param parent     query the rewritten atom should belong to
+     * rewrites the atom to one with user defined name, need unifiers for cases when we have variable clashes
+     * between the relation variable and relation players
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
     @Override
-    public Pair<Atom, Map<VarName, VarName>> rewrite(ReasonerQuery parent) {
+    public Pair<Atom, Map<VarName, VarName>> rewriteToUserDefinedWithUnifiers() {
         Map<VarName, VarName> unifiers = new HashMap<>();
         Var relVar = Graql.var(VarName.anon());
         getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
@@ -690,6 +716,6 @@ public class Relation extends TypeAtom {
                         relVar.rel(Graql.var(rolePlayerVarName));
                     }
                 });
-        return new Pair<>(new Relation(relVar.admin(), getPredicate(), parent), unifiers);
+        return new Pair<>(new Relation(relVar.admin(), getPredicate(), getParentQuery()), unifiers);
     }
 }

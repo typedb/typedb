@@ -21,7 +21,6 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import org.junit.Assert;
 import org.junit.Before;
@@ -154,12 +153,17 @@ public class ReasoningTests {
         Assert.assertEquals(answers.size(), 3);
     }
 
+    //TODO get rid of newAnswers and initialize iterator to answer difference
+    @Ignore
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
+        QueryBuilder iqb = testSet7.graph().graql().infer(true);
         QueryBuilder qb = testSet7.graph().graql().infer(true);
         String queryString = "match $x isa relation1; limit 10;";
-        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         Assert.assertEquals(answers.size(), 10);
+        Assert.assertEquals(answers.size(), queryAnswers(qb.parse(queryString)).size());
+
     }
 
     @Ignore
@@ -189,7 +193,6 @@ public class ReasoningTests {
         QueryBuilder iqb = testSet10.graph().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation2;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
-
         Assert.assertTrue(!answers.isEmpty());
     }
 
