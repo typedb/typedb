@@ -488,14 +488,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @return The unique base identifier of this concept.
-     */
-    public Object getBaseIdentifier() {
-        return vertex.id();
-    }
-
-    /**
-     *
      * @return The base ttpe of this concept which helps us identify the concept
      */
     public String getBaseType(){
@@ -508,7 +500,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
+        return ConceptId.of(vertex.id());
     }
 
     /**
@@ -562,7 +554,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     EdgeImpl putEdge(Concept to, Schema.EdgeLabel type){
         ConceptImpl toConcept = (ConceptImpl) to;
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getValue()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getValue()).select("edge");
         if(!traversal.hasNext()) {
             return addEdge(toConcept, type);
         } else {
@@ -595,8 +587,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param toConcept The target concept
      */
     void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
-                outE(type.getLabel()).as("edge").otherV().hasId(((ConceptImpl) toConcept).getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getValue()).
+                outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getValue()).select("edge");
         if(traversal.hasNext()) {
             traversal.next().remove();
         }

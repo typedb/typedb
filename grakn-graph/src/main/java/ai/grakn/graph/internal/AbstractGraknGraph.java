@@ -568,7 +568,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         InstanceImpl toRolePlayer = (InstanceImpl) to;
 
         String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getBaseIdentifier()).
+        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getId().getValue()).
                     local(outE(Schema.EdgeLabel.SHORTCUT.getLabel()).has(Schema.EdgeProperty.SHORTCUT_HASH.name(), hash)).
                     hasNext();
 
@@ -869,7 +869,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 }
             }
 
-            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
+            getTinkerPopGraph().traversal().V(otherCasting.getId().getValue()).next().remove();
         }
 
         return relationsToClean;

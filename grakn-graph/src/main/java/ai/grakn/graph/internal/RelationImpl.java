@@ -223,7 +223,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             InstanceImpl<?, ?> instance = casting.getRolePlayer();
             if(instance != null) {
                 for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT)) {
-                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId().getValue())){
+                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId().toString())){
                         edge.delete();
                     }
                 }

@@ -51,7 +51,7 @@ public class CastingTest extends GraphTestBase{
     @Test
     public void testEquals() throws Exception {
         Graph graph = graknGraph.getTinkerPopGraph();
-        Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
+        Vertex v = graph.traversal().V(relation.getId().getValue()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
         CastingImpl castingCopy = graknGraph.getConcept(ConceptId.of(v.id().toString()));
         assertEquals(casting, castingCopy);
 
@@ -64,7 +64,7 @@ public class CastingTest extends GraphTestBase{
 
     @Test
     public void hashCodeTest() throws Exception {
-        Vertex castingVertex = graknGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).next();
+        Vertex castingVertex = graknGraph.getTinkerPopGraph().traversal().V(casting.getId().getValue()).next();
         assertEquals(casting.hashCode(), castingVertex.hashCode());
     }
 
