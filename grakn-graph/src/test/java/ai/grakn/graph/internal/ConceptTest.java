@@ -42,7 +42,6 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.ID_RESERVED;
 import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -301,17 +300,5 @@ public class ConceptTest extends GraphTestBase{
         expectedException.expectMessage(INVALID_OBJECT_TYPE.getMessage(thing, Type.class));
 
         thing.asType();
-    }
-
-    @Test
-    public void reservedTest(){
-        expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(ID_RESERVED.getMessage("concept"));
-        graknGraph.putEntityType("concept");
-    }
-
-    @Test
-    public void name(){
-        System.out.println(graknGraph.getMetaConcept().superType());
     }
 }

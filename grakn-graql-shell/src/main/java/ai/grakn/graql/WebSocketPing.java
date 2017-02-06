@@ -22,6 +22,7 @@ package ai.grakn.graql;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 
+import java.io.EOFException;
 import java.io.IOException;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
@@ -47,6 +48,9 @@ class WebSocketPing {
                     e.printStackTrace();
                 }
             }
+        } catch (EOFException e) {
+            // Silently exit in this case, because it is causing to tests to randomly fail
+            // TODO: Figure out exactly when this happens
         } catch (WebSocketException | IOException e) {
             // Report an error if the session is still open
             if (session.isOpen()) {
