@@ -40,9 +40,17 @@ import java.util.stream.Collectors;
  *
  */
 public class ConceptLog {
-    private Set<ConceptImpl> modifiedConcepts;
+
+    //We Track Modified Concepts For Validation
+    private final Set<ConceptImpl> modifiedConcepts;
+
+    //We Track Casting Explicitly For Post Processing
     private final Set<CastingImpl> modifiedCastings;
+
+    //We Track Resource Explicitly for Post Processing
     private final Set<ResourceImpl> modifiedResources;
+
+    //We Track Relations so that we can look them up before they are completely defined and indexed on commit
     private final Map<String, RelationImpl> modifiedRelations;
 
 
@@ -91,8 +99,7 @@ public class ConceptLog {
      * @return All the concepts which have been affected within the transaction in some way
      */
     public Set<ConceptImpl> getModifiedConcepts () {
-        modifiedConcepts = modifiedConcepts.stream().filter(c -> c != null && c.isAlive()).collect(Collectors.toSet());
-        return modifiedConcepts;
+        return modifiedConcepts.stream().filter(c -> c != null && c.isAlive()).collect(Collectors.toSet());
     }
 
     /**
