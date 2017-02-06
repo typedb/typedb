@@ -160,6 +160,13 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 continue;
             }
 
+            // Mark as RUNNING and update task & runner states.
+            addRunningTask(state.getId());
+            storage.updateState(state
+                    .status(RUNNING)
+                    .statusChangedBy(this.getClass().getName())
+                    .engineID(ENGINE_ID));
+
             // Submit to executor
             executor.submit(() -> executeTask(state));
 
@@ -174,13 +181,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
      */
     private void executeTask(TaskState state) {
         try {
-            // Mark as RUNNING and update task & runner states.
-            addRunningTask(state.getId());
-            storage.updateState(state
-                    .status(RUNNING)
-                    .statusChangedBy(this.getClass().getName())
-                    .engineID(ENGINE_ID));
-
             LOG.debug("Executing task " + state.getId());
 
             // Instantiate task.
