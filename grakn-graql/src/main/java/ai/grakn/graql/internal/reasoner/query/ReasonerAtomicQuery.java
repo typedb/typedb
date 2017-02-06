@@ -301,7 +301,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private int iter = 0;
         private final boolean materialise;
         private final QueryAnswers answers = new QueryAnswers();
-        private QueryAnswers newAnswers = new QueryAnswers();
         private final QueryCache cache = new QueryCache();
         private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         private final Set<Rule> rules;
@@ -334,7 +333,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         private void completeIteration(){
-            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + answers.size() + " size: " + size());
+            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + answerSize() + " size: " + size());
             dAns = size() - dAns;
             iter++;
         }
@@ -343,7 +342,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             if (!hasNextRule()) initIteration();
             Rule rule = nextRule();
             LOG.debug("Resolving rule: " + rule.getId() + " answers: " + size());
-            newAnswers = outer().resolveViaRule(rule, subGoals, cache, materialise);
+            QueryAnswers newAnswers = outer().resolveViaRule(rule, subGoals, cache, materialise);
             newAnswers.removeAll(answers);
             answerIterator = newAnswers.iterator();
             if (!hasNextRule()) completeIteration();
@@ -373,5 +372,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
         private ReasonerAtomicQuery outer(){ return ReasonerAtomicQuery.this;}
         private int size(){ return cache.size();}
+        private int answerSize(){ return cache.getAnswers(outer()).size();}
     }
 }

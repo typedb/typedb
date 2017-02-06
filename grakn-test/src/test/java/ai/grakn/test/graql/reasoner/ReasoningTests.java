@@ -152,7 +152,7 @@ public class ReasoningTests {
 
         Assert.assertEquals(answers.size(), 3);
     }
-    
+
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         QueryBuilder iqb = testSet7.graph().graql().infer(true);

@@ -231,12 +231,23 @@ public class GenealogyTest {
         assertEquals(answers, answers2);
     }
 
+    //2 relations per wife-husband pair - (spouse1: $x, spouse2 :$y) and converse
     @Test
     public void testMarriage() {
         String queryString = "match (spouse1: $x, spouse2: $y) isa marriage;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 44);
+        assertTrue(!hasDuplicates(answers));
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testMarriage2() {
+        String queryString = "match (wife: $x, husband: $y) isa marriage;";
+        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 22);
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, answers2);
     }

@@ -187,6 +187,11 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return unifiedAnswers;
     }
 
+    public static Map<VarName, Concept> unify(Map<VarName, Concept> answer, Map<VarName, VarName> unifiers){
+        return answer.entrySet().stream()
+                .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())? unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
+    }
+
     /**
      * unify answers of childQuery with parentQuery
      * @param parentQuery parent atomic query containing target variables
