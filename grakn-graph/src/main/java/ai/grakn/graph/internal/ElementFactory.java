@@ -97,12 +97,6 @@ final class ElementFactory {
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
     RelationTypeImpl buildRelationType(Vertex vertex, RelationType type, Boolean isImplicit){
-        /*if(isImplicit) {
-            return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type, true));
-        } else {
-            return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type)); //No need to save something as non-implicit.
-        }*/
-
         return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type, isImplicit));
     }
 
@@ -133,12 +127,6 @@ final class ElementFactory {
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
     RoleTypeImpl buildRoleType(Vertex vertex, RoleType type, Boolean isImplicit){
-        /*if(isImplicit) {
-            return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type, true));
-        } else {
-            return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type));
-        }*/
-
         return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type, isImplicit));
     }
 
