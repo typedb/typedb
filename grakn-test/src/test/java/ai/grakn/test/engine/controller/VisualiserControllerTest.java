@@ -19,8 +19,8 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.EngineContext;
 import ai.grakn.concept.TypeName;
+import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.jayway.restassured.response.Response;
@@ -30,10 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
@@ -43,7 +40,6 @@ import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest {
@@ -124,7 +120,7 @@ public class VisualiserControllerTest {
 
     private void checkHALStructureOfPerson(Json person, String id){
         assertEquals(person.at("_type").asString(), "person");
-        assertEquals(person.at("_id").getValue(),id);
+        assertEquals(person.at("_id").asString(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -140,7 +136,7 @@ public class VisualiserControllerTest {
     private void checkHALStructureOfPersonWithoutEmbedded(Json person, String id){
 
         assertEquals(person.at("_type").asString(), "person");
-        assertEquals(person.at("_id").getValue(),id);
+        assertEquals(person.at("_id").asString(),id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace

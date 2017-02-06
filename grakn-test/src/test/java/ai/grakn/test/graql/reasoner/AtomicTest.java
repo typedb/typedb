@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
@@ -180,20 +181,21 @@ public class AtomicTest {
 
     @Test
     public void testTypeInference(){
-        String typeId = snbGraph.graph().getType(TypeName.of("recommendation")).toString();
+        ConceptId typeId = snbGraph.graph().getType(TypeName.of("recommendation")).getId();
+
         String patternString = "{($x, $y); $x isa person; $y isa product;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().getValue().equals(typeId));
+        assertTrue(atom.getTypeId().equals(typeId));
     }
 
     @Test
     public void testTypeInference2(){
-        String typeId = cwGraph.graph().getType(TypeName.of("transaction")).toString();
+        ConceptId typeId = cwGraph.graph().getType(TypeName.of("transaction")).getId();
         String patternString = "{($z, $y, $x);$z isa country;$x isa rocket;$y isa person;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, cwGraph.graph()), cwGraph.graph());
         Atom atom = query.getAtom();
-        assertTrue(atom.getTypeId().getValue().equals(typeId));
+        assertTrue(atom.getTypeId().equals(typeId));
     }
 
     @Test
