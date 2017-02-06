@@ -32,6 +32,10 @@ public class TypeNames extends AbstractGenerator<TypeName> {
 
     @Override
     public TypeName generate() {
-        return TypeName.of(gen(String.class));
+        if (random.nextBoolean()) {
+            return TypeName.of(gen(String.class));
+        } else {
+            return TypeName.of("foo");
+        }
     }
 }
