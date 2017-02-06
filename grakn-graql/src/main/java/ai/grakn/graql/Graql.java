@@ -253,8 +253,8 @@ public class Graql {
      * Create an aggregate that will find the mean of a variable's values.
      * @param name the variable to find the mean of
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> average(String name) {
-        return Aggregates.average(VarName.of(name));
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> mean(String name) {
+        return Aggregates.mean(VarName.of(name));
     }
 
     /**

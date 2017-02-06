@@ -30,15 +30,15 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Aggregate that finds average (mean) of a match query.
+ * Aggregate that finds mean of a match query.
  */
-class AverageAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Double>> {
+class MeanAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Double>> {
 
     private final VarName varName;
     private final CountAggregate countAggregate;
     private final Aggregate<Map<VarName, Concept>, Number> sumAggregate;
 
-    AverageAggregate(VarName varName) {
+    MeanAggregate(VarName varName) {
         this.varName = varName;
         countAggregate = new CountAggregate();
         sumAggregate = Aggregates.sum(varName);
@@ -60,7 +60,7 @@ class AverageAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional
 
     @Override
     public String toString() {
-        return "average " + varName;
+        return "mean " + varName;
     }
 
     @Override
@@ -68,7 +68,7 @@ class AverageAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AverageAggregate that = (AverageAggregate) o;
+        MeanAggregate that = (MeanAggregate) o;
 
         return varName.equals(that.varName);
     }
