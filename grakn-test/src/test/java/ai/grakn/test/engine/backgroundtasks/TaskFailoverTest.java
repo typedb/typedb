@@ -106,7 +106,7 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add some tasks to a fake task runner watch and storage, marked as running
-        Set<TaskState> tasks = createTasks(storage, 5, RUNNING);
+        Set<TaskState> tasks = createTasks(5, RUNNING);
         tasks.forEach(storage::newState);
         registerTasksInZKLikeTaskRunnerWould(fakeEngineID, tasks);
 
@@ -131,11 +131,11 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add a task in each state (SCHEDULED, COMPLETED, STOPPED, FAILED, RUNNING) to fake task runner watch
-        TaskState scheduled = createTask(storage, 0, SCHEDULED, false, 0);
-        TaskState running = createTask(storage, 1, RUNNING, false, 0);
-        TaskState stopped = createTask(storage, 2, STOPPED, false, 0);
-        TaskState failed = createTask(storage, 3, FAILED, false, 0);
-        TaskState completed = createTask(storage, 4, COMPLETED, false, 0);
+        TaskState scheduled = createTask(0, SCHEDULED, false, 0);
+        TaskState running = createTask(1, RUNNING, false, 0);
+        TaskState stopped = createTask(2, STOPPED, false, 0);
+        TaskState failed = createTask(3, FAILED, false, 0);
+        TaskState completed = createTask(4, COMPLETED, false, 0);
 
         Set<TaskState> tasks = Sets.newHashSet(scheduled, running, stopped, failed, completed);
         tasks.forEach(storage::newState);
@@ -169,7 +169,7 @@ public class TaskFailoverTest {
         Json configuration = Json.object("configuration", true);
         Json checkpoint = Json.object("configuration", false);
 
-        TaskState running = createTask(storage, 1, RUNNING, false, 0);
+        TaskState running = createTask(1, RUNNING, false, 0);
         running.configuration(configuration);
         running.checkpoint(checkpoint.toString());
         storage.newState(running);

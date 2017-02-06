@@ -25,6 +25,7 @@ import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.ExceptionWrapper;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -32,6 +33,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -63,11 +65,12 @@ public class SchedulerTest {
 
     private Thread schedulerThread;
 
-    @Rule
-    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
+    @ClassRule
+    public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
     @Before
     public void start() throws Exception {
+        ((Logger) org.slf4j.LoggerFactory.getLogger(ExceptionWrapper.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
@@ -85,7 +88,7 @@ public class SchedulerTest {
 
     @Test
     public void immediateNonRecurringScheduled() {
-        Set<TaskState> tasks = createTasks(storage, 5, CREATED);
+        Set<TaskState> tasks = createTasks(5, CREATED);
         sendTasksToNewTasksQueue(tasks);
         waitForStatus(storage, tasks, SCHEDULED);
 
@@ -98,7 +101,7 @@ public class SchedulerTest {
     @Test
     public void schedulerPicksUpFromLastOffset() throws InterruptedException {
         // Schedule 5 tasks
-        Set<TaskState> tasks = createTasks(storage, 5, CREATED);
+        Set<TaskState> tasks = createTasks(5, CREATED);
         sendTasksToNewTasksQueue(tasks);
         waitForStatus(storage, tasks, SCHEDULED);
 
@@ -108,7 +111,7 @@ public class SchedulerTest {
         producer = ConfigHelper.kafkaProducer();
 
         // Schedule 5 more tasks
-        tasks = createTasks(storage, 5, CREATED);
+        tasks = createTasks(5, CREATED);
         sendTasksToNewTasksQueue(tasks);
 
         // Restart the scheduler
@@ -129,7 +132,9 @@ public class SchedulerTest {
         stopScheduler();
 
         // persist a recurring task
-        TaskState recurring = createTask(storage, 1, CREATED, true, 10000);
+        TaskState recurring = createTask(1, CREATED, true, 10000);
+        System.out.println("recurring task " + recurring.getId());
+        storage.newState(recurring);
 
         // check the task actually exists and is recurring
         TaskState recurringPersisted = storage.getState(recurring.getId());
@@ -159,7 +164,8 @@ public class SchedulerTest {
     }
 
     private void sendTasksToNewTasksQueue(Set<TaskState> tasks) {
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), t.configuration().toString())));
+        System.out.println("Producer sending to new tasks queue: " + tasks);
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), TaskState.serialize(t))));
         producer.flush();
     }
 }
