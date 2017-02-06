@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.exception.EngineStorageException;
 
 import java.util.Set;

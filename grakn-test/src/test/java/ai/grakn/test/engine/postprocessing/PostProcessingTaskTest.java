@@ -28,9 +28,9 @@ import org.junit.Test;
 import java.time.Instant;
 import java.util.Date;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 
 public class PostProcessingTaskTest {
     private StandaloneTaskManager taskManager = new StandaloneTaskManager();

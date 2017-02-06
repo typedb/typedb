@@ -20,7 +20,7 @@ package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 
 import java.lang.ref.SoftReference;
 import java.util.HashSet;

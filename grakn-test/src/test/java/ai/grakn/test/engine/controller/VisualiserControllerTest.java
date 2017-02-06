@@ -208,7 +208,6 @@ public class VisualiserControllerTest {
 
         assertEquals(message.at("_id").asString(), personType.getId().getValue());
         assertEquals(message.at("_name").asString(), "person");
-
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), message.at("_baseType").asString());
         assertEquals(message.at("_links").at("self").at("href").asString(), "/graph/concept/" + graph.getType(TypeName.of("person")).getId().getValue() + "?keyspace=" + graph.getKeyspace());
         assertEquals(60, message.at("_embedded").at("isa").asJsonList().size());

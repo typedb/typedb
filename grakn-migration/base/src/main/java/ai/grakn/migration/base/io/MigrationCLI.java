@@ -20,7 +20,7 @@ package ai.grakn.migration.base.io;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.client.Client;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;
@@ -90,7 +90,7 @@ public class MigrationCLI {
                 throw new IllegalArgumentException("Helping");
             }
 
-            if(!GraknEngineServer.isRunning()){
+            if(!Client.serverIsRunning(options.getUri())){
                 System.out.println(COULD_NOT_CONNECT);
             }
 

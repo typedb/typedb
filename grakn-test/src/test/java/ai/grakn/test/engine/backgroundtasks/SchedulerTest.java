@@ -37,8 +37,8 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;

@@ -20,7 +20,7 @@ package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
