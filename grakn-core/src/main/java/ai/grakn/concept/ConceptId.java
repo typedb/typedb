@@ -53,7 +53,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
         if(o.getValue() instanceof Comparable){
             //Most vendor ids implement comparable so this should work most of the time.
             //noinspection unchecked
-            return ((Comparable) o).compareTo(getValue());
+            return ((Comparable) o.getValue()).compareTo(getValue());
         } else {
             //When vendor Id's are not comparable we fallback to toString  comparison
             return getValue().toString().compareTo(o.getValue().toString());
