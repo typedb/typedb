@@ -216,15 +216,15 @@ public class ClusteringTest {
         assertEquals(7, memberMap.size());
 
         String id;
-        id = graph.getResourceType(resourceType1).putResource(2.8).asInstance().getId().getValue();
+        id = graph.getResourceType(resourceType1).putResource(2.8).asInstance().toString();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType2).putResource(-5L).asInstance().getId().getValue();
+        id = graph.getResourceType(resourceType2).putResource(-5L).asInstance().toString();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType3).putResource(100L).asInstance().getId().getValue();
+        id = graph.getResourceType(resourceType3).putResource(100L).asInstance().toString();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType5).putResource(10L).asInstance().getId().getValue();
+        id = graph.getResourceType(resourceType5).putResource(10L).asInstance().toString();
         assertEquals(1L, sizeMap.get(id).longValue());
-        id = graph.getResourceType(resourceType6).putResource(0.8).asInstance().getId().getValue();
+        id = graph.getResourceType(resourceType6).putResource(0.8).asInstance().toString();
         assertEquals(1L, sizeMap.get(id).longValue());
     }
 

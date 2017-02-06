@@ -95,7 +95,7 @@ public class StringConverter {
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
     public static String idToString(ConceptId id) {
-        return escapeNameOrId(id.getValue());
+        return escapeNameOrId(id.toString());
     }
 
     /**

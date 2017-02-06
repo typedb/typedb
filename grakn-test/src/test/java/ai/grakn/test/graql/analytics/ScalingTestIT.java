@@ -401,7 +401,7 @@ public class ScalingTestIT {
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
-            superNodes.add(thing.addEntity().getId().getValue());
+            superNodes.add(thing.addEntity().toString());
         }
         graph.commit();
         graph.close();

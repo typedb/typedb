@@ -409,7 +409,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        return getConcept(Schema.ConceptProperty.ID, id.getValue());
+        return getConcept(Schema.ConceptProperty.ID, id.toString());
     }
     private <T extends Type> T getTypeByName(TypeName name){
         return getConcept(Schema.ConceptProperty.NAME, name.getValue());
@@ -506,7 +506,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().toString());
         }
         return casting;
     }
@@ -522,7 +522,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         // Relation To Casting
         EdgeImpl relationToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().toString());
         getConceptLog().putConcept(relation); //The relation is explicitly tracked so we can look them up without committing
 
         putShortcutEdges(relation, relation.type());
@@ -575,15 +575,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if (!exists) {
             EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
+            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().toString());
 
             if (fromRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
+                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().toString());
             }
             edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
 
             if (toRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
+                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().toString());
             }
             edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
 
@@ -595,12 +595,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private String calculateShortcutHash(Relation relation, RelationType relationType, RoleType fromRole, Instance fromRolePlayer, RoleType toRole, Instance toRolePlayer){
         String hash = "";
-        String relationIdValue = relationType.getId().getValue();
-        String fromIdValue = fromRolePlayer.getId().getValue();
-        String fromRoleValue = fromRole.getId().getValue();
-        String toIdValue = toRolePlayer.getId().getValue();
-        String toRoleValue = toRole.getId().getValue();
-        String assertionIdValue = relation.getId().getValue();
+        String relationIdValue = relationType.getId().toString();
+        String fromIdValue = fromRolePlayer.getId().toString();
+        String fromRoleValue = fromRole.getId().toString();
+        String toIdValue = toRolePlayer.getId().toString();
+        String toRoleValue = toRole.getId().toString();
+        String assertionIdValue = relation.getId().toString();
 
         if(relationIdValue != null) hash += relationIdValue;
         if(fromIdValue != null) hash += fromIdValue;
@@ -774,7 +774,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             JSONObject jsonObject = new JSONObject();
             jsonObject.put(REST.Request.COMMIT_LOG_TYPE, baseType.name());
             jsonObject.put(REST.Request.COMMIT_LOG_INDEX, concept.getValue0());
-            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().getValue());
+            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().toString());
             jsonArray.put(jsonObject);
         });
     }
@@ -819,13 +819,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void deleteRelations(Set<RelationImpl> relations){
         for (RelationImpl relation : relations) {
-            String relationID = relation.getId().getValue();
+            String relationID = relation.getId().toString();
 
             //Kill Shortcut Edges
             relation.rolePlayers().values().forEach(instance -> {
                 if(instance != null) {
                     List<Edge> edges = getTinkerTraversal().
-                            hasId(instance.getId().getValue()).
+                            hasId(instance.getId().toString()).
                             bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                             has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
 
@@ -865,7 +865,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //Perform the transfer
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().toString());
                 }
             }
 
