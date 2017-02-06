@@ -23,6 +23,7 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.EngineStorageException;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -154,17 +155,22 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             String id = record.key();
 
-            TaskState state = storage.getState(id);
-            if(state.status() != SCHEDULED) {
-                LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: "+ state.status());
-                continue;
+            // Instead of deserializing TaskState from value, get up-to-date state from the storage
+            try {
+                TaskState state = storage.getState(id);
+                if (state.status() != SCHEDULED) {
+                    LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: " + state.status());
+                    continue;
+                }
+
+                // Submit to executor
+                executor.submit(() -> executeTask(state));
+
+                // Advance offset
+                seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+            } catch (EngineStorageException e){
+                LOG.error("Cant run this task - " + id + " because state was not found in storage");
             }
-
-            // Submit to executor
-            executor.submit(() -> executeTask(state));
-
-            // Advance offset
-            seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset()+1);
         }
     }
 

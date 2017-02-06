@@ -95,9 +95,7 @@ public final class DistributedTaskManager implements TaskManager {
                 .interval(period)
                 .configuration(configuration);
 
-        stateStorage.newState(taskState);
-
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), configuration.toString()));
+        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), TaskState.serialize(taskState)));
         producer.flush();
 
         return taskState.getId();
