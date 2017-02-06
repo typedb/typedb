@@ -233,17 +233,16 @@ public class HALConceptRepresentationBuilder {
 
     static void generateConceptState(Representation resource, Concept concept){
 
+        resource.withProperty(ID_PROPERTY, concept.getId().getValue());
+
         if (concept.isInstance()) {
             Instance instance = concept.asInstance();
-            resource.withProperty(ID_PROPERTY, instance.getId().getValue())
-                    .withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
+            resource.withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else {
-            Type type = concept.asType();
-            resource.withProperty(ID_PROPERTY, type.getId().getValue())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
-
+            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
         }
+
         if (concept.isResource()) {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
         }
