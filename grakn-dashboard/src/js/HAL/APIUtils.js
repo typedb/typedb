@@ -47,6 +47,8 @@ function buildLabel(resource) {
   }
 
   if (API.KEY_VALUE in resource) { label = resource[API.KEY_VALUE] || label; }
+  if (API.KEY_NAME in resource) { label = resource[API.KEY_NAME] || label; }
+
 
   return label;
 }

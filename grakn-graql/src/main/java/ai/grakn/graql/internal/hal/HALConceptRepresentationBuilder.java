@@ -65,7 +65,9 @@ public class HALConceptRepresentationBuilder {
     private final static String ID_PROPERTY = "_id";
     private final static String TYPE_PROPERTY = "_type";
     private final static String BASETYPE_PROPERTY = "_baseType";
-    private final static String VALUE_PROPERTY = "value";
+    private final static String VALUE_PROPERTY = "_value";
+    private final static String NAME_PROPERTY = "_name";
+
 
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace) {
 
@@ -238,12 +240,15 @@ public class HALConceptRepresentationBuilder {
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else {
             Type type = concept.asType();
-            resource.withProperty(ID_PROPERTY, type.getName().getValue())
+            resource.withProperty(ID_PROPERTY, type.getId().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
 
         }
         if (concept.isResource()) {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
+        }
+        if(concept.isType()){
+            resource.withProperty(NAME_PROPERTY, concept.asType().getName().getValue());
         }
     }
 }
