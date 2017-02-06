@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.loader;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.postprocessing.EngineCacheImpl;
 import ai.grakn.engine.util.ConfigProperties;
@@ -105,19 +106,7 @@ public class LoaderTask implements BackgroundTask {
         try {
             graph.showImplicitConcepts(true);
 
-            // execute each of the insert queries
-            // TODO This is a very round-about way of inserting. We cannot execute InsertQuery.withGraph() because
-            // TODO that function does not accept an EngineGraknGraph object. We need the IF to execute a
-            // TODO match-insert query if the "match" portion is present
-            inserts.forEach(query -> {
-                if(query.admin().getMatchQuery().isPresent()) {
-                    graph.graql()
-                            .match(query.admin().getMatchQuery().get().admin().getPattern())
-                            .insert(query.admin().getVars()).execute();
-                } else {
-                    graph.graql().insert(query.admin().getVars()).execute();
-                }
-            });
+            inserts.forEach(q -> q.withGraph((GraknGraph) graph).execute());
 
             // commit the transaction
             graph.commit(EngineCacheImpl.getInstance());
