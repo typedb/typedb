@@ -72,7 +72,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     @Override
     public int hashCode(){
-        return conceptId.hashCode();
+        return getValue().hashCode();
     }
 
     /**
