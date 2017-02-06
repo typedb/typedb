@@ -47,6 +47,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -67,6 +68,8 @@ import java.util.function.Function;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
+    private Optional<ConceptId> conceptId = Optional.empty();
+
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
@@ -500,7 +503,10 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(vertex.id());
+        if(!conceptId.isPresent()){
+            conceptId = Optional.of(ConceptId.of(vertex.id()));
+        }
+        return conceptId.get();
     }
 
     /**
@@ -605,12 +611,13 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {
-        return vertex.hashCode();
+        return getId().hashCode();
     }
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof ConceptImpl && ((ConceptImpl) object).getVertex().equals(vertex);
+        //Compare Concept based on id because vertex comparisons are equivalent
+        return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
     @Override
