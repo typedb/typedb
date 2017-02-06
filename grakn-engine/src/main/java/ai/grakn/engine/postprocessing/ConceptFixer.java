@@ -20,7 +20,6 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.util.EngineCache;
@@ -90,6 +89,9 @@ class ConceptFixer {
                             throw new RuntimeException(message);
                         });
 
+                //Commit the fix
+                graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
+
                 //Finally clear the cache
                 jobFinaliser.accept(EngineCacheImpl.getInstance(), conceptIndex);
 
@@ -144,27 +146,13 @@ class ConceptFixer {
     }
 
     private static BiConsumer<EngineCache, String> runResourceFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
-        if(graph.fixDuplicateResources(conceptIds)){
-            try {
-                graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
-            } catch (GraknValidationException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
+        graph.fixDuplicateResources(conceptIds);
         return (cache, index) -> {conceptIds.
                 forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));};
     }
 
     private static BiConsumer<EngineCache, String> runCastingFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
-        if(graph.fixDuplicateCastings(conceptIds)){
-            try {
-                graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
-            } catch (GraknValidationException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
+        graph.fixDuplicateCastings(conceptIds);
         return (cache, index) -> {conceptIds.
                 forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));};
     }

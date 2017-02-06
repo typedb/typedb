@@ -65,8 +65,8 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public ResourceType<D> setRegex(String regex) {
-        if(!getDataType().equals(DataType.STRING)){
-            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(toString()));
+        if(getDataType() == null || !getDataType().equals(DataType.STRING)){
+            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getName()));
         }
 
         if(regex != null) {
@@ -93,7 +93,6 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                     getGraknGraph().getElementFactory().buildResource(vertex, type, value));
         }
         return resource;
-
     }
 
     @Override
@@ -130,6 +129,6 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public Boolean isUnique() {
-        return getProperty(Schema.ConceptProperty.IS_UNIQUE);
+        return getPropertyBoolean(Schema.ConceptProperty.IS_UNIQUE);
     }
 }

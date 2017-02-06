@@ -179,9 +179,9 @@ public class PostProcessing {
         for (String keyspace : cache.getKeyspaces()) {
             long numJobs = 0L;
             if(typeName.equals("Casting")){
-                numJobs = cache.getCastingJobs(keyspace).size();
+                numJobs = cache.getNumCastingJobs(keyspace);
             } else if(typeName.equals("Resources")){
-                numJobs = cache.getResourceJobs(keyspace).size();
+                numJobs = cache.getNumResourceJobs(keyspace);
             }
             LOG.info("        Post processing step [" + typeName + " for Graph [" + keyspace + "] has jobs : " + numJobs);
             total += numJobs;
