@@ -37,16 +37,12 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
@@ -63,14 +59,14 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     private static GraknGraph lastGeneratedGraph;
 
-    private static final int MAX_CACHED_GRAPHS = 10;
+//    private static final int MAX_CACHED_GRAPHS = 10;
 
     // A cache of graphs keyed by their size (how many mutations were applied).
     // Used to speed up testing.
-    private static Map<Integer, Set<GraknGraph>> GRAPH_CACHE = new HashMap<>();
+//    private static Map<Integer, Set<GraknGraph>> GRAPH_CACHE = new HashMap<>();
 
     private GraknGraph graph;
-    private Open open;
+    private Boolean open = null;
 
     public GraknGraphs() {
         super(GraknGraph.class);
@@ -101,11 +97,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     @Override
     public GraknGraph generate() {
-        Set<GraknGraph> cache = GRAPH_CACHE.computeIfAbsent(status.size(), key -> Sets.newHashSet());
+//        Set<GraknGraph> cache = GRAPH_CACHE.computeIfAbsent(status.size(), key -> Sets.newHashSet());
 
-        if (cache.size() >= MAX_CACHED_GRAPHS) {
-            graph = random.choose(cache);
-        } else {
+//        if (cache.size() >= MAX_CACHED_GRAPHS) {
+//            graph = random.choose(cache);
+//        } else {
             String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
             graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
 
@@ -113,11 +109,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
                 mutateOnce();
             }
 
-            cache.add(graph);
-        }
+//            cache.add(graph);
+//        }
 
         // Close graphs randomly, unless parameter is set
-        boolean shouldOpen = open != null ? open.value() : random.nextBoolean();
+        boolean shouldOpen = open != null ? open : random.nextBoolean();
 
         if (shouldOpen) {
             graph.open();
@@ -130,7 +126,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public void configure(Open open) {
+        setOpen(open.value());
+    }
+
+    public GraknGraphs setOpen(boolean open) {
         this.open = open;
+        return this;
     }
 
     // A list of methods that will mutate the graph in some random way when called
@@ -148,7 +149,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> entityType().superType(entityType()),
             () -> entityType().addEntity(),
             () -> roleType().superType(roleType()),
-            () -> resourceType().superType(resourceType()),
+            () -> relationType().superType(relationType()),
             () -> relationType().addRelation(),
             () -> relationType().hasRole(roleType()),
             () -> resourceType().superType(resourceType()),
@@ -220,7 +221,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
-        return graph.admin().getMetaConcept().subTypes();
+        boolean implicitFlag = graph.implicitConceptsVisible();
+        graph.showImplicitConcepts(true);
+        Collection<? extends Type> types = graph.admin().getMetaConcept().subTypes();
+        graph.showImplicitConcepts(implicitFlag);
+        return types;
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

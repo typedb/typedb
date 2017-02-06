@@ -20,11 +20,24 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.TypeName;
+import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static ai.grakn.generator.GraknGraphs.lastGeneratedGraph;
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Generator that generates totally random type names
  */
 public class TypeNames extends AbstractGenerator<TypeName> {
+
+    private boolean mustBeUnused = false;
 
     public TypeNames() {
         super(TypeName.class);
@@ -32,10 +45,31 @@ public class TypeNames extends AbstractGenerator<TypeName> {
 
     @Override
     public TypeName generate() {
-        if (random.nextBoolean()) {
-            return TypeName.of(gen(String.class));
-        } else {
-            return TypeName.of("foo");
-        }
+        TypeName name;
+
+        do {
+            if (random.nextBoolean()) {
+                name = TypeName.of(gen(String.class));
+            } else {
+                name = TypeName.of("foo");
+            }
+        } while (mustBeUnused && lastGeneratedGraph().getType(name) != null);
+
+        return name;
+    }
+
+    public void configure(Unused unused) {
+        mustBeUnused();
+    }
+
+    public TypeNames mustBeUnused() {
+        mustBeUnused = true;
+        return this;
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface Unused {
     }
 }

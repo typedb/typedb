@@ -20,25 +20,55 @@
 package ai.grakn.generator;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.TypeName;
+import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
 import static ai.grakn.generator.GraknGraphs.lastGeneratedGraph;
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
     FromGraphGenerator(Class<T> type) {
         super(type);
     }
 
-    private boolean useExistingGraph = false;
+    private boolean useLastGeneratedGraph = false;
 
     protected final GraknGraph graph() {
-        if (useExistingGraph) {
+        if (useLastGeneratedGraph) {
             return lastGeneratedGraph();
         } else {
-            return gen(GraknGraph.class);
+            return gen().make(GraknGraphs.class).setOpen(true).generate(random, status);
         }
     }
 
+    protected final TypeName unusedName() {
+        return gen().make(TypeNames.class).mustBeUnused().generate(random, status);
+    }
+
+    protected final <S extends FromGraphGenerator<?>> S genFromGraph(Class<S> generatorClass) {
+        S generator = gen().make(generatorClass);
+        if (useLastGeneratedGraph) generator.useLastGeneratedGraph();
+        return generator;
+    }
+
     public final void configure(FromGraph fromGraph) {
-        useExistingGraph = true;
+        useLastGeneratedGraph();
+    }
+
+    final void useLastGeneratedGraph() {
+        useLastGeneratedGraph = true;
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface FromGraph {
     }
 }

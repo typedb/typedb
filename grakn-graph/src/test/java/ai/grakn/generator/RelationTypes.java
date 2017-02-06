@@ -21,7 +21,11 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.RelationType;
 
+import java.util.Collection;
+
 public class RelationTypes extends FromGraphGenerator<RelationType> {
+
+    private boolean excludeMeta = false;
 
     public RelationTypes() {
         super(RelationType.class);
@@ -29,6 +33,25 @@ public class RelationTypes extends FromGraphGenerator<RelationType> {
 
     @Override
     public RelationType generate() {
-        return random.choose(graph().admin().getMetaRelationType().subTypes());
+        Collection<RelationType> relationTypes = graph().admin().getMetaRelationType().subTypes();
+
+        if (excludeMeta) {
+            relationTypes.remove(graph().admin().getMetaRelationType());
+        }
+
+        if (relationTypes.isEmpty()) {
+            return graph().putRelationType(unusedName());
+        } else {
+            return random.choose(relationTypes);
+        }
+    }
+
+    public void configure(NotMeta notMeta) {
+        excludeMeta();
+    }
+
+    RelationTypes excludeMeta() {
+        this.excludeMeta = true;
+        return this;
     }
 }

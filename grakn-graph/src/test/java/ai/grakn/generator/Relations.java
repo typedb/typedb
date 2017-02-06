@@ -20,6 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 
 import java.util.Collection;
 
@@ -31,8 +32,13 @@ public class Relations extends FromGraphGenerator<Relation> {
 
     @Override
     public Relation generate() {
-        Collection<Relation> relations = graph().admin().getMetaRelationType().instances();
-        if (relations.isEmpty()) return null;
-        return random.choose(relations);
+        RelationType relationType = genFromGraph(RelationTypes.class).excludeMeta().generate(random, status);
+
+        Collection<Relation> relations = relationType.instances();
+        if (relations.isEmpty()) {
+            return relationType.addRelation();
+        } else {
+            return random.choose(relations);
+        }
     }
 }

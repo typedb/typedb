@@ -20,6 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 
 import java.util.Collection;
 
@@ -31,8 +32,15 @@ public class Resources extends FromGraphGenerator<Resource> {
 
     @Override
     public Resource<?> generate() {
-        Collection<Resource<?>> resources = graph().admin().getMetaResourceType().instances();
-        if (resources.isEmpty()) return null;
-        return random.choose(resources);
+        ResourceType resourceType = genFromGraph(ResourceTypes.class).excludeMeta().generate(random, status);
+
+        Collection<? extends Resource<?>> resources = resourceType.instances();
+        if (resources.isEmpty()) {
+            ResourceType.DataType<?> dataType = resourceType.getDataType();
+            Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
+            return resourceType.putResource(value);
+        } else {
+            return random.choose(resources);
+        }
     }
 }
