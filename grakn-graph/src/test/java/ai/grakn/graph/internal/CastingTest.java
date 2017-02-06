@@ -63,12 +63,6 @@ public class CastingTest extends GraphTestBase{
     }
 
     @Test
-    public void hashCodeTest() throws Exception {
-        Vertex castingVertex = graknGraph.getTinkerPopGraph().traversal().V(casting.getId().getRawValue()).next();
-        assertEquals(casting.hashCode(), castingVertex.hashCode());
-    }
-
-    @Test
     public void testGetRolePlayer() throws Exception {
         assertEquals(rolePlayer, casting.getRolePlayer());
     }
