@@ -508,7 +508,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
+        return ConceptId.of(vertex.id());
     }
 
     /**
