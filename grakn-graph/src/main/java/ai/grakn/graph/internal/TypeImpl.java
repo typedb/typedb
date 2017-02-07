@@ -292,7 +292,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             instances().forEach(concept -> {
                 if (concept.isInstance()) {
                     ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getGraknGraph().getConceptLog().putConcept(instance));
+                            instance -> getGraknGraph().getConceptLog().trackConceptForValidation(instance));
                 }
             });
         }
@@ -358,7 +358,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
+                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getConceptLog().trackConceptForValidation(casting));
             }
         });
 
@@ -381,7 +381,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public T setAbstract(Boolean isAbstract) {
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract) {
-            getGraknGraph().getConceptLog().putConcept(this);
+            getGraknGraph().getConceptLog().trackConceptForValidation(this);
         }
         return getThis();
     }

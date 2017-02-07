@@ -91,8 +91,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
+    private final ElementFactory elementFactory;
 
-    private final ThreadLocal<ElementFactory> localElementFactory = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
@@ -104,6 +104,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
+        elementFactory = new ElementFactory(this);
+
         localIsOpen.set(true);
 
         if(initialiseMetaConcepts()) {
@@ -233,10 +235,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     ElementFactory getElementFactory(){
-        ElementFactory elementFactory = localElementFactory.get();
-        if(elementFactory == null){
-            localElementFactory.set(elementFactory = new ElementFactory(this));
-        }
         return elementFactory;
     }
 
@@ -526,7 +524,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         // Relation To Casting
         EdgeImpl relationToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);
         relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
-        getConceptLog().putConcept(relation); //The relation is explicitly tracked so we can look them up without committing
+        getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
         putShortcutEdges(relation, relation.type());
 
@@ -719,7 +717,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private void clearLocalVariables(){
-        localElementFactory.remove();
         localConceptLog.remove();
     }
 

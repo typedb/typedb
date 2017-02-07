@@ -31,8 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -52,7 +50,6 @@ import java.util.function.Function;
  * @author fppt
  */
 final class ElementFactory {
-    private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
     private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
     private final AbstractGraknGraph graknGraph;
 
@@ -63,18 +60,16 @@ final class ElementFactory {
     private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<Vertex, X> conceptBuilder){
         ConceptId conceptId = ConceptId.of(v.id().toString());
 
-        if(!conceptCache.containsKey(conceptId)){
+        if(!graknGraph.getConceptLog().isConceptCached(conceptId)){
             X newConcept = conceptBuilder.apply(v);
-            conceptCache.put(newConcept.getId(), newConcept);
+            graknGraph.getConceptLog().cacheConcept(newConcept);
         }
 
-        //noinspection unchecked
-        X concept = (X) conceptCache.get(conceptId);
-
+        X concept = graknGraph.getConceptLog().getCachedConcept(conceptId);
 
         //Only track concepts which have been modified.
         if(graknGraph.isConceptModified(concept)) {
-            graknGraph.getConceptLog().putConcept(concept);
+            graknGraph.getConceptLog().trackConceptForValidation(concept);
         }
 
         return concept;
@@ -148,7 +143,7 @@ final class ElementFactory {
 
         ConceptId conceptId = ConceptId.of(v.id());
 
-        if(!conceptCache.containsKey(conceptId)){
+        if(!graknGraph.getConceptLog().isConceptCached(conceptId)){
             ConceptImpl concept;
             switch (type) {
                 case RELATION:
@@ -187,11 +182,10 @@ final class ElementFactory {
                 default:
                     throw new RuntimeException("Unknown base type");
             }
-            conceptCache.put(conceptId, concept);
+            graknGraph.getConceptLog().cacheConcept(concept);
         }
 
-        //noinspection unchecked
-        return (X) conceptCache.get(conceptId);
+        return graknGraph.getConceptLog().getCachedConcept(conceptId);
     }
 
     EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){

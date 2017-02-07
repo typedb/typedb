@@ -95,13 +95,13 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add castings of roleType to make sure relations are still valid
-        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
+        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getConceptLog().trackConceptForValidation(casting));
 
         //Add the Role Type itself
-        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+        getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
         //Add the Relation Type
-        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+        getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
         return this;
     }
