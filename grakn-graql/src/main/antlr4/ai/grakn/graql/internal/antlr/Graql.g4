@@ -95,17 +95,20 @@ casting        : variable (':' VARIABLE)?
 
 variable       : name | VARIABLE ;
 
-predicate      : '='? value                # predicateEq
-               | '!=' value                # predicateNeq
-               | '>' value                 # predicateGt
-               | '>=' value                # predicateGte
-               | '<' value                 # predicateLt
-               | '<=' value                # predicateLte
-               | 'contains' STRING         # predicateContains
-               | REGEX                     # predicateRegex
+predicate      : '='? value        # predicateEq
+               | '=' VARIABLE      # predicateVariable
+               | '!=' valueOrVar   # predicateNeq
+               | '>' valueOrVar    # predicateGt
+               | '>=' valueOrVar   # predicateGte
+               | '<' valueOrVar    # predicateLt
+               | '<=' valueOrVar   # predicateLte
+               | 'contains' STRING # predicateContains
+               | REGEX             # predicateRegex
                ;
-value          : VARIABLE # valueVariable
-               | STRING   # valueString
+valueOrVar     : VARIABLE # valueVariable
+               | value    # valuePrimitive
+               ;
+value          : STRING   # valueString
                | INTEGER  # valueInteger
                | REAL     # valueReal
                | BOOLEAN  # valueBoolean
