@@ -581,4 +581,38 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(graknGraph.getMetaEntityType(), entityTypeB.superType());
 
     }
+
+    @Test
+    public void checkSubTypeCachingUpdatedCorrectlyWhenChangingSuperTypes(){
+        EntityType e1 = graknGraph.putEntityType("entityType1");
+        EntityType e2 = graknGraph.putEntityType("entityType2").superType(e1);
+        EntityType e3 = graknGraph.putEntityType("entityType3").superType(e1);
+        EntityType e4 = graknGraph.putEntityType("entityType4").superType(e1);
+        EntityType e5 = graknGraph.putEntityType("entityType5");
+        EntityType e6 = graknGraph.putEntityType("entityType6").superType(e5);
+
+        assertEquals(4, e1.subTypes().size());
+        assertTrue("e1 subtypes does not contain e1", e1.subTypes().contains(e1));
+        assertTrue("e1 subtypes does not contain e2", e1.subTypes().contains(e2));
+        assertTrue("e1 subtypes does not contain e3", e1.subTypes().contains(e3));
+        assertTrue("e1 subtypes does not contain e4", e1.subTypes().contains(e4));
+
+        assertEquals(2, e5.subTypes().size());
+        assertTrue("e5 subtypes does not contain e5", e5.subTypes().contains(e5));
+        assertTrue("e5 subtypes does not contain e6", e5.subTypes().contains(e6));
+
+        //Now change subtypes
+        e6.superType(e1);
+        e3.superType(e5);
+
+        assertEquals(4, e1.subTypes().size());
+        assertTrue("e1 subtypes does not contain e1", e1.subTypes().contains(e1));
+        assertTrue("e1 subtypes does not contain e2", e1.subTypes().contains(e2));
+        assertTrue("e1 subtypes does not contain e5", e1.subTypes().contains(e5));
+        assertTrue("e1 subtypes does not contain e4", e1.subTypes().contains(e4));
+
+        assertEquals(2, e5.subTypes().size());
+        assertTrue("e5 subtypes does not contain e3", e5.subTypes().contains(e3));
+        assertTrue("e5 subtypes does not contain e6", e5.subTypes().contains(e6));
+    }
 }
