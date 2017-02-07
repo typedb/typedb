@@ -434,11 +434,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropValue(GraqlParser.PropValueContext ctx) {
-        if (ctx.predicate() != null) {
-            return var -> var.value(visitPredicate(ctx.predicate()));
-        } else {
-            return Var::value;
-        }
+        return var -> var.value(visitPredicate(ctx.predicate()));
     }
 
     @Override

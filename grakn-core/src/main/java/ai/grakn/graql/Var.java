@@ -58,12 +58,6 @@ public interface Var extends Pattern {
     Var name(TypeName name);
 
     /**
-     * this variable must have a value
-     * @return this
-     */
-    Var value();
-
-    /**
      * @param value a value that this variable's value must exactly match
      * @return this
      */

@@ -317,7 +317,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteValue() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("value")));
-        qb.match(var("x").isa("movie")).delete(var("x").value()).execute();
+        qb.match(var("x").isa("movie")).delete(var("x").value("hello")).execute();
     }
 
     @Test

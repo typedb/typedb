@@ -236,13 +236,6 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testHasValueQuery() {
-        MatchQuery expected = match(var("x").value());
-        MatchQuery parsed = parse("match $x value;");
-        assertEquals(expected, parsed);
-    }
-
-    @Test
     public void testVariablesEverywhereQuery() {
         MatchQuery expected = match(
                 var().rel(var("p"), "x").rel("y"),

@@ -75,7 +75,7 @@ property       : 'isa' variable                    # isa
                | 'has-scope' VARIABLE              # hasScope
                | 'id' id                           # propId
                | 'type-name' name                  # propName
-               | 'value' predicate?                # propValue
+               | 'value' predicate                 # propValue
                | 'lhs' '{' patterns '}'            # propLhs
                | 'rhs' '{' varPatterns '}'         # propRhs
                | 'has' name? VARIABLE              # propHasVariable

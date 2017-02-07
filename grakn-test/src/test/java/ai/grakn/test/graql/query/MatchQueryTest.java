@@ -427,8 +427,8 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testHasValue() {
-        MatchQuery query = qb.match(var("x").value()).limit(10);
+    public void testIsResource() {
+        MatchQuery query = qb.match(var("x").isa("resource")).limit(10);
 
         assertThat(query.execute(), hasSize(10));
         assertThat(query, variable("x", everyItem(hasType(resource))));

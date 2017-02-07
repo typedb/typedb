@@ -49,7 +49,6 @@ import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.graql.internal.pattern.property.ValueFlagProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -134,11 +133,6 @@ class VarImpl implements VarAdmin {
     @Override
     public Var name(TypeName name) {
         return addProperty(new NameProperty(name));
-    }
-
-    @Override
-    public Var value() {
-        return addProperty(new ValueFlagProperty());
     }
 
     @Override
