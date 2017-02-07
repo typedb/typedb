@@ -20,15 +20,21 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.TypeName;
 
-public class RuleTypes extends FromGraphGenerator<RuleType> {
+public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
     public RuleTypes() {
         super(RuleType.class);
     }
 
     @Override
-    public RuleType generate() {
-        return random.choose(graph().admin().getMetaRuleType().subTypes());
+    protected RuleType newType(TypeName name) {
+        return graph().putRuleType(name);
+    }
+
+    @Override
+    protected RuleType metaType() {
+        return graph().admin().getMetaRuleType();
     }
 }

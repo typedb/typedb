@@ -19,59 +19,67 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.Collection;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.stream.Collectors.toSet;
 
-public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
+public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGenerator<T> {
 
-    private Unique unique;
+    private boolean excludeMeta = false;
 
-    public ResourceTypes() {
-        super(ResourceType.class);
+    AbstractTypeGenerator(Class<T> type) {
+        super(type);
     }
 
     @Override
-    protected ResourceType newType(TypeName name) {
-        ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
+    protected final T generate() {
+        Collection<T> types = (Collection<T>) metaType().subTypes();
 
-        boolean shouldBeUnique = unique != null ? unique.value() : random.nextBoolean();
+        types = types.stream().filter(this::filter).collect(toSet());
 
-        if (shouldBeUnique) {
-            return graph().putResourceTypeUnique(name, dataType);
+        if (excludeMeta) {
+            types.remove(metaType());
+        }
+        
+        if (types.isEmpty()) {
+            TypeName name = gen().make(TypeNames.class).mustBeUnused().generate(random, status);
+            return newType(name);
         } else {
-            return graph().putResourceType(name, dataType);
+            return random.choose(types);
         }
     }
 
-    @Override
-    protected ResourceType metaType() {
-        return graph().admin().getMetaResourceType();
+    protected abstract T newType(TypeName name);
+
+    protected abstract T metaType();
+
+    protected boolean filter(T type) {
+        return true;
     }
 
-    @Override
-    protected boolean filter(ResourceType type) {
-        return unique == null || type.isUnique().equals(unique.value());
+    public final void configure(NotMeta notMeta) {
+        excludeMeta();
     }
 
-    public void configure(Unique unique) {
-        this.unique = unique;
+    final AbstractTypeGenerator<T> excludeMeta() {
+        this.excludeMeta = true;
+        return this;
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface Unique {
-        boolean value() default true;
+    public static @interface NotMeta {
     }
-
 }

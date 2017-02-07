@@ -19,19 +19,17 @@
 
 package ai.grakn.generator;
 
-import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+public class Entities extends AbstractInstanceGenerator<Entity, EntityType> {
 
-import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.ElementType.TYPE_USE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+    public Entities() {
+        super(Entity.class, EntityTypes.class);
+    }
 
-@Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
-@Retention(RUNTIME)
-@GeneratorConfiguration
-public @interface NotMeta {
+    @Override
+    protected Entity newInstance(EntityType type) {
+        return type.addEntity();
+    }
 }

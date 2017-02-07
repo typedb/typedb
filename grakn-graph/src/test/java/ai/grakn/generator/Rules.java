@@ -19,18 +19,18 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.Concept;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.graql.Pattern;
 
-import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
+public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
 
-public class Concepts extends FromGraphGenerator<Concept> {
-
-    public Concepts() {
-        super(Concept.class);
+    public Rules() {
+        super(Rule.class, RuleTypes.class);
     }
 
     @Override
-    public Concept generate() {
-        return random.choose(allConceptsFrom(graph()));
+    protected Rule newInstance(RuleType type) {
+        return type.addRule(gen(Pattern.class), gen(Pattern.class));
     }
 }

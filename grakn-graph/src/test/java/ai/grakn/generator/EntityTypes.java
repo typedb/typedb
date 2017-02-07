@@ -20,15 +20,21 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.TypeName;
 
-public class EntityTypes extends FromGraphGenerator<EntityType> {
+public class EntityTypes extends AbstractTypeGenerator<EntityType> {
 
     public EntityTypes() {
         super(EntityType.class);
     }
 
     @Override
-    public EntityType generate() {
-        return random.choose(graph().admin().getMetaEntityType().subTypes());
+    protected EntityType newType(TypeName name) {
+        return graph().putEntityType(name);
+    }
+
+    @Override
+    protected EntityType metaType() {
+        return graph().admin().getMetaEntityType();
     }
 }

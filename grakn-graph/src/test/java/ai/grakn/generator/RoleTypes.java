@@ -20,15 +20,21 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 
-public class RoleTypes extends FromGraphGenerator<RoleType> {
+public class RoleTypes extends AbstractTypeGenerator<RoleType> {
 
     public RoleTypes() {
         super(RoleType.class);
     }
 
     @Override
-    public RoleType generate() {
-        return random.choose(graph().admin().getMetaRoleType().subTypes());
+    protected RoleType newType(TypeName name) {
+        return graph().putRoleType(name);
+    }
+
+    @Override
+    protected RoleType metaType() {
+        return graph().admin().getMetaRoleType();
     }
 }

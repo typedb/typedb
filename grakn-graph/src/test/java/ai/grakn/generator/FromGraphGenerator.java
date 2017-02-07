@@ -20,7 +20,6 @@
 package ai.grakn.generator;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -48,10 +47,6 @@ public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
         }
     }
 
-    protected final TypeName unusedName() {
-        return gen().make(TypeNames.class).mustBeUnused().generate(random, status);
-    }
-
     protected final <S extends FromGraphGenerator<?>> S genFromGraph(Class<S> generatorClass) {
         S generator = gen().make(generatorClass);
         if (useLastGeneratedGraph) generator.useLastGeneratedGraph();
@@ -62,8 +57,9 @@ public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
         useLastGeneratedGraph();
     }
 
-    final void useLastGeneratedGraph() {
+    final FromGraphGenerator<T> useLastGeneratedGraph() {
         useLastGeneratedGraph = true;
+        return this;
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

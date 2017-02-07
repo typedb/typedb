@@ -22,23 +22,14 @@ package ai.grakn.generator;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 
-import java.util.Collection;
-
-public class Relations extends FromGraphGenerator<Relation> {
+public class Relations extends AbstractInstanceGenerator<Relation, RelationType> {
 
     public Relations() {
-        super(Relation.class);
+        super(Relation.class, RelationTypes.class);
     }
 
     @Override
-    public Relation generate() {
-        RelationType relationType = genFromGraph(RelationTypes.class).excludeMeta().generate(random, status);
-
-        Collection<Relation> relations = relationType.instances();
-        if (relations.isEmpty()) {
-            return relationType.addRelation();
-        } else {
-            return random.choose(relations);
-        }
+    protected Relation newInstance(RelationType type) {
+        return type.addRelation();
     }
 }

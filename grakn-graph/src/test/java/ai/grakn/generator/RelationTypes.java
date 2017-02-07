@@ -20,38 +20,21 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.TypeName;
 
-import java.util.Collection;
-
-public class RelationTypes extends FromGraphGenerator<RelationType> {
-
-    private boolean excludeMeta = false;
+public class RelationTypes extends AbstractTypeGenerator<RelationType> {
 
     public RelationTypes() {
         super(RelationType.class);
     }
 
     @Override
-    public RelationType generate() {
-        Collection<RelationType> relationTypes = graph().admin().getMetaRelationType().subTypes();
-
-        if (excludeMeta) {
-            relationTypes.remove(graph().admin().getMetaRelationType());
-        }
-
-        if (relationTypes.isEmpty()) {
-            return graph().putRelationType(unusedName());
-        } else {
-            return random.choose(relationTypes);
-        }
+    protected RelationType newType(TypeName name) {
+        return graph().putRelationType(name);
     }
 
-    public void configure(NotMeta notMeta) {
-        excludeMeta();
-    }
-
-    RelationTypes excludeMeta() {
-        this.excludeMeta = true;
-        return this;
+    @Override
+    protected RelationType metaType() {
+        return graph().admin().getMetaRelationType();
     }
 }
