@@ -21,6 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -50,10 +51,12 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
 
         if (excludeMeta) {
             types.remove(metaType());
+            types.removeAll(otherMetaTypes());
         }
         
         if (types.isEmpty()) {
             TypeName name = gen().make(TypeNames.class).mustBeUnused().generate(random, status);
+            assert graph().getType(name) == null;
             return newType(name);
         } else {
             return random.choose(types);
@@ -63,6 +66,10 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
     protected abstract T newType(TypeName name);
 
     protected abstract T metaType();
+
+    protected Collection<T> otherMetaTypes() {
+        return ImmutableSet.of();
+    }
 
     protected boolean filter(T type) {
         return true;

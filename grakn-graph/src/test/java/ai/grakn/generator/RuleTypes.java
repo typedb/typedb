@@ -21,6 +21,9 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeName;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
 
 public class RuleTypes extends AbstractTypeGenerator<RuleType> {
 
@@ -36,5 +39,10 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
     @Override
     protected RuleType metaType() {
         return graph().admin().getMetaRuleType();
+    }
+
+    @Override
+    protected Collection<RuleType> otherMetaTypes() {
+        return ImmutableSet.of(graph().admin().getMetaRuleInference(), graph().admin().getMetaRuleConstraint());
     }
 }

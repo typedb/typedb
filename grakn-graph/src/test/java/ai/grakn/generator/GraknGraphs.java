@@ -34,7 +34,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
@@ -44,6 +43,7 @@ import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -221,11 +221,15 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
+        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().subTypes());
+    }
+
+    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
         boolean implicitFlag = graph.implicitConceptsVisible();
         graph.showImplicitConcepts(true);
-        Collection<? extends Type> types = graph.admin().getMetaConcept().subTypes();
+        T result = function.apply(graph);
         graph.showImplicitConcepts(implicitFlag);
-        return types;
+        return result;
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

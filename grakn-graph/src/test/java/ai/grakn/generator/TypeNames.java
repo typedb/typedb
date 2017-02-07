@@ -20,12 +20,14 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.TypeName;
+import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 import static ai.grakn.generator.GraknGraphs.lastGeneratedGraph;
+import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -45,17 +47,19 @@ public class TypeNames extends AbstractGenerator<TypeName> {
 
     @Override
     public TypeName generate() {
-        TypeName name;
+        return withImplicitConceptsVisible(lastGeneratedGraph(), graph -> {
+            TypeName name;
 
-        do {
-            if (random.nextBoolean()) {
-                name = TypeName.of(gen(String.class));
-            } else {
-                name = TypeName.of("foo");
-            }
-        } while (mustBeUnused && lastGeneratedGraph().getType(name) != null);
+            do {
+                if (random.nextBoolean()) {
+                    name = TypeName.of(random.choose(ImmutableList.of("a", "b", "c", "d", "e")));
+                } else {
+                    name = TypeName.of("foo");
+                }
+            } while (mustBeUnused && graph.getType(name) != null);
 
-        return name;
+            return name;
+        });
     }
 
     public void configure(Unused unused) {
