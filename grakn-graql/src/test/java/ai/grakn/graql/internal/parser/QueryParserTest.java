@@ -695,6 +695,13 @@ public class QueryParserTest {
         parse("match $x isa name; aggregate group;");
     }
 
+    @Test
+    public void whenParsingAggregateWithWrongName_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
+        parse("match $x isa name; aggregate hello $x;");
+    }
+
     public static void assertQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
         assertEquals(Sets.newHashSet(query), Sets.newHashSet(parsedQuery));
     }
