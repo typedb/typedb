@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -289,7 +290,7 @@ public class InsertQueryExecutor {
         } else if (superType.isRuleType()) {
             return graph.putRuleType(name).superType(superType.asRuleType());
         } else {
-            throw new RuntimeException("Unrecognized type " + superType.getName());
+            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(name, superType.getName()));
         }
     }
 
