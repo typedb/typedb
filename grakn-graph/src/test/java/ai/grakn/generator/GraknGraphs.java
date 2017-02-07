@@ -34,6 +34,7 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
