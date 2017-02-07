@@ -64,7 +64,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(sqlMigrator.migrate());
             } else {
-                sqlMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch());
+                sqlMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch(), options.getNumberActiveTasks());
                 printWholeCompletionMessage(options);
             }
 

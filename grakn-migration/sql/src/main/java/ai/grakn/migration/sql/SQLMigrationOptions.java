@@ -31,6 +31,7 @@ import static java.lang.Integer.parseInt;
 public class SQLMigrationOptions extends MigrationOptions {
 
     private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
+    private final String active = Integer.toString(AbstractMigrator.ACTIVE_TASKS);
 
     public SQLMigrationOptions(String[] args){
         super();
@@ -40,8 +41,9 @@ public class SQLMigrationOptions extends MigrationOptions {
         options.addOption("user", true, "JDBC username");
         options.addOption("pass", true, "JDBC password");
         options.addOption("q", "query", true, "SQL Query");
-        options.addOption("t", "template", true, "template for the given SQL query");
-        options.addOption("b", "batch", true, "number of row to load at once");
+        options.addOption("t", "template", true, "Graql template to apply to the data.");
+        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
+        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
 
         parse(args);
     }
@@ -83,5 +85,9 @@ public class SQLMigrationOptions extends MigrationOptions {
 
     public int getBatch() {
         return parseInt(command.getOptionValue("b", batch));
+    }
+
+    public int getNumberActiveTasks() {
+        return parseInt(command.getOptionValue("a", active));
     }
 }

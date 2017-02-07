@@ -91,6 +91,11 @@ public class CSVMigratorMainTest {
     }
 
     @Test
+    public void csvMainDifferentNumActiveTest(){
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
+    }
+
+    @Test
     public void csvMainPropertiesTest(){
         load(graph, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
