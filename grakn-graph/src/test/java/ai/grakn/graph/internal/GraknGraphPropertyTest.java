@@ -582,18 +582,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingRollbackOnAnUncommittedGraph_TheResultIsTheSameAsACleanGraph(@Open GraknGraph graph) {
-        graph.clear();
-        graph.open();
-
-        List<Concept> concepts = allConceptsFrom(graph);
-        concepts.forEach(concept -> {
-            assertTrue(concept.isType());
-            assertTrue(isMetaName(concept.asType().getName()));
-        });
-    }
-
-    @Property
     public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) {
         graph.close();
 
