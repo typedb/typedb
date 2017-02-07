@@ -25,6 +25,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
@@ -67,7 +68,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         if(!cachedHasRoles.isPresent()){
             cachedHasRoles = Optional.of(getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
         }
-        return cachedHasRoles.get();
+        return Collections.unmodifiableCollection(cachedHasRoles.get());
     }
 
     /**

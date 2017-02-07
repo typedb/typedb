@@ -36,6 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -113,7 +114,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         superSet.remove(this); //We already have the plays roles from ourselves
         superSet.forEach(superParent -> allRoleTypes.addAll(superParent.playsRoles()));
 
-        return filterImplicitStructures(allRoleTypes);
+        return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
     }
 
     private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){
@@ -220,7 +221,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Collection<T> subTypes(){
-        return filterImplicitStructures(nextSubLevel(this));
+        return Collections.unmodifiableCollection(filterImplicitStructures(nextSubLevel(this)));
     }
 
     /**
@@ -276,7 +277,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             }
         });
 
-        return filterImplicitStructures(instances);
+        return Collections.unmodifiableCollection(filterImplicitStructures(instances));
     }
 
     /**
@@ -305,7 +306,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public Collection<Rule> getRulesOfHypothesis() {
         Set<Rule> rules = new HashSet<>();
         getIncomingNeighbours(Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
-        return rules;
+        return Collections.unmodifiableCollection(rules);
     }
 
     /**
@@ -316,7 +317,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public Collection<Rule> getRulesOfConclusion() {
         Set<Rule> rules = new HashSet<>();
         getIncomingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
-        return rules;
+        return Collections.unmodifiableCollection(rules);
     }
 
     /**

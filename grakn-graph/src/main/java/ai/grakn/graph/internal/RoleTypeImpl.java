@@ -68,7 +68,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<RelationType> relationTypes() {
-        return getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE);
+        return Collections.unmodifiableCollection(getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
     }
 
     /**
@@ -80,7 +80,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         Set<Type> playedBy = new HashSet<>();
         getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).
                 forEach(concept -> playedBy.addAll(concept.asType().subTypes()));
-        return playedBy;
+        return Collections.unmodifiableCollection(playedBy);
     }
 
     /**
