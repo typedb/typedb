@@ -24,6 +24,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -58,12 +59,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allTypesFrom;
+import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
@@ -75,6 +79,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -210,7 +215,7 @@ public class GraknGraphPropertyTest {
         TypeName typeName = resourceType.getName();
 
         exception.expect(ConceptException.class);
-        if(Schema.MetaSchema.isMetaName(typeName)) {
+        if(isMetaName(typeName)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
         } else {
             exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
@@ -478,6 +483,30 @@ public class GraknGraphPropertyTest {
         assertSameResult(() -> graph.getType(typeName), () -> graph.getEntityType(typeName.getValue()));
     }
 
+    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRelationType
+    @Property
+    public void whenCallingGetRelationType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+        assertSameResult(() -> graph.getType(typeName), () -> graph.getRelationType(typeName.getValue()));
+    }
+
+    @Ignore // TODO: Fix this test, or agree on distinction between getType and getResourceType
+    @Property
+    public void whenCallingGetResourceType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+        assertSameResult(() -> graph.getType(typeName), () -> graph.getResourceType(typeName.getValue()));
+    }
+
+    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRoleType
+    @Property
+    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+        assertSameResult(() -> graph.getType(typeName), () -> graph.getRoleType(typeName.getValue()));
+    }
+
+    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRuleType
+    @Property
+    public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+        assertSameResult(() -> graph.getType(typeName), () -> graph.getRuleType(typeName.getValue()));
+    }
+
     @Ignore // TODO: Fix this test
     @Property
     public void whenCallingGetRelationAndTheRelationExists_ReturnThatRelation(
@@ -487,8 +516,13 @@ public class GraknGraphPropertyTest {
 
     @Property
     public void whenCallingGetRelationAndTheRelationDoesntExist_ReturnNull(
-            @Open GraknGraph graph, @FromGraph RelationType relationType) {
-        // TODO: Write something to generate a role map
+            @Open GraknGraph graph,
+            @FromGraph RelationType type, Map<@FromGraph RoleType, @FromGraph Instance> roleMap) {
+        Collection<Relation> instances = type.instances();
+        Set<Map<RoleType, Instance>> roleMaps = instances.stream().map(Relation::rolePlayers).collect(toSet());
+        assumeThat(roleMaps, not(hasItem(roleMap)));
+
+        assertNull(graph.getRelation(type, roleMap));
     }
 
     @Property
@@ -504,8 +538,30 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingClear_TheResultIsTheSameAsACleanGraph() {
-        // TODO: need something to check graph equality
+    public void whenCallingClear_TheGraphCloses(@Open GraknGraph graph) {
+        graph.clear();
+        assertTrue(graph.isClosed());
+    }
+
+    @Ignore // TODO: Re-enable this when test below is fixed
+    @Property
+    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
+        graph.clear();
+        graph.open();
+
+        List<Concept> concepts = allConceptsFrom(graph);
+        concepts.forEach(concept -> {
+            assertTrue(concept.isType());
+            assertTrue(isMetaName(concept.asType().getName()));
+        });
+    }
+
+    @Ignore // TODO: Fix this
+    @Property
+    public void whenCallingClear_TheMetaConceptIsStillPresent(@Open GraknGraph graph) {
+        graph.clear();
+        graph.open();
+        assertNotNull(graph.admin().getMetaConcept());
     }
 
     @Ignore // TODO: Fix this, or remove the test
@@ -526,8 +582,15 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingRollbackOnAnUncommittedGraph_TheResultIsTheSameAsACleanGraph() {
-        // TODO: need something to check graph equality
+    public void whenCallingRollbackOnAnUncommittedGraph_TheResultIsTheSameAsACleanGraph(@Open GraknGraph graph) {
+        graph.clear();
+        graph.open();
+
+        List<Concept> concepts = allConceptsFrom(graph);
+        concepts.forEach(concept -> {
+            assertTrue(concept.isType());
+            assertTrue(isMetaName(concept.asType().getName()));
+        });
     }
 
     @Property
