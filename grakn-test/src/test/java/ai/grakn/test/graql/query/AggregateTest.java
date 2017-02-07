@@ -204,9 +204,9 @@ public class AggregateTest {
                 .match(var("x").isa("movie").has("tmdb-vote-count", var("y")))
                 .aggregate(std("y"));
 
-        double mean = (1000d + 100d + 400d + 435d) / 4d;
-        double variance =
-                (pow(1000d - mean, 2d) + pow(100d - mean, 2d) + pow(400d - mean, 2d) + pow(435d - mean, 2d)) / 4d;
+        double mean = (1000d + 100d + 400d + 435d + 5d) / 5d;
+        double variance = (pow(1000d - mean, 2d) + pow(100d - mean, 2d)
+                + pow(400d - mean, 2d) + pow(435d - mean, 2d) + pow(5d - mean, 2d)) / 5d;
         double expected = sqrt(variance);
 
         assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
