@@ -38,14 +38,15 @@
 
                 <executions>
                     <execution>
-                        <id>npm install</id>
+                        <id>npm install retry</id>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <executable>./npm-install-retry/bin/npm-install-retry --</executable>
+                            <executable>./npm-install-retry/bin/npm-install-retry</executable>
                             <arguments>
+                                <argument>--</argument>
                                 <argument>--no-optional</argument>
                             </arguments>
                         </configuration>

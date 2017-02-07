@@ -1,0 +1,92 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "npm-install-retry",
+        "scope": null,
+        "escapedName": "npm-install-retry",
+        "name": "npm-install-retry",
+        "rawSpec": "",
+        "spec": "latest",
+        "type": "tag"
+      },
+      "/Users/marcoscoppetta/Grakn/grakn/grakn-dashboard"
+    ]
+  ],
+  "_from": "npm-install-retry@latest",
+  "_id": "npm-install-retry@1.1.0",
+  "_inCache": true,
+  "_location": "/npm-install-retry",
+  "_nodeVersion": "4.4.3",
+  "_npmOperationalInternal": {
+    "host": "packages-18-east.internal.npmjs.com",
+    "tmp": "tmp/npm-install-retry-1.1.0.tgz_1478284848035_0.056726805632933974"
+  },
+  "_npmUser": {
+    "name": "jfromaniello",
+    "email": "jfromaniello@gmail.com"
+  },
+  "_npmVersion": "2.15.1",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "npm-install-retry",
+    "scope": null,
+    "escapedName": "npm-install-retry",
+    "name": "npm-install-retry",
+    "rawSpec": "",
+    "spec": "latest",
+    "type": "tag"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/npm-install-retry/-/npm-install-retry-1.1.0.tgz",
+  "_shasum": "2d2e1102395f9b32040ac8560d863b6e8d337765",
+  "_shrinkwrap": null,
+  "_spec": "npm-install-retry",
+  "_where": "/Users/marcoscoppetta/Grakn/grakn/grakn-dashboard",
+  "author": {
+    "name": "José F. Romaniello",
+    "email": "jfromaniello@gmail.com",
+    "url": "http://joseoncode.com"
+  },
+  "bin": {
+    "npm-install-retry": "./bin/npm-install-retry"
+  },
+  "bugs": {
+    "url": "https://github.com/jfromaniello/npm-install-retry/issues"
+  },
+  "dependencies": {
+    "colors": "~0.6.0-1",
+    "commander": "~1.1.1"
+  },
+  "description": "retry npm install when it fails",
+  "devDependencies": {
+    "chai": "~1.7.0",
+    "mocha": "~1.11.0"
+  },
+  "directories": {},
+  "dist": {
+    "shasum": "2d2e1102395f9b32040ac8560d863b6e8d337765",
+    "tarball": "https://registry.npmjs.org/npm-install-retry/-/npm-install-retry-1.1.0.tgz"
+  },
+  "gitHead": "994e1c1610b5856af5fddb85ec8bb5dbcef1d43b",
+  "homepage": "https://github.com/jfromaniello/npm-install-retry#readme",
+  "maintainers": [
+    {
+      "name": "jfromaniello",
+      "email": "jfromaniello@gmail.com"
+    }
+  ],
+  "name": "npm-install-retry",
+  "optionalDependencies": {},
+  "readme": "ERROR: No README data found!",
+  "repository": {
+    "url": "git://github.com/jfromaniello/npm-install-retry.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "version": "1.1.0"
+}
