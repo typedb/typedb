@@ -280,7 +280,7 @@ public class QueryParser {
         registerAggregate("sum", args -> Aggregates.sum((VarName) args.get(0)));
         registerAggregate("max", args -> Aggregates.max((VarName) args.get(0)));
         registerAggregate("min", args -> Aggregates.min((VarName) args.get(0)));
-        registerAggregate("average", args -> Aggregates.average((VarName) args.get(0)));
+        registerAggregate("mean", args -> Aggregates.mean((VarName) args.get(0)));
         registerAggregate("median", args -> Aggregates.median((VarName) args.get(0)));
 
         registerAggregate("group", args -> {

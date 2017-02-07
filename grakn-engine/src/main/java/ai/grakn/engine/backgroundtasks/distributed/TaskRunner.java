@@ -23,6 +23,7 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.EngineStorageException;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -53,6 +54,7 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -115,29 +117,30 @@ public class TaskRunner implements Runnable, AutoCloseable {
         }
         catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
-        }
-        finally {
-            consumer.commitSync();
-            consumer.close();
-            shutdownLatch.countDown();
+        } catch (Throwable t){
+            LOG.error("Error in TaskRunner poll " + getFullStackTrace(t));
+        } finally {
+            noThrow(consumer::commitSync, "Exception syncing commits while closing in TaskRunner");
+            noThrow(consumer::close, "Exception while closing consumer in TaskRunner");
+            noThrow(shutdownLatch::countDown, "Exception while counting down close latch in TaskRunner");
         }
     }
 
     /**
      * Stop the main loop, causing run() to exit.
+     *
+     * noThrow() functions used here so that if an error occurs during execution of a
+     * certain step, the subsequent stops continue to execute.
      */
     public void close() {
         // Stop execution of kafka consumer
-        consumer.wakeup();
+        noThrow(consumer::wakeup, "Could not wake up task runner thread.");
 
-        try {
-            shutdownLatch.await();
-        } catch (InterruptedException e){
-            LOG.error("Error waiting for TaskRunner consumer to exit " + getFullStackTrace(e));
-        }
+        // Wait for the shutdown latch to complete
+        noThrow(shutdownLatch::await, "Error waiting for TaskRunner consumer to exit");
 
         // Interrupt all currently running threads - these will be re-allocated to another Engine.
-        executor.shutdownNow();
+        noThrow(executor::shutdownNow, "Could not shutdown scheduling service.");
 
         LOG.debug("TaskRunner stopped");
     }
@@ -154,17 +157,29 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             String id = record.key();
 
-            TaskState state = storage.getState(id);
-            if(state.status() != SCHEDULED) {
-                LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: "+ state.status());
-                continue;
+            // Instead of deserializing TaskState from value, get up-to-date state from the storage
+            try {
+                TaskState state = storage.getState(id);
+                if (state.status() != SCHEDULED) {
+                    LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: " + state.status());
+                    continue;
+                }
+
+                // Mark as RUNNING and update task & runner states.
+                addRunningTask(state.getId());
+                storage.updateState(state
+                    .status(RUNNING)
+                    .statusChangedBy(this.getClass().getName())
+                    .engineID(ENGINE_ID));
+
+                // Submit to executor
+                executor.submit(() -> executeTask(state));
+
+                // Advance offset
+                seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+            } catch (EngineStorageException e){
+                LOG.error("Cant run this task - " + id + " because state was not found in storage");
             }
-
-            // Submit to executor
-            executor.submit(() -> executeTask(state));
-
-            // Advance offset
-            seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset()+1);
         }
     }
 
@@ -174,13 +189,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
      */
     private void executeTask(TaskState state) {
         try {
-            // Mark as RUNNING and update task & runner states.
-            addRunningTask(state.getId());
-            storage.updateState(state
-                    .status(RUNNING)
-                    .statusChangedBy(this.getClass().getName())
-                    .engineID(ENGINE_ID));
-
             LOG.debug("Executing task " + state.getId());
 
             // Instantiate task.

@@ -45,6 +45,7 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STAT
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
 
 /**
  * <p>
@@ -95,11 +96,11 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
 
         switch (event.getType()) {
             case NODE_ADDED:
-                LOG.debug("New engine joined pool.");
+                LOG.debug("New engine joined pool. Current engines: " + nodes.keySet());
                 current = nodes;
                 break;
             case NODE_REMOVED:
-                LOG.debug("Engine failure detected.");
+                LOG.debug("Engine failure detected. Current engines " + nodes.keySet());
                 failover(client, nodes);
                 current = nodes;
                 break;
@@ -144,8 +145,14 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             // Mark task as SCHEDULED again
             TaskState taskState = stateStorage.getState(id);
 
-            stateStorage.updateState(taskState.status(SCHEDULED));
-            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState.configuration().toString()));
+            if(taskState.status() == RUNNING) {
+                LOG.debug(format("Engine [%s] stopped, task [%s] requeued", engineID, taskState.getId()));
+                stateStorage.updateState(taskState.status(SCHEDULED));
+                producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState.configuration().toString()));
+            } else {
+                LOG.debug(format("Engine [%s] stopped, task [%s] not restarted because state [%s]"
+                        , engineID, taskState.getId(), taskState.status()));
+            }
         }
     }
 

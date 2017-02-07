@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static ai.grakn.graql.Graql.average;
+import static ai.grakn.graql.Graql.mean;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.max;
@@ -170,7 +170,7 @@ public class AggregateTest {
     public void testAverageDouble() {
         AggregateQuery<Optional<Double>> query = qb
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
-                .aggregate(average("y"));
+                .aggregate(mean("y"));
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, query.execute().get(), 0.01d);

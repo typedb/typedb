@@ -21,11 +21,14 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
+import org.apache.curator.framework.state.ConnectionState;
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**
  * There is one "Scheduler" that will be constantly running on the "Leader" machine.
@@ -73,17 +76,29 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
      *  1. Interrupt the Scheduler on whichever machine it is running on. We do this by interrupting the leadership.
      *      When leadership is interrupted it will shut down the Scheduler on that machine.
      *
-     *  2. Shutdown the TaskRunner on this machine.
+     *  2. If the scheduler is running on this machine, close it
      *
-     *  3. Shutdown Zookeeper storage connection on this machine
+     * noThrow() functions used here so that if an error occurs during execution of a
+     * certain step, the subsequent stops continue to execute.
      */
     public void stop(){
         leaderSelector.interruptLeadership();
-        leaderSelector.close();
+        noThrow(leaderSelector::close, "Error closing leadership elector");
 
-        scheduler.close();
-        failover.close();
-        cache.close();
+        if(scheduler != null) {
+            noThrow(scheduler::close, "Error closing the Scheduler");
+            noThrow(failover::close, "Error shutting down task failover hook");
+            noThrow(cache::close, "Error closing zookeeper cache");
+        }
+    }
+
+    @Override
+    public void stateChanged(CuratorFramework client, ConnectionState newState)
+    {
+        if ( (newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST) ) {
+            scheduler.close();
+            throw new CancelLeadershipException();
+        }
     }
 
     /**
@@ -99,7 +114,6 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
         scheduler = new Scheduler(storage);
 
         Thread schedulerThread = new Thread(scheduler, SCHEDULER_THREAD_NAME + scheduler.hashCode());
-        schedulerThread.setDaemon(true);
         schedulerThread.start();
 
         // wait for scheduler to fail
