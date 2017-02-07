@@ -18,7 +18,6 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.TaskStatus;
@@ -28,6 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -55,8 +55,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunSingle() {
-        TestTask task = new TestTask();
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 0,
+        String id = taskManager.createTask(TestTask.class.getName(), this.getClass().getName(), Instant.now(), 0,
                 Json.object("name", "task"));
 
         // Wait for task to be executed.
@@ -91,7 +90,7 @@ public class StandaloneTaskManagerTest {
         // Schedule tasks
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
-            ids.add(taskManager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0,
+            ids.add(taskManager.createTask(TestTask.class.getName(), this.getClass().getName(), Instant.now(), 0,
                     Json.object("name", "task" + i)));
         }
 
@@ -116,9 +115,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunRecurring() throws Exception {
-        TestTask task = new TestTask();
-
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 100,
+        String id = taskManager.createTask(TestTask.class.getName(), this.getClass().getName(), Instant.now(), 100,
                 Json.object("name", "task" + 1));
         Thread.sleep(2000);
 
@@ -130,8 +127,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testStopSingle() {
-        BackgroundTask task = new LongRunningTask();
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), Instant.now(), 0,
+        String id = taskManager.createTask(TestTask.class.getName(), this.getClass().getName(), Instant.now().plus(10, ChronoUnit.SECONDS), 0,
                 Json.object("name", "task" + 1));
 
         TaskStatus status = taskManager.storage().getState(id).status();

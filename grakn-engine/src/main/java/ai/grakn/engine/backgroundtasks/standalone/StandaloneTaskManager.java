@@ -94,10 +94,11 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService.shutdown();
     }
 
-    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
+    @Override
+    public String createTask(String taskClassName, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = (period != 0);
 
-        TaskState taskState = new TaskState(task.getClass().getName())
+        TaskState taskState = new TaskState(taskClassName)
                 .creator(createdBy)
                 .runAt(runAt)
                 .isRecurring(recurring)
@@ -108,10 +109,13 @@ public class StandaloneTaskManager implements TaskManager {
 
         // Schedule task to run.
         Instant now = Instant.now();
-        long delay = Duration.between(runAt, now).toMillis();
-
+        long delay = Duration.between(now, runAt).toMillis();
         try {
             stateStorage.updateState(taskState.status(SCHEDULED).statusChangedBy(this.getClass().getName()));
+
+            // Instantiate task.
+            Class<?> c = Class.forName(taskClassName);
+            BackgroundTask task = (BackgroundTask) c.newInstance();
 
             ScheduledFuture<?> future;
             if(recurring) {
@@ -131,31 +135,6 @@ public class StandaloneTaskManager implements TaskManager {
         }
 
         return taskState.getId();
-    }
-
-    public CompletableFuture completableFuture(String taskId) {
-        if(!instantiatedTasks.containsKey(taskId)){
-            return null;
-        }
-
-        try {
-            return CompletableFuture.runAsync(() -> {
-                try {
-                    while(true){
-                        TaskState state = storage().getState(taskId);
-                        if(state.status().equals(COMPLETED) || state.status().equals(FAILED)){
-                            break;
-                        }
-                        Thread.sleep(1000);
-                    }
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        } catch (Throwable t){
-            LOG.error(getFullStackTrace(t));
-            throw new RuntimeException(t);
-        }
     }
 
     public TaskManager stopTask(String id, String requesterName) {

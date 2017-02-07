@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**
  * Class to manage tasks distributed using Kafka.
@@ -70,25 +70,21 @@ public final class DistributedTaskManager implements TaskManager {
 
     @Override
     public void close() {
-        producer.close();
+        noThrow(producer::close, "Error shutting down producer in TaskManager");
 
-        elector.stop();
-        taskRunner.close();
-        try {
-            taskRunnerThread.join();
-        } catch (InterruptedException e){
-            LOG.error("Error while waiting for taskrunner to exit");
-        }
+        noThrow(elector::stop, "Error stopping Scheduler elector from TaskManager");
+        noThrow(taskRunner::close, "Error shutting down TaskRunner");
+        noThrow(taskRunnerThread::join, "Error waiting for TaskRunner to close");
 
         // stop zookeeper connection
-        connection.close();
+        noThrow(connection::close, "Error waiting for zookeeper connection to close");
     }
 
     @Override
-    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
+    public String createTask(String taskClassName, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = period > 0;
 
-        TaskState taskState = new TaskState(task.getClass().getName())
+        TaskState taskState = new TaskState(taskClassName)
                 .creator(createdBy)
                 .runAt(runAt)
                 .isRecurring(recurring)

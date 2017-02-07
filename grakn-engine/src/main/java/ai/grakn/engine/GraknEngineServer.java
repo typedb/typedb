@@ -146,7 +146,7 @@ public class GraknEngineServer {
 
     private static void startPostprocessing(){
         // Submit a recurring post processing task
-        taskManager.scheduleTask(new PostProcessingTask(),
+        taskManager.createTask(PostProcessingTask.class.getName(),
                 GraknEngineServer.class.getName(),
                 Instant.now(),
                 prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
