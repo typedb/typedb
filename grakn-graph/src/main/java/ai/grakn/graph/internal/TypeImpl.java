@@ -350,7 +350,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     T playsRole(RoleType roleType, boolean required) {
         checkTypeMutation();
         EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
-        cachedPlaysRoles.map(set -> set.add(roleType)).orElse(new HashSet<>().add(roleType));
+
+        if(!cachedPlaysRoles.isPresent()){
+            cachedPlaysRoles = Optional.of(new HashSet<>());
+        }
+        cachedPlaysRoles.get().add(roleType);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
