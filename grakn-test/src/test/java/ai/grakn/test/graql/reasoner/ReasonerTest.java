@@ -895,7 +895,7 @@ public class ReasonerTest {
 
     @Test
     public void testAmbiguousRolePlayersWithSub(){
-        String queryString = "match ($x, $y) isa is-locatedt statis-in;$x id '174';";
+        String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
         QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
