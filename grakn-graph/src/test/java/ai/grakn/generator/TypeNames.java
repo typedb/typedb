@@ -20,7 +20,6 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.TypeName;
-import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -52,7 +51,7 @@ public class TypeNames extends AbstractGenerator<TypeName> {
 
             do {
                 if (random.nextBoolean()) {
-                    name = TypeName.of(random.choose(ImmutableList.of("a", "b", "c", "d", "e")));
+                    name = TypeName.of(gen(String.class));
                 } else {
                     name = TypeName.of("foo");
                 }
