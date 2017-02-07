@@ -41,11 +41,13 @@ import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphMethods;
 import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.generator.ResourceTypes.Unique;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -62,6 +64,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -69,6 +72,7 @@ import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
@@ -81,6 +85,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -124,10 +129,51 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutEntityType_CreateATypeWithTheGivenName(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        EntityType entityType = graph.putEntityType(typeName);
-        assertEquals(typeName, entityType.getName());
+    public void whenCallingAnyPutTypeMethod_CreateATypeWithTheGivenName(
+            @Open GraknGraph graph,
+            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
+        Type type = putType.apply(graph, typeName);
+        assertEquals(typeName, type.getName());
+    }
+
+    @Property
+    public void whenCallingAnyPutTypeMethod_CreateATypeWithoutSubTypes(
+            @Open GraknGraph graph,
+            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
+        Type type = putType.apply(graph, typeName);
+        assertEquals(ImmutableSet.of(type), type.subTypes());
+    }
+
+    @Property
+    public void whenCallingAnyPutTypeMethod_CreateANonAbstractType(
+            @Open GraknGraph graph,
+            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
+        Type type = putType.apply(graph, typeName);
+        assertFalse(type.isAbstract());
+    }
+
+    @Property
+    public void whenCallingAnyPutTypeMethod_CreateANonImplicitType(
+            @Open GraknGraph graph,
+            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
+        Type type = putType.apply(graph, typeName);
+        assertFalse(type.isImplicit());
+    }
+
+    @Property
+    public void whenCallingAnyPutTypeMethod_CreateATypeWithoutHypotheses(
+            @Open GraknGraph graph,
+            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
+        Type type = putType.apply(graph, typeName);
+        assertThat(type.getRulesOfHypothesis(), empty());
+    }
+
+    @Property
+    public void whenCallingAnyPutTypeMethod_CreateATypeWithoutConclusions(
+            @Open GraknGraph graph,
+            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
+        Type type = putType.apply(graph, typeName);
+        assertThat(type.getRulesOfConclusion(), empty());
     }
 
     @Property
@@ -153,13 +199,6 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
 
         graph.putEntityType(type.getName());
-    }
-
-    @Property
-    public void whenCallingPutResourceType_CreateATypeWithTheGivenName(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
-        assertEquals(typeName, resourceType.getName());
     }
 
     @Property
@@ -225,13 +264,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutResourceTypeUnique_CreateATypeWithTheGivenName(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
-        assertEquals(typeName, resourceType.getName());
-    }
-
-    @Property
     public void whenCallingPutResourceTypeUnique_CreateATypeWithSuperTypeResource(
             @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
@@ -288,12 +320,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleType_CreateATypeWithTheGivenName(@Open GraknGraph graph, @Unused TypeName typeName) {
-        RuleType ruleType = graph.putRuleType(typeName);
-        assertEquals(typeName, ruleType.getName());
-    }
-
-    @Property
     public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknGraph graph, @Unused TypeName typeName) {
         RuleType ruleType = graph.putRuleType(typeName);
         assertEquals(graph.admin().getMetaRuleType(), ruleType.superType());
@@ -315,13 +341,6 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
 
         graph.putRuleType(type.getName());
-    }
-
-    @Property
-    public void whenCallingPutRelationType_CreateATypeWithTheGivenName(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        RelationType relationType = graph.putRelationType(typeName);
-        assertEquals(typeName, relationType.getName());
     }
 
     @Property
@@ -347,12 +366,6 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
 
         graph.putRelationType(type.getName());
-    }
-
-    @Property
-    public void whenCallingPutRoleType_CreateATypeWithTheGivenName(@Open GraknGraph graph, @Unused TypeName typeName) {
-        RoleType roleType = graph.putRoleType(typeName);
-        assertEquals(typeName, roleType.getName());
     }
 
     @Property
