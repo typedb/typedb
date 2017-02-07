@@ -30,8 +30,8 @@ pre[class*="language-"] {
 
 /* Code blocks */
 pre[class*="language-"] {
-    padding: 1em;
-    margin: .5em 0;
+    /*padding: 1em;
+    margin: .5em 0;*/
     overflow: auto;
     border-radius: 0.3em;
 }
@@ -91,7 +91,7 @@ pre[class*="language-"] {
 .token.atrule,
 .token.attr-value,
 .token.function {
-    color: #e6db74;
+    color: #00eca2;
 }
 
 .token.keyword {
@@ -118,4 +118,3 @@ pre[class*="language-"] {
 .token.entity {
     cursor: help;
 }
-
