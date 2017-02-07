@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.TaskStatus;
@@ -40,7 +39,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.time.Instant;
 
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
@@ -54,6 +52,8 @@ import static ai.grakn.util.REST.Request.TASK_STOP;
 import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static java.lang.Long.parseLong;
+import static java.time.Instant.ofEpochMilli;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.get;
 import static spark.Spark.post;
@@ -70,7 +70,7 @@ import static spark.Spark.put;
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
     private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
-    private TaskManager manager;
+    private final TaskManager manager;
 
     public TasksController(TaskManager manager) {
         if (manager==null) {
@@ -129,10 +129,11 @@ public class TasksController {
     private String getTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            JSONObject result = serialiseStateFull(manager.storage().getState(id));
+
+            response.status(200);
             response.type("application/json");
 
-            return result.toString();
+            return serialiseStateFull(manager.storage().getState(id)).toString();
         } catch (EngineStorageException e){
            throw new GraknEngineServerException(404, e);
         } catch (Exception e) {
@@ -186,26 +187,12 @@ public class TasksController {
                 configuration = Json.read(request.body());
             }
 
-            Instant runAtInstant = Instant.ofEpochMilli(Long.parseLong(runAt));
-
-            Class<?> clazz = Class.forName(className);
-            BackgroundTask task = (BackgroundTask)clazz.newInstance();
-
-            String id = manager.scheduleTask(task, createdBy, runAtInstant, interval, configuration);
-            JSONObject resp = new JSONObject()
-                    .put("id", id);
+            String id = manager.createTask(className, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
 
             response.type("application/json");
-            return resp.toString();
 
-        }
-        catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new GraknEngineServerException(400, e);
-        }
-        catch (NullPointerException e) {
-            throw new GraknEngineServerException(400, "Missing mandatory parameters");
-        }
-        catch (Exception e) {
+            return Json.object("id", id).toString();
+        } catch (Exception e) {
             LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
         }
@@ -223,8 +210,7 @@ public class TasksController {
 
     private JSONObject serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                       .put("status", state.status())
-                        .put("interval", state.interval())
+                .put("interval", state.interval())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
                        .put("engineID", state.engineID())

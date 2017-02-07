@@ -73,7 +73,7 @@ public class DistributedTaskManagerTest {
         final int startCount = TestTask.startedCounter.get();
 
         for(int i = 0; i < 20; i++) {
-            String taskId = manager.scheduleTask(new TestTask(), DistributedTaskManagerTest.class.getName(),
+            String taskId = manager.createTask(TestTask.class.getName(), DistributedTaskManagerTest.class.getName(),
                     Instant.now(), 0, Json.object("name", "task" + i));
 
             ids.add(taskId);
