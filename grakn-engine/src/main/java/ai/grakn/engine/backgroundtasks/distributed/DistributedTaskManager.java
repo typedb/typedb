@@ -26,8 +26,6 @@ import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
@@ -41,8 +39,6 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
  * This class begins the TaskRunner instance that will be running on this machine.
  */
 public final class DistributedTaskManager implements TaskManager {
-    private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
-
     private final KafkaProducer<String, String> producer;
 
     private final SchedulerElector elector;
