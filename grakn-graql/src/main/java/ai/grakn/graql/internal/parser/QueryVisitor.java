@@ -50,6 +50,7 @@ import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -359,6 +360,10 @@ class QueryVisitor extends GraqlBaseVisitor {
     public Aggregate<?, ?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
         String name = visitIdentifier(ctx.identifier());
         Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
+
+        if (aggregateMethod == null) {
+            throw new IllegalArgumentException(ErrorMessage.UNKNOWN_AGGREGATE.getMessage(name));
+        }
 
         List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
 
