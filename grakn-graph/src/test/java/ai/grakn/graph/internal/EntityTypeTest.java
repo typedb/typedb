@@ -328,9 +328,11 @@ public class EntityTypeTest extends GraphTestBase{
         assertTrue(data.contains(musicVideo));
     }
 
-    @Test(expected=ConceptException.class)
+    @Test
     public void testCircularSub(){
         EntityType entityType = graknGraph.putEntityType("Entity");
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(ErrorMessage.LOOP_DETECTED.getMessage(entityType.getName(), Schema.EdgeLabel.SUB.getLabel()));
         entityType.superType(entityType);
     }
 
