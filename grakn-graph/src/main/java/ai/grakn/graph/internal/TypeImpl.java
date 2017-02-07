@@ -199,14 +199,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     /**
      *
      * @param root The current type to example
-     * @return All the sub children of the root. Effectively calls  {@link TypeImpl#getDirectSubTypes()} recursively
+     * @return All the sub children of the root. Effectively calls  {@link TypeImpl#directSubTypes()} recursively
      */
     @SuppressWarnings("unchecked")
     private Set<T> nextSubLevel(TypeImpl<T, V> root){
         Set<T> results = new HashSet<>();
         results.add((T) root);
 
-        Set<T> children = root.getDirectSubTypes();
+        Set<T> children = root.directSubTypes();
         for(T child: children){
             results.addAll(nextSubLevel((TypeImpl<T, V>) child));
         }
@@ -227,7 +227,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      *
      * @return All of the concepts direct sub children spanning a single level.
      */
-    private Set<T> getDirectSubTypes(){
+    private Set<T> directSubTypes(){
         if(!cachedDirectSubTypes.isPresent()){
             cachedDirectSubTypes = Optional.of(getIncomingNeighbours(Schema.EdgeLabel.SUB));
         }
@@ -239,8 +239,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      *
      * @param newSubType The new subtype
      */
-    private void updateCachedImmediateSubTypes(T newSubType){
-        getDirectSubTypes();//Called to make sure the current children have been cached
+    private void addCachedDirectSubTypes(T newSubType){
+        directSubTypes();//Called to make sure the current children have been cached
         cachedDirectSubTypes.map(set -> set.add(newSubType));
     }
 
@@ -334,7 +334,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
             //Add this as the subtype to the supertype
             //noinspection unchecked - Casting is needed to access {updateCachedImmediateSubTypes} method
-            ((TypeImpl<T, V>) superType).updateCachedImmediateSubTypes(getThis());
+            ((TypeImpl<T, V>) superType).addCachedDirectSubTypes(getThis());
 
             //Track any existing data if there is some
             instances().forEach(concept -> {
