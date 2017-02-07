@@ -44,9 +44,8 @@
                         </goals>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <executable>npm</executable>
+                            <executable>./npm-install-retry/bin/npm-install-retry --</executable>
                             <arguments>
-                                <argument>install</argument>
                                 <argument>--no-optional</argument>
                             </arguments>
                         </configuration>
