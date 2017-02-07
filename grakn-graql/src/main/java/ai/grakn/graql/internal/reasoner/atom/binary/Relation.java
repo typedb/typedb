@@ -46,15 +46,15 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.List;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -560,7 +560,7 @@ public class Relation extends TypeAtom {
             }
         });
 
-        Collection<RoleType> rolesToAllocate = relType.hasRoles();
+        Collection<RoleType> rolesToAllocate = new HashSet<>(relType.hasRoles());
         //remove sub and super roles of allocated roles
         allocatedRoles.forEach(role -> {
             RoleType topRole = getNonMetaTopRole(role);

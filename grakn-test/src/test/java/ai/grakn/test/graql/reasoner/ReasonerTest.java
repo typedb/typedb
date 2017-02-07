@@ -23,6 +23,8 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graphs.GeoGraph;
+import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -31,15 +33,12 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graphs.GeoGraph;
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
-import java.util.Set;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -50,6 +49,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -895,7 +895,7 @@ public class ReasonerTest {
 
     @Test
     public void testAmbiguousRolePlayersWithSub(){
-        String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
+        String queryString = "match ($x, $y) isa is-locatedt statis-in;$x id '174';";
         QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
