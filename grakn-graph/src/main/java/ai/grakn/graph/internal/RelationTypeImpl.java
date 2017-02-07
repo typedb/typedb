@@ -25,7 +25,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -42,12 +42,10 @@ import java.util.Set;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
+    private Optional<Set<RoleType>> cachedHasRoles = Optional.empty();
+
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-    }
-
-    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type) {
-        super(graknGraph, v, type);
     }
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type, Boolean isImplicit) {
@@ -66,9 +64,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public Collection<RoleType> hasRoles() {
-        Set<RoleType> roleTypes = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE).forEach(role -> roleTypes.add(role.asRoleType()));
-        return roleTypes;
+        if(!cachedHasRoles.isPresent()){
+            cachedHasRoles = Optional.of(getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+        }
+        return cachedHasRoles.get();
     }
 
     /**
@@ -80,6 +79,8 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     public RelationType hasRole(RoleType roleType) {
         checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
+        hasRoles(); //Called to make sure everything is initially cached.
+        cachedHasRoles.map(set -> set.add(roleType));
         return this;
     }
 
@@ -102,6 +103,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
         //Add the Relation Type
         getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
+
+        //Remove from cache
+        hasRoles(); //Called to make sure everything is initially cached.
+        cachedHasRoles.map(set -> set.remove(roleType));
 
         return this;
     }
