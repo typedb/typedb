@@ -76,8 +76,8 @@ public class LoaderClientTest {
     }
 
     @Test
-    public void loadWithSmallQueueSizeToBlockTest(){
-        loader.setQueueSize(1);
+    public void loadWithSmallNumberActiveTasksToBlockTest(){
+        loader.setNumberActiveTasks(1);
         loadAndTime();
     }
 

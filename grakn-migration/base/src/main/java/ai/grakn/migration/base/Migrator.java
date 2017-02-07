@@ -55,6 +55,8 @@ public interface Migrator extends AutoCloseable {
      * @param uri Uri where one instance of Grakn Engine is running
      * @param keyspace The name of the keyspace where the data should be persisted
      * @param batchSize The number of queries to execute in one transaction
+     * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
+     *                          to bot the system load. Default is 25.
      */
-    void load(String uri, String keyspace, int batchSize);
+    void load(String uri, String keyspace, int batchSize, int numberActiveTasks);
 }

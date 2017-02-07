@@ -107,6 +107,11 @@ public class JsonMigratorMainTest {
     }
 
     @Test
+    public void jsonMainActiveTasksArgumentTest(){
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
+    }
+
+    @Test
     public void jsonMainThrowableTest(){
         exception.expect(RuntimeException.class);
         run("-input", dataFile, "-template", templateFile, "-batch", "hello");

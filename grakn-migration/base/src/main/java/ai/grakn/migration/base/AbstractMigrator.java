@@ -53,6 +53,7 @@ public abstract class AbstractMigrator implements Migrator {
     private final static Logger LOG = LoggerFactory.getLogger(AbstractMigrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
+    public static final int ACTIVE_TASKS = 25;
 
     /**
      * Register a macro to use in templating
@@ -63,13 +64,16 @@ public abstract class AbstractMigrator implements Migrator {
     }
 
     /**
-     * Load using the default batch size
+     * Migrate data constrained by this migrator using a loader configured
+     * by the provided parameters.
+     *
+     * Uses the default batch size and number of active tasks.
      *
      * @param uri Uri where one instance of Grakn Engine is running
      * @param keyspace The name of the keyspace where the data should be persisted
      */
     public void load(String uri, String keyspace) {
-        load(uri, keyspace, AbstractMigrator.BATCH_SIZE);
+        load(uri, keyspace, AbstractMigrator.BATCH_SIZE, AbstractMigrator.ACTIVE_TASKS);
     }
 
     /**
@@ -78,11 +82,14 @@ public abstract class AbstractMigrator implements Migrator {
      *
      * @param uri Uri where one instance of Grakn Engine is running
      * @param keyspace The name of the keyspace where the data should be persisted
-     * @param batchSize The number of queries to execute in one transaction
+     * @param batchSize The number of queries to execute in one transaction. Default is 25.
+     * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
+     *                  to bot the system load. Default is 25.
      */
-    public void load(String uri, String keyspace, int batchSize){
+    public void load(String uri, String keyspace, int batchSize, int numberActiveTasks){
         LoaderClient loader = new LoaderClient(keyspace, uri, recordMigrationStates());
         loader.setBatchSize(batchSize);
+        loader.setNumberActiveTasks(numberActiveTasks);
 
         migrate().forEach(q -> {
             numberQueriedSubmitted.incrementAndGet();

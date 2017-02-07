@@ -71,7 +71,7 @@ public class Main {
             if (options.isNo()) {
                 writeToSout(csvMigrator.migrate());
             } else {
-                csvMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch());
+                csvMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch(), options.getNumberActiveTasks());
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable) {

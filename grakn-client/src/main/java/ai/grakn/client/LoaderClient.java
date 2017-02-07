@@ -64,7 +64,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * Client to load qraql queries into Grakn.
  *
  * Provides methods to batch insert queries. Optionally can provide a consumer
- * that will execute when a batch finishes loading.
+ * that will execute when a batch finishes loading. LoaderClient will block when the configured
+ * resources are being used to execute tasks.
  *
  * @author alexandraorth
  */
@@ -99,7 +100,7 @@ public class LoaderClient {
         this.batchNumber = new AtomicInteger(0);
 
         setBatchSize(25);
-        setQueueSize(25);
+        setNumberActiveTasks(25);
     }
 
     /**
@@ -112,17 +113,26 @@ public class LoaderClient {
     }
 
     /**
-     * Set the size of the queue- this is equivalent to the size of the semaphore.
-     * @param size the size of the queue
+     * Number of active tasks running on the server at any one time.
+     * Consider this a safeguard on system load.
+     *
+     * The Loader {@link #add(InsertQuery)} method will block on the value of this field.
+     *
+     * @param size number of tasks to allow to run at any given time
      */
-    public LoaderClient setQueueSize(int size){
+    public LoaderClient setNumberActiveTasks(int size){
         this.blockerSize = size;
         this.blocker = new Semaphore(size);
         return this;
     }
 
     /**
-     * Add an insert query to the queue
+     * Add an insert query to the queue.
+     *
+     * This method will block while the number of currently executing tasks
+     * is equal to the set {@link #blockerSize} which can be set with {@link #setNumberActiveTasks(int)}.
+     * It will become unblocked as tasks are completed.
+     *
      * @param query insert query to be executed
      */
     public void add(InsertQuery query){
