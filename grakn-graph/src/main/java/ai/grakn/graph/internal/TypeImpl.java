@@ -235,13 +235,23 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     /**
-     * Updates the currently cached sub type. If no subtypes have been cached then this will hit the database.
+     * Adds a new sub type to the currently cached sub types. If no subtypes have been cached then this will hit the database.
      *
      * @param newSubType The new subtype
      */
     private void addCachedDirectSubTypes(T newSubType){
         directSubTypes();//Called to make sure the current children have been cached
         cachedDirectSubTypes.map(set -> set.add(newSubType));
+    }
+
+    /**
+     * Removes an old sub type from the currently cached sub types. If no subtypes have been cached then this will hit the database.
+     *
+     * @param oldSubType The old sub type which should not be cached anymore
+     */
+    private void deleteCachedDirectedSubTypes(T oldSubType){
+        directSubTypes();//Called to make sure the current children have been cached
+        cachedDirectSubTypes.map(set -> set.remove(oldSubType));
     }
 
     /**
@@ -311,30 +321,36 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     /**
      *
-     * @param superType This type's super type
+     * @param newSuperType This type's super type
      * @return The Type itself
      */
-    public T superType(T superType) {
+    public T superType(T newSuperType) {
         checkTypeMutation();
 
-        T currentSuperType = superType();
-        if(currentSuperType == null || (!currentSuperType.equals(superType))) {
+        T oldSuperType = superType();
+        if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
             //Update the super type of this type in cache
-            cachedSuperType = Optional.of(superType);
+            cachedSuperType = Optional.of(newSuperType);
 
             //Note the check before the actual construction
             if(superTypeLoops()){
-                cachedSuperType = Optional.ofNullable(currentSuperType); //Reset if the new super type causes a loop
+                cachedSuperType = Optional.ofNullable(oldSuperType); //Reset if the new super type causes a loop
                 throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(getName(), Schema.EdgeLabel.SUB.getLabel()));
             }
 
             //Modify the graph once we have checked no loop occurs
             deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
-            putEdge(superType, Schema.EdgeLabel.SUB);
+            putEdge(newSuperType, Schema.EdgeLabel.SUB);
+
+            //Update the sub types of the old super type
+            if(oldSuperType != null) {
+                //noinspection unchecked - Casting is needed to access {deleteCachedDirectedSubTypes} method
+                ((TypeImpl<T, V>) oldSuperType).deleteCachedDirectedSubTypes(getThis());
+            }
 
             //Add this as the subtype to the supertype
-            //noinspection unchecked - Casting is needed to access {updateCachedImmediateSubTypes} method
-            ((TypeImpl<T, V>) superType).addCachedDirectSubTypes(getThis());
+            //noinspection unchecked - Casting is needed to access {addCachedDirectSubTypes} method
+            ((TypeImpl<T, V>) newSuperType).addCachedDirectSubTypes(getThis());
 
             //Track any existing data if there is some
             instances().forEach(concept -> {

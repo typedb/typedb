@@ -608,11 +608,11 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(4, e1.subTypes().size());
         assertTrue("e1 subtypes does not contain e1", e1.subTypes().contains(e1));
         assertTrue("e1 subtypes does not contain e2", e1.subTypes().contains(e2));
-        assertTrue("e1 subtypes does not contain e5", e1.subTypes().contains(e5));
+        assertTrue("e1 subtypes does not contain e6", e1.subTypes().contains(e6));
         assertTrue("e1 subtypes does not contain e4", e1.subTypes().contains(e4));
 
         assertEquals(2, e5.subTypes().size());
         assertTrue("e5 subtypes does not contain e3", e5.subTypes().contains(e3));
-        assertTrue("e5 subtypes does not contain e6", e5.subTypes().contains(e6));
+        assertTrue("e5 subtypes does not contain e5", e5.subTypes().contains(e5));
     }
 }
