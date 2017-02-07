@@ -436,7 +436,7 @@ public class MatchQueryTest {
 
     @Test
     public void testHasReleaseDate() {
-        MatchQuery query = qb.match(var("x").has("release-date"));
+        MatchQuery query = qb.match(var("x").has("release-date", var("y")));
         assertThat(query, variable("x", containsInAnyOrder(godfather, theMuppets, spy, chineseCoffee)));
     }
 

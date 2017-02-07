@@ -76,12 +76,6 @@ public interface Var extends Pattern {
     Var value(ValuePredicate predicate);
 
     /**
-     * @param type a resource type that this variable must have an instance of
-     * @return this
-     */
-    Var has(String type);
-
-    /**
      * @param var a variable representing a resource
      * @return this
      */
