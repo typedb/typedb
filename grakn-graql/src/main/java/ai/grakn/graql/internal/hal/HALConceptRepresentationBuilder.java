@@ -65,9 +65,7 @@ public class HALConceptRepresentationBuilder {
     private final static String ID_PROPERTY = "_id";
     private final static String TYPE_PROPERTY = "_type";
     private final static String BASETYPE_PROPERTY = "_baseType";
-    private final static String VALUE_PROPERTY = "_value";
-    private final static String NAME_PROPERTY = "_name";
-
+    private final static String VALUE_PROPERTY = "value";
 
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace) {
 
@@ -233,21 +231,19 @@ public class HALConceptRepresentationBuilder {
 
     static void generateConceptState(Representation resource, Concept concept){
 
-        resource.withProperty(ID_PROPERTY, concept.getId().getValue());
-
         if (concept.isInstance()) {
             Instance instance = concept.asInstance();
-            resource.withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
+            resource.withProperty(ID_PROPERTY, instance.getId().getValue())
+                    .withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else {
-            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
-        }
+            Type type = concept.asType();
+            resource.withProperty(ID_PROPERTY, type.getName().getValue())
+                    .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
 
+        }
         if (concept.isResource()) {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
-        }
-        if(concept.isType()){
-            resource.withProperty(NAME_PROPERTY, concept.asType().getName().getValue());
         }
     }
 }
