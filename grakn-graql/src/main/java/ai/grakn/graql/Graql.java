@@ -269,8 +269,8 @@ public class Graql {
      * Create an aggregate that will find the standard deviation of a variable's values.
      * @param name the variable to find the standard deviation of
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> stdev(String name) {
-        return Aggregates.stdev(VarName.of(name));
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> std(String name) {
+        return Aggregates.std(VarName.of(name));
     }
 
     /**

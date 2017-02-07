@@ -42,7 +42,7 @@ import static ai.grakn.graql.Graql.max;
 import static ai.grakn.graql.Graql.median;
 import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.select;
-import static ai.grakn.graql.Graql.stdev;
+import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Math.pow;
@@ -202,7 +202,7 @@ public class AggregateTest {
     public void testStdevLong() {
         AggregateQuery<Optional<Double>> query = qb
                 .match(var("x").isa("movie").has("tmdb-vote-count", var("y")))
-                .aggregate(stdev("y"));
+                .aggregate(std("y"));
 
         double mean = (1000d + 100d + 400d + 435d) / 4d;
         double variance =
@@ -216,7 +216,7 @@ public class AggregateTest {
     public void testStdevDouble() {
         AggregateQuery<Optional<Double>> query = qb
                 .match(var("x").isa("movie").has("tmdb-vote-average", var("y")))
-                .aggregate(stdev("y"));
+                .aggregate(std("y"));
 
         double mean = (8.6d + 8.4d + 7.6d + 3.1d) / 4d;
         double variance =

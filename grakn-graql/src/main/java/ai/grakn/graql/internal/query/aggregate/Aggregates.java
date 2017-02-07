@@ -94,8 +94,8 @@ public class Aggregates {
     /**
      * Aggregate that finds standard deviation of a match query
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> stdev(VarName varName) {
-        return new StdevAggregate(varName);
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> std(VarName varName) {
+        return new StdAggregate(varName);
     }
 
     /**
