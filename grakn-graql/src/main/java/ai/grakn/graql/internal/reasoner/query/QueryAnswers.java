@@ -199,20 +199,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      */
     public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        Atom childAtom = childQuery.getAtom();
-        Atom parentAtom = parentQuery.getAtom();
-
-        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
-        //get type unifiers
-        Set<Atomic> unified = new HashSet<>();
-        childAtom.getMappedTypeConstraints().forEach(type -> {
-            Set<Atomic> toUnify = Sets.difference(parentQuery.getEquivalentAtoms(type), unified);
-            Atomic equiv = toUnify.stream().findFirst().orElse(null);
-            if (equiv != null){
-                unifiers.putAll(type.getUnifiers(equiv));
-                unified.add(equiv);
-            }
-        });
-        return answers.unify(unifiers).filterVars(parentQuery.getVarNames());
+        return answers.unify(childQuery.getUnifiers(parentQuery)).filterVars(parentQuery.getVarNames());
     }
 }

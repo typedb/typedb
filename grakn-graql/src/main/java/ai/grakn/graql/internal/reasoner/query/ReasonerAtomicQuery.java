@@ -131,6 +131,22 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return selectedAtoms;
     }
 
+    public Map<VarName, VarName> getUnifiers(ReasonerAtomicQuery parent){
+        if (parent == this) return new HashMap<>();
+        Map<VarName, VarName> unifiers = getAtom().getUnifiers(parent.getAtom());
+        //get type unifiers
+        Set<Atomic> unified = new HashSet<>();
+        getAtom().getTypeConstraints().forEach(type -> {
+            Set<Atomic> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
+            Atomic equiv = toUnify.stream().findFirst().orElse(null);
+            if (equiv != null){
+                unifiers.putAll(type.getUnifiers(equiv));
+                unified.add(equiv);
+            }
+        });
+        return unifiers;
+    }
+
     /**
      * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
      * @param cache container of already performed query resolutions
@@ -371,7 +387,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             return answer;
         }
         private ReasonerAtomicQuery outer(){ return ReasonerAtomicQuery.this;}
-        private int size(){ return cache.size();}
+        private int size(){ return cache.answerSize();}
         private int answerSize(){ return cache.getAnswers(outer()).size();}
     }
 }
