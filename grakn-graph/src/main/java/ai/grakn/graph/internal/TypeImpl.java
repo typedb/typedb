@@ -60,7 +60,7 @@ import java.util.stream.Collectors;
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
     private Optional<T> cachedSuperType = Optional.empty();
-    private Optional<Set<T>> cachedImmediateSubTypes = Optional.empty();
+    private Optional<Set<T>> cachedDirectSubTypes = Optional.empty();
     private Optional<Set<RoleType>> cachedPlaysRoles = Optional.empty(); //Optional is used so we know if we have to read from the DB or not.
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
@@ -225,10 +225,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return All of the concepts direct sub children spanning a single level.
      */
     private Set<T> getDirectSubTypes(){
-        if(!cachedImmediateSubTypes.isPresent()){
-            cachedImmediateSubTypes = Optional.of(getIncomingNeighbours(Schema.EdgeLabel.SUB));
+        if(!cachedDirectSubTypes.isPresent()){
+            cachedDirectSubTypes = Optional.of(getIncomingNeighbours(Schema.EdgeLabel.SUB));
         }
-        return cachedImmediateSubTypes.get();
+        return cachedDirectSubTypes.get();
     }
 
     /**
@@ -238,7 +238,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     private void updateCachedImmediateSubTypes(T newSubType){
         getDirectSubTypes();//Called to make sure the current children have been cached
-        cachedImmediateSubTypes.map(set -> set.add(newSubType));
+        cachedDirectSubTypes.map(set -> set.add(newSubType));
     }
 
     /**
