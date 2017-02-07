@@ -60,6 +60,7 @@ import java.util.stream.Collectors;
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
     private Optional<T> cachedSuperType = Optional.empty();
+    private Optional<Set<RoleType>> cachedPlaysRoles = Optional.empty(); //Optional is used so we know if we have to read from the DB or not.
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -97,7 +98,18 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Collection<RoleType> playsRoles() {
         Set<RoleType> allRoleTypes = new HashSet<>();
-        getSuperSet().forEach(type -> allRoleTypes.addAll(((TypeImpl <?, ?>) type).getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)));
+
+        //Get the immediate plays roles which may be cached
+        if(!cachedPlaysRoles.isPresent()) {
+            cachedPlaysRoles = Optional.of(getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+        }
+        allRoleTypes.addAll(cachedPlaysRoles.get());
+
+        //Now get the super type plays roles (Which may also be cached locally within their own context
+        Set<T> superSet = getSuperSet();
+        superSet.remove(this); //We already have the plays roles from ourselves
+        superSet.forEach(superParent -> allRoleTypes.addAll(superParent.playsRoles()));
+
         return filterImplicitStructures(allRoleTypes);
     }
 
@@ -338,6 +350,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     T playsRole(RoleType roleType, boolean required) {
         checkTypeMutation();
         EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
+        cachedPlaysRoles.map(set -> set.add(roleType)).orElse(new HashSet<>().add(roleType));
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
@@ -364,6 +377,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public T deletePlaysRole(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
+        cachedPlaysRoles.map(set -> set.remove(roleType));
 
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
