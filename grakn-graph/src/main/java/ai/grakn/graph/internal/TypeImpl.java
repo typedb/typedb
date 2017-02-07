@@ -59,12 +59,14 @@ import java.util.stream.Collectors;
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
+    private TypeName cachedTypeName;
     private Optional<T> cachedSuperType = Optional.empty();
     private Optional<Set<T>> cachedDirectSubTypes = Optional.empty();
     private Optional<Set<RoleType>> cachedPlaysRoles = Optional.empty(); //Optional is used so we know if we have to read from the DB or not.
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
+        getName();//This is called to ensure the cachedTypeName is loaded.
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
@@ -159,6 +161,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type name
      */
     public TypeName setName(String name){
+        //TODO: Propagate name change to all instances
         TypeName typeName = TypeName.of(name);
         Type foundType = getGraknGraph().getType(typeName);
 
@@ -167,8 +170,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         } else if (!equals(foundType)){
             throw new ConceptNotUniqueException(foundType, name);
         }
-
-        return typeName;
+        cachedTypeName = typeName;
+        return cachedTypeName;
     }
 
     /**
@@ -504,7 +507,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public TypeName getName() {
-        return TypeName.of(getProperty(Schema.ConceptProperty.NAME));
+        if(cachedTypeName == null){
+            cachedTypeName = TypeName.of(getProperty(Schema.ConceptProperty.NAME));
+        }
+        return cachedTypeName;
     }
 
     /**
