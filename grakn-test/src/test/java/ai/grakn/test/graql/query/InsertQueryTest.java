@@ -33,6 +33,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -726,6 +727,13 @@ public class InsertQueryTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("nothing");
         qb.insert(name("blah this").sub("entity").hasResource("nothing")).execute();
+    }
+
+    @Test
+    public void whenInsertingMetaType_Throw() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", "concept"));
+        qb.insert(name("my-metatype").sub("concept")).execute();
     }
 
     private void assertInsert(Var... vars) {

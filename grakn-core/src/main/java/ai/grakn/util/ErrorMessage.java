@@ -140,7 +140,7 @@ public enum ErrorMessage {
     INSERT_ISA_AND_SUB("cannot insert %s with an isa and a sub"),
     INSERT_NO_DATATYPE("resource type %s must have a datatype defined"),
     INSERT_NO_RESOURCE_RELATION("type %s cannot have resource type %s"),
-    INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
+    INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_TYPE_WITHOUT_NAME("attempted to insert a type without a name"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
