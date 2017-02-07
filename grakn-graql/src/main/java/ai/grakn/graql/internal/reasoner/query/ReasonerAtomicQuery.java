@@ -66,8 +66,6 @@ import java.util.stream.StreamSupport;
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Atom atom;
-    final private QueryAnswers answers = new QueryAnswers();
-    final private QueryAnswers newAnswers = new QueryAnswers();
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
     public ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph){
@@ -76,12 +74,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     public ReasonerAtomicQuery(ReasonerAtomicQuery query){
-        this(query, new QueryAnswers());
-    }
-
-    public ReasonerAtomicQuery(ReasonerAtomicQuery query, QueryAnswers ans){
         super(query);
-        answers.addAll(ans);
     }
 
     public ReasonerAtomicQuery(Atom at) {
@@ -137,10 +130,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
         return selectedAtoms;
     }
-    
-    public QueryAnswers getAnswers(){ return answers;}
-    private QueryAnswers getNewAnswers(){ return newAnswers;}
-
 
     /**
      * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
@@ -149,9 +138,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public QueryAnswers lookup(QueryCache cache){
         boolean queryVisited = cache.contains(this);
         QueryAnswers lookup = queryVisited? cache.getAnswers(this) : DBlookup();
-        if (!queryVisited) cache.record(this);
-        lookup.stream().filter(ans -> !answers.contains(ans)).forEach(newAnswers::add);
-        answers.addAll(lookup);
+        if (!queryVisited) cache.record(this, lookup);
         return lookup;
     }
 
@@ -211,7 +198,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     /**
      * @return materialised complete answers (with all ids)
      */
-    public QueryAnswers materialise(){
+    public QueryAnswers materialise(QueryAnswers answers){
         QueryAnswers fullAnswers = new QueryAnswers();
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         answers.forEach(answer -> {
@@ -238,8 +225,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param subGoals set of visited subqueries
      * @param cache collection of performed query resolutions
      * @param materialise materialisation flag
+     * @return answers from rule resolution
      */
-    private void resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, QueryCache cache, boolean materialise){
+    private QueryAnswers resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, QueryCache cache, boolean materialise){
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
@@ -263,12 +251,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()){
             QueryAnswers knownAnswers = cache.contains(ruleHead)? cache.getAnswers(ruleHead) : ruleHead.DBlookup();
-            answers = new ReasonerAtomicQuery(ruleHead, answers.filterKnown(knownAnswers)).materialise();
+            answers = ruleHead.materialise(answers.filterKnown(knownAnswers));
             answers.addAll(knownAnswers);
-            cache.record(new ReasonerAtomicQuery(ruleHead, answers));
+            cache.record(ruleHead, answers);
             answers = answers.filterByEntityTypes(atom.getMappedTypeConstraints());
         }
-        else answers = answers.filterKnown(this.getAnswers());
 
         QueryAnswers filteredAnswers = this.propagateIdPredicates(answers)
                 .filterVars(this.getVarNames())
@@ -277,10 +264,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                         atom.getUnmappedIdPredicates(),
                         atom.getUnmappedTypeConstraints());
 
-        this.newAnswers.addAll(filteredAnswers);
-        this.getAnswers().addAll(filteredAnswers);
-        cache.record(this);
-
+        cache.record(this, filteredAnswers);
+        return filteredAnswers;
     }
 
     /**
@@ -292,13 +277,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public QueryAnswers answer(Set<ReasonerAtomicQuery> subGoals, QueryCache cache, boolean materialise){
         boolean queryAdmissible = !subGoals.contains(this);
-        lookup(cache);
+        QueryAnswers answers = lookup(cache);
         if(queryAdmissible) {
             Atom atom = this.getAtom();
             Set<Rule> rules = atom.getApplicableRules();
-            rules.forEach(rule -> resolveViaRule(rule, subGoals, cache, materialise));
+            rules.forEach(rule -> answers.addAll(resolveViaRule(rule, subGoals, cache, materialise)));
         }
-        return this.getAnswers();
+        return answers;
     }
 
     @Override
@@ -315,6 +300,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private int dAns = 0;
         private int iter = 0;
         private final boolean materialise;
+        private final QueryAnswers answers = new QueryAnswers();
         private final QueryCache cache = new QueryCache();
         private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         private final Set<Rule> rules;
@@ -325,8 +311,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.materialise = materialise;
             this.rules = outer().getAtom().getApplicableRules();
             LOG.debug("Atom: " + outer().getAtom() + " applicable rules: " + rules.size());
-            lookup(cache);
-            this.answerIterator = outer().newAnswers.iterator();
+            answers.addAll(lookup(cache));
+            this.answerIterator = answers.iterator();
         }
 
         /**
@@ -347,19 +333,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         private void completeIteration(){
-            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + getAnswers().size() + " size: " + size());
+            LOG.debug("Atom: " + outer().getAtom() + " iter: " + iter + " answers: " + answerSize() + " size: " + size());
             dAns = size() - dAns;
             iter++;
         }
 
         private void computeNext(){
             if (!hasNextRule()) initIteration();
-            outer().newAnswers.clear();
             Rule rule = nextRule();
             LOG.debug("Resolving rule: " + rule.getId() + " answers: " + size());
-            outer().resolveViaRule(rule, subGoals, cache, materialise);
+            QueryAnswers newAnswers = outer().resolveViaRule(rule, subGoals, cache, materialise);
+            newAnswers.removeAll(answers);
+            answerIterator = newAnswers.iterator();
             if (!hasNextRule()) completeIteration();
-            answerIterator = outer().getNewAnswers().iterator();
         }
 
         /**
@@ -379,10 +365,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         /**
          * @return single answer to the query
          */
-        public Map<VarName, Concept> next() { return answerIterator.next();}
-        private ReasonerAtomicQuery outer(){ return ReasonerAtomicQuery.this;}
-        private int size(){
-            return cache.keySet().stream().map(q -> q.getAnswers().size()).mapToInt(Integer::intValue).sum();
+        public Map<VarName, Concept> next() {
+            Map<VarName, Concept> answer = answerIterator.next();
+            answers.add(answer);
+            return answer;
         }
+        private ReasonerAtomicQuery outer(){ return ReasonerAtomicQuery.this;}
+        private int size(){ return cache.size();}
+        private int answerSize(){ return cache.getAnswers(outer()).size();}
     }
 }

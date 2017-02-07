@@ -125,10 +125,10 @@ public class Reasoner {
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                dAns = atomicQuery.getAnswers().size();
+                dAns = cache.size();
                 atomicQuery.answer(SG, cache, true);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + atomicQuery.getAnswers().size());
-                dAns = atomicQuery.getAnswers().size() - dAns;
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + cache.getAnswers(atomicQuery).size());
+                dAns = cache.size() - dAns;
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
