@@ -38,10 +38,10 @@ public class Aggregates {
     private Aggregates() {}
 
     /**
-     * Aggregate that finds average (mean) of a match query.
+     * Aggregate that finds mean of a match query.
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> average(VarName varName) {
-        return new AverageAggregate(varName);
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> mean(VarName varName) {
+        return new MeanAggregate(varName);
     }
 
     /**
