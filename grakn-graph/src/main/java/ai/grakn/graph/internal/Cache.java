@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -81,5 +82,16 @@ class Cache<V> {
      */
     public boolean isPresent(){
         return cachedValue.isPresent();
+    }
+
+    /**
+     * Mutates the cached value if something is cached. Otherwise does nothing.
+     *
+     * @param modifier
+     */
+    public void ifPresent(Consumer<V> modifier){
+        if(cachedValue.isPresent()){
+            modifier.accept(cachedValue.get());
+        }
     }
 }
