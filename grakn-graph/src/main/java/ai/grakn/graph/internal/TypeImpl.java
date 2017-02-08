@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -98,6 +99,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return producer.apply(instanceVertex, getThis());
     }
 
+    <X extends Type> Set<X> updateCachedSet(Optional<Set<X>> cachedSet, Supplier<Set<X>> databaseReader){
+        if(!cachedSet.isPresent()){
+            cachedSet = Optional.of(databaseReader.get());
+        }
+        return cachedSet.get();
+    }
+
     /**
      *
      * @return A list of all the roles this Type is allowed to play.
@@ -107,10 +115,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<RoleType> allRoleTypes = new HashSet<>();
 
         //Get the immediate plays roles which may be cached
-        if(!cachedPlaysRoles.isPresent()) {
-            cachedPlaysRoles = Optional.of(getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
-        }
-        allRoleTypes.addAll(cachedPlaysRoles.get());
+        allRoleTypes.addAll(updateCachedSet(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)));
 
         //Now get the super type plays roles (Which may also be cached locally within their own context
         Set<T> superSet = getSuperSet();
@@ -232,10 +237,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return All of the concepts direct sub children spanning a single level.
      */
     private Set<T> directSubTypes(){
-        if(!cachedDirectSubTypes.isPresent()){
-            cachedDirectSubTypes = Optional.of(getIncomingNeighbours(Schema.EdgeLabel.SUB));
-        }
-        return cachedDirectSubTypes.get();
+        return updateCachedSet(cachedDirectSubTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
     }
 
     /**
@@ -403,10 +405,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
         EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
 
-        if(!cachedPlaysRoles.isPresent()){
-            cachedPlaysRoles = Optional.of(new HashSet<>());
-        }
-        cachedPlaysRoles.get().add(roleType);
+        updateCachedSet(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)).add(roleType);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);

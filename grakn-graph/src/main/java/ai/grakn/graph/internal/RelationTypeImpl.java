@@ -65,10 +65,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public Collection<RoleType> hasRoles() {
-        if(!cachedHasRoles.isPresent()){
-            cachedHasRoles = Optional.of(getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
-        }
-        return Collections.unmodifiableCollection(cachedHasRoles.get());
+        return Collections.unmodifiableCollection(updateCachedSet(cachedHasRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE)));
     }
 
     /**
@@ -112,7 +109,6 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
         //Remove from internal cache
-        hasRoles(); //Called to make sure everything is initially cached.
         cachedHasRoles.map(set -> set.remove(roleType));
 
         //Remove from roleTypeCache
