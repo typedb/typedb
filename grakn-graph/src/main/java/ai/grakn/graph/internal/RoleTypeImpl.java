@@ -153,16 +153,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         if(hasHasRoles || hasPlaysRoles){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
-
-            //Force load caches before we delete
-            cachedRelationTypes.get();
-            cachedDirectPlayedByTypes.get();
-
             super.innerDelete();
-
-            //Update caches of relation types it used to be connected to and of types allowed to play it
-            cachedRelationTypes.get().forEach(relationType -> ((RelationTypeImpl) relationType).deleteCachedHasRole(this));
-            cachedDirectPlayedByTypes.get().forEach(type -> ((TypeImpl<?, ?>) type).deleteCachedDirectPlaysRoles(this));
 
             //Clear all internal caching
             cachedRelationTypes.clear();
