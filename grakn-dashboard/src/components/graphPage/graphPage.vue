@@ -221,10 +221,6 @@ export default {
 
             const eventKeys = param.event.srcEvent;
 
-            if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
-                visualiser.deleteNode(node);
-            }
-
             if (eventKeys.shiftKey) {
                 visualiser.clearGraph();
             }
@@ -233,6 +229,10 @@ export default {
                 url: visualiser.getNode(node).href,
                 callback: this.onGraphResponse,
             });
+
+            if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
+                visualiser.deleteNode(node);
+            }
         },
         rightClick(param) {
             const node = param.nodes[0];
