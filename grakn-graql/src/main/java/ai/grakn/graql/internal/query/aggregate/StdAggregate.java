@@ -22,15 +22,11 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.OptionalDouble;
 import java.util.stream.Stream;
 
-import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Aggregate that finds standard deviation of a match query.
@@ -45,24 +41,26 @@ class StdAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Dou
 
     @Override
     public Optional<Double> apply(Stream<? extends Map<VarName, Concept>> stream) {
-        List<Double> numbers = stream
-                .map(result -> result.get(varName).<Number>asResource().getValue().doubleValue())
-                .collect(toList());
+        Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asResource().getValue().doubleValue());
 
-        OptionalDouble optAverage = numbers.stream().mapToDouble(x -> x).average();
+        Iterable<Double> data = numStream::iterator;
 
-        if (!optAverage.isPresent()) {
-            return Optional.empty();
+        long n = 0;
+        double mean = 0d;
+        double M2 = 0d;
+
+        for (double x : data) {
+            n += 1;
+            double delta = x - mean;
+            mean += delta / (double) n;
+            double delta2 = x - mean;
+            M2 += delta*delta2;
         }
 
-        double average = optAverage.getAsDouble();
-
-        OptionalDouble variance = numbers.stream().mapToDouble(x -> pow(x - average, 2)).average();
-
-        if (!variance.isPresent()) {
+        if (n < 2) {
             return Optional.empty();
         } else {
-            return Optional.of(sqrt(variance.getAsDouble()));
+            return Optional.of(sqrt(M2 / (double) (n - 1)));
         }
     }
 
