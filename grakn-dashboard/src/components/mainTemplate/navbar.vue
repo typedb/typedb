@@ -150,17 +150,9 @@ export default {
     created: function() {},
     mounted: function() {
         this.$nextTick(function() {
-            // if (!User.getModalShown())
-            // $('#signupModal').modal('show');
         })
     },
     methods: {
-        openKeySpaces() {
-            // $('#keySpacesModal').modal('show');
-        },
-        openSignUp() {
-            // $('#signupModal').modal('show');
-        },
         logout() {
             User.logout();
             this.$router.push("/login");

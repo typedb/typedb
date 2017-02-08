@@ -154,7 +154,8 @@ export default {
                 extraKeys: {
                     Enter: this.runQuery,
                     "Shift-Delete": this.clearGraph,
-                    "Shift-Backspace": this.clearGraph
+                    "Shift-Backspace": this.clearGraph,
+                    "Shift-Ctrl-Backspace": this.clearGraphAndPage
                 }
             });
 
@@ -264,9 +265,6 @@ export default {
             this.graqlResponse = undefined;
             this.showMessagePanel = false;
             this.message = undefined;
-
-            this.$emit('clear', ev);
-
         },
         clearGraphAndPage(ev) {
             this.clearGraph(ev);
