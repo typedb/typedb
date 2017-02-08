@@ -45,6 +45,8 @@ class StdAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Dou
 
         Iterable<Double> data = numStream::iterator;
 
+        // Online algorithm to calculate unbiased sample standard deviation
+        // https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
         long n = 0;
         double mean = 0d;
         double M2 = 0d;
