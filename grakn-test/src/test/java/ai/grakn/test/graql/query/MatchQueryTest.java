@@ -47,10 +47,12 @@ import org.junit.rules.ExpectedException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
@@ -564,17 +566,17 @@ public class MatchQueryTest {
         GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
-            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(toSet());
-            Collection<RoleType> graphAPIPlaysRoles = graph.getType(type).playsRoles();
+            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
+            Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).playsRoles());
 
-            assertThat(graqlPlaysRoles, is(graphAPIPlaysRoles));
+            assertEquals(graqlPlaysRoles, graphAPIPlaysRoles);
         });
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(var("x").playsRole(name(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = graph.<RoleType>getType(type).playedByTypes();
+            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getType(type).playedByTypes());
 
-            assertThat(graqlPlayedBy, is(graphAPIPlayedBy));
+            assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
 
         // clean graph of inserts
