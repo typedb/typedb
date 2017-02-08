@@ -593,20 +593,14 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType e5 = graknGraph.putEntityType("entityType5");
         EntityType e6 = graknGraph.putEntityType("entityType6").superType(e5);
 
-        assertEquals(4, e1.subTypes().size());
         assertThat(e1.subTypes(), containsInAnyOrder(e1, e2, e3, e4));
-
-        assertEquals(2, e5.subTypes().size());
         assertThat(e5.subTypes(), containsInAnyOrder(e6, e5));
 
         //Now change subtypes
         e6.superType(e1);
         e3.superType(e5);
 
-        assertEquals(4, e1.subTypes().size());
         assertThat(e1.subTypes(), containsInAnyOrder(e1, e2, e4, e6));
-
-        assertEquals(2, e5.subTypes().size());
         assertThat(e5.subTypes(), containsInAnyOrder(e3, e5));
     }
 
