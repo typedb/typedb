@@ -145,6 +145,18 @@ public class EngineCacheImpl implements EngineCache {
         }
     }
 
+    public void clearJobSetResources(String keyspace, String conceptIndex){
+        clearJobSet(conceptIndex, resources.get(keyspace));
+    }
+    public void clearJobSetCastings(String keyspace, String conceptIndex){
+        clearJobSet(conceptIndex, castings.get(keyspace));
+    }
+    private void clearJobSet(String conceptIndex, Map<String, Set<ConceptId>> cache){
+       if(cache.containsKey(conceptIndex) && cache.get(conceptIndex).isEmpty()){
+           cache.remove(conceptIndex);
+       }
+    }
+
     /**
      * @return the last time a job was added to the EngineCacheImpl.
      */
