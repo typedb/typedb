@@ -506,10 +506,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
                     hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
 
-            if(ownerRole.equals(ownerRoleSuper)){
-                System.out.println("WHAT?????");
-            }
-
             //Create the super type edges from sub role/relations to super roles/relation
             ownerRole.superType(ownerRoleSuper);
             valueRole.superType(valueRoleSuper);
