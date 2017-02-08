@@ -81,7 +81,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @param newRelationType The new relation type to cache in the role.
      */
     void addCachedRelationType(RelationType newRelationType){
-        cachedRelationTypes.get().add(newRelationType);
+        cachedRelationTypes.ifPresent(set -> set.add(newRelationType));
     }
 
     /**
@@ -91,7 +91,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @param oldRelationType The new relation type to cache in the role.
      */
     void deleteCachedRelationType(RelationType oldRelationType){
-        if(cachedRelationTypes.isPresent()) cachedRelationTypes.get().remove(oldRelationType);
+        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationType));
     }
 
     /**
@@ -106,11 +106,11 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     }
 
     void addCachedDirectPlaysByType(Type newType){
-        cachedDirectPlayedByTypes.get().add(newType);
+        cachedDirectPlayedByTypes.ifPresent(set -> set.add(newType));
     }
 
     void deleteCachedDirectPlaysByType(Type oldType){
-        if(cachedDirectPlayedByTypes.isPresent()) cachedDirectPlayedByTypes.get().remove(oldType);
+        cachedDirectPlayedByTypes.ifPresent(set -> set.remove(oldType));
     }
 
     /**

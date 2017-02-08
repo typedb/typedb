@@ -78,7 +78,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
 
         //Cache the Role internally
-        cachedHasRoles.get().add(roleType);
+        cachedHasRoles.ifPresent(set -> set.add(roleType));
 
         //Cache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
@@ -107,7 +107,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
         //Remove from internal cache
-        if(cachedHasRoles.isPresent()) cachedHasRoles.get().remove(roleType);
+        cachedHasRoles.ifPresent(set -> set.remove(roleType));
 
         //Remove from roleTypeCache
         ((RoleTypeImpl) roleType).deleteCachedRelationType(this);

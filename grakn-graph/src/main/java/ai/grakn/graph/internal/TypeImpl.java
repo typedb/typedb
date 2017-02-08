@@ -242,7 +242,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param newSubType The new subtype
      */
     private void addCachedDirectSubType(T newSubType){
-        cachedDirectSubTypes.get().add(newSubType);
+        cachedDirectSubTypes.ifPresent(set -> set.add(newSubType));
     }
 
     /**
@@ -251,7 +251,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param oldSubType The old sub type which should not be cached anymore
      */
     private void deleteCachedDirectedSubType(T oldSubType){
-        if(cachedDirectSubTypes.isPresent()) cachedDirectSubTypes.get().remove(oldSubType);
+        cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
     }
 
     /**
@@ -394,7 +394,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
 
         //Update the internal cache of role types played
-        cachedDirectPlaysRoles.get().add(roleType);
+        cachedDirectPlaysRoles.ifPresent(set -> set.add(roleType));
 
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
@@ -426,7 +426,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public T deletePlaysRole(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
-        if(cachedDirectPlaysRoles.isPresent()) cachedDirectPlaysRoles.get().remove(roleType);
+        cachedDirectPlaysRoles.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
         //Add castings to tracking to make sure they can still be played.
