@@ -96,7 +96,7 @@ public class GreedyTraversalPlan {
             numFragments -= 1;
         }
 
-        Plan plan = Plan.of(1);
+        Plan plan = Plan.base();
 
         while (!fragmentSets.isEmpty()) {
             plan = extendPlan(plan, fragmentSets, names, depth);

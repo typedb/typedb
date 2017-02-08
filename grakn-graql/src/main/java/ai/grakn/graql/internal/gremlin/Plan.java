@@ -37,8 +37,8 @@ class Plan implements Comparable<Plan> {
     private final Fragment fragment;
     private final Plan innerPlan;
 
-    private Plan(double cost) {
-        this.cost = cost;
+    private Plan() {
+        this.cost = 1;
         this.fragment = null;
         this.innerPlan = null;
     }
@@ -49,8 +49,8 @@ class Plan implements Comparable<Plan> {
         this.innerPlan = innerPlan;
     }
 
-    static Plan of(double cost) {
-        return new Plan(cost);
+    static Plan base() {
+        return new Plan();
     }
 
     Plan append(Fragment newFragment, Set<VarName> names) {
