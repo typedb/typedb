@@ -33,11 +33,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.javatuples.Pair;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +44,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
-import static java.util.Comparator.comparing;
+import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -137,9 +135,9 @@ public class GraqlTraversal {
         double cost = 1;
 
         while (!fragmentSets.isEmpty()) {
-            Pair<Double, List<Fragment>> pair = findPlan(fragmentSets, names, cost, depth);
-            cost = pair.getValue0();
-            List<Fragment> newFragments = Lists.reverse(pair.getValue1());
+            Plan plan = findPlan(fragmentSets, names, cost, depth);
+            cost = plan.cost;
+            List<Fragment> newFragments = Lists.reverse(plan.fragments);
 
             if (newFragments.isEmpty()) {
                 throw new RuntimeException(ErrorMessage.FAILED_TO_BUILD_TRAVERSAL.getMessage());
@@ -163,25 +161,23 @@ public class GraqlTraversal {
      * @param depth the maximum depth the plan is allowed to descend in the tree
      * @return a pair, containing the cost of the plan and a list of fragments comprising the traversal plan
      */
-    private static Pair<Double, List<Fragment>> findPlan(
+    private static Plan findPlan(
             Set<EquivalentFragmentSet> fragmentSets, Set<VarName> names, double cost, long depth
     ) {
         // Base case
-        Pair<Double, List<Fragment>> baseCase = Pair.with(cost, Lists.newArrayList());
+        Plan baseCase = new Plan(cost);
 
         if (depth == 0) return baseCase;
-
-        Comparator<Pair<Double, List<Fragment>>> byCost = comparing(Pair::getValue0);
 
         // Try every fragment that has its dependencies met, then select the lowest cost fragment
         return fragments(fragmentSets)
                 .filter(fragment -> names.containsAll(fragment.getDependencies()))
                 .map(fragment -> findPlanWithFragment(fragment, fragmentSets, names, cost, depth))
-                .min(byCost)
+                .min(naturalOrder())
                 .orElse(baseCase);
     }
 
-    private static Pair<Double, List<Fragment>> findPlanWithFragment(
+    private static Plan findPlanWithFragment(
             Fragment fragment, Set<EquivalentFragmentSet> fragmentSets, Set<VarName> names, double cost, long depth
     ) {
         // Calculate the new costs, fragment sets and variable names when using this fragment
@@ -193,11 +189,51 @@ public class GraqlTraversal {
         Set<VarName> newNames = Sets.union(names, fragment.getVariableNames().collect(toSet()));
 
         // Recursively find a plan
-        Pair<Double, List<Fragment>> pair = findPlan(newFragmentSets, newNames, newCost, depth - 1);
+        Plan plan = findPlan(newFragmentSets, newNames, newCost, depth - 1);
 
         // Add this fragment and cost and return
-        pair.getValue1().add(fragment);
-        return pair.setAt0(pair.getValue0() + newCost);
+        plan.append(newCost, fragment);
+        return plan;
+    }
+
+    private static class Plan implements Comparable<Plan> {
+        double cost;
+        final List<Fragment> fragments = Lists.newArrayList();
+
+        private Plan(double cost) {
+            this.cost = cost;
+        }
+
+        private void append(double newCost, Fragment newFragment) {
+            cost += newCost;
+            fragments.add(newFragment);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Plan plan = (Plan) o;
+
+            if (Double.compare(plan.cost, cost) != 0) return false;
+            return fragments.equals(plan.fragments);
+        }
+
+        @Override
+        public int hashCode() {
+            int result;
+            long temp;
+            temp = Double.doubleToLongBits(cost);
+            result = (int) (temp ^ (temp >>> 32));
+            result = 31 * result + fragments.hashCode();
+            return result;
+        }
+
+        @Override
+        public int compareTo(Plan plan) {
+            return Double.compare(cost, plan.cost);
+        }
     }
 
     /**
