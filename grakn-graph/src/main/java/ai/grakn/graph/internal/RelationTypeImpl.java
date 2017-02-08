@@ -80,8 +80,14 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     public RelationType hasRole(RoleType roleType) {
         checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
+
+        //Cache the Role internally
         hasRoles(); //Called to make sure everything is initially cached.
         cachedHasRoles.map(set -> set.add(roleType));
+
+        //Cache the relation type in the role
+        ((RoleTypeImpl) roleType).addCachedRelationType(this);
+
         return this;
     }
 
@@ -105,9 +111,12 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         //Add the Relation Type
         getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
-        //Remove from cache
+        //Remove from internal cache
         hasRoles(); //Called to make sure everything is initially cached.
         cachedHasRoles.map(set -> set.remove(roleType));
+
+        //Remove from roleTypeCache
+        ((RoleTypeImpl) roleType).deleteCachedRelationType(this);
 
         return this;
     }

@@ -86,7 +86,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param producer The factory method to produce the instance
      * @return The instance required
      */
-    protected V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
+    V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
         if(Schema.MetaSchema.isMetaName(getName()) && !Schema.MetaSchema.INFERENCE_RULE.getName().equals(getName()) && !Schema.MetaSchema.CONSTRAINT_RULE.getName().equals(getName())){
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
         }
@@ -240,7 +240,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      *
      * @param newSubType The new subtype
      */
-    private void addCachedDirectSubTypes(T newSubType){
+    private void addCachedDirectSubType(T newSubType){
         directSubTypes();//Called to make sure the current children have been cached
         cachedDirectSubTypes.map(set -> set.add(newSubType));
     }
@@ -250,8 +250,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      *
      * @param oldSubType The old sub type which should not be cached anymore
      */
-    private void deleteCachedDirectedSubTypes(T oldSubType){
-        directSubTypes();//Called to make sure the current children have been cached
+    private void deleteCachedDirectedSubType(T oldSubType){
         cachedDirectSubTypes.map(set -> set.remove(oldSubType));
     }
 
@@ -346,12 +345,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Update the sub types of the old super type
             if(oldSuperType != null) {
                 //noinspection unchecked - Casting is needed to access {deleteCachedDirectedSubTypes} method
-                ((TypeImpl<T, V>) oldSuperType).deleteCachedDirectedSubTypes(getThis());
+                ((TypeImpl<T, V>) oldSuperType).deleteCachedDirectedSubType(getThis());
             }
 
             //Add this as the subtype to the supertype
             //noinspection unchecked - Casting is needed to access {addCachedDirectSubTypes} method
-            ((TypeImpl<T, V>) newSuperType).addCachedDirectSubTypes(getThis());
+            ((TypeImpl<T, V>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some
             instances().forEach(concept -> {

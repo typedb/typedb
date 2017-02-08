@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -50,6 +51,8 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
+    private Optional<Set<RelationType>> cachedRelationTypes = Optional.empty();
+
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
     }
@@ -68,7 +71,31 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<RelationType> relationTypes() {
-        return Collections.unmodifiableCollection(getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+        if(!cachedRelationTypes.isPresent()){
+            cachedRelationTypes = Optional.of(getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+        }
+        return Collections.unmodifiableCollection(cachedRelationTypes.get());
+    }
+
+    /**
+     * Caches a new relation type which this role will be part of. This may result in a DB hit if the cache has not been
+     * initialised.
+     *
+     * @param newRelationType The new relation type to cache in the role.
+     */
+    void addCachedRelationType(RelationType newRelationType){
+        relationTypes();//Called to make sure the current relation types have been cached
+        cachedRelationTypes.map(set -> set.add(newRelationType));
+    }
+
+    /**
+     * Removes an old relation type which this role is no longer part of. This may result in a DB hit if the cache has
+     * not been initialised.
+     *
+     * @param oldRelationType The new relation type to cache in the role.
+     */
+    void deleteCachedRelationType(RelationType oldRelationType){
+        cachedRelationTypes.map(set -> set.remove(oldRelationType));
     }
 
     /**
