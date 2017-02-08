@@ -398,9 +398,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     T playsRole(RoleType roleType, boolean required) {
         checkTypeMutation();
-        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
 
+        //Update the internal cache of role types played
         updateCachedValue(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)).add(roleType);
+
+        //Update the cache of types played by the role
+        ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
+
+        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
@@ -428,6 +433,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
         cachedPlaysRoles.map(set -> set.remove(roleType));
+        ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {

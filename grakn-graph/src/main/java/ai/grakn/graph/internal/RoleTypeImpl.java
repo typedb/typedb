@@ -51,6 +51,7 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
+    private Optional<Set<Type>> cachedDirectPlayedByTypes = Optional.empty();
     private Optional<Set<RelationType>> cachedRelationTypes = Optional.empty();
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
@@ -101,10 +102,22 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<Type> playedByTypes() {
-        Set<Type> playedBy = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).
-                forEach(concept -> playedBy.addAll(concept.asType().subTypes()));
-        return Collections.unmodifiableCollection(playedBy);
+        Set<Type> playedByTypes = new HashSet<>();
+        directPlayedByTypes().forEach(type -> playedByTypes.addAll(type.subTypes()));
+        return Collections.unmodifiableCollection(playedByTypes);
+    }
+
+    private Set<Type> directPlayedByTypes(){
+        return updateCachedValue(cachedDirectPlayedByTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+    }
+
+    void addCachedDirectPlaysByType(Type newType){
+        directPlayedByTypes();//Called to make sure the current children have been cached
+        cachedDirectPlayedByTypes.map(set -> set.add(newType));
+    }
+
+    void deleteCachedDirectPlaysByType(Type oldType){
+        cachedDirectPlayedByTypes.map(set -> set.remove(oldType));
     }
 
     /**
