@@ -65,7 +65,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public Collection<RoleType> hasRoles() {
-        return Collections.unmodifiableCollection(updateCachedSet(cachedHasRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE)));
+        return Collections.unmodifiableCollection(updateCachedValue(cachedHasRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE)));
     }
 
     /**

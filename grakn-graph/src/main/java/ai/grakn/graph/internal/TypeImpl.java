@@ -99,11 +99,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return producer.apply(instanceVertex, getThis());
     }
 
-    <X extends Type> Set<X> updateCachedSet(Optional<Set<X>> cachedSet, Supplier<Set<X>> databaseReader){
-        if(!cachedSet.isPresent()){
-            cachedSet = Optional.of(databaseReader.get());
+    <X> X updateCachedValue(Optional<X> cachedValue, Supplier<X> databaseReader){
+        if(!cachedValue.isPresent()){
+            cachedValue = Optional.of(databaseReader.get());
         }
-        return cachedSet.get();
+        return cachedValue.get();
     }
 
     /**
@@ -115,7 +115,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<RoleType> allRoleTypes = new HashSet<>();
 
         //Get the immediate plays roles which may be cached
-        allRoleTypes.addAll(updateCachedSet(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)));
+        allRoleTypes.addAll(updateCachedValue(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)));
 
         //Now get the super type plays roles (Which may also be cached locally within their own context
         Set<T> superSet = getSuperSet();
@@ -153,6 +153,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return This type's super type
      */
     public T superType() {
+        //Not using {updateCachedValue} because we do not want to allow cached nulls.
         if(!cachedSuperType.isPresent()){
             T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
             if(concept == null) {
@@ -237,7 +238,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return All of the concepts direct sub children spanning a single level.
      */
     private Set<T> directSubTypes(){
-        return updateCachedSet(cachedDirectSubTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
+        return updateCachedValue(cachedDirectSubTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
     }
 
     /**
@@ -290,10 +291,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Boolean isAbstract() {
-        if(!cachedIsAbstract.isPresent()){
-            cachedIsAbstract = Optional.of(getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-        }
-        return cachedIsAbstract.get();
+        return updateCachedValue(cachedIsAbstract, () -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
     }
 
     /**
@@ -302,10 +300,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Boolean isImplicit(){
-        if(!cachedIsImplicit.isPresent()) {
-            cachedIsImplicit = Optional.of(getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-        }
-        return cachedIsImplicit.get();
+        return updateCachedValue(cachedIsImplicit, () -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     }
 
     /**
@@ -405,7 +400,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
         EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
 
-        updateCachedSet(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)).add(roleType);
+        updateCachedValue(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)).add(roleType);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);

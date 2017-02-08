@@ -71,7 +71,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<RelationType> relationTypes() {
-        return Collections.unmodifiableCollection(updateCachedSet(cachedRelationTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE)));
+        return Collections.unmodifiableCollection(updateCachedValue(cachedRelationTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE)));
     }
 
     /**
