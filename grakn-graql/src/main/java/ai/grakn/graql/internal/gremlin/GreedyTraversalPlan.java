@@ -41,6 +41,8 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * Class for generating greedy traversal plans
+ *
+ * @author Felix Chapman
  */
 public class GreedyTraversalPlan {
 
