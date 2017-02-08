@@ -299,6 +299,7 @@ public class QueryParser {
         registerAggregate("min", 1, args -> Aggregates.min((VarName) args.get(0)));
         registerAggregate("mean", 1, args -> Aggregates.mean((VarName) args.get(0)));
         registerAggregate("median", 1, args -> Aggregates.median((VarName) args.get(0)));
+        registerAggregate("std", 1, args -> Aggregates.std((VarName) args.get(0)));
 
         registerAggregate("group", 1, 2, args -> {
             if (args.size() < 2) {
