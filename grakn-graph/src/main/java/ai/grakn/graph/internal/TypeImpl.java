@@ -135,7 +135,23 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(hasSubs || hasInstances){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
+            //Force load of linked concepts whose caches need to be updated
+            cachedSuperType.get();
+            cachedPlaysRoles.get();
+
             deleteNode();
+
+            //Update neighbouring caches
+            //noinspection unchecked
+            ((TypeImpl<T, V>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
+            cachedPlaysRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+
+            //Clear internal caching
+            cachedIsImplicit.clear();
+            cachedIsAbstract.clear();
+            cachedSuperType.clear();
+            cachedDirectSubTypes.clear();
+            cachedPlaysRoles.clear();
         }
     }
 
