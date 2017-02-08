@@ -672,7 +672,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //Standard Close Operation Overridden by Vendor
     public void closeGraph(String closedReason){
-        clearLocalVariables();
         finaliseClose(this::closePermanent, closedReason);
     }
 
@@ -681,6 +680,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             closer.run();
             localClosedReason.set(closedReason);
             localIsOpen.set(false);
+            clearLocalVariables();
         }
     }
 

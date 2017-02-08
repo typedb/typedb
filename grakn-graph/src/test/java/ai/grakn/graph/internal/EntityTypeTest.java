@@ -44,6 +44,8 @@ import java.util.Set;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -592,27 +594,21 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType e6 = graknGraph.putEntityType("entityType6").superType(e5);
 
         assertEquals(4, e1.subTypes().size());
-        assertTrue("e1 subtypes does not contain e1", e1.subTypes().contains(e1));
-        assertTrue("e1 subtypes does not contain e2", e1.subTypes().contains(e2));
-        assertTrue("e1 subtypes does not contain e3", e1.subTypes().contains(e3));
-        assertTrue("e1 subtypes does not contain e4", e1.subTypes().contains(e4));
+        assertThat(e1.subTypes(), containsInAnyOrder(e1, e2, e3, e4));
 
         assertEquals(2, e5.subTypes().size());
-        assertTrue("e5 subtypes does not contain e5", e5.subTypes().contains(e5));
-        assertTrue("e5 subtypes does not contain e6", e5.subTypes().contains(e6));
+        assertThat(e5.subTypes(), containsInAnyOrder(e6, e5));
 
         //Now change subtypes
         e6.superType(e1);
         e3.superType(e5);
 
         assertEquals(4, e1.subTypes().size());
-        assertTrue("e1 subtypes does not contain e1", e1.subTypes().contains(e1));
-        assertTrue("e1 subtypes does not contain e2", e1.subTypes().contains(e2));
-        assertTrue("e1 subtypes does not contain e6", e1.subTypes().contains(e6));
-        assertTrue("e1 subtypes does not contain e4", e1.subTypes().contains(e4));
+        assertThat(e1.subTypes(), containsInAnyOrder(e1, e2, e4, e6));
 
         assertEquals(2, e5.subTypes().size());
-        assertTrue("e5 subtypes does not contain e3", e5.subTypes().contains(e3));
-        assertTrue("e5 subtypes does not contain e5", e5.subTypes().contains(e5));
+        assertThat(e5.subTypes(), containsInAnyOrder(e3, e5));
     }
+
+
 }
