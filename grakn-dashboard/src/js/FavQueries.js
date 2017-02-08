@@ -4,7 +4,7 @@ const QUERIES_LS_KEY = 'fav_queries';
 export default {
   getFavQueries() {
     const queries = localStorage.getItem(QUERIES_LS_KEY);
-    if (queries === undefined) {
+    if (queries === null) {
       localStorage.setItem(QUERIES_LS_KEY, '{}');
       return {};
     }

@@ -133,7 +133,7 @@ export default {
      */
   graqlShell(query, fn) {
     this.request({
-      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${query}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
       callback: fn,
       dataType: 'text',
       contentType: 'application/text',
@@ -148,7 +148,7 @@ export default {
      */
   graqlHAL(query, fn) {
     this.request({
-      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${query}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
       callback: fn,
     });
   },
@@ -158,7 +158,7 @@ export default {
      */
   graqlAnalytics(query, fn) {
     this.request({
-      url: `/graph/analytics?keyspace=${User.getCurrentKeySpace()}&query=${query}`,
+      url: `/graph/analytics?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
       callback: fn,
     });
   },

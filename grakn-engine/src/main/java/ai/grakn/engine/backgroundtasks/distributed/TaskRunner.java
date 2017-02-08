@@ -83,8 +83,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final ZookeeperConnection connection;
     private final CountDownLatch shutdownLatch;
 
-    private ExecutorService executor;
-    private KafkaConsumer<String, String> consumer;
+    private final ExecutorService executor;
+    private final KafkaConsumer<String, String> consumer;
 
     public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
@@ -114,8 +114,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
                     processRecords(consumer.poll(POLLING_FREQUENCY));
                 }
             }
-        }
-        catch (WakeupException e) {
+        } catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
         } catch (Throwable t){
             LOG.error("Error in TaskRunner poll " + getFullStackTrace(t));
@@ -166,7 +165,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 }
 
                 // Mark as RUNNING and update task & runner states.
-                addRunningTask(state.getId());
                 storage.updateState(state
                     .status(RUNNING)
                     .statusChangedBy(this.getClass().getName())
@@ -188,23 +186,28 @@ public class TaskRunner implements Runnable, AutoCloseable {
      * @param state TaskState for task @id.
      */
     private void executeTask(TaskState state) {
+        LOG.debug("Executing task " + state.getId());
+
         try {
-            LOG.debug("Executing task " + state.getId());
+            // Should add running task here, so it always gets removed in the finally
+            addRunningTask(state.getId());
 
             // Instantiate task.
             Class<?> c = Class.forName(state.taskClassName());
             BackgroundTask task = (BackgroundTask) c.newInstance();
 
-            // Run task.
-            task.start(saveCheckpoint(state), state.configuration());
+            // Resume task from the checkpoint, if it exists. Otherwise run from the beginning.
+            if(state.checkpoint() != null){
+                task.resume(saveCheckpoint(state), state.checkpoint());
+            } else {
+                task.start(saveCheckpoint(state), state.configuration());
+            }
 
             storage.updateState(state.status(COMPLETED));
-        }
-        catch(Throwable t) {
+        } catch(Throwable t) {
             storage.updateState(state.status(FAILED));
             LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(t));
-        }
-        finally {
+        } finally {
             removeRunningTask(state.getId());
             LOG.debug("Finished executing task - " + state.getId());
         }
@@ -225,8 +228,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
         try {
             connection.connection().setData().forPath(RUNNERS_STATE+"/"+ ENGINE_ID, out.toString().getBytes(StandardCharsets.UTF_8));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + e);
         }
     }

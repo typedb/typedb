@@ -101,7 +101,7 @@ public class DeleteQueryTest {
         assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
         assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
 
-        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name")).execute();
+        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name", var("y"))).execute();
 
         assertFalse(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
         assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
@@ -317,7 +317,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteValue() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("value")));
-        qb.match(var("x").isa("movie")).delete(var("x").value()).execute();
+        qb.match(var("x").isa("movie")).delete(var("x").value("hello")).execute();
     }
 
     @Test

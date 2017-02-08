@@ -58,7 +58,7 @@ public class QueryCache extends HashMap<ReasonerAtomicQuery, Pair<ReasonerAtomic
         else return new QueryAnswers();
     }
 
-    public int size(){
+    public int answerSize(){
         return keySet().stream().map(q -> get(q).getValue().size()).mapToInt(Integer::intValue).sum();
     }
 }

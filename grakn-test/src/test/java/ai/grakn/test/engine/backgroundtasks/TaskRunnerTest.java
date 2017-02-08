@@ -37,8 +37,10 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
+import static java.util.Collections.singleton;
 import static junit.framework.Assert.assertEquals;
 
 public class TaskRunnerTest {
@@ -99,6 +101,21 @@ public class TaskRunnerTest {
 
         waitForStatus(storage, tasks, COMPLETED);
         assertEquals(5, TestTask.startedCounter.get());
+    }
+
+    @Test
+    public void testSendWithCheckpoint() {
+        TaskState task = createTask(0, SCHEDULED, false, 0);
+        task.checkpoint("");
+        storage.newState(task);
+        sendTasksToWorkQueue(singleton(task));
+
+        waitForStatus(storage, singleton(task), COMPLETED);
+
+        // Task should be resumed, not started
+        // This is because it was sent to the work queue with a non-null checkpoint
+        assertEquals(1, TestTask.resumedCounter.get());
+        assertEquals(0, TestTask.startedCounter.get());
     }
 
     private void sendTasksToWorkQueue(Set<TaskState> tasks) {
