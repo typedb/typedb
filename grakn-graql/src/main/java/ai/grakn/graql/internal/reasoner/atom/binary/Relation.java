@@ -598,14 +598,16 @@ public class Relation extends TypeAtom {
     /**
      * @return map of role variable - role type from a predicate
      */
+    @SuppressWarnings("unchecked")
     private Map<RoleType, VarName> getIndirectRoleMap() {
         GraknGraph graph = getParentQuery().graph();
-        return getRelationPlayers().stream()
+        Object result = getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(e -> graph.getConcept(e.getValue().getPredicate()), e -> e.getKey().getVarName()));
+        return (Map<RoleType, VarName>)result;
     }
 
     //varsToAllocate <= childBVs
