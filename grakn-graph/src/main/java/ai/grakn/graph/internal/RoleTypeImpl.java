@@ -101,12 +101,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     @Override
     public Collection<Type> playedByTypes() {
         Set<Type> playedByTypes = new HashSet<>();
-        directPlayedByTypes().forEach(type -> playedByTypes.addAll(type.subTypes()));
+        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subTypes()));
         return Collections.unmodifiableCollection(playedByTypes);
-    }
-
-    private Set<Type> directPlayedByTypes(){
-        return cachedDirectPlayedByTypes.get();
     }
 
     void addCachedDirectPlaysByType(Type newType){
@@ -157,7 +153,20 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         if(hasHasRoles || hasPlaysRoles){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
+
+            //Force load caches before we delete
+            cachedRelationTypes.get();
+            cachedDirectPlayedByTypes.get();
+
             super.innerDelete();
+
+            //Update caches of relation types it used to be connected to and of types allowed to play it
+            cachedRelationTypes.get().forEach(relationType -> ((RelationTypeImpl) relationType).deleteCachedHasRole(this));
+            cachedDirectPlayedByTypes.get().forEach(type -> ((TypeImpl<?, ?>) type).deleteCachedDirectPlaysRoles(this));
+
+            //Clear all internal caching
+            cachedRelationTypes.clear();
+            cachedDirectPlayedByTypes.clear();
         }
     }
 

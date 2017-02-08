@@ -192,14 +192,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     /**
      *
      * @param root The current type to example
-     * @return All the sub children of the root. Effectively calls  {@link TypeImpl#directSubTypes()} recursively
+     * @return All the sub children of the root. Effectively calls  the cache {@link TypeImpl#cachedDirectSubTypes} recursively
      */
     @SuppressWarnings("unchecked")
     private Set<T> nextSubLevel(TypeImpl<T, V> root){
         Set<T> results = new HashSet<>();
         results.add((T) root);
 
-        Set<T> children = root.directSubTypes();
+        Set<T> children = root.cachedDirectSubTypes.get();
         for(T child: children){
             results.addAll(nextSubLevel((TypeImpl<T, V>) child));
         }
@@ -214,14 +214,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public Collection<T> subTypes(){
         return Collections.unmodifiableCollection(filterImplicitStructures(nextSubLevel(this)));
-    }
-
-    /**
-     *
-     * @return All of the concepts direct sub children spanning a single level.
-     */
-    private Set<T> directSubTypes(){
-        return cachedDirectSubTypes.get();
     }
 
     /**
@@ -394,6 +386,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         return getThis();
+    }
+
+    void deleteCachedDirectPlaysRoles(RoleType oldRoleType){
+        if(cachedPlaysRoles.isPresent()) cachedPlaysRoles.get().remove(oldRoleType);
     }
 
     /**

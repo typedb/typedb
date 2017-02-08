@@ -67,6 +67,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         return Collections.unmodifiableCollection(cachedHasRoles.get());
     }
 
+    void deleteCachedHasRole(RoleType oldRole){
+        if(cachedHasRoles.isPresent()) cachedHasRoles.get().remove(oldRole);
+    }
+
     /**
      *
      * @param roleType A new role which is part of this relationship.
