@@ -47,6 +47,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -67,13 +68,15 @@ import java.util.function.Function;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
+    private Optional<ConceptId> id = Optional.empty();
+
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
     }
 
     private final AbstractGraknGraph graknGraph;
-    private Vertex vertex;
+    private final Vertex vertex;
 
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
         this.vertex = v;
@@ -157,7 +160,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
         vertex.remove();
-        vertex = null;
     }
 
     /**
@@ -508,7 +510,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
+        if(!id.isPresent()) id = Optional.of(ConceptId.of(getVertex().id().toString()));
+        return id.get();
     }
 
     /**
@@ -618,7 +621,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof ConceptImpl && ((ConceptImpl) object).getVertex().equals(vertex);
+        //Id comparison is equivalent to  the vertex comparison because vertex comparison just checks the ids anyway
+        return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
     @Override
