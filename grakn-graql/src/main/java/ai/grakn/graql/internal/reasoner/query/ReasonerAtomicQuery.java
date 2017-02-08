@@ -30,6 +30,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -216,6 +217,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public QueryAnswers materialise(QueryAnswers answers){
         QueryAnswers fullAnswers = new QueryAnswers();
+        if (answers.isEmpty()) return fullAnswers;
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         answers.forEach(answer -> {
             Set<IdPredicate> subs = new HashSet<>();
@@ -223,7 +225,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             subs.forEach(queryToMaterialise::addAtom);
             fullAnswers.addAll(queryToMaterialise.materialiseDirect());
             subs.forEach(queryToMaterialise::removeAtom);
+            if (fullAnswers.size() % Reasoner.getCommitFrequency() == 0) Reasoner.commitGraph(graph());
         });
+        Reasoner.commitGraph(graph());
         return fullAnswers;
     }
 
