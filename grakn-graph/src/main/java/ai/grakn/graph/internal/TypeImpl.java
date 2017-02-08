@@ -388,10 +388,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return getThis();
     }
 
-    void deleteCachedDirectPlaysRoles(RoleType oldRoleType){
-        if(cachedPlaysRoles.isPresent()) cachedPlaysRoles.get().remove(oldRoleType);
-    }
-
     /**
      *
      * @param roleType The Role Type which the instances of this Type are allowed to play.
