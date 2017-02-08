@@ -232,9 +232,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private QueryAnswers propagateIdPredicates(QueryAnswers answers){
-        Map<VarName, Concept> newAns = this.getTypeConstraints().stream()
+        Object collected = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate).filter(Objects::nonNull)
                 .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
+        @SuppressWarnings("unchecked")
+        Map<VarName, Concept> newAns = (Map<VarName, Concept>) collected;
         if (answers.isEmpty() || newAns.isEmpty()) return answers;
         return answers.join(new QueryAnswers(Sets.newHashSet(Collections.singletonList(newAns))));
     }
