@@ -92,7 +92,7 @@ public class Aggregates {
     }
 
     /**
-     * Aggregate that finds standard deviation of a match query
+     * Aggregate that finds the unbiased sample standard deviation of a match query
      */
     public static Aggregate<Map<VarName, Concept>, Optional<Double>> std(VarName varName) {
         return new StdAggregate(varName);

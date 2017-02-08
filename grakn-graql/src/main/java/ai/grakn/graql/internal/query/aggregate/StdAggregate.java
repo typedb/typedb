@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 import static java.lang.Math.sqrt;
 
 /**
- * Aggregate that finds standard deviation of a match query.
+ * Aggregate that finds the unbiased sample standard deviation of a match query.
  */
 class StdAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Double>> {
 

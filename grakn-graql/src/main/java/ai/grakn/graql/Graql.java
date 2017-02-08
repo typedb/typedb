@@ -266,7 +266,7 @@ public class Graql {
     }
 
     /**
-     * Create an aggregate that will find the standard deviation of a variable's values.
+     * Create an aggregate that will find the unbiased sample standard deviation of a variable's values.
      * @param name the variable to find the standard deviation of
      */
     public static Aggregate<Map<VarName, Concept>, Optional<Double>> std(String name) {
