@@ -16,45 +16,20 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
+import Vue from 'vue';
 import VeeValidate from 'vee-validate';
-// change this to alias Vue instead of import vue/dist - check out Aliasify
-import Vue from 'vue/dist/vue';
+import VueRouter from 'vue-router';
+
+// Modules
 import User from './js/User';
 import EngineClient from './js/EngineClient';
+import routes from './routes';
 
-const VueRouter = require('vue-router');
 
 Vue.use(VueRouter);
 Vue.use(VeeValidate);
 
-// Components
-const graphPage = require('./components/graphPage.vue');
-const consolePage = require('./components/consolePage.vue');
-const configPage = require('./components/configPage.vue');
-const loginPage = require('./components/loginPage.vue');
-const sidebar = require('./components/global/sidebar.vue');
-const keyspacesmodal = require('./components/global/keyspacesModal.vue');
-const signupmodal = require('./components/global/signupModal.vue');
-
-// ---------------------- Vue setup ---------------------//
-
-const routes = [{
-  path: '/',
-  redirect: '/graph',
-}, {
-  path: '/config',
-  component: configPage,
-}, {
-  path: '/graph',
-  component: graphPage,
-}, {
-  path: '/console',
-  component: consolePage,
-}, {
-  path: '/login',
-  component: loginPage,
-}];
-
+// Define a Vue Router and map all the routes to components - as defined in the routes.js file.
 const router = new VueRouter({
   linkActiveClass: 'active',
   routes,
@@ -62,37 +37,30 @@ const router = new VueRouter({
 
 let authNeeded;
 
-// Before loading every page we need to check if Authentication is enabled, if yes the user must be logged in.
+// Functino used to ask Engine if a token is needed to use its APIs
+const checkIfAuthNeeded = function contactEngine(next) {
+  EngineClient.request({
+    url: '/auth/enabled/',
+    callback: (resp, error) => {
+      authNeeded = resp;
+      if (authNeeded) {
+        next('/login');
+      } else {
+        next();
+      }
+    },
+  });
+};
+
+// Middleware to ensure the user is authenticated when needed.
 router.beforeEach((to, from, next) => {
   if (authNeeded === undefined) {
-    EngineClient.request({
-      url: '/auth/enabled/',
-      callback: (resp, error) => {
-        authNeeded = resp;
-        if (authNeeded) {
-          next('/login');
-        } else {
-          next();
-        }
-      },
-    });
-  } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
+    checkIfAuthNeeded(next);
+  } else if (User.isAuthenticated() || authNeeded === false) {
     next();
   } else {
     next('/login');
   }
-});
-
-Vue.component('side-bar', {
-  render: h => h(sidebar),
-});
-
-Vue.component('keyspaces-modal', {
-  render: h => h(keyspacesmodal),
-});
-
-Vue.component('signup-modal', {
-  render: h => h(signupmodal),
 });
 
 new Vue({

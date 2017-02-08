@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-import * as API from './APITerms';
+import * as API from '../util/HALTerms';
 
 /*
  * Various miscellaneous functions used by the HALParser class.
