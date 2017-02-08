@@ -114,19 +114,19 @@ export default class HALParser {
           this.nodeAlreadyInGraph(HALParser.getHref(child))) {
         const links = Utils.nodeLinks(child);
                 // Add resource and iterate its _embedded field
-        const idP = child[API.KEY_ID];
-        const idC = parent[API.KEY_ID];
+        const idC = child[API.KEY_ID];
+        const idP = parent[API.KEY_ID];
 
-        this.newResource(HALParser.getHref(parent),
+        this.newResource(HALParser.getHref(child),
                         Utils.defaultProperties(child),
                         Utils.extractResources(child), links);
 
         const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
 
         if (Utils.edgeLeftToRight(parent, child)) {
-          this.newRelationship(idP, idC, edgeLabel);
-        } else {
           this.newRelationship(idC, idP, edgeLabel);
+        } else {
+          this.newRelationship(idP, idC, edgeLabel);
         }
 
         this.parseHalObject(child);
