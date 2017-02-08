@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
     private TypeName cachedTypeName;
+    private Optional<Boolean> cachedIsImplicit = Optional.empty();
     private Optional<Boolean> cachedIsAbstract = Optional.empty();
     private Optional<T> cachedSuperType = Optional.empty();
     private Optional<Set<T>> cachedDirectSubTypes = Optional.empty();
@@ -79,6 +80,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType, Boolean isImplicit) {
         this(graknGraph, v, superType);
         setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
+        cachedIsImplicit = Optional.of(isImplicit);
     }
 
     /**
@@ -298,7 +300,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Boolean isImplicit(){
-        return getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT);
+        if(!cachedIsImplicit.isPresent()) {
+            cachedIsImplicit = Optional.of(getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+        }
+        return cachedIsImplicit.get();
     }
 
     /**
