@@ -206,7 +206,7 @@ public class AggregateTest {
 
         double mean = (1000d + 100d + 400d + 435d + 5d) / 5d;
         double variance = (pow(1000d - mean, 2d) + pow(100d - mean, 2d)
-                + pow(400d - mean, 2d) + pow(435d - mean, 2d) + pow(5d - mean, 2d)) / 5d;
+                + pow(400d - mean, 2d) + pow(435d - mean, 2d) + pow(5d - mean, 2d)) / 4d;
         double expected = sqrt(variance);
 
         assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
@@ -220,7 +220,7 @@ public class AggregateTest {
 
         double mean = (8.6d + 8.4d + 7.6d + 3.1d) / 4d;
         double variance =
-                (pow(8.6d - mean, 2d) + pow(8.4d - mean, 2d) + pow(7.6d - mean, 2d) + pow(3.1d - mean, 2d)) / 4d;
+                (pow(8.6d - mean, 2d) + pow(8.4d - mean, 2d) + pow(7.6d - mean, 2d) + pow(3.1d - mean, 2d)) / 3d;
         double expected = sqrt(variance);
 
         assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
