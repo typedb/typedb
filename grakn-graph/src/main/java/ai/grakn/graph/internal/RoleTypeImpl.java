@@ -84,7 +84,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @param newRelationType The new relation type to cache in the role.
      */
     void addCachedRelationType(RelationType newRelationType){
-        relationTypes();//Called to make sure the current relation types have been cached
+        relationTypes();//Called to make sure the current relation types have been cached.
         cachedRelationTypes.map(set -> set.add(newRelationType));
     }
 

@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
     private TypeName cachedTypeName;
+    private Optional<Boolean> cachedIsAbstract = Optional.empty();
     private Optional<T> cachedSuperType = Optional.empty();
     private Optional<Set<T>> cachedDirectSubTypes = Optional.empty();
     private Optional<Set<RoleType>> cachedPlaysRoles = Optional.empty(); //Optional is used so we know if we have to read from the DB or not.
@@ -285,7 +286,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Boolean isAbstract() {
-        return getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT);
+        if(!cachedIsAbstract.isPresent()){
+            cachedIsAbstract = Optional.of(getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+        }
+        return cachedIsAbstract.get();
     }
 
     /**
@@ -451,9 +455,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     public T setAbstract(Boolean isAbstract) {
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
-        if(isAbstract) {
-            getGraknGraph().getConceptLog().trackConceptForValidation(this);
-        }
+        if(isAbstract) getGraknGraph().getConceptLog().trackConceptForValidation(this);
+        cachedIsAbstract = Optional.of(isAbstract);
         return getThis();
     }
 
