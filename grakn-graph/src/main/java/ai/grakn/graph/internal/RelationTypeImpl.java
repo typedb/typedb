@@ -26,7 +26,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -43,7 +42,7 @@ import java.util.Set;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private Optional<Set<RoleType>> cachedHasRoles = Optional.empty();
+    private Cache<Set<RoleType>> cachedHasRoles = new Cache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -65,7 +64,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public Collection<RoleType> hasRoles() {
-        return Collections.unmodifiableCollection(updateCachedValue(cachedHasRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE)));
+        return Collections.unmodifiableCollection(cachedHasRoles.get());
     }
 
     /**
@@ -79,8 +78,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
 
         //Cache the Role internally
-        hasRoles(); //Called to make sure everything is initially cached.
-        cachedHasRoles.map(set -> set.add(roleType));
+        cachedHasRoles.get().add(roleType);
 
         //Cache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
@@ -109,7 +107,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
         //Remove from internal cache
-        cachedHasRoles.map(set -> set.remove(roleType));
+        if(cachedHasRoles.isPresent()) cachedHasRoles.get().remove(roleType);
 
         //Remove from roleTypeCache
         ((RoleTypeImpl) roleType).deleteCachedRelationType(this);

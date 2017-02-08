@@ -38,11 +38,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -62,11 +60,11 @@ import java.util.stream.Collectors;
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
     private TypeName cachedTypeName;
-    private Optional<Boolean> cachedIsImplicit = Optional.empty();
-    private Optional<Boolean> cachedIsAbstract = Optional.empty();
-    private Optional<T> cachedSuperType = Optional.empty();
-    private Optional<Set<T>> cachedDirectSubTypes = Optional.empty();
-    private Optional<Set<RoleType>> cachedPlaysRoles = Optional.empty(); //Optional is used so we know if we have to read from the DB or not.
+    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private Cache<T> cachedSuperType = new Cache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.SUB));
+    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
+    private Cache<Set<RoleType>> cachedPlaysRoles = new Cache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -81,7 +79,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType, Boolean isImplicit) {
         this(graknGraph, v, superType);
         setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
-        cachedIsImplicit = Optional.of(isImplicit);
+        cachedIsImplicit.set(isImplicit);
     }
 
     /**
@@ -99,13 +97,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return producer.apply(instanceVertex, getThis());
     }
 
-    <X> X updateCachedValue(Optional<X> cachedValue, Supplier<X> databaseReader){
-        if(!cachedValue.isPresent()){
-            cachedValue = Optional.of(databaseReader.get());
-        }
-        return cachedValue.get();
-    }
-
     /**
      *
      * @return A list of all the roles this Type is allowed to play.
@@ -115,7 +106,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<RoleType> allRoleTypes = new HashSet<>();
 
         //Get the immediate plays roles which may be cached
-        allRoleTypes.addAll(updateCachedValue(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)));
+        allRoleTypes.addAll(cachedPlaysRoles.get());
 
         //Now get the super type plays roles (Which may also be cached locally within their own context
         Set<T> superSet = getSuperSet();
@@ -153,14 +144,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return This type's super type
      */
     public T superType() {
-        //Not using {updateCachedValue} because we do not want to allow cached nulls.
-        if(!cachedSuperType.isPresent()){
-            T concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
-            if(concept == null) {
-                return null;
-            }
-            cachedSuperType = Optional.of(concept);
-        }
         return cachedSuperType.get();
     }
 
@@ -238,7 +221,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return All of the concepts direct sub children spanning a single level.
      */
     private Set<T> directSubTypes(){
-        return updateCachedValue(cachedDirectSubTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
+        return cachedDirectSubTypes.get();
     }
 
     /**
@@ -247,8 +230,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param newSubType The new subtype
      */
     private void addCachedDirectSubType(T newSubType){
-        directSubTypes();//Called to make sure the current children have been cached
-        cachedDirectSubTypes.map(set -> set.add(newSubType));
+        cachedDirectSubTypes.get().add(newSubType);
     }
 
     /**
@@ -257,7 +239,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param oldSubType The old sub type which should not be cached anymore
      */
     private void deleteCachedDirectedSubType(T oldSubType){
-        cachedDirectSubTypes.map(set -> set.remove(oldSubType));
+        if(cachedDirectSubTypes.isPresent()) cachedDirectSubTypes.get().remove(oldSubType);
     }
 
     /**
@@ -291,7 +273,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Boolean isAbstract() {
-        return updateCachedValue(cachedIsAbstract, () -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+        return cachedIsAbstract.get();
     }
 
     /**
@@ -300,7 +282,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Boolean isImplicit(){
-        return updateCachedValue(cachedIsImplicit, () -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+        return cachedIsImplicit.get();
     }
 
     /**
@@ -336,11 +318,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         T oldSuperType = superType();
         if(oldSuperType == null || (!oldSuperType.equals(newSuperType))) {
             //Update the super type of this type in cache
-            cachedSuperType = Optional.of(newSuperType);
+            cachedSuperType.set(newSuperType);
 
             //Note the check before the actual construction
             if(superTypeLoops()){
-                cachedSuperType = Optional.ofNullable(oldSuperType); //Reset if the new super type causes a loop
+                cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
                 throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(getName(), Schema.EdgeLabel.SUB.getLabel()));
             }
 
@@ -400,7 +382,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
 
         //Update the internal cache of role types played
-        updateCachedValue(cachedPlaysRoles, () -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE)).add(roleType);
+        cachedPlaysRoles.get().add(roleType);
 
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
@@ -432,7 +414,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public T deletePlaysRole(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
-        cachedPlaysRoles.map(set -> set.remove(roleType));
+        if(cachedPlaysRoles.isPresent()) cachedPlaysRoles.get().remove(roleType);
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
         //Add castings to tracking to make sure they can still be played.
@@ -461,7 +443,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public T setAbstract(Boolean isAbstract) {
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract) getGraknGraph().getConceptLog().trackConceptForValidation(this);
-        cachedIsAbstract = Optional.of(isAbstract);
+        cachedIsAbstract.set(isAbstract);
         return getThis();
     }
 

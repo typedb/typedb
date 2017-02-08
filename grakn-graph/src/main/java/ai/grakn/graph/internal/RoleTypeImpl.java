@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -51,8 +50,8 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private Optional<Set<Type>> cachedDirectPlayedByTypes = Optional.empty();
-    private Optional<Set<RelationType>> cachedRelationTypes = Optional.empty();
+    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -72,7 +71,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<RelationType> relationTypes() {
-        return Collections.unmodifiableCollection(updateCachedValue(cachedRelationTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE)));
+        return Collections.unmodifiableCollection(cachedRelationTypes.get());
     }
 
     /**
@@ -82,8 +81,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @param newRelationType The new relation type to cache in the role.
      */
     void addCachedRelationType(RelationType newRelationType){
-        relationTypes();//Called to make sure the current relation types have been cached.
-        cachedRelationTypes.map(set -> set.add(newRelationType));
+        cachedRelationTypes.get().add(newRelationType);
     }
 
     /**
@@ -93,7 +91,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @param oldRelationType The new relation type to cache in the role.
      */
     void deleteCachedRelationType(RelationType oldRelationType){
-        cachedRelationTypes.map(set -> set.remove(oldRelationType));
+        if(cachedRelationTypes.isPresent()) cachedRelationTypes.get().remove(oldRelationType);
     }
 
     /**
@@ -108,16 +106,15 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     }
 
     private Set<Type> directPlayedByTypes(){
-        return updateCachedValue(cachedDirectPlayedByTypes, () -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+        return cachedDirectPlayedByTypes.get();
     }
 
     void addCachedDirectPlaysByType(Type newType){
-        directPlayedByTypes();//Called to make sure the current children have been cached
-        cachedDirectPlayedByTypes.map(set -> set.add(newType));
+        cachedDirectPlayedByTypes.get().add(newType);
     }
 
     void deleteCachedDirectPlaysByType(Type oldType){
-        cachedDirectPlayedByTypes.map(set -> set.remove(oldType));
+        if(cachedDirectPlayedByTypes.isPresent()) cachedDirectPlayedByTypes.get().remove(oldType);
     }
 
     /**
