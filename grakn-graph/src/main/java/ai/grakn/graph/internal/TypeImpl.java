@@ -156,6 +156,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedSuperType.clear();
             cachedDirectSubTypes.clear();
             cachedDirectPlaysRoles.clear();
+
+            //Clear Global Cache
+            getGraknGraph().getConceptLog().removeConcept(this);
         }
     }
 

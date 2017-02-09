@@ -65,6 +65,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.sun.corba.se.impl.util.RepositoryId.cache;
@@ -260,7 +261,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    public Set<ConceptImpl> getConcepts(Schema.ConceptProperty key, Object value){
+    private Set<ConceptImpl> getConcepts(Schema.ConceptProperty key, Object value){
         Set<ConceptImpl> concepts = new HashSet<>();
         getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> {
@@ -270,7 +271,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
 
-    public ConceptLog getConceptLog() {
+    ConceptLog getConceptLog() {
         ConceptLog conceptLog = localConceptLog.get();
         if(conceptLog == null){
             localConceptLog.set(conceptLog = new ConceptLog());
@@ -318,9 +319,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> getElementFactory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <V extends Type> V putType(TypeName name, Schema.BaseType baseType, Function<Vertex, V> factory){
+    private <T extends Type> T putType(TypeName name, Schema.BaseType baseType, Function<Vertex, T> factory){
         checkOntologyMutation();
-        return factory.apply(putVertex(name, baseType));
+        return buildType(name, () -> factory.apply(putVertex(name, baseType)));
+    }
+
+    /**
+     * A helper method which either retrieves the type from the cache or builds it using a provided supplier
+     *
+     * @param name The name of the type to retrieve or build
+     * @param dbBuilder A method which builds the type via a DB read or write
+     *
+     * @return The type which was either cached or built via a DB read or write
+     */
+    private <T extends Type> T buildType(TypeName name, Supplier<T> dbBuilder){
+        if(getConceptLog().isTypeCached(name)){
+            return getConceptLog().getCachedType(name);
+        } else {
+            return dbBuilder.get();
+        }
     }
 
     @Override
@@ -409,10 +426,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        return getConcept(Schema.ConceptProperty.ID, id.getValue());
+        if(getConceptLog().isConceptCached(id)){
+            return getConceptLog().getCachedConcept(id);
+        } else {
+            return getConcept(Schema.ConceptProperty.ID, id.getValue());
+        }
     }
     private <T extends Type> T getTypeByName(TypeName name){
-        return getConcept(Schema.ConceptProperty.NAME, name.getValue());
+        return buildType(name, ()->getConcept(Schema.ConceptProperty.NAME, name.getValue()));
     }
 
     @Override

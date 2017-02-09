@@ -20,6 +20,8 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +48,7 @@ public class ConceptLog {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
+    private final Map<TypeName, TypeImpl> typeCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
     private final Set<ConceptImpl> modifiedConcepts;
@@ -129,11 +132,15 @@ public class ConceptLog {
      *
      * @param concept The concept to nio longer track
      */
+    @SuppressWarnings("SuspiciousMethodCalls")
     void removeConcept(ConceptImpl concept){
         modifiedConcepts.remove(concept);
         modifiedCastings.remove(concept);
         modifiedResources.remove(concept);
         conceptCache.remove(concept.getId());
+        if(concept.isType()){
+            typeCache.remove(((TypeImpl) concept).getName());
+        }
     }
 
     /**
@@ -152,15 +159,29 @@ public class ConceptLog {
      */
     void cacheConcept(ConceptImpl concept){
         conceptCache.put(concept.getId(), concept);
+        if(concept.isType()){
+            TypeImpl type = (TypeImpl) concept;
+            typeCache.put(type.getName(), type);
+        }
     }
 
     /**
      * Checks if the concept has been built before and is currently cached
      *
      * @param id The id of the concept
+     * @return true if the concept is cached
      */
     boolean isConceptCached(ConceptId id){
         return conceptCache.containsKey(id);
+    }
+
+    /**
+     *
+     * @param name The name of the type to cache
+     * @return true if the concept is cached
+     */
+    boolean isTypeCached(TypeName name){
+        return typeCache.containsKey(name);
     }
 
     /**
@@ -173,5 +194,17 @@ public class ConceptLog {
     <X extends Concept> X getCachedConcept(ConceptId id){
         //noinspection unchecked
         return (X) conceptCache.get(id);
+    }
+
+    /**
+     * Returns a previously built type
+     *
+     * @param name The name of the type
+     * @param <X> The type of the type
+     * @return The cached type
+     */
+    <X extends Type> X getCachedType(TypeName name){
+        //noinspection unchecked
+        return (X) typeCache.get(name);
     }
 }
