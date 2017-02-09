@@ -927,6 +927,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 }
             }
 
+            getConceptLog().removeConcept(otherCasting);
             getTinkerPopGraph().traversal().V(otherCasting.getId().getRawValue()).next().remove();
         }
 
