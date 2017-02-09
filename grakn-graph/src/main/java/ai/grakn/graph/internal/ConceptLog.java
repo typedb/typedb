@@ -79,6 +79,9 @@ public class ConceptLog {
         modifiedResources.clear();
         modifiedRelations.clear();
         conceptCache.clear();
+        typeCache.clear();
+
+        //TODO: Reload Types Back In From Central Cache
     }
 
     /**
