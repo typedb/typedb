@@ -742,9 +742,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(Collectors.toSet());
 
 
-        LOG.debug("Graph is valid. Committing graph . . . ");
+        LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransaction();
-        LOG.debug("Graph committed.");
+        LOG.trace("Graph committed.");
         getConceptLog().clearTransaction();
 
         //No post processing should ever be done for the system keyspace

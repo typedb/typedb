@@ -53,6 +53,7 @@ import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_URI;
 import static java.lang.Long.parseLong;
+import static java.lang.String.format;
 import static java.time.Instant.ofEpochMilli;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.get;
@@ -127,15 +128,15 @@ public class TasksController {
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
-        try {
-            String id = request.params(ID_PARAMETER);
+        String id = request.params(ID_PARAMETER);
 
+        try {
             response.status(200);
             response.type("application/json");
 
             return serialiseStateFull(manager.storage().getState(id)).toString();
         } catch (EngineStorageException e){
-           throw new GraknEngineServerException(404, e);
+           throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }

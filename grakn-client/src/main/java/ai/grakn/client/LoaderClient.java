@@ -50,6 +50,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
@@ -224,7 +225,7 @@ public class LoaderClient {
     private CompletableFuture<Json> executePost(String body){
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(String.format(POST, uri) + "?" + getPostParams());
+            URL url = new URL(format(POST, uri) + "?" + getPostParams());
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
@@ -261,7 +262,7 @@ public class LoaderClient {
     private Json getStatus(String id){
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(String.format(GET, uri, id));
+            URL url = new URL(format(GET, uri, id));
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
@@ -301,13 +302,17 @@ public class LoaderClient {
                     if (status == COMPLETED || status == FAILED || status == STOPPED) {
                         return taskState;
                     }
-
-                    Thread.sleep(1000);
                 } catch (IllegalArgumentException e){
                    // Means the task has not yet been stored: we want to log the error, but continue looping
-                    LOG.debug(getFullStackTrace(e));
+                    LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
                 } catch (Throwable t) {
                     throw new RuntimeException(t);
+                } finally {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         });
