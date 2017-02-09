@@ -22,6 +22,7 @@ import ai.grakn.engine.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -123,8 +124,16 @@ public class PostProcessing {
     private void performCastingFix() {
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
+                Set<String> completedJobs = new HashSet<>();
                 cache.getCastingJobs(keyspace).
-                        forEach((index, ids) -> futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, index, ids))));
+                        forEach((index, ids) -> {
+                            if(ids.isEmpty()) {
+                                completedJobs.add(index);
+                            }else{
+                                futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, index, ids)));
+                            }
+                        });
+                completedJobs.forEach(index -> cache.clearJobSetCastings(keyspace, index));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
@@ -134,8 +143,16 @@ public class PostProcessing {
     private void performResourceFix(){
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
+                Set<String> completedJobs = new HashSet<>();
                 cache.getResourceJobs(keyspace).
-                        forEach((index, ids) -> futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids))));
+                        forEach((index, ids) -> {
+                            if(ids.isEmpty()) {
+                                completedJobs.add(index);
+                            } else {
+                                futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids)));
+                            }
+                        });
+                completedJobs.forEach(index -> cache.clearJobSetResources(keyspace, index));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
