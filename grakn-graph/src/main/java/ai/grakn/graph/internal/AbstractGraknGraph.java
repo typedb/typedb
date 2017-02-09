@@ -322,7 +322,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private <T extends Type> T putType(TypeName name, Schema.BaseType baseType, Function<Vertex, T> factory){
         checkOntologyMutation();
         Type type = buildType(name, () -> factory.apply(putVertex(name, baseType)));
-        return validateConceptType(type, baseType, () -> {throw new ConceptNotUniqueException(type, name.getValue());});
+        return validateConceptType(type, baseType, () -> {
+            throw new ConceptNotUniqueException(type, name.getValue());
+        });
     }
 
     private <T extends Concept> T validateConceptType(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler){
