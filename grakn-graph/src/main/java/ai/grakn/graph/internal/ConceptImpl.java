@@ -483,7 +483,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The base ttpe of this concept which helps us identify the concept
      */
     public String getBaseType(){
-        return vertex.label();
+        return getVertex().label();
     }
 
     /**
@@ -503,7 +503,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     protected Set<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
         Set<EdgeImpl> edges = new HashSet<>();
-        vertex.edges(direction, type.getLabel()).
+        getVertex().edges(direction, type.getLabel()).
                 forEachRemaining(e -> edges.add(new EdgeImpl(e, getGraknGraph())));
         return edges;
     }
@@ -553,7 +553,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The edge created
      */
     public EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), graknGraph);
+        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()), graknGraph);
     }
 
     /**
@@ -562,7 +562,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type The type of the edges to retrieve
      */
     void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        vertex.edges(direction, type.getLabel()).forEachRemaining(Element::remove);
+        getVertex().edges(direction, type.getLabel()).forEachRemaining(Element::remove);
     }
 
     /**
@@ -579,7 +579,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     private Edge addEdgeFrom(Vertex fromVertex, String type) {
-        return fromVertex.addEdge(type, vertex);
+        return fromVertex.addEdge(type, getVertex());
     }
 
 
