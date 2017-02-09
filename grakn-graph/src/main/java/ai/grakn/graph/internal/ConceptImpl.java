@@ -90,13 +90,13 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     private T setProperty(String key, Object value){
         if(value == null) {
-            vertex.property(key).remove();
+            getVertex().property(key).remove();
         } else {
-            VertexProperty<Object> foundProperty = vertex.property(key);
+            VertexProperty<Object> foundProperty = getVertex().property(key);
             if(foundProperty.isPresent() && foundProperty.value().equals(value)){
                return getThis();
             } else {
-                vertex.property(key, value);
+                getVertex().property(key, value);
             }
         }
         return getThis();
@@ -108,7 +108,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getGraknGraph().getElementFactory().buildConcept(vertex);
+        ConceptImpl properType = getGraknGraph().getElementFactory().buildConcept(getVertex());
         properType.innerDelete(); //This will execute the proper deletion method.
     }
 
@@ -150,7 +150,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     void deleteNode(){
         // tracking
-        vertex.edges(Direction.BOTH).
+        getVertex().edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
                             graknGraph.getConceptLog().trackConceptForValidation(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
@@ -158,7 +158,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
                 );
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
-        vertex.remove();
+        getVertex().remove();
     }
 
     /**
@@ -456,7 +456,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The value stored in the property
      */
     public <X> X getProperty(Schema.ConceptProperty key){
-        VertexProperty<X> property = vertex.property(key.name());
+        VertexProperty<X> property = getVertex().property(key.name());
         if(property != null && property.isPresent()) {
             return property.value();
         }
