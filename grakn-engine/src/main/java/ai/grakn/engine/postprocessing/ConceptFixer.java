@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
@@ -61,14 +61,14 @@ class ConceptFixer {
      * Main method which attempts to run all post processing jobs.
      *
      * @param postProcessor The post processing job.
-     *                      Either {@link ConceptFixer#runResourceFix(EngineGraknGraph, Set)} or
-     *                      {@link ConceptFixer#runCastingFix(EngineGraknGraph, Set)}.
+     *                      Either {@link ConceptFixer#runResourceFix(GraknGraph, Set)} or
+     *                      {@link ConceptFixer#runCastingFix(GraknGraph, Set)}.
      *                      This then returns a function which will complete the job after going through validation
      * @param keyspace The keyspace to post process against.
      * @param conceptIndex The unique index of the concept which must exist at the end
      * @param conceptIds The conceptIds which effectively need to be merged.
      */
-    private static void runPostProcessingJob(BiFunction<EngineGraknGraph, Set<ConceptId>, BiConsumer<EngineCacheImpl, String>> postProcessor,
+    private static void runPostProcessingJob(BiFunction<GraknGraph, Set<ConceptId>, BiConsumer<EngineCache, String>> postProcessor,
                                                 String keyspace, String conceptIndex, Set<ConceptId> conceptIds){
         String jobId = UUID.randomUUID().toString();
         boolean notDone = true;
@@ -76,10 +76,10 @@ class ConceptFixer {
 
         while (notDone) {
             //Try to Fix the job
-            try(EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
+            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
 
                 //Perform the fix
-                BiConsumer<EngineCacheImpl, String> jobFinaliser = postProcessor.apply(graph, conceptIds);
+                BiConsumer<EngineCache, String> jobFinaliser = postProcessor.apply(graph, conceptIds);
 
                 //Check if the fix worked
                 validateMerged(graph, conceptIndex, conceptIds).
@@ -88,10 +88,10 @@ class ConceptFixer {
                         });
 
                 //Commit the fix
-                graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
+                graph.admin().commitNoLogs();
 
                 //Finally clear the cache
-                jobFinaliser.accept(EngineCacheImpl.getInstance(), conceptIndex);
+                jobFinaliser.accept(EngineCache.getInstance(), conceptIndex);
 
                 return; //If it can get here. All post processing has succeeded.
 
@@ -121,7 +121,7 @@ class ConceptFixer {
      * @param conceptIds The concpet ids which should only return 1 valid concept
      * @return An error if one of the above rules are not satisfied.
      */
-    private static Optional<String> validateMerged(EngineGraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
+    private static Optional<String> validateMerged(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
         //Check number of valid concept Ids
         int numConceptFound = 0;
         for (ConceptId conceptId : conceptIds) {
@@ -136,23 +136,23 @@ class ConceptFixer {
         }
 
         //Check index
-        if(graph.getConcept(Schema.ConceptProperty.INDEX, conceptIndex) == null){
+        if(graph.admin().getConcept(Schema.ConceptProperty.INDEX, conceptIndex) == null){
             return Optional.of("The concept index [" + conceptIndex + "] did not return any concept");
         }
 
         return Optional.empty();
     }
 
-    private static BiConsumer<EngineCacheImpl, String> runResourceFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
-        graph.fixDuplicateResources(conceptIds);
+    private static BiConsumer<EngineCache, String> runResourceFix(GraknGraph graph, Set<ConceptId> conceptIds) {
+        graph.admin().fixDuplicateResources(conceptIds);
         return (cache, index) -> {
             conceptIds.forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));
             cache.clearJobSetResources(graph.getKeyspace(), index);
         };
     }
 
-    private static BiConsumer<EngineCacheImpl, String> runCastingFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
-        graph.fixDuplicateCastings(conceptIds);
+    private static BiConsumer<EngineCache, String> runCastingFix(GraknGraph graph, Set<ConceptId> conceptIds) {
+        graph.admin().fixDuplicateCastings(conceptIds);
         return (cache, index) -> {
             conceptIds.forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));
             cache.clearJobSetCastings(graph.getKeyspace(), index);

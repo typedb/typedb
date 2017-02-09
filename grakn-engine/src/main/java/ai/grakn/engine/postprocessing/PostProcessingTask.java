@@ -43,7 +43,7 @@ public class PostProcessingTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final ConfigProperties properties = ConfigProperties.getInstance();
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
-    private static final EngineCacheImpl cache = EngineCacheImpl.getInstance();
+    private static final EngineCache cache = EngineCache.getInstance();
 
     private static final long timeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
