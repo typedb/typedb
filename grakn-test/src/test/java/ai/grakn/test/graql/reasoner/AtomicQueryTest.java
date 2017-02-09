@@ -170,6 +170,18 @@ public class AtomicQueryTest {
         assertEquals(answers, permutedAnswers);
     }
 
+    @Test
+    public void testReifiedRelation(){
+        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
+        String patternString2 = "{($x, $y) has-role geo-entity;}";
+        GraknGraph graph = geoGraph.graph();
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
+        assertEquals(query.getAtom().isUserDefinedName(), false);
+        assertEquals(query2.getAtom().isUserDefinedName(), true);
+    }
 
     private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
         Set<VarAdmin> vars = pattern

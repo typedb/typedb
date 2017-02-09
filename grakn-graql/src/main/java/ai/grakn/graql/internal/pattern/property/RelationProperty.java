@@ -303,7 +303,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
-        boolean isReified = var.hasProperty(IsaProperty.class)? var.getProperties().count() > 2 : var.getProperties().count() > 1;
+        boolean isReified = var.getProperties()
+                .filter(prop -> !RelationProperty.class.isInstance(prop))
+                .filter(prop -> !IsaProperty.class.isInstance(prop))
+                .count() > 0;
         Var relVar = (var.isUserDefinedName() || isReified)? Graql.var(var.getVarName()) : Graql.var();
         Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
         relationPlayers.forEach(rp -> {
