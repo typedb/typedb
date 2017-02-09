@@ -33,6 +33,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -58,6 +60,8 @@ import java.util.stream.Collectors;
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
+    protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
+
     private TypeName cachedTypeName;
     private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
@@ -67,7 +71,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        getName();//This is called to ensure the cachedTypeName is loaded.
+        cachedTypeName = TypeName.of(v.value(Schema.ConceptProperty.NAME.name()));
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
@@ -94,6 +98,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
         return producer.apply(instanceVertex, getThis());
+    }
+
+    @Override
+    Vertex getVertex(){
+        LOG.debug("Caching failure for Type [" + getName() + "] on graph " + getGraknGraph().getKeyspace() + "]. Looking up property using vertex directly.");
+        return super.getVertex();
     }
 
     /**
@@ -503,9 +513,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public TypeName getName() {
-        if(cachedTypeName == null){
-            cachedTypeName = TypeName.of(getProperty(Schema.ConceptProperty.NAME));
-        }
         return cachedTypeName;
     }
 
