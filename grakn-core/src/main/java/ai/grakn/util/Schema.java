@@ -18,6 +18,16 @@
 
 package ai.grakn.util;
 
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 
 /**
@@ -101,7 +111,30 @@ public final class Schema {
      * Base Types reflecting the possible objects in the concept
      */
     public enum BaseType {
-        RELATION, CASTING, TYPE, ROLE_TYPE, RELATION_TYPE, RESOURCE_TYPE, ENTITY, RESOURCE, RULE, RULE_TYPE, ENTITY_TYPE
+        //Types
+        TYPE(Type.class),
+        ROLE_TYPE(RoleType.class),
+        RELATION_TYPE(RelationType.class),
+        RESOURCE_TYPE(ResourceType.class),
+        ENTITY_TYPE(EntityType.class),
+        RULE_TYPE(RuleType.class),
+
+        //Instances
+        RELATION(Relation.class),
+        CASTING(Instance.class),
+        ENTITY(Entity.class),
+        RESOURCE(Resource.class),
+        RULE(Rule.class);
+
+        private final Class classType;
+
+        BaseType(Class classType){
+            this.classType = classType;
+        }
+
+        public Class getClassType(){
+            return classType;
+        }
     }
 
     /**

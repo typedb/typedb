@@ -321,7 +321,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private <T extends Type> T putType(TypeName name, Schema.BaseType baseType, Function<Vertex, T> factory){
         checkOntologyMutation();
-        return buildType(name, () -> factory.apply(putVertex(name, baseType)));
+        Type type = buildType(name, () -> factory.apply(putVertex(name, baseType)));
+        return validateConceptType(type, baseType, () -> {throw new ConceptNotUniqueException(type, name.getValue());});
+    }
+
+    private <T extends Concept> T validateConceptType(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler){
+        if(concept != null && baseType.getClassType().isInstance(concept)){
+            //noinspection unchecked
+            return (T) concept;
+        } else {
+            return invalidHandler.get();
+        }
     }
 
     /**
@@ -332,7 +342,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private <T extends Type> T buildType(TypeName name, Supplier<T> dbBuilder){
+    private Type buildType(TypeName name, Supplier<Type> dbBuilder){
         if(getConceptLog().isTypeCached(name)){
             return getConceptLog().getCachedType(name);
         } else {
@@ -408,13 +418,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------ Lookup
-    @SuppressWarnings("unchecked")
-    private <T extends Concept> T validConceptOfType(Concept concept, Class type){
-        if(concept != null &&  type.isInstance(concept)){
-            return (T) concept;
-        }
-        return null;
-    }
     public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
         if (traversal.hasNext()) {
@@ -432,8 +435,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return getConcept(Schema.ConceptProperty.ID, id.getValue());
         }
     }
-    private <T extends Type> T getTypeByName(TypeName name){
-        return buildType(name, ()->getConcept(Schema.ConceptProperty.NAME, name.getValue()));
+    private <T extends Type> T getTypeByName(TypeName name, Schema.BaseType baseType){
+        Type type = buildType(name, ()->getConcept(Schema.ConceptProperty.NAME, name.getValue()));
+        return validateConceptType(type, baseType, () -> null);
     }
 
     @Override
@@ -443,8 +447,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         getConcepts(dataType.getConceptProperty(), value).forEach(concept -> {
             if(concept != null && concept.isResource()) {
-                Concept resource = validConceptOfType(concept, ResourceImpl.class);
-                resources.add(resource.asResource());
+                //noinspection unchecked
+                resources.add(concept.asResource());
             }
         });
 
@@ -453,72 +457,72 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <T extends Type> T getType(TypeName name) {
-        return validConceptOfType(getTypeByName(name), TypeImpl.class);
+        return getTypeByName(name, Schema.BaseType.TYPE);
     }
 
     @Override
     public EntityType getEntityType(String name) {
-        return validConceptOfType(getTypeByName(TypeName.of(name)), EntityTypeImpl.class);
+        return getTypeByName(TypeName.of(name), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
     public RelationType getRelationType(String name) {
-        return validConceptOfType(getTypeByName(TypeName.of(name)), RelationTypeImpl.class);
+        return getTypeByName(TypeName.of(name), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override
     public <V> ResourceType<V> getResourceType(String name) {
-        return validConceptOfType(getTypeByName(TypeName.of(name)), ResourceTypeImpl.class);
+        return getTypeByName(TypeName.of(name), Schema.BaseType.RESOURCE_TYPE);
     }
 
     @Override
     public RoleType getRoleType(String name) {
-        return validConceptOfType(getTypeByName(TypeName.of(name)), RoleTypeImpl.class);
+        return getTypeByName(TypeName.of(name), Schema.BaseType.ROLE_TYPE);
     }
 
     @Override
     public RuleType getRuleType(String name) {
-        return validConceptOfType(getTypeByName(TypeName.of(name)), RuleTypeImpl.class);
+        return getTypeByName(TypeName.of(name), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public Type getMetaConcept() {
-        return getTypeByName(Schema.MetaSchema.CONCEPT.getName());
+        return getTypeByName(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
     }
 
     @Override
     public RelationType getMetaRelationType() {
-        return getTypeByName(Schema.MetaSchema.RELATION.getName());
+        return getTypeByName(Schema.MetaSchema.RELATION.getName(), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override
     public RoleType getMetaRoleType() {
-        return getTypeByName(Schema.MetaSchema.ROLE.getName());
+        return getTypeByName(Schema.MetaSchema.ROLE.getName(), Schema.BaseType.ROLE_TYPE);
     }
 
     @Override
     public ResourceType getMetaResourceType() {
-        return getTypeByName(Schema.MetaSchema.RESOURCE.getName());
+        return getTypeByName(Schema.MetaSchema.RESOURCE.getName(), Schema.BaseType.RESOURCE_TYPE);
     }
 
     @Override
     public EntityType getMetaEntityType() {
-        return getTypeByName(Schema.MetaSchema.ENTITY.getName());
+        return getTypeByName(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleType(){
-        return getTypeByName(Schema.MetaSchema.RULE.getName());
+        return getTypeByName(Schema.MetaSchema.RULE.getName(), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getTypeByName(Schema.MetaSchema.INFERENCE_RULE.getName()).asRuleType();
+        return getTypeByName(Schema.MetaSchema.INFERENCE_RULE.getName(), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getTypeByName(Schema.MetaSchema.CONSTRAINT_RULE.getName()).asRuleType();
+        return getTypeByName(Schema.MetaSchema.CONSTRAINT_RULE.getName(), Schema.BaseType.RULE_TYPE);
     }
 
     //-----------------------------------------------Casting Functionality----------------------------------------------
