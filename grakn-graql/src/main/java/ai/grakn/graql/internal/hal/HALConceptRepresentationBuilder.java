@@ -153,9 +153,10 @@ public class HALConceptRepresentationBuilder {
             firstRole = (roleTypes.get(otherVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
         }
 
-        String isaString = (relationType.isPresent()) ? "isa " + relationType.map(StringConverter::typeNameToString) : "";
+        String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeNameToString(relationType.get()) : "";
+
         String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString);
-        currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(assertionID, relationType));
+        currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(firstID,secondID,assertionID, relationType));
     }
 
     private static Map<VarName, Collection<VarAdmin>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
