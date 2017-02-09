@@ -814,7 +814,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean fixDuplicateCastings(Set<ConceptId> castingVertexIds){
         Set<CastingImpl> castings = castingVertexIds.stream().
                 map(id -> this.<CastingImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
-        if(castings.size() > 1){
+        if(castings.size() >= 1){
             //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
             CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX,castings.iterator().next().getIndex(), true);
             castings.remove(mainCasting);
@@ -914,7 +914,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         Set<ResourceImpl> duplicates = resourceVertexIds.stream().
                 map(id -> this.<ResourceImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
 
-        if(duplicates.size() > 1){
+        if(duplicates.size() >= 1){
             //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
             ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, duplicates.iterator().next().getIndex(), true);
             duplicates.remove(mainResource);
