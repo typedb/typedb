@@ -110,7 +110,6 @@ public class VisualiserControllerTest {
                 .then().statusCode(200).extract().response().andReturn();
 
         Json resultArray = Json.read(response.getBody().asString());
-        System.out.println(response.getBody().asString());
 
         //Asking for 10 relations that have 2 role-players each will give us an array of 20 nodes to show in the visualiser.
         assertEquals(20, resultArray.asJsonList().size());
@@ -124,6 +123,51 @@ public class VisualiserControllerTest {
                 mappedEmbedded.get(key).asJsonList().forEach(element -> {
                     if (element.at("_baseType").asString().equals("generated-relation")) {
                         assertFalse(element.at("_links").at("self").at("href").asString().contains("isa"));
+                    }
+                });
+
+            });
+        });
+    }
+
+    //Check that a generated relation _id contains role players' IDs.
+    @Test
+    public void checkGeneratedRelationId() {
+        Response firstResponse = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .queryParam(QUERY_FIELD, "match ($x, $y) isa event-protagonist; limit 1;")
+                .accept(HAL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+
+        Json resultArray = Json.read(firstResponse.getBody().asString());
+        Json firstRolePlayer = resultArray.at(0);
+        String firstRolePlayerId = firstRolePlayer.at("_id").asString();
+
+        Json secondRolePlayer = resultArray.at(1);
+        String secondRolePlayerId = secondRolePlayer.at("_id").asString();
+
+
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .queryParam(QUERY_FIELD, "match $x id \""+firstRolePlayerId+"\"; $y id \""+secondRolePlayerId+"\"; ($x,$y); limit 1;")
+                .accept(HAL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+
+        Json secondResultArray = Json.read(response.getBody().asString());
+
+        //Asking for 1 relation that have 2 role-players each will give us an array of 2 nodes to show in the visualiser.
+        assertEquals(2, secondResultArray.asJsonList().size());
+
+        secondResultArray.asJsonList().forEach(rolePlayer -> {
+            Map<String, Json> mappedEmbedded = rolePlayer.at("_embedded").asJsonMap();
+            //Loop through map containing Json arrays associated to embedded key
+            mappedEmbedded.keySet().forEach(key -> {
+                //Foreach element of the json array we check if it is a generated relation
+                mappedEmbedded.get(key).asJsonList().forEach(element -> {
+                    if (element.at("_baseType").asString().equals("generated-relation")) {
+                        assertEquals(element.at("_id").getValue(),"temp-assertion-"+firstRolePlayerId+secondRolePlayerId);
                     }
                 });
 
