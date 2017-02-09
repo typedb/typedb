@@ -51,14 +51,20 @@ import static ai.grakn.graql.Graql.var;
  */
 public class Reasoner {
 
+    private static int commitFrequency = 50;
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
-    private static void commitGraph(GraknGraph graph) {
+
+    public static void commitGraph(GraknGraph graph) {
         try {
             graph.commit();
         } catch (GraknValidationException e) {
             LOG.error(e.getMessage());
         }
     }
+
+    public static void setCommitFrequency(int freq){ commitFrequency = freq;}
+    public static int getCommitFrequency(){ return commitFrequency;}
+
     private static void linkConceptTypes(GraknGraph graph, Rule rule) {
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(rule.getLHS());
@@ -132,6 +138,5 @@ public class Reasoner {
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
-        commitGraph(graph);
     }
 }

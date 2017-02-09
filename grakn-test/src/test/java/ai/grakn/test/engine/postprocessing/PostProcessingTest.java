@@ -28,7 +28,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -46,7 +46,7 @@ import static ai.grakn.test.GraknTestEnv.*;
 
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private EngineCacheImpl cache = EngineCacheImpl.getInstance();
+    private EngineCache cache = EngineCache.getInstance();
 
     private GraknGraph graph;
 

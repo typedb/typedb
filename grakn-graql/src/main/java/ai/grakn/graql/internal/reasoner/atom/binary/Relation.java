@@ -47,15 +47,15 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.List;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -561,7 +561,7 @@ public class Relation extends TypeAtom {
             }
         });
 
-        Collection<RoleType> rolesToAllocate = relType.hasRoles();
+        Collection<RoleType> rolesToAllocate = new HashSet<>(relType.hasRoles());
         //remove sub and super roles of allocated roles
         allocatedRoles.forEach(role -> {
             RoleType topRole = getNonMetaTopRole(role);
@@ -598,14 +598,16 @@ public class Relation extends TypeAtom {
     /**
      * @return map of role variable - role type from a predicate
      */
+    @SuppressWarnings("unchecked")
     private Map<RoleType, VarName> getIndirectRoleMap() {
         GraknGraph graph = getParentQuery().graph();
-        return getRelationPlayers().stream()
+        Object result = getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(e -> graph.getConcept(e.getValue().getPredicate()), e -> e.getKey().getVarName()));
+        return (Map<RoleType, VarName>)result;
     }
 
     //varsToAllocate <= childBVs

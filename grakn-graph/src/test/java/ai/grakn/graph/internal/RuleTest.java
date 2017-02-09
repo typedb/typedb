@@ -91,7 +91,7 @@ public class RuleTest extends GraphTestBase{
     public void testAddHypothesis() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
         Rule rule = conceptType.addRule(lhs, rhs);
-        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(rule.getId().getRawValue()).next();
         Type type1 = graknGraph.putEntityType("A Concept Type 1");
         Type type2 = graknGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
@@ -103,7 +103,7 @@ public class RuleTest extends GraphTestBase{
     public void testAddConclusion() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
         Rule rule = conceptType.addRule(lhs, rhs);
-        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(rule.getId().getRawValue()).next();
         Type type1 = graknGraph.putEntityType("A Concept Type 1");
         Type type2 = graknGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.CONCLUSION.getLabel()).hasNext());

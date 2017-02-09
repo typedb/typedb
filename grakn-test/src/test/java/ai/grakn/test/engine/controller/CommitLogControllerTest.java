@@ -26,7 +26,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.EngineContext;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 
 public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
-    private final EngineCacheImpl cache = EngineCacheImpl.getInstance();
+    private final EngineCache cache = EngineCache.getInstance();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startDistributedServer();

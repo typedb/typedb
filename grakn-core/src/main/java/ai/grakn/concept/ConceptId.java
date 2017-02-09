@@ -33,19 +33,31 @@ import java.io.Serializable;
  * @author fppt
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
-    private String conceptId;
+    private Object conceptId;
 
-    private ConceptId(String conceptId){
+    private ConceptId(Object conceptId){
         this.conceptId = conceptId;
     }
 
+    /**
+     *
+     * @return Used for indexing purposes and for graql traversals
+     */
     public String getValue(){
+        return conceptId.toString();
+    }
+
+    /**
+     *
+     * @return the raw vertex id. This is used for traversing across vertices directly.
+     */
+    public Object getRawValue(){
         return conceptId;
     }
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof ConceptId && ((ConceptId) object).getValue().equals(conceptId);
+        return object instanceof ConceptId && ((ConceptId) object).getValue().equals(getValue());
     }
 
     @Override
@@ -55,12 +67,12 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     @Override
     public String toString(){
-        return conceptId;
+        return getValue();
     }
 
     @Override
     public int hashCode(){
-        return conceptId.hashCode();
+        return getValue().hashCode();
     }
 
     /**
@@ -68,7 +80,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      * @param value The string which potentially represents a Concept
      * @return The matching concept ID
      */
-    public static ConceptId of(String value){
+    public static ConceptId of(Object value){
         return new ConceptId(value);
     }
 }

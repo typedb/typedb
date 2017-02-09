@@ -18,6 +18,9 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,9 +43,20 @@ import java.util.stream.Collectors;
  *
  */
 public class ConceptLog {
-    private Set<ConceptImpl> modifiedConcepts;
+
+    //Caches any concept which has been touched before
+    private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
+
+    //We Track Modified Concepts For Validation
+    private final Set<ConceptImpl> modifiedConcepts;
+
+    //We Track Casting Explicitly For Post Processing
     private final Set<CastingImpl> modifiedCastings;
+
+    //We Track Resource Explicitly for Post Processing
     private final Set<ResourceImpl> modifiedResources;
+
+    //We Track Relations so that we can look them up before they are completely defined and indexed on commit
     private final Map<String, RelationImpl> modifiedRelations;
 
 
@@ -56,18 +70,19 @@ public class ConceptLog {
     /**
      * Removes all the concepts from the transaction tracker
      */
-    public void clearTransaction(){
+    void clearTransaction(){
         modifiedConcepts.clear();
         modifiedCastings.clear();
         modifiedResources.clear();
         modifiedRelations.clear();
+        conceptCache.clear();
     }
 
     /**
      *
      * @param concept The concept to be later validated
      */
-    public void putConcept(ConceptImpl concept) {
+    void trackConceptForValidation(ConceptImpl concept) {
         if (!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
 
@@ -90,16 +105,15 @@ public class ConceptLog {
      *
      * @return All the concepts which have been affected within the transaction in some way
      */
-    public Set<ConceptImpl> getModifiedConcepts () {
-        modifiedConcepts = modifiedConcepts.stream().filter(c -> c != null && c.isAlive()).collect(Collectors.toSet());
-        return modifiedConcepts;
+    Set<ConceptImpl> getModifiedConcepts() {
+        return modifiedConcepts.stream().filter(c -> c != null && c.isAlive()).collect(Collectors.toSet());
     }
 
     /**
      *
      * @return All the castings which have been affected within the transaction in some way
      */
-    public Set<CastingImpl> getModifiedCastings() {
+    Set<CastingImpl> getModifiedCastings() {
         return modifiedCastings.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
     }
 
@@ -107,26 +121,57 @@ public class ConceptLog {
      *
      * @return All the castings which have been affected within the transaction in some way
      */
-    public Set<ResourceImpl> getModifiedResources() {
+    Set<ResourceImpl> getModifiedResources() {
         return modifiedResources.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
     }
 
     /**
      *
-     * @param c The concept to nio longer track
+     * @param concept The concept to nio longer track
      */
-    public void removeConcept(ConceptImpl c){
-        modifiedConcepts.remove(c);
-        modifiedCastings.remove(c);
-        modifiedResources.remove(c);
+    void removeConcept(ConceptImpl concept){
+        modifiedConcepts.remove(concept);
+        modifiedCastings.remove(concept);
+        modifiedResources.remove(concept);
+        conceptCache.remove(concept.getId());
     }
 
     /**
      * Gets a cached relation by index. This way we can find non committed relations quickly.
-     * @param index
+     *
+     * @param index The current index of the relation
      */
-    public RelationImpl getCachedRelation(String index){
+    RelationImpl getCachedRelation(String index){
         return modifiedRelations.get(index);
     }
 
+    /**
+     * Caches a concept so it does not have to be rebuilt later.
+     *
+     * @param concept The concept to be cached.
+     */
+    void cacheConcept(ConceptImpl concept){
+        conceptCache.put(concept.getId(), concept);
+    }
+
+    /**
+     * Checks if the concept has been built before and is currently cached
+     *
+     * @param id The id of the concept
+     */
+    boolean isConceptCached(ConceptId id){
+        return conceptCache.containsKey(id);
+    }
+
+    /**
+     * Returns a previously built concept
+     *
+     * @param id The id of the concept
+     * @param <X> The type of the concept
+     * @return The cached concept
+     */
+    <X extends Concept> X getCachedConcept(ConceptId id){
+        //noinspection unchecked
+        return (X) conceptCache.get(id);
+    }
 }

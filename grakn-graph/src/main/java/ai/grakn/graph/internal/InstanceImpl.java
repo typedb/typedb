@@ -80,10 +80,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getGraknGraph().getConceptLog().putConcept(casting);
+            getGraknGraph().getConceptLog().trackConceptForValidation(casting);
 
             for(RelationImpl relation : relations) {
-                getGraknGraph().getConceptLog().putConcept(relation);
+                getGraknGraph().getConceptLog().trackConceptForValidation(relation);
                 relation.cleanUp();
             }
 
