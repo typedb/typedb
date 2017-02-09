@@ -37,11 +37,9 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graph.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
-import ai.grakn.util.EngineCache;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -69,6 +67,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.sun.corba.se.impl.util.RepositoryId.cache;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 /**
@@ -85,7 +84,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
  *
  * @param <G> A vendor specific implementation of a Tinkerpop {@link Graph}.
  */
-public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin, EngineGraknGraph {
+public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private final String keyspace;
     private final String engine;
@@ -704,16 +703,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     /**
      * Commits the graph and adds concepts for post processing directly to the cache
+     *
+     * @param resourceCache The cache of resource jobs to be executed
+     * @param castingCache The cache of the casting jobs to be executed
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
     @Override
-    public void commit(EngineCache cache) throws GraknValidationException{
+    public void commit(Map<String, Set<ConceptId>> resourceCache, Map<String, Set<ConceptId>> castingCache) throws GraknValidationException{
         commit((castings, resources) -> {
             if(cache != null) {
-                castings.forEach(pair -> cache.addJobCasting(keyspace, pair.getValue0(), pair.getValue1()));
-                resources.forEach(pair -> cache.addJobResource(keyspace, pair.getValue0(), pair.getValue1()));
+                resources.forEach(pair -> resourceCache.computeIfAbsent(pair.getValue0(), key -> new HashSet<>()).add(pair.getValue1()));
+                castings.forEach(pair -> castingCache.computeIfAbsent(pair.getValue0(), key -> new HashSet<>()).add(pair.getValue1()));
             }
         });
+    }
+
+    /**
+     * Commits to the graph without submitting any commit logs.
+     *
+     * @throws GraknValidationException when the graph does not conform to the object concept
+     */
+    @Override
+    public void commitNoLogs() throws GraknValidationException {
+        commit((x, y) -> {});
     }
 
     private void clearLocalVariables(){

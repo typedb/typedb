@@ -25,16 +25,15 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
@@ -115,7 +114,7 @@ public class VisualiserController {
     private String conceptById(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
             if(concept==null) {
@@ -140,7 +139,7 @@ public class VisualiserController {
     private String conceptByIdOntology(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
             return renderHALConceptOntology(concept, keyspace);
         } catch (Exception e) {
@@ -158,7 +157,7 @@ public class VisualiserController {
     private String ontology(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             JSONObject responseObj = new JSONObject();
             responseObj.put(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
             responseObj.put(ENTITIES_JSON_FIELD, instances(graph.admin().getMetaEntityType()));
@@ -185,7 +184,7 @@ public class VisualiserController {
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
         boolean materialise = parseBoolean(req.queryParams("materialise"));
 
-        try (EngineGraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
@@ -214,7 +213,7 @@ public class VisualiserController {
             @ApiImplicitParam(name = "query", value = "Compute query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String compute(Request req, Response res) {
-        try (EngineGraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
+        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
 
             ComputeQuery computeQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
             JSONObject response = new JSONObject();
@@ -249,9 +248,9 @@ public class VisualiserController {
     @ApiOperation(value = "Pre materialise all the rules on the graph.")
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String preMaterialiseAll(Request req, Response res) {
-        try (EngineGraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
+        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
             //TODO: Fix ugly casting here
-            Reasoner.precomputeInferences((GraknGraph) graph);
+            Reasoner.precomputeInferences(graph);
             return "Done.";
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
