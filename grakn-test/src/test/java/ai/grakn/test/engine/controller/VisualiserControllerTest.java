@@ -110,6 +110,7 @@ public class VisualiserControllerTest {
                 .then().statusCode(200).extract().response().andReturn();
 
         Json resultArray = Json.read(response.getBody().asString());
+        System.out.println(response.getBody().asString());
 
         //Asking for 10 relations that have 2 role-players each will give us an array of 20 nodes to show in the visualiser.
         assertEquals(20, resultArray.asJsonList().size());

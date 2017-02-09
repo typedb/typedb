@@ -43,9 +43,9 @@ class HALGeneratedRelation {
         this.factory = new StandardRepresentationFactory();
     }
 
-    Representation getNewGeneratedRelation(String assertionID, Optional<TypeName> relationType) {
+    Representation getNewGeneratedRelation(String firstID, String secondID, String assertionID, Optional<TypeName> relationType) {
         Representation representation = factory.newRepresentation(assertionID)
-                .withProperty(ID_PROPERTY, "temp-assertion")
+                .withProperty(ID_PROPERTY, "temp-assertion-" + firstID + secondID)
                 .withProperty(BASETYPE_PROPERTY, "generated-relation")
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, "");
