@@ -20,7 +20,8 @@ package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.exception.EngineStorageException;
 
 import java.lang.ref.SoftReference;
 import java.util.HashSet;
@@ -59,7 +60,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
     @Override
     public TaskState getState(String id) {
         if(id == null || !storage.containsKey(id)) {
-            return null;
+            throw new EngineStorageException("Could not retrieve id " + id);
         }
 
         return storage.get(id).get();

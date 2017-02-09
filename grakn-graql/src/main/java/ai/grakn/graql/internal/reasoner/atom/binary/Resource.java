@@ -31,7 +31,9 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -105,4 +107,13 @@ public class Resource extends MultiPredicateBinary{
         getMultiPredicate().stream().map(p -> (ValuePredicate) p).forEach(valuePredicates::add);
         return valuePredicates;
     }
+
+    @Override
+    public Set<TypeAtom> getMappedTypeConstraints() {
+        return getTypeConstraints().stream()
+                .filter(t -> t.getVarName().equals(getVarName()))
+                .filter(t -> Objects.nonNull(t.getType()))
+                .collect(Collectors.toSet());
+    }
+
 }

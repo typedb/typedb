@@ -18,7 +18,7 @@
 
 import _ from 'underscore';
 
-import * as API from './APITerms';
+import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
 
 /*
@@ -114,19 +114,19 @@ export default class HALParser {
           this.nodeAlreadyInGraph(HALParser.getHref(child))) {
         const links = Utils.nodeLinks(child);
                 // Add resource and iterate its _embedded field
-        const hrefP = HALParser.getHref(child);
-        const hrefC = HALParser.getHref(parent);
+        const idC = child[API.KEY_ID];
+        const idP = parent[API.KEY_ID];
 
-        this.newResource(hrefP,
+        this.newResource(HALParser.getHref(child),
                         Utils.defaultProperties(child),
                         Utils.extractResources(child), links);
 
         const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
 
         if (Utils.edgeLeftToRight(parent, child)) {
-          this.newRelationship(hrefP, hrefC, edgeLabel);
+          this.newRelationship(idC, idP, edgeLabel);
         } else {
-          this.newRelationship(hrefC, hrefP, edgeLabel);
+          this.newRelationship(idP, idC, edgeLabel);
         }
 
         this.parseHalObject(child);

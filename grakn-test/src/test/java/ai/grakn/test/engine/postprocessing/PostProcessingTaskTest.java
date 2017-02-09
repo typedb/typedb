@@ -28,9 +28,9 @@ import org.junit.Test;
 import java.time.Instant;
 import java.util.Date;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 
 public class PostProcessingTaskTest {
     private StandaloneTaskManager taskManager = new StandaloneTaskManager();
@@ -40,7 +40,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStart() throws Exception {
-        String id= taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), Instant.now(), 0, null);
+        String id= taskManager.createTask(PostProcessingTask.class.getName(), this.getClass().getName(), Instant.now(), 0, null);
         Assert.assertNotEquals(CREATED, taskManager.storage().getState(id).status());
 
         // Wait for supervisor thread to mark task as completed
@@ -59,7 +59,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStop() {
-        String id = taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), Instant.now(), 10000, null);
+        String id = taskManager.createTask(PostProcessingTask.class.getName(), this.getClass().getName(), Instant.now(), 10000, null);
         taskManager.stopTask(id, this.getClass().getName());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(id).status());
     }

@@ -121,6 +121,9 @@ public enum ErrorMessage {
     INSTANCE_OF_ROLE_TYPE("cannot get instances of role type %s"),
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
 
+    AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
+    UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
+
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
@@ -140,7 +143,7 @@ public enum ErrorMessage {
     INSERT_ISA_AND_SUB("cannot insert %s with an isa and a sub"),
     INSERT_NO_DATATYPE("resource type %s must have a datatype defined"),
     INSERT_NO_RESOURCE_RELATION("type %s cannot have resource type %s"),
-    INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
+    INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_TYPE_WITHOUT_NAME("attempted to insert a type without a name"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
@@ -173,7 +176,7 @@ public enum ErrorMessage {
     UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concepts [%s] part of job [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
-    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] "),
+    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host. Message:[%s] \n Transaction string: [%s] "),
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     LOADER_WAIT_TIMEOUT("Exception thrown due to timeout being exceeded while waiting for loading to complete"),
     STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),

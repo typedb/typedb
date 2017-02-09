@@ -23,6 +23,7 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.EngineStorageException;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -43,16 +44,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -81,8 +83,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final ZookeeperConnection connection;
     private final CountDownLatch shutdownLatch;
 
-    private ExecutorService executor;
-    private KafkaConsumer<String, String> consumer;
+    private final ExecutorService executor;
+    private final KafkaConsumer<String, String> consumer;
 
     public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
@@ -112,32 +114,32 @@ public class TaskRunner implements Runnable, AutoCloseable {
                     processRecords(consumer.poll(POLLING_FREQUENCY));
                 }
             }
-        }
-        catch (WakeupException e) {
+        } catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
-        }
-        finally {
-            consumer.commitSync();
-            consumer.close();
-            shutdownLatch.countDown();
+        } catch (Throwable t){
+            LOG.error("Error in TaskRunner poll " + getFullStackTrace(t));
+        } finally {
+            noThrow(consumer::commitSync, "Exception syncing commits while closing in TaskRunner");
+            noThrow(consumer::close, "Exception while closing consumer in TaskRunner");
+            noThrow(shutdownLatch::countDown, "Exception while counting down close latch in TaskRunner");
         }
     }
 
     /**
      * Stop the main loop, causing run() to exit.
+     *
+     * noThrow() functions used here so that if an error occurs during execution of a
+     * certain step, the subsequent stops continue to execute.
      */
     public void close() {
         // Stop execution of kafka consumer
-        consumer.wakeup();
+        noThrow(consumer::wakeup, "Could not wake up task runner thread.");
 
-        try {
-            shutdownLatch.await();
-        } catch (InterruptedException e){
-            LOG.error("Error waiting for TaskRunner consumer to exit " + getFullStackTrace(e));
-        }
+        // Wait for the shutdown latch to complete
+        noThrow(shutdownLatch::await, "Error waiting for TaskRunner consumer to exit");
 
         // Interrupt all currently running threads - these will be re-allocated to another Engine.
-        executor.shutdownNow();
+        noThrow(executor::shutdownNow, "Could not shutdown scheduling service.");
 
         LOG.debug("TaskRunner stopped");
     }
@@ -154,17 +156,28 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             String id = record.key();
 
-            TaskState state = storage.getState(id);
-            if(state.status() != SCHEDULED) {
-                LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: "+ state.status());
-                continue;
+            // Instead of deserializing TaskState from value, get up-to-date state from the storage
+            try {
+                TaskState state = storage.getState(id);
+                if (state.status() != SCHEDULED) {
+                    LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: " + state.status());
+                    continue;
+                }
+
+                // Mark as RUNNING and update task & runner states.
+                storage.updateState(state
+                    .status(RUNNING)
+                    .statusChangedBy(this.getClass().getName())
+                    .engineID(ENGINE_ID));
+
+                // Submit to executor
+                executor.submit(() -> executeTask(state));
+
+                // Advance offset
+                seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+            } catch (EngineStorageException e){
+                LOG.error("Cant run this task - " + id + " because state was not found in storage");
             }
-
-            // Submit to executor
-            executor.submit(() -> executeTask(state));
-
-            // Advance offset
-            seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset()+1);
         }
     }
 
@@ -173,30 +186,28 @@ public class TaskRunner implements Runnable, AutoCloseable {
      * @param state TaskState for task @id.
      */
     private void executeTask(TaskState state) {
-        try {
-            // Mark as RUNNING and update task & runner states.
-            addRunningTask(state.getId());
-            storage.updateState(state
-                    .status(RUNNING)
-                    .statusChangedBy(this.getClass().getName())
-                    .engineID(ENGINE_ID));
+        LOG.debug("Executing task " + state.getId());
 
-            LOG.debug("Executing task " + state.getId());
+        try {
+            // Should add running task here, so it always gets removed in the finally
+            addRunningTask(state.getId());
 
             // Instantiate task.
             Class<?> c = Class.forName(state.taskClassName());
             BackgroundTask task = (BackgroundTask) c.newInstance();
 
-            // Run task.
-            task.start(saveCheckpoint(state), state.configuration());
+            // Resume task from the checkpoint, if it exists. Otherwise run from the beginning.
+            if(state.checkpoint() != null){
+                task.resume(saveCheckpoint(state), state.checkpoint());
+            } else {
+                task.start(saveCheckpoint(state), state.configuration());
+            }
 
             storage.updateState(state.status(COMPLETED));
-        }
-        catch(Throwable t) {
+        } catch(Throwable t) {
             storage.updateState(state.status(FAILED));
             LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(t));
-        }
-        finally {
+        } finally {
             removeRunningTask(state.getId());
             LOG.debug("Finished executing task - " + state.getId());
         }
@@ -217,8 +228,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
         try {
             connection.connection().setData().forPath(RUNNERS_STATE+"/"+ ENGINE_ID, out.toString().getBytes(StandardCharsets.UTF_8));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + e);
         }
     }

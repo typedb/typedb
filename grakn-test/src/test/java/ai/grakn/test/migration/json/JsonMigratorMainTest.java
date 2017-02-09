@@ -24,6 +24,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeName;
+import ai.grakn.migration.json.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -38,7 +39,6 @@ import static ai.grakn.test.migration.MigratorTestUtils.getProperties;
 import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
 import static ai.grakn.test.migration.MigratorTestUtils.getResource;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
-import static ai.grakn.migration.json.Main.start;
 import static junit.framework.TestCase.assertEquals;
 
 public class JsonMigratorMainTest {
@@ -107,13 +107,18 @@ public class JsonMigratorMainTest {
     }
 
     @Test
+    public void jsonMainActiveTasksArgumentTest(){
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
+    }
+
+    @Test
     public void jsonMainThrowableTest(){
         exception.expect(RuntimeException.class);
         run("-input", dataFile, "-template", templateFile, "-batch", "hello");
     }
 
     private void run(String... args){
-        start(engine.getTaskManager(), args);
+        Main.main(args);
     }
 
     private void runAndAssertDataCorrect(String... args){

@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.migration.csv.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -30,7 +31,6 @@ import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
-import static ai.grakn.migration.csv.Main.start;
 
 public class CSVMigratorMainTest {
 
@@ -91,6 +91,11 @@ public class CSVMigratorMainTest {
     }
 
     @Test
+    public void csvMainDifferentNumActiveTest(){
+        runAndAssertDataCorrect("-input", dataFile, "-template", templateFile, "-a", "2", "-keyspace", graph.getKeyspace());
+    }
+
+    @Test
     public void csvMainPropertiesTest(){
         load(graph, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
@@ -130,7 +135,7 @@ public class CSVMigratorMainTest {
     }
 
     private void run(String... args){
-        start(engine.getTaskManager(), args);
+        Main.main(args);
     }
 
     private void runAndAssertDataCorrect(String... args){

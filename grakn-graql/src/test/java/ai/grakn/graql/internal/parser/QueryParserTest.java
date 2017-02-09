@@ -33,6 +33,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -69,6 +70,7 @@ import static ai.grakn.graql.Graql.parseList;
 import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.select;
+import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
@@ -232,13 +234,6 @@ public class QueryParserTest {
     public void testOrderQuery() {
         MatchQuery expected = match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", desc);
         MatchQuery parsed = parse("match $x isa movie, has release-date $r; order by $r desc;");
-        assertEquals(expected, parsed);
-    }
-
-    @Test
-    public void testHasValueQuery() {
-        MatchQuery expected = match(var("x").value());
-        MatchQuery parsed = parse("match $x value;");
         assertEquals(expected, parsed);
     }
 
@@ -435,6 +430,16 @@ public class QueryParserTest {
 
         AggregateQuery<Map<String, Object>> parsed =
                 parse("match $x isa movie; aggregate (count as c, group $x as g);");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseStdev() {
+        AggregateQuery<?> expected = match(var("x").isa("movie")).aggregate(std("x"));
+
+        AggregateQuery<Map<String, Object>> parsed =
+                parse("match $x isa movie; aggregate std $x;");
 
         assertEquals(expected, parsed);
     }
@@ -678,6 +683,27 @@ public class QueryParserTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("limit1");
         parse("match ($x, $y); limit1;");
+    }
+
+    @Test
+    public void whenParsingAggregateWithWrongArgumentNumber_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("count", 0, 1));
+        parse("match $x isa name; aggregate count $x;");
+    }
+
+    @Test
+    public void whenParsingAggregateWithWrongVariableArgumentNumber_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage("group", "1-2", 0));
+        parse("match $x isa name; aggregate group;");
+    }
+
+    @Test
+    public void whenParsingAggregateWithWrongName_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.UNKNOWN_AGGREGATE.getMessage("hello"));
+        parse("match $x isa name; aggregate hello $x;");
     }
 
     public static void assertQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {

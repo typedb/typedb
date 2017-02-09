@@ -20,10 +20,11 @@ package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
@@ -60,6 +62,8 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
     @Override
     public String newState(TaskState task){
+        InterProcessMutex mutex = mutex(task.getId());
+        acquire(mutex);
         try {
             zookeeperConnection.create()
                     .creatingParentContainersIfNeeded()
@@ -67,6 +71,8 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
         } catch (Exception exception){
             throw new EngineStorageException("Could not write state to storage " + getFullStackTrace(exception));
+        } finally {
+            release(mutex);
         }
 
         return task.getId();
@@ -74,26 +80,39 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
     @Override
     public Boolean updateState(TaskState task){
+        InterProcessMutex mutex = mutex(task.getId());
+        acquire(mutex);
         try {
             zookeeperConnection.setData()
                     .forPath(format(ZK_TASK_PATH, task.getId()), serialize(task));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error("Could not write to ZooKeeper! - "+e);
             return false;
+        } finally {
+            release(mutex);
         }
 
         return true;
     }
 
+    /**
+     * Retrieve the TaskState associated with the given ID. Acquire a distributed mutex before executing
+     * to ensure most up-to-date state.
+     * @param id String id of task.
+     * @return State of the given task
+     */
     @Override
     public TaskState getState(String id) {
+        InterProcessMutex mutex = mutex(id);
         try {
+            mutex.acquire();
+
             byte[] b = zookeeperConnection.getData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX);
             return (TaskState) deserialize(b);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new EngineStorageException("Could not get state from storage " + getFullStackTrace(e));
+        } finally {
+            release(mutex);
         }
     }
 
@@ -133,6 +152,26 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
             return stream.collect(toSet());
         } catch (Exception e){
             throw new EngineStorageException("Could not get state from storage " + getFullStackTrace(e));
+        }
+    }
+
+    private InterProcessMutex mutex(String id){
+        return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
+    }
+
+    private void acquire(InterProcessMutex mutex){
+        try {
+            mutex.acquire();
+        } catch (Exception e) {
+            throw new EngineStorageException("Error acquiring mutex from zookeeper.");
+        }
+    }
+
+    private void release(InterProcessMutex mutex){
+        try {
+            mutex.release();
+        } catch (Exception e) {
+            throw new EngineStorageException("Error releasing mutex from zookeeper.");
         }
     }
 }

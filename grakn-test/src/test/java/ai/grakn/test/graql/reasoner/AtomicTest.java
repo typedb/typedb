@@ -263,7 +263,7 @@ public class AtomicTest {
         ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph);
         Atom childAtom = childQuery.getAtom();
 
-        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(childQuery);
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
         Atom rewrittenAtom = rewrite.getKey();
         Map<VarName, VarName> unifiers = rewrite.getValue();
         Set<VarName> unifiedVariables = Sets.newHashSet(VarName.of("x1"), VarName.of("x2"));

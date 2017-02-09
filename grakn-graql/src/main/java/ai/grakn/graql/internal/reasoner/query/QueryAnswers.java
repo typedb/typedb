@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -36,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -119,7 +119,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return results;
     }
 
-    private QueryAnswers filterBySubstitutions(Set<IdPredicate> subs){
+    public QueryAnswers filterBySubstitutions(Set<IdPredicate> subs){
         if (subs.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers(this);
         subs.forEach( sub -> this.stream()
@@ -128,12 +128,12 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return results;
     }
 
-    private QueryAnswers filterByEntityTypes(Set<TypeAtom> types){
+    public QueryAnswers filterByEntityTypes(Set<TypeAtom> types){
         if (types.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers();
         this.forEach(answer -> {
             boolean isCompatible = true;
-            Iterator<TypeAtom> it = types.iterator();
+            Iterator<TypeAtom> it = types.stream().filter(t -> answer.keySet().contains(t.getVarName())).iterator();
             while( it.hasNext() && isCompatible){
                 TypeAtom type = it.next();
                 VarName var = type.getVarName();
@@ -157,20 +157,13 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         QueryAnswers join = new QueryAnswers();
         Set<VarName> joinVars = Sets.intersection(this.getVars(), localTuples.getVars());
         for( Map<VarName, Concept> lanswer : localTuples){
-            for (Map<VarName, Concept> answer : this){
-                boolean isCompatible = true;
-                Iterator<VarName> vit = joinVars.iterator();
-                while(vit.hasNext() && isCompatible) {
-                    VarName var = vit.next();
-                    isCompatible = answer.get(var).equals(lanswer.get(var));
-                }
-
-                if (isCompatible) {
-                    Map<VarName, Concept> merged = new HashMap<>(lanswer);
-                    merged.putAll(answer);
-                    join.add(merged);
-                }
-            }
+            Stream<Map<VarName, Concept>> answerStream = this.stream();
+            for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(lanswer.get(v)));
+            answerStream.map(ans ->  {
+                        Map<VarName, Concept> merged = new HashMap<>(lanswer);
+                        merged.putAll(ans);
+                        return merged;
+            }).forEach(join::add);
         }
         return join;
     }
@@ -192,18 +185,18 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return unifiedAnswers;
     }
 
+    public static Map<VarName, Concept> unify(Map<VarName, Concept> answer, Map<VarName, VarName> unifiers){
+        return answer.entrySet().stream()
+                .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())? unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
+    }
+
     /**
      * unify answers of childQuery with parentQuery
      * @param parentQuery parent atomic query containing target variables
      * @return unified answers
      */
-    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
-        QueryAnswers answers = childQuery.getAnswers();
+    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        Atomic childAtom = childQuery.getAtom();
-        Atomic parentAtom = parentQuery.getAtom();
-
-        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
-        return answers.unify(unifiers).filterVars(parentQuery.getVarNames());
+        return answers.unify(childQuery.getUnifiers(parentQuery)).filterVars(parentQuery.getVarNames());
     }
 }

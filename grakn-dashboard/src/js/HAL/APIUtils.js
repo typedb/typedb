@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-import * as API from './APITerms';
+import * as API from '../util/HALTerms';
 
 /*
  * Various miscellaneous functions used by the HALParser class.
@@ -47,6 +47,8 @@ function buildLabel(resource) {
   }
 
   if (API.KEY_VALUE in resource) { label = resource[API.KEY_VALUE] || label; }
+  if (API.KEY_NAME in resource) { label = resource[API.KEY_NAME] || label; }
+
 
   return label;
 }

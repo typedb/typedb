@@ -30,18 +30,24 @@ import static java.lang.Integer.parseInt;
 public class JsonMigrationOptions extends MigrationOptions {
 
     private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
+    private final String active = Integer.toString(AbstractMigrator.ACTIVE_TASKS);
 
     public JsonMigrationOptions(String[] args){
         super();
 
-        options.addOption("i", "input", true, "input json data file");
-        options.addOption("t", "template", true, "graql template to apply over data");
-        options.addOption("b", "batch", true, "number of row to load at once");
+        options.addOption("i", "input", true, "Input json data file or directory.");
+        options.addOption("t", "template", true, "Graql template to apply to the data.");
+        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
+        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
 
         parse(args);
     }
 
     public int getBatch() {
         return parseInt(command.getOptionValue("b", batch));
+    }
+
+    public int getNumberActiveTasks() {
+        return parseInt(command.getOptionValue("a", active));
     }
 }

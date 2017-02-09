@@ -51,14 +51,20 @@ import static ai.grakn.graql.Graql.var;
  */
 public class Reasoner {
 
+    private static int commitFrequency = 50;
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
-    private static void commitGraph(GraknGraph graph) {
+
+    public static void commitGraph(GraknGraph graph) {
         try {
             graph.commit();
         } catch (GraknValidationException e) {
             LOG.error(e.getMessage());
         }
     }
+
+    public static void setCommitFrequency(int freq){ commitFrequency = freq;}
+    public static int getCommitFrequency(){ return commitFrequency;}
+
     private static void linkConceptTypes(GraknGraph graph, Rule rule) {
         QueryBuilder qb = graph.graql();
         MatchQuery qLHS = qb.match(rule.getLHS());
@@ -125,13 +131,12 @@ public class Reasoner {
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                dAns = atomicQuery.getAnswers().size();
+                dAns = cache.size();
                 atomicQuery.answer(SG, cache, true);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + atomicQuery.getAnswers().size());
-                dAns = atomicQuery.getAnswers().size() - dAns;
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + cache.getAnswers(atomicQuery).size());
+                dAns = cache.size() - dAns;
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
-        commitGraph(graph);
     }
 }

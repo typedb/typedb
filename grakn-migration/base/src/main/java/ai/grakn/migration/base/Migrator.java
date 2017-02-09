@@ -39,4 +39,24 @@ public interface Migrator extends AutoCloseable {
      * Migrate all the data in the given file based on the given template.
      */
     Stream<InsertQuery> migrate();
+
+    /**
+     * Load using the default batch size
+     *
+     * @param uri Uri where one instance of Grakn Engine is running
+     * @param keyspace The name of the keyspace where the data should be persisted
+     */
+    void load(String uri, String keyspace);
+
+    /**
+     * Migrate data constrained by this migrator using a loader configured
+     * by the provided parameters.
+     *
+     * @param uri Uri where one instance of Grakn Engine is running
+     * @param keyspace The name of the keyspace where the data should be persisted
+     * @param batchSize The number of queries to execute in one transaction
+     * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
+     *                          to bot the system load. Default is 25.
+     */
+    void load(String uri, String keyspace, int batchSize, int numberActiveTasks);
 }

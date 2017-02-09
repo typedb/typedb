@@ -39,6 +39,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -46,15 +47,15 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
-import java.util.ArrayList;
-import java.util.List;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -173,7 +174,8 @@ public class Relation extends TypeAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
-        return Objects.equals(this.typeId, a2.getTypeId())
+        return (isUserDefinedName() == a2.isUserDefinedName() ) &&
+                Objects.equals(this.typeId, a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap());
     }
@@ -377,10 +379,10 @@ public class Relation extends TypeAtom {
                 .findFirst().orElse(null);
         if (hrAtom != null) {
             ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
-            hrQuery.DBlookup();
-            if (hrQuery.getAnswers().size() == 1) {
+            QueryAnswers answers = hrQuery.DBlookup();
+            if (answers.size() == 1) {
                 IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
-                        hrQuery.getAnswers().stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
+                        answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
 
                 Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
                 parent.removeAtom(hrAtom.getPredicate());
@@ -463,6 +465,15 @@ public class Relation extends TypeAtom {
         //filter by checking substitutions
         return getIdPredicates().stream()
                 .filter(pred -> unmappedVars.contains(pred.getVarName()))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<TypeAtom> getMappedTypeConstraints() {
+        Set<VarName> mappedVars = getMappedRolePlayers();
+        return getTypeConstraints().stream()
+                .filter(t -> mappedVars.contains(t.getVarName()))
+                .filter(t -> Objects.nonNull(t.getType()))
                 .collect(Collectors.toSet());
     }
 
@@ -550,7 +561,7 @@ public class Relation extends TypeAtom {
             }
         });
 
-        Collection<RoleType> rolesToAllocate = relType.hasRoles();
+        Collection<RoleType> rolesToAllocate = new HashSet<>(relType.hasRoles());
         //remove sub and super roles of allocated roles
         allocatedRoles.forEach(role -> {
             RoleType topRole = getNonMetaTopRole(role);
@@ -587,14 +598,16 @@ public class Relation extends TypeAtom {
     /**
      * @return map of role variable - role type from a predicate
      */
+    @SuppressWarnings("unchecked")
     private Map<RoleType, VarName> getIndirectRoleMap() {
         GraknGraph graph = getParentQuery().graph();
-        return getRelationPlayers().stream()
+        Object result = getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(rt -> new AbstractMap.SimpleEntry<>(rt, ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(rt.getVarName())))
                 .filter(e -> e.getValue() != null)
                 .collect(Collectors.toMap(e -> graph.getConcept(e.getValue().getPredicate()), e -> e.getKey().getVarName()));
+        return (Map<RoleType, VarName>)result;
     }
 
     //varsToAllocate <= childBVs
@@ -667,13 +680,29 @@ public class Relation extends TypeAtom {
         return unifiers;
     }
 
+    @Override
+    public Atom rewriteToUserDefined(){
+        Var relVar = Graql.var(VarName.anon());
+        getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+        getRelationPlayers()
+                .forEach(c -> {
+                    VarAdmin roleType = c.getRoleType().orElse(null);
+                    if (roleType != null) {
+                        relVar.rel(roleType, c.getRolePlayer());
+                    } else {
+                        relVar.rel(c.getRolePlayer());
+                    }
+                });
+        return new Relation(relVar.admin(), getPredicate(), getParentQuery());
+    }
+
     /**
-     * rewrites the atom to one with user defined name
-     * @param parent     query the rewritten atom should belong to
+     * rewrites the atom to one with user defined name, need unifiers for cases when we have variable clashes
+     * between the relation variable and relation players
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
     @Override
-    public Pair<Atom, Map<VarName, VarName>> rewrite(ReasonerQuery parent) {
+    public Pair<Atom, Map<VarName, VarName>> rewriteToUserDefinedWithUnifiers() {
         Map<VarName, VarName> unifiers = new HashMap<>();
         Var relVar = Graql.var(VarName.anon());
         getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
@@ -690,6 +719,6 @@ public class Relation extends TypeAtom {
                         relVar.rel(Graql.var(rolePlayerVarName));
                     }
                 });
-        return new Pair<>(new Relation(relVar.admin(), getPredicate(), parent), unifiers);
+        return new Pair<>(new Relation(relVar.admin(), getPredicate(), getParentQuery()), unifiers);
     }
 }

@@ -29,6 +29,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import ai.grakn.graql.internal.antlr.GraqlParser;
 import ai.grakn.graql.internal.query.aggregate.Aggregates;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -78,6 +79,22 @@ public class QueryParser {
      */
     public static QueryParser create(QueryBuilder queryBuilder) {
         return new QueryParser(queryBuilder);
+    }
+
+    private void registerAggregate(String name, int numArgs, Function<List<Object>, Aggregate> aggregateMethod) {
+        registerAggregate(name, numArgs, numArgs, aggregateMethod);
+    }
+
+    private void registerAggregate(
+            String name, int minArgs, int maxArgs, Function<List<Object>, Aggregate> aggregateMethod) {
+        aggregateMethods.put(name, args -> {
+            if (args.size() < minArgs || args.size() > maxArgs) {
+                String expectedArgs = (minArgs == maxArgs) ? Integer.toString(minArgs) : minArgs + "-" + maxArgs;
+                String message = ErrorMessage.AGGREGATE_ARGUMENT_NUM.getMessage(name, expectedArgs, args.size());
+                throw new IllegalArgumentException(message);
+            }
+            return aggregateMethod.apply(args);
+        });
     }
 
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
@@ -276,14 +293,15 @@ public class QueryParser {
     // This is unavoidable in the parser.
     @SuppressWarnings("unchecked")
     private void registerDefaultAggregates() {
-        registerAggregate("count", args -> Graql.count());
-        registerAggregate("sum", args -> Aggregates.sum((VarName) args.get(0)));
-        registerAggregate("max", args -> Aggregates.max((VarName) args.get(0)));
-        registerAggregate("min", args -> Aggregates.min((VarName) args.get(0)));
-        registerAggregate("average", args -> Aggregates.average((VarName) args.get(0)));
-        registerAggregate("median", args -> Aggregates.median((VarName) args.get(0)));
+        registerAggregate("count", 0, args -> Graql.count());
+        registerAggregate("sum", 1, args -> Aggregates.sum((VarName) args.get(0)));
+        registerAggregate("max", 1, args -> Aggregates.max((VarName) args.get(0)));
+        registerAggregate("min", 1, args -> Aggregates.min((VarName) args.get(0)));
+        registerAggregate("mean", 1, args -> Aggregates.mean((VarName) args.get(0)));
+        registerAggregate("median", 1, args -> Aggregates.median((VarName) args.get(0)));
+        registerAggregate("std", 1, args -> Aggregates.std((VarName) args.get(0)));
 
-        registerAggregate("group", args -> {
+        registerAggregate("group", 1, 2, args -> {
             if (args.size() < 2) {
                 return Aggregates.group((VarName) args.get(0));
             } else {

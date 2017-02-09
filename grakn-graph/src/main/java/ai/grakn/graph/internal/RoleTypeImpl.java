@@ -50,6 +50,9 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
+    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
     }
@@ -68,7 +71,27 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<RelationType> relationTypes() {
-        return getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE);
+        return Collections.unmodifiableCollection(cachedRelationTypes.get());
+    }
+
+    /**
+     * Caches a new relation type which this role will be part of. This may result in a DB hit if the cache has not been
+     * initialised.
+     *
+     * @param newRelationType The new relation type to cache in the role.
+     */
+    void addCachedRelationType(RelationType newRelationType){
+        cachedRelationTypes.ifPresent(set -> set.add(newRelationType));
+    }
+
+    /**
+     * Removes an old relation type which this role is no longer part of. This may result in a DB hit if the cache has
+     * not been initialised.
+     *
+     * @param oldRelationType The new relation type to cache in the role.
+     */
+    void deleteCachedRelationType(RelationType oldRelationType){
+        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationType));
     }
 
     /**
@@ -77,10 +100,17 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<Type> playedByTypes() {
-        Set<Type> playedBy = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).
-                forEach(concept -> playedBy.addAll(concept.asType().subTypes()));
-        return playedBy;
+        Set<Type> playedByTypes = new HashSet<>();
+        cachedDirectPlayedByTypes.get().forEach(type -> playedByTypes.addAll(type.subTypes()));
+        return Collections.unmodifiableCollection(playedByTypes);
+    }
+
+    void addCachedDirectPlaysByType(Type newType){
+        cachedDirectPlayedByTypes.ifPresent(set -> set.add(newType));
+    }
+
+    void deleteCachedDirectPlaysByType(Type oldType){
+        cachedDirectPlayedByTypes.ifPresent(set -> set.remove(oldType));
     }
 
     /**
@@ -124,6 +154,10 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
             super.innerDelete();
+
+            //Clear all internal caching
+            cachedRelationTypes.clear();
+            cachedDirectPlayedByTypes.clear();
         }
     }
 

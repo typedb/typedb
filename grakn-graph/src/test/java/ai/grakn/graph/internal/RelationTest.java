@@ -161,11 +161,11 @@ public class RelationTest extends GraphTestBase{
         relation.scope(scope);
         relationValue.scope(scope);
 
-        Vertex vertex = graknGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
-        assertEquals(scope.getBaseIdentifier(), vertex.id());
+        Vertex vertex = graknGraph.getTinkerPopGraph().traversal().V(relation.getId().getRawValue()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        assertEquals(scope.getId().getRawValue(), vertex.id());
 
-        vertex = graknGraph.getTinkerPopGraph().traversal().V(relationValue.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
-        assertEquals(scope.getBaseIdentifier(), vertex.id());
+        vertex = graknGraph.getTinkerPopGraph().traversal().V(relationValue.getId().getRawValue()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        assertEquals(scope.getId().getRawValue(), vertex.id());
     }
 
     @Test
@@ -215,7 +215,7 @@ public class RelationTest extends GraphTestBase{
         relation2.scope(scope2);
 
         relation2.deleteScope(scope2);
-        Vertex assertion2_vertex = graknGraph.getTinkerPopGraph().traversal().V(relation2.getBaseIdentifier()).next();
+        Vertex assertion2_vertex = graknGraph.getTinkerPopGraph().traversal().V(relation2.getId().getRawValue()).next();
 
         int count = 0;
         Iterator<Edge> edges =  assertion2_vertex.edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel());
@@ -226,13 +226,13 @@ public class RelationTest extends GraphTestBase{
         assertEquals(2, count);
 
         relation2.deleteScope(scope3);
-        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope3.getBaseIdentifier()).hasNext());
+        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope3.getId().getRawValue()).hasNext());
 
         relation.deleteScope(scope1);
-        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope1.getBaseIdentifier()).hasNext());
+        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope1.getId().getRawValue()).hasNext());
         relation2.deleteScope(scope1);
         relation.deleteScope(scope3);
-        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getId().getRawValue()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test
@@ -243,13 +243,13 @@ public class RelationTest extends GraphTestBase{
         relation.scope(scope2);
 
         relation.scopes().forEach(relation::deleteScope);
-        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getId().getRawValue()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test
     public void testDelete() throws ConceptException{
         relation.delete();
-        assertNull(graknGraph.getConceptByBaseIdentifier(relation.getBaseIdentifier()));
+        assertNull(graknGraph.getConceptByBaseIdentifier(relation.getId().getRawValue()));
     }
 
     @Test
@@ -535,15 +535,15 @@ public class RelationTest extends GraphTestBase{
         assertEdgeCountOfVertex(godfather, Schema.EdgeLabel.ROLE_PLAYER, 2, 0);
 
         //More Specific Checks
-        List<Vertex> assertionsTypes = graknGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).in(Schema.EdgeLabel.CASTING.getLabel()).out(Schema.EdgeLabel.ISA.getLabel()).toList();
+        List<Vertex> assertionsTypes = graknGraph.getTinkerPopGraph().traversal().V(godfather.getId().getRawValue()).in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).in(Schema.EdgeLabel.CASTING.getLabel()).out(Schema.EdgeLabel.ISA.getLabel()).toList();
         assertEquals(2, assertionsTypes.size());
 
         List<Object> assertTypeIds = assertionsTypes.stream().map(Vertex::id).collect(Collectors.toList());
 
-        assertTrue(assertTypeIds.contains(cast.getBaseIdentifier()));
-        assertTrue(assertTypeIds.contains(movieHasGenre.getBaseIdentifier()));
+        assertTrue(assertTypeIds.contains(cast.getId().getRawValue()));
+        assertTrue(assertTypeIds.contains(movieHasGenre.getId().getRawValue()));
 
-        List<Vertex> collection = graknGraph.getTinkerPopGraph().traversal().V(cast.getBaseIdentifier(), movieHasGenre.getBaseIdentifier()).in(Schema.EdgeLabel.ISA.getLabel()).out(Schema.EdgeLabel.CASTING.getLabel()).out().toList();
+        List<Vertex> collection = graknGraph.getTinkerPopGraph().traversal().V(cast.getId().getRawValue(), movieHasGenre.getId().getRawValue()).in(Schema.EdgeLabel.ISA.getLabel()).out(Schema.EdgeLabel.CASTING.getLabel()).out().toList();
         assertEquals(8, collection.size());
 
         HashSet<Object> uniqueCollection = new HashSet<>();
@@ -552,13 +552,13 @@ public class RelationTest extends GraphTestBase{
         }
 
         assertEquals(7, uniqueCollection.size());
-        assertTrue(uniqueCollection.contains(feature.getBaseIdentifier()));
-        assertTrue(uniqueCollection.contains(actor.getBaseIdentifier()));
-        assertTrue(uniqueCollection.contains(godfather.getBaseIdentifier()));
-        assertTrue(uniqueCollection.contains(pacino.getBaseIdentifier()));
-        assertTrue(uniqueCollection.contains(movieOfGenre.getBaseIdentifier()));
-        assertTrue(uniqueCollection.contains(movieGenre.getBaseIdentifier()));
-        assertTrue(uniqueCollection.contains(crime.getBaseIdentifier()));
+        assertTrue(uniqueCollection.contains(feature.getId().getRawValue()));
+        assertTrue(uniqueCollection.contains(actor.getId().getRawValue()));
+        assertTrue(uniqueCollection.contains(godfather.getId().getRawValue()));
+        assertTrue(uniqueCollection.contains(pacino.getId().getRawValue()));
+        assertTrue(uniqueCollection.contains(movieOfGenre.getId().getRawValue()));
+        assertTrue(uniqueCollection.contains(movieGenre.getId().getRawValue()));
+        assertTrue(uniqueCollection.contains(crime.getId().getRawValue()));
 
         assertEquals(Schema.BaseType.ENTITY.name(), pacino.getBaseType());
         for(CastingImpl casting: assertion.getMappingCasting()){
@@ -567,7 +567,7 @@ public class RelationTest extends GraphTestBase{
 
     }
     private void assertEdgeCountOfVertex(Concept concept , Schema.EdgeLabel type, int inCount, int outCount){
-        Vertex v= graknGraph.getTinkerPopGraph().traversal().V(((ConceptImpl) concept).getBaseIdentifier()).next();
+        Vertex v= graknGraph.getTinkerPopGraph().traversal().V(concept.getId().getRawValue()).next();
         assertEquals(inCount, Iterators.size(v.edges(Direction.IN, type.getLabel())));
         assertEquals(outCount, Iterators.size(v.edges(Direction.OUT, type.getLabel())));
     }

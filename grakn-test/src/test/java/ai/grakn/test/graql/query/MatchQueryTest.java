@@ -47,10 +47,12 @@ import org.junit.rules.ExpectedException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
@@ -427,8 +429,8 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testHasValue() {
-        MatchQuery query = qb.match(var("x").value()).limit(10);
+    public void testIsResource() {
+        MatchQuery query = qb.match(var("x").isa("resource")).limit(10);
 
         assertThat(query.execute(), hasSize(10));
         assertThat(query, variable("x", everyItem(hasType(resource))));
@@ -436,7 +438,7 @@ public class MatchQueryTest {
 
     @Test
     public void testHasReleaseDate() {
-        MatchQuery query = qb.match(var("x").has("release-date"));
+        MatchQuery query = qb.match(var("x").has("release-date", var("y")));
         assertThat(query, variable("x", containsInAnyOrder(godfather, theMuppets, spy, chineseCoffee)));
     }
 
@@ -564,17 +566,17 @@ public class MatchQueryTest {
         GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
-            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(toSet());
-            Collection<RoleType> graphAPIPlaysRoles = graph.getType(type).playsRoles();
+            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
+            Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).playsRoles());
 
-            assertThat(graqlPlaysRoles, is(graphAPIPlaysRoles));
+            assertEquals(graqlPlaysRoles, graphAPIPlaysRoles);
         });
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(var("x").playsRole(name(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = graph.<RoleType>getType(type).playedByTypes();
+            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getType(type).playedByTypes());
 
-            assertThat(graqlPlayedBy, is(graphAPIPlayedBy));
+            assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
 
         // clean graph of inserts

@@ -41,27 +41,6 @@ public class GraknEngineServerTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.startDistributedServer();
-        engine.before();
-
-        boolean running = GraknEngineServer.isRunning();
-        assertTrue(running);
-
-        // Check that we've loaded the ontology
-        EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
-        assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
-
-        engine.after();
-    }
-    
-    @Test
-    public void graknEngineNotRunning() throws Exception {
-        boolean running = GraknEngineServer.isRunning();
-        assertFalse(running);
-    }
-
-    @Test
     public void testInMemoryMain() throws Exception {
         // Should start engine with in-memory server
         ConfigProperties.getInstance().setConfigProperty(DISTRIBUTED_TASK_MANAGER, "false");

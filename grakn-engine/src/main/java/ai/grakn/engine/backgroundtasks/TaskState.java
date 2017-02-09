@@ -18,10 +18,13 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import ai.grakn.engine.TaskStatus;
 import mjson.Json;
+import org.apache.commons.lang.SerializationUtils;
 
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.UUID;
 
 /**
@@ -213,6 +216,14 @@ public class TaskState implements Serializable {
 
     public Json configuration() {
         return configuration;
+    }
+
+    public static String serialize(TaskState task){
+        return Base64.getMimeEncoder().encodeToString(SerializationUtils.serialize(task));
+    }
+
+    public static TaskState deserialize(String task){
+        return (TaskState) SerializationUtils.deserialize(Base64.getMimeDecoder().decode(task));
     }
 }
 

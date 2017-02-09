@@ -53,7 +53,7 @@ public class EntityTest extends GraphTestBase{
         Relation relation = relationType.addRelation();
         relation.scope(scope);
         scope.delete();
-        assertNull(graknGraph.getConceptByBaseIdentifier(((ConceptImpl) scope).getBaseIdentifier()));
+        assertNull(graknGraph.getConceptByBaseIdentifier(scope.getId().getRawValue()));
     }
 
     @Test
