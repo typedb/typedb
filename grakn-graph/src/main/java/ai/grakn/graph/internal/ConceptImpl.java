@@ -67,6 +67,8 @@ import java.util.function.Function;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
+    private final ConceptId conceptId;
+
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
@@ -78,6 +80,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
         this.vertex = v;
         this.graknGraph = graknGraph;
+        conceptId = ConceptId.of(v.id());
     }
 
     /**
@@ -151,8 +154,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         vertex.edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.outVertex()));}
+                            graknGraph.getConceptLog().trackConceptForValidation(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
+                            graknGraph.getConceptLog().trackConceptForValidation(getGraknGraph().getElementFactory().buildConcept(e.outVertex()));}
                 );
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
@@ -488,14 +491,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @return The unique base identifier of this concept.
-     */
-    public Object getBaseIdentifier() {
-        return vertex.id();
-    }
-
-    /**
-     *
      * @return The base ttpe of this concept which helps us identify the concept
      */
     public String getBaseType(){
@@ -508,7 +503,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
+        return conceptId;
     }
 
     /**
@@ -562,7 +557,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     EdgeImpl putEdge(Concept to, Schema.EdgeLabel type){
         ConceptImpl toConcept = (ConceptImpl) to;
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getRawValue()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
         if(!traversal.hasNext()) {
             return addEdge(toConcept, type);
         } else {
@@ -595,8 +590,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param toConcept The target concept
      */
     void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
-                outE(type.getLabel()).as("edge").otherV().hasId(((ConceptImpl) toConcept).getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getRawValue()).
+                outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
         if(traversal.hasNext()) {
             traversal.next().remove();
         }
@@ -613,12 +608,13 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {
-        return vertex.hashCode();
+        return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof ConceptImpl && ((ConceptImpl) object).getVertex().equals(vertex);
+        //Compare Concept based on id because vertex comparisons are equivalent
+        return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
     @Override

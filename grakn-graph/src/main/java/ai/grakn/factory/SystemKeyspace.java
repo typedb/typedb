@@ -129,7 +129,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
             graph.commit();
             LOG.info("Loaded system ontology to system keyspace.");
         }
-        catch(IOException|GraknValidationException|NullPointerException e) {
+        catch(IOException |GraknValidationException |NullPointerException e) {
             e.printStackTrace(System.err);
             LOG.error("Could not load system ontology. The error was: " + e);
         }
