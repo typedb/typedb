@@ -42,14 +42,6 @@ import java.util.Collection;
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Changes the name of the type
-     *
-     * @param name The new name of the type
-     * @return The Type name
-     */
-    TypeName setName(String name);
-
-    /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
