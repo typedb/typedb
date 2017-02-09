@@ -86,8 +86,8 @@ public class MatchQueryBase extends AbstractMatchQuery {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
         GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern);
-        LOG.debug("Created query plan");
-        LOG.debug(graqlTraversal.toString());
+        LOG.trace("Created query plan");
+        LOG.trace(graqlTraversal.toString());
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal(graph);
 
         String[] selectedNames = getSelectedNames().stream().map(VarName::getValue).toArray(String[]::new);
