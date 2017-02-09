@@ -36,7 +36,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,7 +58,8 @@ import java.util.stream.Collectors;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
-    private Optional<V> cachedType = Optional.empty();
+    private Cache<TypeName> cachedInternalType = new Cache<>(() -> TypeName.of(getProperty(Schema.ConceptProperty.TYPE)));
+    private Cache<V> cachedType = new Cache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.ISA));
 
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -143,7 +143,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         parent.castings().forEach(c -> {
             CastingImpl casting = c.asCasting();
             if (roleTypeNames.size() != 0) {
-                if (roleTypeNames.contains(casting.getType())) {
+                if (roleTypeNames.contains(casting.getInternalType())) {
                     relations.addAll(casting.getRelations());
                 }
             } else {
@@ -192,27 +192,41 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
     /**
      *
+     * @return The type of the concept casted to the correct interface
+     */
+    public V type() {
+        return cachedType.get();
+    }
+
+    /**
+     *
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
     protected T type(V type) {
         if(type != null){
-            setType(String.valueOf(type.getName()));
+            setInternalType(type.getName());
             putEdge(type, Schema.EdgeLabel.ISA);
-            cachedType = Optional.of(type);
+            cachedType.set(type);
         }
         return getThis();
     }
 
     /**
      *
-     * @return The type of the concept casted to the correct interface
+     * @param type The type of this concept
+     * @return The concept itself casted to the correct interface
      */
-    public V type() {
-        if(!cachedType.isPresent()) {
-            cachedType = Optional.of(getOutgoingNeighbour(Schema.EdgeLabel.ISA));
-        }
-        return cachedType.get();
+    private T setInternalType(TypeName type){
+        cachedInternalType.set(type);
+        return setProperty(Schema.ConceptProperty.TYPE, type.getValue());
     }
 
+    /**
+     *
+     * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
+     */
+    public TypeName getInternalType(){
+        return cachedInternalType.get();
+    }
 }
