@@ -38,7 +38,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -67,7 +69,19 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
     private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.SUB));
     private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
-    private ComponentCache<Set<RoleType>> cachedDirectPlaysRoles = new ComponentCache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+
+    //This cache is different in order to keep track of which plays roles are required
+    private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlaysRoles = new ComponentCache<>(() -> {
+        Map<RoleType, Boolean> roleTypes = new HashMap<>();
+
+        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).forEach(edge -> {
+            RoleType roleType = edge.getTarget();
+            Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
+            roleTypes.put(roleType, required);
+        });
+
+        return roleTypes;
+    });
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -109,17 +123,17 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<RoleType> allRoleTypes = new HashSet<>();
 
         //Get the immediate plays roles which may be cached
-        allRoleTypes.addAll(cachedDirectPlaysRoles.get());
+        allRoleTypes.addAll(cachedDirectPlaysRoles.get().keySet());
 
         //Now get the super type plays roles (Which may also be cached locally within their own context
         Set<T> superSet = superTypeSet();
         superSet.remove(this); //We already have the plays roles from ourselves
-        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlaysRoles()));
+        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlaysRoles().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
     }
 
-    private Set<RoleType> directPlaysRoles(){
+    private Map<RoleType, Boolean> directPlaysRoles(){
         return cachedDirectPlaysRoles.get();
     }
 
@@ -151,7 +165,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Update neighbouring caches
             //noinspection unchecked
             ((TypeImpl<T, V>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
-            cachedDirectPlaysRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+            cachedDirectPlaysRoles.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
 
             //Clear internal caching
             cachedIsImplicit.clear();
@@ -380,7 +394,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
 
         //Update the internal cache of role types played
-        cachedDirectPlaysRoles.ifPresent(set -> set.add(roleType));
+        cachedDirectPlaysRoles.ifPresent(map -> map.put(roleType, required));
 
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
