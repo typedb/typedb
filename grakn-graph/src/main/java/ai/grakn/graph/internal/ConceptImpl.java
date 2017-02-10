@@ -475,11 +475,11 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The tinkerpop vertex
      */
     Vertex getVertex() {
-        GraphTraversal<Vertex, Vertex> traverser = getGraknGraph().getTinkerTraversal().hasId(conceptId.getRawValue());
+        GraphTraversal<Vertex, Vertex> traverser = getGraknGraph().getTinkerTraversal().has(Schema.ConceptProperty.ID.name(), conceptId.getValue());
         if(traverser.hasNext()){
             return traverser.next();
         } else {
-            throw new ConceptException(ErrorMessage.CANNOT_FIND_VERTEX.getMessage(conceptId.getRawValue(), getGraknGraph().getKeyspace()));
+            throw new ConceptException(ErrorMessage.CANNOT_FIND_VERTEX.getMessage(conceptId.getValue(), getGraknGraph().getKeyspace()));
         }
     }
 
