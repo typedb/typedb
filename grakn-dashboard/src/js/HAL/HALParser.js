@@ -70,6 +70,7 @@ export default class HALParser {
     if (Array.isArray(data)) {
       const hashSet = {};
       const objLength = data.length;
+      // Populate hashSet containing all the first level objects returned in the response, they MUST be added to the graph.
       for (let i = 0; i < objLength; i++) {
         hashSet[data[i]._id] = true;
       }
@@ -87,6 +88,7 @@ export default class HALParser {
   parseHalObject(obj, hashSet) {
     if (obj !== null) {
             // The response from Analytics will be a string instead of object. That's why we need this check.
+            // we need this because when we loop through embedded we want to draw the edge that points to all the first order nodes.
       const objResponse = (typeof obj === 'string') ? JSON.parse(obj) : obj;
 
       const links = Utils.nodeLinks(objResponse);
@@ -109,7 +111,13 @@ export default class HALParser {
      */
   parseEmbedded(objs, parent, roleName, hashSet) {
     _.map(objs, (child) => {
-      if ((child[API.KEY_BASE_TYPE] !== API.RESOURCE_TYPE) ||
+      // Add embedded object to the graph only if one of the following is satisfied:
+      // - the current node is not a RESOURCE_TYPE
+      // - the current node is already drawn in the graph
+      // - the current node is contained in the response as first level object (not embdedded)
+      //    if it's contained in the hashset it means it MUST be draw and so all the adges pointing to it.
+
+      if (((child[API.KEY_BASE_TYPE] !== API.RESOURCE_TYPE) && (child[API.KEY_BASE_TYPE] !== API.RESOURCE)) ||
           (hashSet !== undefined && hashSet[child._id]) ||
           this.nodeAlreadyInGraph(HALParser.getHref(child))) {
         const links = Utils.nodeLinks(child);

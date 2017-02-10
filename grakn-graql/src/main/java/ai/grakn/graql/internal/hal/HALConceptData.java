@@ -65,7 +65,7 @@ class HALConceptData {
     private final static String TYPE_PROPERTY = "_type";
     private final static String BASETYPE_PROPERTY = "_baseType";
     private final static String DIRECTION_PROPERTY = "_direction";
-    private final static String VALUE_PROPERTY = "value";
+    private final static String VALUE_PROPERTY = "_value";
 
     private final boolean embedType;
     private final Set<TypeName> typesInQuery;
