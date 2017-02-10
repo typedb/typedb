@@ -140,7 +140,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * Deletes the concept as  type
      */
     @Override
-    public void innerDelete(){
+    public void delete(){
         checkTypeMutation();
         boolean hasSubs = getVertex().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
         boolean hasInstances = getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();

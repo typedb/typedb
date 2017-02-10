@@ -74,7 +74,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * Deletes the concept as an Instance
      */
     @Override
-    public void innerDelete() {
+    public void delete() {
         InstanceImpl<?, ?> parent = this;
         Set<CastingImpl> castings = parent.castings();
         deleteNode();

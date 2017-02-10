@@ -146,14 +146,14 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     }
 
     @Override
-    public void innerDelete(){
+    public void delete(){
         boolean hasHasRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.HAS_ROLE.getLabel()).hasNext();
         boolean hasPlaysRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
 
         if(hasHasRoles || hasPlaysRoles){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
-            super.innerDelete();
+            super.delete();
 
             //Clear all internal caching
             cachedRelationTypes.clear();

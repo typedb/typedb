@@ -108,15 +108,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getGraknGraph().getElementFactory().buildConcept(getVertex());
-        properType.innerDelete(); //This will execute the proper deletion method.
-    }
-
-    /**
-     * Helper method to call the appropriate deletion based on the type of the concept.
-     */
-    //TODO: Check if this is actually the right way of doing things. This is quite odd.
-    void innerDelete(){
         deleteNode();
     }
 
@@ -396,7 +387,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one outgoing edge of a specific type
      */
-    protected <X extends Concept> X getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
+    <X extends Concept> X getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
         Set<X> concepts = getOutgoingNeighbours(edgeLabel);
         if(concepts.size() == 1){
             return concepts.iterator().next();
@@ -412,7 +403,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
-    protected <X extends Concept> Set<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
+    <X extends Concept> Set<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
         Set<X> outgoingNeighbours = new HashSet<>();
 
         getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
@@ -429,7 +420,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
-    protected <X extends Concept> Set<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
+    <X extends Concept> Set<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
         Set<X> incomingNeighbours = new HashSet<>();
         getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
             X found = edge.getSource();
@@ -462,7 +453,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         }
         return null;
     }
-    public Boolean getPropertyBoolean(Schema.ConceptProperty key){
+    Boolean getPropertyBoolean(Schema.ConceptProperty key){
         Boolean value = getProperty(key);
         if(value == null) {
             return false;
@@ -487,7 +478,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return The base ttpe of this concept which helps us identify the concept
      */
-    public String getBaseType(){
+    String getBaseType(){
         return getVertex().label();
     }
 
@@ -506,7 +497,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type The type of the edges to retrieve
      * @return A collection of edges from this concept in a particular direction of a specific type
      */
-    protected Set<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
+    Set<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
         Set<EdgeImpl> edges = new HashSet<>();
         getVertex().edges(direction, type.getLabel()).
                 forEachRemaining(e -> edges.add(new EdgeImpl(e, getGraknGraph())));
@@ -519,7 +510,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return An edge from this concept in a particular direction of a specific type
      * @throws MoreThanOneEdgeException when more than one edge of s specific type
      */
-    public EdgeImpl getEdgeOutgoingOfType(Schema.EdgeLabel type) {
+    EdgeImpl getEdgeOutgoingOfType(Schema.EdgeLabel type) {
         Set<EdgeImpl> edges = getEdgesOfType(Direction.OUT, type);
         if(edges.size() == 1) {
             return edges.iterator().next();
@@ -557,7 +548,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type the type of the edge to create
      * @return The edge created
      */
-    public EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
+    EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
         return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()), graknGraph);
     }
 

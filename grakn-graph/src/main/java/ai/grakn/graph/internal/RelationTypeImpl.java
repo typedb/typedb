@@ -116,11 +116,11 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     }
 
     @Override
-    public void innerDelete(){
+    public void delete(){
         //Force load the cache
         cachedHasRoles.get();
 
-        super.innerDelete();
+        super.delete();
 
         //Update the cache of the connected role types
         cachedHasRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
