@@ -70,7 +70,7 @@ case "$1" in
 
 start)
 
-    if [ $USE_CASSANDRA ]; then
+    if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
     fi
     "${GRAKN_HOME}/bin/zookeeper-server-start.sh" -daemon "${GRAKN_HOME}/conf/kafka/zookeeper.properties"
@@ -83,7 +83,7 @@ stop)
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
     "${GRAKN_HOME}/bin/kafka-server-stop.sh"
     "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
-    if [ $USE_CASSANDRA ]; then
+    if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
     fi
     ;;
@@ -93,7 +93,7 @@ clean)
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
     "${GRAKN_HOME}/bin/kafka-server-stop.sh"
     "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
-    if [ $USE_CASSANDRA ]; then
+    if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
         clean_grakn
     fi
@@ -104,7 +104,7 @@ status)
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
     "${GRAKN_HOME}/bin/kafka-server-status.sh"
     "${GRAKN_HOME}/bin/zookeeper-server-status.sh"
-    if [ $USE_CASSANDRA ]; then
+    if [ "$USE_CASSANDRA" ]; then
         "${GRAKN_HOME}/bin/grakn-cassandra.sh" status
     fi
     ;;

@@ -42,12 +42,12 @@ case "$1" in
 
 start)
 
-    if [ -e $ENGINE_PS ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
+    if [ -e "$ENGINE_PS" ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
         echo "Engine already running"
     else
         # engine has not already started
         echo -n "Starting engine"
-        if [[ $FOREGROUND = true ]]; then
+        if [[ "$FOREGROUND" = true ]]; then
             java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_ENGINE_CONFIG}" ai.grakn.engine.GraknEngineServer
         else
             java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_ENGINE_CONFIG}" ai.grakn.engine.GraknEngineServer &
@@ -59,7 +59,7 @@ start)
 stop)
 
     echo "Stopping engine"
-    if [[ -e $ENGINE_PS ]]; then
+    if [[ -e "$ENGINE_PS" ]]; then
         kill `cat $ENGINE_PS`
         rm $ENGINE_PS
     fi
@@ -68,7 +68,7 @@ stop)
 status)
 
     ENGINE_PIDS=$(ps ax | grep -i 'ai\.grakn\.engine\.GraknEngineServer' | grep java | grep -v grep | awk '{print $1}')
-    if [ -e $ENGINE_PS ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
+    if [ -e "$ENGINE_PS" ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
         echo "Engine is $(cat $ENGINE_PS)"
     elif [ -n "$ENGINE_PIDS" ]; then
         echo "Engine is $ENGINE_PIDS (foreground)"
