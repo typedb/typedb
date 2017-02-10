@@ -39,9 +39,9 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
-import ai.grakn.generator.GraknGraphMethods;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.MetaTypeNames;
+import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.generator.ResourceTypes.Unique;
 import ai.grakn.generator.ResourceValues;
@@ -102,7 +102,7 @@ public class GraknGraphPropertyTest {
     @Ignore // TODO: Fix NPE on getResourcesByValue
     @Property
     public void whenCallingMostMethodOnAClosedGraph_Throw(
-            @Open(false) GraknGraph graph, @From(GraknGraphMethods.class) Method method) throws Throwable {
+            @Open(false) GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
 
         // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf("open", "close", "admin", "isClosed", "implicitConceptsVisible", "showImplicitConcepts", "getKeyspace", "graql")));
@@ -118,7 +118,7 @@ public class GraknGraphPropertyTest {
     @Ignore // TODO: Fix this (or remove test)
     @Property
     public void whenCallingAnyMethodWithNull_Throw(
-            @Open GraknGraph graph, @From(GraknGraphMethods.class) Method method) throws Throwable {
+            @Open GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
         int numParameters = method.getParameterCount();
         assumeThat(numParameters, greaterThan(0));
         Object[] nulls = new Object[numParameters];
