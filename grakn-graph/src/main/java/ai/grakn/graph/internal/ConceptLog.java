@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -116,7 +115,7 @@ public class ConceptLog {
      * @return All the concepts which have been affected within the transaction in some way
      */
     Set<ConceptImpl> getModifiedConcepts() {
-        return modifiedConcepts.stream().filter(c -> c != null && c.isAlive()).collect(Collectors.toSet());
+        return modifiedConcepts;
     }
 
     /**
@@ -124,7 +123,7 @@ public class ConceptLog {
      * @return All the castings which have been affected within the transaction in some way
      */
     Set<CastingImpl> getModifiedCastings() {
-        return modifiedCastings.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
+        return modifiedCastings;
     }
 
     /**
@@ -132,7 +131,7 @@ public class ConceptLog {
      * @return All the castings which have been affected within the transaction in some way
      */
     Set<ResourceImpl> getModifiedResources() {
-        return modifiedResources.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
+        return modifiedResources;
     }
 
     /**
