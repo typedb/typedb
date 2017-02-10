@@ -302,33 +302,38 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     @Override
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
-            Var relVar = var.isUserDefinedName()? Graql.var(var.getVarName()) : Graql.var();
-            Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
-            relationPlayers.forEach(rp -> {
-                VarAdmin role = rp.getRoleType().orElse(null);
-                VarAdmin rolePlayer = rp.getRolePlayer();
-                if (role != null) relVar.rel(role, rolePlayer);
-                else relVar.rel(rolePlayer);
-            });
+        //keep varName if reified, reified if contains more properties than the RelationProperty itself and potential IsaProperty
+        boolean isReified = var.getProperties()
+                .filter(prop -> !RelationProperty.class.isInstance(prop))
+                .filter(prop -> !IsaProperty.class.isInstance(prop))
+                .count() > 0;
+        Var relVar = (var.isUserDefinedName() || isReified)? Graql.var(var.getVarName()) : Graql.var();
+        Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
+        relationPlayers.forEach(rp -> {
+            VarAdmin role = rp.getRoleType().orElse(null);
+            VarAdmin rolePlayer = rp.getRolePlayer();
+            if (role != null) relVar.rel(role, rolePlayer);
+            else relVar.rel(rolePlayer);
+        });
 
-            //id part
-            IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
-            IdPredicate predicate = null;
-            //Isa present
-            if (isaProp != null) {
-                VarAdmin isaVar = isaProp.getType();
-                TypeName typeName = isaVar.getTypeName().orElse(null);
-                VarName typeVariable = typeName == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
-                relVar.isa(Graql.var(typeVariable));
-                if (typeName != null) {
-                    GraknGraph graph = parent.graph();
-                    VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
-                    predicate = new IdPredicate(idVar, parent);
-                } else {
-                    predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
-                }
+        //id part
+        IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
+        IdPredicate predicate = null;
+        //Isa present
+        if (isaProp != null) {
+            VarAdmin isaVar = isaProp.getType();
+            TypeName typeName = isaVar.getTypeName().orElse(null);
+            VarName typeVariable = typeName == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
+            relVar.isa(Graql.var(typeVariable));
+            if (typeName != null) {
+                GraknGraph graph = parent.graph();
+                VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
+                predicate = new IdPredicate(idVar, parent);
+            } else {
+                predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
             }
-            return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), predicate, parent);
+        }
+        return new ai.grakn.graql.internal.reasoner.atom.binary.Relation(relVar.admin(), predicate, parent);
     }
 
 }
