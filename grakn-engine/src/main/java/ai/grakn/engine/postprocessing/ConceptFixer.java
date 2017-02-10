@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -50,25 +50,25 @@ class ConceptFixer {
     private static final int MAX_RETRY = 10;
 
     static void checkResources(String keyspace, String index, Set<ConceptId> conceptIds){
-        runPostProcessingJob(ConceptFixer::runResourceFix, keyspace, index, conceptIds);
+        runPostProcessingJob((graph) -> ConceptFixer.runResourceFix(graph, index, conceptIds), keyspace, index, conceptIds);
     }
 
     static void checkCastings(String keyspace, String index, Set<ConceptId> conceptIds){
-        runPostProcessingJob(ConceptFixer::runCastingFix, keyspace, index, conceptIds);
+        runPostProcessingJob((graph) -> ConceptFixer.runCastingFix(graph, index, conceptIds), keyspace, index, conceptIds);
     }
 
     /**
      * Main method which attempts to run all post processing jobs.
      *
      * @param postProcessor The post processing job.
-     *                      Either {@link ConceptFixer#runResourceFix(GraknGraph, Set)} or
-     *                      {@link ConceptFixer#runCastingFix(GraknGraph, Set)}.
+     *                      Either {@link ConceptFixer#runResourceFix(GraknGraph, String, Set)} or
+     *                      {@link ConceptFixer#runCastingFix(GraknGraph, String, Set)}.
      *                      This then returns a function which will complete the job after going through validation
      * @param keyspace The keyspace to post process against.
      * @param conceptIndex The unique index of the concept which must exist at the end
      * @param conceptIds The conceptIds which effectively need to be merged.
      */
-    private static void runPostProcessingJob(BiFunction<GraknGraph, Set<ConceptId>, BiConsumer<EngineCache, String>> postProcessor,
+    private static void runPostProcessingJob(Function<GraknGraph, Consumer<EngineCache>> postProcessor,
                                                 String keyspace, String conceptIndex, Set<ConceptId> conceptIds){
         String jobId = UUID.randomUUID().toString();
         boolean notDone = true;
@@ -79,7 +79,7 @@ class ConceptFixer {
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
 
                 //Perform the fix
-                BiConsumer<EngineCache, String> jobFinaliser = postProcessor.apply(graph, conceptIds);
+                Consumer<EngineCache> jobFinaliser = postProcessor.apply(graph);
 
                 //Check if the fix worked
                 validateMerged(graph, conceptIndex, conceptIds).
@@ -91,11 +91,12 @@ class ConceptFixer {
                 graph.admin().commitNoLogs();
 
                 //Finally clear the cache
-                jobFinaliser.accept(EngineCache.getInstance(), conceptIndex);
+                jobFinaliser.accept(EngineCache.getInstance());
 
                 return; //If it can get here. All post processing has succeeded.
 
             } catch (Throwable t) { //These exceptions need to become more specialised
+                t.printStackTrace();
                 LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage(jobId, t.getMessage()), t);
             }
 
@@ -108,8 +109,10 @@ class ConceptFixer {
         }
 
         StringBuilder failingConcepts = new StringBuilder();
-        conceptIds.stream().map(id -> failingConcepts.append(id.getValue()).append(","));
-        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(failingConcepts, jobId));
+        for (ConceptId id : conceptIds) {
+            failingConcepts.append(id.getValue()).append(",");
+        }
+        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(failingConcepts.toString(), jobId));
     }
 
     /**
@@ -129,8 +132,10 @@ class ConceptFixer {
                 numConceptFound++;
                 if (numConceptFound > 1) {
                     StringBuilder conceptIdValues = new StringBuilder();
-                    conceptIds.stream().map(c -> conceptIdValues.append(c.getValue()).append(","));
-                    return Optional.of("Not all concept were merged. The set of concept IDs [" + conceptIdValues + "] matched more than one concept");
+                    for (ConceptId id : conceptIds) {
+                        conceptIdValues.append(id.getValue()).append(",");
+                    }
+                    return Optional.of("Not all concept were merged. The set of concepts [" + conceptIds.size() + "] with IDs [" + conceptIdValues.toString() + "] matched more than one concept");
                 }
             }
         }
@@ -143,17 +148,17 @@ class ConceptFixer {
         return Optional.empty();
     }
 
-    private static BiConsumer<EngineCache, String> runResourceFix(GraknGraph graph, Set<ConceptId> conceptIds) {
-        graph.admin().fixDuplicateResources(conceptIds);
-        return (cache, index) -> {
+    private static Consumer<EngineCache> runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        graph.admin().fixDuplicateResources(index, conceptIds);
+        return (cache) -> {
             conceptIds.forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));
             cache.clearJobSetResources(graph.getKeyspace(), index);
         };
     }
 
-    private static BiConsumer<EngineCache, String> runCastingFix(GraknGraph graph, Set<ConceptId> conceptIds) {
-        graph.admin().fixDuplicateCastings(conceptIds);
-        return (cache, index) -> {
+    private static Consumer<EngineCache> runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        graph.admin().fixDuplicateCastings(index, conceptIds);
+        return (cache) -> {
             conceptIds.forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));
             cache.clearJobSetCastings(graph.getKeyspace(), index);
         };

@@ -629,21 +629,13 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     //---------- Null Vertex Handler ---------
     /**
-     * Checks if the underlaying vertex has not been removed and if it is not a ghost
+     * Checks if the underlaying vertex has not been removed and if it is not a ghost.
+     *
      * @return true if the underlying vertex has not been removed.
      */
     boolean isAlive() {
-        if(vertex == null) {
-            return false;
-        }
-
-        try {
-            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
-        } catch (IllegalStateException e){
-            return false;
-        }
+        return getGraknGraph().validVertex(getVertex());
     }
-
 
     <X> void setImmutableProperty(Schema.ConceptProperty conceptProperty, X newValue, X foundValue, Function<X, Object> converter){
         if(newValue == null){

@@ -26,6 +26,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * <p>
@@ -91,6 +92,11 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         if(!getTinkerPopGraph().tx().isOpen()){
             getTinkerPopGraph().tx().open(); //Until we sort out the transaction handling properly commits have to result in transactions being auto opened
         }
+    }
+
+    @Override
+    public boolean validVertex(Vertex vertex) {
+        return !((TitanVertex) vertex).isRemoved() && super.validVertex(vertex);
     }
 
     private void closeTitan(){
