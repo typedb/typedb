@@ -41,6 +41,7 @@ import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphMethods;
 import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.MetaTypeNames;
 import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.generator.ResourceTypes.Unique;
 import ai.grakn.generator.ResourceValues;
@@ -141,6 +142,7 @@ public class GraknGraphPropertyTest {
             @Open GraknGraph graph,
             @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
         Type type = putType.apply(graph, typeName);
+        graph.showImplicitConcepts(true);
         assertThat(type.subTypes(), contains(type));
     }
 
@@ -149,6 +151,7 @@ public class GraknGraphPropertyTest {
             @Open GraknGraph graph,
             @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
         Type type = putType.apply(graph, typeName);
+        graph.showImplicitConcepts(true);
         assertThat(type.playsRoles(), empty());
     }
 
@@ -378,6 +381,7 @@ public class GraknGraphPropertyTest {
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
             @Open GraknGraph graph, @Unused TypeName typeName) {
         RelationType relationType = graph.putRelationType(typeName);
+        graph.showImplicitConcepts(true);
         assertThat(relationType.hasRoles(), empty());
     }
 
@@ -615,10 +619,11 @@ public class GraknGraphPropertyTest {
 
     @Ignore // TODO: Fix this
     @Property
-    public void whenCallingClear_TheMetaConceptIsStillPresent(@Open GraknGraph graph) {
+    public void whenCallingClear_AllMetaConceptsArePresent(
+            @Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
         graph.open();
-        assertNotNull(graph.admin().getMetaConcept());
+        assertNotNull(graph.getType(typeName));
     }
 
     @Ignore // TODO: Fix this, or remove the test

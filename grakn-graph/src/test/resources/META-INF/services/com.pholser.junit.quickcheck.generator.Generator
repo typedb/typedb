@@ -35,3 +35,4 @@ ai.grakn.generator.Entities
 ai.grakn.generator.Relations
 ai.grakn.generator.Rules
 ai.grakn.generator.Resources
+ai.grakn.generator.MetaTypeNames
