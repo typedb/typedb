@@ -47,7 +47,6 @@ import ai.grakn.generator.ResourceValues;
 import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -72,6 +71,7 @@ import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
@@ -141,7 +141,15 @@ public class GraknGraphPropertyTest {
             @Open GraknGraph graph,
             @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
         Type type = putType.apply(graph, typeName);
-        assertEquals(ImmutableSet.of(type), type.subTypes());
+        assertThat(type.subTypes(), contains(type));
+    }
+
+    @Property
+    public void whenCallingAnyPutTypeMethod_CreateATypeNotPlayingAnyRoles(
+            @Open GraknGraph graph,
+            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
+        Type type = putType.apply(graph, typeName);
+        assertThat(type.playsRoles(), empty());
     }
 
     @Property
@@ -223,6 +231,13 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
+    public void whenCallingPutResourceType_TheResultingTypeHasNoRegexConstraint(
+            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
+        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
+        assertNull(resourceType.getRegex());
+    }
+
+    @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingNonUniqueResourceType_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType) {
         assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
@@ -283,6 +298,13 @@ public class GraknGraphPropertyTest {
             @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
         ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
         assertTrue(resourceType.isUnique());
+    }
+
+    @Property
+    public void whenCallingPutResourceTypeUnique_TheResultingTypeHasNoRegexConstraint(
+            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
+        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
+        assertNull(resourceType.getRegex());
     }
 
     @Property
@@ -353,6 +375,13 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
+    public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
+            @Open GraknGraph graph, @Unused TypeName typeName) {
+        RelationType relationType = graph.putRelationType(typeName);
+        assertThat(relationType.hasRoles(), empty());
+    }
+
+    @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeName_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RelationType relationType) {
         RelationType newType = graph.putRelationType(relationType.getName());
@@ -374,6 +403,19 @@ public class GraknGraphPropertyTest {
     public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused TypeName typeName) {
         RoleType roleType = graph.putRoleType(typeName);
         assertEquals(graph.admin().getMetaRoleType(), roleType.superType());
+    }
+
+    @Property
+    public void whenCallingPutRoleType_CreateATypePlayedByNoTypes(@Open GraknGraph graph, @Unused TypeName typeName) {
+        RoleType roleType = graph.putRoleType(typeName);
+        assertThat(roleType.playedByTypes(), empty());
+    }
+
+    @Property
+    public void whenCallingPutRoleType_CreateATypeOwnedByNoRelationTypes(
+            @Open GraknGraph graph, @Unused TypeName typeName) {
+        RoleType roleType = graph.putRoleType(typeName);
+        assertThat(roleType.relationTypes(), empty());
     }
 
     @Property
