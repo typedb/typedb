@@ -45,10 +45,7 @@ public class ConfigProperties {
 
     public static final String DEFAULT_KEYSPACE_PROPERTY = "graphdatabase.default-keyspace";
 
-    public static final String BATCH_SIZE_PROPERTY = "blockingLoader.batch-size";
-
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
-    public static final String POLLING_FREQUENCY_PROPERTY = "loader.polling-frequency";
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
     public static final String PASSWORD_PROTECTED_PROPERTY="password.protected";
 
