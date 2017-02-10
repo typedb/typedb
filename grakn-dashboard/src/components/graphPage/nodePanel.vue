@@ -55,6 +55,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     width: 270px;
     background-color: #0f0f0f;
     padding: 10px;
+    max-height: 95%;
+    overflow: scroll;
 }
 
 .panel-heading {
@@ -72,6 +74,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
   cursor: default;
 }
 
+.fa-times{
+  cursor: pointer;
+}
+
 .dd-header {
     margin-top: 10px;
     margin-bottom: 5px;
@@ -79,7 +85,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 .dd-handle {
     cursor: pointer;
-    /*border: 1px solid #3d404c;*/
     padding: 10px 10px;
     border-radius: 3px;
     margin: 3px 0px;
@@ -87,7 +92,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 .node-properties {
     cursor: text;
-    /*border: 1px solid #3d404c;*/
     padding: 10px 10px;
     border-radius: 3px;
 }

@@ -57,6 +57,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
   display: inline-flex;
   flex:1;
 }
+.fa-times{
+  cursor: pointer;
+}
 
 .grey{
   opacity: 0.5;

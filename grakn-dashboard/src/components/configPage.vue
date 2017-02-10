@@ -26,7 +26,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     <tr>
                         <th>Config Item</th>
                         <th>Value</th>
-                        <tr>
+                    </tr>
                 </thead>
                 <tbody>
                     <tr>
@@ -59,7 +59,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </tr>
                     <tr>
                         <td>Log File</td>
-                        <td>{{response['logging.file']}}</td>
+                        <td>{{response['logging.file.main']}}</td>
                     </tr>
                     <tr>
                         <td>Logging Level</td>
@@ -115,6 +115,17 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </template>
 
 <style scoped>
+table {
+    border-collapse: separate;
+    border-spacing: 15px;
+}
+th{
+  font-weight: bold;
+}
+td{
+  border-bottom: 1px solid #606060;
+  padding: 5px;
+}
 .container {
     display: flex;
     flex-direction: row;
@@ -124,6 +135,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     position: absolute;
 }
 
+.table-responsive{
+  margin-top: 10px;
+}
+
 .inline-flex-1 {
     display: inline-flex;
     flex: 1;
@@ -131,14 +146,16 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 .panel-body {
     display: inline-flex;
+    justify-content: center;
     flex: 3;
     background-color: green;
-    margin-top: 20px;
+    margin-top: 10px;
     margin-bottom: 25px;
-    background-color: rgba(68, 70, 79, 1);
+    background-color: #0f0f0f;
     margin-left: 15px;
     margin-right: 15px;
-    padding: 10px 15px;
+    padding-top: 30px;
+    overflow: scroll;
 }
 </style>
 

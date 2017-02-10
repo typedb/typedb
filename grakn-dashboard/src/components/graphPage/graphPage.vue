@@ -27,7 +27,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </div>
 </template>
 
-<style>
+<style scoped>
 .graph-panel-body {
     height: 100%;
     width: 100%;
@@ -95,7 +95,6 @@ export default {
         this.state.eventHub.$on('load-ontology', this.onLoadOntology);
         this.state.eventHub.$on('clear-page', this.onClear);
         this.state.eventHub.$on('configure-node', this.configureNode);
-
 
     },
     beforeDestroy() {
@@ -220,10 +219,6 @@ export default {
             }
 
             const eventKeys = param.event.srcEvent;
-
-            if (eventKeys.shiftKey) {
-                visualiser.clearGraph();
-            }
 
             EngineClient.request({
                 url: visualiser.getNode(node).href,
