@@ -66,6 +66,7 @@ public class ConceptLog {
 
     ConceptLog(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
+        resetTransaction();
     }
 
     /**

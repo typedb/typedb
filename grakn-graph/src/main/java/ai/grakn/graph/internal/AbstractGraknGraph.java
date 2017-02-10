@@ -737,7 +737,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit() throws GraknValidationException {
         commit(this::submitCommitLogs);
-        clearLocalVariables();
     }
 
     /**
@@ -783,8 +782,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransaction();
+
         LOG.trace("Graph committed.");
-        getConceptLog().resetTransaction();
+        clearLocalVariables();
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
