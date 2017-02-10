@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
-import ai.grakn.graph.BaseGraknGraph;
 import com.google.common.collect.ImmutableList;
 
 import java.util.function.BiFunction;
@@ -37,12 +36,12 @@ public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
     @Override
     protected BiFunction<GraknGraph, TypeName, Type> generate() {
         return random.choose(ImmutableList.of(
-                BaseGraknGraph::putEntityType,
+                GraknGraph::putEntityType,
                 (graph, name) -> graph.putResourceType(name, gen(ResourceType.DataType.class)),
                 (graph, name) -> graph.putResourceTypeUnique(name, gen(ResourceType.DataType.class)),
-                BaseGraknGraph::putRuleType,
-                BaseGraknGraph::putRelationType,
-                BaseGraknGraph::putRoleType
+                GraknGraph::putRuleType,
+                GraknGraph::putRelationType,
+                GraknGraph::putRoleType
         ));
     }
 }
