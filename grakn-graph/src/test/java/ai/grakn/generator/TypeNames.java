@@ -25,7 +25,6 @@ import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static ai.grakn.generator.GraknGraphs.lastGeneratedGraph;
 import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -36,38 +35,47 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Generator that generates totally random type names
  */
-public class TypeNames extends AbstractGenerator<TypeName> {
+public class TypeNames extends FromGraphGenerator<TypeName> {
 
     private boolean mustBeUnused = false;
 
     public TypeNames() {
         super(TypeName.class);
+        this.fromLastGeneratedGraph();
     }
 
     @Override
-    public TypeName generate() {
-        return withImplicitConceptsVisible(lastGeneratedGraph(), graph -> {
-            TypeName name;
+    public TypeName generateFromGraph() {
+        if (mustBeUnused) {
+            return withImplicitConceptsVisible(graph(), graph -> {
+                TypeName name;
 
-            do {
-                if (random.nextBoolean()) {
-                    name = TypeName.of(gen(String.class));
-                } else {
-                    name = TypeName.of("foo");
-                }
-            } while (mustBeUnused && graph.getType(name) != null);
+                do {
+                    name = randomName();
+                } while (graph.getType(name) != null);
 
-            return name;
-        });
+                return name;
+            });
+        } else {
+            return randomName();
+        }
     }
 
     public void configure(Unused unused) {
         mustBeUnused();
     }
 
-    public TypeNames mustBeUnused() {
+    TypeNames mustBeUnused() {
         mustBeUnused = true;
         return this;
+    }
+
+    private TypeName randomName() {
+        if (random.nextBoolean()) {
+            return TypeName.of(gen(String.class));
+        } else {
+            return TypeName.of("foo");
+        }
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

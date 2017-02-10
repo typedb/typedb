@@ -21,6 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
+import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
 
 import java.util.Collection;
 
@@ -34,7 +35,7 @@ public abstract class AbstractInstanceGenerator<T extends Instance, S extends Ty
     }
 
     @Override
-    protected final T generate() {
+    protected final T generateFromGraph() {
         S type = genFromGraph(generatorClass).excludeMeta().generate(random, status);
 
         Collection<T> instances = (Collection<T>) type.instances();
@@ -43,6 +44,10 @@ public abstract class AbstractInstanceGenerator<T extends Instance, S extends Ty
         } else {
             return random.choose(instances);
         }
+    }
+
+    public final void configure(NotMeta notMeta) {
+        // Do nothing, instances are never meta types
     }
 
     protected abstract T newInstance(S type);

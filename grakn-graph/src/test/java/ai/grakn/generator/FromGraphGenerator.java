@@ -24,8 +24,8 @@ import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Supplier;
 
-import static ai.grakn.generator.GraknGraphs.lastGeneratedGraph;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -33,32 +33,43 @@ import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
+    private Supplier<GraknGraph> graphSupplier =
+            () -> gen().make(GraknGraphs.class).setOpen(true).generate(random, status);
+
+    private GraknGraph graph;
+
     FromGraphGenerator(Class<T> type) {
         super(type);
     }
 
-    private boolean useLastGeneratedGraph = false;
-
     protected final GraknGraph graph() {
-        if (useLastGeneratedGraph) {
-            return lastGeneratedGraph();
-        } else {
-            return gen().make(GraknGraphs.class).setOpen(true).generate(random, status);
-        }
+        return graph;
     }
+
+    @Override
+    protected final T generate() {
+        graph = graphSupplier.get();
+        return generateFromGraph();
+    }
+
+    protected abstract T generateFromGraph();
 
     protected final <S extends FromGraphGenerator<?>> S genFromGraph(Class<S> generatorClass) {
         S generator = gen().make(generatorClass);
-        if (useLastGeneratedGraph) generator.useLastGeneratedGraph();
+        generator.fromGraph(this::graph);
         return generator;
     }
 
     public final void configure(FromGraph fromGraph) {
-        useLastGeneratedGraph();
+        fromLastGeneratedGraph();
     }
 
-    final FromGraphGenerator<T> useLastGeneratedGraph() {
-        useLastGeneratedGraph = true;
+    final void fromGraph(Supplier<GraknGraph> graphSupplier) {
+        this.graphSupplier = graphSupplier;
+    }
+
+    final FromGraphGenerator<T> fromLastGeneratedGraph() {
+        fromGraph(GraknGraphs::lastGeneratedGraph);
         return this;
     }
 

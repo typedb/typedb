@@ -55,21 +55,19 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allTypesFrom;
+import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
@@ -106,7 +104,7 @@ public class GraknGraphPropertyTest {
 
         // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf("open", "close", "admin", "isClosed", "implicitConceptsVisible", "showImplicitConcepts", "getKeyspace", "graql")));
-        Object[] params = Stream.of(method.getParameters()).map(Parameter::getType).map(this::mock).toArray();
+        Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraphRuntimeException.class));
@@ -783,15 +781,5 @@ public class GraknGraphPropertyTest {
 
         assertEquals(expectedException, actualException);
         assertEquals(expectedResult, actualResult);
-    }
-
-    private <T> T mock(Class<T> clazz) {
-        if (clazz.equals(boolean.class)) {
-            return (T) Boolean.FALSE;
-        } else if (clazz.equals(String.class)) {
-            return (T) "";
-        } else {
-            return Mockito.mock(clazz);
-        }
     }
 }

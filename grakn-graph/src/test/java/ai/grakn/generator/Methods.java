@@ -20,10 +20,13 @@
 package ai.grakn.generator;
 
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
+import org.mockito.Mockito;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.stream.Stream;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -48,6 +51,20 @@ public class Methods extends AbstractGenerator<Method> {
 
     public void configure(MethodOf methodOf) {
         this.clazz = methodOf.value();
+    }
+
+    public static Object[] mockParamsOf(Method method) {
+        return Stream.of(method.getParameters()).map(Parameter::getType).map(Methods::mock).toArray();
+    }
+
+    private static <T> T mock(Class<T> clazz) {
+        if (clazz.equals(boolean.class)) {
+            return (T) Boolean.FALSE;
+        } else if (clazz.equals(String.class)) {
+            return (T) "";
+        } else {
+            return Mockito.mock(clazz);
+        }
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

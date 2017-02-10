@@ -44,7 +44,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
     }
 
     @Override
-    protected final T generate() {
+    protected final T generateFromGraph() {
         Collection<T> types = (Collection<T>) metaType().subTypes();
 
         types = types.stream().filter(this::filter).collect(toSet());
@@ -55,7 +55,7 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         }
         
         if (types.isEmpty()) {
-            TypeName name = gen().make(TypeNames.class).mustBeUnused().generate(random, status);
+            TypeName name = genFromGraph(TypeNames.class).mustBeUnused().generate(random, status);
             assert graph().getType(name) == null;
             return newType(name);
         } else {

@@ -74,6 +74,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public static GraknGraph lastGeneratedGraph() {
+        if (lastGeneratedGraph == null) {
+            throw new IllegalStateException("No graph to generate from");
+        }
         return lastGeneratedGraph;
     }
 
