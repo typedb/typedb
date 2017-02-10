@@ -81,14 +81,14 @@ class ConceptFixer {
                 //Perform the fix
                 BiConsumer<EngineCache, String> jobFinaliser = postProcessor.apply(graph, conceptIds);
 
-                //Commit the fix
-                graph.admin().commitNoLogs();
-
                 //Check if the fix worked
                 validateMerged(graph, conceptIndex, conceptIds).
                         ifPresent(message -> {
                             throw new RuntimeException(message);
                         });
+
+                //Commit the fix
+                graph.admin().commitNoLogs();
 
                 //Finally clear the cache
                 jobFinaliser.accept(EngineCache.getInstance(), conceptIndex);
@@ -107,11 +107,9 @@ class ConceptFixer {
             retry = performRetry(retry);
         }
 
-        String invalidConcepts = "";
-        for (ConceptId id : conceptIds) {
-            invalidConcepts += id.getValue() + ",";
-        }
-        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(invalidConcepts, jobId));
+        StringBuilder failingConcepts = new StringBuilder();
+        conceptIds.stream().map(id -> failingConcepts.append(id.getValue()).append(","));
+        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(failingConcepts, jobId));
     }
 
     /**
@@ -130,12 +128,9 @@ class ConceptFixer {
             if (graph.getConcept(conceptId) != null) {
                 numConceptFound++;
                 if (numConceptFound > 1) {
-                    String invalidConcepts = "";
-                    for (ConceptId id : conceptIds) {
-                        invalidConcepts += id.getValue() + ",";
-                    }
-
-                    return Optional.of("Not all concept were merged. The set of concepts [" + conceptIds.size() + "] with IDs [" + invalidConcepts + "] matched more than one concept");
+                    StringBuilder conceptIdValues = new StringBuilder();
+                    conceptIds.stream().map(c -> conceptIdValues.append(c.getValue()).append(","));
+                    return Optional.of("Not all concept were merged. The set of concept IDs [" + conceptIdValues + "] matched more than one concept");
                 }
             }
         }
