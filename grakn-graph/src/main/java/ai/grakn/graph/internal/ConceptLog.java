@@ -84,6 +84,7 @@ public class ConceptLog {
         typeCache.clear();
 
         //Reload types back in from grakn graph
+        //TODO: Clone types so changes in transactions don't affect graph cache
         graknGraph.getCachedOntology().asMap().values().forEach(this::cacheConcept);
     }
 
