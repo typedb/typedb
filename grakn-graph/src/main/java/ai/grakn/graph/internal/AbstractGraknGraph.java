@@ -44,6 +44,8 @@ import ai.grakn.util.EngineCommunicator;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -63,6 +65,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -100,6 +103,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
+    private Cache<TypeName, TypeImpl> cachedOntology = CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterAccess(10, TimeUnit.MINUTES)
+            .build();
+
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
         this.keyspace = keyspace;
@@ -130,6 +138,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public String getKeyspace(){
         return keyspace;
+    }
+
+    Cache<TypeName, TypeImpl> getCachedOntology(){
+        return cachedOntology;
     }
 
     @Override
@@ -274,7 +286,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     ConceptLog getConceptLog() {
         ConceptLog conceptLog = localConceptLog.get();
         if(conceptLog == null){
-            localConceptLog.set(conceptLog = new ConceptLog());
+            localConceptLog.set(conceptLog = new ConceptLog(this));
         }
         return conceptLog;
     }
@@ -661,7 +673,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } catch (UnsupportedOperationException e){
             throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
         }
-        getConceptLog().clearTransaction();
+        getConceptLog().resetTransaction();
     }
 
     /**
@@ -772,7 +784,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransaction();
         LOG.trace("Graph committed.");
-        getConceptLog().clearTransaction();
+        getConceptLog().resetTransaction();
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {

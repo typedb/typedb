@@ -45,35 +45,37 @@ import java.util.stream.Collectors;
  *
  */
 public class ConceptLog {
+    private final AbstractGraknGraph<?> graknGraph;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
     private final Map<TypeName, TypeImpl> typeCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
-    private final Set<ConceptImpl> modifiedConcepts;
+    private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
 
     //We Track Casting Explicitly For Post Processing
-    private final Set<CastingImpl> modifiedCastings;
+    private final Set<CastingImpl> modifiedCastings = new HashSet<>();
 
     //We Track Resource Explicitly for Post Processing
-    private final Set<ResourceImpl> modifiedResources;
+    private final Set<ResourceImpl> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, RelationImpl> modifiedRelations;
+    private final Map<String, RelationImpl> modifiedRelations = new HashMap<>();
 
 
-    ConceptLog() {
-        modifiedCastings = new HashSet<>();
-        modifiedConcepts = new HashSet<>();
-        modifiedResources = new HashSet<>();
-        modifiedRelations = new HashMap<>();
+    ConceptLog(AbstractGraknGraph<?> graknGraph) {
+        this.graknGraph = graknGraph;
     }
 
     /**
      * Removes all the concepts from the transaction tracker
      */
-    void clearTransaction(){
+    void resetTransaction(){
+        //Purge types into cachedOntology
+        graknGraph.getCachedOntology().putAll(typeCache);
+
+        //Clear all transaction bound caches
         modifiedConcepts.clear();
         modifiedCastings.clear();
         modifiedResources.clear();
@@ -81,7 +83,8 @@ public class ConceptLog {
         conceptCache.clear();
         typeCache.clear();
 
-        //TODO: Reload Types Back In From Central Cache
+        //Reload types back in from grakn graph
+        graknGraph.getCachedOntology().asMap().values().forEach(this::cacheConcept);
     }
 
     /**

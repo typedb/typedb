@@ -63,11 +63,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private TypeName cachedTypeName;
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private Cache<T> cachedSuperType = new Cache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.SUB));
-    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
-    private Cache<Set<RoleType>> cachedDirectPlaysRoles = new Cache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+    private ComponentCache<Boolean> cachedIsImplicit = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+    private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.SUB));
+    private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
+    private ComponentCache<Set<RoleType>> cachedDirectPlaysRoles = new ComponentCache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -160,7 +160,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedDirectSubTypes.clear();
             cachedDirectPlaysRoles.clear();
 
-            //Clear Global Cache
+            //Clear Global ComponentCache
             getGraknGraph().getConceptLog().removeConcept(this);
         }
     }

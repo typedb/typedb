@@ -38,11 +38,11 @@ import java.util.function.Supplier;
  * @author fppt
  *
  */
-class Cache<V> {
+class ComponentCache<V> {
     private final Supplier<V> databaseReader;
     private Optional<V> cachedValue = Optional.empty();
 
-    public Cache(Supplier<V> databaseReader){
+    public ComponentCache(Supplier<V> databaseReader){
         this.databaseReader = databaseReader;
     }
 
@@ -87,9 +87,9 @@ class Cache<V> {
     /**
      * Mutates the cached value if something is cached. Otherwise does nothing.
      *
-     * @param modifier
+     * @param modifier the mutator function.
      */
-    public void ifPresent(Consumer<V> modifier){
+    void ifPresent(Consumer<V> modifier){
         if(cachedValue.isPresent()){
             modifier.accept(cachedValue.get());
         }

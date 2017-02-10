@@ -42,7 +42,7 @@ import java.util.Set;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private Cache<Set<RoleType>> cachedHasRoles = new Cache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+    private ComponentCache<Set<RoleType>> cachedHasRoles = new ComponentCache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -77,10 +77,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
 
-        //Cache the Role internally
+        //ComponentCache the Role internally
         cachedHasRoles.ifPresent(set -> set.add(roleType));
 
-        //Cache the relation type in the role
+        //ComponentCache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
 
         return this;
@@ -125,7 +125,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         //Update the cache of the connected role types
         cachedHasRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
 
-        //Clear internal Cache
+        //Clear internal ComponentCache
         cachedHasRoles.clear();
     }
 }

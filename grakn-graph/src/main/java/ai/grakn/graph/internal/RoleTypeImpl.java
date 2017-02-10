@@ -50,8 +50,8 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
-    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+    private ComponentCache<Set<Type>> cachedDirectPlayedByTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+    private ComponentCache<Set<RelationType>> cachedRelationTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
