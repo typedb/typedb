@@ -30,6 +30,8 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.GraknAdmin;
@@ -65,6 +67,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link EntityType} with the provided name
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link EntityType}.
      */
     EntityType putEntityType(String name);
 
@@ -76,6 +79,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link EntityType} with the provided name
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link EntityType}.
      */
     EntityType putEntityType(TypeName name);
 
@@ -91,6 +95,9 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link ResourceType} with the provided name and data type.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
+     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
+     *                          unique or has a different datatype.
      */
     <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType);
 
@@ -106,6 +113,9 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link ResourceType} with the provided name and data type.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
+     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
+     *                          unique or has a different datatype.
      */
     <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType);
 
@@ -122,6 +132,9 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link ResourceType} with the provided name.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
+     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
+     *                          not unique or has a different datatype.
      */
     <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType);
 
@@ -138,6 +151,9 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link ResourceType} with the provided name.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
+     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
+     *                          not unique or has a different datatype.
      */
     <V> ResourceType <V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType);
 
@@ -149,6 +165,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RuleType} with the provided name.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RuleType}.
      */
     RuleType putRuleType(String name);
 
@@ -160,6 +177,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RuleType} with the provided name.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RuleType}.
      */
     RuleType putRuleType(TypeName name);
 
@@ -171,6 +189,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link RelationType} with the provided name.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RelationType}.
      */
     RelationType putRelationType(String name);
 
@@ -182,6 +201,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return A new or existing {@link RelationType} with the provided name.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RelationType}.
      */
     RelationType putRelationType(TypeName name);
 
@@ -193,6 +213,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RoleType} with the provided Id.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RoleType}.
      */
     RoleType putRoleType(String name);
 
@@ -204,6 +225,7 @@ public interface GraknGraph extends AutoCloseable{
      * @return new or existing {@link RoleType} with the provided Id.
      *
      * @throws GraphRuntimeException if the graph is closed
+     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RoleType}.
      */
     RoleType putRoleType(TypeName name);
 
@@ -231,7 +253,7 @@ public interface GraknGraph extends AutoCloseable{
     <T extends Type> T getType(TypeName name);
 
     /**
-     * Get the Resources holding the value provided, if they exist.
+     * Get all Resources holding the value provided, if they exist.
      *
      * @param value A value which a Resource in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
@@ -293,12 +315,12 @@ public interface GraknGraph extends AutoCloseable{
     RuleType getRuleType(String name);
 
     /**
-     * Get a collection of Relations that match the specified Relation Type and role map, if it exists.
+     * Get a Relation that has the specified Relation Type and role map, if it exists. Otherwise, return {@code null}.
      * Caller specifies a Relation Type and a role map, which lists the Instances or Resources in the relationship, and the roles each play.
      *
      * @param relationType The Relation Type which we wish to find a Relation instance of.
      * @param roleMap A role map specifying the rolePlayers (Instances or Resources) in the relationship and the roles (Role Types) they play.
-     * @return A collection of Relations which meet the above requirements or an empty collection is no relationship exists fulfilling the above requirements.
+     * @return a Relation which meet the above requirements or {@code null} if no relationship exists fulfilling the above requirements.
      *
      * @throws GraphRuntimeException if the graph is closed
      */
