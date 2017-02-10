@@ -160,7 +160,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
         vertex.remove();
-        vertex = null;
     }
 
     /**
