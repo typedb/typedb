@@ -114,7 +114,7 @@ public final class Schema {
         //Other Properties
         TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), IS_UNIQUE(Boolean.class),
-        IS_MATERIALISED(Boolean.class), IS_EXPECTED(Boolean.class), RULE_LHS(String.class), RULE_RHS(String.class),
+        RULE_LHS(String.class), RULE_RHS(String.class),
         VALUE_STRING(String.class), VALUE_LONG(Long.class), VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class);
 
         private final Class dataType;

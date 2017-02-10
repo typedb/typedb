@@ -75,7 +75,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     private final AbstractGraknGraph graknGraph;
-    private Vertex vertex;
+    private final Vertex vertex;
 
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
         this.vertex = v;
