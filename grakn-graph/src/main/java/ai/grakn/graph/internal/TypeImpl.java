@@ -133,7 +133,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
     }
 
-    private Map<RoleType, Boolean> directPlaysRoles(){
+    Map<RoleType, Boolean> directPlaysRoles(){
         return cachedDirectPlaysRoles.get();
     }
 
