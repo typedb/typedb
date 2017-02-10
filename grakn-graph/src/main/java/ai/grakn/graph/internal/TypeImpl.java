@@ -100,12 +100,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return producer.apply(instanceVertex, getThis());
     }
 
-    @Override
-    Vertex getVertex(){
-        LOG.debug("Caching failure for Type [" + getName() + "] on graph " + getGraknGraph().getKeyspace() + "]. Looking up property using vertex directly.");
-        return super.getVertex();
-    }
-
     /**
      *
      * @return A list of all the roles this Type is allowed to play.
