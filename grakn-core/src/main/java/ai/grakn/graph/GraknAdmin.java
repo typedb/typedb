@@ -145,14 +145,14 @@ public interface GraknAdmin {
      * @param castingVertexIds The vertex Ids of the duplicate castings
      * @return if castings were merged and a commit is required.
      */
-    boolean fixDuplicateCastings(Set<ConceptId> castingVertexIds);
+    boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds);
 
     /**
      *
      * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
-    boolean fixDuplicateResources(Set<ConceptId> resourceVertexIds);
+    boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
 
     /**
      *
@@ -161,4 +161,11 @@ public interface GraknAdmin {
      * @return A concept with the matching key and value
      */
     <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value);
+
+    /**
+     *
+     * @param vertex The vertex to be checked against the underlaying graph
+     * @return true if the vertex is still valid and has not been removed
+     */
+    boolean validVertex(Vertex vertex);
 }
