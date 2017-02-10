@@ -257,11 +257,11 @@ class ValidateGlobalRules {
         TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
 
         while(currentConcept != null){
-            Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
-            for (EdgeImpl edge : edges) {
-                Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
-                if (required) {
-                    RoleType roleType = edge.getTarget().asRoleType();
+
+            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
+            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
+                if(playsRoleEntry.getValue()){
+                    RoleType roleType = playsRoleEntry.getKey();
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId()));
