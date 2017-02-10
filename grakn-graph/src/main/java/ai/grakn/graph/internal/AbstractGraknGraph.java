@@ -673,7 +673,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } catch (UnsupportedOperationException e){
             throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
         }
-        getConceptLog().resetTransaction();
+        clearLocalVariables();
     }
 
     /**
@@ -784,7 +784,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         commitTransaction();
 
         LOG.trace("Graph committed.");
-        clearLocalVariables();
+        getConceptLog().resetTransaction(true);
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {

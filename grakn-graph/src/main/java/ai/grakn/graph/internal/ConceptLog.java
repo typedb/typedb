@@ -66,15 +66,15 @@ public class ConceptLog {
 
     ConceptLog(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
-        resetTransaction();
+        resetTransaction(false);
     }
 
     /**
      * Removes all the concepts from the transaction tracker
      */
-    void resetTransaction(){
+    void resetTransaction(boolean committed){
         //Purge types into cachedOntology
-        graknGraph.getCachedOntology().putAll(typeCache);
+        if(committed) graknGraph.getCachedOntology().putAll(typeCache);
 
         //Clear all transaction bound caches
         modifiedConcepts.clear();
