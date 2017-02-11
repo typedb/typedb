@@ -53,30 +53,6 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
         setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
     }
 
-    //TODO: Fill out details on this method
-    /**
-     *
-     * @param expectation
-     * @return The Rule itself
-     */
-    @Override
-    public Rule setExpectation(boolean expectation) {
-        setProperty(Schema.ConceptProperty.IS_EXPECTED, expectation);
-        return getThis();
-    }
-
-    //TODO: Fill out details on this method
-    /**
-     *
-     * @param materialise
-     * @return The Rule itself
-     */
-    @Override
-    public Rule setMaterialise(boolean materialise) {
-        setProperty(Schema.ConceptProperty.IS_MATERIALISED, materialise);
-        return getThis();
-    }
-
     /**
      *
      * @return A string representing the left hand side GraQL query.
@@ -101,27 +77,6 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
         } else {
             return getGraknGraph().graql().parsePattern(value);
         }
-    }
-
-
-    //TODO: Fill out details on this method
-    /**
-     *
-     * @return
-     */
-    @Override
-    public Boolean getExpectation() {
-        return getPropertyBoolean(Schema.ConceptProperty.IS_EXPECTED);
-    }
-
-    //TODO: Fill out details on this method
-    /**
-     *
-     * @return
-     */
-    @Override
-    public Boolean isMaterialise() {
-        return getPropertyBoolean(Schema.ConceptProperty.IS_MATERIALISED);
     }
 
     /**
