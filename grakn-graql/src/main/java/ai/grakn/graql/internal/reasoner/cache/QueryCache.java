@@ -87,12 +87,6 @@ public class QueryCache<T extends ReasonerQuery>{
         else return new HashMap<>();
     }
 
-    private Map<VarName, VarName> getRetrieveUnifiers(T toRetrieve){
-        T equivalentQuery = contains(toRetrieve)? cache.get( toRetrieve).getKey() : null;
-        if (equivalentQuery != null) return  equivalentQuery.getUnifiers(toRetrieve);
-        else return new HashMap<>();
-    }
-
     public int answerSize(Set<T> queries){
         return cache.values().stream()
                 .filter(p -> queries.contains(p.getKey()))
