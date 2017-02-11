@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.Map;
@@ -124,14 +125,15 @@ public class InferenceRule {
     private void rewriteBody(){
         body.getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())
+                .filter(at -> Objects.nonNull(at.getType()))
+                .filter(at -> at.getType().equals(head.getAtom().getType()))
                 .forEach(at -> {
                     Atom rewrite = at.rewriteToUserDefined();
-                    if (rewrite.isEquivalent(getHead().getAtom())) {
-                        body.removeAtom(at);
-                        body.addAtom(rewrite);
-                    }
-                });
+                    body.removeAtom(at);
+                    body.addAtom(rewrite);
+                    });
     }
 
     private void unify(Map<VarName, VarName> unifiers){
@@ -159,11 +161,11 @@ public class InferenceRule {
      * make rule consistent variable-wise with the parent atom by means of unification
      * @param parentAtom atom the rule should be unified with
      */
-   public void unify(Atom parentAtom) {
+    public void unify(Atom parentAtom) {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
-        rewriteBody();
-        if(parentAtom.isRelation() || parentAtom.isResource()) {
+        if (head.getAtom().isUserDefinedName()) rewriteBody();
+        if (parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);
         }
     }
