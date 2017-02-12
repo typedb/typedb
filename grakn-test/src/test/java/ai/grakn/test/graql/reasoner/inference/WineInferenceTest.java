@@ -22,7 +22,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.stream.Collectors;
@@ -34,8 +34,8 @@ import static ai.grakn.test.GraknTestEnv.*;
 
 public class WineInferenceTest {
 
-    @ClassRule
-    public static final GraphContext wineGraph = GraphContext.preLoad("wines-test.gql", "wines-rules.gql");
+    @Rule
+    public final GraphContext wineGraph = GraphContext.preLoad("wines-test.gql", "wines-rules.gql");
 
     @BeforeClass
     public static void setUpClass() {
@@ -44,7 +44,7 @@ public class WineInferenceTest {
 
     @Test
     public void testRecommendation() {
-        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;";
+        String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;$y has name $nameW;";
         QueryBuilder qb = wineGraph.graph().graql().infer(false);
         QueryBuilder iqb = wineGraph.graph().graql().infer(true);
 
@@ -54,7 +54,7 @@ public class WineInferenceTest {
                         "{$nameP value 'Charlie';$nameW value 'Pinot Grigio Rose';} or" +
                         "{$nameP value 'Denis';$nameW value 'Busuioaca Romaneasca';} or" +
                         "{$nameP value 'Eva';$nameW value 'Tamaioasa Romaneasca';} or" +
-                        "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y;";
+                        "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y, $nameW;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));

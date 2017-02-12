@@ -379,7 +379,7 @@ public class Relation extends TypeAtom {
                 .findFirst().orElse(null);
         if (hrAtom != null) {
             ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
-            QueryAnswers answers = hrQuery.DBlookup();
+            QueryAnswers answers = new QueryAnswers(hrQuery.DBlookup().collect(Collectors.toSet()));
             if (answers.size() == 1) {
                 IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
                         answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
