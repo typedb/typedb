@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.parser;
 
+import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
@@ -36,14 +37,14 @@ import java.util.stream.Collectors;
  */
 public class GraqlErrorListener extends BaseErrorListener {
 
-    private final String[] query;
+    private final List<String> query;
     private final List<SyntaxError> errors = new ArrayList<>();
 
     public GraqlErrorListener(String query) {
         if (query.isEmpty()) {
             this.query = null;
         } else {
-            this.query = query.split("\n");
+            this.query = Lists.newArrayList(query.split("\n"));
         }
     }
 
@@ -55,7 +56,7 @@ public class GraqlErrorListener extends BaseErrorListener {
         if (query == null) {
             errors.add(new SyntaxError(line, msg));
         } else {
-            errors.add(new SyntaxError(query[line-1], line, charPositionInLine, msg));
+            errors.add(new SyntaxError(query.get(line-1), line, charPositionInLine, msg));
         }
     }
 
