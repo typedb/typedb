@@ -145,7 +145,7 @@ export default {
         this.loadMetaTypeInstances();
 
         //Global key bindings
-        window.addEventListener('keyup', (e)=>{if(e.keyCode===13) this.runQuery();})
+        window.addEventListener('keyup', (e)=>{if(e.keyCode===13&&!e.shiftKey) this.runQuery();})
 
     },
     mounted: function() {
@@ -230,7 +230,7 @@ export default {
             const query = this.codeMirror.getValue();
 
             // Empty query.
-            if (query == undefined || query.length === 0)
+            if (query == undefined || query.trim().length === 0)
                 return;
 
             this.state.eventHub.$emit('click-submit', query);
