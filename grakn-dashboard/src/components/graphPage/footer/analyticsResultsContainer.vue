@@ -38,10 +38,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .panel-wrapper{
   position: absolute;
   bottom: 100%;
-  background-color: rgba(68, 70, 79, 0.9);
+  background-color: #0f0f0f;
   width:100%;
   margin-bottom:5px;
-  padding: 5px 10px;
+  padding: 10px 10px;
 }
 
 .panel-footer{
@@ -55,6 +55,15 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
   color: white;
   border: 1px solid white;
   margin: 2px 0px;
+}
+
+.modal-title{
+  margin-bottom: 10px;
+}
+
+h5{
+  border-bottom: 1px solid #606060;
+  padding-bottom:5px;
 }
 
 </style>
