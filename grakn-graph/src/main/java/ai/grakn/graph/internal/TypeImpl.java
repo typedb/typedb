@@ -144,7 +144,21 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
-        return null;
+        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retreived
+
+        Set<ResourceType> resourceTypes = new HashSet<>();
+        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
+        playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+            if(relationType.isImplicit()){
+                //This is faster than doing the traversal
+                TypeName prefix = Schema.Resource.HAS_RESOURCE.getName(TypeName.of(""));
+                TypeName resourceTypeName = TypeName.of(relationType.getName().getValue().replace(prefix.getValue(), ""));
+                resourceTypes.add(getGraknGraph().getType(resourceTypeName));
+            }
+        }));
+
+        getGraknGraph().showImplicitConcepts(false);
+        return resourceTypes;
     }
 
     Map<RoleType, Boolean> directPlaysRoles(){
