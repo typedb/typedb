@@ -48,7 +48,7 @@
   },
   "scripts": {
     "browserify": "browserify -e src/main.js -o static/dashboard.js",
-    "watchify": "watchify src/main.js -o static/dashboard.js",
+    "watchify": "watchify src/main.js -o static/dashboard.js -v",
     "preinstall": "npm install browserify vueify babelify",
     "test": "nyc ava",
     "coverage": "nyc report --reporter=lcov"
