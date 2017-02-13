@@ -707,6 +707,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void clear(ConceptCache conceptCache) {
         innerClear();
+        conceptCache.clearAllJobs(getKeyspace());
     }
 
     private void innerClear(){
