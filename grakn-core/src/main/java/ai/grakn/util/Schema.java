@@ -152,7 +152,7 @@ public final class Schema {
         //Supported Data Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),
         VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class),
-        VALUE_INTEGER(Integer.class);
+        VALUE_INTEGER(Integer.class), VALUE_FLOAT(Float.class);
 
         private final Class dataType;
 

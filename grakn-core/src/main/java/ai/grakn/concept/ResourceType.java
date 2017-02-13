@@ -168,6 +168,7 @@ public interface ResourceType<D> extends Type {
         public static final DataType<Integer> INTEGER = new DataType<>(Integer.class.getName(), Schema.ConceptProperty.VALUE_INTEGER);
         public static final DataType<Long> LONG = new DataType<>(Long.class.getName(), Schema.ConceptProperty.VALUE_LONG);
         public static final DataType<Double> DOUBLE = new DataType<>(Double.class.getName(), Schema.ConceptProperty.VALUE_DOUBLE);
+        public static final DataType<Float> FLOAT = new DataType<>(Double.class.getName(), Schema.ConceptProperty.VALUE_FLOAT);
 
         public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
                     .put(STRING.getName(), STRING)
@@ -175,6 +176,7 @@ public interface ResourceType<D> extends Type {
                     .put(LONG.getName(), LONG)
                     .put(DOUBLE.getName(), DOUBLE)
                     .put(INTEGER.getName(), INTEGER)
+                    .put(FLOAT.getName(), FLOAT)
                     .build();
 
         private final String dataType;
