@@ -293,7 +293,6 @@ public class MovieGraph extends TestGraph {
         Pattern rhs = graph.graql().parsePattern("$x id 'expect-rhs'");
 
         Rule expectation = aRuleType.addRule(lhs, rhs)
-                .setExpectation(true)
                 .addConclusion(movie).addHypothesis(person);
 
         putResource(expectation, name, "expectation-rule");
@@ -301,7 +300,6 @@ public class MovieGraph extends TestGraph {
         lhs = graph.graql().parsePattern("$x id 'materialize-lhs'");
         rhs = graph.graql().parsePattern("$x id 'materialize-rhs'");
         Rule materialize = aRuleType.addRule(lhs, rhs)
-                .setMaterialise(true)
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
 
         putResource(materialize, name, "materialize-rule");

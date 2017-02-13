@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -56,7 +57,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         Optional<Map<VarName, Concept>> map = this.stream().findFirst();
         return map.isPresent()? map.get().keySet() : new HashSet<>();
     }
-
 
     /**
      * permute answer based on specified sets of permutations defined by unifiers
@@ -160,9 +160,9 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
             Stream<Map<VarName, Concept>> answerStream = this.stream();
             for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(lanswer.get(v)));
             answerStream.map(ans ->  {
-                        Map<VarName, Concept> merged = new HashMap<>(lanswer);
-                        merged.putAll(ans);
-                        return merged;
+                Map<VarName, Concept> merged = new HashMap<>(lanswer);
+                merged.putAll(ans);
+                return merged;
             }).forEach(join::add);
         }
         return join;
@@ -187,7 +187,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
 
     public static Map<VarName, Concept> unify(Map<VarName, Concept> answer, Map<VarName, VarName> unifiers){
         return answer.entrySet().stream()
-                .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())? unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
+                .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey()) ? unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
     }
 
     /**
@@ -195,7 +195,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      * @param parentQuery parent atomic query containing target variables
      * @return unified answers
      */
-    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, QueryAnswers answers){
+    public static <T extends ReasonerQuery> QueryAnswers getUnifiedAnswers(T parentQuery, T childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
         return answers.unify(childQuery.getUnifiers(parentQuery)).filterVars(parentQuery.getVarNames());
     }

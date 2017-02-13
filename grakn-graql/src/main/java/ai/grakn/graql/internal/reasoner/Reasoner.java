@@ -25,7 +25,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.QueryCache;
+import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
@@ -120,23 +120,25 @@ public class Reasoner {
     /**
      * materialise all possible inferences
      */
+
     public static void precomputeInferences(GraknGraph graph){
         linkConceptTypes(graph);
-        QueryCache cache = new QueryCache();
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
             ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead());
-            int dAns;
+            long dAns;
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                dAns = cache.size();
-                atomicQuery.answer(SG, cache, true);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + cache.getAnswers(atomicQuery).size());
-                dAns = cache.size() - dAns;
+                dAns = cache.getAnswers(atomicQuery).count();
+                atomicQuery.answerStream(SG, cache, true);
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + dAns);
+                dAns = cache.getAnswers(atomicQuery).count() - dAns;
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
     }
+
 }

@@ -55,7 +55,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.Utility.isCaptured;
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilterFunction;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
@@ -199,7 +199,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-
     /**
      * @param atom in question
      * @return true if query contains an equivalent atom
@@ -216,6 +215,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         unify(to, VarName.of("temp"));
         unify(from, to);
         unify(VarName.of("temp"), from);
+    }
+
+    @Override
+    public Map<VarName, VarName> getUnifiers(ReasonerQuery parent) {
+        //TODO
+        return new HashMap<>();
     }
 
     /**
@@ -424,7 +429,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             answerStream = join(answerStream, subAnswerStream);
         }
         return answerStream
-                .flatMap(a -> nonEqualsFilterFunction.apply(a, this.getFilters()))
+                .filter(a -> nonEqualsFilter(a, this.getFilters()))
                 .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()));
     }
 }

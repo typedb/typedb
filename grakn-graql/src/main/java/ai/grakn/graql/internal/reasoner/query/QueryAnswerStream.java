@@ -19,17 +19,18 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 
-import java.util.Collection;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -43,14 +44,8 @@ import java.util.stream.Stream;
  *
  */
 public class QueryAnswerStream {
-    private final Stream<Map<VarName, Concept>> stream;
 
-    public QueryAnswerStream(Stream<Map<VarName, Concept>> s) {
-        this.stream = s;
-    }
-    public Stream<Map<VarName, Concept>> stream() {return stream;}
-
-    private static Map<VarName, Concept> varFilterOperator(Map<VarName, Concept> answer, Set<VarName> vars) {
+    public static Map<VarName, Concept> varFilterOperator(Map<VarName, Concept> answer, Set<VarName> vars) {
         Map<VarName, Concept> filteredAnswer = new HashMap<>();
         vars.stream()
                 .filter(answer::containsKey)
@@ -58,7 +53,7 @@ public class QueryAnswerStream {
         return filteredAnswer;
     }
 
-    private static boolean knownFilterOperator(Map<VarName, Concept> answer, QueryAnswers known) {
+    public static boolean knownFilter(Map<VarName, Concept> answer, Stream<Map<VarName, Concept>> known) {
         boolean isKnown = false;
         Iterator<Map<VarName, Concept>> it = known.iterator();
         while (it.hasNext() && !isKnown) {
@@ -68,69 +63,46 @@ public class QueryAnswerStream {
         return !isKnown;
     }
 
-    private static boolean nonEqualsOperator(Map<VarName, Concept> answer, Set<NotEquals> atoms) {
-        if(atoms.isEmpty()) return false;
-        boolean filter = false;
+    public static boolean nonEqualsFilter(Map<VarName, Concept> answer, Set<NotEquals> atoms) {
+        if(atoms.isEmpty()) return true;
+        boolean pass = true;
         Iterator<NotEquals> it = atoms.iterator();
-        while (it.hasNext() && !filter) {
-            filter = NotEquals.notEqualsOperator(answer, it.next());
+        while (it.hasNext() && pass) {
+            pass = NotEquals.notEqualsOperator(answer, it.next());
         }
-        return filter;
+        return pass;
     }
 
-    public static final BiFunction<Map<VarName, Concept>, Set<VarName>, Stream<Map<VarName, Concept>>> varFilterFunction = (a, vars) -> {
-        Map<VarName, Concept> filteredAnswer = varFilterOperator(a, vars);
-        return filteredAnswer.isEmpty() ? Stream.empty() : Stream.of(filteredAnswer);
-    };
-
-    public static final BiFunction<Map<VarName, Concept>, QueryAnswers, Stream<Map<VarName, Concept>>> knownFilterFunction =
-            (a, known) -> knownFilterOperator(a, known) ? Stream.empty() : Stream.of(a);
-
-    public static final BiFunction<Map<VarName, Concept>, Set<VarName>, Stream<Map<VarName, Concept>>> incompleteFilterFunction =
-            (a, vars) -> a.keySet().containsAll(vars) ? Stream.of(a) : Stream.empty();
-
-    public static final BiFunction<Map<VarName, Concept>, Set<NotEquals>, Stream<Map<VarName, Concept>>> nonEqualsFilterFunction =
-            (a, atoms) -> nonEqualsOperator(a, atoms) ? Stream.empty() : Stream.of(a);
-
-    /**
-     * filter stream by constraining the variable set to the provided one
-     * @param vars set of variable names
-     * @return filtered answers
-     */
-    public QueryAnswerStream filterVars(Set<VarName> vars) {
-        return new QueryAnswerStream(this.stream.flatMap(a -> varFilterFunction.apply(a, vars)));
+    public static boolean subFilter(Map<VarName, Concept> answer, Set<IdPredicate> subs){
+        if (subs.isEmpty()) return true;
+        boolean pass = true;
+        Iterator<IdPredicate> it = subs.iterator();
+        while (it.hasNext() && pass) {
+            IdPredicate sub = it.next();
+            pass = answer.get(sub.getVarName()).getId().equals(sub.getPredicate());
+        }
+        return pass;
     }
 
-    /**
-     * filter stream by discarding the already known ones
-     * @param known set of known answers
-     * @return filtered answers
-     */
-    public QueryAnswerStream filterKnown(QueryAnswers known){
-        return new QueryAnswerStream(this.stream.flatMap(a -> knownFilterFunction.apply(a, known)));
+    public static boolean entityTypeFilter(Map<VarName, Concept> answer, Set<TypeAtom> types){
+        if (types.isEmpty()) return true;
+        boolean pass = true;
+        Iterator<TypeAtom> it = types.stream().iterator();
+        while( it.hasNext() && pass){
+            TypeAtom type = it.next();
+            VarName var = type.getVarName();
+            Type t = type.getType();
+            pass = answer.get(var).asInstance().type().equals(t);
+        }
+        return pass;
     }
 
-    /**
-     * filter stream by discarding answers with incomplete set of variables
-     * @param vars variable set considered complete
-     * @return filtered answers
-     */
-    public QueryAnswerStream filterIncomplete(Set<VarName> vars) {
-        return new QueryAnswerStream(this.stream.flatMap(a -> incompleteFilterFunction.apply(a, vars)));
+    public static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Map<VarName, VarName>> unifierSet){
+        if (unifierSet.isEmpty()) return Stream.of(answer);
+        return unifierSet.stream().flatMap(unifiers -> Stream.of(QueryAnswers.unify(answer, unifiers)));
     }
 
-    /**
-     * filter stream by applying NonEquals filters
-     * @param query query containing filters
-     * @return filtered answers
-     */
-    public QueryAnswerStream filterNonEquals(ReasonerQueryImpl query){
-        Set<NotEquals> filters = query.getFilters();
-        if(filters.isEmpty()) return new QueryAnswerStream(this.stream);
-        return new QueryAnswerStream(this.stream.flatMap(a -> nonEqualsFilterFunction.apply(a, filters)));
-    }
-
-    private static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
+    public static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
         boolean isCompatible = true;
         Set<VarName> keysToCompare = new HashSet<>(m1.keySet());
         keysToCompare.retainAll(m2.keySet());
@@ -146,32 +118,48 @@ public class QueryAnswerStream {
         } else return new HashMap<>();
     }
 
-    private static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
+    public static final BiFunction<Map<VarName, Concept>, Set<VarName>, Stream<Map<VarName, Concept>>> varFilterFunction = (a, vars) -> {
+        Map<VarName, Concept> filteredAnswer = varFilterOperator(a, vars);
+        return filteredAnswer.isEmpty() ? Stream.empty() : Stream.of(filteredAnswer);
+    };
+
+    public static final BiFunction<Map<VarName, Concept>, Set<Map<VarName, VarName>>, Stream<Map<VarName, Concept>>> permuteFunction = QueryAnswerStream::permuteOperator;
+
+    public static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
         Map<VarName, Concept> merged = joinOperator(a1, a2);
         return merged.isEmpty()? Stream.empty(): Stream.of(merged);
     };
 
     /**
-     * perform a half-lazy join operation on two streams (this and stream2)
-     * @param stream2 right operand of join operation
-     * @return joined stream
+     * unify answer stream by applying unifiers
+     * @param answers stream of answers to be unified
+     * @param unifiers to apply on stream elements
+     * @return unified answer stream
      */
-    public QueryAnswerStream join(QueryAnswerStream stream2) {
-        Stream<Map<VarName, Concept>> result =  this.stream;
-        Collection<Map<VarName, Concept>> c = stream2.stream().collect(Collectors.toSet());
-        result = result.flatMap(a1 -> c.stream().flatMap(a2 -> joinFunction.apply(a1, a2)));
-        return new QueryAnswerStream(result);
+    public static Stream<Map<VarName, Concept>> unify(Stream<Map<VarName, Concept>> answers, Map<VarName, VarName> unifiers) {
+        return answers.map(ans -> QueryAnswers.unify(ans, unifiers));
     }
 
     /**
-     * perform a half-lazy join operation on two streams (stream and stream2)
-     * @param stream left operand of join operation
-     * @param stream2 right operand of join operation
+     * lazy stream join
+     * @param stream left stream operand
+     * @param stream2 right stream operand
      * @return joined stream
      */
     public static Stream<Map<VarName, Concept>> join(Stream<Map<VarName, Concept>> stream, Stream<Map<VarName, Concept>> stream2) {
-        Collection<Map<VarName, Concept>> c = stream2.collect(Collectors.toSet());
-        return stream.flatMap(a1 -> c.stream().flatMap(a2 -> joinFunction.apply(a1, a2)));
+        return join(joinFunction, stream, stream2);
+    }
+
+    /**
+     * perform a lazy join operation on two streams (stream and stream2)
+     * @param function joining function
+     * @param s1 left operand of join operation
+     * @param s2 right operand of join operation
+     * @return joined stream
+     */
+    public static <T> Stream<T> join(BiFunction<T, T, Stream<T>> function, Stream<T> s1, Stream<T> s2) {
+        LazyIterator<T> l2 = new LazyIterator<>(s2);
+        return s1.flatMap(a1 -> l2.stream().flatMap(a2 -> function.apply(a1,a2)));
     }
 }
 

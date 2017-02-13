@@ -41,7 +41,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -55,7 +55,9 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STAT
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -75,7 +77,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
-    private final static int EXECUTOR_SIZE = properties.getAvailableThreads();
     private final static String ENGINE_ID = EngineID.getInstance().id();
 
     private final Set<String> runningTasks = new HashSet<>();
@@ -84,6 +85,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final CountDownLatch shutdownLatch;
 
     private final ExecutorService executor;
+    private final int executorSize;
+    private final AtomicInteger acceptedTasks = new AtomicInteger(0);
     private final KafkaConsumer<String, String> consumer;
 
     public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
@@ -96,7 +99,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
         // Create initial entries in ZK for TaskFailover to watch.
         registerAsRunning();
         updateOwnState();
-        executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
+
+        // Instantiate the executor where tasks will run
+        // executorSize is the maximum executor queue size
+        int numberAvailableThreads = properties.getAvailableThreads();
+        executor = newFixedThreadPool(numberAvailableThreads);
+        executorSize = numberAvailableThreads * 4;
 
         shutdownLatch = new CountDownLatch(1);
 
@@ -110,7 +118,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         try {
             while (true) {
                 // Poll for new tasks only when we know we have space to accept them.
-                if (getRunningTasksCount() < EXECUTOR_SIZE) {
+                if (getAcceptedTasksCount() < executorSize) {
                     processRecords(consumer.poll(POLLING_FREQUENCY));
                 }
             }
@@ -146,10 +154,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     private void processRecords(ConsumerRecords<String, String> records) {
         for(ConsumerRecord<String, String> record: records) {
-            LOG.debug("Received " + record.key() + "\n Runner currently has tasks: "+ getRunningTasksCount() + " allowed: "+ EXECUTOR_SIZE);
+            LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s", record.key(), getRunningTasksCount(), getAcceptedTasksCount(), executorSize));
 
             // Exit loop when TaskRunner capacity full
-            if(getRunningTasksCount() >= EXECUTOR_SIZE) {
+            if(getAcceptedTasksCount() >= executorSize) {
                 seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
                 break;
             }
@@ -170,6 +178,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
                     .statusChangedBy(this.getClass().getName())
                     .engineID(ENGINE_ID));
 
+                acceptedTasks.incrementAndGet();
                 // Submit to executor
                 executor.submit(() -> executeTask(state));
 
@@ -209,6 +218,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
             LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(t));
         } finally {
             removeRunningTask(state.getId());
+            acceptedTasks.decrementAndGet();
             LOG.debug("Finished executing task - " + state.getId());
         }
     }
@@ -251,6 +261,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
         }
 
         LOG.debug("Registered TaskRunner");
+    }
+
+    private synchronized int getAcceptedTasksCount() {
+        return acceptedTasks.get();
     }
 
     private synchronized int getRunningTasksCount() {

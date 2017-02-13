@@ -70,24 +70,6 @@ public class RuleTest extends GraphTestBase{
     }
 
     @Test
-    public void testExpectation() throws Exception {
-        RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = conceptType.addRule(lhs, rhs);
-        assertFalse(rule.getExpectation());
-        rule.setExpectation(true);
-        assertTrue(rule.getExpectation());
-    }
-
-    @Test
-    public void testMaterialise() throws Exception {
-        RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = conceptType.addRule(lhs, rhs);
-        assertFalse(rule.isMaterialise());
-        rule.setMaterialise(true);
-        assertTrue(rule.isMaterialise());
-    }
-
-    @Test
     public void testAddHypothesis() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
         Rule rule = conceptType.addRule(lhs, rhs);

@@ -109,7 +109,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         allRoleTypes.addAll(cachedDirectPlaysRoles.get());
 
         //Now get the super type plays roles (Which may also be cached locally within their own context
-        Set<T> superSet = getSuperSet();
+        Set<T> superSet = superTypeSet();
         superSet.remove(this); //We already have the plays roles from ourselves
         superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlaysRoles()));
 
@@ -191,7 +191,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      *
      * @return All outgoing sub parents including itself
      */
-    Set<T> getSuperSet() {
+    Set<T> superTypeSet() {
         Set<T> superSet= new HashSet<>();
         superSet.add(getThis());
         T superParent = superType();

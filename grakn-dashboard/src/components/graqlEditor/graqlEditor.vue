@@ -35,7 +35,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
             <button @click="runQuery" class="btn"><i
                           class="pe-7s-angle-right-circle"></i></button>
-            <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-refresh"></i>
+            <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-close-circle"></i>
                           </button>
             <query-settings></query-settings>
         </div>
@@ -143,6 +143,10 @@ export default {
     created: function() {
         this.loadState();
         this.loadMetaTypeInstances();
+
+        //Global key bindings
+        window.addEventListener('keyup', (e)=>{if(e.keyCode===13&&!e.shiftKey) this.runQuery();})
+
     },
     mounted: function() {
         this.$nextTick(function() {
@@ -151,6 +155,7 @@ export default {
                 theme: "dracula",
                 mode: "graql",
                 viewportMargin: Infinity,
+                autofocus: true,
                 extraKeys: {
                     Enter: this.runQuery,
                     "Shift-Delete": this.clearGraph,
@@ -225,7 +230,7 @@ export default {
             const query = this.codeMirror.getValue();
 
             // Empty query.
-            if (query == undefined || query.length === 0)
+            if (query == undefined || query.trim().length === 0)
                 return;
 
             this.state.eventHub.$emit('click-submit', query);

@@ -177,7 +177,9 @@ rhs
 
 isa inference-rule
 lhs
-{($x, $y) isa marriage; $x has gender "female"; $y has gender "male";}
+{($x, $y) isa marriage;
+$x has gender "female";
+$y has gender "male";}
 rhs
 {(wife: $x, husband: $y) isa marriage;};
 

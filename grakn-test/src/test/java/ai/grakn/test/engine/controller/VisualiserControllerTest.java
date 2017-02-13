@@ -86,7 +86,7 @@ public class VisualiserControllerTest {
                 .then().statusCode(200).extract().response().andReturn();
 
         Json resultArray = Json.read(response.getBody().asString());
-        assertEquals(60,resultArray.asJsonList().size());
+        assertEquals(60, resultArray.asJsonList().size());
 
         Json firstPerson = resultArray.at(0);
         String firstPersonId = firstPerson.at("_id").asString();
@@ -130,9 +130,63 @@ public class VisualiserControllerTest {
         });
     }
 
-    private void checkHALStructureOfPerson(Json person, String id){
+    //Check that a generated relation _id contains role players' IDs.
+    @Test
+    public void checkGeneratedRelationId() {
+        Response firstResponse = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .queryParam(QUERY_FIELD, "match ($x, $y) isa event-protagonist; limit 1;")
+                .accept(HAL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+
+        Json resultArray = Json.read(firstResponse.getBody().asString());
+        Json firstRolePlayer = resultArray.at(0);
+        String firstRolePlayerId = firstRolePlayer.at("_id").asString();
+
+        Json secondRolePlayer = resultArray.at(1);
+        String secondRolePlayerId = secondRolePlayer.at("_id").asString();
+
+        if (firstRolePlayerId.compareTo(secondRolePlayerId) < 0) {
+            String tempString = secondRolePlayerId;
+            secondRolePlayerId = firstRolePlayerId;
+            firstRolePlayerId = tempString;
+        }
+
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .queryParam(QUERY_FIELD, "match $x id \"" + firstRolePlayerId + "\"; $y id \"" + secondRolePlayerId + "\"; ($x,$y); limit 1;")
+                .accept(HAL_CONTENTTYPE)
+                .get(REST.WebPath.GRAPH_MATCH_QUERY_URI)
+                .then().statusCode(200).extract().response().andReturn();
+
+        Json secondResultArray = Json.read(response.getBody().asString());
+
+        //Asking for 1 relation that have 2 role-players each will give us an array of 2 nodes to show in the visualiser.
+        assertEquals(2, secondResultArray.asJsonList().size());
+
+        // Final vars for lambda
+        final String firstId=firstRolePlayerId;
+        final String secondId=secondRolePlayerId;
+
+        secondResultArray.asJsonList().forEach(rolePlayer -> {
+            Map<String, Json> mappedEmbedded = rolePlayer.at("_embedded").asJsonMap();
+            //Loop through map containing Json arrays associated to embedded key
+            mappedEmbedded.keySet().forEach(key -> {
+                //Foreach element of the json array we check if it is a generated relation
+                mappedEmbedded.get(key).asJsonList().forEach(element -> {
+                    if (element.at("_baseType").asString().equals("generated-relation")) {
+                        assertEquals(element.at("_id").getValue(), "temp-assertion-" + firstId + secondId);
+                    }
+                });
+
+            });
+        });
+    }
+
+    private void checkHALStructureOfPerson(Json person, String id) {
         assertEquals(person.at("_type").asString(), "person");
-        assertEquals(person.at("_id").getValue(),id);
+        assertEquals(person.at("_id").getValue(), id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -145,10 +199,10 @@ public class VisualiserControllerTest {
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), embeddedType.at("_baseType").asString());
     }
 
-    private void checkHALStructureOfPersonWithoutEmbedded(Json person, String id){
+    private void checkHALStructureOfPersonWithoutEmbedded(Json person, String id) {
 
         assertEquals(person.at("_type").asString(), "person");
-        assertEquals(person.at("_id").getValue(),id);
+        assertEquals(person.at("_id").getValue(), id);
         assertEquals(person.at("_baseType").asString(), Schema.BaseType.ENTITY.name());
 
         //check we are always attaching the correct keyspace
@@ -162,8 +216,8 @@ public class VisualiserControllerTest {
                 .get(REST.WebPath.CONCEPT_BY_ID_URI + id)
                 .then().statusCode(200).extract().response().andReturn();
 
-        Json samePerson =Json.read(response.getBody().asString());
-        checkHALStructureOfPersonWithoutEmbedded(samePerson,id);
+        Json samePerson = Json.read(response.getBody().asString());
+        checkHALStructureOfPersonWithoutEmbedded(samePerson, id);
 
         return samePerson;
     }
@@ -202,7 +256,7 @@ public class VisualiserControllerTest {
         Type personType = graph.getType(TypeName.of("person"));
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
-                .get(REST.WebPath.CONCEPT_BY_ID_URI +personType.getId().getValue())
+                .get(REST.WebPath.CONCEPT_BY_ID_URI + personType.getId().getValue())
                 .then().statusCode(200).extract().response().andReturn();
         Json message = Json.read(response.getBody().asString());
 

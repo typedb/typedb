@@ -150,8 +150,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> instance().hasResource(resource()),
             () -> relation().scope(instance()),
             () -> relation().putRolePlayer(roleType(), instance()),
-            () -> rule().setExpectation(true),
-            () -> rule().setMaterialise(true),
             () -> rule().addHypothesis(type()),
             () -> rule().addConclusion(type())
     );

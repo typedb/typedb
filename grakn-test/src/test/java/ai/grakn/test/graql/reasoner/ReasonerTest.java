@@ -575,7 +575,7 @@ public class ReasonerTest {
     public void testRelationVariable(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         String queryString2 = "match $r(geo-entity: $x, entity-location: $y) isa is-located-in;";
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = new QueryAnswers(query.admin().results());
@@ -658,20 +658,22 @@ public class ReasonerTest {
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
         List<Map<String, Concept>> answers = query.execute();
-        assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("19"));
+        assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "19");
     }
 
     @Test
     public void testOrderAndOffset(){
-        String fullQueryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;";
-        String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a; offset 3;";
-        MatchQuery fullQuery = snbGraph.graph().graql().infer(true).materialise(false).parse(fullQueryString);
+        String queryString = "match $p isa person, has age $a, has name $n;$pr isa product;($p, $pr) isa recommendation;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
-        List<Map<String, Concept>> fullAnswers = fullQuery.execute();
-        List<Map<String, Concept>> answers = query.execute();
-        assertEquals(fullAnswers.size(), answers.size() + 3);
-        assertTrue(answers.iterator().next().get("a").asResource().getValue().toString().equals("23"));
+        final int offset = 3;
+        List<Map<String, Concept>> fullAnswers = query.execute();
+        List<Map<String, Concept>> answers = query.orderBy(VarName.of("a")).offset(offset).execute();
+        List<Map<String, Concept>> answers2 = query.orderBy(VarName.of("a")).execute();
+
+        assertEquals(fullAnswers.size(), answers.size() + offset);
+        assertEquals(answers2.size(), answers.size() + offset);
+        assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "23");
     }
 
     @Test
@@ -762,15 +764,17 @@ public class ReasonerTest {
         String queryString = "match $x isa is-located-in;";
         String queryString2 = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; select $x;";
         String queryString3 = "match $x ($x1, $x2) isa is-located-in; select $x;";
-        MatchQuery query = geoGraph.graph().graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = geoGraph2.graph().graql().infer(true).materialise(false).parse(queryString2);
-        MatchQuery query3 = geoGraph3.graph().graql().infer(true).materialise(false).parse(queryString3);
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        MatchQuery query = iqb.materialise(false).parse(queryString);
+        MatchQuery query2 = iqb.materialise(false).parse(queryString2);
+        MatchQuery query3 = iqb.materialise(false).parse(queryString3);
 
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
         QueryAnswers answers3 = queryAnswers(query3);
         assertEquals(answers, answers2);
         assertEquals(answers2, answers3);
+
     }
 
     @Test
@@ -890,7 +894,7 @@ public class ReasonerTest {
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
         assertTrue(answers2.containsAll(answers));
-        assertTrue(2*answers.size() == answers2.size());
+        assertEquals(2*answers.size(), answers2.size());
     }
 
     @Test

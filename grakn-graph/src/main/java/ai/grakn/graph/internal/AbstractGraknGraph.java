@@ -742,9 +742,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(Collectors.toSet());
 
 
-        LOG.debug("Graph is valid. Committing graph . . . ");
+        LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransaction();
-        LOG.debug("Graph committed.");
+        LOG.trace("Graph committed.");
         getConceptLog().clearTransaction();
 
         //No post processing should ever be done for the system keyspace
@@ -803,6 +803,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
+    public boolean validVertex(Vertex vertex){
+        if(vertex == null) {
+            return false;
+        }
+
+        try {
+            //Sample read
+            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
+        } catch (IllegalStateException e){
+            return false;
+        }
+    }
+
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
     /**
      * Merges the provided duplicate castings.
@@ -811,12 +824,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return if castings were merged and a commit is required.
      */
     @Override
-    public boolean fixDuplicateCastings(Set<ConceptId> castingVertexIds){
+    public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
         Set<CastingImpl> castings = castingVertexIds.stream().
                 map(id -> this.<CastingImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
-        if(castings.size() > 1){
+        if(castings.size() >= 1){
             //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
-            CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX,castings.iterator().next().getIndex(), true);
+            CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
             castings.remove(mainCasting);
 
             //Fix the duplicates
@@ -910,13 +923,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if a commit is required.
      */
     @Override
-    public boolean fixDuplicateResources(Set<ConceptId> resourceVertexIds){
+    public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
         Set<ResourceImpl> duplicates = resourceVertexIds.stream().
                 map(id -> this.<ResourceImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
 
-        if(duplicates.size() > 1){
+        if(duplicates.size() >= 1){
             //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
-            ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, duplicates.iterator().next().getIndex(), true);
+            ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
             duplicates.remove(mainResource);
             Iterator<ResourceImpl> it = duplicates.iterator();
 

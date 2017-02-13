@@ -25,17 +25,13 @@ import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
-import com.google.common.collect.ImmutableMap;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -48,7 +44,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest {
@@ -94,6 +89,7 @@ public class AtomicQueryTest {
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
     }
 
+    /*
     @Test
     public void testMaterialize(){
         QueryBuilder qb = snbGraph.graph().graql().infer(false);
@@ -111,6 +107,7 @@ public class AtomicQueryTest {
         atomicQuery.materialise(answers);
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
+    */
 
     @Test
     public void testResourceEquivalence(){
@@ -145,6 +142,7 @@ public class AtomicQueryTest {
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
+    /*
     @Test
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -169,7 +167,20 @@ public class AtomicQueryTest {
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }
+    */
 
+    @Test
+    public void testReifiedRelation(){
+        String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
+        String patternString2 = "{($x, $y) has-role geo-entity;}";
+        GraknGraph graph = geoGraph.graph();
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
+        assertEquals(query.getAtom().isUserDefinedName(), false);
+        assertEquals(query2.getAtom().isUserDefinedName(), true);
+    }
 
     private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
         Set<VarAdmin> vars = pattern

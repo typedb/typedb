@@ -82,6 +82,8 @@ const computeComponentCenterLeft = function(path) {
     return null;
 };
 
+import User from '../../js/User';
+
 
 export default {
     name: 'MainTemplate',
@@ -127,6 +129,13 @@ export default {
               "showMethod": "fadeIn",
               "hideMethod": "fadeOut"
           };
+
+          if (!User.getModalShown()){
+            var modal = document.getElementById('myModal');
+            modal.style.display = "block";
+            User.setModalShown(true);
+          }
+
         });
     },
     watch: {

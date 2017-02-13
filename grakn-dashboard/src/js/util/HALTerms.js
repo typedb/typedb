@@ -23,7 +23,8 @@
 export const RELATION_TYPE = 'RELATION';
 export const TYPE_TYPE = 'TYPE';
 export const RULE_TYPE = 'RULE';
-export const RESOURCE_TYPE = 'RESOURCE';
+export const RESOURCE = 'RESOURCE';
+export const RESOURCE_TYPE = 'RESOURCE_TYPE';
 export const ROLE_TYPE = 'ROLE';
 export const ENTITY_TYPE = 'ENTITY';
 export const GENERATED_RELATION_TYPE = 'generated-relation';
