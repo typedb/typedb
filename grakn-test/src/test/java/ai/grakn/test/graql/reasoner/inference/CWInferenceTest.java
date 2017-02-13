@@ -217,10 +217,9 @@ public class CWInferenceTest {
         Pattern R6_LHS = and(localGraph.graql().parsePatterns("$x isa region;"));
         Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
         inferenceRule.addRule(R6_LHS, R6_RHS);
+        Reasoner.commitGraph(localGraph);
 
-        Reasoner.linkConceptTypes(localGraph);
         String queryString = "match $x isa criminal;";
-
         String explicitQuery = "match " +
                 "{$x isa criminal;} or {" +
                 "$x has nationality 'American';" +

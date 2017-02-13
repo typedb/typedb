@@ -20,11 +20,8 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -35,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
@@ -65,21 +61,6 @@ public class Reasoner {
     public static void setCommitFrequency(int freq){ commitFrequency = freq;}
     public static int getCommitFrequency(){ return commitFrequency;}
 
-    private static void linkConceptTypes(GraknGraph graph, Rule rule) {
-        QueryBuilder qb = graph.graql();
-        MatchQuery qLHS = qb.match(rule.getLHS());
-        MatchQuery qRHS = qb.match(rule.getRHS());
-
-        //TODO fix this hack
-        Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes()
-            .stream().filter(type -> !type.isRoleType()).collect(Collectors.toSet());
-        Set<Type> conclusionConceptTypes = qRHS.admin().getTypes()
-            .stream().filter(type -> !type.isRoleType()).collect(Collectors.toSet());
-
-        hypothesisConceptTypes.forEach(rule::addHypothesis);
-        conclusionConceptTypes.forEach(rule::addConclusion);
-    }
-
     /**
      *
      * @param graph to be checked against
@@ -100,29 +81,10 @@ public class Reasoner {
     }
 
     /**
-     * Link all unlinked rules in the rule base to their matching types
-     * @param graph for the linking to be performed
-     */
-    public static void linkConceptTypes(GraknGraph graph) {
-        Set<Rule> rules = getRules(graph);
-        LOG.debug(rules.size() + " rules initialized...");
-        Set<Rule> linkedRules = new HashSet<>();
-        rules.stream()
-                .filter(rule -> rule.getConclusionTypes().isEmpty() && rule.getHypothesisTypes().isEmpty())
-                .forEach(rule -> {
-                    linkConceptTypes(graph, rule);
-                    linkedRules.add(rule);
-                });
-        if(!linkedRules.isEmpty()) commitGraph(graph);
-        LOG.debug(linkedRules.size() + " rules linked...");
-    }
-
-    /**
      * materialise all possible inferences
      */
 
     public static void precomputeInferences(GraknGraph graph){
-        linkConceptTypes(graph);
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
