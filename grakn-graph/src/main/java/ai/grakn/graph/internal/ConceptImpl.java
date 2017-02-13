@@ -617,7 +617,16 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     @Override
-    public String toString(){
+    public final String toString(){
+        if (vertex == null) {
+            // Concept has been deleted, so handle differently
+            return "Id [" + getId() + "]";
+        } else {
+            return innerToString();
+        }
+    }
+
+    protected String innerToString() {
         String message = "Base Type [" + getBaseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";
