@@ -60,12 +60,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     private static GraknGraph lastGeneratedGraph;
 
-//    private static final int MAX_CACHED_GRAPHS = 10;
-
-    // A cache of graphs keyed by their size (how many mutations were applied).
-    // Used to speed up testing.
-//    private static Map<Integer, Set<GraknGraph>> GRAPH_CACHE = new HashMap<>();
-
     private GraknGraph graph;
     private Boolean open = null;
 
@@ -101,20 +95,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     @Override
     public GraknGraph generate() {
-//        Set<GraknGraph> cache = GRAPH_CACHE.computeIfAbsent(status.size(), key -> Sets.newHashSet());
+        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
+        graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
 
-//        if (cache.size() >= MAX_CACHED_GRAPHS) {
-//            graph = random.choose(cache);
-//        } else {
-            String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-            graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-
-            for (int i = 0; i < status.size(); i++) {
-                mutateOnce();
-            }
-
-//            cache.add(graph);
-//        }
+        for (int i = 0; i < status.size(); i++) {
+            mutateOnce();
+        }
 
         // Close graphs randomly, unless parameter is set
         boolean shouldOpen = open != null ? open : random.nextBoolean();
