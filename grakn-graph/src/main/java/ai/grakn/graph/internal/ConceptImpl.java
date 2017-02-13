@@ -618,11 +618,11 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     @Override
     public final String toString(){
-        if (vertex == null) {
+        if (getGraknGraph().validVertex(vertex)) {
+            return innerToString();
+        } else {
             // Concept has been deleted, so handle differently
             return "Id [" + getId() + "]";
-        } else {
-            return innerToString();
         }
     }
 
