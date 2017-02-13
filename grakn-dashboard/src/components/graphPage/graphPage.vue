@@ -131,6 +131,8 @@ export default {
         },
 
         onClickSubmit(query) {
+            this.state.stopBuilderMode();
+
             if (query.includes('aggregate')) {
                 this.showWarning("Invalid query: 'aggregate' queries are not allowed from the Graph page. Please use the Console page.");
                 return;
@@ -139,14 +141,13 @@ export default {
             if (query.trim().startsWith('compute')) {
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             } else {
-                let queryToExecute=query;
-                if(!(query.includes('offset')))
-                  queryToExecute=queryToExecute+' offset 0;';
-                if(!(query.includes('limit')))
-                  queryToExecute=queryToExecute+' limit 100;';
+                let queryToExecute = query;
+                if (!(query.includes('offset')))
+                    queryToExecute = queryToExecute + ' offset 0;';
+                if (!(query.includes('limit')))
+                    queryToExecute = queryToExecute + ' limit 100;';
 
-                this.state.eventHub.$emit('inject-query',queryToExecute);
-
+                this.state.eventHub.$emit('inject-query', queryToExecute);
                 EngineClient.graqlHAL(queryToExecute, this.onGraphResponse);
             }
         },
@@ -160,27 +161,36 @@ export default {
                 return;
             }
 
-            // When we will enable clustering, also need to check && !visualiser.expandCluster(node)
-            if (eventKeys.altKey) {
-                if (visualiser.nodes._data[node].ontology) {
-                    EngineClient.request({
-                        url: visualiser.nodes._data[node].ontology,
-                        callback: this.onGraphResponse,
-                    });
+            if (!this.state.queryBuilderMode) {
+                // When we will enable clustering, also need to check && !visualiser.expandCluster(node)
+                if (eventKeys.altKey) {
+                    if (visualiser.nodes._data[node].ontology) {
+                        EngineClient.request({
+                            url: visualiser.nodes._data[node].ontology,
+                            callback: this.onGraphResponse,
+                        });
+                    }
+                } else {
+                    const props = visualiser.getNode(node);
+                    this.allNodeOntologyProps = {
+                        id: props.id,
+                        type: props.type,
+                        baseType: props.baseType,
+                    };
+
+                    this.allNodeResources = this.prepareResources(props.properties);
+                    this.selectedNodeLabel = visualiser.getNodeLabel(node);
+
+                    this.showNodePanel = true;
                 }
-            } else {
-                const props = visualiser.getNode(node);
-                this.allNodeOntologyProps = {
-                    id: props.id,
-                    type: props.type,
-                    baseType: props.baseType,
-                };
-
-                this.allNodeResources = this.prepareResources(props.properties);
-                this.selectedNodeLabel = visualiser.getNodeLabel(node);
-
-                this.showNodePanel = true;
+            }else{
+              this.handleBuildQuery(node);
             }
+        },
+        handleBuildQuery(node) {
+            this.state.numOfClickedNodesInBuilding+=1;
+            let stringa = this.state.nextBuildingStep(node);
+            this.state.eventHub.$emit('append-query', stringa);
         },
         /**
          * Prepare the list of resources to be shown in the right div panel

@@ -69,7 +69,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     font-size: 95%;
 }
 
-.a {
+a {
     margin-left: auto;
 }
 
@@ -98,7 +98,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 .dd-item {
     display: flex;
     align-items: center;
-    margin: auto;
     margin-top: 5px;
     padding-left: 7px;
 }
@@ -110,7 +109,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 
 .line-buttons {
     display: inline-flex;
-    flex-direction: row;
     align-items: center;
 }
 
@@ -121,7 +119,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     z-index: 2;
     margin-top: 5px;
     background-color: #0f0f0f;
-    padding:10px;
 }
 
 
@@ -154,11 +151,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 }
 
 .full-query {
-    width: 200px;
     display: inline-flex;
     position: relative;
     border-bottom: 1px solid #606060;
     padding-bottom: 5px;
+    flex: 3;
+    margin-right: 10px;
 }
 </style>
 
