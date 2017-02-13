@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graph;
+package ai.grakn.graph.admin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
