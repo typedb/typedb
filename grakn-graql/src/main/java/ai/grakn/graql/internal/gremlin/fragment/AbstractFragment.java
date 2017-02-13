@@ -45,7 +45,7 @@ abstract class AbstractFragment implements Fragment{
 
     private final VarName start;
     private final Optional<VarName> end;
-    private EquivalentFragmentSet equivalentFragmentSet;
+    private EquivalentFragmentSet equivalentFragmentSet = null;
 
     AbstractFragment(VarName start) {
         this.start = start;
