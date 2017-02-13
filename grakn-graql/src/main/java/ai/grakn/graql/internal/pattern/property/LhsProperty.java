@@ -18,22 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.Pattern;
-import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.query.InsertQueryExecutor;
-import ai.grakn.util.ErrorMessage;
-
-import java.util.Collection;
-import java.util.Set;
-
-import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
-import static ai.grakn.util.Schema.MetaSchema.RULE;
 
 /**
  * Represents the {@code lhs} (left-hand side) property on a {@link ai.grakn.concept.Rule}.
@@ -45,58 +30,14 @@ import static ai.grakn.util.Schema.MetaSchema.RULE;
  *
  * @author Felix Chapman
  */
-public class LhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty{
+public class LhsProperty extends RuleProperty {
 
-    private final Pattern lhs;
-
-    public LhsProperty(Pattern lhs) {
-        this.lhs = lhs;
-    }
-
-    public Pattern getLhs() {
-        return lhs;
+    public LhsProperty(Pattern pattern) {
+        super(pattern);
     }
 
     @Override
     public String getName() {
         return "lhs";
-    }
-
-    @Override
-    public String getProperty() {
-        return lhs.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        LhsProperty that = (LhsProperty) o;
-
-        return lhs.equals(that.lhs);
-
-    }
-
-    @Override
-    public int hashCode() {
-        return lhs.hashCode();
-    }
-
-    @Override
-    public Collection<EquivalentFragmentSet> match(VarName start) {
-        throw new UnsupportedOperationException(ErrorMessage.MATCH_INVALID.getMessage(this.getClass().getName()));
-    }
-
-    @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        if (!concept.isRule()) {
-            throw new IllegalStateException(INSERT_UNSUPPORTED_PROPERTY.getMessage(getName(), RULE.getName()));
-        }
-    }
-
-    @Override
-    public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
-        return null;
     }
 }
