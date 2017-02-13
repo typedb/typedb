@@ -71,4 +71,11 @@ public interface ConceptCache {
      * @param conceptIndex The unique index value has been enforced.
      */
     void clearJobSetCastings(String keyspace, String conceptIndex);
+
+    /**
+     * Removes all jobs from the keyspace
+     *
+     * @param keyspace The keyspace to purge of all jobs
+     */
+    void clearAllJobs(String keyspace);
 }

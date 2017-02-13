@@ -156,6 +156,12 @@ public class EngineCache implements ConceptCache{
         }
     }
 
+    @Override
+    public void clearAllJobs(String keyspace){
+        if(castings.containsKey(keyspace)) castings.remove(keyspace);
+        if(resources.containsKey(keyspace)) resources.remove(keyspace);
+    }
+
     /**
      * @return the last time a job was added to the EngineCache.
      */
