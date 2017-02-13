@@ -91,7 +91,7 @@ public class GraknEngineServer {
     public static void start(boolean taskManagerIsDistributed){
         startTaskManager(taskManagerIsDistributed);
         startHTTP();
-        startPostprocessing();
+//        startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
