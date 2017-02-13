@@ -19,19 +19,15 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import com.google.common.collect.ImmutableList;
 
-/**
- * Generator that generates totally concept IDs
- */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
-
-    public ConceptIds() {
-        super(ConceptId.class);
+public class CommonStrings extends AbstractGenerator<String> {
+    public CommonStrings() {
+        super(String.class);
     }
 
     @Override
-    public ConceptId generate() {
-        return ConceptId.of(gen(String.class));
+    protected String generate() {
+        return random.choose(ImmutableList.of("foo", "bar", "baz"));
     }
 }
