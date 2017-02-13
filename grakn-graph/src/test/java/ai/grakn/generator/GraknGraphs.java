@@ -203,13 +203,17 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public static List<Concept> allConceptsFrom(GraknGraph graph) {
-        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allTypesFrom(graph));
-        concepts.addAll(graph.admin().getMetaConcept().instances());
+        List<Concept> concepts = Lists.newArrayList(allTypesFrom(graph));
+        concepts.addAll(allInstancesFrom(graph));
         return concepts;
     }
 
     public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
         return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().subTypes());
+    }
+
+    public static Collection<? extends Instance> allInstancesFrom(GraknGraph graph) {
+        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().instances());
     }
 
     public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
