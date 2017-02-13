@@ -118,22 +118,22 @@ public class EntityTypeTest extends GraphTestBase{
         TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3'");
         TypeImpl c4 = (TypeImpl) graknGraph.putEntityType("c4");
 
-        assertTrue(c1.getSuperSet().contains(c1));
-        assertFalse(c1.getSuperSet().contains(c2));
-        assertFalse(c1.getSuperSet().contains(c3));
-        assertFalse(c1.getSuperSet().contains(c4));
+        assertTrue(c1.superTypeSet().contains(c1));
+        assertFalse(c1.superTypeSet().contains(c2));
+        assertFalse(c1.superTypeSet().contains(c3));
+        assertFalse(c1.superTypeSet().contains(c4));
 
         c1.superType(c2);
-        assertTrue(c1.getSuperSet().contains(c1));
-        assertTrue(c1.getSuperSet().contains(c2));
-        assertFalse(c1.getSuperSet().contains(c3));
-        assertFalse(c1.getSuperSet().contains(c4));
+        assertTrue(c1.superTypeSet().contains(c1));
+        assertTrue(c1.superTypeSet().contains(c2));
+        assertFalse(c1.superTypeSet().contains(c3));
+        assertFalse(c1.superTypeSet().contains(c4));
 
         c2.superType(c3);
-        assertTrue(c1.getSuperSet().contains(c1));
-        assertTrue(c1.getSuperSet().contains(c2));
-        assertTrue(c1.getSuperSet().contains(c3));
-        assertFalse(c1.getSuperSet().contains(c4));
+        assertTrue(c1.superTypeSet().contains(c1));
+        assertTrue(c1.superTypeSet().contains(c2));
+        assertTrue(c1.superTypeSet().contains(c3));
+        assertFalse(c1.superTypeSet().contains(c4));
     }
 
     @Test
