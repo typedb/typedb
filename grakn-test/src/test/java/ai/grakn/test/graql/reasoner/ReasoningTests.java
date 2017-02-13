@@ -149,7 +149,6 @@ public class ReasoningTests {
         QueryBuilder qb = testSet6.graph().graql().infer(true);
         String queryString = "match $x isa relation1;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
-
         Assert.assertEquals(answers.size(), 3);
     }
 
@@ -157,14 +156,13 @@ public class ReasoningTests {
     public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
         QueryBuilder iqb = testSet7.graph().graql().infer(true);
         QueryBuilder qb = testSet7.graph().graql().infer(true);
-        String queryString = "match $x isa relation1; limit 10;";
+        String queryString = "match $x isa relation1 ; limit 10;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         Assert.assertEquals(answers.size(), 10);
         Assert.assertEquals(answers.size(), queryAnswers(qb.parse(queryString)).size());
 
     }
 
-    @Ignore
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved1() {
         QueryBuilder qb = testSet8.graph().graql().infer(true);
@@ -173,11 +171,10 @@ public class ReasoningTests {
         answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
     }
 
-    @Ignore
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved2() {
         QueryBuilder qb = testSet9.graph().graql().infer(true);
-        String queryString = "match (role1:$x, role1:$y) isa relation1;";
+        String queryString = "match (role1:$x, role1:$y) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
     }
