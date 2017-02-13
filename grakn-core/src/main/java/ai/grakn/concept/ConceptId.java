@@ -56,8 +56,18 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     }
 
     @Override
-    public boolean equals(Object object) {
-        return object instanceof ConceptId && ((ConceptId) object).getValue().equals(getValue());
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ConceptId conceptId1 = (ConceptId) o;
+
+        return conceptId.equals(conceptId1.conceptId);
+    }
+
+    @Override
+    public int hashCode() {
+        return conceptId.hashCode();
     }
 
     @Override
@@ -68,11 +78,6 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     @Override
     public String toString(){
         return getValue();
-    }
-
-    @Override
-    public int hashCode(){
-        return getValue().hashCode();
     }
 
     /**
