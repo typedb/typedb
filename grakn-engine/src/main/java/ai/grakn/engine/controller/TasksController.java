@@ -84,7 +84,7 @@ public class TasksController {
         get(GET,         this::getTask);
         put(STOP,        this::stopTask);
         put(PAUSE,       this::pauseTask);
-        put(RESUME,      this::pauseTask);
+        put(RESUME,      this::resumeTask);
         post(TASKS,      this::scheduleTask);
 
         exception(EngineStorageException.class,     this::handleNotFoundInStorage);
@@ -217,8 +217,8 @@ public class TasksController {
      * @param response The response object providing functionality for modifying the response
      */
     private void handleNotFoundInStorage(Exception exception, Request request, Response response){
-        String id = request.params(ID_PARAMETER);
-        throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
+        response.status(404);
+        throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", request.params(ID_PARAMETER)));
     }
 
     /**
@@ -228,7 +228,9 @@ public class TasksController {
      * @param response The response object providing functionality for modifying the response
      */
     private void handleInternalError(Exception exception, Request request, Response response){
-        LOG.error(getFullStackTrace(exception));
+        LOG.error(request.ip() + getFullStackTrace(exception));
+
+        response.status(500);
         throw new GraknEngineServerException(500, exception);
     }
 
