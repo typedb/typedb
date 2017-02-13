@@ -66,19 +66,16 @@ import java.util.function.Function;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
+    private final AbstractGraknGraph graknGraph;
     private final ConceptId conceptId;
     private final Vertex vertex;
-
+    
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
     }
 
-    private final AbstractGraknGraph graknGraph;
-    private final Vertex vertex;
-
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
-        this.vertex = v;
         this.graknGraph = graknGraph;
         conceptId = ConceptId.of(v.id());
         vertex = v;
