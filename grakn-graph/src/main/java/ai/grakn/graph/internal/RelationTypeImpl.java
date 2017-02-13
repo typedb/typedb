@@ -125,7 +125,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         //Update the cache of the connected role types
         cachedHasRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
 
-        //Clear internal ComponentCache
+        //Clear internal Cache
         cachedHasRoles.clear();
     }
 }
