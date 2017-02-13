@@ -67,6 +67,7 @@ public enum ErrorMessage {
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
+    CANNOT_FIND_VERTEX("Cannot find vertex using id [%s] on graph [%s] on a already constructed concept. This may be due to the vertex being deleted."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

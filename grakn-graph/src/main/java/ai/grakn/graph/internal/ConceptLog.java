@@ -20,12 +20,13 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeName;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -42,40 +43,61 @@ import java.util.stream.Collectors;
  * @author fppt
  *
  */
-public class ConceptLog {
+class ConceptLog {
+    private final AbstractGraknGraph<?> graknGraph;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
+    private final Map<TypeName, TypeImpl> typeCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
-    private final Set<ConceptImpl> modifiedConcepts;
+    private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
 
     //We Track Casting Explicitly For Post Processing
-    private final Set<CastingImpl> modifiedCastings;
+    private final Set<CastingImpl> modifiedCastings = new HashSet<>();
 
     //We Track Resource Explicitly for Post Processing
-    private final Set<ResourceImpl> modifiedResources;
+    private final Set<ResourceImpl> modifiedResources = new HashSet<>();
 
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
-    private final Map<String, RelationImpl> modifiedRelations;
+    private final Map<String, RelationImpl> modifiedRelations = new HashMap<>();
 
 
-    ConceptLog() {
-        modifiedCastings = new HashSet<>();
-        modifiedConcepts = new HashSet<>();
-        modifiedResources = new HashSet<>();
-        modifiedRelations = new HashMap<>();
+    ConceptLog(AbstractGraknGraph<?> graknGraph) {
+        this.graknGraph = graknGraph;
+        resetTransaction();
     }
 
     /**
      * Removes all the concepts from the transaction tracker
      */
-    void clearTransaction(){
+    void resetTransaction(){
+        //Clear all transaction bound caches
         modifiedConcepts.clear();
         modifiedCastings.clear();
         modifiedResources.clear();
         modifiedRelations.clear();
         conceptCache.clear();
+        typeCache.clear();
+
+        //Reload types back in from grakn graph
+        //TODO: Improve thread safety further. References stored in sets are the same as originals in central cache. This is dangerous.
+        graknGraph.getCachedOntology().asMap().values().forEach(type -> this.cacheConcept(type.clone()));
+    }
+
+    /**
+     * A helper method which writes back into the central cache at the end of a transaction.
+     *
+     * @param committed true if a commit has occurred
+     */
+    void writeToCentralCache(boolean committed){
+        //When a commit has occurred all types can be overridden this is because we know they are valid
+        //If a commit has not occurred we can only safely push types to the central cache if no modifications have occurred.
+        if(committed){
+            graknGraph.getCachedOntology().putAll(typeCache);
+        }
+
+        //TODO: Fill our cache when not committing
     }
 
     /**
@@ -106,7 +128,7 @@ public class ConceptLog {
      * @return All the concepts which have been affected within the transaction in some way
      */
     Set<ConceptImpl> getModifiedConcepts() {
-        return modifiedConcepts.stream().filter(c -> c != null && c.isAlive()).collect(Collectors.toSet());
+        return modifiedConcepts;
     }
 
     /**
@@ -114,7 +136,7 @@ public class ConceptLog {
      * @return All the castings which have been affected within the transaction in some way
      */
     Set<CastingImpl> getModifiedCastings() {
-        return modifiedCastings.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
+        return modifiedCastings;
     }
 
     /**
@@ -122,18 +144,22 @@ public class ConceptLog {
      * @return All the castings which have been affected within the transaction in some way
      */
     Set<ResourceImpl> getModifiedResources() {
-        return modifiedResources.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
+        return modifiedResources;
     }
 
     /**
      *
      * @param concept The concept to nio longer track
      */
+    @SuppressWarnings("SuspiciousMethodCalls")
     void removeConcept(ConceptImpl concept){
         modifiedConcepts.remove(concept);
         modifiedCastings.remove(concept);
         modifiedResources.remove(concept);
         conceptCache.remove(concept.getId());
+        if(concept.isType()){
+            typeCache.remove(((TypeImpl) concept).getName());
+        }
     }
 
     /**
@@ -152,15 +178,29 @@ public class ConceptLog {
      */
     void cacheConcept(ConceptImpl concept){
         conceptCache.put(concept.getId(), concept);
+        if(concept.isType()){
+            TypeImpl type = (TypeImpl) concept;
+            typeCache.put(type.getName(), type);
+        }
     }
 
     /**
      * Checks if the concept has been built before and is currently cached
      *
      * @param id The id of the concept
+     * @return true if the concept is cached
      */
     boolean isConceptCached(ConceptId id){
         return conceptCache.containsKey(id);
+    }
+
+    /**
+     *
+     * @param name The name of the type to cache
+     * @return true if the concept is cached
+     */
+    boolean isTypeCached(TypeName name){
+        return typeCache.containsKey(name);
     }
 
     /**
@@ -173,5 +213,17 @@ public class ConceptLog {
     <X extends Concept> X getCachedConcept(ConceptId id){
         //noinspection unchecked
         return (X) conceptCache.get(id);
+    }
+
+    /**
+     * Returns a previously built type
+     *
+     * @param name The name of the type
+     * @param <X> The type of the type
+     * @return The cached type
+     */
+    <X extends Type> X getCachedType(TypeName name){
+        //noinspection unchecked
+        return (X) typeCache.get(name);
     }
 }

@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -93,20 +94,20 @@ class ValidateGlobalRules {
         boolean satisfiesPlaysRole = false;
 
         while(currentConcept != null){
-            Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
+            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
 
-            for (EdgeImpl edge : edges) {
-                if (edge.getTarget().asType().getName().equals(roleType.getName())) {
+            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
+                RoleType playsRole = playsRoleEntry.getKey();
+                Boolean required = playsRoleEntry.getValue();
+                if(playsRole.getName().equals(roleType.getName())){
                     satisfiesPlaysRole = true;
 
                     // Assert unique relation for this role type
-                    Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
                     if (required && rolePlayer.relations(roleType).size() != 1) {
                         return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(rolePlayer.getId(), roleType.getName(), rolePlayer.relations(roleType).size()));
                     }
                 }
             }
-
             currentConcept = (TypeImpl) currentConcept.superType();
         }
 
@@ -256,11 +257,11 @@ class ValidateGlobalRules {
         TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
 
         while(currentConcept != null){
-            Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
-            for (EdgeImpl edge : edges) {
-                Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
-                if (required) {
-                    RoleType roleType = edge.getTarget().asRoleType();
+
+            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
+            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
+                if(playsRoleEntry.getValue()){
+                    RoleType roleType = playsRoleEntry.getKey();
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId()));
