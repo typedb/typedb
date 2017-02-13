@@ -158,7 +158,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
     }
 
     @Override
-    public String toString(){
-        return super.toString() + "- Value [" + getValue() + "] ";
+    public String innerToString(){
+        return super.innerToString() + "- Value [" + getValue() + "] ";
     }
 }

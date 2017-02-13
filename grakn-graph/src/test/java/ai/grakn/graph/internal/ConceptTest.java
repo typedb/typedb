@@ -134,6 +134,17 @@ public class ConceptTest extends GraphTestBase{
     }
 
     @Test
+    public void testToStringOnDeletedConceptDoesntThrow() {
+        EntityType concept = graknGraph.putEntityType("a");
+        Instance concept2 = concept.addEntity();
+        concept2.delete();
+
+        assertFalse(concept2.toString().contains("ConceptType"));
+        assertFalse(concept2.toString().contains("Subject Identifier"));
+        assertFalse(concept2.toString().contains("Subject Locator"));
+    }
+
+    @Test
     public void testDelete() throws ConceptException{
         assertEquals(9, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
         Concept c1 = graknGraph.putEntityType("1");
