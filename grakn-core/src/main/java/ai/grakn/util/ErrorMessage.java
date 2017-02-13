@@ -135,6 +135,7 @@ public enum ErrorMessage {
 
     INSERT_RULE_WITHOUT_LHS("the rule '%s' doesn't have a lhs specified"),
     INSERT_RULE_WITHOUT_RHS("the rule '%s' doesn't have a rhs specified"),
+    INSERT_UNSUPPORTED_PROPERTY("the property '%s' can only be inserted on a '%s'"),
     INSERT_WITHOUT_TYPE("'%s' doesn't have an 'isa' or a 'sub'"),
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),
