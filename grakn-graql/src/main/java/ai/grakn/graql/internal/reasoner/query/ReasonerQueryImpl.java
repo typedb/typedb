@@ -137,9 +137,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean isRuleResolvable(){
         boolean ruleResolvable = false;
-        Iterator<Atomic> it = atomSet.iterator();
+        Iterator<Atom> it = atomSet.stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
         while(it.hasNext() && !ruleResolvable) {
-            Atomic at = it.next();
+            Atom at = it.next();
             ruleResolvable = at.isRuleResolvable();
         }
         return ruleResolvable;
