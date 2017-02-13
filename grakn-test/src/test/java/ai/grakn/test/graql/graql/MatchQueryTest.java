@@ -131,7 +131,7 @@ public class MatchQueryTest {
         graph.graql().match(var("x")).select("y").execute();
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void testVarNameEmptySet() {
         graph.graql().match(var()).select(Collections.EMPTY_SET).execute();
     }
@@ -201,13 +201,4 @@ public class MatchQueryTest {
         graph.graql().match(var("x").isa("name")).orderBy("x", Order.asc).execute();
     }
 
-    private void assertExceptionThrown(Consumer<String> consumer, String varName) {
-        boolean exceptionThrown = false;
-        try {
-            consumer.accept(varName);
-        } catch (Exception e) {
-            exceptionThrown = true;
-        }
-        assertTrue(exceptionThrown);
-    }
 }
