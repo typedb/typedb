@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
+import static mjson.Json.nil;
 
 class JsonPrinter implements Printer<Json> {
     @Override
@@ -67,7 +68,7 @@ class JsonPrinter implements Printer<Json> {
 
     @Override
     public final Json graqlString(boolean inner, Optional<?> optional) {
-        return optional.map(item -> graqlString(inner, item)).orElse(null);
+        return optional.map(item -> graqlString(inner, item)).orElse(nil());
     }
 
     @Override
