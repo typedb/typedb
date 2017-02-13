@@ -583,7 +583,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
-        return eq(getVariable(ctx.VARIABLE()));
+        return eq(var(getVariable(ctx.VARIABLE())));
     }
 
     @Override
