@@ -89,6 +89,12 @@ public interface Type extends Concept {
 
     /**
      *
+     * @return The resource types which this type is linked with.
+     */
+    Collection<ResourceType> resources();
+
+    /**
+     *
      * @return The super of this Type
      */
     Type superType();

@@ -142,6 +142,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
     }
 
+    @Override
+    public Collection<ResourceType> resources() {
+        return null;
+    }
+
     Map<RoleType, Boolean> directPlaysRoles(){
         return cachedDirectPlaysRoles.get();
     }
