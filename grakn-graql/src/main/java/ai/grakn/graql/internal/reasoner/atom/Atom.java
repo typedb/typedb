@@ -169,8 +169,8 @@ public abstract class Atom extends AtomBase {
      */
     public Set<ValuePredicate> getValuePredicates(){
         return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-            .filter(atom -> atom.getVarName().equals(getValueVariable()))
-            .collect(Collectors.toSet());
+                .filter(atom -> atom.getVarName().equals(getValueVariable()))
+                .collect(Collectors.toSet());
     }
 
     /**

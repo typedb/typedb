@@ -37,24 +37,6 @@ import java.util.Collection;
  *
  */
 public interface Rule extends Instance{
-    //------------------------------------- Modifiers ----------------------------------
-
-    /**
-     * Set the expectation of this Rule to be true or false.
-     *
-     * @param expectation A boolean parameter representing the expectation setting.
-     * @return The Rule itself
-     */
-    Rule setExpectation(boolean expectation);
-
-
-    /**
-     * Sets whether the Rule should be materialised.
-     *
-     * @param materialise A boolean representing whether the Rule should be materialised.
-     * @return The Rule itself
-     */
-    Rule setMaterialise(boolean materialise);
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves the Left Hand Side of a Graql query.
@@ -69,22 +51,6 @@ public interface Rule extends Instance{
      * @return A string representing the right hand side Graql query.
      */
     Pattern getRHS();
-
-
-    /**
-     * Returns a boolean representing the expectation setting of this Rule.
-     *
-     * @return a boolean representing the expectation setting.
-     */
-    Boolean getExpectation();
-
-
-    /**
-     * Returns whether the Rule is materialised.
-     *
-     * @return boolean value representing the materialisation setting.
-     */
-    Boolean isMaterialise();
 
     //------------------------------------- Edge Handling ----------------------------------
     /**
