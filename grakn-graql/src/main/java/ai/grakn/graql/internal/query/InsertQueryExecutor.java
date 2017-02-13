@@ -78,7 +78,7 @@ public class InsertQueryExecutor {
     private final GraknGraph graph;
     private final Collection<VarAdmin> vars;
     private final Map<VarName, Concept> concepts = new HashMap<>();
-    private Map<VarName, Concept> namedConcepts;
+    private final Map<VarName, Concept> namedConcepts = new HashMap<>();
     private final Stack<VarName> visitedVars = new Stack<>();
     private final ImmutableMap<VarName, List<VarAdmin>> varsByVarName;
     private final ImmutableMap<TypeName, List<VarAdmin>> varsByTypeName;
@@ -126,7 +126,8 @@ public class InsertQueryExecutor {
     Map<VarName, Concept> insertAll(Map<VarName, Concept> results) {
         concepts.clear();
         concepts.putAll(results);
-        namedConcepts = new HashMap<>(results);
+        namedConcepts.clear();
+        namedConcepts.putAll(results);
         vars.forEach(this::insertVar);
         return namedConcepts;
     }
