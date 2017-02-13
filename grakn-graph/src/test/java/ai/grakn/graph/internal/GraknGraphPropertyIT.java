@@ -92,7 +92,7 @@ import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitQuickcheck.class)
-public class GraknGraphPropertyTest {
+public class GraknGraphPropertyIT {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
