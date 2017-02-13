@@ -72,8 +72,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 
             InsertQuery query = graph.graql().insert(user);
             query.execute();
-            EngineCache engineCache = EngineCache.getInstance();
-            graph.admin().commit(engineCache.getResourceJobs(graph.getKeyspace()), engineCache.getCastingJobs(graph.getKeyspace()));
+            graph.admin().commit(EngineCache.getInstance());
             LOG.debug("Created user " + userJson);
             return true;
         } catch (Throwable t) {
@@ -207,8 +206,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             });
 
             if(exists){
-                EngineCache engineCache = EngineCache.getInstance();
-                graph.admin().commit(engineCache.getResourceJobs(graph.getKeyspace()), engineCache.getCastingJobs(graph.getKeyspace()));
+                graph.admin().commit(EngineCache.getInstance());
             }
 
             return exists;
