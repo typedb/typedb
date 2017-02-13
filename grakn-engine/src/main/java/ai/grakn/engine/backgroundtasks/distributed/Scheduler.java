@@ -20,6 +20,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -41,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
@@ -88,7 +90,10 @@ public class Scheduler implements Runnable, AutoCloseable {
             producer = kafkaProducer();
 
             waitToClose = new CountDownLatch(1);
-            schedulingService = Executors.newScheduledThreadPool(1);
+
+            ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                    .setNameFormat("scheduler-pool-%d").build();
+            schedulingService = Executors.newScheduledThreadPool(1, namedThreadFactory);
 
             LOG.debug("Scheduler started");
         }

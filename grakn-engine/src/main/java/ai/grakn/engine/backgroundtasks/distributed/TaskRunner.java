@@ -24,6 +24,7 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -41,6 +42,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -103,7 +105,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
         // Instantiate the executor where tasks will run
         // executorSize is the maximum executor queue size
         int numberAvailableThreads = properties.getAvailableThreads();
-        executor = newFixedThreadPool(numberAvailableThreads);
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("task-runner-pool-%d").build();
+
+        executor = newFixedThreadPool(numberAvailableThreads, namedThreadFactory);
         executorSize = numberAvailableThreads * 4;
 
         shutdownLatch = new CountDownLatch(1);
@@ -118,9 +123,11 @@ public class TaskRunner implements Runnable, AutoCloseable {
         try {
             while (true) {
                 // Poll for new tasks only when we know we have space to accept them.
-                if (getAcceptedTasksCount() < executorSize) {
-                    processRecords(consumer.poll(POLLING_FREQUENCY));
-                }
+//                if (acceptedTasks.get() < executorSize) {
+                processRecords(consumer.poll(POLLING_FREQUENCY));
+                Thread.sleep(1000);
+//
+//     }
             }
         } catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
@@ -154,14 +161,13 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     private void processRecords(ConsumerRecords<String, String> records) {
         for(ConsumerRecord<String, String> record: records) {
-            LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s", record.key(), getRunningTasksCount(), getAcceptedTasksCount(), executorSize));
-
             // Exit loop when TaskRunner capacity full
-            if(getAcceptedTasksCount() >= executorSize) {
+            if(acceptedTasks.get() >= executorSize) {
                 seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
                 break;
             }
 
+            LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s", record.key(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
             String id = record.key();
 
             // Instead of deserializing TaskState from value, get up-to-date state from the storage
@@ -261,10 +267,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
         }
 
         LOG.debug("Registered TaskRunner");
-    }
-
-    private synchronized int getAcceptedTasksCount() {
-        return acceptedTasks.get();
     }
 
     private synchronized int getRunningTasksCount() {
