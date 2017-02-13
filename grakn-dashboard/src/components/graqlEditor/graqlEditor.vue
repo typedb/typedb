@@ -116,7 +116,7 @@ const FavQueriesList = require('./favQueriesList.vue');
 const TypesPanel = require('./typesPanel.vue');
 const MessagePanel = require('./messagePanel.vue');
 const QuerySettings = require('./querySettings.vue');
-const QueryBuildersList = require('./QueryBuildersList.vue');
+const QueryBuildersList = require('./queryBuildersList.vue');
 
 
 export default {
