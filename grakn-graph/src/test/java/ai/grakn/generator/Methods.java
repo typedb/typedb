@@ -19,68 +19,58 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.TypeName;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
+import org.mockito.Mockito;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.stream.Stream;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Generator that generates totally random type names
- */
-public class TypeNames extends FromGraphGenerator<TypeName> {
+public class Methods extends AbstractGenerator<Method> {
 
-    private boolean mustBeUnused = false;
+    private Class<?> clazz = null;
 
-    public TypeNames() {
-        super(TypeName.class);
-        this.fromLastGeneratedGraph();
+    public Methods() {
+        super(Method.class);
     }
 
     @Override
-    public TypeName generateFromGraph() {
-        if (mustBeUnused) {
-            return withImplicitConceptsVisible(graph(), graph -> {
-                TypeName name;
+    protected Method generate() {
+        if (clazz == null) throw new IllegalStateException("Must use annotation OfClass");
 
-                do {
-                    name = randomName();
-                } while (graph.getType(name) != null);
+        return random.choose(clazz.getMethods());
+    }
 
-                return name;
-            });
+    public void configure(MethodOf methodOf) {
+        this.clazz = methodOf.value();
+    }
+
+    public static Object[] mockParamsOf(Method method) {
+        return Stream.of(method.getParameters()).map(Parameter::getType).map(Methods::mock).toArray();
+    }
+
+    private static <T> T mock(Class<T> clazz) {
+        if (clazz.equals(boolean.class)) {
+            return (T) Boolean.FALSE;
+        } else if (clazz.equals(String.class)) {
+            return (T) "";
         } else {
-            return randomName();
-        }
-    }
-
-    public void configure(Unused unused) {
-        mustBeUnused();
-    }
-
-    TypeNames mustBeUnused() {
-        mustBeUnused = true;
-        return this;
-    }
-
-    private TypeName randomName() {
-        if (random.nextBoolean()) {
-            return TypeName.of(gen(String.class));
-        } else {
-            return TypeName.of("foo");
+            return Mockito.mock(clazz);
         }
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface Unused {
+    public @interface MethodOf {
+        Class<?> value();
     }
 }

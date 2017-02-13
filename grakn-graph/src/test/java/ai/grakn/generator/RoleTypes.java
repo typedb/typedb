@@ -19,23 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 
-/**
- * Generator that generates totally concept IDs
- */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+public class RoleTypes extends AbstractTypeGenerator<RoleType> {
 
-    public ConceptIds() {
-        super(ConceptId.class);
+    public RoleTypes() {
+        super(RoleType.class);
     }
 
     @Override
-    public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+    protected RoleType newType(TypeName name) {
+        return graph().putRoleType(name);
+    }
+
+    @Override
+    protected RoleType metaType() {
+        return graph().admin().getMetaRoleType();
     }
 }

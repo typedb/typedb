@@ -136,13 +136,7 @@ public class LazyTest {
         MatrixGraphII.getGraph(N, N).accept(graphContext.graph());
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-
         GraknGraph graph = graphContext.graph();
-
-        startTime = System.currentTimeMillis();
-        Reasoner.linkConceptTypes(graph);
-        long linkTime = System.currentTimeMillis() - startTime;
-        System.out.println("linkTime: " + linkTime);
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";

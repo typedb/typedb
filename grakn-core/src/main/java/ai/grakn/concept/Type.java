@@ -106,6 +106,9 @@ public interface Type extends Concept {
     Collection<? extends Instance> instances();
 
     /**
+     * Return if the type is set to abstract.
+     *
+     * By default, types are not abstract.
      *
      * @return returns true if the type is set to be abstract.
      */
@@ -113,6 +116,8 @@ public interface Type extends Concept {
 
     /**
      * Return whether the Type was created implicitly.
+     *
+     * By default, types are not implicit.
      *
      * @return returns true if the type was created implicitly through {@link #hasResource}
      */

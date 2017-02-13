@@ -161,7 +161,10 @@ export default {
                 viewportMargin: Infinity,
                 autofocus: true,
                 extraKeys: {
-                    Enter: this.runQuery,
+                    // Enter key is now binded globally on the window object so that a runQuery can be fired even if the curson is not in the editor
+                    // But here we need to bind Enter to a behaviour that is not the default "newLine", otherwise everytime we hit enter the cursors goes to new line.
+                    Enter: "goLineEnd",
+                    "Shift-Enter":"newlineAndIndent",
                     "Shift-Delete": this.clearGraph,
                     "Shift-Backspace": this.clearGraph,
                     "Shift-Ctrl-Backspace": this.clearGraphAndPage

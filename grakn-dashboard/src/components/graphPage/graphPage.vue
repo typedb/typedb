@@ -230,13 +230,22 @@ export default {
 
             const eventKeys = param.event.srcEvent;
 
-            EngineClient.request({
-                url: visualiser.getNode(node).href,
-                callback: this.onGraphResponse,
-            });
+            if (eventKeys.altKey) {
+                if (visualiser.nodes._data[node].ontology) {
+                    EngineClient.request({
+                        url: visualiser.nodes._data[node].ontology,
+                        callback: this.onGraphResponse,
+                    });
+                }
+            } else {
+                EngineClient.request({
+                    url: visualiser.getNode(node).href,
+                    callback: this.onGraphResponse,
+                });
 
-            if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
-                visualiser.deleteNode(node);
+                if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
+                    visualiser.deleteNode(node);
+                }
             }
         },
         rightClick(param) {
@@ -251,20 +260,20 @@ export default {
                 });
             }
         },
-        configureNode(nodeType,selectedProps) {
+        configureNode(nodeType, selectedProps) {
             visualiser.setDisplayProperties(nodeType, selectedProps);
         },
         holdOnNode(param) {
             const node = param.nodes[0];
             if (node === undefined) return;
 
-            this.state.eventHub.$emit('show-label-panel',visualiser.getAllNodeProperties(node),visualiser.getNodeType(node));
+            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node));
         },
 
         onGraphResponseAnalytics(resp, err) {
             if (resp != null) {
                 if (resp.type === 'string') {
-                    this.state.eventHub.$emit('analytics-string-response',resp.response);
+                    this.state.eventHub.$emit('analytics-string-response', resp.response);
                 } else {
                     this.halParser.parseResponse(resp.response);
                     visualiser.fitGraphToWindow();

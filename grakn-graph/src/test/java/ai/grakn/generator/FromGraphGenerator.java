@@ -19,68 +19,63 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.GraknGraph;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Supplier;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Generator that generates totally random type names
- */
-public class TypeNames extends FromGraphGenerator<TypeName> {
+public abstract class FromGraphGenerator<T> extends AbstractGenerator<T> {
+    private Supplier<GraknGraph> graphSupplier =
+            () -> gen().make(GraknGraphs.class).setOpen(true).generate(random, status);
 
-    private boolean mustBeUnused = false;
+    private GraknGraph graph;
 
-    public TypeNames() {
-        super(TypeName.class);
-        this.fromLastGeneratedGraph();
+    FromGraphGenerator(Class<T> type) {
+        super(type);
+    }
+
+    protected final GraknGraph graph() {
+        return graph;
     }
 
     @Override
-    public TypeName generateFromGraph() {
-        if (mustBeUnused) {
-            return withImplicitConceptsVisible(graph(), graph -> {
-                TypeName name;
-
-                do {
-                    name = randomName();
-                } while (graph.getType(name) != null);
-
-                return name;
-            });
-        } else {
-            return randomName();
-        }
+    protected final T generate() {
+        graph = graphSupplier.get();
+        return generateFromGraph();
     }
 
-    public void configure(Unused unused) {
-        mustBeUnused();
+    protected abstract T generateFromGraph();
+
+    protected final <S extends FromGraphGenerator<?>> S genFromGraph(Class<S> generatorClass) {
+        S generator = gen().make(generatorClass);
+        generator.fromGraph(this::graph);
+        return generator;
     }
 
-    TypeNames mustBeUnused() {
-        mustBeUnused = true;
+    public final void configure(FromGraph fromGraph) {
+        fromLastGeneratedGraph();
+    }
+
+    final void fromGraph(Supplier<GraknGraph> graphSupplier) {
+        this.graphSupplier = graphSupplier;
+    }
+
+    final FromGraphGenerator<T> fromLastGeneratedGraph() {
+        fromGraph(GraknGraphs::lastGeneratedGraph);
         return this;
-    }
-
-    private TypeName randomName() {
-        if (random.nextBoolean()) {
-            return TypeName.of(gen(String.class));
-        } else {
-            return TypeName.of("foo");
-        }
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface Unused {
+    public @interface FromGraph {
     }
 }

@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
@@ -33,6 +34,8 @@ import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static ai.grakn.util.Schema.ConceptProperty.RULE_LHS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -149,5 +152,23 @@ public class RuleTest extends GraphTestBase{
                 ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("RHS", rule.getId(), rule.type().getName(), "Your-Type"));
 
         graknGraph.commit();
+    }
+
+    @Test
+    public void checkRuleSetsAreFilledUponCommit() throws GraknValidationException{
+        EntityType t1 = graknGraph.putEntityType("type1");
+        EntityType t2 = graknGraph.putEntityType("type2");
+
+        lhs = graknGraph.graql().parsePattern("$x isa type1");
+        rhs = graknGraph.graql().parsePattern("$x isa type2");
+
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+        assertTrue("Hypothesis is not empty before commit", rule.getHypothesisTypes().isEmpty());
+        assertTrue("Conclusion is not empty before commit", rule.getConclusionTypes().isEmpty());
+
+        graknGraph.commit();
+
+        assertThat(rule.getHypothesisTypes(), containsInAnyOrder(t1));
+        assertThat(rule.getConclusionTypes(), containsInAnyOrder(t2));
     }
 }

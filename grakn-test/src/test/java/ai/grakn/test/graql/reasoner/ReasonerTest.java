@@ -32,6 +32,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -195,6 +196,7 @@ public class ReasonerTest {
         Pattern body = and(snbGraph.graph().graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(snbGraph.graph().graql().parsePatterns("$x has firstname 'Bob';"));
         snbGraph.graph().admin().getMetaRuleInference().addRule(body, head);
+        Reasoner.commitGraph(snbGraph.graph());
 
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         assertTrue(!answers.isEmpty());

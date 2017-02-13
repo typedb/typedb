@@ -19,23 +19,30 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.RuleType;
+import ai.grakn.concept.TypeName;
+import com.google.common.collect.ImmutableSet;
 
-/**
- * Generator that generates totally concept IDs
- */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+import java.util.Collection;
 
-    public ConceptIds() {
-        super(ConceptId.class);
+public class RuleTypes extends AbstractTypeGenerator<RuleType> {
+
+    public RuleTypes() {
+        super(RuleType.class);
     }
 
     @Override
-    public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+    protected RuleType newType(TypeName name) {
+        return graph().putRuleType(name);
+    }
+
+    @Override
+    protected RuleType metaType() {
+        return graph().admin().getMetaRuleType();
+    }
+
+    @Override
+    protected Collection<RuleType> otherMetaTypes() {
+        return ImmutableSet.of(graph().admin().getMetaRuleInference(), graph().admin().getMetaRuleConstraint());
     }
 }
