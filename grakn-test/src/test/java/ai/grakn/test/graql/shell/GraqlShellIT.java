@@ -257,7 +257,7 @@ public class GraqlShellIT {
                 "insert man sub entity has-resource name; person sub entity; name sub resource datatype string;\n" +
                 "insert has name 'felix' isa man;\n" +
                 "match isa person, has name $x;\n" +
-                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
+                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n commit\n" +
                 "match isa person, has name $x;\n", "--infer"
         );
 

@@ -308,10 +308,23 @@ class ValidateGlobalRules {
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
     private static Set<String> checkRuleSideInvalid(GraknGraph graph, RuleImpl rule, String side, Pattern pattern) {
-        return pattern.admin().getVars().stream()
+        Set<String> errors = new HashSet<>();
+
+        pattern.admin().getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .flatMap(v -> v.getTypeNames().stream())
-                .filter(typeName -> graph.getType(typeName) == null)
-                .map(typeName -> ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getName(), typeName)).collect(Collectors.toSet());
+                .flatMap(v -> v.getTypeNames().stream()).forEach(typeName -> {
+                    Type type = graph.getType(typeName);
+                    if(type == null){
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getName(), typeName));
+                    } else {
+                        if(side.equalsIgnoreCase("LHS")){
+                            rule.addHypothesis(type);
+                        } else {
+                            rule.addConclusion(type);
+                        }
+                    }
+                });
+
+        return errors;
     }
 }
