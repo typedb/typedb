@@ -19,23 +19,17 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 
-/**
- * Generator that generates totally concept IDs
- */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+public class Entities extends AbstractInstanceGenerator<Entity, EntityType> {
 
-    public ConceptIds() {
-        super(ConceptId.class);
+    public Entities() {
+        super(Entity.class, EntityTypes.class);
     }
 
     @Override
-    public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+    protected Entity newInstance(EntityType type) {
+        return type.addEntity();
     }
 }

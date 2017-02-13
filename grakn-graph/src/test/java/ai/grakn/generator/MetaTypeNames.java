@@ -19,23 +19,28 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
+import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 
 /**
- * Generator that generates totally concept IDs
+ * Generator that generates meta type names only
  */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+public class MetaTypeNames extends AbstractGenerator<TypeName> {
 
-    public ConceptIds() {
-        super(ConceptId.class);
+    private static final ImmutableSet<TypeName> META_TYPE_NAMES =
+            Stream.of(Schema.MetaSchema.values()).map(m -> m.getName()).collect(toImmutableSet());
+
+    public MetaTypeNames() {
+        super(TypeName.class);
     }
 
     @Override
-    public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+    public TypeName generate() {
+        return random.choose(META_TYPE_NAMES);
     }
 }

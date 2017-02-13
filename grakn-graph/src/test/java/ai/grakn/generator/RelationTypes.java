@@ -19,23 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.TypeName;
 
-/**
- * Generator that generates totally concept IDs
- */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+public class RelationTypes extends AbstractTypeGenerator<RelationType> {
 
-    public ConceptIds() {
-        super(ConceptId.class);
+    public RelationTypes() {
+        super(RelationType.class);
     }
 
     @Override
-    public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+    protected RelationType newType(TypeName name) {
+        return graph().putRelationType(name);
+    }
+
+    @Override
+    protected RelationType metaType() {
+        return graph().admin().getMetaRelationType();
     }
 }

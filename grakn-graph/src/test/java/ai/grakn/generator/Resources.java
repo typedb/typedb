@@ -19,23 +19,19 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
 
-/**
- * Generator that generates totally concept IDs
- */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+public class Resources extends AbstractInstanceGenerator<Resource, ResourceType> {
 
-    public ConceptIds() {
-        super(ConceptId.class);
+    public Resources() {
+        super(Resource.class, ResourceTypes.class);
     }
 
     @Override
-    public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+    protected Resource newInstance(ResourceType type) {
+        ResourceType.DataType<?> dataType = type.getDataType();
+        Object value = gen().make(ResourceValues.class).dataType(dataType).generate(random, status);
+        return type.putResource(value);
     }
 }

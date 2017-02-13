@@ -19,68 +19,59 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/**
- * Generator that generates totally random type names
- */
-public class TypeNames extends FromGraphGenerator<TypeName> {
+public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
 
-    private boolean mustBeUnused = false;
+    private Unique unique;
 
-    public TypeNames() {
-        super(TypeName.class);
-        this.fromLastGeneratedGraph();
+    public ResourceTypes() {
+        super(ResourceType.class);
     }
 
     @Override
-    public TypeName generateFromGraph() {
-        if (mustBeUnused) {
-            return withImplicitConceptsVisible(graph(), graph -> {
-                TypeName name;
+    protected ResourceType newType(TypeName name) {
+        ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
 
-                do {
-                    name = randomName();
-                } while (graph.getType(name) != null);
+        boolean shouldBeUnique = unique != null ? unique.value() : random.nextBoolean();
 
-                return name;
-            });
+        if (shouldBeUnique) {
+            return graph().putResourceTypeUnique(name, dataType);
         } else {
-            return randomName();
+            return graph().putResourceType(name, dataType);
         }
     }
 
-    public void configure(Unused unused) {
-        mustBeUnused();
+    @Override
+    protected ResourceType metaType() {
+        return graph().admin().getMetaResourceType();
     }
 
-    TypeNames mustBeUnused() {
-        mustBeUnused = true;
-        return this;
+    @Override
+    protected boolean filter(ResourceType type) {
+        return unique == null || type.isUnique().equals(unique.value());
     }
 
-    private TypeName randomName() {
-        if (random.nextBoolean()) {
-            return TypeName.of(gen(String.class));
-        } else {
-            return TypeName.of("foo");
-        }
+    public void configure(Unique unique) {
+        this.unique = unique;
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface Unused {
+    public @interface Unique {
+        boolean value() default true;
     }
+
 }

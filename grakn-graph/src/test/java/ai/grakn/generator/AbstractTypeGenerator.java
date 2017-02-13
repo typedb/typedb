@@ -19,68 +19,74 @@
 
 package ai.grakn.generator;
 
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.Collection;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.stream.Collectors.toSet;
 
-/**
- * Generator that generates totally random type names
- */
-public class TypeNames extends FromGraphGenerator<TypeName> {
+public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGenerator<T> {
 
-    private boolean mustBeUnused = false;
+    private boolean excludeMeta = false;
 
-    public TypeNames() {
-        super(TypeName.class);
-        this.fromLastGeneratedGraph();
+    AbstractTypeGenerator(Class<T> type) {
+        super(type);
     }
 
     @Override
-    public TypeName generateFromGraph() {
-        if (mustBeUnused) {
-            return withImplicitConceptsVisible(graph(), graph -> {
-                TypeName name;
+    protected final T generateFromGraph() {
+        Collection<T> types = (Collection<T>) metaType().subTypes();
 
-                do {
-                    name = randomName();
-                } while (graph.getType(name) != null);
+        types = types.stream().filter(this::filter).collect(toSet());
 
-                return name;
-            });
+        if (excludeMeta) {
+            types.remove(metaType());
+            types.removeAll(otherMetaTypes());
+        }
+        
+        if (types.isEmpty()) {
+            TypeName name = genFromGraph(TypeNames.class).mustBeUnused().generate(random, status);
+            assert graph().getType(name) == null;
+            return newType(name);
         } else {
-            return randomName();
+            return random.choose(types);
         }
     }
 
-    public void configure(Unused unused) {
-        mustBeUnused();
+    protected abstract T newType(TypeName name);
+
+    protected abstract T metaType();
+
+    protected Collection<T> otherMetaTypes() {
+        return ImmutableSet.of();
     }
 
-    TypeNames mustBeUnused() {
-        mustBeUnused = true;
+    protected boolean filter(T type) {
+        return true;
+    }
+
+    public final void configure(NotMeta notMeta) {
+        excludeMeta();
+    }
+
+    final AbstractTypeGenerator<T> excludeMeta() {
+        this.excludeMeta = true;
         return this;
-    }
-
-    private TypeName randomName() {
-        if (random.nextBoolean()) {
-            return TypeName.of(gen(String.class));
-        } else {
-            return TypeName.of("foo");
-        }
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface Unused {
+    public static @interface NotMeta {
     }
 }

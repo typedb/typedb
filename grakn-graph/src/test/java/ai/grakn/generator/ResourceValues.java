@@ -26,13 +26,21 @@ import ai.grakn.concept.ResourceType;
  */
 public class ResourceValues extends AbstractGenerator<Object> {
 
+    private ResourceType.DataType<?> dataType = null;
+
     public ResourceValues() {
         super(Object.class);
     }
 
     @Override
     public Object generate() {
-        String type = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
+        String type;
+        if (dataType == null) {
+            type = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
+        } else {
+            type = dataType.getName();
+        }
+
         switch (type) {
             case "java.lang.String":
                 return gen(String.class);
@@ -47,4 +55,10 @@ public class ResourceValues extends AbstractGenerator<Object> {
                 throw new RuntimeException("unreachable: " + type);
         }
     }
+
+    ResourceValues dataType(ResourceType.DataType<?> dataType) {
+        this.dataType = dataType;
+        return this;
+    }
+
 }

@@ -19,23 +19,17 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 
-/**
- * Generator that generates totally concept IDs
- */
-public class ConceptIds extends AbstractGenerator<ConceptId> {
+public class Relations extends AbstractInstanceGenerator<Relation, RelationType> {
 
-    public ConceptIds() {
-        super(ConceptId.class);
+    public Relations() {
+        super(Relation.class, RelationTypes.class);
     }
 
     @Override
-    public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+    protected Relation newInstance(RelationType type) {
+        return type.addRelation();
     }
 }

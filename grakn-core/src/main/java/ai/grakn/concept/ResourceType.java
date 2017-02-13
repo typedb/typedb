@@ -141,7 +141,10 @@ public interface ResourceType<D> extends Type {
     DataType<D> getDataType();
 
     /**
-     * Retrieve the regular expression to which instances of this ResourceType must conform.
+     * Retrieve the regular expression to which instances of this ResourceType must conform, or {@code null} if no
+     * regular expression is set.
+     *
+     * By default, a {@link ResourceType} does not have a regular expression set.
      *
      * @return The regular expression to which instances of this ResourceType must conform.
      */
