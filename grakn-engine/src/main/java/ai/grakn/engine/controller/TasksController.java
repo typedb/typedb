@@ -217,6 +217,8 @@ public class TasksController {
      * @param response The response object providing functionality for modifying the response
      */
     private void handleNotFoundInStorage(Exception exception, Request request, Response response){
+        LOG.trace(getFullStackTrace(exception));
+        
         response.status(404);
         throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", request.params(ID_PARAMETER)));
     }
