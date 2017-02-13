@@ -234,6 +234,19 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void testValueEqualsVarQuery() {
+        MatchQuery query = qb.match(var("x").value(var("y")));
+
+        assertThat(query.execute(), hasSize(greaterThan(10)));
+
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+        });
+    }
+
+    @Test
     public void testRegexQuery() {
         MatchQuery query = qb.match(
                 var("x").isa("genre").has("name", regex("^f.*y$"))
