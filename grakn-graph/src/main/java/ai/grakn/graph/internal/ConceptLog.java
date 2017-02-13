@@ -93,9 +93,11 @@ class ConceptLog {
     void writeToCentralCache(boolean committed){
         //When a commit has occurred all types can be overridden this is because we know they are valid
         //If a commit has not occurred we can only safely push types to the central cache if no modifications have occurred.
-        if(committed || modifiedConcepts.isEmpty()){
+        if(committed){
             graknGraph.getCachedOntology().putAll(typeCache);
         }
+
+        //TODO: Fill our cache when not committing
     }
 
     /**
