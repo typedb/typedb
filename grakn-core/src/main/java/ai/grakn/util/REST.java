@@ -44,6 +44,9 @@ public class REST {
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
+        /**
+         * URIs to Tasks Controller URI endpoints
+         */
         public static class Tasks {
             public static final String TASKS = "/tasks";
             public static final String GET = "/tasks/:id";
