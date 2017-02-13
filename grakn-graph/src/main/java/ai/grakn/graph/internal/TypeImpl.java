@@ -61,7 +61,7 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
+class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type, Cloneable {
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private TypeName cachedTypeName;
@@ -97,6 +97,15 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         this(graknGraph, v, superType);
         setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
         cachedIsImplicit.set(isImplicit);
+    }
+
+    @Override
+    public TypeImpl clone() {
+        try {
+            return (TypeImpl) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("Could not clone type [" + cachedTypeName.getValue() + "]", e);
+        }
     }
 
     /**

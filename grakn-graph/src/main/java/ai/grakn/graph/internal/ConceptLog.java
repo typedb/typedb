@@ -43,7 +43,7 @@ import java.util.Set;
  * @author fppt
  *
  */
-public class ConceptLog {
+class ConceptLog {
     private final AbstractGraknGraph<?> graknGraph;
 
     //Caches any concept which has been touched before
@@ -81,8 +81,8 @@ public class ConceptLog {
         typeCache.clear();
 
         //Reload types back in from grakn graph
-        //TODO: Clone types so changes in transactions don't affect graph cache
-        graknGraph.getCachedOntology().asMap().values().forEach(this::cacheConcept);
+        //TODO: Improve thread safety further. References stored in sets are the same as originals in central cache. This is dangerous.
+        graknGraph.getCachedOntology().asMap().values().forEach(type -> this.cacheConcept(type.clone()));
     }
 
     /**
