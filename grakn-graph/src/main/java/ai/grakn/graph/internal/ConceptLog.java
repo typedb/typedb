@@ -65,16 +65,13 @@ public class ConceptLog {
 
     ConceptLog(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
-        resetTransaction(false);
+        resetTransaction();
     }
 
     /**
      * Removes all the concepts from the transaction tracker
      */
-    void resetTransaction(boolean committed){
-        //Purge types into cachedOntology
-        if(committed) graknGraph.getCachedOntology().putAll(typeCache);
-
+    void resetTransaction(){
         //Clear all transaction bound caches
         modifiedConcepts.clear();
         modifiedCastings.clear();
@@ -86,6 +83,19 @@ public class ConceptLog {
         //Reload types back in from grakn graph
         //TODO: Clone types so changes in transactions don't affect graph cache
         graknGraph.getCachedOntology().asMap().values().forEach(this::cacheConcept);
+    }
+
+    /**
+     * A helper method which writes back into the central cache at the end of a transaction.
+     *
+     * @param committed true if a commit has occurred
+     */
+    void writeToCentralCache(boolean committed){
+        //When a commit has occurred all types can be overridden this is because we know they are valid
+        //If a commit has not occurred we can only safely push types to the central cache if no modifications have occurred.
+        if(committed || modifiedConcepts.isEmpty()){
+            graknGraph.getCachedOntology().putAll(typeCache);
+        }
     }
 
     /**

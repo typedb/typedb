@@ -767,6 +767,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private void clearLocalVariables(){
+        getConceptLog().writeToCentralCache(false);
         localConceptLog.remove();
     }
 
@@ -784,7 +785,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         commitTransaction();
 
         LOG.trace("Graph committed.");
-        getConceptLog().resetTransaction(true);
+        getConceptLog().writeToCentralCache(true);
+        getConceptLog().resetTransaction();
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
