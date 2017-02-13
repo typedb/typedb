@@ -28,8 +28,6 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -48,14 +46,17 @@ import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_STOP;
-import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
+
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.PAUSE;
+import static ai.grakn.util.REST.WebPath.Tasks.RESUME;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static java.time.Instant.ofEpochMilli;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.post;
 import static spark.Spark.put;
@@ -79,14 +80,19 @@ public class TasksController {
         }
         this.manager = manager;
 
-        get(ALL_TASKS_URI, this::getTasks);
-        get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
-        put(TASKS_URI + "/" + ID_PARAMETER + TASK_STOP, this::stopTask);
-        post(TASKS_SCHEDULE_URI, this::scheduleTask);
+        get(TASKS,       this::getTasks);
+        get(GET,         this::getTask);
+        put(STOP,        this::stopTask);
+        put(PAUSE,       this::pauseTask);
+        put(RESUME,      this::pauseTask);
+        post(TASKS,      this::scheduleTask);
+
+        exception(EngineStorageException.class,     this::handleNotFoundInStorage);
+        exception(Exception.class,                  this::handleInternalError);
     }
 
     @GET
-    @Path("/all")
+    @Path("/")
     @ApiOperation(value = "Get tasks matching a specific TaskStatus.")
     @ApiImplicitParams({
         @ApiImplicitParam(name = "status", value = "TaskStatus as string.", dataType = "string", paramType = "query"),
@@ -95,7 +101,7 @@ public class TasksController {
         @ApiImplicitParam(name = "limit", value = "Limit the number of entries in the returned result.", dataType = "integer", paramType = "query"),
         @ApiImplicitParam(name = "offset", value = "Use in conjunction with limit for pagination.", dataType = "integer", paramType = "query")
     })
-    private JSONArray getTasks(Request request, Response response) {
+    private Json getTasks(Request request, Response response) {
         TaskStatus status = null;
         String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
         String creator = request.queryParams(TASK_CREATOR_PARAMETER);
@@ -114,51 +120,60 @@ public class TasksController {
             status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
         }
 
-        JSONArray result = new JSONArray();
-        for (TaskState state : manager.storage().getTasks(status, className, creator, limit, offset)) {
-            result.put(serialiseStateSubset(state));
-        }
+        Json result = Json.array();
+        manager.storage()
+                .getTasks(status, className, creator, limit, offset).stream()
+                .map(this::serialiseStateFull)
+                .forEach(result::add);
 
+        response.status(200);
         response.type("application/json");
+
         return result;
     }
 
     @GET
-    @Path("/:uuid")
+    @Path("/:id")
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
         String id = request.params(ID_PARAMETER);
 
-        try {
-            response.status(200);
-            response.type("application/json");
+        response.status(200);
+        response.type("application/json");
 
-            return serialiseStateFull(manager.storage().getState(id)).toString();
-        } catch (EngineStorageException e){
-           throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
-        } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
-        }
+        return serialiseStateFull(manager.storage().getState(id)).toString();
     }
 
     @PUT
-    @Path("/:uuid/stop")
+    @Path("/:id/stop")
     @ApiOperation(value = "Stop a running or paused task.")
-    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "id", value = "Identifier of the task to stop.", required = true, dataType = "string", paramType = "path")
     private String stopTask(Request request, Response response) {
-        try {
-            String id = request.params(ID_PARAMETER);
-            manager.stopTask(id, this.getClass().getName());
-            return "";
-        }
-        catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
-        }
+        manager.stopTask(request.params(ID_PARAMETER), this.getClass().getName());
+        return Json.object().toString();
+    }
+
+    @PUT
+    @Path("/:id/pause")
+    @ApiOperation(value = "Pause a running task.")
+    @ApiImplicitParam(name = "id", value = "Identifier of the task to pause.", required = true, dataType = "string", paramType = "path")
+    private String pauseTask(Request request, Response response) {
+        manager.pauseTask(request.params(ID_PARAMETER), this.getClass().getName());
+        return Json.object().toString();
+    }
+
+    @PUT
+    @Path("/:id/resume")
+    @ApiOperation(value = "Resume a paused task.")
+    @ApiImplicitParam(name = "id", value = "Identifier of the task to resume.", required = true, dataType = "string", paramType = "path")
+    private String resumeTask(Request request, Response response) {
+        manager.resumeTask(request.params(ID_PARAMETER), this.getClass().getName());
+        return Json.object().toString();
     }
 
     @POST
-    @Path("/schedule")
+    @Path("/")
     @ApiOperation(value = "Schedule a task.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "className", value = "Class name of object implementing the BackgroundTask interface", required = true, dataType = "string", paramType = "query"),
@@ -183,38 +198,56 @@ public class TasksController {
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
         }
 
-        try {
-            if(request.body() != null && (!request.body().isEmpty())) {
-                configuration = Json.read(request.body());
-            }
-
-            String id = manager.createTask(className, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
-
-            response.type("application/json");
-
-            return Json.object("id", id).toString();
-        } catch (Exception e) {
-            LOG.error(getFullStackTrace(e));
-            throw new GraknEngineServerException(500, e);
+        if(request.body() != null && (!request.body().isEmpty())) {
+            configuration = Json.read(request.body());
         }
+
+        String id = manager.createTask(className, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
+
+        response.status(200);
+        response.type("application/json");
+
+        return Json.object("id", id).toString();
     }
 
-
-    private JSONObject serialiseStateSubset(TaskState state) {
-        return new JSONObject().put("id", state.getId())
-                .put("status", state.status())
-                .put("creator", state.creator())
-                .put("className", state.taskClassName())
-                .put("runAt", state.runAt())
-                .put("recurring", state.isRecurring());
+    /**
+     * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the user.
+     * @param exception EngineStorageException thrown by the server
+     * @param request The request object providing information about the HTTP request
+     * @param response The response object providing functionality for modifying the response
+     */
+    private void handleNotFoundInStorage(Exception exception, Request request, Response response){
+        String id = request.params(ID_PARAMETER);
+        throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
     }
 
-    private JSONObject serialiseStateFull(TaskState state) {
+    /**
+     * Handle any exception thrown by the server
+     * @param exception Exception by the server
+     * @param request The request object providing information about the HTTP request
+     * @param response The response object providing functionality for modifying the response
+     */
+    private void handleInternalError(Exception exception, Request request, Response response){
+        LOG.error(getFullStackTrace(exception));
+        throw new GraknEngineServerException(500, exception);
+    }
+
+    private Json serialiseStateSubset(TaskState state) {
+        return Json.object()
+                .set("id", state.getId())
+                .set("status", state.status().name())
+                .set("creator", state.creator())
+                .set("className", state.taskClassName())
+                .set("runAt", state.runAt().toString())
+                .set("recurring", state.isRecurring());
+    }
+
+    private Json serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                .put("interval", state.interval())
-                       .put("exception", state.exception())
-                       .put("stackTrace", state.stackTrace())
-                       .put("engineID", state.engineID())
-                       .put("configuration", state.configuration());
+                .set("interval", state.interval())
+                .set("exception", state.exception())
+                .set("stackTrace", state.stackTrace())
+                .set("engineID", state.engineID())
+                .set("configuration", state.configuration());
     }
 }

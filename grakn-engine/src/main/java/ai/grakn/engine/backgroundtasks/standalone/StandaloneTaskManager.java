@@ -136,14 +136,13 @@ public class StandaloneTaskManager implements TaskManager {
         return taskState.getId();
     }
 
-    public TaskManager stopTask(String id, String requesterName) {
+    @Override
+    public void stopTask(String id, String requesterName) {
         try {
             stateUpdateLock.lock();
 
+            // Throws exception if ID not found
             TaskState state = stateStorage.getState(id);
-            if (state == null) {
-                return this;
-            }
 
             Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
             synchronized (pair) {
@@ -167,8 +166,16 @@ public class StandaloneTaskManager implements TaskManager {
         } finally {
             stateUpdateLock.unlock();
         }
+    }
 
-        return this;
+    @Override
+    public void pauseTask(String id, String requesterName) {
+        throw new UnsupportedOperationException(this.getClass().getName() + " currently does not support pausing tasks");
+    }
+
+    @Override
+    public void resumeTask(String id, String requesterName) {
+        throw new UnsupportedOperationException(this.getClass().getName() + " currently does not support resuming paused tasks");
     }
 
     public TaskStateStorage storage() {

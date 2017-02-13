@@ -47,18 +47,17 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -74,8 +73,11 @@ public class LoaderClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoaderClient.class);
 
-    private final String POST = "http://%s" + TASKS_SCHEDULE_URI;
-    private final String GET = "http://%s" + TASKS_URI + "/%s";
+    private static final String INSERTS = "inserts";
+    private static final String BATCH_NUMBER = "batchNumber";
+
+    private final String TASK_POST = "http://%s" + TASKS;
+    private final String TASK_GET = "http://%s" + GET + "/%s";
 
     private final Consumer<Json> onCompletionOfTask;
     private final Map<Integer,CompletableFuture> futures;
@@ -225,7 +227,7 @@ public class LoaderClient {
     private CompletableFuture<Json> executePost(String body){
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(format(POST, uri) + "?" + getPostParams());
+            URL url = new URL(format(TASK_POST, uri) + "?" + getPostParams());
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
@@ -262,7 +264,7 @@ public class LoaderClient {
     private Json getStatus(String id){
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(format(GET, uri, id));
+            URL url = new URL(format(TASK_GET, uri, id));
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
@@ -334,8 +336,8 @@ public class LoaderClient {
     private String getConfiguration(Collection<InsertQuery> queries, int batchNumber){
         return Json.object()
                 .set(KEYSPACE_PARAM, keyspace)
-                .set("batchNumber", batchNumber)
-                .set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
+                .set(BATCH_NUMBER, batchNumber)
+                .set(INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
                 .toString();
     }
 
