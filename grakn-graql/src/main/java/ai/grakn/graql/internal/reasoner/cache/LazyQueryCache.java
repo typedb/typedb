@@ -41,7 +41,7 @@ import javafx.util.Pair;
  */
 public class LazyQueryCache<T extends ReasonerQuery>{
 
-    public final Map<T, Pair<T, LazyAnswerIterator>> cache = new HashMap<>();
+    private final Map<T, Pair<T, LazyAnswerIterator>> cache = new HashMap<>();
 
     public LazyQueryCache(){ super();}
     public boolean contains(T query){ return cache.containsKey(query);}

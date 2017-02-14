@@ -46,7 +46,7 @@ import java.util.stream.Stream;
  */
 public class QueryAnswerStream {
 
-    public static Map<VarName, Concept> varFilterOperator(Map<VarName, Concept> answer, Set<VarName> vars) {
+    private static Map<VarName, Concept> varFilterOperator(Map<VarName, Concept> answer, Set<VarName> vars) {
         Map<VarName, Concept> filteredAnswer = new HashMap<>();
         vars.stream()
                 .filter(answer::containsKey)
@@ -98,12 +98,12 @@ public class QueryAnswerStream {
         return pass;
     }
 
-    public static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Map<VarName, VarName>> unifierSet){
+    private static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Map<VarName, VarName>> unifierSet){
         if (unifierSet.isEmpty()) return Stream.of(answer);
         return unifierSet.stream().flatMap(unifiers -> Stream.of(QueryAnswers.unify(answer, unifiers)));
     }
 
-    public static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
+    private static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
         boolean isCompatible = true;
         Set<VarName> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
         Iterator<VarName> it = joinVars.iterator();
@@ -125,7 +125,7 @@ public class QueryAnswerStream {
 
     public static final BiFunction<Map<VarName, Concept>, Set<Map<VarName, VarName>>, Stream<Map<VarName, Concept>>> permuteFunction = QueryAnswerStream::permuteOperator;
 
-    public static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
+    private static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
         Map<VarName, Concept> merged = joinOperator(a1, a2);
         return merged.isEmpty()? Stream.empty(): Stream.of(merged);
     };
@@ -176,7 +176,7 @@ public class QueryAnswerStream {
      * @param s2 right operand of join operation
      * @return joined stream
      */
-    public static <T> Stream<T> join(BiFunction<T, T, Stream<T>> function, Stream<T> s1, Stream<T> s2) {
+    private static <T> Stream<T> join(BiFunction<T, T, Stream<T>> function, Stream<T> s1, Stream<T> s2) {
         LazyIterator<T> l2 = new LazyIterator<>(s2);
         return s1.flatMap(a1 -> l2.stream().flatMap(a2 -> function.apply(a1,a2)));
     }

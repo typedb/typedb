@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * @author Kasper Piskorski
  *
  */
-public class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
+class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
 
     private final ReasonerAtomicQuery query;
     final private QueryAnswers answers = new QueryAnswers();
