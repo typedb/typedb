@@ -580,7 +580,6 @@ public class GraknGraphPropertyIT {
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRuleType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test
     @Property
     public void whenCallingGetRelationAndTheRelationExists_ReturnThatRelation(
             @Open GraknGraph graph, @FromGraph Relation relation) {

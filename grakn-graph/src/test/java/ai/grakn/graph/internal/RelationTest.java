@@ -592,4 +592,16 @@ public class RelationTest extends GraphTestBase{
         assertEquals(relation, graknGraph.getRelation(relationType, map));
     }
 
+    @Test
+    public void getRelationViaMapWhenRoleIsAddedAfterRelation(){
+        RoleType role1 = graknGraph.putRoleType("Role 1");
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
+
+        Relation relation = relationType.addRelation();
+
+        relationType.hasRole(role1);
+
+        assertEquals(relation, graknGraph.getRelation(relation.type(), relation.rolePlayers()));
+    }
+
 }
