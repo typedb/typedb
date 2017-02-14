@@ -202,7 +202,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
             }
         }
 
-        LOG.debug(format("Took [%s] ms to add [%s] records to executor", System.currentTimeMillis() - startTime, records.count()));
+        LOG.debug(format("Took [%s] ms to process [%s] records in taskrunner", System.currentTimeMillis() - startTime, records.count()));
     }
 
     /**
@@ -306,8 +306,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
             LOG.debug("TaskRunner consumer partitions assigned " + partitions);
         }
         public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            consumer.commitSync();
             LOG.debug("TaskRunner consumer partitions revoked " + partitions);
+            //TODO the consumer cannot sync here because the partitions have already been revoked
+            //TODO can potentially save the offsets in an external store
+//            consumer.commitSync();
         }
     }
 }

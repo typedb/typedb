@@ -96,7 +96,9 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
     public void stateChanged(CuratorFramework client, ConnectionState newState)
     {
         if ( (newState == ConnectionState.SUSPENDED) || (newState == ConnectionState.LOST) ) {
-            scheduler.close();
+            if(scheduler != null) {
+                noThrow(scheduler::close, "Error closing the Scheduler");
+            }
             throw new CancelLeadershipException();
         }
     }

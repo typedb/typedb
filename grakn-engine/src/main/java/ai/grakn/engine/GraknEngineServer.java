@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.awaitInitialization;
 import static spark.Spark.before;
 import static spark.Spark.exception;
@@ -79,6 +80,10 @@ public class GraknEngineServer {
     public static void main(String[] args) {
         boolean distributed = prop.getPropertyAsBool(DISTRIBUTED_TASK_MANAGER);
 
+        // close GraknEngineServer on SIGTERM
+        Thread closeThread = new Thread(GraknEngineServer::stop, "GraknEngineServer-shutdown");
+        Runtime.getRuntime().addShutdownHook(closeThread);
+
         start(distributed);
     }
 
@@ -89,7 +94,7 @@ public class GraknEngineServer {
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
-    public static void stop() throws Exception {
+    public static void stop() {
         //TODO there is a bug where clear() on graphs still submits to the commit log (#12388). We
         //TODO cannot stop http here until that is fixed, because in tests after stopping engine
         //TODO we need to clear the graphs
@@ -171,9 +176,13 @@ public class GraknEngineServer {
         }
     }
 
-    private static void stopTaskManager() throws Exception {
+    private static void stopTaskManager() {
         PostProcessing.getInstance().stop();
-        taskManager.close();
+        try {
+            taskManager.close();
+        } catch (Exception e){
+            LOG.error(getFullStackTrace(e));
+        }
     }
 
     public static TaskManager getTaskManager(){

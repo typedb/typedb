@@ -20,6 +20,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.util.ConfigProperties;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -68,6 +69,7 @@ public class Scheduler implements Runnable, AutoCloseable {
     private static final String STATUS_MESSAGE = "Topic [%s], partition [%s] received [%s] records, next offset is [%s]";
 
     private final static Logger LOG = LoggerFactory.getLogger(Scheduler.class);
+    private final static int SCHEDULER_THREADS = ConfigProperties.getInstance().getAvailableThreads();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final TaskStateStorage storage;
@@ -93,7 +95,7 @@ public class Scheduler implements Runnable, AutoCloseable {
 
             ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
                     .setNameFormat("scheduler-pool-%d").build();
-            schedulingService = Executors.newScheduledThreadPool(1, namedThreadFactory);
+            schedulingService = Executors.newScheduledThreadPool(SCHEDULER_THREADS, namedThreadFactory);
 
             LOG.debug("Scheduler started");
         }
@@ -113,7 +115,9 @@ public class Scheduler implements Runnable, AutoCloseable {
                 ConsumerRecords<String, String> records = consumer.poll(1000);
                 printConsumerStatus(records);
 
+                long startTime = System.currentTimeMillis();
                 for(ConsumerRecord<String, String> record:records) {
+
                     TaskState taskState = TaskState.deserialize(record.value());
 
                     // mark the task as created
@@ -125,6 +129,8 @@ public class Scheduler implements Runnable, AutoCloseable {
                     //acknowledge that the record was read to the consumer
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                 }
+
+                LOG.debug(format("Took [%s] ms to process [%s] records in scheduler", System.currentTimeMillis() - startTime, records.count()));
             }
         }
         catch (WakeupException e) {
@@ -171,16 +177,15 @@ public class Scheduler implements Runnable, AutoCloseable {
     private void scheduleTask(TaskState state) {
         long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
-        markAsScheduled(state);
+        Runnable submit = () -> {
+            markAsScheduled(state);
+            sendToWorkQueue(state);
+        };
+
         if(state.isRecurring()) {
-            Runnable submit = () -> {
-                markAsScheduled(state);
-                sendToWorkQueue(state);
-            };
             schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
         }
         else {
-            Runnable submit = () -> sendToWorkQueue(state);
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
     }
@@ -235,8 +240,11 @@ public class Scheduler implements Runnable, AutoCloseable {
             LOG.debug("Scheduler partitions assigned " + partitions);
         }
         public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            consumer.commitSync();
             LOG.debug("Scheduler partitions revoked " + partitions);
+
+            //TODO the consumer cannot sync here because the partitions have already been revoked
+            //TODO can potentially save the offsets in an external store
+//            consumer.commitSync();
         }
     }
 }
