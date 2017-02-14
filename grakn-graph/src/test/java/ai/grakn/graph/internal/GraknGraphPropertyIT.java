@@ -623,11 +623,10 @@ public class GraknGraphPropertyIT {
         assertTrue(graph.isClosed());
     }
 
-    @Ignore // TODO: Fix this, or remove the test
     @Property
     public void whenCallingGetKeySpace_ReturnTheKeyspaceOfTheGraph(String keyspace) {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-        assertEquals(keyspace, graph.getKeyspace());
+        assertEquals(keyspace.toLowerCase(), graph.getKeyspace());
     }
 
     @Property
