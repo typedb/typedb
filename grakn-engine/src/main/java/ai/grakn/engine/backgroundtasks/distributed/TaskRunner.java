@@ -128,7 +128,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
     public void run()  {
         try {
             while (true) {
-                // Poll for new tasks only when we know we have space to accept them.
                 processRecords(consumer.poll(POLLING_FREQUENCY));
             }
         } catch (WakeupException e) {
@@ -294,6 +293,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
         consumer.commitSync();
     }
 
+    /**
+     * Implementation of ConsumerRebalanceListener that will log whenever partitions are reassigned and
+     * sync the last commits when partitions are revoked.
+     */
     private class HandleRebalance implements ConsumerRebalanceListener {
         public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
             LOG.debug("TaskRunner consumer partitions assigned " + partitions);
