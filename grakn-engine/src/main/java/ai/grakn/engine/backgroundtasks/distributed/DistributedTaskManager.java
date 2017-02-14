@@ -113,8 +113,11 @@ public final class DistributedTaskManager implements TaskManager {
     }
 
     /**
-     * Start a new instance of TaskRunner in a thread. It is instantiated with a TaskRunnerResurrection exception
-     * handler that will restart the task runner if any unchecked exception is thrown.
+     * Start a new instance of TaskRunner in a thread.
+     *
+     * We want to revive the TaskRunner if an unhandled exception is thrown. To handle:
+     *        It is instantiated with a TaskRunnerResurrection exception
+     *        handler that will restart the task runner if any unchecked exception is thrown.
      */
     private void startTaskRunner(){
         taskRunner = new TaskRunner(stateStorage, connection);
