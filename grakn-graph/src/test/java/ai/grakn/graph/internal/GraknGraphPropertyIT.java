@@ -343,7 +343,6 @@ public class GraknGraphPropertyIT {
         graph.putResourceTypeUnique(typeName, dataType);
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenCallingPutResourceTypeUniqueWithAnExistingNonUniqueResourceTypeName_Throw(
             @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType) {
@@ -354,7 +353,7 @@ public class GraknGraphPropertyIT {
         if(isMetaName(typeName)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(false, resourceType, true, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
         graph.putResourceTypeUnique(typeName, dataType);
