@@ -97,7 +97,7 @@ public class GraknGraphPropertyIT {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    @Ignore // TODO: Fix NPE on getResourcesByValue
+    @Ignore //TODO: This is breaking because your mocked concepts have null concept IDs this is an impossible state so I think you should get your generater to mock valid concepts
     @Property
     public void whenCallingMostMethodOnAClosedGraph_Throw(
             @Open(false) GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
