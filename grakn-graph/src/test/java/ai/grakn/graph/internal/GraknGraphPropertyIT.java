@@ -274,7 +274,7 @@ public class GraknGraphPropertyIT {
         if(isMetaName(typeName)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(false, resourceType, true, Schema.ConceptProperty.IS_UNIQUE.name()));
+            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(true, resourceType, false, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
         graph.putResourceType(typeName, dataType);
@@ -330,7 +330,6 @@ public class GraknGraphPropertyIT {
         graph.putResourceTypeUnique(type.getName(), dataType);
     }
 
-    @Ignore //TODO: Caching has broken this test because the data type can be passed in. As the datatype is under debate to be embedded in the ontology I will hold off on fixing fro the moment
     @Property
     public void whenCallingPutResourceTypeUniqueWithAnExistingUniqueResourceTypeNameButADifferentDataType_Throw(
             @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType,
