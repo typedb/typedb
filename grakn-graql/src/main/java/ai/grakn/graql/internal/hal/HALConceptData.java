@@ -190,16 +190,8 @@ class HALConceptData {
        generateConceptState(resource,concept);
 
         //Resources and links
-        if (concept.isEntity()) {
-            generateResources(resource, concept.asEntity().resources());
-        }
-
-        if (concept.isRule()) {
-            generateResources(resource, concept.asRule().resources());
-        }
-
-        if (concept.isRelation()) {
-            generateResources(resource, concept.asRelation().resources());
+        if (concept.isInstance()) {
+            generateResources(resource, concept.asInstance().resources());
         }
     }
 
