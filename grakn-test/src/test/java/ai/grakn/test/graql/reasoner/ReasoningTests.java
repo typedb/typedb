@@ -197,7 +197,8 @@ public class ReasoningTests {
      * recursive relation having same type for different role players
      * tests for handling recursivity and equivalence of queries and relations
      */
-    @Test //Expected result: The query should return a unique match
+    @Ignore
+    @Test //Expected result: The query should return a unique match (note: this test seems to behave non-deterministically)
     public void transRelationWithEntityGuardsAtBothEnds() {
         QueryBuilder iqb = testSet10.graph().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation2;";
@@ -231,7 +232,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test //Expected result: The query should return a unique match
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources1() {
         QueryBuilder qb = testSet14.graph().graql().infer(true);
         String queryString1 = "match $x isa entity1, has res1 $y;";
@@ -244,7 +245,7 @@ public class ReasoningTests {
     }
 
     @Ignore
-    @Test //Expected result: The query should return a unique match
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources2() {
         QueryBuilder qb = testSet15.graph().graql().infer(true);
         String queryString1 = "match $x isa entity1, has res2 $y;";
@@ -262,7 +263,7 @@ public class ReasoningTests {
     }
 
 
-    @Test //Expected result: The query should return a unique match
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources3() {
         QueryBuilder qb = testSet16.graph().graql().infer(true);
         String queryString1 = "match $x isa entity1, has res1 $y; $z isa relation1;";
