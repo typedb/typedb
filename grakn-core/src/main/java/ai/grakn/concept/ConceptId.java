@@ -62,12 +62,12 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
         ConceptId conceptId1 = (ConceptId) o;
 
-        return conceptId.equals(conceptId1.conceptId);
+        return getValue().equals(conceptId1.getValue());
     }
 
     @Override
     public int hashCode() {
-        return conceptId.hashCode();
+        return getValue().hashCode();
     }
 
     @Override
