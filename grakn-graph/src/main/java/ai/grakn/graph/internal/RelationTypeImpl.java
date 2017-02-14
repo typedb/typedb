@@ -83,6 +83,9 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         //ComponentCache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
 
+        //Put all the instance back in for tracking because their unique hashes need to be regenerated
+        instances().forEach(instance -> getGraknGraph().getConceptLog().trackConceptForValidation((ConceptImpl) instance));
+
         return this;
     }
 
@@ -111,6 +114,9 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
         //Remove from roleTypeCache
         ((RoleTypeImpl) roleType).deleteCachedRelationType(this);
+
+        //Put all the instance back in for tracking because their unique hashes need to be regenerated
+        instances().forEach(instance -> getGraknGraph().getConceptLog().trackConceptForValidation((ConceptImpl) instance));
 
         return this;
     }

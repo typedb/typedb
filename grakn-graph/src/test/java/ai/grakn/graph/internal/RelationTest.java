@@ -600,7 +600,9 @@ public class RelationTest extends GraphTestBase{
         Relation relation = relationType.addRelation();
 
         relationType.hasRole(role1);
+        assertEquals(relation, graknGraph.getRelation(relation.type(), relation.rolePlayers()));
 
+        relationType.deleteHasRole(role1);
         assertEquals(relation, graknGraph.getRelation(relation.type(), relation.rolePlayers()));
     }
 
