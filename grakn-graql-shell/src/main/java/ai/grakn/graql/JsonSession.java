@@ -53,7 +53,10 @@ import static java.util.Spliterator.IMMUTABLE;
 public class JsonSession {
 
     private final Session session;
-    private static final long DEFAULT_TIMEOUT = 10;
+
+    // This timeout is applied to the blocking queue. Given that we don't know how long an arbitrary query takes to
+    // execute, we wait for a very long time. If there is a connection error with engine, it is handled elsewhere.
+    private static final long DEFAULT_TIMEOUT = Long.MAX_VALUE;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = Executors.defaultThreadFactory().newThread(runnable);
