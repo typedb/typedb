@@ -117,17 +117,13 @@ public class TaskRunner implements Runnable, AutoCloseable {
     }
 
     /**
-     * Start the main loop, this will block until a call to stop().
+     * Start the main loop, this will block until a call to close() that wakes up the consumer.
      */
     public void run()  {
         try {
             while (true) {
                 // Poll for new tasks only when we know we have space to accept them.
-//                if (acceptedTasks.get() < executorSize) {
                 processRecords(consumer.poll(POLLING_FREQUENCY));
-                Thread.sleep(1000);
-//
-//     }
             }
         } catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
@@ -167,11 +163,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 break;
             }
 
-            LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s", record.key(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
-            String id = record.key();
+            LOG.debug(format("Received [%s] of [%s], currently running: %s has: %s allowed: %s",
+                    record.key(), records.count(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
 
-            // Instead of deserializing TaskState from value, get up-to-date state from the storage
+            String id = record.key();
             try {
+                // Instead of deserializing TaskState from value, get up-to-date state from the storage
                 TaskState state = storage.getState(id);
                 if (state.status() != SCHEDULED) {
                     LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: " + state.status());
