@@ -416,6 +416,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //This check is needed here because caching will return a type by name without checking the datatype
         if(!resourceType.getDataType().equals(dataType)){
             throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+        } else if(resourceType.isUnique()){
+            throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(false, resourceType, true, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
         return resourceType;
