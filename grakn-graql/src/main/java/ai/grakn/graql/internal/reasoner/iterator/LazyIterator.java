@@ -33,7 +33,7 @@ import java.util.stream.StreamSupport;
  * @author Kasper Piskorski
  *
  */
-class LazyIterator<T> implements Iterable<T>{
+public class LazyIterator<T> implements Iterable<T>{
     private final Iterator<T> iterator;
     public final List<T> accumulator = new ArrayList<>();
 

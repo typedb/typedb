@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import com.google.common.collect.Sets;
 import java.util.HashMap;
@@ -157,7 +158,7 @@ public class QueryAnswerStream {
      * @return joined stream
      */
     public static Stream<Map<VarName, Concept>> join(Stream<Map<VarName, Concept>> stream, Stream<Map<VarName, Concept>> stream2, Set<VarName> joinVars) {
-        LazyIterator<Map<VarName, Concept>> l2 = new LazyIterator<>(stream2);
+        LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
         return stream.flatMap(a1 -> {
             Stream<Map<VarName, Concept>> answerStream = l2.stream();
             for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(a1.get(v)));
