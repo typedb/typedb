@@ -583,7 +583,18 @@ public class GraknGraphPropertyIT {
     @Property
     public void whenCallingGetRelationAndTheRelationExists_ReturnThatRelation(
             @Open GraknGraph graph, @FromGraph Relation relation) {
-        assertEquals(relation, graph.getRelation(relation.type(), relation.rolePlayers()));
+        //Cannot compare against the exact relation because it is possible to temporarily create (within a transaction)
+        // duplicate relations. In this case it was creating 2 relations with no roles and roleplayers of the same type
+        // and returning one of them which is valid but may not be the one you are comparing against. Hence why the
+        // comparison is more defined.
+
+        Relation foundRelation = graph.getRelation(relation.type(), relation.rolePlayers());
+        if(foundRelation.getId().equals(relation.getId())){
+            assertEquals(relation, foundRelation);
+        } else { //This is possible when we have created duplicate empty relations. So we check everything we can.
+            assertEquals(relation.rolePlayers(), foundRelation.rolePlayers());
+            assertEquals(relation.type(), foundRelation.type());
+        }
     }
 
     @Property
