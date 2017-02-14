@@ -234,7 +234,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     }
 
     @Override
-    public String toString(){
+    public String innerToString(){
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(getId()).append("] Type [").append(type().getName()).append("] Roles and Role Players: \n");
         for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
