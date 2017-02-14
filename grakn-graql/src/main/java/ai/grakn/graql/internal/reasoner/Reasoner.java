@@ -19,14 +19,18 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
 
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,9 +99,10 @@ public class Reasoner {
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                atomicQuery.answerStream(SG, cache, true).collect(Collectors.toSet());
-                System.out.println("Atom: " + atomicQuery.getAtom() + " answers: " + dAns);
+                Set<Map<VarName, Concept>> answers = atomicQuery.answerStream(SG, cache, true).collect(Collectors.toSet());
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + answers.size() + " dAns: " + dAns);
                 dAns = cache.answerSize(SG) - dAns;
+                Reasoner.commitGraph(graph);
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
