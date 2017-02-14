@@ -40,7 +40,6 @@ import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
-import ai.grakn.generator.MetaTypeNames;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.generator.ResourceTypes.Unique;
@@ -81,7 +80,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -637,15 +635,6 @@ public class GraknGraphPropertyIT {
             assertTrue(concept.isType());
             assertTrue(isMetaName(concept.asType().getName()));
         });
-    }
-
-    @Ignore // TODO: Fix this
-    @Property
-    public void whenCallingClear_AllMetaConceptsArePresent(
-            @Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
-        graph.clear();
-        graph.open();
-        assertNotNull(graph.getType(typeName));
     }
 
     @Ignore // TODO: Fix this, or remove the test
