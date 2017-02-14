@@ -188,7 +188,7 @@ public class ReasoningTests {
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved2() {
         QueryBuilder qb = testSet9.graph().graql().infer(true);
-        String queryString = "match (role1:$x, role1:$y) isa relation1;";
+        String queryString = "match (role1:$x, role1:$y) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
     }
@@ -263,6 +263,7 @@ public class ReasoningTests {
     }
 
 
+    @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources3() {
         QueryBuilder qb = testSet16.graph().graql().infer(true);
