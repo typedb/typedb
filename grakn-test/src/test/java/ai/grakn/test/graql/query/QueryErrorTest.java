@@ -18,20 +18,26 @@
 
 package ai.grakn.test.graql.query;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
+import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.stream.Stream;
+
 import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -56,21 +62,21 @@ public class QueryErrorTest {
     public void testErrorNonExistentConceptType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("film");
-        qb.match(Graql.var("x").isa("film")).stream();
+        qb.match(var("x").isa("film")).stream();
     }
 
     @Test
     public void testErrorNotARole() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("role"), containsString("person"), containsString("isa person")));
-        qb.match(Graql.var("x").isa("movie"), Graql.var().rel("person", "y").rel("x")).stream();
+        qb.match(var("x").isa("movie"), var().rel("person", "y").rel("x")).stream();
     }
 
     @Test
     public void testErrorNonExistentResourceType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("thingy");
-        qb.match(Graql.var("x").has("thingy", "value")).delete("x").execute();
+        qb.match(var("x").has("thingy", "value")).delete("x").execute();
     }
 
     @Test
@@ -78,7 +84,7 @@ public class QueryErrorTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(
                 containsString("relation"), containsString("movie"), containsString("separate"), containsString(";")));
-        qb.match(Graql.var().isa("movie").rel("x").rel("y")).stream();
+        qb.match(var().isa("movie").rel("x").rel("y")).stream();
     }
 
     @Test
@@ -89,7 +95,7 @@ public class QueryErrorTest {
                 containsString("production-with-cast"), containsString("character-being-played"),
                 containsString("actor")
         ));
-        qb.match(Graql.var().isa("has-cast").rel("director", "x")).stream();
+        qb.match(var().isa("has-cast").rel("director", "x")).stream();
     }
 
     @Test
@@ -100,7 +106,7 @@ public class QueryErrorTest {
                 containsString("production-with-cast"), containsString("character-being-played"),
                 containsString("actor")
         ));
-        qb.match(Graql.var().isa("has-cast").rel("character-in-production", "x")).stream();
+        qb.match(var().isa("has-cast").rel("character-in-production", "x")).stream();
     }
 
     @Test
@@ -109,7 +115,7 @@ public class QueryErrorTest {
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));
-        qb.match(Graql.var("abc").isa("person").isa("has-cast"));
+        qb.match(var("abc").isa("person").isa("has-cast"));
     }
 
     @Test
@@ -117,14 +123,14 @@ public class QueryErrorTest {
         // 'has genre' is not allowed because genre is an entity type
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("genre"), containsString("resource")));
-        qb.match(Graql.var("x").isa("movie").has("genre", "Drama")).stream();
+        qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
     }
 
     @Test
     public void testExceptionWhenNoSelectVariablesProvided() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage("select");
-        qb.match(Graql.var("x").isa("movie")).select();
+        qb.match(var("x").isa("movie")).select();
     }
 
     @Test
@@ -137,7 +143,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNullValue() {
         exception.expect(NullPointerException.class);
-        Graql.var("x").value(null);
+        var("x").value(null);
     }
 
     @Test
@@ -154,7 +160,7 @@ public class QueryErrorTest {
                 containsString("person"),
                 containsString("name")
         ));
-        emptyQb.insert(Graql.var().isa("person").has("name", "Bob")).execute();
+        emptyQb.insert(var().isa("person").has("name", "Bob")).execute();
     }
 
     @Test
@@ -164,7 +170,7 @@ public class QueryErrorTest {
                 containsString("actor"),
                 containsString("role")
         ));
-        qb.match(Graql.var("x").isa("actor")).stream();
+        qb.match(var("x").isa("actor")).stream();
     }
 
     @Test
@@ -176,5 +182,18 @@ public class QueryErrorTest {
                         "tag-group sub role; product-type sub role;" +
                         "category sub entity, plays-role tag-group; plays-role product-type;"
         ).execute();
+    }
+
+    @Test
+    public void testGetNonExistentVariable() {
+        MatchQuery query = qb.match(var("x").isa("movie"));
+
+        Stream<Concept> concepts = query.get("y");
+
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("y")));
+
+        //noinspection ResultOfMethodCallIgnored
+        concepts.count();
     }
 }
