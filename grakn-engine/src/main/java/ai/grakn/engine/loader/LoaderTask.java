@@ -106,8 +106,7 @@ public class LoaderTask implements BackgroundTask {
             inserts.forEach(q -> q.withGraph(graph).execute());
 
             // commit the transaction
-            EngineCache engineCache = EngineCache.getInstance();
-            graph.admin().commit(engineCache.getResourceJobs(graph.getKeyspace()), engineCache.getCastingJobs(graph.getKeyspace()));
+            graph.admin().commit(EngineCache.getInstance());
         } catch (GraknValidationException e) {
             //If it's a validation exception there is no point in re-trying
             throwException(FAILED_VALIDATION.getMessage(e.getMessage()), inserts);

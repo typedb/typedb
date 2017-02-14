@@ -37,7 +37,8 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.GraknAdmin;
+import ai.grakn.graph.admin.ConceptCache;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
@@ -740,18 +741,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
-     * Commits the graph and adds concepts for post processing directly to the cache
+     * Commits the graph and adds concepts for post processing directly to the cache bypassing the REST API.
      *
-     * @param resourceCache The cache of resource jobs to be executed
-     * @param castingCache The cache of the casting jobs to be executed
+     * @param conceptCache The concept Cache to store concepts in for processing later
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
     @Override
-    public void commit(Map<String, Set<ConceptId>> resourceCache, Map<String, Set<ConceptId>> castingCache) throws GraknValidationException{
+    public void commit(ConceptCache conceptCache) throws GraknValidationException{
         commit((castings, resources) -> {
             if(cache != null) {
-                resources.forEach(pair -> resourceCache.computeIfAbsent(pair.getValue0(), key -> new HashSet<>()).add(pair.getValue1()));
-                castings.forEach(pair -> castingCache.computeIfAbsent(pair.getValue0(), key -> new HashSet<>()).add(pair.getValue1()));
+                castings.forEach(pair -> conceptCache.addJobCasting(getKeyspace(), pair.getValue0(), pair.getValue1()));
+                resources.forEach(pair -> conceptCache.addJobResource(getKeyspace(), pair.getValue0(), pair.getValue1()));
             }
         });
     }
