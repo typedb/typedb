@@ -58,7 +58,6 @@ import org.junit.runner.RunWith;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -622,19 +621,6 @@ public class GraknGraphPropertyIT {
     public void whenCallingClear_TheGraphCloses(@Open GraknGraph graph) {
         graph.clear();
         assertTrue(graph.isClosed());
-    }
-
-    @Ignore // TODO: Re-enable this when test below is fixed
-    @Property
-    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
-        graph.clear();
-        graph.open();
-
-        List<Concept> concepts = allConceptsFrom(graph);
-        concepts.forEach(concept -> {
-            assertTrue(concept.isType());
-            assertTrue(isMetaName(concept.asType().getName()));
-        });
     }
 
     @Ignore // TODO: Fix this, or remove the test
