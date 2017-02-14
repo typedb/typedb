@@ -32,12 +32,15 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.GraknAdmin;
+import ai.grakn.graph.admin.ConceptCache;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
@@ -404,8 +407,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
-        return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType, Boolean.FALSE)).asResourceType();
+        return putResourceType(name, dataType, Boolean.FALSE);
     }
 
     @Override
@@ -416,8 +418,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
-        return putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType, Boolean.TRUE)).asResourceType();
+        return putResourceType(name, dataType, Boolean.TRUE);
+    }
+
+    private <V> ResourceType <V> putResourceType(TypeName name, ResourceType.DataType<V> dataType, Boolean isUnique){
+
+        @SuppressWarnings("unchecked")
+        ResourceType<V> resourceType = putType(name, Schema.BaseType.RESOURCE_TYPE,
+                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType, isUnique)).asResourceType();
+
+        //These checks is needed here because caching will return a type by name without checking the datatype
+        if(Schema.MetaSchema.isMetaName(name)) {
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(name));
+        } else if(!dataType.equals(resourceType.getDataType())){
+            throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+        } else if(resourceType.isUnique() ^ isUnique){
+            throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.isUnique(), resourceType, isUnique, Schema.ConceptProperty.IS_UNIQUE.name()));
+        }
+
+        return resourceType;
     }
 
     @Override
@@ -740,18 +759,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
-     * Commits the graph and adds concepts for post processing directly to the cache
+     * Commits the graph and adds concepts for post processing directly to the cache bypassing the REST API.
      *
-     * @param resourceCache The cache of resource jobs to be executed
-     * @param castingCache The cache of the casting jobs to be executed
+     * @param conceptCache The concept Cache to store concepts in for processing later
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
     @Override
-    public void commit(Map<String, Set<ConceptId>> resourceCache, Map<String, Set<ConceptId>> castingCache) throws GraknValidationException{
+    public void commit(ConceptCache conceptCache) throws GraknValidationException{
         commit((castings, resources) -> {
             if(cache != null) {
-                resources.forEach(pair -> resourceCache.computeIfAbsent(pair.getValue0(), key -> new HashSet<>()).add(pair.getValue1()));
-                castings.forEach(pair -> castingCache.computeIfAbsent(pair.getValue0(), key -> new HashSet<>()).add(pair.getValue1()));
+                castings.forEach(pair -> conceptCache.addJobCasting(getKeyspace(), pair.getValue0(), pair.getValue1()));
+                resources.forEach(pair -> conceptCache.addJobResource(getKeyspace(), pair.getValue0(), pair.getValue1()));
             }
         });
     }

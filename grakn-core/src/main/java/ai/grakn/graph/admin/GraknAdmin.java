@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graph;
+package ai.grakn.graph.admin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
@@ -32,7 +32,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -126,11 +125,10 @@ public interface GraknAdmin {
     /**
      * Commits the graph and adds concepts for post processing directly to the cache bypassing the REST API.
      *
-     * @param resourceCache The cache of resource jobs to be executed
-     * @param castingCache The cache of the casting jobs to be executed
+     * @param conceptCache The concept Cache to store concepts in for processing later
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
-    void commit(Map<String, Set<ConceptId>> resourceCache, Map<String, Set<ConceptId>> castingCache) throws GraknValidationException;
+    void commit(ConceptCache conceptCache) throws GraknValidationException;
 
     /**
      * Commits to the graph without submitting any commit logs.

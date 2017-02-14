@@ -72,7 +72,6 @@ import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -97,7 +96,7 @@ public class GraknGraphPropertyIT {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    @Ignore // TODO: Fix NPE on getResourcesByValue
+    @Ignore //TODO: This is breaking because your mocked concepts have null concept IDs this is an impossible state so I think you should get your generater to mock valid concepts
     @Property
     public void whenCallingMostMethodOnAClosedGraph_Throw(
             @Open(false) GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
@@ -111,20 +110,6 @@ public class GraknGraphPropertyIT {
         exception.expectCause(hasProperty("message", is(ErrorMessage.CLOSED_USER.getMessage())));
 
         method.invoke(graph, params);
-    }
-
-    @Ignore // TODO: Fix this (or remove test)
-    @Property
-    public void whenCallingAnyMethodWithNull_Throw(
-            @Open GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
-        int numParameters = method.getParameterCount();
-        assumeThat(numParameters, greaterThan(0));
-        Object[] nulls = new Object[numParameters];
-
-        exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(NullPointerException.class));
-
-        method.invoke(graph, nulls);
     }
 
     @Property
@@ -262,7 +247,6 @@ public class GraknGraphPropertyIT {
         graph.putResourceType(type.getName(), dataType);
     }
 
-    @Ignore //TODO: Caching has broken this test because the data type can be passed in. As the datatype is under debate to be embedded in the ontology I will hold off on fixing fro the moment
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeNameButADifferentDataType_Throw(
             @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType,
@@ -280,7 +264,6 @@ public class GraknGraphPropertyIT {
         graph.putResourceType(typeName, dataType);
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenCallingPutResourceTypeWithAnExistingUniqueResourceTypeName_Throw(
             @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType) {
@@ -291,7 +274,7 @@ public class GraknGraphPropertyIT {
         if(isMetaName(typeName)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(true, resourceType, false, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
         graph.putResourceType(typeName, dataType);
@@ -347,7 +330,6 @@ public class GraknGraphPropertyIT {
         graph.putResourceTypeUnique(type.getName(), dataType);
     }
 
-    @Ignore //TODO: Caching has broken this test because the data type can be passed in. As the datatype is under debate to be embedded in the ontology I will hold off on fixing fro the moment
     @Property
     public void whenCallingPutResourceTypeUniqueWithAnExistingUniqueResourceTypeNameButADifferentDataType_Throw(
             @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType,
@@ -361,7 +343,6 @@ public class GraknGraphPropertyIT {
         graph.putResourceTypeUnique(typeName, dataType);
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenCallingPutResourceTypeUniqueWithAnExistingNonUniqueResourceTypeName_Throw(
             @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType) {
@@ -372,7 +353,7 @@ public class GraknGraphPropertyIT {
         if(isMetaName(typeName)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
         } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
+            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(false, resourceType, true, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
         graph.putResourceTypeUnique(typeName, dataType);
@@ -570,33 +551,33 @@ public class GraknGraphPropertyIT {
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getEntityType
     @Property
-    public void whenCallingGetEntityType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetEntityType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph EntityType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getEntityType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRelationType
     @Property
-    public void whenCallingGetRelationType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetRelationType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RelationType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRelationType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getResourceType
     @Property
-    public void whenCallingGetResourceType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetResourceType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph ResourceType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getResourceType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRoleType
     @Property
-    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RoleType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRoleType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRuleType
     @Property
-    public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RuleType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRuleType(typeName.getValue()));
     }
 
