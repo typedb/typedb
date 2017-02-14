@@ -72,7 +72,6 @@ import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -111,20 +110,6 @@ public class GraknGraphPropertyIT {
         exception.expectCause(hasProperty("message", is(ErrorMessage.CLOSED_USER.getMessage())));
 
         method.invoke(graph, params);
-    }
-
-    @Ignore // TODO: Fix this (or remove test)
-    @Property
-    public void whenCallingAnyMethodWithNull_Throw(
-            @Open GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
-        int numParameters = method.getParameterCount();
-        assumeThat(numParameters, greaterThan(0));
-        Object[] nulls = new Object[numParameters];
-
-        exception.expect(InvocationTargetException.class);
-        exception.expectCause(isA(NullPointerException.class));
-
-        method.invoke(graph, nulls);
     }
 
     @Property
