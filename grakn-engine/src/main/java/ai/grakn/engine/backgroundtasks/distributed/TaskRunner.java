@@ -118,6 +118,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
     /**
      * Start the main loop, this will block until a call to close() that wakes up the consumer.
+     *
+     * The only way to exit this loop without throwing an exception is by calling consumer.wakeup()
+     *
+     * We do not want to catch any exceptions here. The caller of this TaskRunner should handle the case
+     * where an exception is thrown. It is recommended to register the TaskRunner thread with a UncaughtExceptionHandler.
+     * The catch(Throwable t) here is merely for logging purposes. You will notice that the exception is re-thrown.
      */
     public void run()  {
         try {
@@ -127,8 +133,11 @@ public class TaskRunner implements Runnable, AutoCloseable {
             }
         } catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
-        } catch (Throwable t){
-            LOG.error("Error in TaskRunner poll " + getFullStackTrace(t));
+        } catch (Throwable throwable){
+            LOG.error("Error in TaskRunner poll " + throwable.getMessage());
+
+            // re-throw the exception
+            throw throwable;
         } finally {
             noThrow(consumer::commitSync, "Exception syncing commits while closing in TaskRunner");
             noThrow(consumer::close, "Exception while closing consumer in TaskRunner");
