@@ -82,7 +82,8 @@ class JsonPrinter implements Printer<Json> {
 
         map.forEach((Object key, Object value) -> {
             if (key instanceof VarName) key = ((VarName) key).getValue();
-            json.set(key.toString(), graqlString(true, value));
+            String keyString = key == null ? "" : key.toString();
+            json.set(keyString, graqlString(true, value));
         });
 
         return json;
