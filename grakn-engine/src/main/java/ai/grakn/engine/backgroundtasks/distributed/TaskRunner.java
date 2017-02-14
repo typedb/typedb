@@ -164,6 +164,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
     }
 
     private void processRecords(ConsumerRecords<String, String> records) {
+        long startTime = System.currentTimeMillis();
+
         for(ConsumerRecord<String, String> record: records) {
             // Exit loop when TaskRunner capacity full
             if(acceptedTasks.get() >= executorSize) {
@@ -199,6 +201,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 LOG.error("Cant run this task - " + id + " because state was not found in storage");
             }
         }
+
+        LOG.debug(format("Took [%s] ms to add [%s] records to executor", System.currentTimeMillis() - startTime, records.count()));
     }
 
     /**
