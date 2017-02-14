@@ -552,33 +552,33 @@ public class GraknGraphPropertyIT {
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getEntityType
     @Property
-    public void whenCallingGetEntityType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetEntityType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph EntityType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getEntityType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRelationType
     @Property
-    public void whenCallingGetRelationType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetRelationType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RelationType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRelationType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getResourceType
     @Property
-    public void whenCallingGetResourceType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetResourceType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph ResourceType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getResourceType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRoleType
     @Property
-    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetRoleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RoleType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRoleType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test, or agree on distinction between getType and getRuleType
     @Property
-    public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, TypeName typeName) {
+    public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RuleType type) {
+        TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRuleType(typeName.getValue()));
     }
 
