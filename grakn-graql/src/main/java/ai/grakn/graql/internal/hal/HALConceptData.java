@@ -129,7 +129,6 @@ class HALConceptData {
         }
 
         if (concept.isType()) {
-
             generateTypeEmbedded(halResource, concept.asType(), separationDegree);
         }
 
@@ -193,6 +192,10 @@ class HALConceptData {
         //Resources and links
         if (concept.isEntity()) {
             generateResources(resource, concept.asEntity().resources());
+        }
+
+        if (concept.isRule()) {
+            generateResources(resource, concept.asRule().resources());
         }
 
         if (concept.isRelation()) {
