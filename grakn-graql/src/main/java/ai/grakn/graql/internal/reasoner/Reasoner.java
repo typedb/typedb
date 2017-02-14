@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
 
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,14 +91,13 @@ public class Reasoner {
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
             ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead());
-            long dAns;
+            long dAns = 0;
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                dAns = cache.getAnswers(atomicQuery).count();
-                atomicQuery.answerStream(SG, cache, true);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + dAns);
-                dAns = cache.getAnswers(atomicQuery).count() - dAns;
+                atomicQuery.answerStream(SG, cache, true).collect(Collectors.toSet());
+                System.out.println("Atom: " + atomicQuery.getAtom() + " answers: " + dAns);
+                dAns = cache.answerSize(SG) - dAns;
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
