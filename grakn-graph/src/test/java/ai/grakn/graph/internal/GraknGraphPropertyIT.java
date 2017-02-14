@@ -488,7 +488,6 @@ public class GraknGraphPropertyIT {
         assertEquals(type, graph.getType(typeName));
     }
 
-    @Ignore // TODO: Re-enable this test when issue with types being super type of themselves is resolved
     @Property
     public void whenCallingGetTypeWithANonExistingTypeName_ItReturnsNull(@Open GraknGraph graph, TypeName typeName) {
         Set<TypeName> allTypes = allTypesFrom(graph).stream().map(Type::getName).collect(toSet());
