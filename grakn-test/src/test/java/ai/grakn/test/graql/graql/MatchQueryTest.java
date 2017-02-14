@@ -24,7 +24,6 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -36,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;

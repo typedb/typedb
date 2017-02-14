@@ -19,11 +19,8 @@
 package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graphs.MovieGraph;
-import ai.grakn.graql.Order;
 import ai.grakn.graql.Var;
-import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -32,16 +29,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class DeleteAndInsertTest {
 
@@ -91,5 +83,37 @@ public class DeleteAndInsertTest {
     @Test(expected = Exception.class)
     public void deleteVarNameNullString() {
         graph.graql().match(var()).delete((String) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void matchInsertNullVar() {
+        graph.graql().match(var("x").isa("movie")).insert((Var) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void matchInsertNullCollection() {
+        graph.graql().match(var("x").isa("movie")).insert((Collection<? extends Var>) null).execute();
+    }
+
+    @Ignore //TODO: Fix this
+    @Test(expected = Exception.class)
+    public void matchInsertEmptyCollection() {
+        graph.graql().match(var()).insert(Collections.EMPTY_SET).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void insertNullVar() {
+        graph.graql().insert((Var) null).execute();
+    }
+
+    @Test(expected = Exception.class)
+    public void insertNullCollection() {
+        graph.graql().insert((Collection<? extends Var>) null).execute();
+    }
+
+    @Ignore //TODO: Fix this
+    @Test(expected = Exception.class)
+    public void insertEmptyCollection() {
+        graph.graql().insert(Collections.EMPTY_SET).execute();
     }
 }
