@@ -25,8 +25,9 @@ import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
+import com.google.common.collect.Sets;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -104,9 +105,8 @@ public class QueryAnswerStream {
 
     public static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
         boolean isCompatible = true;
-        Set<VarName> keysToCompare = new HashSet<>(m1.keySet());
-        keysToCompare.retainAll(m2.keySet());
-        Iterator<VarName> it = keysToCompare.iterator();
+        Set<VarName> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
+        Iterator<VarName> it = joinVars.iterator();
         while(it.hasNext() && isCompatible) {
             VarName var = it.next();
             isCompatible = m1.get(var).equals(m2.get(var));
@@ -148,6 +148,25 @@ public class QueryAnswerStream {
      */
     public static Stream<Map<VarName, Concept>> join(Stream<Map<VarName, Concept>> stream, Stream<Map<VarName, Concept>> stream2) {
         return join(joinFunction, stream, stream2);
+    }
+
+    /**
+     * lazy stream join with quasi sideways information propagation
+     * @param stream left stream operand
+     * @param stream2 right stream operand
+     * @return joined stream
+     */
+    public static Stream<Map<VarName, Concept>> join(Stream<Map<VarName, Concept>> stream, Stream<Map<VarName, Concept>> stream2, Set<VarName> joinVars) {
+        LazyIterator<Map<VarName, Concept>> l2 = new LazyIterator<>(stream2);
+        return stream.flatMap(a1 -> {
+            Stream<Map<VarName, Concept>> answerStream = l2.stream();
+            for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(a1.get(v)));
+            return answerStream.flatMap(a2 -> {
+                Map<VarName, Concept> merged = new HashMap<>(a1);
+                merged.putAll(a2);
+                return Stream.of(merged);
+            });
+        });
     }
 
     /**

@@ -67,6 +67,7 @@ public class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
 
     private void computeNext(){
         oldAns = answerSize();
+        cache.reload();
         iter++;
         subGoals.clear();
         answerIterator = query.answerStream(subGoals, cache, materialise).iterator();
