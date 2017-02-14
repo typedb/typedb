@@ -144,6 +144,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
+        boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
+        
         getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retreived
 
         Set<ResourceType> resourceTypes = new HashSet<>();
@@ -157,7 +159,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             }
         }));
 
-        getGraknGraph().showImplicitConcepts(false);
+        getGraknGraph().showImplicitConcepts(implicitFlag);
         return resourceTypes;
     }
 
