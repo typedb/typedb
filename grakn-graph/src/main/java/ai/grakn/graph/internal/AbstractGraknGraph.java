@@ -431,7 +431,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(name));
         } else if(!dataType.equals(resourceType.getDataType())){
             throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
-        } else if(resourceType.isUnique() != isUnique){
+        } else if(resourceType.isUnique() ^ isUnique){
             throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.isUnique(), resourceType, isUnique, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
