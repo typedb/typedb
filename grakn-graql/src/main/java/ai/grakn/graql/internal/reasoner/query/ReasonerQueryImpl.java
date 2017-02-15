@@ -380,6 +380,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return null;
     }
 
+    public Atom findNextJoinable(Atom atom){
+        Set<Atom> atoms = getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(at -> at != atom)
+                .collect(Collectors.toSet());
+        return findNextJoinable(atoms, atom.getVarNames());
+    }
+
     /**
      * atom selection function
      * @return selected atoms
@@ -392,7 +400,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         //pass relations or rule-resolvable types and resources
         Set<Atom> atomsToSelect = atoms.stream()
-                .filter(atom -> (atom.isSelectable() || atom.isRuleResolvable()))
+                .filter(Atomic::isSelectable)
                 .collect(Collectors.toSet());
 
         Set<Atom> orderedSelection = new LinkedHashSet<>();
@@ -443,10 +451,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             return this.getMatchQuery().admin().streamWithVarNames();
         }
         Iterator<Atom> atIt = this.selectAtoms().iterator();
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
+        Atom atom = atIt.next();
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atom);
         Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);
         while (atIt.hasNext()) {
-            atomicQuery = new ReasonerAtomicQuery(atIt.next());
+            atom = atIt.next();
+            atomicQuery = new ReasonerAtomicQuery(atom);
             Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
             answerStream = join(answerStream, subAnswerStream);
         }
