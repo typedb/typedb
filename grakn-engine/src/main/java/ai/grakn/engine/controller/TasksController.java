@@ -55,7 +55,6 @@ import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static java.time.Instant.ofEpochMilli;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.post;
@@ -217,8 +216,6 @@ public class TasksController {
      * @param response The response object providing functionality for modifying the response
      */
     private void handleNotFoundInStorage(Exception exception, Request request, Response response){
-        LOG.trace(getFullStackTrace(exception));
-        
         response.status(404);
         throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", request.params(ID_PARAMETER)));
     }
@@ -230,10 +227,8 @@ public class TasksController {
      * @param response The response object providing functionality for modifying the response
      */
     private void handleInternalError(Exception exception, Request request, Response response){
-        LOG.error(request.ip() + getFullStackTrace(exception));
-
         response.status(500);
-        throw new GraknEngineServerException(500, exception);
+        throw new GraknEngineServerException(500, request.ip() + exception);
     }
 
     private Json serialiseStateSubset(TaskState state) {

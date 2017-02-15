@@ -103,7 +103,6 @@ public class UserController {
             users.addUser(user);
             return true;
         } catch(Exception e){
-            LOG.error("Error during creating new user", e);
             throw new GraknEngineServerException(500,e);
         }
     }

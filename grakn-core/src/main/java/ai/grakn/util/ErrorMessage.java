@@ -63,6 +63,7 @@ public enum ErrorMessage {
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_RESOURCE_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
+    COULD_NOT_GET_KEYSPACE("Could not find keyspaces: [%s]."),
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
