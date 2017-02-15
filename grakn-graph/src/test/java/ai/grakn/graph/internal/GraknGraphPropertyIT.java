@@ -69,6 +69,7 @@ import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
@@ -589,7 +590,8 @@ public class GraknGraphPropertyIT {
         if(foundRelation.getId().equals(relation.getId())){
             assertEquals(relation, foundRelation);
         } else { //This is possible when we have created duplicate empty relations. So we check everything we can.
-            assertEquals(relation.rolePlayers(), foundRelation.rolePlayers());
+            assertThat(relation.rolePlayers().keySet(), containsInAnyOrder(foundRelation.rolePlayers().keySet()));
+            assertThat(relation.rolePlayers().values(), containsInAnyOrder(foundRelation.rolePlayers().values()));
             assertEquals(relation.type(), foundRelation.type());
         }
     }
