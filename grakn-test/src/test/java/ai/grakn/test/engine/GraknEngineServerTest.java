@@ -41,7 +41,6 @@ public class GraknEngineServerTest {
         GraknEngineServer.main(new String[]{});
         assertTrue(GraknEngineServer.getTaskManager() instanceof StandaloneTaskManager);
         GraknEngineServer.stop();
-        GraknEngineServer.stopHTTP();
     }
 
     @Test
