@@ -701,10 +701,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void clear() {
         EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
+        innerClear();
+    }
+
+    @Override
+    public void clear(ConceptCache conceptCache) {
+        innerClear();
+        conceptCache.clearAllJobs(getKeyspace());
+    }
+
+    private void innerClear(){
         clearGraph();
         finaliseClose(this::closePermanent, ErrorMessage.CLOSED_CLEAR.getMessage());
     }
 
+    //This is overridden by vendors for more efficient clearing approaches
     protected void clearGraph(){
         getTinkerPopGraph().traversal().V().drop().iterate();
     }

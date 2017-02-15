@@ -589,7 +589,16 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     @Override
-    public String toString(){
+    public final String toString(){
+        if (getGraknGraph().validVertex(vertex)) {
+            return innerToString();
+        } else {
+            // Concept has been deleted, so handle differently
+            return "Id [" + getId() + "]";
+        }
+    }
+
+    protected String innerToString() {
         String message = "Base Type [" + getBaseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";

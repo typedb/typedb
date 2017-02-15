@@ -25,8 +25,11 @@ import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
+import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +48,7 @@ import java.util.stream.Stream;
  */
 public class QueryAnswerStream {
 
-    public static Map<VarName, Concept> varFilterOperator(Map<VarName, Concept> answer, Set<VarName> vars) {
+    private static Map<VarName, Concept> varFilterOperator(Map<VarName, Concept> answer, Set<VarName> vars) {
         Map<VarName, Concept> filteredAnswer = new HashMap<>();
         vars.stream()
                 .filter(answer::containsKey)
@@ -97,16 +100,15 @@ public class QueryAnswerStream {
         return pass;
     }
 
-    public static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Map<VarName, VarName>> unifierSet){
+    private static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Map<VarName, VarName>> unifierSet){
         if (unifierSet.isEmpty()) return Stream.of(answer);
         return unifierSet.stream().flatMap(unifiers -> Stream.of(QueryAnswers.unify(answer, unifiers)));
     }
 
-    public static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
+    private static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
         boolean isCompatible = true;
-        Set<VarName> keysToCompare = new HashSet<>(m1.keySet());
-        keysToCompare.retainAll(m2.keySet());
-        Iterator<VarName> it = keysToCompare.iterator();
+        Set<VarName> joinVars = Sets.intersection(m1.keySet(), m2.keySet());
+        Iterator<VarName> it = joinVars.iterator();
         while(it.hasNext() && isCompatible) {
             VarName var = it.next();
             isCompatible = m1.get(var).equals(m2.get(var));
@@ -125,7 +127,7 @@ public class QueryAnswerStream {
 
     public static final BiFunction<Map<VarName, Concept>, Set<Map<VarName, VarName>>, Stream<Map<VarName, Concept>>> permuteFunction = QueryAnswerStream::permuteOperator;
 
-    public static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
+    private static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
         Map<VarName, Concept> merged = joinOperator(a1, a2);
         return merged.isEmpty()? Stream.empty(): Stream.of(merged);
     };
@@ -141,6 +143,18 @@ public class QueryAnswerStream {
     }
 
     /**
+     * perform a lazy join operation on two streams (stream and stream2)
+     * @param function joining function
+     * @param s1 left operand of join operation
+     * @param s2 right operand of join operation
+     * @return joined stream
+     */
+    private static <T> Stream<T> join(BiFunction<T, T, Stream<T>> function, Stream<T> s1, Stream<T> s2) {
+        LazyIterator<T> l2 = new LazyIterator<>(s2);
+        return s1.flatMap(a1 -> l2.stream().flatMap(a2 -> function.apply(a1,a2)));
+    }
+
+    /**
      * lazy stream join
      * @param stream left stream operand
      * @param stream2 right stream operand
@@ -151,15 +165,23 @@ public class QueryAnswerStream {
     }
 
     /**
-     * perform a lazy join operation on two streams (stream and stream2)
-     * @param function joining function
-     * @param s1 left operand of join operation
-     * @param s2 right operand of join operation
+     * lazy stream join with quasi- sideways information propagation
+     * @param stream left stream operand
+     * @param stream2 right stream operand
+     * @param joinVars intersection on variables of two streams
      * @return joined stream
      */
-    public static <T> Stream<T> join(BiFunction<T, T, Stream<T>> function, Stream<T> s1, Stream<T> s2) {
-        LazyIterator<T> l2 = new LazyIterator<>(s2);
-        return s1.flatMap(a1 -> l2.stream().flatMap(a2 -> function.apply(a1,a2)));
+    public static Stream<Map<VarName, Concept>> join(Stream<Map<VarName, Concept>> stream, Stream<Map<VarName, Concept>> stream2, ImmutableSet<VarName> joinVars) {
+        LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
+        return stream.flatMap(a1 -> {
+            Stream<Map<VarName, Concept>> answerStream = l2.stream();
+            for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(a1.get(v)));
+            return answerStream.map(a2 -> {
+                Map<VarName, Concept> merged = new HashMap<>(a1);
+                merged.putAll(a2);
+                return merged;
+            });
+        });
     }
 }
 

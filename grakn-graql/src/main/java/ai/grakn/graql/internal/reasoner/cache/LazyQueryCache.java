@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.query.LazyIterator;
+import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import java.util.HashMap;
@@ -41,7 +41,7 @@ import javafx.util.Pair;
  */
 public class LazyQueryCache<T extends ReasonerQuery>{
 
-    public final Map<T, Pair<T, LazyIterator<Map<VarName, Concept>>>> cache = new HashMap<>();
+    private final Map<T, Pair<T, LazyAnswerIterator>> cache = new HashMap<>();
 
     public LazyQueryCache(){ super();}
     public boolean contains(T query){ return cache.containsKey(query);}
@@ -51,15 +51,15 @@ public class LazyQueryCache<T extends ReasonerQuery>{
      * @param query query to be added/updated
      * @param answers answers to the query
      */
-    public Stream<Map<VarName, Concept>> record(T query, Stream<Map<VarName, Concept>> answers){
-        Pair<T, LazyIterator<Map<VarName, Concept>>> match =  cache.get(query);
+    public LazyAnswerIterator record(T query, Stream<Map<VarName, Concept>> answers){
+        Pair<T, LazyAnswerIterator> match =  cache.get(query);
         if (match!= null) {
             Stream<Map<VarName, Concept>> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
         } else {
-            cache.put(query, new Pair<>(query, new LazyIterator<>(answers)));
+            cache.put(query, new Pair<>(query, new LazyAnswerIterator(answers)));
         }
-        return  getAnswers(query);
+        return getAnswerIterator(query);
     }
 
     /**
@@ -68,12 +68,20 @@ public class LazyQueryCache<T extends ReasonerQuery>{
      * @return unified cached answers
      */
     public Stream<Map<VarName, Concept>> getAnswers(T query){
-        Pair<T, LazyIterator<Map<VarName, Concept>>> match =  cache.get(query);
+        Pair<T, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
             return match.getValue().stream().map(a -> QueryAnswers.unify(a, unifiers));
         }
         else return Stream.empty();
+    }
+
+    public LazyAnswerIterator getAnswerIterator(T query){
+        Pair<T, LazyAnswerIterator> match =  cache.get(query);
+        if (match != null) {
+            return match.getValue().unify(getRetrieveUnifiers(query));
+        }
+        else return new LazyAnswerIterator(Stream.empty());
     }
 
     private Map<VarName, VarName> getRecordUnifiers(T toRecord){
@@ -86,6 +94,16 @@ public class LazyQueryCache<T extends ReasonerQuery>{
         T equivalentQuery = contains(toRetrieve)? cache.get( toRetrieve).getKey() : null;
         if (equivalentQuery != null) return  equivalentQuery.getUnifiers(toRetrieve);
         else return new HashMap<>();
+    }
+
+    public void reload(){
+        Map<T, Pair<T, LazyAnswerIterator>> newCache = new HashMap<>();
+        cache.entrySet().forEach(entry ->
+                newCache.put(entry.getKey(), new Pair<>(
+                        entry.getKey(),
+                        new LazyAnswerIterator(entry.getValue().getValue().accumulator.stream()))));
+        cache.clear();
+        cache.putAll(newCache);
     }
 
     public long answerSize(Set<T> queries){

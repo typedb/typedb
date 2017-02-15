@@ -365,6 +365,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         cstrs.forEach(con -> addAtom(AtomicFactory.create(con, this)));
     }
 
+    private Atom findFirstJoinable(Set<Atom> atoms){
+        for (Atom next : atoms) {
+            Atom atom = findNextJoinable(Sets.difference(atoms, Sets.newHashSet(next)), next.getVarNames());
+            if (atom != null) return atom;
+        }
+        return atoms.iterator().next();
+    }
+
+    private Atom findNextJoinable(Set<Atom> atoms, Set<VarName> vars){
+        for (Atom next : atoms) {
+            if (!Sets.intersection(vars, next.getVarNames()).isEmpty()) return next;
+        }
+        return null;
+    }
+
     /**
      * atom selection function
      * @return selected atoms
@@ -376,15 +391,22 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (atoms.size() == 1) return atoms;
 
         //pass relations or rule-resolvable types and resources
-        Set<Atom> selectedAtoms = atoms.stream()
+        Set<Atom> atomsToSelect = atoms.stream()
                 .filter(atom -> (atom.isSelectable() || atom.isRuleResolvable()))
                 .collect(Collectors.toSet());
 
-        //order by variables
         Set<Atom> orderedSelection = new LinkedHashSet<>();
-        getVarNames().forEach(var -> orderedSelection.addAll(selectedAtoms.stream()
-                .filter(atom -> atom.containsVar(var))
-                .collect(Collectors.toSet())));
+
+        Atom atom = findFirstJoinable(atomsToSelect);
+        Set<VarName> joinedVars = new HashSet<>();
+        while(!atomsToSelect.isEmpty() && atom != null) {
+            orderedSelection.add(atom);
+            atomsToSelect.remove(atom);
+            joinedVars.addAll(atom.getVarNames());
+            atom = findNextJoinable(atomsToSelect, joinedVars);
+        }
+        //if disjoint select at random
+        if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
 
         if (orderedSelection.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
