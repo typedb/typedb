@@ -81,6 +81,12 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         vertex = v;
     }
 
+    ConceptImpl(ConceptImpl concept){
+        this.graknGraph = concept.getGraknGraph();
+        this.conceptId = concept.getId();
+        this.vertex = concept.getVertex();
+    }
+
     /**
      *
      * @param key The key of the property to mutate
