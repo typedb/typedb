@@ -30,11 +30,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTest extends GraphTestBase {
@@ -317,6 +319,38 @@ public class GraknGraphTest extends GraphTestBase {
         graph.open();
 
         graph.putEntityType("A Thing");
+    }
+
+    @Test
+    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws GraknValidationException, ExecutionException, InterruptedException {
+        //Check Central cache is empty
+        assertTrue(graknGraph.getCachedOntology().asMap().isEmpty());
+
+        RoleType r1 = graknGraph.putRoleType("r1");
+        RoleType r2 = graknGraph.putRoleType("r2");
+        EntityType e1 = graknGraph.putEntityType("e1").playsRole(r1).playsRole(r2);
+        RelationType rel1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
+
+        //Purge the above concepts into the main cache
+        graknGraph.commit();
+
+        //Check cache is in good order
+        assertThat(graknGraph.getCachedOntology().asMap().values(), containsInAnyOrder(r1, r2, e1, rel1,
+                graknGraph.getMetaConcept(), graknGraph.getMetaEntityType(),
+                graknGraph.getMetaRelationType(), graknGraph.getMetaRoleType()));
+
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        //Mutate Ontology in a separate thread
+        pool.submit(() -> {
+            graknGraph.open();
+            EntityType entityType = graknGraph.getEntityType("e1");
+            RoleType role = graknGraph.getRoleType("r1");
+            entityType.deletePlaysRole(role);
+        }).get();
+
+        //Check the above mutation did not affect central repo
+        TypeImpl foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
+        assertTrue("Main cache was affected by transaction", foundE1.playsRoles().contains(r1));
     }
 
     @Test
