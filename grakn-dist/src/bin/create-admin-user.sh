@@ -27,9 +27,9 @@ else
   echo ""
 fi
 
-if [[ ${API_RESPONSE} == "false" ]]; then
+if [[ "${API_RESPONSE}" == "false" ]]; then
   echo "User creation failed - already exists?"
-elif [[ ${API_RESPONSE} == "true" ]]; then
+elif [[ "${API_RESPONSE}" == "true" ]]; then
   echo "User ${USER_NAME} has been created."
   echo "Remember to enable authentication in the config file and restart Grakn Engine."
 else
