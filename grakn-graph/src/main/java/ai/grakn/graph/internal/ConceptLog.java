@@ -119,17 +119,6 @@ class ConceptLog {
         //Caching of relations in memory so they can be retrieved without needing a commit
         if (concept.isRelation()) {
             RelationImpl relation = (RelationImpl) concept;
-
-            /*String valueToDelete = null;
-            for (Map.Entry<String, RelationImpl> stringRelationEntry : modifiedRelations.entrySet()) {
-                if(stringRelationEntry.getValue().equals(relation)){
-                    valueToDelete = stringRelationEntry.getKey();
-                    break;
-                }
-            }
-
-            if(valueToDelete != null) modifiedRelations.remove(valueToDelete);*/
-
             modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.rolePlayers()), relation);
         }
     }
