@@ -21,6 +21,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -32,6 +33,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +110,7 @@ public class Scheduler implements Runnable, AutoCloseable {
         running = true;
 
         // restart any recurring tasks in the graph
-        restartRecurringTasks();
+//        restartRecurringTasks();
 
         try {
             while (running) {
@@ -121,7 +123,13 @@ public class Scheduler implements Runnable, AutoCloseable {
                     TaskState taskState = TaskState.deserialize(record.value());
 
                     // mark the task as created
-                    storage.newState(taskState);
+                    try {
+                        storage.newState(taskState);
+                    } catch (EngineStorageException e){
+                        LOG.debug("Already processed " + taskState.getId());
+                        consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+                        continue;
+                    }
 
                     // schedule the task
                     scheduleTask(taskState);
@@ -212,6 +220,8 @@ public class Scheduler implements Runnable, AutoCloseable {
      * Get all recurring tasks from the graph and schedule them
      */
     private void restartRecurringTasks() {
+        LOG.debug("Restarting recurring tasks");
+
         Set<TaskState> tasks = storage.getTasks(null, null, null, 0, 0);
         tasks.stream()
                 .filter(TaskState::isRecurring)
