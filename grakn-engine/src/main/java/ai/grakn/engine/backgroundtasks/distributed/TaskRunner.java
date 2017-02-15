@@ -138,7 +138,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
             // re-throw the exception
             throw throwable;
         } finally {
-            noThrow(consumer::commitSync, "Exception syncing commits while closing in TaskRunner");
             noThrow(consumer::close, "Exception while closing consumer in TaskRunner");
             noThrow(shutdownLatch::countDown, "Exception while counting down close latch in TaskRunner");
         }
@@ -254,7 +253,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         try {
             connection.connection().setData().forPath(RUNNERS_STATE+"/"+ ENGINE_ID, out.toString().getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
-            LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + e);
+            LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + getFullStackTrace(e));
         }
     }
 
