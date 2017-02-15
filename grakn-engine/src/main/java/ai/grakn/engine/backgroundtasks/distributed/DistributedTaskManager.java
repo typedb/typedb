@@ -139,13 +139,13 @@ public final class DistributedTaskManager implements TaskManager {
                     paramThread.getName(), getFullStackTrace(paramThrowable)));
 
             noThrow(taskRunner::close, "Error shutting down TaskRunner");
-            noThrow(taskRunnerThread::join, "Error waiting for TaskRunner to close");
+            // no need to call taskRunnerThread.join() here - recursive wait, are still in thread
 
             LOG.debug("TaskRunner closed.");
 
             startTaskRunner();
 
-            LOG.debug("Reinstantiation of TaskRunner completed.");
+            LOG.debug("Re-instantiation of TaskRunner completed.");
         }
     }
 }

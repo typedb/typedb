@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -140,6 +141,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
         } finally {
             noThrow(consumer::close, "Exception while closing consumer in TaskRunner");
             noThrow(shutdownLatch::countDown, "Exception while counting down close latch in TaskRunner");
+
+            LOG.debug("TaskRunner run() end");
         }
     }
 
@@ -157,7 +160,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
         noThrow(shutdownLatch::await, "Error waiting for TaskRunner consumer to exit");
 
         // Interrupt all currently running threads - these will be re-allocated to another Engine.
-        noThrow(executor::shutdownNow, "Could not shutdown scheduling service.");
+        noThrow(executor::shutdown, "Could not shutdown TaskRunner executor.");
+        noThrow(() -> executor.awaitTermination(1, TimeUnit.MINUTES), "Error waiting for TaskRunner executor to shutdown.");
 
         LOG.debug("TaskRunner stopped");
     }
