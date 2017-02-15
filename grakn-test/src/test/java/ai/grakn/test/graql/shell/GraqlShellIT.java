@@ -423,7 +423,29 @@ public class GraqlShellIT {
                 "match $x isa X;",
                 allOf(containsString("id"), containsString("\"foo\""))
         );
+    }
 
+    @Test
+    public void testCleanCommand() throws Exception {
+        assertShellMatches(
+                "insert my-type sub entity;",
+                is("{}"),
+                "commit",
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity"),
+                "clean",
+                "match $x sub entity;",
+                containsString("entity"),
+                "rollback",
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity"),
+                "clean",
+                "commit",
+                "rollback",
+                containsString("entity")
+        );
     }
 
     @Test
