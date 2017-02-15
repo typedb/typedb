@@ -21,6 +21,7 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -31,6 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
@@ -182,6 +184,25 @@ public class VisualiserControllerTest {
 
             });
         });
+    }
+
+
+    //Check that a generated relation _id contains role players' IDs.
+    @Test
+    public void testOntologyConceptHAL() {
+
+
+
+                Type protagonistType = graph.getType(TypeName.of("protagonist"));
+        Response response = with()
+                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
+                .get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + protagonistType.getId().getValue())
+                .then().statusCode(200).extract().response().andReturn();
+        Json protagonist = Json.read(response.getBody().asString());
+
+        assertEquals("protagonist",protagonist.at("_name").getValue());
+        assertEquals(protagonistType.getId().getValue(),protagonist.at("_id").getValue());
+        assertEquals("event-protagonist",protagonist.at("_embedded").at("has-role").at(0).at("_name").getValue());
     }
 
     private void checkHALStructureOfPerson(Json person, String id) {
