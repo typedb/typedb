@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -283,10 +284,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         ReasonerAtomicQuery childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Map<VarName, Concept>> subs = childAtomicQuery.answerStream(subGoals, cache, materialise);
+        Set<VarName> joinedVars = childAtomicQuery.getVarNames();
         while(atIt.hasNext()){
             childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
+            Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Map<VarName, Concept>> localSubs = childAtomicQuery.answerStream(subGoals, cache, materialise);
-            subs = join(subs, localSubs);
+            subs = join(subs, localSubs, ImmutableSet.copyOf(joinVars));
+            joinedVars.addAll(childAtomicQuery.getVarNames());
         }
 
         Stream<Map<VarName, Concept>> answers = subs
