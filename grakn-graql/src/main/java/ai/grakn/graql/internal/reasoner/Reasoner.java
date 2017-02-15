@@ -106,5 +106,4 @@ public class Reasoner {
             subGoals.addAll(SG);
         });
     }
-
 }
