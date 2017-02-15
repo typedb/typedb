@@ -134,17 +134,23 @@ export default {
             this.state.stopBuilderMode();
 
             if (query.includes('aggregate')) {
-                this.showWarning("Invalid query: 'aggregate' queries are not allowed from the Graph page. Please use the Console page.");
+                // Error message until we will not properly support aggregate queries in graph page.
+                this.state.eventHub.$emit('error-message', 'Invalid query: \'aggregate\' queries are not allowed from the Graph page. Please use the Console page.');
                 return;
             }
 
             if (query.trim().startsWith('compute')) {
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             } else {
-                let queryToExecute = query;
-                if (!(query.includes('offset')))
+                let queryToExecute = query.trim();
+
+                // Add trailing semi-colon
+                if(queryToExecute.charAt(queryToExecute.length-1)!==';')
+                    queryToExecute+=';';
+
+                if (!(query.includes('offset'))&&!(query.includes('delete')))
                     queryToExecute = queryToExecute + ' offset 0;';
-                if (!(query.includes('limit')))
+                if (!(query.includes('limit'))&&!(query.includes('delete')))
                     queryToExecute = queryToExecute + ' limit 100;';
 
                 this.state.eventHub.$emit('inject-query', queryToExecute);
@@ -238,12 +244,19 @@ export default {
                     });
                 }
             } else {
+                let generatedNode = false;
+                //If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
+                if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
+                  generatedNode = true;
+                }
+
                 EngineClient.request({
                     url: visualiser.getNode(node).href,
+                    appendReasonerParams: generatedNode,
                     callback: this.onGraphResponse,
                 });
 
-                if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
+                if (generatedNode) {
                     visualiser.deleteNode(node);
                 }
             }

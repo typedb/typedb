@@ -36,6 +36,8 @@ export default {
      * @param requestData
      */
   request(requestData) {
+    const reasonerParam = (requestData.appendReasonerParams) ? `&reasoner=${User.getReasonerStatus()}` : '';
+
     $.ajax({
       type: requestData.requestType || 'GET',
       contentType: requestData.contentType || 'application/json; charset=utf-8',
@@ -45,7 +47,7 @@ export default {
         json: 'application/hal+json',
       },
       data: requestData.data,
-      url: requestData.url,
+      url: requestData.url + reasonerParam,
       beforeSend: this.setHeaders,
     }).done((response) => {
       // sometimes we might not have a callback function
