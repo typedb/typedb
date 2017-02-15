@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
+import org.elasticsearch.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -80,11 +81,11 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
-        Stream<Map<VarName, Concept>> stream = query.lookup(cache);
-        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
+        Stream<Map<VarName, Concept>> stream = query.lookup(cache).stream();
+        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache).stream();
         Stream<Map<VarName, Concept>> joinedStream = QueryAnswerStream.join(stream, stream2);
 
-        joinedStream = cache.record(query3, joinedStream.flatMap(a -> varFilterFunction.apply(a, query3.getVarNames())));
+        joinedStream = cache.record(query3, joinedStream.flatMap(a -> varFilterFunction.apply(a, query3.getVarNames()))).stream();
 
         Set<Map<VarName, Concept>> collect = joinedStream.collect(toSet());
         Set<Map<VarName, Concept>> collect2 = cache.getAnswers(query3).collect(toSet());
@@ -107,9 +108,9 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
-        Stream<Map<VarName, Concept>> stream = query.lookup(cache);
-        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
-        Stream<Map<VarName, Concept>> stream3 = query3.lookup(cache);
+        Stream<Map<VarName, Concept>> stream = query.lookup(cache).stream();
+        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache).stream();
+        Stream<Map<VarName, Concept>> stream3 = query3.lookup(cache).stream();
 
         Stream<Map<VarName, Concept>> join = QueryAnswerStream.join(QueryAnswerStream.join(stream, stream2), stream3);
         assertEquals(join.collect(toSet()).size(), 10);

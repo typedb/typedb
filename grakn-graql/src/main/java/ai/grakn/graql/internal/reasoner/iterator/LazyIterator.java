@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner.iterator;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -40,6 +40,7 @@ public class LazyIterator<T> implements Iterable<T>{
     public LazyIterator(Stream<T> stream){
         this.iterator = stream.distinct().iterator();
     }
+    public LazyIterator(Iterator<T> iterator){ this.iterator = iterator;}
     @Override
     public Iterator<T> iterator() {
         return new Iterator<T>(){
