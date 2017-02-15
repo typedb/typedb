@@ -138,7 +138,6 @@ public class Scheduler implements Runnable, AutoCloseable {
         } catch (Throwable t){
             LOG.error("Error in scheduler poll " + getFullStackTrace(t));
         } finally {
-            noThrow(consumer::commitSync, "Exception syncing commits while closing in Scheduler");
             noThrow(consumer::close, "Exception while closing consumer in Scheduler");
             noThrow(waitToClose::countDown, "Exception while counting down close latch in Scheduler");
         }
