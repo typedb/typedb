@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
-import ai.grakn.util.ErrorMessage;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;

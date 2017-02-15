@@ -451,12 +451,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             return this.getMatchQuery().admin().streamWithVarNames();
         }
         Iterator<Atom> atIt = this.selectAtoms().iterator();
-        Atom atom = atIt.next();
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atom);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);
         while (atIt.hasNext()) {
-            atom = atIt.next();
-            atomicQuery = new ReasonerAtomicQuery(atom);
+            atomicQuery = new ReasonerAtomicQuery(atIt.next());
             Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
             answerStream = join(answerStream, subAnswerStream);
         }
