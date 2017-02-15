@@ -68,8 +68,7 @@ public class CommitLogController {
            return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.KEYSPACE_PARAM, "delete");
         }
 
-        cache.getCastingJobs(graphName).clear();
-        cache.getResourceJobs(graphName).clear();
+        cache.clearAllJobs(graphName);
 
         return "The cache of Graph [" + graphName + "] has been cleared";
     }

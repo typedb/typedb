@@ -366,23 +366,18 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private Atom findFirstJoinable(Set<Atom> atoms){
-        Iterator<Atom> ait = atoms.iterator();
-        Atom atom = null;
-        while(ait.hasNext() && atom == null) {
-            Atom next = ait.next();
-            atom = findNextJoinable(Sets.difference(atoms, Sets.newHashSet(next)), next.getVarNames());
+        for (Atom next : atoms) {
+            Atom atom = findNextJoinable(Sets.difference(atoms, Sets.newHashSet(next)), next.getVarNames());
+            if (atom != null) return atom;
         }
-        return atom != null? atom : atoms.iterator().next();
+        return atoms.iterator().next();
     }
 
     private Atom findNextJoinable(Set<Atom> atoms, Set<VarName> vars){
-        Iterator<Atom> ait = atoms.iterator();
-        Atom atom = null;
-        while(ait.hasNext() && atom == null) {
-            Atom next = ait.next();
-            atom = Sets.intersection(vars, next.getVarNames()).isEmpty()? null : next;
+        for (Atom next : atoms) {
+            if (!Sets.intersection(vars, next.getVarNames()).isEmpty()) return next;
         }
-        return atom;
+        return null;
     }
 
     /**
@@ -403,16 +398,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Atom> orderedSelection = new LinkedHashSet<>();
 
         Atom atom = findFirstJoinable(atomsToSelect);
-        orderedSelection.add(atom);
-        atomsToSelect.remove(atom);
-        Set<VarName> joinedVars = atom.getVarNames();
+        Set<VarName> joinedVars = new HashSet<>();
         while(!atomsToSelect.isEmpty() && atom != null) {
+            orderedSelection.add(atom);
+            atomsToSelect.remove(atom);
+            joinedVars.addAll(atom.getVarNames());
             atom = findNextJoinable(atomsToSelect, joinedVars);
-            if (atom != null) {
-                orderedSelection.add(atom);
-                atomsToSelect.remove(atom);
-                joinedVars.addAll(atom.getVarNames());
-            }
         }
         //if disjoint select at random
         if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);

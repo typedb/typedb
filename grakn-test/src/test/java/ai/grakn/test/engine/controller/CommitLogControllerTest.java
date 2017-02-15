@@ -79,6 +79,14 @@ public class CommitLogControllerTest {
     }
 
     @Test
+    public void checkDirectClearWorks(){
+        GraknGraph test = Grakn.factory(Grakn.DEFAULT_URI, KEYSPACE).getGraph();
+        test.admin().clear(EngineCache.getInstance());
+        assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
+    }
+
+    @Test
     public void testControllerWorking() {
         assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
