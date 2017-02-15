@@ -24,6 +24,7 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -41,6 +42,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -103,7 +106,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
         // Instantiate the executor where tasks will run
         // executorSize is the maximum executor queue size
         int numberAvailableThreads = properties.getAvailableThreads();
-        executor = newFixedThreadPool(numberAvailableThreads);
+        ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("task-runner-pool-%d").build();
+
+        executor = newFixedThreadPool(numberAvailableThreads, namedThreadFactory);
         executorSize = numberAvailableThreads * 4;
 
         shutdownLatch = new CountDownLatch(1);
@@ -112,24 +118,31 @@ public class TaskRunner implements Runnable, AutoCloseable {
     }
 
     /**
-     * Start the main loop, this will block until a call to stop().
+     * Start the main loop, this will block until a call to close() that wakes up the consumer.
+     *
+     * The only way to exit this loop without throwing an exception is by calling consumer.wakeup()
+     *
+     * We do not want to catch any exceptions here. The caller of this TaskRunner should handle the case
+     * where an exception is thrown. It is recommended to register the TaskRunner thread with a UncaughtExceptionHandler.
+     * The catch(Throwable t) here is merely for logging purposes. You will notice that the exception is re-thrown.
      */
     public void run()  {
         try {
             while (true) {
-                // Poll for new tasks only when we know we have space to accept them.
-                if (getAcceptedTasksCount() < executorSize) {
-                    processRecords(consumer.poll(POLLING_FREQUENCY));
-                }
+                processRecords(consumer.poll(POLLING_FREQUENCY));
             }
         } catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
-        } catch (Throwable t){
-            LOG.error("Error in TaskRunner poll " + getFullStackTrace(t));
+        } catch (Throwable throwable){
+            LOG.error("Error in TaskRunner poll " + throwable.getMessage());
+
+            // re-throw the exception
+            throw throwable;
         } finally {
-            noThrow(consumer::commitSync, "Exception syncing commits while closing in TaskRunner");
             noThrow(consumer::close, "Exception while closing consumer in TaskRunner");
             noThrow(shutdownLatch::countDown, "Exception while counting down close latch in TaskRunner");
+
+            LOG.debug("TaskRunner run() end");
         }
     }
 
@@ -147,25 +160,28 @@ public class TaskRunner implements Runnable, AutoCloseable {
         noThrow(shutdownLatch::await, "Error waiting for TaskRunner consumer to exit");
 
         // Interrupt all currently running threads - these will be re-allocated to another Engine.
-        noThrow(executor::shutdownNow, "Could not shutdown scheduling service.");
+        noThrow(executor::shutdown, "Could not shutdown TaskRunner executor.");
+        noThrow(() -> executor.awaitTermination(1, TimeUnit.MINUTES), "Error waiting for TaskRunner executor to shutdown.");
 
         LOG.debug("TaskRunner stopped");
     }
 
     private void processRecords(ConsumerRecords<String, String> records) {
-        for(ConsumerRecord<String, String> record: records) {
-            LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s", record.key(), getRunningTasksCount(), getAcceptedTasksCount(), executorSize));
+        long startTime = System.currentTimeMillis();
 
+        for(ConsumerRecord<String, String> record: records) {
             // Exit loop when TaskRunner capacity full
-            if(getAcceptedTasksCount() >= executorSize) {
+            if(acceptedTasks.get() >= executorSize) {
                 seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
                 break;
             }
 
-            String id = record.key();
+            LOG.debug(format("Received [%s] of [%s], currently running: %s has: %s allowed: %s",
+                    record.key(), records.count(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
 
-            // Instead of deserializing TaskState from value, get up-to-date state from the storage
+            String id = record.key();
             try {
+                // Instead of deserializing TaskState from value, get up-to-date state from the storage
                 TaskState state = storage.getState(id);
                 if (state.status() != SCHEDULED) {
                     LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: " + state.status());
@@ -188,6 +204,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 LOG.error("Cant run this task - " + id + " because state was not found in storage");
             }
         }
+
+        LOG.debug(format("Took [%s] ms to process [%s] records in taskrunner", System.currentTimeMillis() - startTime, records.count()));
     }
 
     /**
@@ -239,7 +257,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         try {
             connection.connection().setData().forPath(RUNNERS_STATE+"/"+ ENGINE_ID, out.toString().getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
-            LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + e);
+            LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + getFullStackTrace(e));
         }
     }
 
@@ -263,10 +281,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
         LOG.debug("Registered TaskRunner");
     }
 
-    private synchronized int getAcceptedTasksCount() {
-        return acceptedTasks.get();
-    }
-
     private synchronized int getRunningTasksCount() {
         return runningTasks.size();
     }
@@ -286,12 +300,15 @@ public class TaskRunner implements Runnable, AutoCloseable {
         consumer.commitSync();
     }
 
-    private class HandleRebalance implements ConsumerRebalanceListener {
+    /**
+     * Implementation of ConsumerRebalanceListener that will log whenever partitions are reassigned and
+     * sync the last commits when partitions are revoked.
+     */
+    private static class HandleRebalance implements ConsumerRebalanceListener {
         public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
             LOG.debug("TaskRunner consumer partitions assigned " + partitions);
         }
         public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            consumer.commitSync();
             LOG.debug("TaskRunner consumer partitions revoked " + partitions);
         }
     }
