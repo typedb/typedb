@@ -18,7 +18,8 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.ErrorMessage;
@@ -36,8 +37,6 @@ import spark.Response;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.util.Collections;
-import java.util.Set;
 
 import static spark.Spark.delete;
 import static spark.Spark.post;
@@ -48,7 +47,7 @@ import static spark.Spark.post;
  * @author Filipe Teixeira
  */
 public class CommitLogController {
-    private final EngineCacheImpl cache = EngineCacheImpl.getInstance();
+    private final EngineCache cache = EngineCache.getInstance();
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
     public CommitLogController(){
@@ -69,8 +68,7 @@ public class CommitLogController {
            return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.KEYSPACE_PARAM, "delete");
         }
 
-        cache.getCastingJobs(graphName).clear();
-        cache.getResourceJobs(graphName).clear();
+        cache.clearAllJobs(graphName);
 
         return "The cache of Graph [" + graphName + "] has been cleared";
     }
@@ -96,33 +94,26 @@ public class CommitLogController {
 
             for (Object object : jsonArray) {
                 JSONObject jsonObject = (JSONObject) object;
-                String conceptId = jsonObject.getString("id");
-                Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString("type"));
+
+                String conceptVertexId = jsonObject.getString(REST.Request.COMMIT_LOG_ID);
+                String conceptIndex = jsonObject.getString(REST.Request.COMMIT_LOG_INDEX);
+                Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE));
 
                 switch (type) {
                     case CASTING:
-                        cache.addJobCasting(graphName, Collections.singleton(conceptId));
+                        cache.addJobCasting(graphName, conceptIndex, ConceptId.of(conceptVertexId));
                         break;
                     case RESOURCE:
-                        cache.addJobResource(graphName, Collections.singleton(conceptId));
+                        cache.addJobResource(graphName, conceptIndex, ConceptId.of(conceptVertexId));
                         break;
                     default:
-                        LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptId, type.name()));
+                        LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptVertexId, type.name()));
                 }
             }
 
-            long numJobs = getJobCount(cache.getCastingJobs(graphName));
-            numJobs += getJobCount(cache.getResourceJobs(graphName));
-
-            return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
+            return "Graph [" + graphName + "] now has [" + cache.getNumJobs(graphName) + "] post processing jobs";
         } catch(Exception e){
             throw new GraknEngineServerException(500,e);
         }
-    }
-    private long getJobCount(Set jobs){
-        if(jobs != null) {
-            return jobs.size();
-        }
-        return 0L;
     }
 }

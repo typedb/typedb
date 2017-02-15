@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.test.EngineContext;
@@ -40,9 +41,8 @@ import org.junit.Test;
 import java.time.Instant;
 import java.util.Date;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
@@ -51,7 +51,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
 
 public class TasksControllerTest {
     private String singleTask;
@@ -66,14 +65,18 @@ public class TasksControllerTest {
 
     @Before
     public void setUp() throws Exception {
-        assumeFalse(usingTinker());
         DistributedTaskManager manager = (DistributedTaskManager) engine.getTaskManager();
-        singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), Instant.now(), 0, Json.object());
+        singleTask = manager.storage().newState(
+                new TaskState(TestTask.class.getName())
+                        .creator(this.getClass().getName())
+                        .runAt(Instant.now())
+                        .status(COMPLETED)
+                        .configuration(Json.object()));
     }
 
     @Test
     public void testTasksByStatus() throws Exception{
-        Response response = given().queryParam("status", CREATED.toString())
+        Response response = given().queryParam("status", COMPLETED.toString())
                                    .queryParam("limit", 10)
                                    .get("/tasks/all");
 
@@ -84,18 +87,15 @@ public class TasksControllerTest {
         JSONArray array = new JSONArray(response.body().asString());
         array.forEach(x -> {
             JSONObject o = (JSONObject)x;
-            assertEquals(CREATED.toString(), o.get("status"));
+            assertEquals(COMPLETED.toString(), o.get("status"));
         });
     }
 
     @Test
     public void testTasksByClassName() {
-        System.out.println("testTasksByClassName");
         Response response = given().queryParam("className", TestTask.class.getName())
                                    .queryParam("limit", 10)
                                    .get("/tasks/all");
-
-        System.out.println(response.body().toString());
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -128,8 +128,6 @@ public class TasksControllerTest {
     @Test
     public void testGetAllTasks() {
         Response response = given().queryParam("limit", 10).get("/tasks/all");
-
-        System.out.println(response.body().asString());
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)

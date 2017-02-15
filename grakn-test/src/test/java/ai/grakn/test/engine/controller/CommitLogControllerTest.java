@@ -20,17 +20,15 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -45,11 +43,10 @@ import java.util.UUID;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
-    private final EngineCacheImpl cache = EngineCacheImpl.getInstance();
+    private final EngineCache cache = EngineCache.getInstance();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startDistributedServer();
@@ -58,16 +55,16 @@ public class CommitLogControllerTest {
     public void setUp() throws Exception {
         String commitLog = "{\n" +
                 "    \"concepts\":[\n" +
-                "        {\"id\":\"1\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"id\":\"2\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"id\":\"3\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"id\":\"4\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"id\":\"5\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
-                "        {\"id\":\"6\", \"type\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
-                "        {\"id\":\"7\", \"type\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
-                "        {\"id\":\"8\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
-                "        {\"id\":\"9\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
-                "        {\"id\":\"10\", \"type\":\"" + Schema.BaseType.RELATION + "\"}\n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"10\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"1\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"20\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"2\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"30\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"3\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"40\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"4\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"50\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"5\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"60\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"6\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"70\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"7\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"80\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"8\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"90\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"9\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"100\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"10\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"}\n" +
                 "    ]\n" +
                 "}";
 
@@ -79,6 +76,14 @@ public class CommitLogControllerTest {
     @After
     public void takeDown() throws InterruptedException {
         cache.getCastingJobs(KEYSPACE).clear();
+    }
+
+    @Test
+    public void checkDirectClearWorks(){
+        GraknGraph test = Grakn.factory(Grakn.DEFAULT_URI, KEYSPACE).getGraph();
+        test.admin().clear(EngineCache.getInstance());
+        assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
     }
 
     @Test
@@ -115,11 +120,6 @@ public class CommitLogControllerTest {
         assertEquals(0, cache.getCastingJobs(TIM).size());
         assertEquals(0, cache.getResourceJobs(BOB).size());
         assertEquals(0, cache.getResourceJobs(TIM).size());
-
-        cache.getResourceJobs(BOB).forEach(resourceId -> {
-            Concept concept = ((AbstractGraknGraph) bob).getConceptByBaseIdentifier(resourceId);
-            assertTrue(concept.isResource());
-        });
 
         bob.close();
         tim.close();

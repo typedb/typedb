@@ -225,7 +225,7 @@ public class QueryToStringTest {
     }
 
     private void assertSameResults(MatchQuery query) {
-        QueryParserTest.assertQueriesEqual(query, qb.parse(query.toString()));
+        assertEquals(query.execute(), qb.parse(query.toString()).execute());
     }
 
     private void assertEquivalent(Query<?> query, String queryString) {

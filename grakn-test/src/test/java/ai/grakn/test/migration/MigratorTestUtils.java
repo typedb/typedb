@@ -18,6 +18,7 @@
 
 package ai.grakn.test.migration;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
@@ -27,10 +28,8 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
-import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -62,7 +61,7 @@ public class MigratorTestUtils {
     }
 
     public static void migrate(GraknGraph graph, Migrator migrator){
-        MigrationLoader.load(GraknEngineServer.getTaskManager(), graph.getKeyspace(), migrator);
+        migrator.load(Grakn.DEFAULT_URI, graph.getKeyspace());
     }
 
     public static void load(GraknGraph graph, File ontology) {

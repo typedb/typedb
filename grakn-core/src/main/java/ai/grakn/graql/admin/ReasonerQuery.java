@@ -75,6 +75,11 @@ public interface ReasonerQuery{
     void unify(Map<VarName, VarName> unifiers);
 
     /**
+     * @return
+     */
+    Map<VarName, VarName> getUnifiers(ReasonerQuery parent);
+
+    /**
      * resolves the query
      * @param materialise materialisation flag
      * @return stream of answers

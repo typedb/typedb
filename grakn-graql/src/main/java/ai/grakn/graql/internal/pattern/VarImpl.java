@@ -49,7 +49,6 @@ import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
-import ai.grakn.graql.internal.pattern.property.ValueFlagProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -137,11 +136,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var value() {
-        return addProperty(new ValueFlagProperty());
-    }
-
-    @Override
     public Var value(Object value) {
         return value(Graql.eq(value));
     }
@@ -149,11 +143,6 @@ class VarImpl implements VarAdmin {
     @Override
     public Var value(ValuePredicate predicate) {
         return addProperty(new ValueProperty(predicate.admin()));
-    }
-
-    @Override
-    public Var has(String type) {
-        return has(type, Graql.var());
     }
 
     @Override

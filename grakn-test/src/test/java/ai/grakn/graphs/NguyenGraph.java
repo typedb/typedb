@@ -58,7 +58,7 @@ public class NguyenGraph extends TestGraph {
         RoleType Pfrom = graph.getRoleType("P-rA");
         RoleType Pto = graph.getRoleType("P-rB");
 
-        EntityType entity = graph.getEntityType("entity");
+        EntityType entity = graph.getEntityType("entity2");
         EntityType aEntity = graph.getEntityType("a-entity");
         EntityType bEntity = graph.getEntityType("b-entity");
         RelationType R = graph.getRelationType("R");

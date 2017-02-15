@@ -53,4 +53,19 @@ class SumAggregate extends AbstractAggregate<Map<VarName, Concept>, Number> {
     public String toString() {
         return "sum " + varName;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SumAggregate that = (SumAggregate) o;
+
+        return varName.equals(that.varName);
+    }
+
+    @Override
+    public int hashCode() {
+        return varName.hashCode();
+    }
 }

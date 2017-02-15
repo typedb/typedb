@@ -12,16 +12,13 @@
   },
   "homepage": "https://github.com/graknlabs/grakn",
   "dependencies": {
-    "animate.css-js": "0.0.9",
-    "bootstrap": "^3.3.7",
     "codemirror": "^5.19.0",
     "jquery": "^3.1.0",
-    "jquery-ui": "^1.12.0",
     "pace-progress": "^1.0.2",
     "prismjs": "^1.5.1",
     "underscore": "1.8",
     "vee-validate": "^2.0.0-beta.17",
-    "vis": "4.17",
+    "vis": "^4.18.0",
     "vue": "^2.0",
     "vue-router": "^2.0",
     "vue-template-compiler": "^2.0"
@@ -32,10 +29,11 @@
     "babel-preset-es2015": "^6.13.2",
     "babelify": "^7.3.0",
     "browserify": "^13.1.0",
-    "nyc": "^10.0.0",
-    "eslint": "^3.12.2",
+    "eslint": "^3.13.1",
     "eslint-config-airbnb-base": "^11.0.0",
     "eslint-plugin-import": "^2.2.0",
+    "nyc": "^10.0.0",
+    "vue-eslint-parser": "^1.0.0",
     "vueify": "^9.0",
     "watchify": "^3.7.0"
   },
@@ -45,9 +43,12 @@
       "vueify"
     ]
   },
+  "browser": {
+    "vue": "vue/dist/vue.common"
+  },
   "scripts": {
     "browserify": "browserify -e src/main.js -o static/dashboard.js",
-    "watchify": "watchify src/main.js -o static/dashboard.js",
+    "watchify": "watchify src/main.js -o static/dashboard.js -v",
     "preinstall": "npm install browserify vueify babelify",
     "test": "nyc ava",
     "coverage": "nyc report --reporter=lcov"

@@ -18,41 +18,40 @@
 
 package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
-import javafx.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
 import static ai.grakn.engine.util.SystemOntologyElements.ENGINE_ID;
 import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
 import static ai.grakn.engine.util.SystemOntologyElements.RECUR_INTERVAL;
 import static ai.grakn.engine.util.SystemOntologyElements.RUN_AT;
 import static ai.grakn.engine.util.SystemOntologyElements.SCHEDULED_TASK;
+import static ai.grakn.engine.util.SystemOntologyElements.SERIALISED_TASK;
 import static ai.grakn.engine.util.SystemOntologyElements.STACK_TRACE;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_BY;
@@ -62,12 +61,10 @@ import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_ID;
-import static ai.grakn.engine.util.SystemOntologyElements.SERIALISED_TASK;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
-import static org.apache.commons.lang.SerializationUtils.deserialize;
-import static org.apache.commons.lang.SerializationUtils.serialize;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -81,12 +78,12 @@ public class TaskStateGraphStore implements TaskStateStorage {
     private final static String TASK_VAR = "task";
     private final static int retries = 10;
 
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final Logger LOG = LoggerFactory.getLogger(TaskStateGraphStore.class);
 
     public TaskStateGraphStore() {}
 
     @Override
-    public String newState(TaskState task) {
+    public String newState(TaskState task) throws EngineStorageException {
         Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId())
                 .has(STATUS, var().value(CREATED.toString()))
@@ -95,7 +92,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
                 .has(RUN_AT, var().value(task.runAt().toEpochMilli()))
                 .has(RECURRING, var().value(task.isRecurring()))
                 .has(RECUR_INTERVAL, var().value(task.interval()))
-                .has(SERIALISED_TASK, var().value(Base64.getMimeEncoder().encodeToString(serialize(task))));
+                .has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
 
         if(task.configuration() != null) {
             state.has(TASK_CONFIGURATION, var().value(task.configuration().toString()));
@@ -106,7 +103,11 @@ public class TaskStateGraphStore implements TaskStateStorage {
             return true;
         }, true);
 
-        return result.get().equals(true) ? task.getId() : null;
+        if(!result.isPresent()){
+            throw new EngineStorageException("Concept " + task.getId() + " could not be saved in storage");
+        }
+
+        return task.getId();
     }
 
     @Override
@@ -118,7 +119,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Var resources = var(TASK_VAR);
 
         resourcesToDettach.add(SERIALISED_TASK);
-        resources.has(SERIALISED_TASK, var().value(Base64.getMimeEncoder().encodeToString(serialize(task))));
+        resources.has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
 
         // TODO make sure all properties are being update
         if(task.status() != null) {
@@ -170,13 +171,18 @@ public class TaskStateGraphStore implements TaskStateStorage {
         return result.isPresent();
     }
 
-    public TaskState getState(String id) {
+    @Override
+    public TaskState getState(String id) throws EngineStorageException {
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
             Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
             return instanceToState(graph, instance);
         }, false);
 
-        return result.orElse(null);
+        if(!result.isPresent()){
+            throw new EngineStorageException("Concept " + id + " not found in storage");
+        }
+
+        return result.get();
     }
 
     /**
@@ -187,19 +193,20 @@ public class TaskStateGraphStore implements TaskStateStorage {
      * @param instance Task instance to turn into task state
      * @return TaskState representing given instance
      */
-    public TaskState instanceToState(EngineGraknGraph graph, Instance instance){
+    public TaskState instanceToState(GraknGraph graph, Instance instance){
         ResourceType<String> serialisedResourceType = graph.getResourceType(SERIALISED_TASK.getValue());
         String serialisedTask = (String) instance.resources(serialisedResourceType).iterator().next().getValue();
 
-        return (TaskState) deserialize(Base64.getMimeDecoder().decode(serialisedTask));
+        return TaskState.deserialize(serialisedTask);
     }
 
-    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
+    @Override
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
                                                  int limit, int offset) {
         return getTasks(taskStatus, taskClassName, createdBy, limit, offset, false);
     }
 
-    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy,
                                                  int limit, int offset, Boolean recurring) {
         Var matchVar = var(TASK_VAR).isa(name(SCHEDULED_TASK));
 
@@ -216,7 +223,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             matchVar.has(RECURRING, var().value(recurring));
         }
 
-        Optional<Set<Pair<String, TaskState>>> result = attemptCommitToSystemGraph((graph) -> {
+        Optional<Set<TaskState>> result = attemptCommitToSystemGraph((graph) -> {
             MatchQuery q = graph.graql().match(matchVar);
 
             if (limit > 0) {
@@ -226,35 +233,27 @@ public class TaskStateGraphStore implements TaskStateStorage {
                 q.offset(offset);
             }
 
-            List<Map<String, Concept>> res = q.execute();
-
-            // Create Set of pairs with IDs &
-            Set<Pair<String, TaskState>> out = new HashSet<>();
-            for (Map<String, Concept> m : res) {
-                Concept c = m.values().stream().findFirst().orElse(null);
-                if (c != null) {
-                    TaskState state = instanceToState(graph, c.asInstance());
-                    out.add(new Pair<>(state.getId(), state));
-                }
-            }
-
-            return out;
+            return q.execute().stream()
+                    .map(map -> map.values().stream().findFirst())
+                    .map(Optional::get)
+                    .map(c -> instanceToState(graph, c.asInstance()))
+                    .collect(toSet());
         }, false);
 
         return result.isPresent() ? result.get() : new HashSet<>();
     }
 
-    private <T> Optional<T> attemptCommitToSystemGraph(Function<EngineGraknGraph, T> function, boolean commit){
+    private <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
         double sleepFor = 100;
         for (int i = 0; i < retries; i++) {
 
             LOG.debug("Attempting "  + (commit ? "commit" : "query") + " on system graph @ t"+Thread.currentThread().getId());
             long time = System.currentTimeMillis();
 
-            try (EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
                 T result = function.apply(graph);
                 if (commit) {
-                    graph.commit(EngineCacheImpl.getInstance());
+                    graph.admin().commit(EngineCache.getInstance());
                 }
 
                 return Optional.of(result);

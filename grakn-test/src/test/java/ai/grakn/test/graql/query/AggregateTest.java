@@ -25,6 +25,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
+import ai.grakn.test.matcher.MovieMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -34,15 +35,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static ai.grakn.graql.Graql.average;
+import static ai.grakn.graql.Graql.mean;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.max;
 import static ai.grakn.graql.Graql.median;
 import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.select;
+import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
 
 public class AggregateTest {
@@ -63,7 +67,7 @@ public class AggregateTest {
 
         long count = countQuery.execute();
 
-        Assert.assertEquals(QueryUtil.movies.length, count);
+        Assert.assertEquals(MovieMatchers.movies.size(), count);
     }
 
     @Test
@@ -73,7 +77,7 @@ public class AggregateTest {
 
         Map<Concept, List<Map<VarName, Concept>>> groups = groupQuery.execute();
 
-        Assert.assertEquals(QueryUtil.movies.length, groups.size());
+        Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
 
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
@@ -107,7 +111,7 @@ public class AggregateTest {
         // We can't guarantee the generic type is correct here
         @SuppressWarnings("unchecked") Map<Concept, List<Map<String, Concept>>> groups = (Map) results.get("g");
 
-        Assert.assertEquals(QueryUtil.movies.length, groups.size());
+        Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
 
         long groupedResults = groups.values().stream().mapToInt(List::size).sum();
 
@@ -169,7 +173,7 @@ public class AggregateTest {
     public void testAverageDouble() {
         AggregateQuery<Optional<Double>> query = qb
                 .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
-                .aggregate(average("y"));
+                .aggregate(mean("y"));
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, query.execute().get(), 0.01d);
@@ -192,5 +196,33 @@ public class AggregateTest {
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(8.0d, query.execute().get().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testStdevLong() {
+        AggregateQuery<Optional<Double>> query = qb
+                .match(var("x").isa("movie").has("tmdb-vote-count", var("y")))
+                .aggregate(std("y"));
+
+        double mean = (1000d + 100d + 400d + 435d + 5d) / 5d;
+        double variance = (pow(1000d - mean, 2d) + pow(100d - mean, 2d)
+                + pow(400d - mean, 2d) + pow(435d - mean, 2d) + pow(5d - mean, 2d)) / 4d;
+        double expected = sqrt(variance);
+
+        assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testStdevDouble() {
+        AggregateQuery<Optional<Double>> query = qb
+                .match(var("x").isa("movie").has("tmdb-vote-average", var("y")))
+                .aggregate(std("y"));
+
+        double mean = (8.6d + 8.4d + 7.6d + 3.1d) / 4d;
+        double variance =
+                (pow(8.6d - mean, 2d) + pow(8.4d - mean, 2d) + pow(7.6d - mean, 2d) + pow(3.1d - mean, 2d)) / 3d;
+        double expected = sqrt(variance);
+
+        assertEquals(expected, query.execute().get().doubleValue(), 0.01d);
     }
 }

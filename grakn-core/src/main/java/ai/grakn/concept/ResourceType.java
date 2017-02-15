@@ -141,7 +141,10 @@ public interface ResourceType<D> extends Type {
     DataType<D> getDataType();
 
     /**
-     * Retrieve the regular expression to which instances of this ResourceType must conform.
+     * Retrieve the regular expression to which instances of this ResourceType must conform, or {@code null} if no
+     * regular expression is set.
+     *
+     * By default, a {@link ResourceType} does not have a regular expression set.
      *
      * @return The regular expression to which instances of this ResourceType must conform.
      */
@@ -162,16 +165,19 @@ public interface ResourceType<D> extends Type {
     class DataType<D> {
         public static final DataType<String> STRING = new DataType<>(String.class.getName(), Schema.ConceptProperty.VALUE_STRING);
         public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class.getName(), Schema.ConceptProperty.VALUE_BOOLEAN);
+        public static final DataType<Integer> INTEGER = new DataType<>(Integer.class.getName(), Schema.ConceptProperty.VALUE_INTEGER);
         public static final DataType<Long> LONG = new DataType<>(Long.class.getName(), Schema.ConceptProperty.VALUE_LONG);
         public static final DataType<Double> DOUBLE = new DataType<>(Double.class.getName(), Schema.ConceptProperty.VALUE_DOUBLE);
+        public static final DataType<Float> FLOAT = new DataType<>(Float.class.getName(), Schema.ConceptProperty.VALUE_FLOAT);
 
-        public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.of(
-                STRING.getName(), STRING,
-                BOOLEAN.getName(), BOOLEAN,
-                LONG.getName(), LONG,
-                DOUBLE.getName(), DOUBLE,
-                Integer.class.getName(), LONG
-        );
+        public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
+                    .put(STRING.getName(), STRING)
+                    .put(BOOLEAN.getName(), BOOLEAN)
+                    .put(LONG.getName(), LONG)
+                    .put(DOUBLE.getName(), DOUBLE)
+                    .put(INTEGER.getName(), INTEGER)
+                    .put(FLOAT.getName(), FLOAT)
+                    .build();
 
         private final String dataType;
         private final Schema.ConceptProperty conceptProperty;
@@ -187,6 +193,11 @@ public interface ResourceType<D> extends Type {
 
         public Schema.ConceptProperty getConceptProperty(){
             return conceptProperty;
+        }
+
+        @Override
+        public String toString(){
+            return getName();
         }
     }
 }

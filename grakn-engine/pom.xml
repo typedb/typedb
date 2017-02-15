@@ -169,9 +169,9 @@
                         <phase>process-classes</phase>
                         <configuration>
                             <skip>${maven.javadoc.skip}</skip>
-                            <executable>npm</executable>
+                            <executable>./npm-install-retry/bin/npm-install-retry</executable>
                             <arguments>
-                                <argument>install</argument>
+                                <argument>--</argument>
                                 <argument>-g</argument>
                                 <argument>--prefix=./npm/</argument>
                                 <argument>raml2html@3.0.1</argument>

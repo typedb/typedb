@@ -25,23 +25,22 @@ import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Set;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
+import static java.util.Collections.singleton;
 import static junit.framework.Assert.assertEquals;
 
 public class TaskRunnerTest {
@@ -83,7 +82,8 @@ public class TaskRunnerTest {
     public void testSendReceive() throws Exception {
         TestTask.startedCounter.set(0);
 
-        Set<TaskState> tasks = createTasks(storage, 5, SCHEDULED);
+        Set<TaskState> tasks = createTasks(5, SCHEDULED);
+        tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         waitForStatus(storage, tasks, COMPLETED);
 
@@ -94,7 +94,8 @@ public class TaskRunnerTest {
     public void testSendDuplicate() throws Exception {
         TestTask.startedCounter.set(0);
 
-        Set<TaskState> tasks = createTasks(storage, 5, SCHEDULED);
+        Set<TaskState> tasks = createTasks(5, SCHEDULED);
+        tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         sendTasksToWorkQueue(tasks);
 
@@ -102,8 +103,23 @@ public class TaskRunnerTest {
         assertEquals(5, TestTask.startedCounter.get());
     }
 
+    @Test
+    public void testSendWithCheckpoint() {
+        TaskState task = createTask(0, SCHEDULED, false, 0);
+        task.checkpoint("");
+        storage.newState(task);
+        sendTasksToWorkQueue(singleton(task));
+
+        waitForStatus(storage, singleton(task), COMPLETED);
+
+        // Task should be resumed, not started
+        // This is because it was sent to the work queue with a non-null checkpoint
+        assertEquals(1, TestTask.resumedCounter.get());
+        assertEquals(0, TestTask.startedCounter.get());
+    }
+
     private void sendTasksToWorkQueue(Set<TaskState> tasks) {
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), t.configuration().toString())));
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), TaskState.serialize(t))));
         producer.flush();
     }
 }

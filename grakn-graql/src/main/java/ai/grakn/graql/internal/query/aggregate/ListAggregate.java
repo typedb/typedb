@@ -32,4 +32,16 @@ class ListAggregate<T> extends AbstractAggregate<T, List<T>> {
     public List<T> apply(Stream<? extends T> stream) {
         return stream.collect(Collectors.toList());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31;
+    }
 }

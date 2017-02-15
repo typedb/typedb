@@ -22,6 +22,7 @@ import ai.grakn.engine.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -31,7 +32,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
 public class PostProcessing {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
-
     private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
     private static PostProcessing instance = null;
@@ -60,12 +59,12 @@ public class PostProcessing {
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
-    private final EngineCacheImpl cache;
+    private final EngineCache cache;
 
     private PostProcessing() {
-        postpool = Executors.newFixedThreadPool(1);
+        postpool = Executors.newFixedThreadPool(Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
-        cache = EngineCacheImpl.getInstance();
+        cache = EngineCache.getInstance();
         futures = ConcurrentHashMap.newKeySet();
         isRunning.set(false);
     }
@@ -125,24 +124,35 @@ public class PostProcessing {
     private void performCastingFix() {
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                for (String castingId : cache.getCastingJobs(keyspace)) {
-                    futures.add(postpool.submit(() ->
-                            ConceptFixer.checkCasting(cache, keyspace, castingId)));
-                }
+                Set<String> completedJobs = new HashSet<>();
+                cache.getCastingJobs(keyspace).
+                        forEach((index, ids) -> {
+                            if(ids.isEmpty()) {
+                                completedJobs.add(index);
+                            }else{
+                                futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, index, ids)));
+                            }
+                        });
+                completedJobs.forEach(index -> cache.clearJobSetCastings(keyspace, index));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
-
         });
     }
 
     private void performResourceFix(){
         cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
-                futures.add(postpool.submit(() -> {
-                    Set<String> deepCopy = cache.getResourceJobs(keyspace).stream().map(String::new).collect(Collectors.toSet());
-                    ConceptFixer.checkResources(cache, keyspace, deepCopy);
-                }));
+                Set<String> completedJobs = new HashSet<>();
+                cache.getResourceJobs(keyspace).
+                        forEach((index, ids) -> {
+                            if(ids.isEmpty()) {
+                                completedJobs.add(index);
+                            } else {
+                                futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids)));
+                            }
+                        });
+                completedJobs.forEach(index -> cache.clearJobSetResources(keyspace, index));
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
@@ -186,9 +196,9 @@ public class PostProcessing {
         for (String keyspace : cache.getKeyspaces()) {
             long numJobs = 0L;
             if(typeName.equals("Casting")){
-                numJobs = cache.getCastingJobs(keyspace).size();
+                numJobs = cache.getNumCastingJobs(keyspace);
             } else if(typeName.equals("Resources")){
-                numJobs = cache.getResourceJobs(keyspace).size();
+                numJobs = cache.getNumResourceJobs(keyspace);
             }
             LOG.info("        Post processing step [" + typeName + " for Graph [" + keyspace + "] has jobs : " + numJobs);
             total += numJobs;

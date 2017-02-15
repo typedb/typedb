@@ -50,14 +50,21 @@ export default class Visualiser {
     this.networkConfig = {
       autoResize: true,
       nodes: {
-                // shape: 'star',
         font: {
           size: 15,
-          face: 'DIN',
+          face: 'Geogrotesque-Ultralight',
         },
-        shadow: true,
+        shadow: {
+          enabled: true,
+          size: 10,
+          x: 2,
+          y: 2,
+        },
       },
       edges: {
+        hoverWidth: 2,
+        selectionWidth: 2,
+        arrowStrikethrough: false,
         arrows: {
           to: true,
         },
@@ -163,16 +170,19 @@ export default class Visualiser {
         /**
          * Add a node to the graph. This can be called at any time *after* render().
          */
-  addNode(id, bp, ap, ls) {
-    if (!this.nodeExists(id)) {
+  addNode(href, bp, ap, ls) {
+    if (!this.nodeExists(bp.id)) {
+      const colorObj = this.style.getNodeColour(bp.type, bp.baseType);
+      const highlightObj = { highlight: Object.assign(colorObj.highlight, { border: colorObj.highlight.background }) };
+      const hoverObj = { hover: highlightObj.highlight };
       this.nodes.add({
-        id,
-        uuid: bp.id,
+        id: bp.id,
+        href,
         label: this.generateLabel(bp.type, ap, bp.label),
         baseLabel: bp.label,
         type: bp.type,
         baseType: bp.baseType,
-        color: this.style.getNodeColour(bp.type, bp.baseType),
+        color: Object.assign(colorObj, { border: colorObj.background }, highlightObj, hoverObj),
         font: this.style.getNodeFont(bp.type, bp.baseType),
         shape: this.style.getNodeShape(bp.baseType),
         selected: false,
@@ -350,7 +360,8 @@ export default class Visualiser {
   generateLabel(type, properties, label) {
     if (type in this.displayProperties) {
       return this.displayProperties[type].reduce((l, x) => {
-        const value = (properties[x] === undefined) ? '' : properties[x].label;
+        let value = (properties[x] === undefined) ? '' : properties[x].label;
+        if (value.length > 40) value = `${value.substring(0, 40)}...`;
         return `${(l.length ? `${l}\n` : l) + x}: ${value}`;
       }, '');
     }

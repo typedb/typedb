@@ -31,6 +31,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +43,8 @@ import java.util.Set;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -114,22 +117,22 @@ public class EntityTypeTest extends GraphTestBase{
         TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3'");
         TypeImpl c4 = (TypeImpl) graknGraph.putEntityType("c4");
 
-        assertTrue(c1.getSuperSet().contains(c1));
-        assertFalse(c1.getSuperSet().contains(c2));
-        assertFalse(c1.getSuperSet().contains(c3));
-        assertFalse(c1.getSuperSet().contains(c4));
+        assertTrue(c1.superTypeSet().contains(c1));
+        assertFalse(c1.superTypeSet().contains(c2));
+        assertFalse(c1.superTypeSet().contains(c3));
+        assertFalse(c1.superTypeSet().contains(c4));
 
         c1.superType(c2);
-        assertTrue(c1.getSuperSet().contains(c1));
-        assertTrue(c1.getSuperSet().contains(c2));
-        assertFalse(c1.getSuperSet().contains(c3));
-        assertFalse(c1.getSuperSet().contains(c4));
+        assertTrue(c1.superTypeSet().contains(c1));
+        assertTrue(c1.superTypeSet().contains(c2));
+        assertFalse(c1.superTypeSet().contains(c3));
+        assertFalse(c1.superTypeSet().contains(c4));
 
         c2.superType(c3);
-        assertTrue(c1.getSuperSet().contains(c1));
-        assertTrue(c1.getSuperSet().contains(c2));
-        assertTrue(c1.getSuperSet().contains(c3));
-        assertFalse(c1.getSuperSet().contains(c4));
+        assertTrue(c1.superTypeSet().contains(c1));
+        assertTrue(c1.superTypeSet().contains(c2));
+        assertTrue(c1.superTypeSet().contains(c3));
+        assertFalse(c1.superTypeSet().contains(c4));
     }
 
     @Test
@@ -220,7 +223,7 @@ public class EntityTypeTest extends GraphTestBase{
 
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
-        graknGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
+        graknGraph.getTinkerPopGraph().traversal().V(conceptType.getId().getRawValue()).
                 out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(graknGraph.getRoleType(r.value(Schema.ConceptProperty.NAME.name()))));
 
         assertEquals(2, foundRoles.size());
@@ -326,9 +329,11 @@ public class EntityTypeTest extends GraphTestBase{
         assertTrue(data.contains(musicVideo));
     }
 
-    @Test(expected=ConceptException.class)
+    @Test
     public void testCircularSub(){
         EntityType entityType = graknGraph.putEntityType("Entity");
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(ErrorMessage.LOOP_DETECTED.getMessage(entityType.getName(), Schema.EdgeLabel.SUB.getLabel()));
         entityType.superType(entityType);
     }
 
@@ -341,7 +346,6 @@ public class EntityTypeTest extends GraphTestBase{
         entityType2.superType(entityType3);
         entityType3.superType(entityType1);
     }
-
 
     @Test
     public void testMetaTypeIsAbstractImmutable(){
@@ -543,4 +547,55 @@ public class EntityTypeTest extends GraphTestBase{
         assertTrue(entityTypeA.subTypes().contains(entityTypeB));
         assertTrue(entityTypeA.subTypes().contains(entityTypeC));
     }
+
+    @Test
+    public void testChangingSuperTypeBackToMetaType(){
+        EntityType entityTypeA = graknGraph.putEntityType("entityTypeA");
+        EntityType entityTypeB = graknGraph.putEntityType("entityTypeB").superType(entityTypeA);
+        assertEquals(entityTypeA, entityTypeB.superType());
+
+        //Making sure put does not effect super type
+        entityTypeB = graknGraph.putEntityType("entityTypeB");
+        assertEquals(entityTypeA, entityTypeB.superType());
+
+        //Changing super type back to meta explicitly
+        entityTypeB.superType(graknGraph.getMetaEntityType());
+        assertEquals(graknGraph.getMetaEntityType(), entityTypeB.superType());
+
+    }
+
+    @Test
+    public void checkSubTypeCachingUpdatedCorrectlyWhenChangingSuperTypes(){
+        EntityType e1 = graknGraph.putEntityType("entityType1");
+        EntityType e2 = graknGraph.putEntityType("entityType2").superType(e1);
+        EntityType e3 = graknGraph.putEntityType("entityType3").superType(e1);
+        EntityType e4 = graknGraph.putEntityType("entityType4").superType(e1);
+        EntityType e5 = graknGraph.putEntityType("entityType5");
+        EntityType e6 = graknGraph.putEntityType("entityType6").superType(e5);
+
+        assertThat(e1.subTypes(), containsInAnyOrder(e1, e2, e3, e4));
+        assertThat(e5.subTypes(), containsInAnyOrder(e6, e5));
+
+        //Now change subtypes
+        e6.superType(e1);
+        e3.superType(e5);
+
+        assertThat(e1.subTypes(), containsInAnyOrder(e1, e2, e4, e6));
+        assertThat(e5.subTypes(), containsInAnyOrder(e3, e5));
+    }
+
+    @Test
+    public void checkThatResourceTypesCanBeRetrievedFromTypes(){
+        EntityType e1 = graknGraph.putEntityType("e1");
+        ResourceType r1 = graknGraph.putResourceType("r1", ResourceType.DataType.STRING);
+        ResourceType r2 = graknGraph.putResourceType("r2", ResourceType.DataType.LONG);
+        ResourceType r3 = graknGraph.putResourceType("r3", ResourceType.DataType.BOOLEAN);
+
+        assertTrue("Entity is linked to resources when it shouldn't", e1.resources().isEmpty());
+        e1.hasResource(r1);
+        e1.hasResource(r2);
+        e1.hasResource(r3);
+        assertThat(e1.resources(), containsInAnyOrder(r1, r2, r3));
+    }
+
 }

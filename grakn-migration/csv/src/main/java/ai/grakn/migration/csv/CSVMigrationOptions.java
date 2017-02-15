@@ -30,6 +30,7 @@ import static java.lang.Integer.parseInt;
  */
 public class CSVMigrationOptions extends MigrationOptions {
     private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
+    private final String active = Integer.toString(AbstractMigrator.ACTIVE_TASKS);
     private final String separator = Character.toString(CSVMigrator.SEPARATOR);
     private final String quote = Character.toString(CSVMigrator.QUOTE);
     private final String nullString = CSVMigrator.NULL_STRING;
@@ -37,12 +38,13 @@ public class CSVMigrationOptions extends MigrationOptions {
     public CSVMigrationOptions(String[] args) {
         super();
 
-        options.addOption("i", "input", true, "input csv file");
-        options.addOption("t", "template", true, "graql template to apply over data");
-        options.addOption("s", "separator", true, "separator of columns in input file");
-        options.addOption("q", "quote", true, "character used to encapsulate values containing special characters");
-        options.addOption("l", "null", true, "string that will be evaluated as null");
-        options.addOption("b", "batch", true, "number of row to load at once");
+        options.addOption("i", "input", true, "Input csv file.");
+        options.addOption("t", "template", true, "Graql template to apply to the data.");
+        options.addOption("s", "separator", true, "Separator of columns in input file.");
+        options.addOption("q", "quote", true, "Character used to encapsulate values containing special characters.");
+        options.addOption("l", "null", true, "String that will be evaluated as null.");
+        options.addOption("b", "batch", true, "Number of rows to execute in one Grakn transaction. Default 25.");
+        options.addOption("a", "active", true, "Number of tasks (batches) running on the server at any one time. Default 25.");
 
         parse(args);
     }
@@ -71,5 +73,9 @@ public class CSVMigrationOptions extends MigrationOptions {
 
     public int getBatch() {
         return parseInt(command.getOptionValue("b", batch));
+    }
+
+    public int getNumberActiveTasks() {
+        return parseInt(command.getOptionValue("a", active));
     }
 }

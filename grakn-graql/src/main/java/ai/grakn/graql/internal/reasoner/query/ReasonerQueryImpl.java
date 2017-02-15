@@ -55,7 +55,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.Utility.isCaptured;
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilterFunction;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
@@ -137,9 +137,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public boolean isRuleResolvable(){
         boolean ruleResolvable = false;
-        Iterator<Atomic> it = atomSet.iterator();
+        Iterator<Atom> it = atomSet.stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
         while(it.hasNext() && !ruleResolvable) {
-            Atomic at = it.next();
+            Atom at = it.next();
             ruleResolvable = at.isRuleResolvable();
         }
         return ruleResolvable;
@@ -199,25 +199,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return vars;
     }
 
-
     /**
      * @param atom in question
      * @return true if query contains an equivalent atom
      */
     public boolean containsEquivalentAtom(Atomic atom){
-        boolean isContained = false;
-        Iterator<Atomic> it = atomSet.iterator();
-        while( it.hasNext() && !isContained) {
-            Atomic at = it.next();
-            isContained = atom.isEquivalent(at);
-        }
-        return isContained;
+        return !getEquivalentAtoms(atom).isEmpty();
+    }
+
+    public Set<Atomic> getEquivalentAtoms(Atomic atom){
+        return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
     }
 
     private void exchangeRelVarNames(VarName from, VarName to){
         unify(to, VarName.of("temp"));
         unify(from, to);
         unify(VarName.of("temp"), from);
+    }
+
+    @Override
+    public Map<VarName, VarName> getUnifiers(ReasonerQuery parent) {
+        //TODO
+        return new HashMap<>();
     }
 
     /**
@@ -362,6 +365,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         cstrs.forEach(con -> addAtom(AtomicFactory.create(con, this)));
     }
 
+    private Atom findFirstJoinable(Set<Atom> atoms){
+        for (Atom next : atoms) {
+            Atom atom = findNextJoinable(Sets.difference(atoms, Sets.newHashSet(next)), next.getVarNames());
+            if (atom != null) return atom;
+        }
+        return atoms.iterator().next();
+    }
+
+    private Atom findNextJoinable(Set<Atom> atoms, Set<VarName> vars){
+        for (Atom next : atoms) {
+            if (!Sets.intersection(vars, next.getVarNames()).isEmpty()) return next;
+        }
+        return null;
+    }
+
     /**
      * atom selection function
      * @return selected atoms
@@ -373,15 +391,22 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (atoms.size() == 1) return atoms;
 
         //pass relations or rule-resolvable types and resources
-        Set<Atom> selectedAtoms = atoms.stream()
+        Set<Atom> atomsToSelect = atoms.stream()
                 .filter(atom -> (atom.isSelectable() || atom.isRuleResolvable()))
                 .collect(Collectors.toSet());
 
-        //order by variables
         Set<Atom> orderedSelection = new LinkedHashSet<>();
-        getVarNames().forEach(var -> orderedSelection.addAll(selectedAtoms.stream()
-                .filter(atom -> atom.containsVar(var))
-                .collect(Collectors.toSet())));
+
+        Atom atom = findFirstJoinable(atomsToSelect);
+        Set<VarName> joinedVars = new HashSet<>();
+        while(!atomsToSelect.isEmpty() && atom != null) {
+            orderedSelection.add(atom);
+            atomsToSelect.remove(atom);
+            joinedVars.addAll(atom.getVarNames());
+            atom = findNextJoinable(atomsToSelect, joinedVars);
+        }
+        //if disjoint select at random
+        if (!atomsToSelect.isEmpty()) atomsToSelect.forEach(orderedSelection::add);
 
         if (orderedSelection.isEmpty()) {
             throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
@@ -426,7 +451,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             answerStream = join(answerStream, subAnswerStream);
         }
         return answerStream
-                .flatMap(a -> nonEqualsFilterFunction.apply(a, this.getFilters()))
+                .filter(a -> nonEqualsFilter(a, this.getFilters()))
                 .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()));
     }
 }

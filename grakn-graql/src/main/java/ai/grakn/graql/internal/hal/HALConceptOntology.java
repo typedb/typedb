@@ -30,7 +30,7 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import java.util.Collection;
 
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.getBaseType;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.generateConceptState;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -57,11 +57,7 @@ class HALConceptOntology {
 
     // - State properties
 
-    private final static String ID_PROPERTY = "_id";
-    private final static String TYPE_PROPERTY = "_type";
-    private final static String BASETYPE_PROPERTY = "_baseType";
     private final static String DIRECTION_PROPERTY = "_direction";
-    private final static String VALUE_PROPERTY = "value";
 
 
     HALConceptOntology(Concept concept,String keyspace) {
@@ -81,22 +77,7 @@ class HALConceptOntology {
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + this.keyspace);
-
-        //State
-        if (concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            resource.withProperty(ID_PROPERTY, instance.getId())
-                    .withProperty(TYPE_PROPERTY, instance.type().getName())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
-        } else { // temp fix until a new behaviour is defined
-            Type type = concept.asType();
-            resource.withProperty(ID_PROPERTY, concept.asType().getName())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(type).name());
-        }
-
-        if (concept.isResource()) {
-            resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
-        }
+        generateConceptState(resource,concept);
     }
 
     private void embedType(Representation halResource, Concept concept) {

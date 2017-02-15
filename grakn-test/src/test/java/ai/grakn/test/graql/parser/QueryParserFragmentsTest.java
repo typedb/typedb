@@ -94,20 +94,6 @@ public class QueryParserFragmentsTest {
         patterns.next().admin().asVar();
     }
 
-    @Test
-    public void testParseInfiniteMatchInsert() throws IOException {
-        InputStream stream = new InfiniteStream("#TRAP COMMENT\n", "match $x isa person; insert ($x, $y) isa has-cast;");
-
-        Iterator<Object> objects = QueryParser.create(withoutGraph()).parseBatchLoad(stream).iterator();
-
-        assertEquals("match", objects.next());
-        assertEquals("$x isa person", objects.next().toString());
-        assertEquals("insert", objects.next());
-        assertTrue(((VarAdmin) objects.next()).hasProperty(RelationProperty.class));
-        assertEquals("match", objects.next());
-        assertTrue(objects.hasNext());
-    }
-
     class InfiniteStream extends InputStream {
 
         private final String string;

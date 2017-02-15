@@ -60,7 +60,7 @@ public class MatrixGraphII extends TestGraph {
         EntityType aEntity = graph.getEntityType("a-entity");
         RelationType Q = graph.getRelationType("Q");
         ConceptId[][] aInstancesIds = new ConceptId[n+1][m+1];
-        Instance aInst = putEntity(graph, "a", graph.getEntityType("entity"), key);
+        Instance aInst = putEntity(graph, "a", graph.getEntityType("entity2"), key);
         for(int i = 1 ; i <= n ;i++)
             for(int j = 1 ; j <= m ;j++)
                 aInstancesIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();

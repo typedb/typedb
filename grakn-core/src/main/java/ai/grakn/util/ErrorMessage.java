@@ -29,7 +29,7 @@ package ai.grakn.util;
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     NO_EDGE("Concept [%s] does not have any edges to a [%s]"),
-    CANNOT_DELETE("Type [%s] cannot be deleted as it still has incomind edges"),
+    CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
     LOOP_DETECTED("Concept [%s] loops when following edges of type [%s]"),
     MORE_THAN_ONE_EDGE("Concept [%s] has more than one edge of type [%s]"),
     ID_NOT_UNIQUE("Failed to change the Id of Concept [%s] due to another concept already having an id of " +
@@ -67,6 +67,7 @@ public enum ErrorMessage {
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
+    CANNOT_FIND_VERTEX("Cannot find vertex using id [%s] on graph [%s] on a already constructed concept. This may be due to the vertex being deleted."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -88,6 +89,8 @@ public enum ErrorMessage {
 
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
     VALIDATION_REQUIRED_RELATION("The role player [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
+
+    VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
@@ -119,6 +122,9 @@ public enum ErrorMessage {
     INSTANCE_OF_ROLE_TYPE("cannot get instances of role type %s"),
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
 
+    AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
+    UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
+
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
@@ -129,6 +135,7 @@ public enum ErrorMessage {
 
     INSERT_RULE_WITHOUT_LHS("the rule '%s' doesn't have a lhs specified"),
     INSERT_RULE_WITHOUT_RHS("the rule '%s' doesn't have a rhs specified"),
+    INSERT_UNSUPPORTED_PROPERTY("the property '%s' can only be inserted on a '%s'"),
     INSERT_WITHOUT_TYPE("'%s' doesn't have an 'isa' or a 'sub'"),
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),
@@ -138,7 +145,7 @@ public enum ErrorMessage {
     INSERT_ISA_AND_SUB("cannot insert %s with an isa and a sub"),
     INSERT_NO_DATATYPE("resource type %s must have a datatype defined"),
     INSERT_NO_RESOURCE_RELATION("type %s cannot have resource type %s"),
-    INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
+    INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_TYPE_WITHOUT_NAME("attempted to insert a type without a name"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
@@ -167,13 +174,14 @@ public enum ErrorMessage {
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
-    POSTPROCESSING_ERROR("Unexpected error during %s fix due to [%s]"),
-    UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concept [%s] due to error [%s]"),
+    POSTPROCESSING_ERROR("Unexpected error during post processing on Job [%s] fix due to [%s]"),
+    UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concepts [%s] part of job [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
-    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] "),
+    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host. Message:[%s] \n Transaction string: [%s] "),
     ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
     LOADER_WAIT_TIMEOUT("Exception thrown due to timeout being exceeded while waiting for loading to complete"),
+    STATE_STORAGE_ERROR("Exception thrown while retrieving state of a task from storage."),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     GRAPH_MISSING("Provided query does not have an associated graph"),

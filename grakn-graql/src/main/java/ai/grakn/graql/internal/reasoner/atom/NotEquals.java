@@ -98,7 +98,7 @@ public class NotEquals extends AtomBase {
     public VarName getReferenceVarName(){ return refVarName;}
 
     public static boolean notEqualsOperator(Map<VarName, Concept> answer, NotEquals atom) {
-        return answer.get(atom.varName).equals(answer.get(atom.refVarName));
+        return !answer.get(atom.varName).equals(answer.get(atom.refVarName));
     }
 
     public static BiFunction<Map<VarName, Concept>, NotEquals, Stream<Map<VarName, Concept>>> notEqualsFunction =

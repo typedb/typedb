@@ -24,13 +24,13 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.test.GraphContext;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class GeoInferenceTest {
@@ -47,12 +47,12 @@ public class GeoInferenceTest {
     public void testQuery() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $x isa city;$x has name $name;"+
+        String queryString = "match $x isa city;"+
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
-                        "$y isa country;$y has name 'Poland'; select $x, $name;";
+                        "$y isa country;$y has name 'Poland'; select $x;";
 
         String explicitQuery = "match " +
-                "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
+                "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
@@ -110,6 +110,76 @@ public class GeoInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
         assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
+    }
+
+    @Test
+    public void testQuery3() {
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+
+        //QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        //assertEquals(answers.size(), 51);
+        //assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testQuery4() {
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match ($x, $y) isa is-located-in;";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers.size(), 102);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testQuery5() {
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers.size(), 51);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testQuery6() {
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match $x isa is-located-in;";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers.size(), 51);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testQuery7() {
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match $x isa is-located-in;";
+        String queryString2 = "match $x ($x1, $x2)isa is-located-in;select $x;";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(true).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString2));
+        assertEquals(answers.size(), 51);
+        assertEquals(answers, answers2);
+    }
+
+    @Test
+    public void testLazy() {
+        QueryBuilder iqb = geoGraph.graph().graql().infer(true);
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 1;";
+        String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; limit 22;";
+        String queryString3 = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
+        QueryAnswers answers3 = queryAnswers(iqb.materialise(false).parse(queryString3));
+        assertTrue(answers3.containsAll(answers));
+        assertTrue(answers3.containsAll(answers2));
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

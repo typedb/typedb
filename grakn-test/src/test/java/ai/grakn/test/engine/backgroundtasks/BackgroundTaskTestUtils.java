@@ -20,7 +20,7 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import mjson.Json;
 
 import java.util.Date;
@@ -35,15 +35,14 @@ import static java.util.stream.Collectors.toSet;
  */
 public class BackgroundTaskTestUtils {
 
-    public static Set<TaskState> createTasks(TaskStateStorage storage, int n, TaskStatus status) {
+    public static Set<TaskState> createTasks(int n, TaskStatus status) {
         return IntStream.range(0, n)
-                .mapToObj(i -> createTask(storage, i, status, false, 0))
+                .mapToObj(i -> createTask(i, status, false, 0))
                 .collect(toSet());
     }
 
-    public static TaskState createTask(TaskStateStorage storage,
-                                int i, TaskStatus status, boolean recurring, int interval) {
-        TaskState state = new TaskState(TestTask.class.getName())
+    public static TaskState createTask(int i, TaskStatus status, boolean recurring, int interval) {
+        return new TaskState(TestTask.class.getName())
                 .status(status)
                 .creator(BackgroundTaskTestUtils.class.getName())
                 .statusChangedBy(BackgroundTaskTestUtils.class.getName())
@@ -51,9 +50,6 @@ public class BackgroundTaskTestUtils {
                 .isRecurring(recurring)
                 .interval(interval)
                 .configuration(Json.object("name", "task" + i));
-
-        storage.newState(state);
-        return state;
     }
     
     public static void waitForStatus(TaskStateStorage storage, Set<TaskState> tasks, TaskStatus status) {
@@ -64,8 +60,12 @@ public class BackgroundTaskTestUtils {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
-            TaskStatus currentStatus = storage.getState(task.getId()).status();
-            if(currentStatus == status) { return; }
+            try {
+                TaskStatus currentStatus = storage.getState(task.getId()).status();
+                if (currentStatus == status) {
+                    return;
+                }
+            } catch (Exception ignored){}
         }
     }
 }

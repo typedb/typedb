@@ -17,71 +17,51 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 
 
 <template>
-<section class="wrapper">
-    <side-bar></side-bar>
-    <section class="content">
-        <div class="container-fluid">
-            <graql-editor v-on:click-submit="onClickSubmit" v-on:clear="onClear" v-on:close-error="onCloseError" :errorMessage="errorMessage" :errorPanelClass="errorPanelClass"></graql-editor>
-            <div class="row tab-row">
-                <div class="tabs-col col-md-12">
-                    <div class="tabs-container">
-                        <ul class="nav nav-tabs">
-                            <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Console</a></li>
-                            <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
-                        </ul>
-                        <div class="tab-content">
-                            <div id="tab-1" class="tab-pane active">
-                                <div class="panel-body">
-                                    <pre class="language-graql" v-html="graqlResponse"></pre>
-                                </div>
-                            </div>
-                            <div id="tab-3" class="tab-pane">
-                                <div class="panel-body">
-                                    <h4>Graql Entry</h4>
-                                    <br />
-                                    <div class="table-responsive">
-                                        <table class="table table-hover table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Key</th>
-                                                    <th>What it does</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td>ENTER</td>
-                                                    <td>Submit Graql query.</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Shift + Enter</td>
-                                                    <td>New line.</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Shift + Backspace</td>
-                                                    <td>Clear graph & current query.</td>
-                                                </tr>
-                                                <tr>
-                                                    <td>Shift + Delete</td>
-                                                    <td>Clear graph & current query.</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <keyspaces-modal></keyspaces-modal>
-            <signup-modal></signup-modal>
-        </div>
-    </section>
-</section>
+<div class="container">
+    <div class="inline-flex-1"></div>
+    <div class="panel-body z-depth-2">
+        <pre class="language-graql" v-html="graqlResponse"></pre>
+    </div>
+    <div class="inline-flex-1"></div>
+</div>
 </template>
 
-<style>
+<style scoped>
+.container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+}
 
+.inline-flex-1 {
+    display: inline-flex;
+    flex: 1;
+}
+
+.panel-body {
+    display: inline-flex;
+    flex: 4;
+    background-color: green;
+    margin-top: 20px;
+    margin-bottom: 25px;
+    background-color: #0f0f0f;
+    margin-left: 15px;
+    margin-right: 15px;
+    padding: 10px 15px;
+    position: relative;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+.panel-body::-webkit-scrollbar {
+    display: none;
+}
+
+pre{
+  width: 100%;
+}
 </style>
 
 <script>
@@ -90,37 +70,42 @@ import Prism from 'prismjs';
 import CodeMirror from 'codemirror';
 import placeholder from 'codemirror/addon/display/placeholder.js';
 import simpleMode from 'codemirror/addon/mode/simple.js';
+import * as API from '../js/util/HALTerms';
 
 import HALParser from '../js/HAL/HALParser.js';
 import EngineClient from '../js/EngineClient.js';
-import * as PLang from '../js/prismGraql.js';
-import simpleGraql from '../js/codemirrorGraql.js';
+import PLang from '../js/prismGraql.js';
 import User from '../js/User.js'
 
 // Components
-var GraqlEditor = require('./graqlEditor.vue')
+import ConsolePageState from '../js/state/consolePageState';
+
 
 export default {
     name: "ConsolePage",
-    components: {
-        GraqlEditor
-    },
     data() {
         return {
-            errorMessage: undefined,
-            errorPanelClass: undefined,
             graqlResponse: undefined,
             halParser: {},
             useReasoner: User.getReasonerStatus(),
-            materialiseReasoner:User.getMaterialiseStatus(),
+            materialiseReasoner: User.getMaterialiseStatus(),
             typeInstances: false,
             typeKeys: [],
-
+            state: ConsolePageState,
             codeMirror: {}
         }
     },
 
     created() {
+        // Register listened on State events
+        this.state.eventHub.$on('click-submit', this.onClickSubmit);
+        this.state.eventHub.$on('load-ontology', this.onLoadOntology);
+        this.state.eventHub.$on('clear-page', this.onClear);
+    },
+    beforeDestroy() {
+        this.state.eventHub.$off('click-submit', this.onClickSubmit);
+        this.state.eventHub.$off('load-ontology', this.onLoadOntology);
+        this.state.eventHub.$off('clear-page', this.onClear);
     },
 
     mounted: function() {
@@ -135,7 +120,11 @@ export default {
          */
         onClickSubmit(query) {
             this.errorMessage = undefined;
-            EngineClient.graqlShell(query, this.shellResponse,this.useReasoner,this.materialiseReasoner);
+            EngineClient.graqlShell(query, this.shellResponse);
+        },
+        onLoadOntology() {
+            const querySub = `match $x sub ${API.ROOT_CONCEPT};`;
+            EngineClient.graqlShell(querySub, this.shellResponse);
         },
         onClear() {
             this.graqlResponse = undefined;
@@ -148,25 +137,16 @@ export default {
          * EngineClient callbacks
          */
         shellResponse(resp, err) {
-            if (resp != null)
-                this.graqlResponse = Prism.highlight(resp, PLang.default);
-            else
-                this.showError(err);
+            if (resp != null) {
+                if (resp.length==0) {
+                    this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+                } else {
+                    this.graqlResponse = Prism.highlight(resp, PLang);
+                }
+            } else {
+                this.state.eventHub.$emit('error-message', err);
+            }
         },
-        /*
-         * UX
-         */
-        showError(msg) {
-            this.errorPanelClass = 'panel-c-danger';
-            this.errorMessage = msg;
-            $('.search-button').removeClass('btn-default').addClass('btn-danger');
-        },
-
-        showWarning(msg) {
-            this.errorPanelClass = 'panel-c-warning';
-            this.errorMessage = msg;
-            $('.search-button').removeClass('btn-default').addClass('btn-warning');
-        }
 
     }
 }

@@ -141,7 +141,7 @@ public class AdminTest {
 
     @Test
     public void testInsertQueryGetTypes() {
-        InsertQuery query = qb.insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
+        InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
         Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
         assertEquals(types, query.admin().getTypes());
     }
@@ -149,7 +149,7 @@ public class AdminTest {
     @Test
     public void testMatchInsertQueryGetTypes() {
         InsertQuery query = qb.match(var("y").isa("movie"))
-                        .insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
+                        .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
         Set<Type> types =
                 Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());

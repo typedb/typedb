@@ -60,4 +60,22 @@ class GroupAggregate<T> extends AbstractAggregate<Map<VarName, Concept>, Map<Con
             return "group " + varName + " " + innerAggregate.toString();
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GroupAggregate<?> that = (GroupAggregate<?>) o;
+
+        if (!varName.equals(that.varName)) return false;
+        return innerAggregate.equals(that.innerAggregate);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = varName.hashCode();
+        result = 31 * result + innerAggregate.hashCode();
+        return result;
+    }
 }

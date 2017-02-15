@@ -30,6 +30,7 @@ public class TestTask implements BackgroundTask {
     private final static Logger LOG = LoggerFactory.getLogger(TestTask.class);
 
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
+    public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     public void start(Consumer<String> saveCheckpoint, Json config) {
         LOG.debug(config.at("name").asString());
@@ -42,5 +43,7 @@ public class TestTask implements BackgroundTask {
     public void pause() {
     }
 
-    public void resume(Consumer<String> c, String s) {}
+    public void resume(Consumer<String> c, String s) {
+        resumedCounter.incrementAndGet();
+    }
 }

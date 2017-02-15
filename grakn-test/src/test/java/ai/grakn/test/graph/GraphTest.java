@@ -7,7 +7,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.test.EngineContext;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -116,7 +115,7 @@ public class GraphTest {
     public void testSameGraphs(){
         String key = "mykeyspace";
         GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).getGraph();
-        EngineGraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key);
+        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key);
         assertEquals(graph1, graph2);
         graph1.close();
         graph2.close();

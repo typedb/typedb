@@ -18,7 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import javafx.util.Pair;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.exception.EngineStorageException;
 
 import java.util.Set;
 
@@ -40,7 +41,7 @@ public interface TaskStateStorage {
      * @return String form of the task id, which can be use later to update or retrieve the task state. Null if task could
      * not be created of mandatory fields were omitted.
      */
-    String newState(TaskState state);
+    String newState(TaskState state) throws EngineStorageException;
 
     /**
      * Used to update task state. With the exception of @id any other fields may individually be null, however all parameters
@@ -57,7 +58,7 @@ public interface TaskStateStorage {
      * @param id String id of task.
      * @return TaskState object or null if no TaskState with this id could be found.
      */
-    TaskState getState(String id);
+    TaskState getState(String id) throws EngineStorageException;
 
     /**
      * Return a Set of Pairs of tasks that match any of the criteria. The first value of the Pair is the task id, whilst
@@ -69,9 +70,9 @@ public interface TaskStateStorage {
      * @param createdBy String containing created by. See TaskState.
      * @param limit Limit the returned result set to @limit amount of entries.
      * @param offset Use in conjunction with @limit for pagination.
-     * @return Set<Pair<String, TaskState>> of task IDs and corresponding TaskState *copies*.
+     * @return Set<TaskState> of TaskStates corresponding to search
      */
-    Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus,
+    Set<TaskState> getTasks(TaskStatus taskStatus,
                                           String taskClassName,
                                           String createdBy,
                                           int limit,

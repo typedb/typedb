@@ -30,12 +30,21 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class ExceptionWrapper {
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionWrapper.class);
 
-    public static void noThrow(Runnable fn, String errorMessage) {
+    public static void noThrow(RunnableWithExceptions fn, String errorMessage) {
         try {
             fn.run();
         }
         catch (Throwable t) {
             LOG.error(errorMessage + "\nThe exception was: " + getFullStackTrace(t));
         }
+    }
+
+    /**
+     * Function interface that throws exception for use in the noThrow function
+     * @param <E>
+     */
+    @FunctionalInterface
+    public interface RunnableWithExceptions<E extends Exception> {
+        void run() throws E;
     }
 }

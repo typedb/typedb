@@ -21,8 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.exception.MoreThanOneEdgeException;
-import ai.grakn.exception.NoEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,7 +29,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 public class CastingTest extends GraphTestBase{
 
@@ -54,7 +51,7 @@ public class CastingTest extends GraphTestBase{
     @Test
     public void testEquals() throws Exception {
         Graph graph = graknGraph.getTinkerPopGraph();
-        Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
+        Vertex v = graph.traversal().V(relation.getId().getRawValue()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
         CastingImpl castingCopy = graknGraph.getConcept(ConceptId.of(v.id().toString()));
         assertEquals(casting, castingCopy);
 
@@ -63,46 +60,6 @@ public class CastingTest extends GraphTestBase{
         InstanceImpl rolePlayer = (InstanceImpl) type.addEntity();
         CastingImpl casting2 = graknGraph.putCasting(role, rolePlayer, relation);
         assertNotEquals(casting, casting2);
-    }
-
-    @Test
-    public void hashCodeTest() throws Exception {
-        Vertex castingVertex = graknGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).next();
-        assertEquals(casting.hashCode(), castingVertex.hashCode());
-    }
-
-    @Test
-    public void testGetRole() throws Exception {
-        assertEquals(role, casting.getRole());
-        Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        vertex.property(Schema.ConceptProperty.ID.name(), vertex.id().toString());
-
-        CastingImpl casting2 = graknGraph.getConcept(ConceptId.of(vertex.id().toString()));
-        boolean exceptionThrown = false;
-        try{
-            casting2.getRole();
-        } catch(NoEdgeException e){
-            exceptionThrown = true;
-        }
-        assertTrue(exceptionThrown);
-
-
-        TypeImpl c1 = (TypeImpl) graknGraph.putEntityType("c1'");
-        TypeImpl c2 = (TypeImpl) graknGraph.putEntityType("c2");
-        Vertex casting2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(casting2.getBaseIdentifier()).next();
-        Vertex c1_Vertex = graknGraph.getTinkerPopGraph().traversal().V(c1.getBaseIdentifier()).next();
-        Vertex c2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(c2.getBaseIdentifier()).next();
-
-        casting2_Vertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), c1_Vertex);
-        casting2_Vertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), c2_Vertex);
-
-        exceptionThrown = false;
-        try{
-            casting2.getRole();
-        } catch(MoreThanOneEdgeException e){
-            exceptionThrown = true;
-        }
-        assertTrue(exceptionThrown);
     }
 
     @Test

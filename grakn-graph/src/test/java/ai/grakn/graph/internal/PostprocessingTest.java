@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -66,20 +67,24 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingDuplicateCasting(){
+        Set<ConceptId> castingVertexIds = new HashSet<>();
         CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3);
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
+        castingVertexIds.add(mainCasting.getId());
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4).getId().getValue()));
         assertEquals(3, instance1.castings().size());
 
-        graknGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
+        graknGraph.fixDuplicateCastings(mainCasting.getIndex(), castingVertexIds);
         assertEquals(1, instance1.castings().size());
     }
 
-    private void buildDuplicateCastingWithNewRelation(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
+    private CastingImpl buildDuplicateCastingWithNewRelation(CastingImpl mainCasting, RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
         RelationImpl relation = (RelationImpl) relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
         Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
+        castingVertex.property(Schema.ConceptProperty.INDEX.name(), mainCasting.getIndex());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
@@ -90,6 +95,8 @@ public class PostprocessingTest extends GraphTestBase{
 
         putFakeShortcutEdge(relationType, relation, mainRoleType, mainInstance, otherRoleType, otherInstance);
         putFakeShortcutEdge(relationType, relation, otherRoleType, otherInstance, mainRoleType, mainInstance);
+
+        return graknGraph.admin().buildConcept(castingVertex);
     }
 
     private void putFakeShortcutEdge(RelationType relationType, Relation relation, RoleType fromRole, InstanceImpl fromInstance, RoleType toRole, InstanceImpl toInstance){
@@ -113,10 +120,12 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingDuplicateRelationsDueToDuplicateCastings() {
-        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
+        Set<ConceptId> castingVertexIds = new HashSet<>();
 
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2);
-        buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3);
+        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
+        castingVertexIds.add(mainCasting.getId());
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance2).getId().getValue()));
+        castingVertexIds.add(ConceptId.of(buildDuplicateCastingWithNewRelation(mainCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue()));
 
         assertEquals(3, instance1.relations().size());
         assertEquals(2, instance2.relations().size());
@@ -125,7 +134,7 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(6, graknGraph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
-        graknGraph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
+        graknGraph.fixDuplicateCastings(mainCasting.getIndex(), castingVertexIds);
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());
@@ -141,21 +150,20 @@ public class PostprocessingTest extends GraphTestBase{
         ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Create fake resources
-        Set<Object> resourceIds = new HashSet<>();
-        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "2").getBaseIdentifier());
-        resourceIds.add(createFakeResource(resourceType, "3").getBaseIdentifier());
+        Set<ConceptId> resourceIds = new HashSet<>();
+        ResourceImpl<String> mainResource = createFakeResource(resourceType, "1");
+        resourceIds.add(mainResource.getId());
+        resourceIds.add(createFakeResource(resourceType, "1").getId());
+        resourceIds.add(createFakeResource(resourceType, "1").getId());
 
         //Check we have duplicate resources
-        assertEquals(5, resourceType.instances().size());
+        assertEquals(3, resourceType.instances().size());
 
         //Fix duplicates
-        graknGraph.fixDuplicateResources(resourceIds);
+        graknGraph.fixDuplicateResources(mainResource.getIndex(), resourceIds);
 
         //Check we no longer have duplicates
-        assertEquals(3, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().size());
     }
 
     @Test
@@ -170,18 +178,14 @@ public class PostprocessingTest extends GraphTestBase{
         Entity e3 = entityType.addEntity();
 
         //Create fake resources
-        Set<Object> resourceIds = new HashSet<>();
+        Set<ConceptId> resourceIds = new HashSet<>();
         ResourceImpl<?> r1 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r11 = createFakeResource(resourceType, "1");
         ResourceImpl<?> r111 = createFakeResource(resourceType, "1");
-        ResourceImpl<?> r2 = createFakeResource(resourceType, "2");
-        ResourceImpl<?> r3 = createFakeResource(resourceType, "3");
 
-        resourceIds.add(r1.getBaseIdentifier());
-        resourceIds.add(r11.getBaseIdentifier());
-        resourceIds.add(r111.getBaseIdentifier());
-        resourceIds.add(r2.getBaseIdentifier());
-        resourceIds.add(r3.getBaseIdentifier());
+        resourceIds.add(r1.getId());
+        resourceIds.add(r11.getId());
+        resourceIds.add(r111.getId());
 
         //Give resources some relationships
         relationType.addRelation().putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
@@ -191,7 +195,7 @@ public class PostprocessingTest extends GraphTestBase{
         relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
 
         //Check everything is broken
-        assertEquals(5, resourceType.instances().size());
+        assertEquals(3, resourceType.instances().size());
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
@@ -200,10 +204,10 @@ public class PostprocessingTest extends GraphTestBase{
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().values().contains(e1)));
 
         //Now fix everything
-        graknGraph.fixDuplicateResources(resourceIds);
+        graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);
 
         //Check everything is in order
-        assertEquals(3, resourceType.instances().size());
+        assertEquals(1, resourceType.instances().size());
 
         //Get back the surviving resource
         Resource<String> foundR1 = null;

@@ -19,23 +19,23 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.internal.reasoner.query.QueryCache;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
 
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
@@ -51,28 +51,19 @@ import static ai.grakn.graql.Graql.var;
  */
 public class Reasoner {
 
+    private static int commitFrequency = 50;
     private static final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
-    private static void commitGraph(GraknGraph graph) {
+
+    public static void commitGraph(GraknGraph graph) {
         try {
             graph.commit();
         } catch (GraknValidationException e) {
             LOG.error(e.getMessage());
         }
     }
-    private static void linkConceptTypes(GraknGraph graph, Rule rule) {
-        QueryBuilder qb = graph.graql();
-        MatchQuery qLHS = qb.match(rule.getLHS());
-        MatchQuery qRHS = qb.match(rule.getRHS());
 
-        //TODO fix this hack
-        Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes()
-            .stream().filter(type -> !type.isRoleType()).collect(Collectors.toSet());
-        Set<Type> conclusionConceptTypes = qRHS.admin().getTypes()
-            .stream().filter(type -> !type.isRoleType()).collect(Collectors.toSet());
-
-        hypothesisConceptTypes.forEach(rule::addHypothesis);
-        conclusionConceptTypes.forEach(rule::addConclusion);
-    }
+    public static void setCommitFrequency(int freq){ commitFrequency = freq;}
+    public static int getCommitFrequency(){ return commitFrequency;}
 
     /**
      *
@@ -94,44 +85,25 @@ public class Reasoner {
     }
 
     /**
-     * Link all unlinked rules in the rule base to their matching types
-     * @param graph for the linking to be performed
-     */
-    public static void linkConceptTypes(GraknGraph graph) {
-        Set<Rule> rules = getRules(graph);
-        LOG.debug(rules.size() + " rules initialized...");
-        Set<Rule> linkedRules = new HashSet<>();
-        rules.stream()
-                .filter(rule -> rule.getConclusionTypes().isEmpty() && rule.getHypothesisTypes().isEmpty())
-                .forEach(rule -> {
-                    linkConceptTypes(graph, rule);
-                    linkedRules.add(rule);
-                });
-        if(!linkedRules.isEmpty()) commitGraph(graph);
-        LOG.debug(linkedRules.size() + " rules linked...");
-    }
-
-    /**
      * materialise all possible inferences
      */
+
     public static void precomputeInferences(GraknGraph graph){
-        linkConceptTypes(graph);
-        QueryCache cache = new QueryCache();
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
             ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead());
-            int dAns;
+            long dAns = 0;
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                dAns = atomicQuery.getAnswers().size();
-                atomicQuery.answer(SG, cache, true);
-                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + atomicQuery.getAnswers().size());
-                dAns = atomicQuery.getAnswers().size() - dAns;
+                Set<Map<VarName, Concept>> answers = atomicQuery.answerStream(SG, cache, true).collect(Collectors.toSet());
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + answers.size() + " dAns: " + dAns);
+                dAns = cache.answerSize(SG) - dAns;
+                Reasoner.commitGraph(graph);
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
-        commitGraph(graph);
     }
 }

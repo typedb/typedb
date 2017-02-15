@@ -58,7 +58,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-@Ignore("This test is consistently failing on Travis")
 public class GraqlShellIT {
 
     @ClassRule
@@ -154,7 +153,7 @@ public class GraqlShellIT {
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-f", "src/test/graql/shell-test.gql");
-        assertEquals(err.toString(), "");
+        assertEquals("", err.toString());
     }
 
     @Test
@@ -175,7 +174,7 @@ public class GraqlShellIT {
     @Test
     public void testInsertQuery() throws Exception {
         String result = testShell(
-                "match $x isa entity; ask;\ninsert $x isa entity;\nmatch $x isa entity; ask;\n"
+                "insert entity2 sub entity; match $x isa entity2; ask;\ninsert $x isa entity2;\nmatch $x isa entity2; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
@@ -258,7 +257,7 @@ public class GraqlShellIT {
                 "insert man sub entity has-resource name; person sub entity; name sub resource datatype string;\n" +
                 "insert has name 'felix' isa man;\n" +
                 "match isa person, has name $x;\n" +
-                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
+                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n commit\n" +
                 "match isa person, has name $x;\n", "--infer"
         );
 
@@ -348,7 +347,7 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String result = testShell("insert $x isa entity;\nrollback;\nmatch $x isa entity;\n");
+        String result = testShell("insert entity2 sub entity; insert $x isa entity2;\nrollback;\nmatch $x isa entity;\n");
         String[] lines = result.split("\n");
 
         // Make sure there are no results for match query

@@ -37,8 +37,6 @@ import java.util.Properties;
 public class ConfigProperties {
 
     //Test Configs
-    public static final String TEST_CONFIG_FILE = "../conf/test/tinker/grakn-engine.properties";
-
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn-engine.properties";
     public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
@@ -47,10 +45,7 @@ public class ConfigProperties {
 
     public static final String DEFAULT_KEYSPACE_PROPERTY = "graphdatabase.default-keyspace";
 
-    public static final String BATCH_SIZE_PROPERTY = "blockingLoader.batch-size";
-
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
-    public static final String POLLING_FREQUENCY_PROPERTY = "loader.polling-frequency";
     public static final String JWT_SECRET_PROPERTY = "JWT.secret";
     public static final String PASSWORD_PROTECTED_PROPERTY="password.protected";
 
@@ -60,7 +55,6 @@ public class ConfigProperties {
     public static final String HAL_DEGREE_PROPERTY = "halBuilder.degree";
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
-
     public static final String POST_PROCESSING_DELAY = "backgroundTasks.post-processing-delay";
     public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
 
@@ -82,7 +76,13 @@ public class ConfigProperties {
     public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING = "grakn.log.file.postprocessing";
     public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
 
+    public static final String POST_PROCESSING_THREADS = "postprocessing.threads";
+
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
+
+
+    // Engine Config
+    public static final String DISTRIBUTED_TASK_MANAGER = "taskmanager.distributed";
 
     public static final String KAFKA_BOOTSTRAP_SERVERS = "tasks.kafka.bootstrap-servers";
     public static final String KAFKA_SESSION_TIMEOUT = "tasks.kafka.consumer.session-timeout";
@@ -99,7 +99,6 @@ public class ConfigProperties {
 
     public static final String SCHEDULER_POLLING_FREQ = "tasks.scheduler.polling-frequency";
     public static final String TASKRUNNER_POLLING_FREQ = "tasks.runner.polling-frequency";
-    public static final String TASK_MANAGER_INSTANCE = "tasks.task-manager";
 
     private Logger LOG;
 

@@ -18,16 +18,15 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import javafx.util.Pair;
 import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -40,7 +39,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.time.Instant;
 
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
@@ -54,6 +52,9 @@ import static ai.grakn.util.REST.Request.TASK_STOP;
 import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static java.lang.Long.parseLong;
+import static java.lang.String.format;
+import static java.time.Instant.ofEpochMilli;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.get;
 import static spark.Spark.post;
@@ -70,7 +71,7 @@ import static spark.Spark.put;
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
     private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
-    private TaskManager manager;
+    private final TaskManager manager;
 
     public TasksController(TaskManager manager) {
         if (manager==null) {
@@ -114,8 +115,8 @@ public class TasksController {
         }
 
         JSONArray result = new JSONArray();
-        for (Pair<String, TaskState> pair : manager.storage().getTasks(status, className, creator, limit, offset)) {
-            result.put(serialiseStateSubset(pair.getKey(), pair.getValue()));
+        for (TaskState state : manager.storage().getTasks(status, className, creator, limit, offset)) {
+            result.put(serialiseStateSubset(state));
         }
 
         response.type("application/json");
@@ -127,13 +128,16 @@ public class TasksController {
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
+        String id = request.params(ID_PARAMETER);
+
         try {
-            String id = request.params(ID_PARAMETER);
-            JSONObject result = serialiseStateFull(id, manager.storage().getState(id));
+            response.status(200);
             response.type("application/json");
 
-            return result.toString();
-        } catch(Exception e) {
+            return serialiseStateFull(manager.storage().getState(id)).toString();
+        } catch (EngineStorageException e){
+           throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
+        } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -184,34 +188,20 @@ public class TasksController {
                 configuration = Json.read(request.body());
             }
 
-            Instant runAtInstant = Instant.ofEpochMilli(Long.parseLong(runAt));
-
-            Class<?> clazz = Class.forName(className);
-            BackgroundTask task = (BackgroundTask)clazz.newInstance();
-
-            String id = manager.scheduleTask(task, createdBy, runAtInstant, interval, configuration);
-            JSONObject resp = new JSONObject()
-                    .put("id", id);
+            String id = manager.createTask(className, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
 
             response.type("application/json");
-            return resp.toString();
 
-        }
-        catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new GraknEngineServerException(400, e);
-        }
-        catch (NullPointerException e) {
-            throw new GraknEngineServerException(400, "Missing mandatory parameters");
-        }
-        catch (Exception e) {
+            return Json.object("id", id).toString();
+        } catch (Exception e) {
             LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
         }
     }
 
 
-    private JSONObject serialiseStateSubset(String id, TaskState state) {
-        return new JSONObject().put("id", id)
+    private JSONObject serialiseStateSubset(TaskState state) {
+        return new JSONObject().put("id", state.getId())
                 .put("status", state.status())
                 .put("creator", state.creator())
                 .put("className", state.taskClassName())
@@ -219,9 +209,9 @@ public class TasksController {
                 .put("recurring", state.isRecurring());
     }
 
-    private JSONObject serialiseStateFull(String id, TaskState state) {
-        return serialiseStateSubset(id, state)
-                       .put("interval", state.interval())
+    private JSONObject serialiseStateFull(TaskState state) {
+        return serialiseStateSubset(state)
+                .put("interval", state.interval())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
                        .put("engineID", state.engineID())

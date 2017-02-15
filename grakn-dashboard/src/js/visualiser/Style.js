@@ -17,7 +17,7 @@
  */
 
 
-import * as API from '../HAL/APITerms';
+import * as API from '../util/HALTerms';
 
 /*
  * Styling options for visualised graph.
@@ -30,25 +30,23 @@ export default class Style {
 
     this.node = {
       colour: {
-        background: '#383838',
-        border: '#bfc681',
+        background: '#563891',
         highlight: {
-          background: '#383838',
-          border: '#bfc681',
+          background: '#973fd8',
         },
       },
       shape: 'box',
-      shadow: true,
     };
 
     this.edge = {
       colour: {
-        color: '#bbbcbc',
-        highlight: '#a1d884',
+        color: '#00eca2',
+        highlight: '#56fd92',
+        hover: '#56fd92',
       },
       font: {
-        color: '#ffad33',
-        background: '#3b3d44',
+        color: '#00eca2',
+        background: '#232323',
         strokeWidth: 0,
       },
     };
@@ -61,12 +59,11 @@ export default class Style {
      */
   getNodeColour(type, baseType) {
         // Meta-ontology
-    if (type === '') {
+    if (type === '' && baseType !== API.GENERATED_RELATION_TYPE) {
       return {
-        background: this.node.colour.background,
-        border: '#5bc2e7',
+        background: '#a80a74',
         highlight: {
-          border: '#5bc2e7',
+          background: '#f15cc0',
         },
       };
     }
@@ -74,20 +71,24 @@ export default class Style {
         // User defined ontology & instances
     switch (baseType) {
       case API.GENERATED_RELATION_TYPE:
+        return {
+          background: '#20a194',
+          highlight: {
+            background: '#0aca88',
+          },
+        };
       case API.RELATION_TYPE:
         return {
-          background: this.node.colour.background,
-          border: '#77dd77',
+          background: '#20a194',
           highlight: {
-            border: '#77dd77',
+            background: '#0aca88',
           },
         };
       case API.RESOURCE_TYPE:
         return {
-          background: this.node.colour.background,
-          border: '#ff7878',
+          background: '#1d65cb',
           highlight: {
-            border: '#ff7878',
+            background: '#0cb8f7',
           },
         };
       default:
@@ -117,7 +118,7 @@ export default class Style {
      */
   getNodeFont(type, baseType) {
     return {
-      color: this.getNodeColour(type, baseType).border,
+      color: '#ffffff',
     };
   }
 
@@ -140,16 +141,15 @@ export default class Style {
   clusterColour() {
     return {
       background: this.node.colour.background,
-      border: '#fc1dbb',
       highlight: {
-        border: '#fc1dbb',
+        background: this.node.colour.background,
       },
     };
   }
 
   clusterFont() {
     return {
-      color: this.clusterColour().border,
+      color: '#ffffff',
     };
   }
 }

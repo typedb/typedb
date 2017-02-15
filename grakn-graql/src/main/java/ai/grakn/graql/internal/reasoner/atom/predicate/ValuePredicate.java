@@ -44,8 +44,6 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     public ValuePredicate(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     public ValuePredicate(VarName varName, ValuePredicateAdmin pred, ReasonerQuery par){
         this(createValueVar(varName, pred), par);}
-    public ValuePredicate(VarName varName, ReasonerQuery par){
-        this(Graql.var(varName).value().admin(), par);}
     private ValuePredicate(ValuePredicate pred) { super(pred);}
 
     @Override

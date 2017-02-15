@@ -54,6 +54,10 @@ public class JsonSession {
 
     private final Session session;
 
+    // This timeout is applied to the blocking queue. Given that we don't know how long an arbitrary query takes to
+    // execute, we wait for a very long time. If there is a connection error with engine, it is handled elsewhere.
+    private static final long DEFAULT_TIMEOUT = Long.MAX_VALUE;
+
     private final ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = Executors.defaultThreadFactory().newThread(runnable);
         thread.setDaemon(true);
@@ -61,14 +65,19 @@ public class JsonSession {
     });
 
     private final BlockingQueue<Json> messages = new LinkedBlockingQueue<>();
+    private final long timeout;
 
     JsonSession(GraqlClient client, URI uri) {
+        this(client, uri, DEFAULT_TIMEOUT);
+    }
+
+    JsonSession(GraqlClient client, URI uri, long timeout) {
+        this.timeout = timeout;
+
         try {
             this.session = client.connect(this, uri).get();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
         }
     }
 
@@ -87,7 +96,12 @@ public class JsonSession {
             @Override
             public boolean tryAdvance(Consumer<? super Json> action) {
                 Json message = getMessage();
-                if (message.is(ACTION, ACTION_END)) {
+
+                if (message == null) {
+                    System.err.println("Timeout while contacting engine");
+                }
+
+                if (message == null || message.is(ACTION, ACTION_END)) {
                     return false;
                 } else {
                     action.accept(message);
@@ -101,13 +115,13 @@ public class JsonSession {
 
     private Json getMessage() {
         try {
-            return messages.poll(5, TimeUnit.MINUTES);
+            return messages.poll(timeout, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    void sendJson(Json json) throws WebSocketException {
+    void sendJson(Json json) throws WebSocketException, IOException {
         try {
             executor.submit(() -> {
                 try {
@@ -119,7 +133,13 @@ public class JsonSession {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
+            RuntimeException inner = (RuntimeException) e.getCause();
+            Throwable cause = inner.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            } else {
+                throw inner;
+            }
         }
     }
 

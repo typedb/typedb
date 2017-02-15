@@ -19,6 +19,7 @@
 package ai.grakn.graql.template;
 
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Query;
 import org.junit.Test;
 
 import java.text.ParseException;
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ai.grakn.graql.Graql.parse;
 import static junit.framework.TestCase.assertEquals;
 
 public class MacroTest {
@@ -263,8 +265,8 @@ public class MacroTest {
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        String result = Graql.parseTemplate(template, data).toString();
+        Query<?> result = Graql.parseTemplate(template, data);
         System.out.println(result);
-        assertEquals(expected, result);
+        assertEquals(parse(expected), result);
     }
 }

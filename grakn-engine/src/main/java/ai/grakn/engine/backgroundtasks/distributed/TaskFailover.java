@@ -28,6 +28,8 @@ import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -35,14 +37,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
 
 /**
  * <p>
@@ -52,7 +55,7 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
  * @author Denis lobanov
  */
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final Logger LOG = LoggerFactory.getLogger(TaskFailover.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final TaskStateStorage stateStorage;
@@ -93,11 +96,11 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
 
         switch (event.getType()) {
             case NODE_ADDED:
-                LOG.debug("New engine joined pool.");
+                LOG.debug("New engine joined pool. Current engines: " + nodes.keySet());
                 current = nodes;
                 break;
             case NODE_REMOVED:
-                LOG.debug("Engine failure detected.");
+                LOG.debug("Engine failure detected. Current engines " + nodes.keySet());
                 failover(client, nodes);
                 current = nodes;
                 break;
@@ -142,8 +145,14 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             // Mark task as SCHEDULED again
             TaskState taskState = stateStorage.getState(id);
 
-            stateStorage.updateState(taskState.status(SCHEDULED));
-            producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState.configuration().toString()));
+            if(taskState.status() == RUNNING) {
+                LOG.debug(format("Engine [%s] stopped, task [%s] requeued", engineID, taskState.getId()));
+                stateStorage.updateState(taskState.status(SCHEDULED));
+                producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState.configuration().toString()));
+            } else {
+                LOG.debug(format("Engine [%s] stopped, task [%s] not restarted because state [%s]"
+                        , engineID, taskState.getId(), taskState.status()));
+            }
         }
     }
 

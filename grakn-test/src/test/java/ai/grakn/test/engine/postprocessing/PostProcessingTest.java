@@ -28,12 +28,13 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -45,7 +46,7 @@ import static ai.grakn.test.GraknTestEnv.*;
 
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private EngineCacheImpl cache = EngineCacheImpl.getInstance();
+    private EngineCache cache = EngineCache.getInstance();
 
     private GraknGraph graph;
 
@@ -115,6 +116,9 @@ public class PostProcessingTest {
 
         //Check it's all fixed
         assertEquals(4, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+
+        //Check the cache has been cleaned
+        assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
     }
 
     private void buildDuplicateCasting(ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
@@ -139,8 +143,14 @@ public class PostProcessingTest {
         Vertex mainInstanceVertex = rawGraph.traversal().V().
                 hasId(mainInstanceId.getValue()).next();
 
+        Vertex otherCasting = mainRoleTypeVertex.edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).next().outVertex();
+
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
+
+        castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
+        castingVertex.property(Schema.ConceptProperty.INDEX.name(), otherCasting.value(Schema.ConceptProperty.INDEX.name()));
+
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
@@ -148,6 +158,8 @@ public class PostProcessingTest {
 
         edge = relationVertex.addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
+
+        cache.addJobCasting(graph.getKeyspace(), castingVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(castingVertex.id().toString()));
     }
 
     @Test
@@ -182,6 +194,9 @@ public class PostProcessingTest {
 
         //Check it's fixed
         assertEquals(1, graph.getResourceType(sample).instances().size());
+
+        //Check the cache has been cleared
+        assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
     }
     private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
         AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;
@@ -193,23 +208,24 @@ public class PostProcessingTest {
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
+        resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);
 
-        cache.getResourceJobs(graknGraph.getKeyspace()).add(resourceVertex.id().toString());
+        cache.addJobResource(graknGraph.getKeyspace(), resourceVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(resourceVertex.id().toString()));
     }
 
     private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
         boolean flag = true;
         while(flag){
             if(isCasting){
-                if(cache.getCastingJobs(keyspace).size() < value){
+                if(cache.getNumCastingJobs(keyspace) < value){
                     Thread.sleep(1000);
                 } else{
                     flag = false;
                 }
             } else {
-                if(cache.getResourceJobs(keyspace).size() < value){
+                if(cache.getNumResourceJobs(keyspace) < value){
                     Thread.sleep(1000);
                 } else {
                     flag = false;

@@ -19,7 +19,6 @@
 package ai.grakn.migration.base.io;
 
 import ai.grakn.Grakn;
-import ai.grakn.engine.util.ConfigProperties;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -36,9 +35,7 @@ import static ai.grakn.migration.base.io.MigrationCLI.die;
  * @author alexandraorth
  */
 public class MigrationOptions {
-    private static final ConfigProperties properties = ConfigProperties.getInstance();
 
-    private static final String keyspace = properties.getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
     private static final String uri = Grakn.DEFAULT_URI;
     private int numberOptions;
 
@@ -48,7 +45,7 @@ public class MigrationOptions {
     public MigrationOptions(){
         options.addOption("v", "verbose", false, "Print counts of migrated data.");
         options.addOption("h", "help", false, "Print usage message.");
-        options.addOption("k", "keyspace", true, "Grakn graph.");
+        options.addOption("k", "keyspace", true, "Grakn graph. Required.");
         options.addOption("u", "uri", true, "Location of Grakn Engine.");
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
@@ -67,7 +64,11 @@ public class MigrationOptions {
     }
 
     public String getKeyspace() {
-        return command.hasOption("k") ? command.getOptionValue("k") : keyspace;
+        if(!command.hasOption("k")){
+            die("Keyspace missing (-k)");
+        }
+
+        return command.getOptionValue("k");
     }
 
     public String getConfiguration() {

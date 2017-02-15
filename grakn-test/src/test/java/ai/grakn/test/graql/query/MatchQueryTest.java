@@ -24,7 +24,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
@@ -36,7 +35,6 @@ import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -48,12 +46,13 @@ import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
@@ -68,26 +67,94 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.test.matcher.MovieMatchers.aRuleType;
+import static ai.grakn.test.matcher.MovieMatchers.action;
+import static ai.grakn.test.matcher.MovieMatchers.alPacino;
+import static ai.grakn.test.matcher.GraknMatchers.allVariables;
+import static ai.grakn.test.matcher.MovieMatchers.apocalypseNow;
+import static ai.grakn.test.matcher.MovieMatchers.benjaminLWillard;
+import static ai.grakn.test.matcher.MovieMatchers.betteMidler;
+import static ai.grakn.test.matcher.MovieMatchers.character;
+import static ai.grakn.test.matcher.MovieMatchers.chineseCoffee;
+import static ai.grakn.test.matcher.MovieMatchers.cluster;
+import static ai.grakn.test.matcher.MovieMatchers.comedy;
+import static ai.grakn.test.matcher.GraknMatchers.concept;
+import static ai.grakn.test.matcher.GraknMatchers.constraintRule;
+import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
+import static ai.grakn.test.matcher.MovieMatchers.crime;
+import static ai.grakn.test.matcher.MovieMatchers.drama;
+import static ai.grakn.test.matcher.GraknMatchers.entity;
+import static ai.grakn.test.matcher.MovieMatchers.family;
+import static ai.grakn.test.matcher.MovieMatchers.fantasy;
+import static ai.grakn.test.matcher.MovieMatchers.gender;
+import static ai.grakn.test.matcher.MovieMatchers.genre;
+import static ai.grakn.test.matcher.MovieMatchers.genreOfProduction;
+import static ai.grakn.test.matcher.MovieMatchers.godfather;
+import static ai.grakn.test.matcher.MovieMatchers.harry;
+import static ai.grakn.test.matcher.MovieMatchers.hasTitle;
+import static ai.grakn.test.matcher.GraknMatchers.hasType;
+import static ai.grakn.test.matcher.GraknMatchers.hasValue;
+import static ai.grakn.test.matcher.MovieMatchers.heat;
+import static ai.grakn.test.matcher.MovieMatchers.hocusPocus;
+import static ai.grakn.test.matcher.GraknMatchers.inferenceRule;
+import static ai.grakn.test.matcher.GraknMatchers.isCasting;
+import static ai.grakn.test.matcher.GraknMatchers.isInstance;
+import static ai.grakn.test.matcher.MovieMatchers.judeLaw;
+import static ai.grakn.test.matcher.MovieMatchers.kermitTheFrog;
+import static ai.grakn.test.matcher.MovieMatchers.language;
+import static ai.grakn.test.matcher.MovieMatchers.marlonBrando;
+import static ai.grakn.test.matcher.MovieMatchers.martinSheen;
+import static ai.grakn.test.matcher.MovieMatchers.mirandaHeart;
+import static ai.grakn.test.matcher.MovieMatchers.missPiggy;
+import static ai.grakn.test.matcher.MovieMatchers.movie;
+import static ai.grakn.test.matcher.MovieMatchers.movies;
+import static ai.grakn.test.matcher.MovieMatchers.musical;
+import static ai.grakn.test.matcher.MovieMatchers.name;
+import static ai.grakn.test.matcher.MovieMatchers.neilMcCauley;
+import static ai.grakn.test.matcher.MovieMatchers.person;
+import static ai.grakn.test.matcher.MovieMatchers.production;
+import static ai.grakn.test.matcher.MovieMatchers.realName;
+import static ai.grakn.test.matcher.MovieMatchers.releaseDate;
+import static ai.grakn.test.matcher.GraknMatchers.resource;
+import static ai.grakn.test.matcher.GraknMatchers.results;
+import static ai.grakn.test.matcher.MovieMatchers.robertDeNiro;
+import static ai.grakn.test.matcher.GraknMatchers.rule;
+import static ai.grakn.test.matcher.MovieMatchers.runtime;
+import static ai.grakn.test.matcher.MovieMatchers.sarah;
+import static ai.grakn.test.matcher.MovieMatchers.sarahJessicaParker;
+import static ai.grakn.test.matcher.MovieMatchers.spy;
+import static ai.grakn.test.matcher.MovieMatchers.theMuppets;
+import static ai.grakn.test.matcher.MovieMatchers.title;
+import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteAverage;
+import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteCount;
+import static ai.grakn.test.matcher.GraknMatchers.variable;
+import static ai.grakn.test.matcher.MovieMatchers.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.Matchers.anything;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("OptionalGetWithoutIsPresent")
+@SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
 
     private QueryBuilder qb;
@@ -113,40 +180,29 @@ public class MatchQueryTest {
     @Test
     public void testMovieQuery() {
         MatchQuery query = qb.match(var("x").isa("movie"));
-
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), QueryUtil.movies);
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
     public void testProductionQuery() {
         MatchQuery query = qb.match(var("x").isa("production"));
-
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), QueryUtil.movies);
+        assertThat(query, variable("x", containsAllMovies));
     }
 
     @Test
     public void testValueQuery() {
         MatchQuery query = qb.match(var("tgf").value("Godfather"));
-        List<Map<String, Concept>> results = Lists.newArrayList(query);
-
-        assertEquals(1, results.size());
-
-        Map<String, Concept> result = results.get(0);
-        Resource<String> tgf = result.get("tgf").asResource();
-
-        assertEquals("title", tgf.type().getName().getValue());
-        assertEquals("Godfather", tgf.getValue());
+        assertThat(query, variable("tgf", contains(both(hasValue("Godfather")).and(hasType(title)))));
     }
 
     @Test
     public void testRoleOnlyQuery() {
-        MatchQuery query = qb.match(var().rel("actor", "x"));
+        MatchQuery query = qb.match(var().rel("actor", "x")).distinct();
 
-        QueryUtil.assertResultsMatch(
-                query, "x", "person", movieGraph.graph().getResourceType("name"),
-                "Marlon Brando", "Al Pacino", "Miss Piggy", "Kermit The Frog", "Martin Sheen", "Robert de Niro",
-                "Jude Law", "Miranda Heart", "Bette Midler", "Sarah Jessica Parker"
-        );
+        assertThat(query, variable("x", containsInAnyOrder(
+                marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw, mirandaHeart,
+                betteMidler, sarahJessicaParker
+        )));
     }
 
     @Test
@@ -161,7 +217,7 @@ public class MatchQueryTest {
                 var("t").value(neq("Apocalypse Now"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Hocus Pocus", "Heat", "Spy");
+        assertThat(query, variable("x", containsInAnyOrder(hocusPocus, heat, spy)));
     }
 
     @Test
@@ -174,7 +230,20 @@ public class MatchQueryTest {
                 )
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Hocus Pocus", "Godfather", "The Muppets");
+        assertThat(query, variable("x", containsInAnyOrder(hocusPocus, godfather, theMuppets)));
+    }
+
+    @Test
+    public void testValueEqualsVarQuery() {
+        MatchQuery query = qb.match(var("x").value(var("y")));
+
+        assertThat(query.execute(), hasSize(greaterThan(10)));
+
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+        });
     }
 
     @Test
@@ -183,7 +252,7 @@ public class MatchQueryTest {
                 var("x").isa("genre").has("name", regex("^f.*y$"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "genre", movieGraph.graph().getResourceType("name"), "family", "fantasy");
+        assertThat(query, variable("x", containsInAnyOrder(family, fantasy)));
     }
 
     @Test
@@ -192,7 +261,7 @@ public class MatchQueryTest {
                 var("x").isa("character").has("name", contains("ar"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "character", movieGraph.graph().getResourceType("name"), "Sarah", "Benjamin L. Willard", "Harry");
+        assertThat(query, variable("x", containsInAnyOrder(sarah, benjaminLWillard, harry)));
     }
 
     @Test
@@ -201,7 +270,7 @@ public class MatchQueryTest {
                 var("type").playsRole("character-being-played")
         );
 
-        QueryUtil.assertResultsMatch(query, "type", null, movieGraph.graph().getResourceType("title"), "character", "person");
+        assertThat(query, variable("type", containsInAnyOrder(character, person)));
     }
 
     @Test
@@ -212,20 +281,15 @@ public class MatchQueryTest {
                 var("z").isa("character").has("name", "Don Vito Corleone"),
                 var().rel("x").rel("y").rel("z")
         ).select("x", "y");
-        List<Map<String, Concept>> results = Lists.newArrayList(query);
 
-        assertEquals(1, results.size());
-
-        Map<String, Concept> result = results.get(0);
-        assertEquals("Godfather", result.get("x").asEntity().resources(movieGraph.graph().getResourceType("title")).iterator().next().getValue());
-        assertEquals("Marlon Brando", result.get("y").asEntity().resources(movieGraph.graph().getResourceType("name")).iterator().next().getValue());
+        assertThat(query, allOf(variable("x", contains(godfather)), variable("y", contains(marlonBrando))));
     }
 
     @Test
     public void testTypeNameQuery() {
         MatchQuery query = qb.match(or(var("x").name("character"), var("x").name("person")));
 
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"),  "character", "person");
+        assertThat(query, variable("x", containsInAnyOrder(character, person)));
     }
 
     @Test
@@ -236,9 +300,9 @@ public class MatchQueryTest {
                 var("y").isa("movie"),
                 var().rel("y").rel("z"),
                 var("z").isa("person").has("name", "Marlon Brando")
-        ).select("x");
+        ).select("x").distinct();
 
-        QueryUtil.assertResultsMatch(query, "x", "person", movieGraph.graph().getResourceType("name"), "Marlon Brando", "Al Pacino", "Martin Sheen");
+        assertThat(query, variable("x", containsInAnyOrder(marlonBrando, alPacino, martinSheen)));
     }
 
     @Test
@@ -248,7 +312,7 @@ public class MatchQueryTest {
                 var("y").has("title", "Apocalypse Now")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "person", movieGraph.graph().getResourceType("name"), "Marlon Brando", "Martin Sheen");
+        assertThat(query, variable("x", containsInAnyOrder(marlonBrando, martinSheen)));
     }
 
     @Test
@@ -257,13 +321,14 @@ public class MatchQueryTest {
                 var("x").has("release-date", DATE_FORMAT.parse("Mon Mar 03 00:00:00 BST 1986").getTime())
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Spy");
+        assertThat(query, variable("x", contains(spy)));
     }
 
     @Test
     public void testNameQuery() {
         MatchQuery query = qb.match(var("x").has("title", "Godfather"));
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"),  "Godfather");
+
+        assertThat(query, variable("x", contains(godfather)));
     }
 
 
@@ -273,7 +338,7 @@ public class MatchQueryTest {
                 var("x").has("tmdb-vote-count", lte(400))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Apocalypse Now", "The Muppets", "Chinese Coffee");
+        assertThat(query, variable("x", containsInAnyOrder(apocalypseNow, theMuppets, chineseCoffee)));
     }
 
     @Test
@@ -282,7 +347,7 @@ public class MatchQueryTest {
                 var("x").has("tmdb-vote-average", gt(7.8))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Apocalypse Now", "Godfather");
+        assertThat(query, variable("x", containsInAnyOrder(apocalypseNow, godfather)));
     }
 
     @Test
@@ -291,23 +356,17 @@ public class MatchQueryTest {
                 var("x").has("release-date", gte(DATE_FORMAT.parse("Tue Jun 23 12:34:56 GMT 1984").getTime()))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Spy", "The Muppets", "Chinese Coffee");
+        assertThat(query, variable("x", containsInAnyOrder(spy, theMuppets, chineseCoffee)));
     }
 
     @Test
     public void testGlobalPredicateQuery() {
-        Stream<Concept> query = qb.match(
+        MatchQuery query = qb.match(
                 var("x").value(gt(500L)),
                 var("x").value(lt(1000000L))
-        ).get("x");
+        );
 
-        // Results will contain any numbers greater than 500, but no strings
-        List<Concept> results = query.collect(toList());
-
-        assertEquals(1, results.size());
-        Resource<Long> result = results.get(0).asResource();
-        assertEquals(1000L, (long) result.getValue());
-        assertEquals("tmdb-vote-count", result.type().getName().getValue());
+        assertThat(query, variable("x", contains(both(hasValue(1000L)).and(hasType(tmdbVoteCount)))));
     }
 
     @Test
@@ -318,7 +377,8 @@ public class MatchQueryTest {
                 var("a").isa("has-cast")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "The Muppets");
+        // There are two results because Miss Piggy plays both actor and character roles in 'The Muppets' cast
+        assertThat(query, variable("x", contains(theMuppets, theMuppets)));
     }
 
     @Test
@@ -331,24 +391,22 @@ public class MatchQueryTest {
                 )
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Godfather", "Apocalypse Now", "Heat", "The Muppets", "Chinese Coffee");
+        assertThat(query, variable("x", containsInAnyOrder(godfather, apocalypseNow, heat, theMuppets, chineseCoffee)));
     }
 
     @Test
     public void testTypeAsVariable() {
-        movieGraph.graph().showImplicitConcepts(true);
-
         MatchQuery query = qb.match(name("genre").playsRole(var("x")));
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"), "genre-of-production", "has-name-owner");
+        assertThat(query, variable("x", contains(genreOfProduction)));
     }
 
     @Test
     public void testVariableAsRoleType() {
-        MatchQuery query = qb.match(var().rel(var().name("genre-of-production"), "y"));
-        QueryUtil.assertResultsMatch(
-                query, "y", null, movieGraph.graph().getResourceType("name"),
-                "crime", "drama", "war", "action", "comedy", "family", "musical", "comedy", "fantasy"
-        );
+        MatchQuery query = qb.match(var().rel(var().name("genre-of-production"), "y")).distinct();
+
+        assertThat(query, variable("y", containsInAnyOrder(
+                crime, drama, war, action, comedy, family, musical, fantasy
+        )));
     }
 
     @Test
@@ -357,52 +415,50 @@ public class MatchQueryTest {
                 var().rel(var("x").isa("movie")).rel("genre-of-production", var().has("name", "crime"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"),  "Godfather", "Heat");
+        assertThat(query, variable("x", containsInAnyOrder(godfather, heat)));
     }
 
     @Test
     public void testVariablesEverywhere() {
         MatchQuery query = qb.match(
                 var()
-                        .rel(name("production-with-genre"), var("x").isa(var().sub(name("production"))))
+                        .rel(name("production-with-genre"), var("x").isa(var("y").sub(name("production"))))
                         .rel(var().has("name", "crime"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"),  "Godfather", "Heat");
+        assertThat(query, results(containsInAnyOrder(
+                allOf(hasEntry(is("x"), godfather), hasEntry(is("y"), production)),
+                allOf(hasEntry(is("x"), godfather), hasEntry(is("y"), movie)),
+                allOf(hasEntry(is("x"), heat),      hasEntry(is("y"), production)),
+                allOf(hasEntry(is("x"), heat),      hasEntry(is("y"), movie))
+        )));
     }
 
     @Test
     public void testSubSelf() {
         MatchQuery query = qb.match(name("movie").sub(var("x")));
 
-        QueryUtil.assertResultsMatch(
-                query, "x", null, movieGraph.graph().getResourceType("title"),
-                "movie", "production", "entity", "concept"
-        );
+        assertThat(query, variable("x", containsInAnyOrder(movie, production, entity, concept)));
     }
 
     @Test
-    public void testHasValue() {
-        MatchQuery query = qb.match(var("x").value()).limit(10);
-        assertEquals(10, query.stream().count());
-        assertTrue(query.stream().allMatch(results -> results.get("x").asResource().getValue() != null));
+    public void testIsResource() {
+        MatchQuery query = qb.match(var("x").isa("resource")).limit(10);
+
+        assertThat(query.execute(), hasSize(10));
+        assertThat(query, variable("x", everyItem(hasType(resource))));
     }
 
     @Test
     public void testHasReleaseDate() {
-        MatchQuery query = qb.match(var("x").has("release-date"));
-        assertEquals(4, query.stream().count());
-        assertTrue(query.stream().map(results -> results.get("x")).allMatch(
-                x -> x.asEntity().resources().stream().anyMatch(
-                        resource -> resource.type().getName().getValue().equals("release-date")
-                )
-        ));
+        MatchQuery query = qb.match(var("x").has("release-date", var("y")));
+        assertThat(query, variable("x", containsInAnyOrder(godfather, theMuppets, spy, chineseCoffee)));
     }
 
     @Test
     public void testAllowedToReferToNonExistentRoleplayer() {
-        long count = qb.match(var().rel("actor", var().id(ConceptId.of("999999999999999999")))).stream().count();
-        assertEquals(0, count);
+        MatchQuery query = qb.match(var().rel("actor", var().id(ConceptId.of("999999999999999999"))));
+        assertThat(query.execute(), empty());
     }
 
     @Test
@@ -412,8 +468,7 @@ public class MatchQueryTest {
                 var("y").has("name", "Robert de Niro")
         ).select("x");
 
-        List<ResourceType> resourceTypes = Arrays.asList(movieGraph.graph().getResourceType("name"), movieGraph.graph().getResourceType("title"));
-        QueryUtil.assertResultsMatch(query, "x", null, resourceTypes, "Heat", "Neil McCauley");
+        assertThat(query, variable("x", containsInAnyOrder(heat, neilMcCauley)));
     }
 
     @Test
@@ -423,29 +478,30 @@ public class MatchQueryTest {
                 var("y").has("name", "Kermit The Frog")
         ).select("x");
 
-        List<ResourceType> resourceTypes = Arrays.asList(movieGraph.graph().getResourceType("title"), movieGraph.graph().getResourceType("name"));
-        QueryUtil.assertResultsMatch(query, "x", null, resourceTypes,  "The Muppets", "Kermit The Frog");
+        assertThat(query, variable("x", (Matcher) hasItem(kermitTheFrog)));
     }
 
     @Test
     public void testMatchDataType() {
         MatchQuery query = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"), "tmdb-vote-average");
+        assertThat(query, variable("x", containsInAnyOrder(tmdbVoteAverage)));
 
         query = qb.match(var("x").datatype(ResourceType.DataType.LONG));
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"), "tmdb-vote-count", "runtime", "release-date");
+        assertThat(query, variable("x", containsInAnyOrder(tmdbVoteCount, runtime, releaseDate)));
 
         query = qb.match(var("x").datatype(ResourceType.DataType.BOOLEAN));
-        assertEquals(0, query.stream().count());
+        assertThat(query, variable("x", empty()));
 
         query = qb.match(var("x").datatype(ResourceType.DataType.STRING));
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"), "title", "gender", "real-name", "name");
+        assertThat(query, variable("x", containsInAnyOrder(title, gender, realName, name)));
     }
 
     @Test
     public void testSelectRuleTypes() {
         MatchQuery query = qb.match(var("x").sub(RULE.getName().getValue()));
-        QueryUtil.assertResultsMatch(query, "x", null, movieGraph.graph().getResourceType("title"), "rule", "a-rule-type", "inference-rule", "constraint-rule");
+        assertThat(query, variable("x", containsInAnyOrder(
+                rule, aRuleType, inferenceRule, constraintRule
+        )));
     }
 
     @Test
@@ -462,7 +518,7 @@ public class MatchQueryTest {
     public void testDisconnectedQuery() {
         MatchQuery query = qb.match(var("x").isa("movie"), var("y").isa("person"));
         int numPeople = 10;
-        assertEquals(QueryUtil.movies.length * numPeople, query.stream().count());
+        assertThat(query.execute(), hasSize(movies.size() * numPeople));
     }
 
     @Test
@@ -496,14 +552,13 @@ public class MatchQueryTest {
     @Test
     public void testHasVariable() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has("tmdb-vote-count", var("x")));
-        assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
+        assertThat(query, variable("x", contains(hasValue(1000L))));
     }
 
     @Test
     public void testRegexResourceType() {
         MatchQuery query = qb.match(var("x").regex("(fe)?male"));
-        assertEquals(1, query.stream().count());
-        assertEquals("gender", query.get("x").findFirst().get().asType().getName().getValue());
+        assertThat(query, variable("x", contains(gender)));
     }
 
     @Test
@@ -524,17 +579,17 @@ public class MatchQueryTest {
         GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
-            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(toSet());
-            Collection<RoleType> graphAPIPlaysRoles = graph.getType(type).playsRoles();
+            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
+            Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).playsRoles());
 
-            assertThat(graqlPlaysRoles, is(graphAPIPlaysRoles));
+            assertEquals(graqlPlaysRoles, graphAPIPlaysRoles);
         });
 
         Stream.of(d, e, f).forEach(type -> {
             Set<Concept> graqlPlayedBy = qb.match(var("x").playsRole(name(type))).get("x").collect(toSet());
-            Collection<Type> graphAPIPlayedBy = graph.<RoleType>getType(type).playedByTypes();
+            Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getType(type).playedByTypes());
 
-            assertThat(graqlPlayedBy, is(graphAPIPlayedBy));
+            assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
 
         // clean graph of inserts
@@ -559,15 +614,14 @@ public class MatchQueryTest {
             Concept x = result.get("x");
             Concept y = result.get("y");
             Concept z = result.get("z");
-            assertFalse(x + " = " + y + " = " + z, x.equals(y) && x.equals(z));
+            assertThat(x, not(allOf(is(y), is(z))));
         });
     }
 
     @Test
     public void testRelatedToSelf() {
         MatchQuery query = qb.match(var().rel("x").rel("x").rel("x"));
-        
-        assertEquals(0, query.stream().count());
+        assertThat(query.execute(), empty());
     }
 
     @Test
@@ -575,14 +629,10 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var("x"));
 
         // Make sure there a reasonable number of results
-        assertTrue(query.stream().count() > 10);
+        assertThat(query.execute(), hasSize(greaterThan(10)));
 
-        query.get("x").forEach(concept -> {
-            // Make sure results never contain castings
-            if (concept.isInstance()) {
-                assertFalse(concept.asInstance().type().isRoleType());
-            }
-        });
+        // Make sure results never contain castings
+        assertThat(query, variable("x", everyItem(not(isCasting()))));
     }
 
     @Test
@@ -590,36 +640,30 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var("x").isa(Schema.MetaSchema.CONCEPT.getName().getValue()));
 
         // Make sure there a reasonable number of results
-        assertTrue(query.stream().count() > 10);
+        assertThat(query.execute(), hasSize(greaterThan(10)));
 
-        query.get("x").forEach(concept -> {
-            assertTrue(concept.toString(), concept.isInstance());
-            assertFalse(concept.asInstance().type().isRoleType());
-        });
+        assertThat(query, variable("x", everyItem(both(isInstance()).and(not(isCasting())))));
     }
 
     @Test
     public void testMatchAllPairs() {
-        long numConcepts = qb.match(var("x")).stream().count();
+        int numConcepts = (int) qb.match(var("x")).stream().count();
         MatchQuery pairs = qb.match(var("x"), var("y"));
 
         // We expect there to be a result for every pair of concepts
-        assertEquals(numConcepts * numConcepts, pairs.stream().count());
+        assertThat(pairs.execute(), hasSize(numConcepts * numConcepts));
     }
 
     @Test
     public void testMatchAllDistinctPairs() {
-        long numConcepts = qb.match(var("x")).stream().count();
+        int numConcepts = (int) qb.match(var("x")).stream().count();
         MatchQuery pairs = qb.match(var("x").neq("y"));
 
         // Make sure there are no castings in results
-        assertFalse(pairs.stream()
-                .flatMap(result -> result.values().stream())
-                .anyMatch(concept -> concept.getId().getValue().startsWith("CASTING-"))
-        );
+        assertThat(pairs, allVariables(everyItem(not(isCasting()))));
 
         // We expect there to be a result for every distinct pair of concepts
-        assertEquals(numConcepts * (numConcepts - 1), pairs.stream().count());
+        assertThat(pairs.execute(), hasSize(numConcepts * (numConcepts - 1)));
     }
 
     @Test
@@ -628,13 +672,12 @@ public class MatchQueryTest {
 
         List<Map<String, Concept>> results = query.execute();
 
-        assertTrue(String.valueOf(results.size()), results.size() > 10);
+        assertThat(results, hasSize(greaterThan(10)));
 
         results.forEach(result -> {
-            Resource<Comparable<Comparable<?>>> resource = result.get("x").asResource();
-            Comparable<Comparable<?>> x = resource.getValue();
-            Comparable<?> y = (Comparable<?>) result.get("y").asResource().getValue();
-            assertTrue(x.toString() + " <= " + y.toString(), x.compareTo(y) > 0);
+            Comparable x = (Comparable) result.get("x").asResource().getValue();
+            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            assertThat(x, greaterThan(y));
         });
     }
 
@@ -645,7 +688,7 @@ public class MatchQueryTest {
                 var().has("title", "The Muppets").has("release-date", var("r"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", movieGraph.graph().getResourceType("title"), "Godfather");
+        assertThat(query, variable("x", contains(godfather)));
     }
 
     @Test
@@ -657,13 +700,12 @@ public class MatchQueryTest {
 
         List<Map<String, Concept>> results = query.execute();
 
-        assertTrue(String.valueOf(results.size()), results.size() > 5);
+        assertThat(results, hasSize(greaterThan(5)));
 
         results.forEach(result -> {
-            Resource<Comparable<Comparable<?>>> resource = result.get("x").asResource();
-            Comparable<Comparable<?>> x = resource.getValue();
-            Comparable<?> y = (Comparable<?>) result.get("y").asResource().getValue();
-            assertTrue(x.toString() + " > " + y.toString(), x.compareTo(y) <= 0);
+            Comparable x = (Comparable) result.get("x").asResource().getValue();
+            Comparable y = (Comparable) result.get("y").asResource().getValue();
+            assertThat(x, lessThanOrEqualTo(y));
         });
     }
 
@@ -694,22 +736,19 @@ public class MatchQueryTest {
     @Test
     public void testNoInstancesOfRoleType() {
         MatchQuery query = qb.match(var("x").isa(var("y")), var("y").name("actor"));
-        assertEquals(0, query.stream().count());
+        assertThat(query.execute(), empty());
     }
 
     @Test
     public void testNoInstancesOfRoleTypeUnselectedVariable() {
         MatchQuery query = qb.match(var().isa(var("y")), var("y").name("actor"));
-        assertEquals(0, query.stream().count());
+        assertThat(query.execute(), empty());
     }
 
     @Test
     public void testNoInstancesOfRoleTypeStartingFromCasting() {
         MatchQuery query = qb.match(var("x").isa(var("y")));
-
-        query.get("y").forEach(concept -> {
-            assertFalse(concept.isRoleType());
-        });
+        assertThat(query, variable("y", everyItem(not(isCasting()))));
     }
 
     @Test
@@ -718,7 +757,7 @@ public class MatchQueryTest {
                 .hasLabel(Schema.BaseType.CASTING.name()).id().next().toString();
 
         MatchQuery query = qb.match(var("x").id(ConceptId.of(castingId)));
-        assertEquals(0, query.stream().count());
+        assertThat(query.execute(), empty());
     }
 
     @Test
@@ -727,16 +766,14 @@ public class MatchQueryTest {
         ConceptId id = godfather.getId();
         MatchQuery query = qb.match(var().id(id).has("title", var("x")));
 
-        assertEquals("Godfather", query.get("x").findAny().get().asResource().getValue());
+        assertThat(query, variable("x", contains(hasValue("Godfather"))));
     }
 
     @Test
     public void testResultsString() {
-        qb.match(var("x").isa("movie")).resultsString(Printers.graql()).forEach(result -> {
-            assertThat(result, allOf(
-                    containsString("$x"), containsString("movie"), containsString(";")
-            ));
-        });
+        MatchQuery query = qb.match(var("x").isa("movie"));
+        List<String> resultsString = query.resultsString(Printers.graql()).collect(toList());
+        assertThat(resultsString, everyItem(allOf(containsString("$x"), containsString("movie"), containsString(";"))));
     }
 
     @Test
@@ -766,72 +803,54 @@ public class MatchQueryTest {
     @Test
     public void testMatchHasResource() {
         MatchQuery query = qb.match(var("x").hasResource("name"));
-
-        QueryUtil.assertResultsMatch(
-                query, "x", null, Lists.newArrayList(),
-                "person", "language", "genre", "a-rule-type", "cluster", "character"
-        );
+        assertThat(query, variable("x", containsInAnyOrder(
+                person, language, genre, aRuleType, cluster, character
+        )));
     }
 
     @Test
     public void testMatchKey() {
         MatchQuery query = qb.match(var("x").hasKey("name"));
-
-        QueryUtil.assertResultsMatch(query, "x", null, Lists.newArrayList(), "genre");
+        assertThat(query, variable("x", contains(genre)));
     }
 
     @Test
     public void testHideImplicitTypes() {
         MatchQuery query = qb.match(var("x").sub("concept"));
-
-        Set<String> types = query.get("x").map(Concept::asType).map(type -> type.getName().getValue()).collect(toSet());
-
-        assertThat(types, allOf(hasItem("movie"), not(hasItem("has-title"))));
+        assertThat(query, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
     }
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
         MatchQuery query = qb.match(var("x").sub("concept").name("has-title"));
-
-        Set<String> types = query.get("x").map(Concept::asType).map(type -> type.getName().getValue()).collect(toSet());
-
-        assertEquals(types, Sets.newHashSet("has-title"));
+        assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
     }
 
     @Test
     public void testDontHideImplicitTypesIfImplicitTypesOn() {
         movieGraph.graph().showImplicitConcepts(true);
-
         MatchQuery query = qb.match(var("x").sub("concept"));
-
-        Set<String> types = query.get("x").map(Concept::asType).map(type -> type.getName().getValue()).collect(toSet());
-
-        assertThat(types, allOf(hasItem("movie"), hasItem("has-title")));
+        assertThat(query, variable("x", hasItems(movie, hasTitle)));
     }
 
     @Test
     public void testHideImplicitTypesTwice() {
-        MatchQuery query = qb.match(var("x").sub("concept"));
-
-        Set<String> types = query.get("x").map(Concept::asType).map(type -> type.getName().getValue()).collect(toSet());
-
-        assertThat(types, allOf(hasItem("movie"), not(hasItem("has-title"))));
+        MatchQuery query1 = qb.match(var("x").sub("concept"));
+        assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
 
         GraknGraph graph2 = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(movieGraph.graph().getKeyspace());
-        Set<String> typesAgain = graph2.graql().match(var("x").sub("concept")).get("x").map(type -> type.asType().getName().getValue()).collect(toSet());
 
-        assertEquals(types, typesAgain);
+        MatchQuery query2 = graph2.graql().match(var("x").sub("concept"));
+        assertEquals(query1.execute(), query2.execute());
     }
 
-    // hamcrest matcher generics are weird
-    @SuppressWarnings("unchecked")
     @Test
     public void testQueryNoVariables() {
         MatchQuery query = qb.match(var().isa("movie"));
         List<Map<String, Concept>> results = query.execute();
         assertThat(results, allOf(
                 (Matcher) everyItem(not(hasKey(anything()))),
-                hasSize(QueryUtil.movies.length)
+                hasSize(movies.size())
         ));
     }
 

@@ -37,18 +37,4 @@
     <properties>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>ai.grakn</groupId>
-            <artifactId>grakn-engine</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.servicemix.bundles</groupId>
-                    <artifactId>org.apache.servicemix.bundles.commons-csv</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-    </dependencies>
 </project>

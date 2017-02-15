@@ -65,4 +65,19 @@ class MedianAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<
     public String toString() {
         return "median " + varName;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        MedianAggregate that = (MedianAggregate) o;
+
+        return varName.equals(that.varName);
+    }
+
+    @Override
+    public int hashCode() {
+        return varName.hashCode();
+    }
 }

@@ -7,7 +7,8 @@ module.exports = {
         "window": true,
         "localStorage": true,
         "$": true,
-        "visualiser": true
+        "visualiser": true,
+        "vis":true,
     },
     "rules": {
         "no-plusplus": [

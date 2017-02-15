@@ -29,7 +29,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -59,6 +58,9 @@ import java.util.stream.Collectors;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
+    private ComponentCache<TypeName> cachedInternalType = new ComponentCache<>(() -> TypeName.of(getProperty(Schema.ConceptProperty.TYPE)));
+    private ComponentCache<V> cachedType = new ComponentCache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.ISA));
+
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
     }
@@ -72,16 +74,16 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * Deletes the concept as an Instance
      */
     @Override
-    public void innerDelete() {
+    public void delete() {
         InstanceImpl<?, ?> parent = this;
         Set<CastingImpl> castings = parent.castings();
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getGraknGraph().getConceptLog().putConcept(casting);
+            getGraknGraph().getConceptLog().trackConceptForValidation(casting);
 
             for(RelationImpl relation : relations) {
-                getGraknGraph().getConceptLog().putConcept(relation);
+                getGraknGraph().getConceptLog().trackConceptForValidation(relation);
                 relation.cleanUp();
             }
 
@@ -141,7 +143,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         parent.castings().forEach(c -> {
             CastingImpl casting = c.asCasting();
             if (roleTypeNames.size() != 0) {
-                if (roleTypeNames.contains(casting.getType())) {
+                if (roleTypeNames.contains(casting.getInternalType())) {
                     relations.addAll(casting.getRelations());
                 }
             } else {
@@ -190,28 +192,41 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
 
     /**
      *
+     * @return The type of the concept casted to the correct interface
+     */
+    public V type() {
+        return cachedType.get();
+    }
+
+    /**
+     *
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
     protected T type(V type) {
-        if(type != null && type() == null){
-            V currentIsa = type();
-            if(currentIsa == null){
-                setType(String.valueOf(type.getName()));
-                putEdge(type, Schema.EdgeLabel.ISA);
-            } else if(!currentIsa.equals(type)){
-                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
-            }
+        if(type != null){
+            setInternalType(type.getName());
+            putEdge(type, Schema.EdgeLabel.ISA);
+            cachedType.set(type);
         }
         return getThis();
     }
 
     /**
      *
-     * @return The type of the concept casted to the correct interface
+     * @param type The type of this concept
+     * @return The concept itself casted to the correct interface
      */
-    public V type() {
-        return getOutgoingNeighbour(Schema.EdgeLabel.ISA);
+    private T setInternalType(TypeName type){
+        cachedInternalType.set(type);
+        return setProperty(Schema.ConceptProperty.TYPE, type.getValue());
     }
 
+    /**
+     *
+     * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
+     */
+    public TypeName getInternalType(){
+        return cachedInternalType.get();
+    }
 }

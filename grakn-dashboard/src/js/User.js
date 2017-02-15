@@ -35,7 +35,7 @@ export default {
     // @return boolean
   getReasonerStatus() {
     const useReasoner = localStorage.getItem('use_reasoner');
-    if (useReasoner === undefined) {
+    if (useReasoner == null) {
       this.setReasonerStatus(DEFAULT_USE_REASONER);
       return DEFAULT_USE_REASONER;
     }
@@ -49,7 +49,7 @@ export default {
     // @return boolean
   getMaterialiseStatus() {
     const materialiseReasoner = localStorage.getItem('reasoner_materialise');
-    if (materialiseReasoner === undefined) {
+    if (materialiseReasoner == null) {
       this.setMaterialiseStatus(DEFAULT_MATERIALISE);
       return DEFAULT_MATERIALISE;
     }

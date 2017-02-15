@@ -18,18 +18,22 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -90,20 +94,20 @@ class ValidateGlobalRules {
         boolean satisfiesPlaysRole = false;
 
         while(currentConcept != null){
-            Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
+            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
 
-            for (EdgeImpl edge : edges) {
-                if (edge.getTarget().asType().getName().equals(roleType.getName())) {
+            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
+                RoleType playsRole = playsRoleEntry.getKey();
+                Boolean required = playsRoleEntry.getValue();
+                if(playsRole.getName().equals(roleType.getName())){
                     satisfiesPlaysRole = true;
 
                     // Assert unique relation for this role type
-                    Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
                     if (required && rolePlayer.relations(roleType).size() != 1) {
                         return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(rolePlayer.getId(), roleType.getName(), rolePlayer.relations(roleType).size()));
                     }
                 }
             }
-
             currentConcept = (TypeImpl) currentConcept.superType();
         }
 
@@ -207,11 +211,19 @@ class ValidateGlobalRules {
         //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
         if(!superRelationType.isAbstract()) {
             Set<TypeName> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.getSuperSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
+            superRelationType.superTypeSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
             for (RoleType hasRole : hasRoles) {
-                RoleType superRoleType = hasRole.superType();
-                if (superRoleType == null || !allSuperRolesPlayed.contains(superRoleType.getName())) {
+                boolean validRoleTypeFound = false;
+                Set<RoleType> superRoleTypes = ((RoleTypeImpl) hasRole).superTypeSet();
+                for (RoleType superRoleType : superRoleTypes) {
+                    if(allSuperRolesPlayed.contains(superRoleType.getName())){
+                        validRoleTypeFound = true;
+                        break;
+                    }
+                }
+
+                if(!validRoleTypeFound){
                     errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(hasRole.getName(), relationType.getName(), "super", "super", superRelationType.getName()));
                 }
             }
@@ -245,11 +257,11 @@ class ValidateGlobalRules {
         TypeImpl<?, ?> currentConcept = (TypeImpl) instance.type();
 
         while(currentConcept != null){
-            Set<EdgeImpl> edges = currentConcept.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE);
-            for (EdgeImpl edge : edges) {
-                Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
-                if (required) {
-                    RoleType roleType = edge.getTarget().asRoleType();
+
+            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
+            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
+                if(playsRoleEntry.getValue()){
+                    RoleType roleType = playsRoleEntry.getKey();
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId()));
@@ -273,5 +285,46 @@ class ValidateGlobalRules {
         } catch (ConceptNotUniqueException e){
             return Optional.of(VALIDATION_RELATION_DUPLICATE.getMessage(relation));
         }
+    }
+
+    /**
+     *
+     * @param rule The rule to be validated
+     * @return Error messages if the lhs or rhs of a rule refers to a non existent type
+     */
+    static Set<String> validateRuleOntologyElementsExist(GraknGraph graph, RuleImpl rule){
+        Set<String> errors = new HashSet<>();
+        errors.addAll(checkRuleSideInvalid(graph, rule, "LHS", rule.getLHS()));
+        errors.addAll(checkRuleSideInvalid(graph, rule, "RHS", rule.getRHS()));
+        return errors;
+    }
+
+    /**
+     *
+     * @param graph The graph to query against
+     * @param rule The rule the pattern was extracted from
+     * @param side The side from which the pattern was extracted
+     * @param pattern The pattern from which we will extract the types in the pattern
+     * @return A list of errors if the pattern refers to any non-existent types in the graph
+     */
+    private static Set<String> checkRuleSideInvalid(GraknGraph graph, RuleImpl rule, String side, Pattern pattern) {
+        Set<String> errors = new HashSet<>();
+
+        pattern.admin().getVars().stream()
+                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.getTypeNames().stream()).forEach(typeName -> {
+                    Type type = graph.getType(typeName);
+                    if(type == null){
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getName(), typeName));
+                    } else {
+                        if(side.equalsIgnoreCase("LHS")){
+                            rule.addHypothesis(type);
+                        } else {
+                            rule.addConclusion(type);
+                        }
+                    }
+                });
+
+        return errors;
     }
 }

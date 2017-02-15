@@ -58,12 +58,6 @@ public interface Var extends Pattern {
     Var name(TypeName name);
 
     /**
-     * this variable must have a value
-     * @return this
-     */
-    Var value();
-
-    /**
      * @param value a value that this variable's value must exactly match
      * @return this
      */
@@ -74,12 +68,6 @@ public interface Var extends Pattern {
      * @return this
      */
     Var value(ValuePredicate predicate);
-
-    /**
-     * @param type a resource type that this variable must have an instance of
-     * @return this
-     */
-    Var has(String type);
 
     /**
      * @param var a variable representing a resource

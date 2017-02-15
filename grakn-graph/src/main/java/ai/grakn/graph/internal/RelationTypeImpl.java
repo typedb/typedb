@@ -25,7 +25,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -42,12 +42,10 @@ import java.util.Set;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
+    private ComponentCache<Set<RoleType>> cachedHasRoles = new ComponentCache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-    }
-
-    RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type) {
-        super(graknGraph, v, type);
     }
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RelationType type, Boolean isImplicit) {
@@ -66,9 +64,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public Collection<RoleType> hasRoles() {
-        Set<RoleType> roleTypes = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE).forEach(role -> roleTypes.add(role.asRoleType()));
-        return roleTypes;
+        return Collections.unmodifiableCollection(cachedHasRoles.get());
     }
 
     /**
@@ -80,6 +76,13 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     public RelationType hasRole(RoleType roleType) {
         checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
+
+        //ComponentCache the Role internally
+        cachedHasRoles.ifPresent(set -> set.add(roleType));
+
+        //ComponentCache the relation type in the role
+        ((RoleTypeImpl) roleType).addCachedRelationType(this);
+
         return this;
     }
 
@@ -95,14 +98,34 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add castings of roleType to make sure relations are still valid
-        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
+        roleTypeImpl.castings().forEach(casting -> getGraknGraph().getConceptLog().trackConceptForValidation(casting));
 
         //Add the Role Type itself
-        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+        getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
         //Add the Relation Type
-        getGraknGraph().getConceptLog().putConcept(roleTypeImpl);
+        getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
+
+        //Remove from internal cache
+        cachedHasRoles.ifPresent(set -> set.remove(roleType));
+
+        //Remove from roleTypeCache
+        ((RoleTypeImpl) roleType).deleteCachedRelationType(this);
 
         return this;
+    }
+
+    @Override
+    public void delete(){
+        //Force load the cache
+        cachedHasRoles.get();
+
+        super.delete();
+
+        //Update the cache of the connected role types
+        cachedHasRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
+
+        //Clear internal Cache
+        cachedHasRoles.clear();
     }
 }

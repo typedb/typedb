@@ -35,7 +35,7 @@ $x has recommended-generic-wine-type 'Champagne';
 $x has preferred-colour 'white';
 $y isa wine;
 $y has name 'White Champagne';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -44,7 +44,7 @@ $x has recommended-generic-wine-type 'Champagne';
 $x has preferred-colour 'pink';
 $y isa wine;
 $y has name 'Pink Champagne';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -53,7 +53,7 @@ $x has recommended-generic-wine-type 'Champagne';
 $x has preferred-colour 'black';
 $y isa wine;
 $y has name 'Black Champagne';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 ###############Table###############
 
@@ -71,7 +71,7 @@ $x has recommended-generic-wine-type 'table wine';
 $x has preferred-colour 'white';
 $y isa wine;
 $y has name 'Tamaioasa Romaneasca';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -80,7 +80,7 @@ $x has recommended-generic-wine-type 'table wine';
 $x has preferred-colour 'pink';
 $y isa wine;
 $y has name 'Busuioaca Romaneasca';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -89,7 +89,7 @@ $x has recommended-generic-wine-type 'table wine';
 $x has preferred-colour 'red';
 $y isa wine;
 $y has name 'Cabernet Sauvignion';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 
 ###############DEALU MARE VINEYARD###############
@@ -109,7 +109,7 @@ $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'white';
 $y isa wine;
 $y has name 'Feteasca Regala';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -119,7 +119,7 @@ $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'pink';
 $y isa wine;
 $y has name 'Feteasca Roz';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -129,7 +129,7 @@ $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'red';
 $y isa wine;
 $y has name 'Feteasca Neagra';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 ###############Jidvei vineyard###############
 
@@ -148,7 +148,7 @@ $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'white';
 $y isa wine;
 $y has name 'Sauvignion Blanc';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -158,7 +158,7 @@ $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'pink';
 $y isa wine;
 $y has name 'Feteasca Regala';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -168,7 +168,7 @@ $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'red';
 $y isa wine;
 $y has name 'Pinot Noir';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 ###############ENTREE WINES###############
 
@@ -186,7 +186,7 @@ $x has preferred-entree 'white meat';
 $x has preferred-colour 'white';
 $y isa wine;
 $y has name 'Muscat Sec';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -196,7 +196,7 @@ $x has preferred-entree 'white meat';
 $x has preferred-colour 'rose';
 $y isa wine;
 $y has name 'Pinot Grigio Rose';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -206,7 +206,7 @@ $x has preferred-entree 'white meat';
 $x has preferred-colour 'red';
 $y isa wine;
 $y has name 'Corbieres 2003';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -216,7 +216,7 @@ $x has preferred-entree 'steak';
 $x has preferred-colour 'white';
 $y isa wine;
 $y has name 'Chateau Agnel 2000';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -226,7 +226,7 @@ $x has preferred-entree 'steak';
 $x has preferred-colour 'rose';
 $y isa wine;
 $y has name 'Busuioaca Romaneasca';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -236,7 +236,7 @@ $x has preferred-entree 'steak';
 $x has preferred-colour 'red';
 $y isa wine;
 $y has name 'Rosso di Sicilia 2004';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};
 
 isa inference-rule,
 lhs {
@@ -246,4 +246,4 @@ $x has preferred-entree 'barbecue';
 $x has preferred-colour 'white';
 $y isa wine;
 $y has name 'Riojo Blanco CVNE 2003';},
-rhs {($x, $y) isa wine-recommendation;};
+rhs {(recommendation-owner: $x, recommended-wine: $y)  isa wine-recommendation;};

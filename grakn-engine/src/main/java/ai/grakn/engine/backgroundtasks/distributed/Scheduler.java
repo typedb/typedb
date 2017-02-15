@@ -20,8 +20,6 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.util.ConfigProperties;
-import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -45,14 +43,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.SCHEDULERS_GROUP;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.engine.util.ConfigProperties.SCHEDULER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -68,7 +65,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class Scheduler implements Runnable, AutoCloseable {
     private static final String STATUS_MESSAGE = "Topic [%s], partition [%s] received [%s] records, next offset is [%s]";
 
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
     private final static Logger LOG = LoggerFactory.getLogger(Scheduler.class);
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
@@ -92,7 +88,6 @@ public class Scheduler implements Runnable, AutoCloseable {
             producer = kafkaProducer();
 
             waitToClose = new CountDownLatch(1);
-
             schedulingService = Executors.newScheduledThreadPool(1);
 
             LOG.debug("Scheduler started");
@@ -114,7 +109,13 @@ public class Scheduler implements Runnable, AutoCloseable {
                 printConsumerStatus(records);
 
                 for(ConsumerRecord<String, String> record:records) {
-                    scheduleTask(record.key(), record.value());
+                    TaskState taskState = TaskState.deserialize(record.value());
+
+                    // mark the task as created
+                    storage.newState(taskState);
+
+                    // schedule the task
+                    scheduleTask(taskState);
 
                     //acknowledge that the record was read to the consumer
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
@@ -122,34 +123,36 @@ public class Scheduler implements Runnable, AutoCloseable {
             }
         }
         catch (WakeupException e) {
-            // do nothing to shutdown
             LOG.debug("Shutting down scheduler consumer");
-        }
-        finally {
-            consumer.commitSync();
-            consumer.close();
-            waitToClose.countDown();
+        } catch (Throwable t){
+            LOG.error("Error in scheduler poll " + getFullStackTrace(t));
+        } finally {
+            noThrow(consumer::commitSync, "Exception syncing commits while closing in Scheduler");
+            noThrow(consumer::close, "Exception while closing consumer in Scheduler");
+            noThrow(waitToClose::countDown, "Exception while counting down close latch in Scheduler");
         }
     }
 
+    /**
+     * Stop the main loop, causing run() to exit.
+     *
+     * noThrow() functions used here so that if an error occurs during execution of a
+     * certain step, the subsequent stops continue to execute.
+     */
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
             running = false;
             noThrow(consumer::wakeup, "Could not wake up scheduler thread.");
 
             // Wait for thread calling run() to wakeup and close consumer.
-            try {
-                waitToClose.await(5*properties.getPropertyAsLong(SCHEDULER_POLLING_FREQ), MILLISECONDS);
-            } catch (Throwable t) {
-                LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
-            }
+            noThrow(waitToClose::await, "Error waiting for TaskRunner consumer to exit");
 
             noThrow(schedulingService::shutdownNow, "Could not shutdown scheduling service.");
 
             noThrow(producer::flush, "Could not flush Kafka producer in scheduler.");
             noThrow(producer::close, "Could not close Kafka producer in scheduler.");
 
-            noThrow(() -> LOG.debug("Scheduler stopped."), "Kafka logging error.");
+            LOG.debug("Scheduler stopped.");
         }
         else {
             LOG.error("Scheduler open() must be called before close()!");
@@ -158,33 +161,21 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     /**
      * Schedule a task to be submitted to the work queue when it is supposed to be run
-     * @param id id of the task to be scheduled
-     * @param configuration configuration of task to be scheduled, will be copied to WORK_QUEUE_TOPIC
-     */
-    private void scheduleTask(String id, String configuration) {
-        TaskState state = storage.getState(id);
-        scheduleTask(id, configuration, state);
-    }
-
-    /**
-     * Schedule a task to be submitted to the work queue when it is supposed to be run
-     * @param id id of the task to be scheduled
-     * @param configuration configuration of task to be scheduled, will be copied to WORK_QUEUE_TOPIC
      * @param state state of the task
      */
-    private void scheduleTask(String id,  String configuration, TaskState state) {
+    private void scheduleTask(TaskState state) {
         long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
         markAsScheduled(state);
         if(state.isRecurring()) {
             Runnable submit = () -> {
                 markAsScheduled(state);
-                sendToWorkQueue(id, configuration);
+                sendToWorkQueue(state);
             };
             schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
         }
         else {
-            Runnable submit = () -> sendToWorkQueue(id, configuration);
+            Runnable submit = () -> sendToWorkQueue(state);
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
     }
@@ -200,12 +191,11 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     /**
      * Submit a task to the work queue
-     * @param taskId id of the task to be submitted
-     * @param configuration task to be submitted
+     * @param state task to be submitted
      */
-    private void sendToWorkQueue(String taskId, String configuration) {
-        LOG.debug("Sending to work queue " + taskId);
-        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, taskId, configuration), new KafkaLoggingCallback());
+    private void sendToWorkQueue(TaskState state) {
+        LOG.debug("Sending to work queue " + state.getId());
+        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, state.getId(), TaskState.serialize(state)), new KafkaLoggingCallback());
         producer.flush();
     }
 
@@ -213,17 +203,11 @@ public class Scheduler implements Runnable, AutoCloseable {
      * Get all recurring tasks from the graph and schedule them
      */
     private void restartRecurringTasks() {
-        Set<Pair<String, TaskState>> tasks = storage.getTasks(null, null, null, 0, 0);
+        Set<TaskState> tasks = storage.getTasks(null, null, null, 0, 0);
         tasks.stream()
-                .filter(p -> p.getValue().isRecurring())
-                .filter(p -> p.getValue().status() != STOPPED)
-                .forEach(p -> {
-                    // Not sure what is the right format for "no configuration", but somehow the configuration
-                    // here for a postprocessing task is "null": if we say that the configuration of a task
-                    // is a JSONObject, then an empty configuration ought to be {}
-                    String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
-                    scheduleTask(p.getKey(), config, p.getValue());
-                });
+                .filter(TaskState::isRecurring)
+                .filter(p -> p.status() != STOPPED)
+                .forEach(this::scheduleTask);
     }
 
     private void printConsumerStatus(ConsumerRecords<String, String> records){

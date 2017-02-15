@@ -66,7 +66,7 @@ public class ResourceTypeTest extends GraphTestBase{
     public void testRegexSetOnNonString(){
         ResourceType<Long> thing = graknGraph.putResourceType("Random ID", ResourceType.DataType.LONG);
         expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(thing.toString()));
+        expectedException.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(thing.getName()));
         thing.setRegex("blab");
     }
 

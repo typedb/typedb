@@ -47,12 +47,12 @@ public class ZookeeperConnection {
         try {
             zookeeperConnection.start();
             if(!zookeeperConnection.blockUntilConnected(30, TimeUnit.SECONDS)){
-                throw new RuntimeException("Could not instantiate zookeeper");
+                throw new RuntimeException("Could not connect to zookeeper");
             }
 
             createZKPaths();
         } catch (Exception exception) {
-            throw new RuntimeException("Could not instantiate zookeeper");
+            throw new RuntimeException("Could not connect to zookeeper");
         }
     }
 

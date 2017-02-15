@@ -70,7 +70,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         this.originalVars = vars;
 
         // Get all variables, including ones nested in other variables
-        this.vars = vars.stream().flatMap(v -> v.getImplicitInnerVars().stream()).collect(toImmutableList());
+        this.vars = vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toImmutableList());
 
         for (VarAdmin var : this.vars) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));
@@ -161,5 +161,25 @@ class InsertQueryImpl implements InsertQueryAdmin {
     public String toString() {
         String mq = matchQuery.map(match -> match + "\n").orElse("");
         return mq + "insert " + originalVars.stream().map(v -> v + ";").collect(Collectors.joining("\n")).trim();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        InsertQueryImpl maps = (InsertQueryImpl) o;
+
+        if (!matchQuery.equals(maps.matchQuery)) return false;
+        if (!graph.equals(maps.graph)) return false;
+        return originalVars.equals(maps.originalVars);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = matchQuery.hashCode();
+        result = 31 * result + graph.hashCode();
+        result = 31 * result + originalVars.hashCode();
+        return result;
     }
 }

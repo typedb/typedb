@@ -21,28 +21,22 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 
 import com.google.common.collect.Maps;
-import java.util.ArrayList;
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
+import java.util.stream.Stream;
 
 /**
  *
@@ -65,28 +59,19 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
     }
 
     /**
-     *
-     * @param atom atom which roles are to be permuted
-     * @param headAtom rule head atom which answers we are permuting, only needed when atom is a match all atom
+     * permute answer based on specified sets of permutations defined by unifiers
+     * @param unifierSet set of unifier mappings to perform the permutation on
+     * @param subs substitutions that need to met
+     * @param types type constraints that need to be met
      * @return permuted answers
      */
-    public QueryAnswers permute(Atom atom, Atom headAtom){
-        if (!(atom.isRelation() && headAtom.isRelation())) return this;
-        List<VarName> permuteVars = new ArrayList<>();
-        //if atom is match all atom, add type from rule head and find unmapped roles
-        Relation relAtom = atom.getValueVariable().getValue().isEmpty()?
-                ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
-                (Relation) atom;
-        relAtom.getUnmappedRolePlayers().forEach(permuteVars::add);
-
-        List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars));
-        Set<Map<VarName, VarName>> unifierSet = getUnifiersFromPermutations(permuteVars, varPermutations);
+    public QueryAnswers permute(Set<Map<VarName, VarName>> unifierSet, Set<IdPredicate> subs, Set<TypeAtom> types){
+        if (unifierSet.isEmpty()) return this;
         QueryAnswers permutedAnswers = new QueryAnswers();
         unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
-
         return permutedAnswers
-                .filterBySubstitutions(atom)
-                .filterByEntityTypes(atom);
+                .filterBySubstitutions(subs)
+                .filterByEntityTypes(types);
     }
 
     /**
@@ -124,30 +109,18 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
 
     /**
      * filter answers by applying NonEquals filters
-     * @param query query containing filters
+     * @param filters non equal atoms to
      * @return filtered answers
      */
-    public QueryAnswers filterNonEquals(ReasonerQueryImpl query){
-        Set<NotEquals> filters = query.getAtoms().stream()
-                .filter(at -> at.getClass() == NotEquals.class)
-                .map(at -> (NotEquals) at)
-                .collect(Collectors.toSet());
+    public QueryAnswers filterNonEquals(Set<NotEquals> filters){
         if(filters.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers(this);
         for (NotEquals filter : filters) results = filter.filter(results);
         return results;
     }
 
-    public QueryAnswers filterBySubstitutions(Atom parent){
-        if(!parent.isRelation()) return this;
-        Relation atom = (Relation) parent;
-        Set<VarName> unmappedVars = atom.getUnmappedRolePlayers();
-        //filter by checking substitutions
-        Set<IdPredicate> subs = atom.getIdPredicates().stream()
-                .filter(pred -> unmappedVars.contains(pred.getVarName()))
-                .collect(Collectors.toSet());
+    public QueryAnswers filterBySubstitutions(Set<IdPredicate> subs){
         if (subs.isEmpty()) return this;
-
         QueryAnswers results = new QueryAnswers(this);
         subs.forEach( sub -> this.stream()
                 .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
@@ -155,24 +128,17 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return results;
     }
 
-    public QueryAnswers filterByEntityTypes(Atom parent){
-        if(!parent.isRelation()) return this;
-        Relation atom = (Relation) parent;
-        Set<VarName> unmappedVars = atom.getUnmappedRolePlayers();
-        Map<VarName, Type> varTypeMap = atom.getParentQuery().getVarTypeMap();
-        Map<VarName, Type> filterMap = unmappedVars.stream()
-                .filter(varTypeMap::containsKey)
-                .filter(v -> Objects.nonNull(varTypeMap.get(v)))
-                .collect(Collectors.toMap(v -> v, varTypeMap::get));
-        if (filterMap.isEmpty()) return this;
-
+    public QueryAnswers filterByEntityTypes(Set<TypeAtom> types){
+        if (types.isEmpty()) return this;
         QueryAnswers results = new QueryAnswers();
         this.forEach(answer -> {
             boolean isCompatible = true;
-            Iterator<Map.Entry<VarName, Type>> it = filterMap.entrySet().iterator();
+            Iterator<TypeAtom> it = types.stream().filter(t -> answer.keySet().contains(t.getVarName())).iterator();
             while( it.hasNext() && isCompatible){
-                Map.Entry<VarName, Type> entry = it.next();
-                isCompatible = answer.get(entry.getKey()).asInstance().type().equals(entry.getValue());
+                TypeAtom type = it.next();
+                VarName var = type.getVarName();
+                Type t = type.getType();
+                isCompatible = answer.get(var).asInstance().type().equals(t);
             }
             if (isCompatible) results.add(answer);
         });
@@ -189,24 +155,15 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
             return new QueryAnswers();
         }
         QueryAnswers join = new QueryAnswers();
-        Set<VarName> joinVars = new HashSet<>(this.getVars());
-        joinVars.retainAll(localTuples.getVars());
-
+        Set<VarName> joinVars = Sets.intersection(this.getVars(), localTuples.getVars());
         for( Map<VarName, Concept> lanswer : localTuples){
-            for (Map<VarName, Concept> answer : this){
-                boolean isCompatible = true;
-                Iterator<VarName> vit = joinVars.iterator();
-                while(vit.hasNext() && isCompatible) {
-                    VarName var = vit.next();
-                    isCompatible = answer.get(var).equals(lanswer.get(var));
-                }
-
-                if (isCompatible) {
-                    Map<VarName, Concept> merged = new HashMap<>(lanswer);
-                    merged.putAll(answer);
-                    join.add(merged);
-                }
-            }
+            Stream<Map<VarName, Concept>> answerStream = this.stream();
+            for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(lanswer.get(v)));
+            answerStream.map(ans ->  {
+                Map<VarName, Concept> merged = new HashMap<>(lanswer);
+                merged.putAll(ans);
+                return merged;
+            }).forEach(join::add);
         }
         return join;
     }
@@ -228,18 +185,18 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         return unifiedAnswers;
     }
 
+    public static Map<VarName, Concept> unify(Map<VarName, Concept> answer, Map<VarName, VarName> unifiers){
+        return answer.entrySet().stream()
+                .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey()) ? unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
+    }
+
     /**
      * unify answers of childQuery with parentQuery
      * @param parentQuery parent atomic query containing target variables
      * @return unified answers
      */
-    public static QueryAnswers getUnifiedAnswers(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
-        QueryAnswers answers = childQuery.getAnswers();
+    public static <T extends ReasonerQuery> QueryAnswers getUnifiedAnswers(T parentQuery, T childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        Atomic childAtom = childQuery.getAtom();
-        Atomic parentAtom = parentQuery.getAtom();
-
-        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
-        return answers.unify(unifiers).filterVars(parentQuery.getVarNames());
+        return answers.unify(childQuery.getUnifiers(parentQuery)).filterVars(parentQuery.getVarNames());
     }
 }

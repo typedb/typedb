@@ -42,7 +42,6 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.util.ErrorMessage.ID_RESERVED;
 import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,29 +71,10 @@ public class ConceptTest extends GraphTestBase{
 
         assertNotNull(type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
 
-        Vertex vertexType1 = graknGraph.getTinkerPopGraph().traversal().V(type1.getBaseIdentifier()).next();
-        Vertex vertexType3 = graknGraph.getTinkerPopGraph().traversal().V(type3.getBaseIdentifier()).next();
+        Vertex vertexType1 = graknGraph.getTinkerPopGraph().traversal().V(type1.getId().getRawValue()).next();
+        Vertex vertexType3 = graknGraph.getTinkerPopGraph().traversal().V(type3.getId().getRawValue()).next();
         vertexType1.addEdge(Schema.EdgeLabel.SUB.getLabel(), vertexType3);
         type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB);
-    }
-
-    @Test
-    public void testGetVertex(){
-        assertNotNull(concept.getBaseIdentifier());
-    }
-
-    @Test
-    public void testSetType() {
-        concept.setType("test_type");
-        Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals("test_type", conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
-    }
-
-    @Test
-    public void testGetType() {
-        concept.setType("test_type");
-        Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(concept.getType().getValue(), conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
     }
 
     @Test
@@ -107,7 +87,7 @@ public class ConceptTest extends GraphTestBase{
 
         assertEquals(c1, c1_copy);
         assertNotEquals(c1, c2);
-        assertNotEquals(c1.getBaseIdentifier(), concept.getBaseIdentifier());
+        assertNotEquals(c1.getId().getRawValue(), concept.getId().getRawValue());
 
         HashSet<Concept> concepts = new HashSet<>();
 
@@ -118,7 +98,7 @@ public class ConceptTest extends GraphTestBase{
 
         concepts.add(c2);
         assertEquals(2, concepts.size());
-        Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getId().getRawValue()).next();
         assertNotEquals(concept, conceptVertex);
     }
 
@@ -133,6 +113,17 @@ public class ConceptTest extends GraphTestBase{
     public void testToString() {
         EntityType concept = graknGraph.putEntityType("a");
         Instance concept2 = concept.addEntity();
+
+        assertFalse(concept2.toString().contains("ConceptType"));
+        assertFalse(concept2.toString().contains("Subject Identifier"));
+        assertFalse(concept2.toString().contains("Subject Locator"));
+    }
+
+    @Test
+    public void testToStringOnDeletedConceptDoesntThrow() {
+        EntityType concept = graknGraph.putEntityType("a");
+        Instance concept2 = concept.addEntity();
+        concept2.delete();
 
         assertFalse(concept2.toString().contains("ConceptType"));
         assertFalse(concept2.toString().contains("Subject Identifier"));
@@ -177,12 +168,12 @@ public class ConceptTest extends GraphTestBase{
         InstanceImpl conceptInstance4 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance5 = (InstanceImpl) entityType.addEntity();
         InstanceImpl conceptInstance6 = (InstanceImpl) entityType.addEntity();
-        Vertex conceptInstance1_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance1.getBaseIdentifier()).next();
-        Vertex conceptInstance2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance2.getBaseIdentifier()).next();
-        Vertex conceptInstance3_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance3.getBaseIdentifier()).next();
-        Vertex conceptInstance4_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance4.getBaseIdentifier()).next();
-        Vertex conceptInstance5_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance5.getBaseIdentifier()).next();
-        Vertex conceptInstance6_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance6.getBaseIdentifier()).next();
+        Vertex conceptInstance1_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance1.getId().getRawValue()).next();
+        Vertex conceptInstance2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance2.getId().getRawValue()).next();
+        Vertex conceptInstance3_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance3.getId().getRawValue()).next();
+        Vertex conceptInstance4_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance4.getId().getRawValue()).next();
+        Vertex conceptInstance5_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance5.getId().getRawValue()).next();
+        Vertex conceptInstance6_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance6.getId().getRawValue()).next();
 
         conceptInstance2_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
         conceptInstance3_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
@@ -301,17 +292,5 @@ public class ConceptTest extends GraphTestBase{
         expectedException.expectMessage(INVALID_OBJECT_TYPE.getMessage(thing, Type.class));
 
         thing.asType();
-    }
-
-    @Test
-    public void reservedTest(){
-        expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(ID_RESERVED.getMessage("concept"));
-        graknGraph.putEntityType("concept");
-    }
-
-    @Test
-    public void name(){
-        System.out.println(graknGraph.getMetaConcept().superType());
     }
 }

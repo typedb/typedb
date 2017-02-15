@@ -22,7 +22,6 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
-import javafx.util.Pair;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,9 +32,10 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.junit.Assert.assertEquals;
@@ -110,11 +110,12 @@ public class TaskStateGraphStoreTest {
     @Test
     public void testGetTaskStateByStatus() {
         String id = stateStorage.newState(task());
+        stateStorage.newState(task().status(SCHEDULED));
         assertNotNull(id);
 
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
         assertTrue(res.parallelStream()
-                .map(Pair::getKey)
+                .map(TaskState::getId)
                 .filter(x -> x.equals(id))
                 .collect(Collectors.toList())
                 .size() == 1);
@@ -123,11 +124,12 @@ public class TaskStateGraphStoreTest {
     @Test
     public void testGetTaskStateByCreator() {
         String id = stateStorage.newState(task());
+        stateStorage.newState(task().creator("other"));
         assertNotNull(id);
 
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
         assertTrue(res.parallelStream()
-                        .map(Pair::getKey)
+                .map(TaskState::getId)
                         .filter(x -> x.equals(id))
                         .collect(Collectors.toList())
                         .size() == 1);
@@ -138,9 +140,9 @@ public class TaskStateGraphStoreTest {
         String id = stateStorage.newState(task());
         assertNotNull(id);
 
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
         assertTrue(res.parallelStream()
-                        .map(Pair::getKey)
+                .map(TaskState::getId)
                         .filter(x -> x.equals(id))
                         .collect(Collectors.toList())
                         .size() == 1);
@@ -148,15 +150,15 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetAllTaskStates() {
-        String id = stateStorage.newState(task());
-        assertNotNull(id);
+        int sizeBeforeAdding = stateStorage.getTasks(null, null, null, 0, 0).size();
 
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, null, 0, 0);
-        assertTrue(res.parallelStream()
-                        .map(Pair::getKey)
-                        .filter(x -> x.equals(id))
-                        .collect(Collectors.toList())
-                        .size() == 1);
+        int numberTasks = 10;
+        IntStream.range(0, numberTasks)
+                .mapToObj(i -> task())
+                .forEach(stateStorage::newState);
+
+        Set<TaskState> res = stateStorage.getTasks(null, null, null, 0, 0);
+        assertEquals(sizeBeforeAdding + numberTasks, res.size());
     }
 
     @Test
@@ -165,8 +167,8 @@ public class TaskStateGraphStoreTest {
             stateStorage.newState(task());
         }
 
-        Set<Pair<String, TaskState>> setA = stateStorage.getTasks(null, null, null, 5, 0);
-        Set<Pair<String, TaskState>> setB = stateStorage.getTasks(null, null, null, 5, 5);
+        Set<TaskState> setA = stateStorage.getTasks(null, null, null, 5, 0);
+        Set<TaskState> setB = stateStorage.getTasks(null, null, null, 5, 5);
 
         setA.forEach(x -> assertFalse(setB.contains(x)));
     }

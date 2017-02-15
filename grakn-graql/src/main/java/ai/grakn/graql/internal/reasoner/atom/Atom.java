@@ -169,8 +169,8 @@ public abstract class Atom extends AtomBase {
      */
     public Set<ValuePredicate> getValuePredicates(){
         return ((ReasonerQueryImpl) getParentQuery()).getValuePredicates().stream()
-            .filter(atom -> atom.getVarName().equals(getValueVariable()))
-            .collect(Collectors.toSet());
+                .filter(atom -> atom.getVarName().equals(getValueVariable()))
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -190,6 +190,11 @@ public abstract class Atom extends AtomBase {
         return relevantTypes;
     }
 
+    public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
+    public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
+    public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
+    public Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+
     /**
      * @return map of role type- (var name, var type) pairs
      */
@@ -201,10 +206,15 @@ public abstract class Atom extends AtomBase {
     public void inferTypes(){}
 
     /**
-     * rewrites the atom to be compatible with parent atom
-     * @param parent atom to be compatible with
-     * @param q query the rewritten atom should belong to
+     * rewrites the atom to one with user defined name
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Pair<Atom, Map<VarName, VarName>> rewrite(Atom parent, ReasonerQuery q){ return new Pair<>(this, new HashMap<>());}
+    public Atom rewriteToUserDefined(){ return this;}
+
+    /**
+     * rewrites the atom to one with user defined name, need unifiers for cases when we have variable clashes
+     * between the relation variable and relation players
+     * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
+     */
+    public Pair<Atom, Map<VarName, VarName>> rewriteToUserDefinedWithUnifiers(){ return new Pair<>(this, new HashMap<>());}
 }

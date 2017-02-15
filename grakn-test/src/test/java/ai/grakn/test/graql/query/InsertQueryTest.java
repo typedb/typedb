@@ -33,6 +33,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -55,6 +56,8 @@ import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
+import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -408,7 +411,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertRuleType() {
-        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName().getValue()));
+        assertInsert(var("x").name("my-inference-rule").sub(RULE.getName().getValue()));
     }
 
     @Test
@@ -722,10 +725,31 @@ public class InsertQueryTest {
     }
 
     @Test
+    public void testInsertNonRuleWithLhs() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getName()));
+        qb.insert(var().isa("movie").lhs(var("x"))).execute();
+    }
+
+    @Test
+    public void testInsertNonRuleWithRHS() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getName()));
+        qb.insert(name("thing").sub("movie").rhs(var("x"))).execute();
+    }
+
+    @Test
     public void testErrorWhenNonExistentResource() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("nothing");
         qb.insert(name("blah this").sub("entity").hasResource("nothing")).execute();
+    }
+
+    @Test
+    public void whenInsertingMetaType_Throw() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", "concept"));
+        qb.insert(name("my-metatype").sub("concept")).execute();
     }
 
     private void assertInsert(Var... vars) {

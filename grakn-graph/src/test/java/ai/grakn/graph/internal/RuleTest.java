@@ -18,11 +18,14 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.graql.Pattern;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,6 +34,8 @@ import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static ai.grakn.util.Schema.ConceptProperty.RULE_LHS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -68,28 +73,10 @@ public class RuleTest extends GraphTestBase{
     }
 
     @Test
-    public void testExpectation() throws Exception {
-        RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = conceptType.addRule(lhs, rhs);
-        assertFalse(rule.getExpectation());
-        rule.setExpectation(true);
-        assertTrue(rule.getExpectation());
-    }
-
-    @Test
-    public void testMaterialise() throws Exception {
-        RuleType conceptType = graknGraph.putRuleType("A Thing");
-        Rule rule = conceptType.addRule(lhs, rhs);
-        assertFalse(rule.isMaterialise());
-        rule.setMaterialise(true);
-        assertTrue(rule.isMaterialise());
-    }
-
-    @Test
     public void testAddHypothesis() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
         Rule rule = conceptType.addRule(lhs, rhs);
-        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(rule.getId().getRawValue()).next();
         Type type1 = graknGraph.putEntityType("A Concept Type 1");
         Type type2 = graknGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
@@ -101,7 +88,7 @@ public class RuleTest extends GraphTestBase{
     public void testAddConclusion() throws Exception {
         RuleType conceptType = graknGraph.putRuleType("A Thing");
         Rule rule = conceptType.addRule(lhs, rhs);
-        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(rule.getId().getRawValue()).next();
         Type type1 = graknGraph.putEntityType("A Concept Type 1");
         Type type2 = graknGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.CONCLUSION.getLabel()).hasNext());
@@ -137,4 +124,51 @@ public class RuleTest extends GraphTestBase{
         assertTrue(rule.getConclusionTypes().contains(ct2));
     }
 
+    @Test
+    public void addRuleWithNonExistentEntityType() throws GraknValidationException {
+        graknGraph.putEntityType("My-Type");
+
+        lhs = graknGraph.graql().parsePattern("$x isa Your-Type");
+        rhs = graknGraph.graql().parsePattern("$x isa My-Type");
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("LHS", rule.getId(), rule.type().getName(), "Your-Type"));
+
+        graknGraph.commit();
+    }
+
+    @Test
+    public void addRuleWithNonExistentRoleType() throws GraknValidationException {
+        graknGraph.putEntityType("My-Type");
+
+        lhs = graknGraph.graql().parsePattern("$x isa My-Type");
+        rhs = graknGraph.graql().parsePattern("$x has-role Your-Type");
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+
+        expectedException.expect(GraknValidationException.class);
+        expectedException.expectMessage(
+                ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("RHS", rule.getId(), rule.type().getName(), "Your-Type"));
+
+        graknGraph.commit();
+    }
+
+    @Test
+    public void checkRuleSetsAreFilledUponCommit() throws GraknValidationException{
+        EntityType t1 = graknGraph.putEntityType("type1");
+        EntityType t2 = graknGraph.putEntityType("type2");
+
+        lhs = graknGraph.graql().parsePattern("$x isa type1");
+        rhs = graknGraph.graql().parsePattern("$x isa type2");
+
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+        assertTrue("Hypothesis is not empty before commit", rule.getHypothesisTypes().isEmpty());
+        assertTrue("Conclusion is not empty before commit", rule.getConclusionTypes().isEmpty());
+
+        graknGraph.commit();
+
+        assertThat(rule.getHypothesisTypes(), containsInAnyOrder(t1));
+        assertThat(rule.getConclusionTypes(), containsInAnyOrder(t2));
+    }
 }

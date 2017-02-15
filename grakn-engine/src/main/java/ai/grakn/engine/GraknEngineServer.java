@@ -23,7 +23,6 @@ import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
-import ai.grakn.engine.controller.ImportController;
 import ai.grakn.engine.controller.StatusController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
@@ -41,10 +40,6 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Spark;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -59,6 +54,8 @@ import static spark.Spark.port;
 import static spark.Spark.staticFiles;
 import static spark.Spark.webSocket;
 import static spark.Spark.webSocketIdleTimeoutMillis;
+
+import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -80,11 +77,13 @@ public class GraknEngineServer {
     private static TaskManager taskManager;
 
     public static void main(String[] args) {
-        start(true);
+        boolean distributed = prop.getPropertyAsBool(DISTRIBUTED_TASK_MANAGER);
+
+        start(distributed);
     }
 
-    public static void start(boolean inMemory){
-        startTaskManager(inMemory);
+    public static void start(boolean taskManagerIsDistributed){
+        startTaskManager(taskManagerIsDistributed);
         startHTTP();
         startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -101,11 +100,11 @@ public class GraknEngineServer {
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
-    private static void startTaskManager(boolean inMemory) {
-        if(inMemory){
-            taskManager = new StandaloneTaskManager();
-        } else {
+    private static void startTaskManager(boolean taskManagerIsDistributed) {
+        if(taskManagerIsDistributed){
             taskManager = new DistributedTaskManager();
+        } else {
+            taskManager = new StandaloneTaskManager();
         }
     }
 
@@ -131,7 +130,6 @@ public class GraknEngineServer {
         new AuthController();
         new UserController();
         new TasksController(taskManager);
-        new ImportController(taskManager);
 
         //Register filter to check authentication token in each request
         before((req, res) -> checkAuthorization(req));
@@ -148,7 +146,7 @@ public class GraknEngineServer {
 
     private static void startPostprocessing(){
         // Submit a recurring post processing task
-        taskManager.scheduleTask(new PostProcessingTask(),
+        taskManager.createTask(PostProcessingTask.class.getName(),
                 GraknEngineServer.class.getName(),
                 Instant.now(),
                 prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
@@ -181,32 +179,6 @@ public class GraknEngineServer {
     public static TaskManager getTaskManager(){
         return taskManager;
     }
-
-    /**
-     * Check if Grakn Engine has been started
-     *
-     * @return true if Grakn Engine running, false otherwise
-     */
-    public static boolean isRunning() {
-        try {
-            String host = prop.getProperty(ConfigProperties.SERVER_HOST_NAME);
-            String port = prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER);
-
-            HttpURLConnection connection = (HttpURLConnection)
-                    new URL("http://" + host + ":" + port + REST.WebPath.GRAPH_FACTORY_URI).openConnection();
-            connection.setRequestMethod("GET");
-            connection.connect();
-
-            InputStream inputStream = connection.getInputStream();
-            if (inputStream.available() == 0) {
-                return false;
-            }
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
-    }
-
 
     private static void checkAuthorization(Request request) {
         if(!isPasswordProtected) return;

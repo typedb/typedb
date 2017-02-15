@@ -71,8 +71,6 @@ public class AtomicTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        Reasoner.linkConceptTypes(snbGraph.graph());
-        Reasoner.linkConceptTypes(cwGraph.graph());
     }
 
     @org.junit.Rule
@@ -260,12 +258,10 @@ public class AtomicTest {
     public void testRewrite(){
         GraknGraph graph = genealogyOntology.graph();
         String childRelation = "{(father: $x1, daughter: $x2) isa parentship;}";
-        String parentRelation = "{$r (father: $x, daughter: $y) isa parentship;}";
         ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph);
         Atom childAtom = childQuery.getAtom();
-        Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
 
-        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, childQuery);
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
         Atom rewrittenAtom = rewrite.getKey();
         Map<VarName, VarName> unifiers = rewrite.getValue();
         Set<VarName> unifiedVariables = Sets.newHashSet(VarName.of("x1"), VarName.of("x2"));

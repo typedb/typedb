@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
@@ -29,6 +30,8 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Function;
 
 /**
  * <p>
@@ -54,62 +57,72 @@ final class ElementFactory {
         this.graknGraph = graknGraph;
     }
 
+    private <X extends ConceptImpl> X getOrBuildConcept(Vertex v, Function<Vertex, X> conceptBuilder){
+        ConceptId conceptId = ConceptId.of(v.id().toString());
+
+        if(!graknGraph.getConceptLog().isConceptCached(conceptId)){
+            X newConcept = conceptBuilder.apply(v);
+            graknGraph.getConceptLog().cacheConcept(newConcept);
+        }
+
+        X concept = graknGraph.getConceptLog().getCachedConcept(conceptId);
+
+        //Only track concepts which have been modified.
+        if(graknGraph.isConceptModified(concept)) {
+            graknGraph.getConceptLog().trackConceptForValidation(concept);
+        }
+
+        return concept;
+    }
+
     // ------------------------------------------- Building Castings  --------------------------------------------------
-    CastingImpl buildCasting(Vertex v, RoleType type){
-        return trackConcept(new CastingImpl(graknGraph, v, type));
+    CastingImpl buildCasting(Vertex vertex, RoleType type){
+        return getOrBuildConcept(vertex, (v) -> new CastingImpl(graknGraph, v, type));
     }
 
     // ---------------------------------------- Building Resource Types  -----------------------------------------------
-    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
-        return trackConcept(new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex vertex, ResourceType<V> type, ResourceType.DataType<V> dataType, Boolean isUnique){
+        return getOrBuildConcept(vertex, (v) -> new ResourceTypeImpl<>(graknGraph, v, type, dataType, isUnique));
     }
 
     // ------------------------------------------ Building Resources
-    <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
-        return trackConcept(new ResourceImpl<>(graknGraph, v, type, value));
+    <V> ResourceImpl <V> buildResource(Vertex vertex, ResourceType<V> type, V value){
+        return getOrBuildConcept(vertex, (v) -> new ResourceImpl<>(graknGraph, v, type, value));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    RelationTypeImpl buildRelationType(Vertex v, RelationType type, Boolean isImplicit){
-        if(isImplicit) {
-            return trackConcept(new RelationTypeImpl(graknGraph, v, type, true));
-        } else {
-            return trackConcept(new RelationTypeImpl(graknGraph, v, type)); //No need to save something as non-implicit.
-        }
+    RelationTypeImpl buildRelationType(Vertex vertex, RelationType type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RelationTypeImpl(graknGraph, v, type, isImplicit));
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(Vertex v, RelationType type){
-        return trackConcept(new RelationImpl(graknGraph, v, type));
+    RelationImpl buildRelation(Vertex vertex, RelationType type){
+        return getOrBuildConcept(vertex, (v) -> new RelationImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    EntityTypeImpl buildEntityType(Vertex v, EntityType type){
-        return trackConcept(new EntityTypeImpl(graknGraph, v, type));
+    EntityTypeImpl buildEntityType(Vertex vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityTypeImpl(graknGraph, v, type));
     }
 
     // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(Vertex v, EntityType type){
-        return trackConcept(new EntityImpl(graknGraph, v, type));
+    EntityImpl buildEntity(Vertex vertex, EntityType type){
+        return getOrBuildConcept(vertex, (v) -> new EntityImpl(graknGraph, v, type));
     }
 
     // ----------------------------------------- Building Rule Types  --------------------------------------------------
-    RuleTypeImpl buildRuleType(Vertex v, RuleType type){
-        return trackConcept(new RuleTypeImpl(graknGraph, v, type));
+    RuleTypeImpl buildRuleType(Vertex vertex, RuleType type){
+        return getOrBuildConcept(vertex, (v) -> new RuleTypeImpl(graknGraph, v, type));
     }
 
     // -------------------------------------------- Building Rules
-    RuleImpl buildRule(Vertex v, RuleType type, Pattern lhs, Pattern rhs){
-        return trackConcept(new RuleImpl(graknGraph, v, type, lhs, rhs));
+    RuleImpl buildRule(Vertex vertex, RuleType type, Pattern lhs, Pattern rhs){
+        return getOrBuildConcept(vertex, (v) -> new RuleImpl(graknGraph, v, type, lhs, rhs));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    RoleTypeImpl buildRoleType(Vertex v, RoleType type, Boolean isImplicit){
-        if(isImplicit) {
-            return trackConcept(new RoleTypeImpl(graknGraph, v, type, true));
-        } else {
-            return trackConcept(new RoleTypeImpl(graknGraph, v, type));
-        }
+    RoleTypeImpl buildRoleType(Vertex vertex, RoleType type, Boolean isImplicit){
+        return getOrBuildConcept(vertex, (v) -> new RoleTypeImpl(graknGraph, v, type, isImplicit));
     }
 
     /**
@@ -120,6 +133,11 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     <X extends Concept> X buildConcept(Vertex v){
+        if(!graknGraph.validVertex(v)){
+            LOG.warn("Found vertex [" + v + "] which is no longer valid ignoring . . . ");
+            return null;
+        }
+
         Schema.BaseType type;
         try {
             type = Schema.BaseType.valueOf(v.label());
@@ -128,55 +146,54 @@ final class ElementFactory {
             return null;
         }
 
-        ConceptImpl concept = null;
-        switch (type){
-            case RELATION:
-                concept = new RelationImpl(graknGraph, v);
-                break;
-            case CASTING:
-                concept = new CastingImpl(graknGraph, v);
-                break;
-            case TYPE:
-                concept = new TypeImpl<>(graknGraph, v);
-                break;
-            case ROLE_TYPE:
-                concept = new RoleTypeImpl(graknGraph, v);
-                break;
-            case RELATION_TYPE:
-                concept = new RelationTypeImpl(graknGraph, v);
-                break;
-            case ENTITY:
-                concept = new EntityImpl(graknGraph, v);
-                break;
-            case ENTITY_TYPE:
-                concept = new EntityTypeImpl(graknGraph, v);
-                break;
-            case RESOURCE_TYPE:
-                concept = new ResourceTypeImpl<>(graknGraph, v);
-                break;
-            case RESOURCE:
-                concept = new ResourceImpl<>(graknGraph, v);
-                break;
-            case RULE:
-                concept = new RuleImpl(graknGraph, v);
-                break;
-            case RULE_TYPE:
-                concept = new RuleTypeImpl(graknGraph, v);
-                break;
+        ConceptId conceptId = ConceptId.of(v.id());
+
+        if(!graknGraph.getConceptLog().isConceptCached(conceptId)){
+            ConceptImpl concept;
+            switch (type) {
+                case RELATION:
+                    concept = new RelationImpl(graknGraph, v);
+                    break;
+                case CASTING:
+                    concept = new CastingImpl(graknGraph, v);
+                    break;
+                case TYPE:
+                    concept = new TypeImpl<>(graknGraph, v);
+                    break;
+                case ROLE_TYPE:
+                    concept = new RoleTypeImpl(graknGraph, v);
+                    break;
+                case RELATION_TYPE:
+                    concept = new RelationTypeImpl(graknGraph, v);
+                    break;
+                case ENTITY:
+                    concept = new EntityImpl(graknGraph, v);
+                    break;
+                case ENTITY_TYPE:
+                    concept = new EntityTypeImpl(graknGraph, v);
+                    break;
+                case RESOURCE_TYPE:
+                    concept = new ResourceTypeImpl<>(graknGraph, v);
+                    break;
+                case RESOURCE:
+                    concept = new ResourceImpl<>(graknGraph, v);
+                    break;
+                case RULE:
+                    concept = new RuleImpl(graknGraph, v);
+                    break;
+                case RULE_TYPE:
+                    concept = new RuleTypeImpl(graknGraph, v);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown base type");
+            }
+            graknGraph.getConceptLog().cacheConcept(concept);
         }
 
-        //noinspection unchecked
-        return (X) concept;
+        return graknGraph.getConceptLog().getCachedConcept(conceptId);
     }
 
-    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
+    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
         return new EdgeImpl(edge, graknGraph);
-    }
-
-    private <X extends ConceptImpl> X trackConcept(X concept){
-        if(graknGraph.isConceptModified(concept)) { //Only track concepts which have been modified.
-            graknGraph.getConceptLog().putConcept(concept);
-        }
-        return concept;
     }
 }

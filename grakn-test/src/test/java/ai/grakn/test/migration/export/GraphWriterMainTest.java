@@ -19,7 +19,7 @@
 package ai.grakn.test.migration.export;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.example.MovieGraphFactory;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.BeforeClass;
@@ -36,7 +36,7 @@ public class GraphWriterMainTest {
     @BeforeClass
     public static void loadMovieGraph() {
         graph =  engineContext.graphWithNewKeyspace();
-        MovieGraphFactory.loadGraph(graph);
+        MovieGraph.get().accept(graph);
     }
 
     @Test

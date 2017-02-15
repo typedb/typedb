@@ -20,8 +20,8 @@ package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
-import javafx.util.Pair;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.exception.EngineStorageException;
 
 import java.lang.ref.SoftReference;
 import java.util.HashSet;
@@ -57,16 +57,18 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
         return true;
     }
 
+    @Override
     public TaskState getState(String id) {
         if(id == null || !storage.containsKey(id)) {
-            return null;
+            throw new EngineStorageException("Could not retrieve id " + id);
         }
 
         return storage.get(id).get();
     }
 
-    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {
-        Set<Pair<String, TaskState>> res = new HashSet<>();
+    @Override
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {
+        Set<TaskState> res = new HashSet<>();
 
         int count = 0;
         for(Map.Entry<String, SoftReference<TaskState>> x: storage.entrySet()) {
@@ -95,7 +97,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
             }
             count++;
 
-            res.add(new Pair<>(x.getKey(), state));
+            res.add(state);
         }
 
         return res;

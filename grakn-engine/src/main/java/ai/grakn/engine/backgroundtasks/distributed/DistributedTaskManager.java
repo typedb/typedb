@@ -18,26 +18,19 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
+import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**
  * Class to manage tasks distributed using Kafka.
@@ -46,8 +39,6 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
  * This class begins the TaskRunner instance that will be running on this machine.
  */
 public final class DistributedTaskManager implements TaskManager {
-    private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
-
     private final KafkaProducer<String, String> producer;
 
     private final SchedulerElector elector;
@@ -59,8 +50,8 @@ public final class DistributedTaskManager implements TaskManager {
     private Thread taskRunnerThread;
 
     public DistributedTaskManager() {
-        stateStorage = new TaskStateGraphStore();
         connection = new ZookeeperConnection();
+        stateStorage = new TaskStateZookeeperStore(connection);
 
         // run the TaskRunner in a thread
         taskRunner = new TaskRunner(stateStorage, connection);
@@ -75,34 +66,28 @@ public final class DistributedTaskManager implements TaskManager {
 
     @Override
     public void close() {
-        producer.close();
+        noThrow(producer::close, "Error shutting down producer in TaskManager");
 
-        elector.stop();
-        taskRunner.close();
-        try {
-            taskRunnerThread.join();
-        } catch (InterruptedException e){
-            LOG.error("Error while waiting for taskrunner to exit");
-        }
+        noThrow(elector::stop, "Error stopping Scheduler elector from TaskManager");
+        noThrow(taskRunner::close, "Error shutting down TaskRunner");
+        noThrow(taskRunnerThread::join, "Error waiting for TaskRunner to close");
 
         // stop zookeeper connection
-        connection.close();
+        noThrow(connection::close, "Error waiting for zookeeper connection to close");
     }
 
     @Override
-    public String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration) {
+    public String createTask(String taskClassName, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = period > 0;
 
-        TaskState taskState = new TaskState(task.getClass().getName())
+        TaskState taskState = new TaskState(taskClassName)
                 .creator(createdBy)
                 .runAt(runAt)
                 .isRecurring(recurring)
                 .interval(period)
                 .configuration(configuration);
 
-        stateStorage.newState(taskState);
-
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), configuration.toString()));
+        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), TaskState.serialize(taskState)));
         producer.flush();
 
         return taskState.getId();
@@ -116,24 +101,5 @@ public final class DistributedTaskManager implements TaskManager {
     @Override
     public TaskStateStorage storage() {
         return stateStorage;
-    }
-
-    @Override
-    public CompletableFuture completableFuture(String taskId) {
-        return CompletableFuture.runAsync(() -> {
-
-            while (true) {
-                TaskStatus status = stateStorage.getState(taskId).status();
-                if (status == COMPLETED || status == FAILED || status ==  STOPPED) {
-                    break;
-                }
-
-                try {
-                    Thread.sleep(5000);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
     }
 }

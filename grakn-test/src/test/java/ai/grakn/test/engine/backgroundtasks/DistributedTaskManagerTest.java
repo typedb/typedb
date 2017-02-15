@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
 import ai.grakn.test.EngineContext;
 import mjson.Json;
@@ -30,9 +30,8 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -50,19 +49,17 @@ public class DistributedTaskManagerTest {
 
     private void waitToFinish(String id) {
         while (true) {
-            TaskStatus status = manager.storage().getState(id).status();
-            if (status == COMPLETED || status == FAILED) {
-                System.out.println(id + " ------> " + status);
-                break;
-            }
-
-            System.out.println("Checking " + id + " " + status);
-
             try {
+                TaskStatus status = manager.storage().getState(id).status();
+                if (status == COMPLETED || status == FAILED) {
+                    System.out.println(id + " ------> " + status);
+                    break;
+                }
+
+                System.out.println("Checking " + id + " " + status);
+
                 Thread.sleep(5000);
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception ignored){}
         }
     }
 
@@ -76,7 +73,7 @@ public class DistributedTaskManagerTest {
         final int startCount = TestTask.startedCounter.get();
 
         for(int i = 0; i < 20; i++) {
-            String taskId = manager.scheduleTask(new TestTask(), DistributedTaskManagerTest.class.getName(),
+            String taskId = manager.createTask(TestTask.class.getName(), DistributedTaskManagerTest.class.getName(),
                     Instant.now(), 0, Json.object("name", "task" + i));
 
             ids.add(taskId);

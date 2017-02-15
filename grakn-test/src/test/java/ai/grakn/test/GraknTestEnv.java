@@ -1,10 +1,10 @@
 package ai.grakn.test;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.EngineGraknGraph;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
@@ -51,7 +51,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static void startEngine(boolean inMemory) throws Exception {
+    static void startEngine(boolean useDistributedEngine) throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -69,7 +69,7 @@ public abstract class GraknTestEnv {
 
             // start engine
             RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-            GraknEngineServer.start(inMemory);
+            GraknEngineServer.start(useDistributedEngine);
 
             LOG.info("ENGINE STARTED.");
         }
@@ -104,12 +104,12 @@ public abstract class GraknTestEnv {
         // Drop all keyspaces
         EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
 
-        EngineGraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
+        GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         systemGraph.graql().match(var("x").isa("keyspace-name"))
                 .execute()
                 .forEach(x -> x.values().forEach(y -> {
                     String name = y.asResource().getValue().toString();
-                    EngineGraknGraph graph = engineGraknGraphFactory.getGraph(name);
+                    GraknGraph graph = engineGraknGraphFactory.getGraph(name);
                     graph.clear();
                 }));
 

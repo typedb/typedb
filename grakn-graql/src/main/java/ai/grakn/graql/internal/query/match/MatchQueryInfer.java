@@ -54,8 +54,8 @@ class MatchQueryInfer extends MatchQueryModifier {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        Reasoner.linkConceptTypes(graph);
         if (!Reasoner.hasRules(graph)) return inner.stream(optionalGraph);
+
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
         Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);

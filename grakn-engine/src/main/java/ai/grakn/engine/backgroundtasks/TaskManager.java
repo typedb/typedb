@@ -21,7 +21,6 @@ package ai.grakn.engine.backgroundtasks;
 import mjson.Json;
 
 import java.time.Instant;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * <p>
@@ -38,7 +37,7 @@ public interface TaskManager extends AutoCloseable {
     /**
      * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds. All parameters must not be
      * null unless stated otherwise.
-     * @param task Any object implementing the BackgroundTask interface that is to be scheduled for later execution.
+     * @param taskClassName Name of the class implementing the BackgroundTask interface that is to be scheduled for later execution.
      * @param runAt Instant when task should run.
      * @param period A non-zero value indicates that this should be a recurring task and period indicates the delay between
      *               subsequent runs of the task after successful execution.
@@ -47,14 +46,7 @@ public interface TaskManager extends AutoCloseable {
      *                      get an initialised but empty JSONObject).
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleTask(BackgroundTask task, String createdBy, Instant runAt, long period, Json configuration);
-
-    /**
-     * Return a future that allows registering asynchronous callbacks triggered when a task is completed.
-     * @param taskId ID of task to track
-     * @return A CompletableFuture instance monitoring the status of the given task.
-     */
-    CompletableFuture completableFuture(String taskId);
+    String createTask(String taskClassName, String createdBy, Instant runAt, long period, Json configuration);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

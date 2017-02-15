@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -31,8 +32,10 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import com.google.common.collect.Sets;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Objects;
 import javafx.util.Pair;
 
 import java.util.Map;
@@ -104,7 +107,7 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewrite(parentAtom, head);
+        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
         Map<VarName, VarName> rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
@@ -113,11 +116,24 @@ public class InferenceRule {
             unify(rewriteUnifiers);
 
             //resolve captures
-            Set<VarName> varIntersection = body.getVarNames();
-            varIntersection.retainAll(parentAtom.getVarNames());
+            Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
             varIntersection.removeAll(rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
+    }
+
+    private void rewriteBody(){
+        body.getAtoms().stream()
+                .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(Atom::isRelation)
+                .filter(at -> !at.isUserDefinedName())
+                .filter(at -> Objects.nonNull(at.getType()))
+                .filter(at -> at.getType().equals(head.getAtom().getType()))
+                .forEach(at -> {
+                    Atom rewrite = at.rewriteToUserDefined();
+                    body.removeAtom(at);
+                    body.addAtom(rewrite);
+                    });
     }
 
     private void unify(Map<VarName, VarName> unifiers){
@@ -145,10 +161,11 @@ public class InferenceRule {
      * make rule consistent variable-wise with the parent atom by means of unification
      * @param parentAtom atom the rule should be unified with
      */
-   public void unify(Atom parentAtom) {
-        rewriteHead(parentAtom);
+    public void unify(Atom parentAtom) {
+        if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
-        if(parentAtom.isRelation() || parentAtom.isResource()) {
+        if (head.getAtom().isUserDefinedName()) rewriteBody();
+        if (parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);
         }
     }

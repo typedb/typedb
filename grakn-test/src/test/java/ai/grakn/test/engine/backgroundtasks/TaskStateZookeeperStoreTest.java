@@ -28,13 +28,17 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TaskStateZookeeperStoreTest {
     private static ZookeeperConnection connection;
@@ -103,6 +107,69 @@ public class TaskStateZookeeperStoreTest {
         assertEquals(CREATED, state.status());
         assertEquals(engineID, state.engineID());
         assertEquals(checkpoint, state.checkpoint());
+    }
+
+
+    @Test
+    public void testGetTasksByStatus() {
+        String id = stateStorage.newState(task());
+        stateStorage.newState(task().status(SCHEDULED));
+        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
+
+        assertTrue(res.parallelStream()
+                .map(TaskState::getId)
+                .filter(x -> x.equals(id))
+                .collect(Collectors.toList())
+                .size() == 1);
+    }
+
+    @Test
+    public void testGetTasksByCreator() {
+        String id = stateStorage.newState(task());
+        stateStorage.newState(task().creator("another"));
+        Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
+
+        assertTrue(res.parallelStream()
+                .map(TaskState::getId)
+                .filter(x -> x.equals(id))
+                .collect(Collectors.toList())
+                .size() == 1);
+    }
+
+    @Test
+    public void testGetTasksByClassName() {
+        String id = stateStorage.newState(task());
+        Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
+
+        assertTrue(res.parallelStream()
+                .map(TaskState::getId)
+                .filter(x -> x.equals(id))
+                .collect(Collectors.toList())
+                .size() == 1);
+    }
+
+    @Test
+    public void testGetAllTasks() {
+        String id = stateStorage.newState(task());
+        Set<TaskState> res = stateStorage.getTasks(null, null, null, 0, 0);
+
+        assertTrue(res.parallelStream()
+                .map(TaskState::getId)
+                .filter(x -> x.equals(id))
+                .collect(Collectors.toList())
+                .size() == 1);
+    }
+
+    @Test
+    public void testTaskPagination() {
+        for (int i = 0; i < 20; i++) {
+            stateStorage.newState(task());
+        }
+
+        Set<TaskState> setA = stateStorage.getTasks(null, null, null, 10, 0);
+        Set<TaskState> setB = stateStorage.getTasks(null, null, null, 10, 10);
+
+        setA.forEach(x -> assertFalse(setB.contains(x)));
     }
 
     public TaskState task(){
