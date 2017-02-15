@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
@@ -28,8 +27,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.Map;
 
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.group;
