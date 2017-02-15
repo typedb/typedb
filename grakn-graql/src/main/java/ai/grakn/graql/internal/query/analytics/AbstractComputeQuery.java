@@ -134,7 +134,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             subTypeNames.remove(metaEntityType.getName());
             subTypeNames.remove(metaResourceType.getName());
             subTypeNames.remove(metaRelationType.getName());
-            this.subTypeNames.removeAll(CommonOLAP.analyticsElements);
         } else {
             for (Type type : subGraph) {
                 type.subTypes().forEach(subType -> this.subTypeNames.add(subType.getName()));
