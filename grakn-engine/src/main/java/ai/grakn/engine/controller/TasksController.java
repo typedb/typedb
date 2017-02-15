@@ -70,7 +70,6 @@ import static spark.Spark.put;
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
-    private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
     private final TaskManager manager;
 
     public TasksController(TaskManager manager) {
@@ -86,8 +85,8 @@ public class TasksController {
         put(RESUME,      this::resumeTask);
         post(TASKS,      this::scheduleTask);
 
-        exception(EngineStorageException.class,     this::handleNotFoundInStorage);
-        exception(Exception.class,                  this::handleInternalError);
+        exception(EngineStorageException.class, (exception, request, response) -> handleNotFoundInStorage(request, response));
+        exception(Exception.class,              (exception, request, response) -> handleInternalError(exception, response));
     }
 
     @GET
@@ -211,11 +210,10 @@ public class TasksController {
 
     /**
      * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the user.
-     * @param exception EngineStorageException thrown by the server
      * @param request The request object providing information about the HTTP request
      * @param response The response object providing functionality for modifying the response
      */
-    private void handleNotFoundInStorage(Exception exception, Request request, Response response){
+    private void handleNotFoundInStorage(Request request, Response response){
         response.status(404);
         throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", request.params(ID_PARAMETER)));
     }
@@ -223,12 +221,11 @@ public class TasksController {
     /**
      * Handle any exception thrown by the server
      * @param exception Exception by the server
-     * @param request The request object providing information about the HTTP request
      * @param response The response object providing functionality for modifying the response
      */
-    private void handleInternalError(Exception exception, Request request, Response response){
+    private void handleInternalError(Exception exception, Response response){
         response.status(500);
-        throw new GraknEngineServerException(500, request.ip() + exception);
+        throw new GraknEngineServerException(500, exception);
     }
 
     private Json serialiseStateSubset(TaskState state) {
