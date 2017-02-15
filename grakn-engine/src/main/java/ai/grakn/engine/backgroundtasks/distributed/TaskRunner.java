@@ -300,15 +300,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
      * Implementation of ConsumerRebalanceListener that will log whenever partitions are reassigned and
      * sync the last commits when partitions are revoked.
      */
-    private class HandleRebalance implements ConsumerRebalanceListener {
+    private static class HandleRebalance implements ConsumerRebalanceListener {
         public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
             LOG.debug("TaskRunner consumer partitions assigned " + partitions);
         }
         public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
             LOG.debug("TaskRunner consumer partitions revoked " + partitions);
-            //TODO the consumer cannot sync here because the partitions have already been revoked
-            //TODO can potentially save the offsets in an external store
-//            consumer.commitSync();
         }
     }
 }
