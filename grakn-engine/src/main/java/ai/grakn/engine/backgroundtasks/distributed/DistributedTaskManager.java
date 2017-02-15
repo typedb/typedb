@@ -135,7 +135,7 @@ public final class DistributedTaskManager implements TaskManager {
     private class TaskRunnerResurrection implements Thread.UncaughtExceptionHandler {
 
         public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
-            LOG.debug(format("TaskRunner [%s] threw an exception. Will attempt to close and reopen. Exception is: \n [%s]",
+            LOG.debug(format("TaskRunner [%s] threw an exception. Will attempt to close and reopen. Exception is: %n [%s]",
                     paramThread.getName(), getFullStackTrace(paramThrowable)));
 
             noThrow(taskRunner::close, "Error shutting down TaskRunner");

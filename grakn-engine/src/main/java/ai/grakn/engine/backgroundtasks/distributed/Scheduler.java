@@ -234,16 +234,12 @@ public class Scheduler implements Runnable, AutoCloseable {
         }
     }
 
-    private class HandleRebalance implements ConsumerRebalanceListener {
+    private static class HandleRebalance implements ConsumerRebalanceListener {
         public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
             LOG.debug("Scheduler partitions assigned " + partitions);
         }
         public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
             LOG.debug("Scheduler partitions revoked " + partitions);
-
-            //TODO the consumer cannot sync here because the partitions have already been revoked
-            //TODO can potentially save the offsets in an external store
-//            consumer.commitSync();
         }
     }
 }
