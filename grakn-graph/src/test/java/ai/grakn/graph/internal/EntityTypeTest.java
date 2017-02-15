@@ -584,5 +584,18 @@ public class EntityTypeTest extends GraphTestBase{
         assertThat(e5.subTypes(), containsInAnyOrder(e3, e5));
     }
 
+    @Test
+    public void checkThatResourceTypesCanBeRetrievedFromTypes(){
+        EntityType e1 = graknGraph.putEntityType("e1");
+        ResourceType r1 = graknGraph.putResourceType("r1", ResourceType.DataType.STRING);
+        ResourceType r2 = graknGraph.putResourceType("r2", ResourceType.DataType.LONG);
+        ResourceType r3 = graknGraph.putResourceType("r3", ResourceType.DataType.BOOLEAN);
+
+        assertTrue("Entity is linked to resources when it shouldn't", e1.resources().isEmpty());
+        e1.hasResource(r1);
+        e1.hasResource(r2);
+        e1.hasResource(r3);
+        assertThat(e1.resources(), containsInAnyOrder(r1, r2, r3));
+    }
 
 }
