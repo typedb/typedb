@@ -426,7 +426,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void testCleanCommand() throws Exception {
+    public void whenRunningCleanCommand_TheGraphIsCleanedButNotCommitted() throws Exception {
         assertShellMatches(
                 "insert my-type sub entity;",
                 is("{}"),
@@ -435,6 +435,8 @@ public class GraqlShellIT {
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
+                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
+                "Y",
                 "match $x sub entity;",
                 containsString("entity"),
                 "rollback",
@@ -442,8 +444,33 @@ public class GraqlShellIT {
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
+                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
+                "yes",
                 "commit",
                 "rollback",
+                containsString("entity")
+        );
+    }
+
+    @Test
+    public void whenCancellingCleanCommand_TheGraphIsNotCleaned() throws Exception {
+        assertShellMatches(
+                "insert my-type sub entity;",
+                is("{}"),
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity"),
+                "clean",
+                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
+                "n",
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity"),
+                "clean",
+                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
+                "no thanks bad idea thanks for warning me",
+                "match $x sub entity;",
+                containsString("entity"),
                 containsString("entity")
         );
     }
