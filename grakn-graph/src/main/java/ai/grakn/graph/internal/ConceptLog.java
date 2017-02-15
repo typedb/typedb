@@ -65,13 +65,12 @@ class ConceptLog {
 
     ConceptLog(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
-        resetTransaction();
     }
 
     /**
      * Removes all the concepts from the transaction tracker
      */
-    void resetTransaction(){
+    /*void resetTransaction(){
         //Clear all transaction bound caches
         modifiedConcepts.clear();
         modifiedCastings.clear();
@@ -80,10 +79,7 @@ class ConceptLog {
         conceptCache.clear();
         typeCache.clear();
 
-        //Reload types back in from grakn graph
-        //TODO: Improve thread safety further. References stored in sets are the same as originals in central cache. This is dangerous.
-        graknGraph.getCachedOntology().asMap().values().forEach(type -> this.cacheConcept(type.clone()));
-    }
+    }*/
 
     /**
      * A helper method which writes back into the central cache at the end of a transaction.

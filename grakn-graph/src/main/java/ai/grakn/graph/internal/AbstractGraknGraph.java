@@ -63,11 +63,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -103,6 +105,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
+    private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
@@ -285,13 +288,101 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return concepts;
     }
 
-
     ConceptLog getConceptLog() {
         ConceptLog conceptLog = localConceptLog.get();
         if(conceptLog == null){
             localConceptLog.set(conceptLog = new ConceptLog(this));
+            loadOntologyCacheIntoTransactionCache(conceptLog);
         }
         return conceptLog;
+    }
+
+    private Map<TypeName, Type> getCloneCache(){
+        Map<TypeName, Type> cloneCache = localCloneCache.get();
+        if(cloneCache == null){
+            localCloneCache.set(cloneCache = new HashMap<>());
+        }
+        return cloneCache;
+    }
+
+    /**
+     * Given a concept log bound to a specific thread the central ontology cache is read into this concept log.
+     * This method performs this operation whilst making a deep clone of the cached concepts to ensure transactions
+     * do not accidentally break the central ontology cache.
+     *
+     * @param conceptLog The thread bound concept log to read the snapshot into.
+     */
+    private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
+        ConcurrentMap<TypeName, TypeImpl> cachedOntologySnapshot = getCachedOntology().asMap();
+
+        //Read central cache into conceptLog cloning only base concepts. Sets clones later
+        for (TypeImpl type : cachedOntologySnapshot.values()) {
+            conceptLog.cacheConcept(clone(type));
+        }
+
+        //Iterate through cached clones completing the cloning process.
+        //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
+        for (Type type : getCloneCache().values()) {
+            if(type.isRoleType()){
+                ((RoleTypeImpl) type).completeClone(cachedOntologySnapshot.get(type.getName()));
+            } else if(type.isRelationType()){
+                ((RelationTypeImpl) type).completeClone(cachedOntologySnapshot.get(type.getName()));
+            } else {
+                ((TypeImpl) type).completeClone(cachedOntologySnapshot.get(type.getName()));
+            }
+        }
+
+        //Purge clone cache to save memory
+        localCloneCache.remove();
+    }
+
+    /**
+     *
+     * @param type The type to clone
+     * @param <X> The type of the concept
+     * @return The newly deep cloned set
+     */
+    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    <X extends Type> X clone(X type){
+        //Is a cloning even needed?
+        if(getCloneCache().containsKey(type.getName())){
+            return (X) getCloneCache().get(type.getName());
+        }
+
+        //If the clone has not happened then make a new one
+        Type clonedType = null;
+        if(type.isRoleType()) {
+            clonedType = new RoleTypeImpl((RoleTypeImpl) type);
+        } else if(type.isRelationType()) {
+            clonedType = new RelationTypeImpl((RelationTypeImpl) type);
+        } else if(type.isEntityType()) {
+            clonedType = new EntityTypeImpl((EntityTypeImpl) type);
+        } else if(type.isRuleType()) {
+            clonedType = new RuleTypeImpl((RuleTypeImpl) type);
+        } else if(type.isResourceType()) {
+            clonedType = new ResourceTypeImpl((ResourceTypeImpl) type);
+        } else if(type.isType()) {
+            clonedType = new TypeImpl((TypeImpl) type);
+        }
+
+        if(clonedType == null){
+            throw new IllegalArgumentException("Attempting to clone concept [" + type + "] which is not supported");
+        }
+
+        //Update clone cache so we don't clone multiple concepts in the same transaction
+        getCloneCache().put(clonedType.getName(), clonedType);
+
+        return (X) clonedType;
+    }
+
+    /**
+     *
+     * @param types a set of concepts to clone
+     * @param <X> the type of those concepts
+     * @return the set of concepts deep cloned
+     */
+    <X extends Type> Set<X> clone(Set<X> types){
+        return types.stream().map(this::clone).collect(Collectors.toSet());
     }
 
     void checkOntologyMutation(){
@@ -804,7 +895,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         LOG.trace("Graph committed.");
         getConceptLog().writeToCentralCache(true);
-        getConceptLog().resetTransaction();
+        clearLocalVariables();
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {

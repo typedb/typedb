@@ -48,6 +48,10 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
         super(graknGraph, v, type);
     }
 
+    RuleTypeImpl(RuleTypeImpl rule){
+        super(rule);
+    }
+
     @Override
     public Rule addRule(Pattern lhs, Pattern rhs) {
         if(lhs == null) {

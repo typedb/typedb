@@ -65,6 +65,18 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         super(graknGraph, v, type, isImplicit);
     }
 
+    RoleTypeImpl(RoleTypeImpl role){
+        super(role);
+        //role.cachedDirectPlayedByTypes.ifPresent(value -> this.cachedDirectPlayedByTypes.set(getGraknGraph().clone(value)));
+        //role.cachedRelationTypes.ifPresent(value -> this.cachedRelationTypes.set(getGraknGraph().clone(value)));
+    }
+
+    void completeClone(RoleTypeImpl roleType){
+        super.completeClone(roleType);
+        roleType.cachedDirectPlayedByTypes.ifPresent(value -> this.cachedDirectPlayedByTypes.set(getGraknGraph().clone(value)));
+        roleType.cachedRelationTypes.ifPresent(value -> this.cachedRelationTypes.set(getGraknGraph().clone(value)));
+    }
+
     /**
      *
      * @return The Relation Type which this role takes part in.

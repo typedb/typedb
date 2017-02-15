@@ -59,6 +59,10 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity());
     }
 
+    ResourceTypeImpl(ResourceTypeImpl resourceType){
+        super(resourceType);
+    }
+
     /**
      * @param regex The regular expression which instances of this resource must conform to.
      * @return The Resource Type itself.
