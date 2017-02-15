@@ -31,7 +31,6 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.analytics.CommonOLAP;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
