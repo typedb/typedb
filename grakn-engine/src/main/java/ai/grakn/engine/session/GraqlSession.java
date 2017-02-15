@@ -266,7 +266,10 @@ class GraqlSession {
      * Clean the transaction, removing everything in the graph (but not committing)
      */
     void clean() {
-        queryExecutor.submit(graph::clear);
+        queryExecutor.submit(() -> {
+            graph.clear();
+            graph.open();
+        });
     }
 
     private void attemptRefresh() {
