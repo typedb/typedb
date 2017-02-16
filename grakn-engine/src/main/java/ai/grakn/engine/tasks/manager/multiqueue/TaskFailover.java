@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.engine.tasks.manager;
+package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskState;

@@ -20,7 +20,6 @@
 package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.manager.TaskFailover;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;

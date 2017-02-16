@@ -21,22 +21,37 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.config.ConfigHelper;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import mjson.Json;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+
 /**
- * TaskManager implementation that operates using a single Kafka queue
- *
- * This class controls the SingleQueueTaskRunner. Should this TaskRunner fail the TaskManager will attempt
- * to resurrect it.
+ * {@link TaskManager} implementation that operates using a single Kafka queue and controls the
+ * lifecycle {@link SingleQueueTaskManager}
  *
  * @author aelred, alexandrorth
  */
 public class SingleQueueTaskManager implements TaskManager {
 
+    private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
+
+    private final KafkaProducer<String, String> producer;
+    private final ZookeeperConnection zookeeper;
+    private final TaskStateStorage storage;
+
+    private SingleQueueTaskRunner taskRunner;
+    private Thread taskRunnerThread;
+
     /**
-     * Create a SingleQueueTaskManager and instantiate any needed services
+     * Create a {@link SingleQueueTaskManager}
      *
      * The SingleQueueTaskManager implementation must:
      *  + Instantiate a connection to zookeeper
@@ -44,17 +59,32 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      */
     public SingleQueueTaskManager(){
+        this.zookeeper = new ZookeeperConnection();
+        this.storage = new TaskStateZookeeperStore(zookeeper);
 
+        this.producer = ConfigHelper.kafkaProducer();
     }
 
     /**
-     * Close this instance of the TaskManager. Any errors that occur should not prevent the
+     * Close the {@link SingleQueueTaskRunner} and . Any errors that occur should not prevent the
      * subsequent ones from executing.
      * @throws Exception
      */
     @Override
     public void close() throws Exception {
+        LOG.debug("Closing TaskManager");
 
+        // close kafka producer
+        noThrow(producer::close, "Error shutting down producer in TaskManager");
+
+        // close task runner
+        noThrow(taskRunner::close, "Error shutting down TaskRunner");
+        noThrow(taskRunnerThread::join, "Error waiting for TaskRunner to close");
+
+        // stop zookeeper connection
+        noThrow(zookeeper::close, "Error waiting for zookeeper connection to close");
+
+        LOG.debug("TaskManager closed");
     }
 
     /**

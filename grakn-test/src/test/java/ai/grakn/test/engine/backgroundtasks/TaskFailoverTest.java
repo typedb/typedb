@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.TaskFailover;
+import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
