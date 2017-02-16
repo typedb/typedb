@@ -52,11 +52,13 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
     private Scheduler scheduler;
     private TreeCache cache;
     private TaskFailover failover;
+    private ZookeeperConnection connection;
 
-    public SchedulerElector(TaskStateStorage storage, ZookeeperConnection zookeeperConnection) {
+    public SchedulerElector(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
+        this.connection = connection;
 
-        leaderSelector = new LeaderSelector(zookeeperConnection.connection(), SCHEDULER, this);
+        leaderSelector = new LeaderSelector(connection.connection(), SCHEDULER, this);
         leaderSelector.autoRequeue();
 
         // the selection for this instance doesn't start until the leader selector is started
@@ -113,7 +115,7 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
         registerFailover(client);
 
         // start the scheduler
-        scheduler = new Scheduler(storage);
+        scheduler = new Scheduler(storage, connection);
 
         Thread schedulerThread = new Thread(scheduler, SCHEDULER_THREAD_NAME + scheduler.hashCode());
         schedulerThread.start();

@@ -33,14 +33,11 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -48,6 +45,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
@@ -57,6 +55,7 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.SCHEDULERS_GROUP
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -65,7 +64,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * Monitor new tasks queue to add them to ScheduledExecutorService.
  * ScheduledExecutorService will be given a function to add the task in question to the work queue.
  *
- * @author Denis Lobanov
+ * @author Denis Lobanov, alexandraorth
  */
 public class Scheduler implements Runnable, AutoCloseable {
     private static final String STATUS_MESSAGE = "Topic [%s], partition [%s] received [%s] records, next offset is [%s]";
@@ -82,13 +81,16 @@ public class Scheduler implements Runnable, AutoCloseable {
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
 
-    public Scheduler(TaskStateStorage storage){
+    public Scheduler(TaskStateStorage storage, ZookeeperConnection connection){
         this.storage = storage;
 
         if(OPENED.compareAndSet(false, true)) {
             // Kafka listener
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
-            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new HandleRebalance());
+
+            // Configure callback for a Kafka rebalance
+            ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection, this.getClass().getSimpleName());
+            consumer.subscribe(singletonList(NEW_TASKS_TOPIC), listener);
 
             // Kafka writer
             producer = kafkaProducer();
@@ -120,25 +122,31 @@ public class Scheduler implements Runnable, AutoCloseable {
                 long startTime = System.currentTimeMillis();
                 for(ConsumerRecord<String, String> record:records) {
 
+                    // Get the task from kafka
                     TaskState taskState = TaskState.deserialize(record.value());
 
-                    // mark the task as created
+                    // Mark the task as created and schedule
                     try {
                         storage.newState(taskState);
+
+                        // schedule the task
+                        scheduleTask(taskState);
                     } catch (EngineStorageException e){
                         LOG.debug("Already processed " + taskState.getId());
+
+                        TaskState recorded = storage.getState(taskState.getId());
+                        if(recorded.status() == CREATED){
+                            System.out.println("Rescheduling " + taskState.getId());
+                            scheduleTask(recorded);
+                        }
+                    } finally {
+                        //acknowledge that the record was read to the consumer
                         consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
-                        continue;
                     }
-
-                    // schedule the task
-                    scheduleTask(taskState);
-
-                    //acknowledge that the record was read to the consumer
-                    consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                 }
 
-                LOG.debug(format("Took [%s] ms to process [%s] records in scheduler", System.currentTimeMillis() - startTime, records.count()));
+                LOG.debug(format("Took [%s] ms to process [%s] records in scheduler",
+                        System.currentTimeMillis() - startTime, records.count()));
             }
         }
         catch (WakeupException e) {
@@ -241,15 +249,6 @@ public class Scheduler implements Runnable, AutoCloseable {
             if(exception != null) {
                 LOG.debug(getFullStackTrace(exception));
             }
-        }
-    }
-
-    private static class HandleRebalance implements ConsumerRebalanceListener {
-        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            LOG.debug("Scheduler partitions assigned " + partitions);
-        }
-        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            LOG.debug("Scheduler partitions revoked " + partitions);
         }
     }
 }
