@@ -18,8 +18,8 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;

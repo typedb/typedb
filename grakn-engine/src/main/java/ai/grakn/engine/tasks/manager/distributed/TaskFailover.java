@@ -16,10 +16,10 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.tasks.manager.distributed;
 
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -39,11 +39,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
+import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 

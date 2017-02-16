@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.config;
+package ai.grakn.engine.tasks.config;
 
 import ai.grakn.engine.util.ConfigProperties;
 import org.apache.curator.framework.CuratorFramework;

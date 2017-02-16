@@ -18,12 +18,12 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.config.ConfigHelper;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.TaskRunner;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -36,7 +36,7 @@ import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;

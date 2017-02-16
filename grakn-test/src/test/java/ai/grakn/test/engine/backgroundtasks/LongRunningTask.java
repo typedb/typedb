@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
+import ai.grakn.engine.tasks.BackgroundTask;
 import mjson.Json;
 
 import java.util.Date;

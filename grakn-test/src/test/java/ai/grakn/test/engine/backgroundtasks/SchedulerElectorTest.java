@@ -18,10 +18,10 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
-import ai.grakn.engine.backgroundtasks.distributed.SchedulerElector;
-import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.Scheduler;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.SchedulerElector;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

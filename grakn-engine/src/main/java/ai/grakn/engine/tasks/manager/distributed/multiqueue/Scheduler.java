@@ -16,10 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.tasks.manager.distributed.multiqueue;
 
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.distributed.ExternalStorageRebalancer;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -48,11 +50,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
-import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.SCHEDULERS_GROUP;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
+import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.SCHEDULERS_GROUP;
+import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;

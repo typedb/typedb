@@ -16,12 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.taskstatestorage;
+package ai.grakn.engine.tasks.storage;
 
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
@@ -30,9 +30,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
@@ -41,7 +41,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 
 /**
  * <p>
- * Manages the state of background {@link ai.grakn.engine.backgroundtasks.BackgroundTask} in
+ * Manages the state of background {@link ai.grakn.engine.tasks.BackgroundTask} in
  * a synchronized manner withing a cluster. This means that all updates must be performed
  * by acquiring a distributed mutex so that no concurrent writes are possible. 
  * </p>

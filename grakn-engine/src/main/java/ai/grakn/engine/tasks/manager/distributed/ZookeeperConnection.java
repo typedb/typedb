@@ -16,19 +16,19 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.tasks.manager.distributed;
 
-import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
+import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 
 import java.util.concurrent.TimeUnit;
 
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 
 /**
  * <p>

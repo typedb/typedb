@@ -16,9 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.tasks.manager.distributed.multiqueue;
 
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.manager.distributed.TaskFailover;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
@@ -26,8 +28,8 @@ import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 import org.apache.curator.framework.state.ConnectionState;
 
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.SCHEDULER;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**

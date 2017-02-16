@@ -18,10 +18,10 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.distributed.TaskFailover;
-import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.distributed.TaskFailover;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -45,8 +45,8 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;

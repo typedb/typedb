@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.tasks.manager.distributed;
 
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 
 import static java.lang.String.format;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.PARTITION_PATH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.PARTITION_PATH;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
 import static org.apache.commons.lang.SerializationUtils.serialize;
 

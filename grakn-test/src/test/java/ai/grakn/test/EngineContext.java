@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.tasks.TaskManager;
 import org.junit.rules.ExternalResource;
 
 import static ai.grakn.test.GraknTestEnv.hideLogs;

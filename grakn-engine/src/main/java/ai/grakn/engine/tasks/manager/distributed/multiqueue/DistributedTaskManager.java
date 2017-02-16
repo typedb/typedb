@@ -16,13 +16,14 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.tasks.manager.distributed.multiqueue;
 
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.config.ConfigHelper;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;

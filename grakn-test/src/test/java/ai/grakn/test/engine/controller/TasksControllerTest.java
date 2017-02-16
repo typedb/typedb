@@ -18,8 +18,8 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.backgroundtasks.LongRunningTask;

@@ -19,7 +19,7 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;

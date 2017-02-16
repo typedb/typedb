@@ -16,23 +16,19 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.config;
+package ai.grakn.engine.tasks.config;
 
 /**
  * <p>
- * Class containing strings that describe the file storage locations in Zookeeper
+ * Class containing strings that describe the Kafka queues and groups
  * </p>
  *
  * @author Denis Lobanov, alexandraorth
  */
-public interface ZookeeperPaths {
-    String TASKS_NAMESPACE = "grakn";
-    String SCHEDULER = "/scheduler";
-    String TASK_RUNNERS = "/task_runners";
-    String RUNNERS_WATCH = TASK_RUNNERS+"/watch";
-    String RUNNERS_STATE = TASK_RUNNERS+"/last_state";
-    String TASKS_PATH_PREFIX = "/tasks";
-    String TASK_STATE_SUFFIX = "/state";
-    String TASK_LOCK_SUFFIX = "/lock";
-    String PARTITION_PATH = "/partition/%s";
+public interface KafkaTerms {
+    String TASK_RUNNER_GROUP = "task-runners";
+    String SCHEDULERS_GROUP = "schedulers";
+    String WORK_QUEUE_TOPIC = "work-queue";
+    String NEW_TASKS_TOPIC = "new-tasks";
+    String LOG_TOPIC = "logs";
 }

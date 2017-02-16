@@ -16,13 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.standalone;
+package ai.grakn.engine.tasks.manager.standalone;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
+import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
 import mjson.Json;

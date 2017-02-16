@@ -18,9 +18,9 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -16,11 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.tasks.manager.distributed.multiqueue;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.distributed.ExternalStorageRebalancer;
+import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
@@ -51,11 +53,11 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.TASK_RUNNER_GROUP;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
+import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
+import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
@@ -272,7 +274,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         out.put(runningTasks);
 
         try {
-            connection.connection().setData().forPath(RUNNERS_STATE+"/"+ ENGINE_ID, out.toString().getBytes(StandardCharsets.UTF_8));
+            connection.connection().setData().forPath(RUNNERS_STATE + "/" + ENGINE_ID, out.toString().getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + getFullStackTrace(e));
         }

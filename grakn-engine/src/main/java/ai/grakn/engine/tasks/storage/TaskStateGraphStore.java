@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.taskstatestorage;
+package ai.grakn.engine.tasks.storage;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
@@ -25,8 +25,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;

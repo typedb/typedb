@@ -18,8 +18,8 @@
 
 package ai.grakn.test.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.TaskStatus;
 import mjson.Json;
 

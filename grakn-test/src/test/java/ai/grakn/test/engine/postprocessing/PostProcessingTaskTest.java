@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.standalone.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.test.EngineContext;
 import org.junit.Assert;
