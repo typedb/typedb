@@ -61,10 +61,12 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ConceptId cast = (ConceptId) o;
-        if (conceptId instanceof String)
+        if (conceptId instanceof String) {
             return conceptId.equals(cast.conceptId.toString());
-        else if (cast.conceptId instanceof String)
+        }
+        else if (cast.conceptId instanceof String) {
             return cast.conceptId.equals(conceptId.toString());
+        }
         return conceptId.equals(cast.conceptId);
     }
 
