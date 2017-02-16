@@ -59,6 +59,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         ConceptId cast = (ConceptId) o;
         if (conceptId instanceof String)
             return conceptId.equals(cast.conceptId.toString());
