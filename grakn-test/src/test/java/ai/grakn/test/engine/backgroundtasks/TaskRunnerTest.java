@@ -81,6 +81,7 @@ public class TaskRunnerTest {
     @Test
     public void testSendReceive() throws Exception {
         TestTask.startedCounter.set(0);
+        TestTask.resumedCounter.set(0);
 
         Set<TaskState> tasks = createTasks(5, SCHEDULED);
         tasks.forEach(storage::newState);
@@ -93,6 +94,7 @@ public class TaskRunnerTest {
     @Test
     public void testSendDuplicate() throws Exception {
         TestTask.startedCounter.set(0);
+        TestTask.resumedCounter.set(0);
 
         Set<TaskState> tasks = createTasks(5, SCHEDULED);
         tasks.forEach(storage::newState);
@@ -105,6 +107,9 @@ public class TaskRunnerTest {
 
     @Test
     public void testSendWithCheckpoint() {
+        TestTask.startedCounter.set(0);
+        TestTask.resumedCounter.set(0);
+
         TaskState task = createTask(0, SCHEDULED, false, 0);
         task.checkpoint("");
         storage.newState(task);
