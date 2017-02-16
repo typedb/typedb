@@ -77,7 +77,7 @@ public class LoaderClient {
     private static final String BATCH_NUMBER = "batchNumber";
 
     private final String TASK_POST = "http://%s" + TASKS;
-    private final String TASK_GET = "http://%s" + GET + "/%s";
+    private final String TASK_GET = "http://%s" + TASKS + "/%s";
 
     private final Consumer<Json> onCompletionOfTask;
     private final Map<Integer,CompletableFuture> futures;
