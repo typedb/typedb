@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
@@ -37,12 +38,14 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.neq;
+import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class VariableTest {
+public class VariableAndPatternTest {
 
     private GraknGraph graph = rule.graph();
 
@@ -67,9 +70,8 @@ public class VariableTest {
         var("-1");
     }
 
-    @Ignore
+    @Ignore //TODO: FIX THIS TEST
     @Test
-    //TODO: FIX THIS TEST
     public void testVarNameInvalid() {
         assertExceptionThrown(Graql::var, "");
         assertExceptionThrown(Graql::var, " ");
@@ -156,14 +158,126 @@ public class VariableTest {
         assertFalse(conj.isEmpty());
 
         resultSet2.retainAll(resultSet1);
-
         assertEquals(resultSet2, conj);
 
         conj = graph.graql().match(and(varSet3)).execute().stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());
-
         assertEquals(resultSet2, conj);
+
+        conj = graph.graql().match(or(var("x"), var("x"))).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertTrue(conj.size() > 1);
+    }
+
+    @Test(expected = Exception.class)
+    public void testConjunctionNull() {
+        Set<Var> varSet = null;
+        and(varSet);
+    }
+
+    @Test(expected = Exception.class)
+    public void testConjunctionContainsNull() {
+        Var var = null;
+        and(var(), var);
+    }
+
+    @Test
+    public void testDisjunction() {
+        Set<Var> varSet1 = Sets.newHashSet(
+                var("x").isa("movie"),
+                var("y1").isa("genre").has("name", "crime"),
+                var().isa("has-genre").rel(var("x")).rel(var("y1")));
+        Set<Concept> resultSet1 = graph.graql().match(varSet1).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(resultSet1.isEmpty());
+
+        Set<Var> varSet2 = Sets.newHashSet(
+                var("x").isa("movie"),
+                var("y2").isa("person").has("name", "Marlon Brando"),
+                var().isa("has-cast").rel(var("x")).rel(var("y2")));
+        Set<Concept> resultSet2 = graph.graql().match(varSet2).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(resultSet1.isEmpty());
+
+        Set<Pattern> varSet3 = Sets.newHashSet(
+                var("x").isa("movie"),
+                or(var("y").isa("genre").has("name", "crime"),
+                        var("y").isa("person").has("name", "Marlon Brando")),
+                var().rel(var("x")).rel(var("y")));
+        Set<Concept> conj = graph.graql().match(varSet3).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(conj.isEmpty());
+
+        resultSet2.addAll(resultSet1);
+        assertEquals(resultSet2, conj);
+
+        conj = graph.graql().match(or(var("x"), var("x"))).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertTrue(conj.size() > 1);
+    }
+
+    @Test(expected = Exception.class)
+    public void testDisjunctionNull() {
+        Set<Var> varSet = null;
+        or(varSet);
+    }
+
+    @Test(expected = Exception.class)
+    public void testDisjunctionContainsNull() {
+        Var var = null;
+        or(var(), var);
+    }
+
+    @Test
+    public void testNegation() {
+        assertTrue(graph.graql().match(var().isa("movie").has("title", "Godfather")).ask().execute());
+        Set<Concept> result1 = graph.graql().match(
+                var("x").isa("movie").has("title", var("y")),
+                var("y").value(neq("Godfather"))).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(result1.isEmpty());
+
+        Set<Concept> result2 = graph.graql().match(
+                var("x").isa("movie").has("title", var("y")),
+                var("y")).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(result2.isEmpty());
+
+        result2.removeAll(result1);
+        assertEquals(1, result2.size());
+    }
+
+    @Ignore
+    @Test // TODO: Do we have a negation for this?
+    public void testNegationEmpty() {
+        Set<Concept> result = graph.graql().match(
+                var("x").isa("movie").has("title", var("y")),
+                var("y").value(neq(var()))).select("x").execute()
+                .stream()
+                .map(stringConceptMap -> stringConceptMap.get("x"))
+                .collect(Collectors.toSet());
+        assertTrue(result.isEmpty());
+    }
+
+    @Test(expected = Exception.class)
+    public void testNegationNull() {
+        Var var = null;
+        neq(var);
     }
 
     private void assertExceptionThrown(Consumer<String> consumer, String varName) {
