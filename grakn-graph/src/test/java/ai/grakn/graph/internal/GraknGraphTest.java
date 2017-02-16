@@ -290,7 +290,6 @@ public class GraknGraphTest extends GraphTestBase {
                 }
             }
 
-            graph.open();
             graph.putEntityType("A Thing");
             errorNotThrown[0] = true;
         });
@@ -315,8 +314,6 @@ public class GraknGraphTest extends GraphTestBase {
             }
         }
         assertTrue("Graph not correctly closed", errorThrown);
-
-        graph.open();
 
         graph.putEntityType("A Thing");
     }

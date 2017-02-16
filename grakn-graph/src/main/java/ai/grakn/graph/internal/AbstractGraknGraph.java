@@ -797,16 +797,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         closeGraph(ErrorMessage.CLOSED_USER.getMessage());
     }
 
-    /**
-     * Opens the graph. This must be called before a thread can use the graph
-     */
-    @Override
-    public void open(){
-        localIsOpen.set(true);
-        localClosedReason.remove();
-        getTinkerPopGraph();//Used to check graph is truly open.
-    }
-
     //Standard Close Operation Overridden by Vendor
     public void closeGraph(String closedReason){
         finaliseClose(this::closePermanent, closedReason);

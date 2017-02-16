@@ -106,7 +106,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         boolean shouldOpen = open != null ? open : random.nextBoolean();
 
         if (shouldOpen) {
-            graph.open();
         } else {
             graph.close();
         }

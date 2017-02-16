@@ -61,7 +61,6 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         assertEquals(108, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
-        graknGraph.open();
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
             graknGraph.commit();
@@ -81,7 +80,6 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
                 GraknGraph innerTranscation = graknGraph;
-                innerTranscation.open();
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }

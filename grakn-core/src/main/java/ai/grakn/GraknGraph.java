@@ -397,11 +397,6 @@ public interface GraknGraph extends AutoCloseable{
     void close();
 
     /**
-     * Opens the graph. This must be called before a new thread can use the graph.
-     */
-    void open();
-
-    /**
      * Validates and attempts to commit the graph. Also submits commit logs for post processing
      * An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
      *

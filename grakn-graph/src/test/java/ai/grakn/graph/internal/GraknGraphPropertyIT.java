@@ -644,7 +644,7 @@ public class GraknGraphPropertyIT {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-        graph.open();
+
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
@@ -656,7 +656,6 @@ public class GraknGraphPropertyIT {
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
-        graph.open();
         assertNotNull(graph.getType(typeName));
     }
 
@@ -685,8 +684,6 @@ public class GraknGraphPropertyIT {
 
     @Property
     public void whenCallingOpen_TheGraphIsOpen(GraknGraph graph) {
-        graph.open();
-
         assertFalse(graph.isClosed());
     }
 
