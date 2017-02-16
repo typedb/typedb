@@ -91,10 +91,12 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
             lastGraphBuiltBatchLoading = true;
+            batchLoadingGraknGraph.openTransaction();
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, false);
             lastGraphBuiltBatchLoading = false;
+            graknGraph.openTransaction();
             return graknGraph;
         }
     }
