@@ -105,7 +105,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
-    private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
+    private final ThreadLocal<Map<TypeName, TypeImpl>> localCloneCache = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
@@ -297,8 +297,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return conceptLog;
     }
 
-    private Map<TypeName, Type> getCloneCache(){
-        Map<TypeName, Type> cloneCache = localCloneCache.get();
+    private Map<TypeName, TypeImpl> getCloneCache(){
+        Map<TypeName, TypeImpl> cloneCache = localCloneCache.get();
         if(cloneCache == null){
             localCloneCache.set(cloneCache = new HashMap<>());
         }
@@ -322,13 +322,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Iterate through cached clones completing the cloning process.
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
-        for (Type type : getCloneCache().values()) {
-            if(type.isRoleType()){
-                ((RoleTypeImpl) type).completeClone(cachedOntologySnapshot.get(type.getName()));
-            } else if(type.isRelationType()){
-                ((RelationTypeImpl) type).completeClone(cachedOntologySnapshot.get(type.getName()));
+        for (TypeImpl<?, ?> type : getCloneCache().values()) {
+            TypeImpl centralType = cachedOntologySnapshot.get(type.getName());
+
+            if(type.isRelationType()){
+                ((RelationTypeImpl) type).copyCachedConcepts((RelationTypeImpl) centralType);
+            } else if(type.isRoleType()){
+                ((RoleTypeImpl) type).copyCachedConcepts((RoleTypeImpl) centralType);
             } else {
-                ((TypeImpl) type).completeClone(cachedOntologySnapshot.get(type.getName()));
+                type.copyCachedConcepts(centralType);
             }
         }
 
@@ -350,7 +352,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //If the clone has not happened then make a new one
-        Type clonedType = null;
+        TypeImpl clonedType = null;
         if(type.isRoleType()) {
             clonedType = new RoleTypeImpl((RoleTypeImpl) type);
         } else if(type.isRelationType()) {

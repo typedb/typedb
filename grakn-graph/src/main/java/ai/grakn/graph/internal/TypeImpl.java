@@ -104,11 +104,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         this.cachedTypeName = type.getName();
         type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
-        //type.cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().clone(value)));
-        //type.cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().clone(value)));
     }
 
-    void completeClone(TypeImpl<T, V> type){
+    void copyCachedConcepts(TypeImpl<T, V> type){
         type.cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().clone(value)));
         type.cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().clone(value)));
     }
