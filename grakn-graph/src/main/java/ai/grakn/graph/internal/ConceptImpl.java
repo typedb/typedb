@@ -590,7 +590,9 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     @Override
     public boolean equals(Object object) {
-        //Compare Concept based on id because vertex comparisons are equivalent
+        //Compare Concept
+        //based on id because vertex comparisons are equivalent
+        if (this == object) return true;
         return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
