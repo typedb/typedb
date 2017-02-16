@@ -19,10 +19,10 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -49,7 +49,7 @@ public class TypeAtom extends Binary{
 
     @Override
     protected VarName extractValueVariableName(VarAdmin var) {
-        return var.getProperties().findFirst().orElse(null).getInnerVars().findFirst().orElse(null).getVarName();
+        return var.getProperties().findFirst().get().getInnerVars().findFirst().get().getVarName();
     }
 
     @Override

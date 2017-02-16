@@ -45,7 +45,7 @@ abstract class AbstractFragment implements Fragment{
 
     private final VarName start;
     private final Optional<VarName> end;
-    private EquivalentFragmentSet equivalentFragmentSet;
+    private EquivalentFragmentSet equivalentFragmentSet = null;
 
     AbstractFragment(VarName start) {
         this.start = start;
@@ -59,7 +59,11 @@ abstract class AbstractFragment implements Fragment{
 
     @Override
     public final EquivalentFragmentSet getEquivalentFragmentSet() {
-        return equivalentFragmentSet;
+        if (equivalentFragmentSet != null) {
+            return equivalentFragmentSet;
+        } else {
+            throw new IllegalStateException("Should not call getEquivalentFragmentSet before setEquivalentFragmentSet");
+        }
     }
 
     @Override
