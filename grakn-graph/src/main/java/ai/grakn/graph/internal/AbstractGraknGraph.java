@@ -101,11 +101,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
 
+    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
-    private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
+    private final ThreadLocal<Map<TypeName, TypeImpl>> localCloneCache = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
@@ -163,6 +164,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean implicitConceptsVisible(){
         return getBooleanFromLocalThread(localShowImplicitStructures);
+    }
+
+    private boolean getCommitRequired(){
+        return getBooleanFromLocalThread(localCommitRequired);
     }
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
@@ -798,7 +803,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Closes the current graph, rendering it unusable.
      */
     @Override
-    public void close() {
+    public void close() throws GraknValidationException {
+        if(getCommitRequired()){
+            commit();
+        }
         closeGraph(ErrorMessage.CLOSED_USER.getMessage());
     }
 
@@ -825,10 +833,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     * Sets a thread local flag indicating that a commit is required when cloding the graph.
+     */
+    public void commitOnClose(){
+        localCommitRequired.set(true);
+    }
+
+    /**
      * Commits the graph
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
-    @Override
     public void commit() throws GraknValidationException {
         commit(this::submitCommitLogs);
     }
