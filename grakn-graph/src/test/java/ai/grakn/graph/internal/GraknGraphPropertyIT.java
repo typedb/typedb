@@ -74,7 +74,9 @@ import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
@@ -85,7 +87,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -499,7 +500,6 @@ public class GraknGraphPropertyIT {
         assertEquals(type, graph.getType(typeName));
     }
 
-    @Ignore // TODO: Re-enable this test when issue with types being super type of themselves is resolved
     @Property
     public void whenCallingGetTypeWithANonExistingTypeName_ItReturnsNull(@Open GraknGraph graph, TypeName typeName) {
         Set<TypeName> allTypes = allTypesFrom(graph).stream().map(Type::getName).collect(toSet());
@@ -592,11 +592,23 @@ public class GraknGraphPropertyIT {
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRuleType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test
+    @Ignore //Fix this. The behaviour of the getRelation method is still poorly defined
     @Property
     public void whenCallingGetRelationAndTheRelationExists_ReturnThatRelation(
             @Open GraknGraph graph, @FromGraph Relation relation) {
-        assertEquals(relation, graph.getRelation(relation.type(), relation.rolePlayers()));
+        //Cannot compare against the exact relation because it is possible to temporarily create (within a transaction)
+        // duplicate relations. In this case it was creating 2 relations with no roles and roleplayers of the same type
+        // and returning one of them which is valid but may not be the one you are comparing against. Hence why the
+        // comparison is more defined.
+
+        Relation foundRelation = graph.getRelation(relation.type(), relation.rolePlayers());
+        if(foundRelation.getId().equals(relation.getId())){
+            assertEquals(relation, foundRelation);
+        } else { //This is possible when we have created duplicate empty relations. So we check everything we can.
+            assertThat(relation.rolePlayers().keySet(), containsInAnyOrder(foundRelation.rolePlayers().keySet()));
+            assertThat(relation.rolePlayers().values(), containsInAnyOrder(foundRelation.rolePlayers().values()));
+            assertEquals(relation.type(), foundRelation.type());
+        }
     }
 
     @Property
@@ -628,33 +640,30 @@ public class GraknGraphPropertyIT {
         assertTrue(graph.isClosed());
     }
 
-    @Ignore // TODO: Re-enable this when test below is fixed
+    @Ignore // TODO: Re-enable this when test below is fixed and AFTER the transaction refactor
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
         graph.open();
-
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
             assertTrue(isMetaName(concept.asType().getName()));
-        });
+            });
     }
 
-    @Ignore // TODO: Fix this
+    @Ignore // TODO: Fix this AFTER transaction refactor
     @Property
-    public void whenCallingClear_AllMetaConceptsArePresent(
-            @Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
+    public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
         graph.open();
         assertNotNull(graph.getType(typeName));
     }
 
-    @Ignore // TODO: Fix this, or remove the test
     @Property
-    public void whenCallingGetKeySpace_ReturnTheKeyspaceOfTheGraph(String keyspace) {
+    public void whenCallingGetKeySpace_ReturnTheLowercaseKeyspaceOfTheGraph(String keyspace) {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-        assertEquals(keyspace, graph.getKeyspace());
+        assertEquals(keyspace.toLowerCase(), graph.getKeyspace());
     }
 
     @Property
@@ -744,7 +753,6 @@ public class GraknGraphPropertyIT {
         }
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenGettingSuperType_TheResultIsNeverItself(@Open GraknGraph graph, TypeName typeName) {
         Type type = graph.getType(typeName);
