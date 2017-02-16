@@ -31,7 +31,6 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.internal.analytics.CommonOLAP;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -134,7 +133,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             subTypeNames.remove(metaEntityType.getName());
             subTypeNames.remove(metaResourceType.getName());
             subTypeNames.remove(metaRelationType.getName());
-            this.subTypeNames.removeAll(CommonOLAP.analyticsElements);
         } else {
             for (Type type : subGraph) {
                 type.subTypes().forEach(subType -> this.subTypeNames.add(subType.getName()));
