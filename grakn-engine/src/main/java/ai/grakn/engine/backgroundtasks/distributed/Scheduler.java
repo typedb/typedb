@@ -134,10 +134,9 @@ public class Scheduler implements Runnable, AutoCloseable {
                     } catch (EngineStorageException e){
                         LOG.debug("Already processed " + taskState.getId());
 
-                        TaskState recorded = storage.getState(taskState.getId());
-                        if(recorded.status() == CREATED){
-                            System.out.println("Rescheduling " + taskState.getId());
-                            scheduleTask(recorded);
+                        // If that task is marked as created, re-schedule
+                        if(storage.getState(taskState.getId()).status() == CREATED){
+                            scheduleTask(taskState);
                         }
                     } finally {
                         //acknowledge that the record was read to the consumer
