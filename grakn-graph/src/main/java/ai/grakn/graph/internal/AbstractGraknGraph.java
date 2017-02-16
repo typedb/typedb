@@ -323,8 +323,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Iterate through cached clones completing the cloning process.
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
         for (Type type : getCloneCache().values()) {
-            Type centralType = cachedOntologySnapshot.get(type.getName());
-            ((TypeImpl) type).copyCachedConcepts(centralType);
+            //noinspection unchecked
+            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getName()));
         }
 
         //Purge clone cache to save memory
