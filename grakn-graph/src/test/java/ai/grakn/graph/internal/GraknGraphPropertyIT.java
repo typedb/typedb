@@ -35,6 +35,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
@@ -676,9 +677,8 @@ public class GraknGraphPropertyIT {
     }
 
     @Property
-    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) {
+    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws GraknValidationException {
         graph.close();
-
         assertTrue(graph.isClosed());
     }
 

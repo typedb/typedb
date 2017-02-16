@@ -63,7 +63,8 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     private void addEntityType(GraknGraph graknGraph){
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
-            graknGraph.commit();
+            graknGraph.commitOnClose();
+            graknGraph.close();
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }
@@ -114,7 +115,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     }
 
     @Test
-    public void testCloseStandard(){
+    public void testCloseStandard() throws GraknValidationException {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
         graph.close();
 

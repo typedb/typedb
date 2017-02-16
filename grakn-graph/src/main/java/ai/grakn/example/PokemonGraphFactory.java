@@ -84,7 +84,8 @@ public class PokemonGraphFactory{
     public static void loadGraph(GraknGraph graknGraph) {
         buildGraph(graknGraph);
         try {
-            graknGraph.commit();
+            graknGraph.commitOnClose();
+            graknGraph.close();
         } catch (GraknValidationException e) {
             throw new RuntimeException(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage(), e);
         }

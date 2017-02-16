@@ -5,6 +5,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.GraknVersion;
 import ai.grakn.util.Schema;
 import org.junit.Test;
@@ -22,7 +23,7 @@ public class SystemKeyspaceTest {
 	private final String space3 = "SystemKeyspaceTest.space3";
 	
     @Test
-    public void testCollectKeyspaces() { 
+    public void testCollectKeyspaces() throws GraknValidationException {
     	GraknGraphFactory f1 = Grakn.factory(Grakn.IN_MEMORY, space1);
     	f1.getGraph().close();
     	GraknGraphFactory f2 = Grakn.factory(Grakn.IN_MEMORY, space2);

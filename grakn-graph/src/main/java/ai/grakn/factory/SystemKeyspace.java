@@ -99,7 +99,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
                 if (resource.owner() == null) {
                     graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
                 }
-                graph.commit();
+                graph.commitOnClose();
             } catch (GraknValidationException e) {
                 e.printStackTrace();
             }
@@ -126,10 +126,9 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
             LOG.info("System ontology is " + query);
             graph.graql().parse(query).execute();
             graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
-            graph.commit();
+            graph.commitOnClose();
             LOG.info("Loaded system ontology to system keyspace.");
-        }
-        catch(IOException |GraknValidationException |NullPointerException e) {
+        } catch(IOException |GraknValidationException |NullPointerException e) {
             e.printStackTrace(System.err);
             LOG.error("Could not load system ontology. The error was: " + e);
         }

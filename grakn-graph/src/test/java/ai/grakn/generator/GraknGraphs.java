@@ -33,6 +33,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
@@ -107,7 +108,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
         if (shouldOpen) {
         } else {
-            graph.close();
+            try {
+                graph.close();
+            } catch (GraknValidationException e) {
+                throw new RuntimeException("Generater opened invalid graph somehow", e);
+            }
         }
 
         lastGeneratedGraph = graph;

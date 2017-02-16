@@ -121,6 +121,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.engine = engine;
         elementFactory = new ElementFactory(this);
 
+        localIsOpen.set(true);
+
         if(initialiseMetaConcepts()) {
             try {
                 commit();

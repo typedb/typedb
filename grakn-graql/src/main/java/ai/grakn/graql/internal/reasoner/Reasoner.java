@@ -28,14 +28,13 @@ import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.Schema;
-
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
@@ -56,7 +55,8 @@ public class Reasoner {
 
     public static void commitGraph(GraknGraph graph) {
         try {
-            graph.commit();
+            graph.commitOnClose();
+            graph.close();
         } catch (GraknValidationException e) {
             LOG.error(e.getMessage());
         }

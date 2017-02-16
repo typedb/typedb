@@ -301,7 +301,7 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
-    public void testCloseAndReOpenGraph(){
+    public void testCloseAndReOpenGraph() throws GraknValidationException {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
         graph.close();
 
@@ -315,6 +315,7 @@ public class GraknGraphTest extends GraphTestBase {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
+        graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
         graph.putEntityType("A Thing");
     }
 
