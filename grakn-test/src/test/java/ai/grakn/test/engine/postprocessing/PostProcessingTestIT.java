@@ -23,9 +23,10 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.postprocessing.PostProcessing;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.GraknTestEnv;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;
@@ -39,6 +40,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
+
 public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
     private EngineCache cache = EngineCache.getInstance();
@@ -51,15 +55,12 @@ public class PostProcessingTestIT {
     @Before
     public void setUp() throws Exception {
         graph = engine.graphWithNewKeyspace();
-
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknTestEnv.class)).setLevel(Level.DEBUG);
-        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT)).setLevel(Level.ALL);
     }
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScale() throws GraknValidationException, ExecutionException, InterruptedException {
-        int numAttempts = 100;
+        int numAttempts = 500;
         ExecutorService pool = Executors.newFixedThreadPool(40);
         Set<Future> futures = new HashSet<>();
 
@@ -100,15 +101,33 @@ public class PostProcessingTestIT {
         graph.close();
         graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
-        res1IsBroken = 
+        boolean res1IsBroken = graph.getResourceType("res1").instances().size() >= 2;
+        boolean res2IsBroken = graph.getResourceType("res2").instances().size() >= 2;
+
+        assertTrue("Failed at breaking resource 1 or 2", res1IsBroken || res2IsBroken);
+
+        //Force PP
+        postProcessing.run();
+
+        //Check current broken state of graph
+        graph.close();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+
+        res1IsBroken = graph.getResourceType("res1").instances().size() >= 2;
+        res2IsBroken = graph.getResourceType("res2").instances().size() >= 2;
+
+        assertFalse("Failed at fixing resource 1 or 2", res1IsBroken || res2IsBroken);
     }
 
     private void forceDuplicateResources(GraknGraph graph, String resourceType, String resourceValue){
-        graph.getResourceType(resourceType).putResource(resourceValue);
         try {
+            graph.open();
+            graph.getResourceType(resourceType).putResource(resourceValue);
             graph.commit();
-        } catch (GraknValidationException e) {
+        } catch (GraknValidationException | ConceptNotUniqueException e) {
             //Ignore
+        } finally {
+            graph.close();
         }
     }
 
@@ -122,5 +141,4 @@ public class PostProcessingTestIT {
             }
         }
     }
-
 }
