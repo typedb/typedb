@@ -48,23 +48,22 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> addEntityType(graknGraph)));
+            futures.add(pool.submit(this::addEntityType));
         }
 
         futures.forEach(future -> {
             try {
-                future.get();
+                future.get();   
             } catch (InterruptedException | ExecutionException ignored) {
-
+                ignored.printStackTrace();
             }
         });
         assertEquals(108, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
-    private void addEntityType(GraknGraph graknGraph){
-        graknGraph.putEntityType(UUID.randomUUID().toString());
-        try {
+    private void addEntityType(){
+        try(GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph()){
+            graph.putEntityType(UUID.randomUUID().toString());
             graknGraph.commitOnClose();
-            graknGraph.close();
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }
@@ -80,7 +79,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                GraknGraph innerTranscation = graknGraph;
+                GraknGraph innerTranscation = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }

@@ -50,6 +50,7 @@ public class PokemonGraphFactoryTest {
     public void setup() {
         graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         PokemonGraphFactory.loadGraph(graknGraph);
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
     }
 
     @Test
