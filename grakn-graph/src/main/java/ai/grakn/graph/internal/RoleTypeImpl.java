@@ -65,8 +65,13 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         super(graknGraph, v, type, isImplicit);
     }
 
-    RoleTypeImpl(RoleTypeImpl role){
+    private RoleTypeImpl(RoleTypeImpl role){
         super(role);
+    }
+
+    @Override
+    public RoleType copy(){
+        return new RoleTypeImpl(this);
     }
 
     void copyCachedConcepts(RoleTypeImpl type){

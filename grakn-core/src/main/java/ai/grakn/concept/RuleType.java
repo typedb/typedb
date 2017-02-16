@@ -103,4 +103,10 @@ public interface RuleType extends Type {
      * @return All the rule instances of this Rule Type.
      */
     Collection<Rule> instances();
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    RuleType copy();
 }

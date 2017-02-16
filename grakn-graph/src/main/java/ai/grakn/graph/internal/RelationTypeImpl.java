@@ -52,8 +52,13 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         super(graknGraph, v, type, isImplicit);
     }
 
-    RelationTypeImpl(RelationTypeImpl relationType){
+    private RelationTypeImpl(RelationTypeImpl relationType){
         super(relationType);
+    }
+
+    @Override
+    public RelationType copy(){
+        return new RelationTypeImpl(this);
     }
 
     void copyCachedConcepts(RelationTypeImpl type){

@@ -59,8 +59,15 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity());
     }
 
-    ResourceTypeImpl(ResourceTypeImpl resourceType){
+    private ResourceTypeImpl(ResourceTypeImpl resourceType){
+        //noinspection unchecked
         super(resourceType);
+    }
+
+    @Override
+    public ResourceType<D> copy(){
+        //noinspection unchecked
+        return new ResourceTypeImpl(this);
     }
 
     /**

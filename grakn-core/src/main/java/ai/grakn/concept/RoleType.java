@@ -109,5 +109,11 @@ public interface RoleType extends Type {
      * @return A list of all the Types which can play this role.
      */
     Collection<Type> playedByTypes();
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    RoleType copy();
 }
 
