@@ -107,8 +107,18 @@ public final class DistributedTaskManager implements TaskManager {
     }
 
     @Override
-    public TaskManager stopTask(String id, String requesterName) {
-        throw new UnsupportedOperationException(this.getClass().getName() + " currently doesn't support stopping tasks");
+    public void stopTask(String id, String requesterName) {
+        throw new UnsupportedOperationException(this.getClass().getName() + " currently does not support stopping tasks");
+    }
+
+    @Override
+    public void pauseTask(String id, String requesterName) {
+        throw new UnsupportedOperationException(this.getClass().getName() + " currently does not support pausing tasks");
+    }
+
+    @Override
+    public void resumeTask(String id, String requesterName) {
+        throw new UnsupportedOperationException(this.getClass().getName() + " currently does not support resuming paused tasks");
     }
 
     @Override

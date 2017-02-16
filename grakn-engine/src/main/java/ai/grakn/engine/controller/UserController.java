@@ -25,8 +25,6 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -51,7 +49,6 @@ import static spark.Spark.put;
 @Path("/user")
 @Produces({"application/json", "text/plain"})
 public class UserController {
-    private final Logger LOG = LoggerFactory.getLogger(UserController.class);
     private final UsersHandler users = UsersHandler.getInstance();
 
     public UserController() {
@@ -103,7 +100,6 @@ public class UserController {
             users.addUser(user);
             return true;
         } catch(Exception e){
-            LOG.error("Error during creating new user", e);
             throw new GraknEngineServerException(500,e);
         }
     }

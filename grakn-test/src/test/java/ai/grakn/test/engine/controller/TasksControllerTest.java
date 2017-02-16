@@ -43,7 +43,7 @@ import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.put;
@@ -78,7 +78,7 @@ public class TasksControllerTest {
     public void testTasksByStatus() throws Exception{
         Response response = given().queryParam("status", COMPLETED.toString())
                                    .queryParam("limit", 10)
-                                   .get("/tasks/all");
+                                   .get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -95,7 +95,7 @@ public class TasksControllerTest {
     public void testTasksByClassName() {
         Response response = given().queryParam("className", TestTask.class.getName())
                                    .queryParam("limit", 10)
-                                   .get("/tasks/all");
+                                   .get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -112,7 +112,7 @@ public class TasksControllerTest {
     public void testTasksByCreator() {
         Response response = given().queryParam("creator", this.getClass().getName())
                                    .queryParam("limit", 10)
-                                   .get("/tasks/all");
+                                   .get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -127,7 +127,7 @@ public class TasksControllerTest {
 
     @Test
     public void testGetAllTasks() {
-        Response response = given().queryParam("limit", 10).get("/tasks/all");
+        Response response = given().queryParam("limit", 10).get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -140,9 +140,6 @@ public class TasksControllerTest {
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(singleTask));
-
-        // Stopping tasks is not currently supported by the DistributedTaskManager.
-//                .and().body("status", equalTo(STOPPED.toString()));
     }
 
     @Test
@@ -150,7 +147,7 @@ public class TasksControllerTest {
         given().queryParam("className", TestTask.class.getName())
                .queryParam("creator", this.getClass().getName())
                .queryParam("runAt", new Date())
-               .post(TASKS_SCHEDULE_URI)
+               .post(TASKS)
                .then().statusCode(200)
                .and().contentType(ContentType.JSON)
                .and().body("id", notNullValue());
@@ -165,7 +162,7 @@ public class TasksControllerTest {
                 .queryParam("creator", this.getClass().getName())
                 .queryParam("runAt", new Date())
                 .queryParam("interval", 5000)
-                .post(TASKS_SCHEDULE_URI);
+                .post(TASKS);
         System.out.println(response.body().asString());
 
         response.then().statusCode(200)

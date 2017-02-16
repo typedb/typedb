@@ -52,10 +52,26 @@ public interface TaskManager extends AutoCloseable {
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the
      * task is killed afterwards.
      * @param id String of task to stop.
-     * @param requesterName Optional String to denote who requested this call; used for status reporting and may be null.
-     * @return Instance of the class implementing TaskManager.
+     * @param requesterName String to denote who requested this call.
      */
-    TaskManager stopTask(String id, String requesterName);
+    void stopTask(String id, String requesterName);
+
+    /**
+     * Pause a running task.
+     *
+     * If the task is not found in storage, throw a EngineStorageException.
+     * @param id Identifier of the task to pause.
+     * @param requesterName String to denote who requested this call;
+     */
+    void pauseTask(String id, String requesterName);
+
+    /**
+     * Resume execution of a paused task.
+     * If the task is not found in storage, throw a EngineStorageException.
+     * @param id Identifier of the task to resume.
+     * @param requesterName String to denote who requested this call;
+     */
+    void resumeTask(String id, String requesterName);
 
     /**
      * Return the StateStorage instance that is used by this class.
