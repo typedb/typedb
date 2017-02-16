@@ -14,14 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.engine.tasks.manager.distributed.multiqueue;
+package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.distributed.ExternalStorageRebalancer;
-import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;

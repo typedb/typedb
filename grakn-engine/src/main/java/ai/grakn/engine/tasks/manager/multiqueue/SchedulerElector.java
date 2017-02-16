@@ -14,13 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.engine.tasks.manager.distributed.multiqueue;
+package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.manager.distributed.TaskFailover;
-import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.manager.TaskFailover;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;

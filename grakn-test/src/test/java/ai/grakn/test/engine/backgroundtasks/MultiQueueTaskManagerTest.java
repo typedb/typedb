@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.manager.distributed.multiqueue.MultiQueueTaskManager;
+import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.Before;

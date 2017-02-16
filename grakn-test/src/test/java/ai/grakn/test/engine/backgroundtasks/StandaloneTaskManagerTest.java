@@ -21,7 +21,7 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.manager.standalone.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import mjson.Json;
 import org.junit.BeforeClass;
 import org.junit.Test;

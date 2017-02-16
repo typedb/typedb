@@ -19,7 +19,7 @@
 package ai.grakn.test.engine;
 
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.tasks.manager.standalone.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import org.junit.Rule;
 import org.junit.Test;

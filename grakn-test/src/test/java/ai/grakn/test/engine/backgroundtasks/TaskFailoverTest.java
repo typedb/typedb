@@ -19,8 +19,8 @@
 package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.distributed.TaskFailover;
-import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
+import ai.grakn.engine.tasks.manager.TaskFailover;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
