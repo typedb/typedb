@@ -742,7 +742,6 @@ public class GraknGraphPropertyIT {
         }
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenGettingSuperType_TheResultIsNeverItself(@Open GraknGraph graph, TypeName typeName) {
         Type type = graph.getType(typeName);
