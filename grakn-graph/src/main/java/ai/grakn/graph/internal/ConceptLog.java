@@ -68,20 +68,6 @@ class ConceptLog {
     }
 
     /**
-     * Removes all the concepts from the transaction tracker
-     */
-    /*void resetTransaction(){
-        //Clear all transaction bound caches
-        modifiedConcepts.clear();
-        modifiedCastings.clear();
-        modifiedResources.clear();
-        modifiedRelations.clear();
-        conceptCache.clear();
-        typeCache.clear();
-
-    }*/
-
-    /**
      * A helper method which writes back into the central cache at the end of a transaction.
      *
      * @param committed true if a commit has occurred
