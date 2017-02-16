@@ -43,9 +43,9 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov
  * This class begins the TaskRunner instance that will be running on this machine.
  */
-public final class DistributedTaskManager implements TaskManager {
+public final class MultiQueueTaskManager implements TaskManager {
 
-    private final static Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
+    private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskManager.class);
 
     private final KafkaProducer<String, String> producer;
 
@@ -54,10 +54,10 @@ public final class DistributedTaskManager implements TaskManager {
     private final TaskStateStorage stateStorage;
 
     private static final String TASKRUNNER_THREAD_NAME = "taskrunner-";
-    private TaskRunner taskRunner;
+    private MultiQueueTaskRunner multiQueueTaskRunner;
     private Thread taskRunnerThread;
 
-    public DistributedTaskManager() {
+    public MultiQueueTaskManager() {
         connection = new ZookeeperConnection();
         stateStorage = new TaskStateZookeeperStore(connection);
 
@@ -81,7 +81,7 @@ public final class DistributedTaskManager implements TaskManager {
         noThrow(elector::stop, "Error stopping Scheduler elector from TaskManager");
 
         // close task runner
-        noThrow(taskRunner::close, "Error shutting down TaskRunner");
+        noThrow(multiQueueTaskRunner::close, "Error shutting down TaskRunner");
         noThrow(taskRunnerThread::join, "Error waiting for TaskRunner to close");
 
         // stop zookeeper connection
@@ -125,8 +125,8 @@ public final class DistributedTaskManager implements TaskManager {
      *        handler that will restart the task runner if any unchecked exception is thrown.
      */
     private void startTaskRunner(){
-        taskRunner = new TaskRunner(stateStorage, connection);
-        taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
+        multiQueueTaskRunner = new MultiQueueTaskRunner(stateStorage, connection);
+        taskRunnerThread = new Thread(multiQueueTaskRunner, TASKRUNNER_THREAD_NAME + multiQueueTaskRunner.hashCode());
         taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
         taskRunnerThread.start();
     }
@@ -143,7 +143,7 @@ public final class DistributedTaskManager implements TaskManager {
             LOG.debug(format("TaskRunner [%s] threw an exception. Will attempt to close and reopen. Exception is: %n [%s]",
                     paramThread.getName(), getFullStackTrace(paramThrowable)));
 
-            noThrow(taskRunner::close, "Error shutting down TaskRunner");
+            noThrow(multiQueueTaskRunner::close, "Error shutting down TaskRunner");
             // no need to call taskRunnerThread.join() here - recursive wait, are still in thread
 
             LOG.debug("TaskRunner closed.");

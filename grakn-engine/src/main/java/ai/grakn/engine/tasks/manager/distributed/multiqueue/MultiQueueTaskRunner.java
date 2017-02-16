@@ -77,8 +77,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class TaskRunner implements Runnable, AutoCloseable {
-    private final static Logger LOG = LoggerFactory.getLogger(TaskRunner.class);
+public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
+    private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskRunner.class);
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
@@ -94,7 +94,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final AtomicInteger acceptedTasks = new AtomicInteger(0);
     private final KafkaConsumer<String, String> consumer;
 
-    public TaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
+    public MultiQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
         this.connection = connection;
 

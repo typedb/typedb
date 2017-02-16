@@ -21,7 +21,7 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.config.ConfigHelper;
-import ai.grakn.engine.tasks.manager.distributed.multiqueue.TaskRunner;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.MultiQueueTaskRunner;
 import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
@@ -43,12 +43,12 @@ import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitF
 import static java.util.Collections.singleton;
 import static junit.framework.Assert.assertEquals;
 
-public class TaskRunnerTest {
+public class MultiQueueTaskRunnerTest {
 
     private static ZookeeperConnection connection;
 
     private TaskStateStorage storage;
-    private TaskRunner taskRunner;
+    private MultiQueueTaskRunner multiQueueTaskRunner;
     private KafkaProducer<String, String> producer;
 
     private Thread taskRunnerThread;
@@ -63,8 +63,8 @@ public class TaskRunnerTest {
         producer = ConfigHelper.kafkaProducer();
         storage = new TaskStateInMemoryStore();
 
-        taskRunner = new TaskRunner(storage, connection);
-        taskRunnerThread = new Thread(taskRunner);
+        multiQueueTaskRunner = new MultiQueueTaskRunner(storage, connection);
+        taskRunnerThread = new Thread(multiQueueTaskRunner);
         taskRunnerThread.start();
     }
 
@@ -72,7 +72,7 @@ public class TaskRunnerTest {
     public void tearDown() throws Exception {
         producer.close();
 
-        taskRunner.close();
+        multiQueueTaskRunner.close();
         taskRunnerThread.join();
 
         connection.close();

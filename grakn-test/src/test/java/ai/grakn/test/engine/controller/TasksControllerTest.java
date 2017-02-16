@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.distributed.multiqueue.DistributedTaskManager;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.backgroundtasks.LongRunningTask;
@@ -65,7 +65,7 @@ public class TasksControllerTest {
 
     @Before
     public void setUp() throws Exception {
-        DistributedTaskManager manager = (DistributedTaskManager) engine.getTaskManager();
+        MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
         singleTask = manager.storage().newState(
                 new TaskState(TestTask.class.getName())
                         .creator(this.getClass().getName())
@@ -141,7 +141,7 @@ public class TasksControllerTest {
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(singleTask));
 
-        // Stopping tasks is not currently supported by the DistributedTaskManager.
+        // Stopping tasks is not currently supported by the MultiQueueTaskManager.
 //                .and().body("status", equalTo(STOPPED.toString()));
     }
 
@@ -156,7 +156,7 @@ public class TasksControllerTest {
                .and().body("id", notNullValue());
     }
 
-    // Stopping tasks is not currently implemented in DistributedTaskManager
+    // Stopping tasks is not currently implemented in MultiQueueTaskManager
     @Ignore
     @Test
     public void testScheduleStopTask() {

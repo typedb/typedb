@@ -18,7 +18,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.manager.distributed.multiqueue.DistributedTaskManager;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.tasks.manager.standalone.StandaloneTaskManager;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
@@ -107,7 +107,7 @@ public class GraknEngineServer {
      */
     private static void startTaskManager(boolean taskManagerIsDistributed) {
         if(taskManagerIsDistributed){
-            taskManager = new DistributedTaskManager();
+            taskManager = new MultiQueueTaskManager();
         } else {
             taskManager = new StandaloneTaskManager();
         }

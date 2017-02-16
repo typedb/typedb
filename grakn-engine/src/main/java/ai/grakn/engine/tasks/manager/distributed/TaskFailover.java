@@ -119,7 +119,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
      */
     private void failover(CuratorFramework client, Map<String, ChildData> nodes) throws Exception {
         for(String engineId: current.keySet()) {
-            // Dead TaskRunner
+            // Dead MultiQueueTaskRunner
             if(!nodes.containsKey(engineId)) {
                 LOG.debug("Dead engine: "+engineId);
                 reQueue(client, engineId);
@@ -128,13 +128,13 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     }
 
     /**
-     * Re-submit all tasks to the work queue that a dead TaskRunner was working on.
+     * Re-submit all tasks to the work queue that a dead MultiQueueTaskRunner was working on.
      * @param client CuratorFramework
      * @param engineID String unique ID of engine
      * @throws Exception
      */
     private void reQueue(CuratorFramework client, String engineID) throws Exception {
-        // Get list of task last processed by this TaskRunner
+        // Get list of task last processed by this MultiQueueTaskRunner
         byte[] b = client.getData().forPath(RUNNERS_STATE+"/"+engineID);
 
         // Re-queue all of the IDs.

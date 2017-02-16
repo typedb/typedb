@@ -22,7 +22,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.distributed.multiqueue.Scheduler;
-import ai.grakn.engine.tasks.manager.distributed.multiqueue.TaskRunner;
+import ai.grakn.engine.tasks.manager.distributed.multiqueue.MultiQueueTaskRunner;
 import ai.grakn.engine.tasks.manager.distributed.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
@@ -73,7 +73,7 @@ public class SchedulerTest {
     public void start() throws Exception {
         ((Logger) org.slf4j.LoggerFactory.getLogger(ExceptionWrapper.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(MultiQueueTaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
 
         storage = new TaskStateInMemoryStore();
