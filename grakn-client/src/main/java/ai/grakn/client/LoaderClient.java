@@ -52,7 +52,6 @@ import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
