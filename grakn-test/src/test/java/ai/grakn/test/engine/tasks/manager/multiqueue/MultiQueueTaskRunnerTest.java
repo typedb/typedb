@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.backgroundtasks;
+package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskState;
@@ -25,6 +25,7 @@ import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskRunner;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.engine.tasks.TestTask;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
@@ -37,9 +38,9 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.util.Collections.singleton;
 import static junit.framework.Assert.assertEquals;
 

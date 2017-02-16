@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.backgroundtasks;
+package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
@@ -47,9 +47,9 @@ import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.util.Collections.singleton;
 import static junit.framework.TestCase.assertEquals;
 

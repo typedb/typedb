@@ -16,12 +16,13 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.backgroundtasks;
+package ai.grakn.test.engine.tasks.storage;
 
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.engine.tasks.TestTask;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;

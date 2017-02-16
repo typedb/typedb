@@ -16,11 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.backgroundtasks;
+package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.engine.tasks.TestTask;
 import mjson.Json;
 import org.junit.Before;
 import org.junit.ClassRule;

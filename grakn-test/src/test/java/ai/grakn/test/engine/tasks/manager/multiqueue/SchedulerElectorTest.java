@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.backgroundtasks;
+package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.manager.multiqueue.Scheduler;
 import ai.grakn.engine.tasks.manager.multiqueue.SchedulerElector;

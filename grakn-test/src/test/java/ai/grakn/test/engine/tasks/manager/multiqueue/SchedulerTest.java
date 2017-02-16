@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.backgroundtasks;
+package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -42,9 +42,9 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
-import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.util.Collections.singleton;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;

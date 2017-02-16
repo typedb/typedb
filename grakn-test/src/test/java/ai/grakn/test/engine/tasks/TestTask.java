@@ -16,37 +16,34 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.backgroundtasks;
+package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.BackgroundTask;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Date;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class LongRunningTask implements BackgroundTask {
-    private final AtomicBoolean isRunning = new AtomicBoolean(true);
+public class TestTask implements BackgroundTask {
+    private final static Logger LOG = LoggerFactory.getLogger(TestTask.class);
+
+    public static final AtomicInteger startedCounter = new AtomicInteger(0);
+    public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     public void start(Consumer<String> saveCheckpoint, Json config) {
-        long initial = new Date().getTime();
+        LOG.debug(config.at("name").asString());
 
-        while (isRunning.get() && ((new Date().getTime()) - initial < 50000)) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ignored) {
-                break;
-            }
-        }
+        startedCounter.incrementAndGet();
     }
 
-    public void stop() {
-        isRunning.set(false);
-    }
+    public void stop() {}
 
     public void pause() {
     }
 
     public void resume(Consumer<String> c, String s) {
+        resumedCounter.incrementAndGet();
     }
 }
