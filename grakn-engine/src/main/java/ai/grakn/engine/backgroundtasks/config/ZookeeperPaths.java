@@ -34,4 +34,5 @@ public interface ZookeeperPaths {
     String TASKS_PATH_PREFIX = "/tasks";
     String TASK_STATE_SUFFIX = "/state";
     String TASK_LOCK_SUFFIX = "/lock";
+    String PARTITION_PATH = "/partition/%s";
 }

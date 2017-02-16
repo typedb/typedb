@@ -69,7 +69,7 @@ public class ConfigHelper {
         properties.put("enable.auto.commit", false);
         properties.put("auto.offset.reset", "earliest");
         properties.put("metadata.max.age.ms", 1000);
-        properties.put("max.poll.records", 1);
+        properties.put("max.poll.records", 10);
         properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
         properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");

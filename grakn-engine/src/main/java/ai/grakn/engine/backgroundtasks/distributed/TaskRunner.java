@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -96,8 +95,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
         this.storage = storage;
         this.connection = connection;
 
+        // Create the consumer
         consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new HandleRebalance());
+
+        // Configure callback for a Kafka rebalance
+        ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection, this.getClass().getSimpleName());
+        consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), listener);
 
         // Create initial entries in ZK for TaskFailover to watch.
         registerAsRunning();
@@ -108,7 +111,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
         int numberAvailableThreads = properties.getAvailableThreads();
         ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("task-runner-pool-%d").build();
-
         executor = newFixedThreadPool(numberAvailableThreads, namedThreadFactory);
         executorSize = numberAvailableThreads * 4;
 
@@ -129,7 +131,22 @@ public class TaskRunner implements Runnable, AutoCloseable {
     public void run()  {
         try {
             while (true) {
-                processRecords(consumer.poll(POLLING_FREQUENCY));
+                ConsumerRecords<String, String> records = consumer.poll(POLLING_FREQUENCY);
+
+                long startTime = System.currentTimeMillis();
+                for(ConsumerRecord<String, String> record: records) {
+
+                    // If TaskRunner capacity full commit offset as current record and exit
+                    if(acceptedTasks.get() >= executorSize) {
+                        acknowledgeRecordSeen(record);
+                        break;
+                    }
+
+                    processAndAcknowledgeProcessed(record);
+                }
+
+                LOG.debug(format("Took [%s] ms to process [%s] records in taskrunner",
+                        System.currentTimeMillis() - startTime, records.count()));
             }
         } catch (WakeupException e) {
             LOG.debug("TaskRunner exiting, woken up.");
@@ -166,46 +183,42 @@ public class TaskRunner implements Runnable, AutoCloseable {
         LOG.debug("TaskRunner stopped");
     }
 
-    private void processRecords(ConsumerRecords<String, String> records) {
-        long startTime = System.currentTimeMillis();
+    /**
+     * Add a single record to the threadpool if it has been marked as SCHEDULED. At the end of
+     * the method acknowledge the record has been read to the consumer.
+     *
+     * @param record The record to execute.
+     */
+    private void processAndAcknowledgeProcessed(ConsumerRecord<String, String> record) {
+        try {
+            LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s",
+                record.key(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
 
-        for(ConsumerRecord<String, String> record: records) {
-            // Exit loop when TaskRunner capacity full
-            if(acceptedTasks.get() >= executorSize) {
-                seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset());
-                break;
-            }
+            // Get up-to-date state from the storage
+            TaskState state = storage.getState(record.key());
 
-            LOG.debug(format("Received [%s] of [%s], currently running: %s has: %s allowed: %s",
-                    record.key(), records.count(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
-
-            String id = record.key();
-            try {
-                // Instead of deserializing TaskState from value, get up-to-date state from the storage
-                TaskState state = storage.getState(id);
-                if (state.status() != SCHEDULED) {
-                    LOG.debug("Cant run this task - " + id + " because\n\t\tstatus: " + state.status());
-                    continue;
-                }
+            // If the task is scheduled, run it
+            if (state.status() == SCHEDULED) {
 
                 // Mark as RUNNING and update task & runner states.
                 storage.updateState(state
-                    .status(RUNNING)
-                    .statusChangedBy(this.getClass().getName())
-                    .engineID(ENGINE_ID));
+                        .status(RUNNING)
+                        .statusChangedBy(this.getClass().getName())
+                        .engineID(ENGINE_ID));
 
                 acceptedTasks.incrementAndGet();
+
                 // Submit to executor
                 executor.submit(() -> executeTask(state));
-
-                // Advance offset
-                seekAndCommit(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
-            } catch (EngineStorageException e){
-                LOG.error("Cant run this task - " + id + " because state was not found in storage");
+            } else {
+                LOG.debug(format("Will not run [%s] because status: [%s]", record.key(), state.status()));
             }
+        } catch (EngineStorageException e){
+            LOG.error(format("Cant run [%s] because state was not found in storage", record.key()));
+        } finally {
+            // Acknowledge that the TaskRunner has processed this record
+            acknowledgeRecordProcessed(record);
         }
-
-        LOG.debug(format("Took [%s] ms to process [%s] records in taskrunner", System.currentTimeMillis() - startTime, records.count()));
     }
 
     /**
@@ -295,21 +308,29 @@ public class TaskRunner implements Runnable, AutoCloseable {
         updateOwnState();
     }
 
-    private void seekAndCommit(TopicPartition partition, long offset) {
-        consumer.seek(partition, offset);
-        consumer.commitSync();
+    /**
+     * Instruct kafka to read from the current record
+     * @param record The record to read from
+     */
+    private void acknowledgeRecordSeen(ConsumerRecord record){
+        commitOffset(record, record.offset());
     }
 
     /**
-     * Implementation of ConsumerRebalanceListener that will log whenever partitions are reassigned and
-     * sync the last commits when partitions are revoked.
+     * Instruct kafka to read from the next record
+     * @param record The record to read from
      */
-    private static class HandleRebalance implements ConsumerRebalanceListener {
-        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            LOG.debug("TaskRunner consumer partitions assigned " + partitions);
-        }
-        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            LOG.debug("TaskRunner consumer partitions revoked " + partitions);
-        }
+    private void acknowledgeRecordProcessed(ConsumerRecord record){
+        commitOffset(record, record.offset() + 1);
+    }
+
+    /**
+     * Commit the given offset for the partition & topic the given record belongs to
+     * @param record Record from which to extract partition and topic
+     * @param offset Offset to commit
+     */
+    private void commitOffset(ConsumerRecord record, long offset) {
+        consumer.seek(new TopicPartition(record.topic(), record.partition()), offset);
+        consumer.commitSync();
     }
 }
