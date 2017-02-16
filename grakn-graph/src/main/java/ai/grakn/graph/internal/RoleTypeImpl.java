@@ -74,10 +74,11 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         return new RoleTypeImpl(this);
     }
 
-    void copyCachedConcepts(RoleTypeImpl type){
+    @Override
+    void copyCachedConcepts(RoleType type){
         super.copyCachedConcepts(type);
-        type.cachedDirectPlayedByTypes.ifPresent(value -> this.cachedDirectPlayedByTypes.set(getGraknGraph().clone(value)));
-        type.cachedRelationTypes.ifPresent(value -> this.cachedRelationTypes.set(getGraknGraph().clone(value)));
+        ((RoleTypeImpl) type).cachedDirectPlayedByTypes.ifPresent(value -> this.cachedDirectPlayedByTypes.set(getGraknGraph().clone(value)));
+        ((RoleTypeImpl) type).cachedRelationTypes.ifPresent(value -> this.cachedRelationTypes.set(getGraknGraph().clone(value)));
     }
 
     /**

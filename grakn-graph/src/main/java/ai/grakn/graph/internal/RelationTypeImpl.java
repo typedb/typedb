@@ -61,9 +61,10 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         return new RelationTypeImpl(this);
     }
 
-    void copyCachedConcepts(RelationTypeImpl type){
+    @Override
+    void copyCachedConcepts(RelationType type){
         super.copyCachedConcepts(type);
-        type.cachedHasRoles.ifPresent(value -> this.cachedHasRoles.set(getGraknGraph().clone(value)));
+        ((RelationTypeImpl) type).cachedHasRoles.ifPresent(value -> this.cachedHasRoles.set(getGraknGraph().clone(value)));
     }
 
     @Override

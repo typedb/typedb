@@ -109,7 +109,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
-    private Cache<TypeName, TypeImpl> cachedOntology = CacheBuilder.newBuilder()
+    private Cache<TypeName, Type> cachedOntology = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterAccess(10, TimeUnit.MINUTES)
             .build();
@@ -146,7 +146,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return keyspace;
     }
 
-    Cache<TypeName, TypeImpl> getCachedOntology(){
+    Cache<TypeName, Type> getCachedOntology(){
         return cachedOntology;
     }
 
@@ -313,25 +313,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param conceptLog The thread bound concept log to read the snapshot into.
      */
     private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
-        ConcurrentMap<TypeName, TypeImpl> cachedOntologySnapshot = getCachedOntology().asMap();
+        ConcurrentMap<TypeName, Type> cachedOntologySnapshot = getCachedOntology().asMap();
 
         //Read central cache into conceptLog cloning only base concepts. Sets clones later
-        for (TypeImpl type : cachedOntologySnapshot.values()) {
-            conceptLog.cacheConcept(clone(type));
+        for (Type type : cachedOntologySnapshot.values()) {
+            conceptLog.cacheConcept((TypeImpl) clone(type));
         }
 
         //Iterate through cached clones completing the cloning process.
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
         for (Type type : getCloneCache().values()) {
-            TypeImpl centralType = cachedOntologySnapshot.get(type.getName());
-
-            if(type.isRelationType()){
-                ((RelationTypeImpl) type).copyCachedConcepts((RelationTypeImpl) centralType);
-            } else if(type.isRoleType()){
-                ((RoleTypeImpl) type).copyCachedConcepts((RoleTypeImpl) centralType);
-            } else {
-                ((TypeImpl) type).copyCachedConcepts(centralType);
-            }
+            Type centralType = cachedOntologySnapshot.get(type.getName());
+            ((TypeImpl) type).copyCachedConcepts(centralType);
         }
 
         //Purge clone cache to save memory
