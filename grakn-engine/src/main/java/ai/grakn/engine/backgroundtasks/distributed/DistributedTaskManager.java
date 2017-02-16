@@ -23,6 +23,7 @@ import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
+import ai.grakn.engine.util.EngineID;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -71,6 +72,8 @@ public final class DistributedTaskManager implements TaskManager {
 
     @Override
     public void close() {
+        LOG.debug("Closing TaskManager");
+
         // close kafka producer
         noThrow(producer::close, "Error shutting down producer in TaskManager");
 
@@ -83,6 +86,8 @@ public final class DistributedTaskManager implements TaskManager {
 
         // stop zookeeper connection
         noThrow(connection::close, "Error waiting for zookeeper connection to close");
+
+        LOG.debug("TaskManager closed");
     }
 
     @Override
