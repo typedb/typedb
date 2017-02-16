@@ -34,7 +34,7 @@ import java.io.Serializable;
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
     private Object conceptId;
-    int hashCode = 0;
+    private int hashCode = 0;
 
     private ConceptId(Object conceptId){
         this.conceptId = conceptId;
