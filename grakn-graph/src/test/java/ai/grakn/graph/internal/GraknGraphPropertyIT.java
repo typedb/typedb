@@ -40,6 +40,7 @@ import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
+import ai.grakn.generator.MetaTypeNames;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.PutTypeFunctions;
 import ai.grakn.generator.ResourceTypes.Unique;
@@ -58,6 +59,7 @@ import org.junit.runner.RunWith;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -68,6 +70,7 @@ import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -625,8 +628,28 @@ public class GraknGraphPropertyIT {
         assertTrue(graph.isClosed());
     }
 
+    @Ignore // TODO: Re-enable this when test below is fixed and AFTER the transaction refactor
     @Property
-    public void whenCallingGetKeySpace_ReturnTheKeyspaceOfTheGraph(String keyspace) {
+    public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
+        graph.clear();
+        graph.open();
+        List<Concept> concepts = allConceptsFrom(graph);
+        concepts.forEach(concept -> {
+            assertTrue(concept.isType());
+            assertTrue(isMetaName(concept.asType().getName()));
+            });
+    }
+
+    @Ignore // TODO: Fix this AFTER transaction refactor
+    @Property
+    public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
+        graph.clear();
+        graph.open();
+        assertNotNull(graph.getType(typeName));
+    }
+
+    @Property
+    public void whenCallingGetKeySpace_ReturnTheLowercaseKeyspaceOfTheGraph(String keyspace) {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
         assertEquals(keyspace.toLowerCase(), graph.getKeyspace());
     }
