@@ -112,7 +112,7 @@ public class Scheduler implements Runnable, AutoCloseable {
         running = true;
 
         // restart any recurring tasks in the graph
-//        restartRecurringTasks();
+        restartRecurringTasks();
 
         try {
             while (running) {
