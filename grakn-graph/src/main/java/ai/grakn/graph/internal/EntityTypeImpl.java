@@ -45,6 +45,10 @@ class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
         super(graknGraph, v, type);
     }
 
+    EntityTypeImpl(EntityTypeImpl entityType){
+        super(entityType);
+    }
+
     @Override
     public Entity addEntity() {
         return addInstance(Schema.BaseType.ENTITY, (vertex, type) ->
