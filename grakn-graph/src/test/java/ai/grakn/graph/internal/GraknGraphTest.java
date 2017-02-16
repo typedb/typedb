@@ -339,6 +339,8 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.getMetaConcept(), graknGraph.getMetaEntityType(),
                 graknGraph.getMetaRelationType(), graknGraph.getMetaRoleType()));
 
+        assertThat(e1.playsRoles(), containsInAnyOrder(r1, r2));
+
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
         pool.submit(() -> {
