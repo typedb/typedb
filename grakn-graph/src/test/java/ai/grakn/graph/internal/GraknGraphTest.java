@@ -279,7 +279,6 @@ public class GraknGraphTest extends GraphTestBase {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
 
         final boolean[] errorThrown = {false};
-        final boolean[] errorNotThrown = {false};
 
         Future future = pool.submit(() -> {
             try{
@@ -289,15 +288,11 @@ public class GraknGraphTest extends GraphTestBase {
                     errorThrown[0] = true;
                 }
             }
-
-            graph.putEntityType("A Thing");
-            errorNotThrown[0] = true;
         });
 
         future.get();
 
         assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
-        assertTrue("Error thrown even after opening graph", errorNotThrown[0]);
     }
 
     @Test

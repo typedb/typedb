@@ -682,10 +682,6 @@ public class GraknGraphPropertyIT {
         assertTrue(graph.isClosed());
     }
 
-    @Property
-    public void whenCallingOpen_TheGraphIsOpen(GraknGraph graph) {
-        assertFalse(graph.isClosed());
-    }
 
     // TODO: Everything below this point should be moved to more appropriate test classes
 

@@ -89,7 +89,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException ignored) {
-
+                ignored.printStackTrace();
             }
         });
 
