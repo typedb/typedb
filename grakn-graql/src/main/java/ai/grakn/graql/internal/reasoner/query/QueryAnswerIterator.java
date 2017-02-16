@@ -48,6 +48,7 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
     private final boolean materialise;
     private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
     private final LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+
     private Iterator<Map<VarName, Concept>> answerIterator;
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 

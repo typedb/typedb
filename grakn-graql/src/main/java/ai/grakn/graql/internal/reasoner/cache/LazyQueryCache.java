@@ -39,20 +39,36 @@ import javafx.util.Pair;
  * @author Kasper Piskorski
  *
  */
-public class LazyQueryCache<T extends ReasonerQuery>{
+public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswerIterator>{
 
-    private final Map<T, Pair<T, LazyAnswerIterator>> cache = new HashMap<>();
 
     public LazyQueryCache(){ super();}
-    public boolean contains(T query){ return cache.containsKey(query);}
+
+    @Override
+    public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
+        Pair<Q, LazyAnswerIterator> match =  cache.get(query);
+        if (match!= null) {
+            Stream<Map<VarName, Concept>> unifiedStream = answers.unify(getRecordUnifiers(query)).stream();
+            cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
+        } else {
+            cache.put(query, new Pair<>(query, answers));
+        }
+        return getAnswerIterator(query);
+    }
+
+    @Override
+    public Stream<Map<VarName, Concept>> record(Q query, Stream<Map<VarName, Concept>> answers) {
+        return recordRetrieveLazy(query, answers).stream();
+    }
 
     /**
      * updates the cache by the specified query
      * @param query query to be added/updated
      * @param answers answers to the query
      */
-    public LazyAnswerIterator record(T query, Stream<Map<VarName, Concept>> answers){
-        Pair<T, LazyAnswerIterator> match =  cache.get(query);
+    @Override
+    public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Map<VarName, Concept>> answers){
+        Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match!= null) {
             Stream<Map<VarName, Concept>> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
@@ -67,8 +83,18 @@ public class LazyQueryCache<T extends ReasonerQuery>{
      * @param query for which to retrieve answers
      * @return unified cached answers
      */
-    public Stream<Map<VarName, Concept>> getAnswers(T query){
-        Pair<T, LazyAnswerIterator> match =  cache.get(query);
+    @Override
+    public LazyAnswerIterator getAnswers(Q query) {
+        Pair<Q, LazyAnswerIterator> match =  cache.get(query);
+        if (match != null) {
+            return match.getValue().unify(getRetrieveUnifiers(query));
+        }
+        else return new LazyAnswerIterator(Stream.empty());
+    }
+
+    @Override
+    public Stream<Map<VarName, Concept>> getAnswerStream(Q query){
+        Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
             return match.getValue().stream().map(a -> QueryAnswers.unify(a, unifiers));
@@ -76,39 +102,25 @@ public class LazyQueryCache<T extends ReasonerQuery>{
         else return Stream.empty();
     }
 
-    public LazyAnswerIterator getAnswerIterator(T query){
-        Pair<T, LazyAnswerIterator> match =  cache.get(query);
-        if (match != null) {
-            return match.getValue().unify(getRetrieveUnifiers(query));
-        }
-        else return new LazyAnswerIterator(Stream.empty());
+    @Override
+    public LazyAnswerIterator getAnswerIterator(Q query) {
+        return getAnswers(query);
     }
 
-    private Map<VarName, VarName> getRecordUnifiers(T toRecord){
-        T equivalentQuery = contains(toRecord)? cache.get(toRecord).getKey() : null;
-        if (equivalentQuery != null) return toRecord.getUnifiers(equivalentQuery);
-        else return new HashMap<>();
-    }
-
-    private Map<VarName, VarName> getRetrieveUnifiers(T toRetrieve){
-        T equivalentQuery = contains(toRetrieve)? cache.get( toRetrieve).getKey() : null;
-        if (equivalentQuery != null) return  equivalentQuery.getUnifiers(toRetrieve);
-        else return new HashMap<>();
+    @Override
+    public long answerSize(Set<Q> queries){
+        return cache.values().stream()
+                .filter(p -> queries.contains(p.getKey()))
+                .map(v -> v.getValue().size()).mapToLong(Long::longValue).sum();
     }
 
     public void reload(){
-        Map<T, Pair<T, LazyAnswerIterator>> newCache = new HashMap<>();
+        Map<Q, Pair<Q, LazyAnswerIterator>> newCache = new HashMap<>();
         cache.entrySet().forEach(entry ->
                 newCache.put(entry.getKey(), new Pair<>(
                         entry.getKey(),
                         new LazyAnswerIterator(entry.getValue().getValue().accumulator.stream()))));
         cache.clear();
         cache.putAll(newCache);
-    }
-
-    public long answerSize(Set<T> queries){
-        return cache.values().stream()
-                .filter(p -> queries.contains(p.getKey()))
-                .map(v -> v.getValue().size()).mapToLong(Long::longValue).sum();
     }
 }

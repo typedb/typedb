@@ -62,8 +62,8 @@ public class LazyTest {
         Stream<Map<VarName, Concept>> dbStream = query.DBlookup();
         cache.record(query, dbStream);
 
-        Set<Map<VarName, Concept>> collect = cache.getAnswers(query).collect(toSet());
-        Set<Map<VarName, Concept>> collect2 = cache.getAnswers(query2).collect(toSet());
+        Set<Map<VarName, Concept>> collect = cache.getAnswerStream(query).collect(toSet());
+        Set<Map<VarName, Concept>> collect2 = cache.getAnswerStream(query2).collect(toSet());
         assertEquals(collect.size(), collect2.size());
     }
 
@@ -81,14 +81,14 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
-        Stream<Map<VarName, Concept>> stream = query.lookup(cache).stream();
-        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache).stream();
+        Stream<Map<VarName, Concept>> stream = query.lookup(cache);
+        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
         Stream<Map<VarName, Concept>> joinedStream = QueryAnswerStream.join(stream, stream2);
 
-        joinedStream = cache.record(query3, joinedStream.flatMap(a -> varFilterFunction.apply(a, query3.getVarNames()))).stream();
+        joinedStream = cache.record(query3, joinedStream.flatMap(a -> varFilterFunction.apply(a, query3.getVarNames())));
 
         Set<Map<VarName, Concept>> collect = joinedStream.collect(toSet());
-        Set<Map<VarName, Concept>> collect2 = cache.getAnswers(query3).collect(toSet());
+        Set<Map<VarName, Concept>> collect2 = cache.getAnswerStream(query3).collect(toSet());
 
         assertEquals(collect.size(), 37);
         assertEquals(collect.size(), collect2.size());
@@ -108,9 +108,9 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
-        Stream<Map<VarName, Concept>> stream = query.lookup(cache).stream();
-        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache).stream();
-        Stream<Map<VarName, Concept>> stream3 = query3.lookup(cache).stream();
+        Stream<Map<VarName, Concept>> stream = query.lookup(cache);
+        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
+        Stream<Map<VarName, Concept>> stream3 = query3.lookup(cache);
 
         Stream<Map<VarName, Concept>> join = QueryAnswerStream.join(QueryAnswerStream.join(stream, stream2), stream3);
         assertEquals(join.collect(toSet()).size(), 10);
