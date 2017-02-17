@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Collections;
 
 import static java.lang.String.format;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.PARTITION_PATH;
@@ -107,18 +106,6 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
 
         LOG.debug(format("Offset at %s writing for partition %s", currentOffset, partitionPath));
         connection.write(partitionPath, serialize(currentOffset));
-    }
-
-    /**
-     * Delete any offset saved for the given partition from zookeeper.
-     *
-     * @param partition Partition to delete the offset of.
-     */
-    private void deleteOffsetFromZookeeper(TopicPartition partition){
-        String partitionPath = getPartitionPath(partition);
-
-        LOG.debug(format("Offset at %s deleting", partitionPath));
-        connection.delete(partitionPath);
     }
 
     /**
