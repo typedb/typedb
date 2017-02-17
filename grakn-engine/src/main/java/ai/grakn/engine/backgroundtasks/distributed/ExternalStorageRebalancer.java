@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
+import ai.grakn.exception.EngineStorageException;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
@@ -25,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import static java.lang.String.format;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.PARTITION_PATH;
@@ -60,8 +62,11 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
         LOG.debug(format("%s consumer partitions assigned %s", className, partitions));
 
         for(TopicPartition partition : partitions){
-            consumer.seek(partition, getOffsetFromZookeeper(partition));
-            deleteOffsetFromZookeeper(partition);
+            try {
+                consumer.seek(partition, getOffsetFromZookeeper(partition));
+            } catch (EngineStorageException e){
+                LOG.error("Could not find offset in Zookeeper.");
+            }
         }
     }
 
