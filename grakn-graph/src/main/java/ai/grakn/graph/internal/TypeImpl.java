@@ -106,9 +106,16 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
 
-    void copyCachedConcepts(TypeImpl<T, V> type){
-        type.cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().clone(value)));
-        type.cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().clone(value)));
+    @Override
+    public Type copy(){
+        //noinspection unchecked
+        return new TypeImpl(this);
+    }
+
+    @SuppressWarnings("unchecked")
+    void copyCachedConcepts(T type){
+        ((TypeImpl<T, V>) type).cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().clone(value)));
+        ((TypeImpl<T, V>) type).cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().clone(value)));
     }
 
     /**

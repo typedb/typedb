@@ -127,4 +127,10 @@ public interface RelationType extends Type {
      * @return All the Relation instances of this relation type
      */
     Collection<Relation> instances();
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    RelationType copy();
 }

@@ -105,11 +105,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
-    private final ThreadLocal<Map<TypeName, TypeImpl>> localCloneCache = new ThreadLocal<>();
+    private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 
-    private Cache<TypeName, TypeImpl> cachedOntology = CacheBuilder.newBuilder()
+    private Cache<TypeName, Type> cachedOntology = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterAccess(10, TimeUnit.MINUTES)
             .build();
@@ -146,7 +146,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return keyspace;
     }
 
-    Cache<TypeName, TypeImpl> getCachedOntology(){
+    Cache<TypeName, Type> getCachedOntology(){
         return cachedOntology;
     }
 
@@ -297,8 +297,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return conceptLog;
     }
 
-    private Map<TypeName, TypeImpl> getCloneCache(){
-        Map<TypeName, TypeImpl> cloneCache = localCloneCache.get();
+    private Map<TypeName, Type> getCloneCache(){
+        Map<TypeName, Type> cloneCache = localCloneCache.get();
         if(cloneCache == null){
             localCloneCache.set(cloneCache = new HashMap<>());
         }
@@ -313,25 +313,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param conceptLog The thread bound concept log to read the snapshot into.
      */
     private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
-        ConcurrentMap<TypeName, TypeImpl> cachedOntologySnapshot = getCachedOntology().asMap();
+        ConcurrentMap<TypeName, Type> cachedOntologySnapshot = getCachedOntology().asMap();
 
         //Read central cache into conceptLog cloning only base concepts. Sets clones later
-        for (TypeImpl type : cachedOntologySnapshot.values()) {
-            conceptLog.cacheConcept(clone(type));
+        for (Type type : cachedOntologySnapshot.values()) {
+            conceptLog.cacheConcept((TypeImpl) clone(type));
         }
 
         //Iterate through cached clones completing the cloning process.
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
-        for (TypeImpl<?, ?> type : getCloneCache().values()) {
-            TypeImpl centralType = cachedOntologySnapshot.get(type.getName());
-
-            if(type.isRelationType()){
-                ((RelationTypeImpl) type).copyCachedConcepts((RelationTypeImpl) centralType);
-            } else if(type.isRoleType()){
-                ((RoleTypeImpl) type).copyCachedConcepts((RoleTypeImpl) centralType);
-            } else {
-                type.copyCachedConcepts(centralType);
-            }
+        for (Type type : getCloneCache().values()) {
+            //noinspection unchecked
+            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getName()));
         }
 
         //Purge clone cache to save memory
@@ -352,24 +345,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //If the clone has not happened then make a new one
-        TypeImpl clonedType = null;
-        if(type.isRoleType()) {
-            clonedType = new RoleTypeImpl((RoleTypeImpl) type);
-        } else if(type.isRelationType()) {
-            clonedType = new RelationTypeImpl((RelationTypeImpl) type);
-        } else if(type.isEntityType()) {
-            clonedType = new EntityTypeImpl((EntityTypeImpl) type);
-        } else if(type.isRuleType()) {
-            clonedType = new RuleTypeImpl((RuleTypeImpl) type);
-        } else if(type.isResourceType()) {
-            clonedType = new ResourceTypeImpl((ResourceTypeImpl) type);
-        } else if(type.isType()) {
-            clonedType = new TypeImpl((TypeImpl) type);
-        }
-
-        if(clonedType == null){
-            throw new IllegalArgumentException("Attempting to clone concept [" + type + "] which is not supported");
-        }
+        Type clonedType = type.copy();
 
         //Update clone cache so we don't clone multiple concepts in the same transaction
         getCloneCache().put(clonedType.getName(), clonedType);

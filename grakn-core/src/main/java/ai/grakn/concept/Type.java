@@ -152,4 +152,10 @@ public interface Type extends Concept {
      * @return The Type itself.
      */
     Type deletePlaysRole(RoleType roleType);
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    Type copy();
 }

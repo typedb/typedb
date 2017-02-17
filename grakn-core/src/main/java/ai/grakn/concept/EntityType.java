@@ -107,4 +107,10 @@ public interface EntityType extends Type{
      * @return All the instances of this EntityType.
      */
     Collection<Entity> instances();
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    EntityType copy();
 }

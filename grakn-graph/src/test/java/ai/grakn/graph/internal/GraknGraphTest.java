@@ -351,7 +351,7 @@ public class GraknGraphTest extends GraphTestBase {
         }).get();
 
         //Check the above mutation did not affect central repo
-        TypeImpl foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
+        Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
         assertTrue("Main cache was affected by transaction", foundE1.playsRoles().contains(r1));
     }
 

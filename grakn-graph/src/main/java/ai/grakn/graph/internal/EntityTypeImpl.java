@@ -45,8 +45,13 @@ class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
         super(graknGraph, v, type);
     }
 
-    EntityTypeImpl(EntityTypeImpl entityType){
+    private EntityTypeImpl(EntityTypeImpl entityType){
         super(entityType);
+    }
+
+    @Override
+    public EntityType copy(){
+        return new EntityTypeImpl(this);
     }
 
     @Override
