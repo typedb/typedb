@@ -30,6 +30,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpRetryException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -77,16 +78,17 @@ public class LoaderClient {
     private final String POST = "http://%s" + TASKS_SCHEDULE_URI;
     private final String GET = "http://%s" + TASKS_URI + "/%s";
 
-    private final Consumer<Json> onCompletionOfTask;
     private final Map<Integer,CompletableFuture> futures;
     private final Collection<InsertQuery> queries;
     private final String keyspace;
     private final String uri;
 
+    private Consumer<Json> onCompletionOfTask;
     private AtomicInteger batchNumber;
     private Semaphore blocker;
     private int batchSize;
     private int blockerSize;
+    private boolean retry = false;
 
     public LoaderClient(String keyspace, String uri) {
         this(keyspace, uri, (Json t) -> {});
@@ -102,6 +104,26 @@ public class LoaderClient {
 
         setBatchSize(25);
         setNumberActiveTasks(25);
+    }
+
+    /**
+     * Tell the {@link LoaderClient} if it should retry sending tasks when the Engine
+     * server is not available
+     *
+     * @param retry boolean representing if engine should retry
+     */
+    public LoaderClient setRetryPolicy(boolean retry){
+        this.retry = retry;
+        return this;
+    }
+
+    /**
+     * Provide a consumer function to execute upon task completion
+     * @param onCompletionOfTask function applied to the last state of the task
+     */
+    public LoaderClient setTaskCompletionConsumer(Consumer<Json> onCompletionOfTask){
+        this.onCompletionOfTask = onCompletionOfTask;
+        return this;
     }
 
     /**
@@ -156,8 +178,6 @@ public class LoaderClient {
 
     /**
      * Wait for all of the submitted tasks to have been completed
-     * TODO If the submitted tasks are never marked as COMPLETED/STOPPED/FAILED this
-     * TODO wait will hang forever. We may want to consider adding a timeout
      */
     public void waitToFinish(){
         flush();
@@ -193,17 +213,15 @@ public class LoaderClient {
             // Add this status to the set of completable futures
             futures.put(status.hashCode(), status);
 
-            // When this task completes release the semaphore
-            status.thenAcceptAsync(finalTaskStatus -> {
+            // Function to execute when the task completes
+            status.whenComplete((result, error) -> {
                 unblock(status);
-                onCompletionOfTask.accept(finalTaskStatus);
-            });
 
-            // If there was an error getting the status from the host
-            status.exceptionally(throwable -> {
-                unblock(status);
-                LOG.error(getFullStackTrace(throwable));
-                throw new RuntimeException(throwable);
+                if(error != null){
+                    LOG.error(getFullStackTrace(error));
+                }
+
+                onCompletionOfTask.accept(result);
             });
         } catch (Throwable throwable){
             LOG.error(getFullStackTrace(throwable));
@@ -222,7 +240,7 @@ public class LoaderClient {
      *
      * @return A Completable future that terminates when the task is finished
      */
-    private CompletableFuture<Json> executePost(String body){
+    private CompletableFuture<Json> executePost(String body) throws HttpRetryException {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(format(POST, uri) + "?" + getPostParams());
@@ -246,7 +264,11 @@ public class LoaderClient {
             return makeTaskCompletionFuture(id);
         }
         catch (IOException e){
-            throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
+            if(retry){
+                return executePost(body);
+            } else {
+                throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
+            }
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -259,7 +281,7 @@ public class LoaderClient {
      * @param id ID of the task to be fetched
      * @return Json object containing status of the task
      */
-    private Json getStatus(String id){
+    private Json getStatus(String id) throws HttpRetryException {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(format(GET, uri, id));
@@ -278,7 +300,7 @@ public class LoaderClient {
             return Json.read(readResponse(connection.getInputStream()));
         }
         catch (IOException e){
-            throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
+            throw new HttpRetryException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri), 404);
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -302,17 +324,20 @@ public class LoaderClient {
                     if (status == COMPLETED || status == FAILED || status == STOPPED) {
                         return taskState;
                     }
-                } catch (IllegalArgumentException e){
-                   // Means the task has not yet been stored: we want to log the error, but continue looping
+                } catch (IllegalArgumentException e) {
+                    // Means the task has not yet been stored: we want to log the error, but continue looping
                     LOG.warn(format("Task [%s] not found on server. Attempting to get status again.", id));
+                } catch (HttpRetryException e){
+                    LOG.warn(format("Could not communicate with host %s for task [%s] ", uri, id));
+                    if(retry){
+                        LOG.warn(format("Attempting communication again with host %s for task [%s]", uri, id));
+                    } else {
+                        throw new RuntimeException(e);
+                    }
                 } catch (Throwable t) {
                     throw new RuntimeException(t);
                 } finally {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                    try { Thread.sleep(1000); } catch (InterruptedException e) { throw new RuntimeException(e); }
                 }
             }
         });

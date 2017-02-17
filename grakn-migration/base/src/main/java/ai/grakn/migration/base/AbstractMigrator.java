@@ -54,6 +54,7 @@ public abstract class AbstractMigrator implements Migrator {
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 25;
+    public static final boolean RETRY = false;
 
     /**
      * Register a macro to use in templating
@@ -73,7 +74,7 @@ public abstract class AbstractMigrator implements Migrator {
      * @param keyspace The name of the keyspace where the data should be persisted
      */
     public void load(String uri, String keyspace) {
-        load(uri, keyspace, AbstractMigrator.BATCH_SIZE, AbstractMigrator.ACTIVE_TASKS);
+        load(uri, keyspace, AbstractMigrator.BATCH_SIZE, AbstractMigrator.ACTIVE_TASKS, AbstractMigrator.RETRY);
     }
 
     /**
@@ -85,11 +86,13 @@ public abstract class AbstractMigrator implements Migrator {
      * @param batchSize The number of queries to execute in one transaction. Default is 25.
      * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
      *                  to bot the system load. Default is 25.
+     * @param retry If the Loader should continue attempt to send tasks when Engine is not available
      */
-    public void load(String uri, String keyspace, int batchSize, int numberActiveTasks){
+    public void load(String uri, String keyspace, int batchSize, int numberActiveTasks, boolean retry){
         LoaderClient loader = new LoaderClient(keyspace, uri, recordMigrationStates());
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
+        loader.setRetryPolicy(retry);
 
         migrate().forEach(q -> {
             numberQueriedSubmitted.incrementAndGet();
