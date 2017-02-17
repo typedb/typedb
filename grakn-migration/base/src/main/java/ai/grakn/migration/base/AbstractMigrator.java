@@ -39,6 +39,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static java.lang.String.format;
+
 /**
  * <p>
  *     Abstract migrator class containing methods and functionality needed by
@@ -49,12 +51,17 @@ import java.util.stream.StreamSupport;
  */
 public abstract class AbstractMigrator implements Migrator {
 
-    private final static AtomicInteger numberQueriedSubmitted = new AtomicInteger(0);
+    private final static AtomicInteger numberQueriesSubmitted = new AtomicInteger(0);
+    private final static AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
+
     private final static Logger LOG = LoggerFactory.getLogger(AbstractMigrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 25;
     public static final boolean RETRY = false;
+
+    private int batchSize;
+    private long startTime;
 
     /**
      * Register a macro to use in templating
@@ -89,13 +96,16 @@ public abstract class AbstractMigrator implements Migrator {
      * @param retry If the Loader should continue attempt to send tasks when Engine is not available
      */
     public void load(String uri, String keyspace, int batchSize, int numberActiveTasks, boolean retry){
+        this.batchSize = batchSize;
+        this.startTime = System.currentTimeMillis();
+
         LoaderClient loader = new LoaderClient(keyspace, uri, recordMigrationStates());
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
         loader.setRetryPolicy(retry);
 
         migrate().forEach(q -> {
-            numberQueriedSubmitted.incrementAndGet();
+            numberQueriesSubmitted.incrementAndGet();
             loader.add(q);
         });
         loader.waitToFinish();
@@ -148,11 +158,18 @@ public abstract class AbstractMigrator implements Migrator {
         return (Json json) -> {
             TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
             Json configuration = Json.read(json.at("configuration").asString());
-            int batchNumber = configuration.at("batchNumber").asInteger();
+            int batch = configuration.at("batchNumber").asInteger();
 
-            LOG.info("Status of finished batch: " + status);
-            LOG.info("Batches finished: " + batchNumber);
-            LOG.info("Number Queries finished: " + numberQueriedSubmitted.get());
+            numberBatchesCompleted.incrementAndGet();
+
+            long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;
+            long numberQueriesCompleted = numberBatchesCompleted.get() * batchSize;
+
+            LOG.info(format("Status of batch [%s]: %s", batch, status));
+            LOG.info(format("Number queries submitted: %s", numberQueriesSubmitted.get()));
+            LOG.info(format("Number batches completed: %s", numberBatchesCompleted.get()));
+            LOG.info(format("~Number queries completed: %s", numberQueriesCompleted));
+            LOG.info(format("~Rate of completion (queries/second): %s", numberQueriesCompleted / timeElapsedSeconds));
         };
     }
 }
