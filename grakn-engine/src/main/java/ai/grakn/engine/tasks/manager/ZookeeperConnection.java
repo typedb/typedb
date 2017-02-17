@@ -19,10 +19,10 @@
 
 package ai.grakn.engine.tasks.manager;
 
-import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +30,7 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
 
 /**
  * <p>
@@ -40,12 +41,14 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
  */
 public class ZookeeperConnection {
 
-    private final CuratorFramework zookeeperConnection = ConfigHelper.client();
+    private final CuratorFramework zookeeperConnection;
 
     /**
      * Start the connection to zookeeper. This method is blocking.
      */
-    public ZookeeperConnection() {
+    public ZookeeperConnection(CuratorFramework zookeeperConnection) {
+        this.zookeeperConnection = zookeeperConnection;
+
         try {
             zookeeperConnection.start();
             if(!zookeeperConnection.blockUntilConnected(30, TimeUnit.SECONDS)){
@@ -76,6 +79,26 @@ public class ZookeeperConnection {
      */
     public CuratorFramework connection(){
         return zookeeperConnection;
+    }
+
+    public InterProcessMutex mutex(String id){
+        return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
+    }
+
+    public void acquire(InterProcessMutex mutex){
+        try {
+            mutex.acquire();
+        } catch (Exception e) {
+            throw new EngineStorageException("Error acquiring mutex from zookeeper.");
+        }
+    }
+
+    public void release(InterProcessMutex mutex){
+        try {
+            mutex.release();
+        } catch (Exception e) {
+            throw new EngineStorageException("Error releasing mutex from zookeeper.");
+        }
     }
 
     /**

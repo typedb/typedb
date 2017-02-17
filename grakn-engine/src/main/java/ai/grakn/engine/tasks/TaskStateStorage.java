@@ -41,6 +41,8 @@ public interface TaskStateStorage {
      * @return String form of the task id, which can be use later to update or retrieve the task state. Null if task could
      * not be created of mandatory fields were omitted.
      */
+    //TODO call this addState
+    //TODO return void
     String newState(TaskState state) throws EngineStorageException;
 
     /**

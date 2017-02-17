@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**
@@ -59,7 +60,7 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      */
     public SingleQueueTaskManager(){
-        this.zookeeper = new ZookeeperConnection();
+        this.zookeeper = new ZookeeperConnection(client());
         this.storage = new TaskStateZookeeperStore(zookeeper);
 
         this.producer = ConfigHelper.kafkaProducer();

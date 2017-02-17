@@ -41,6 +41,7 @@ import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
@@ -77,7 +78,7 @@ public class SchedulerTest {
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
 
         storage = new TaskStateInMemoryStore();
-        connection = new ZookeeperConnection();
+        connection = new ZookeeperConnection(client());
         startScheduler();
         producer = ConfigHelper.kafkaProducer();
     }

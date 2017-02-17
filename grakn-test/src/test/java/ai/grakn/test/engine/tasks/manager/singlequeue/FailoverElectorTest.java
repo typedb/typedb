@@ -16,24 +16,23 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks.config;
+package ai.grakn.test.engine.tasks.manager.singlequeue;
 
-/**
- * <p>
- * Class containing strings that describe the file storage locations in Zookeeper
- * </p>
- *
- * @author Denis Lobanov, alexandraorth
- */
-public interface ZookeeperPaths {
-    String TASKS_NAMESPACE = "grakn";
-    String SCHEDULER = "/scheduler";
-    String TASK_RUNNERS = "/task_runners";
-    String RUNNERS_WATCH = TASK_RUNNERS+"/watch";
-    String RUNNERS_STATE = TASK_RUNNERS+"/last_state";
-    String TASKS_PATH_PREFIX = "/tasks";
-    String TASK_STATE_SUFFIX = "/state";
-    String TASK_LOCK_SUFFIX = "/lock";
-    String PARTITION_PATH = "/partition/%s";
-    String ENGINE_PATH = "/engine";
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.manager.singlequeue.FailoverElector;
+import org.junit.Test;
+
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
+
+public class FailoverElectorTest {
+
+    @Test
+    public void whenLeaderElectorIsInstantiated_AnEngineBecomesLeader(){
+
+        ZookeeperConnection zookeeper = new ZookeeperConnection(client());
+
+        FailoverElector elector = new FailoverElector(zookeeper);
+
+    }
+
 }

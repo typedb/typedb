@@ -37,6 +37,7 @@ import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
@@ -59,7 +60,7 @@ public class MultiQueueTaskRunnerTest {
 
     @Before
     public void setup() throws Exception {
-        connection = new ZookeeperConnection();
+        connection = new ZookeeperConnection(client());
 
         producer = ConfigHelper.kafkaProducer();
         storage = new TaskStateInMemoryStore();

@@ -31,6 +31,7 @@ import org.junit.Test;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static org.junit.Assert.assertNotEquals;
 
 public class SchedulerElectorTest {
@@ -42,7 +43,7 @@ public class SchedulerElectorTest {
 
     @BeforeClass
     public static void instantiate(){
-        connection = new ZookeeperConnection();
+        connection = new ZookeeperConnection(client());
         elector = new SchedulerElector(new TaskStateInMemoryStore(), connection);
     }
 

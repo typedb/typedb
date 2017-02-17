@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
@@ -59,7 +60,7 @@ public final class MultiQueueTaskManager implements TaskManager {
     private Thread taskRunnerThread;
 
     public MultiQueueTaskManager() {
-        connection = new ZookeeperConnection();
+        connection = new ZookeeperConnection(client());
         stateStorage = new TaskStateZookeeperStore(connection);
 
         // run the TaskRunner in a thread

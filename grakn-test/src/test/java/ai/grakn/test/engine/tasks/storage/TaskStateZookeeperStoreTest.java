@@ -24,8 +24,9 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.TestTask;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -35,10 +36,13 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static java.time.Instant.now;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class TaskStateZookeeperStoreTest {
@@ -48,15 +52,10 @@ public class TaskStateZookeeperStoreTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startKafkaServer();
 
-    @BeforeClass
-    public static void setUp() throws Exception {
-        connection = new ZookeeperConnection();
+    @Before
+    public void setUp() throws Exception {
+        connection = new ZookeeperConnection(client());
         stateStorage = new TaskStateZookeeperStore(connection);
-    }
-
-    @AfterClass
-    public static void teardown(){
-        connection.close();
     }
 
     @Test
@@ -72,24 +71,80 @@ public class TaskStateZookeeperStoreTest {
     }
 
     @Test
-    public void testUpdate() throws Exception {
+    public void whenUpdatingTask_StateChanges() throws Exception {
         String id = stateStorage.newState(task());
 
         // Change
         String engineID = UUID.randomUUID().toString();
         String checkpoint = "test checkpoint";
-
         TaskState state = stateStorage.getState(id)
                 .status(SCHEDULED)
                 .engineID(engineID)
                 .checkpoint(checkpoint);
 
+        // Update
         stateStorage.updateState(state);
 
+        // Retrieve the task and check properties correct
         state = stateStorage.getState(id);
         assertEquals(SCHEDULED, state.status());
         assertEquals(engineID, state.engineID());
         assertEquals(checkpoint, state.checkpoint());
+    }
+
+    @Test
+    public void whenUpdatingTaskWithPreviousEngineAndNoNewEngine_ThereIsNoEnginePath() throws Exception {
+        TaskState task = task();
+        stateStorage.newState(task);
+
+        // Update previous
+        stateStorage.updateState(task.engineID("Engine1"));
+        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(true));
+
+        // Check that getting engine-task path is not there
+        stateStorage.updateState(task.engineID(null));
+        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
+    }
+
+    @Test
+    public void whenUpdatingTaskWithNoPreviousEngineAndNewEngine_ThereIsEnginePath() throws Exception {
+        TaskState task = task();
+        stateStorage.newState(task);
+
+        // Set engine id to null
+        stateStorage.updateState(task.engineID(null));
+        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
+
+        // Check that getting engine-task path is there
+        stateStorage.updateState(task.engineID("Engine1"));
+        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(true));
+    }
+
+    @Test
+    public void whenUpdatingTaskWithPreviousEngineAndNewEngine_ThereIsEnginePath() throws Exception {
+        TaskState task = task();
+        stateStorage.newState(task);
+
+        stateStorage.updateState(task.engineID("Engine1"));
+        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(true));
+
+        // Check that getting engine-task path is not there
+        stateStorage.updateState(task.engineID("Engine2"));
+        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
+        assertThat(pathExists("/tasks/engine/Engine2/" + task.getId()), is(true));
+    }
+
+    @Test
+    public void whenUpdatingTaskWithNoPreviousEngineAndNoNewEngine_ThereIsNoEnginePath() throws Exception {
+        TaskState task = task();
+        stateStorage.newState(task);
+
+        stateStorage.updateState(task.engineID(null));
+        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
+
+        // Check that getting engine-task path is not there
+        stateStorage.updateState(task.engineID(null));
+        assertThat(pathExists("/tasks/engine/Engine2/" + task.getId()), is(false));
     }
 
     @Test
@@ -181,5 +236,12 @@ public class TaskStateZookeeperStoreTest {
                 .isRecurring(false)
                 .interval(0)
                 .configuration(null);
+    }
+
+    /**
+     * Returns true when the given path exists in zookeeper
+     */
+    private boolean pathExists(String path) throws Exception {
+        return connection.connection().checkExists().forPath(path) != null;
     }
 }
