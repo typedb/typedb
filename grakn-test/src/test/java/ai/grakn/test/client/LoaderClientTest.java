@@ -20,10 +20,10 @@ package ai.grakn.test.client;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.client.LoaderClient;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.client.LoaderClient;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
@@ -31,7 +31,6 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -148,17 +147,14 @@ public class LoaderClientTest {
     }
 
     public static void loadOntology(String keyspace){
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        try(GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()){
+            EntityType nameTag = graph.putEntityType("name_tag");
+            ResourceType<String> nameTagString = graph.putResourceType("name_tag_string", ResourceType.DataType.STRING);
+            ResourceType<String> nameTagId = graph.putResourceType("name_tag_id", ResourceType.DataType.STRING);
 
-        EntityType nameTag = graph.putEntityType("name_tag");
-        ResourceType<String> nameTagString = graph.putResourceType("name_tag_string", ResourceType.DataType.STRING);
-        ResourceType<String> nameTagId = graph.putResourceType("name_tag_id", ResourceType.DataType.STRING);
-
-        nameTag.hasResource(nameTagString);
-        nameTag.hasResource(nameTagId);
-
-        try {
-            graph.commit();
+            nameTag.hasResource(nameTagString);
+            nameTag.hasResource(nameTagId);
+            graph.commitOnClose();
         } catch (GraknValidationException e){
             throw new RuntimeException(e);
         }

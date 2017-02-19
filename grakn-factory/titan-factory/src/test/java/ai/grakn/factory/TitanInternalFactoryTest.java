@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
@@ -195,7 +196,11 @@ public class TitanInternalFactoryTest extends TitanTestBase{
                 assertFalse("Grakn graph is closed", graph.isClosed());
                 assertFalse("Internal tinkerpop graph is closed", graph.getTinkerPopGraph().isClosed());
                 graph.putEntityType("A Thing");
-                graph.close();
+                try {
+                    graph.close();
+                } catch (GraknValidationException e) {
+                    e.printStackTrace();
+                }
             }));
         }
 
@@ -215,7 +220,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     }
 
     @Test
-    public void testGraphNotClosed(){
+    public void testGraphNotClosed() throws GraknValidationException {
         GraknTitanGraph graph = titanGraphFactory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");

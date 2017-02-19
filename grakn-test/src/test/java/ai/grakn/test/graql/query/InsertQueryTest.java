@@ -512,7 +512,8 @@ public class InsertQueryTest {
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
 
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
@@ -527,7 +528,8 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
@@ -543,7 +545,8 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
@@ -558,7 +561,8 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
@@ -573,7 +577,8 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test

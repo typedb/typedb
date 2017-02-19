@@ -76,10 +76,10 @@ public class GraknTitanGraphTest extends TitanTestBase{
         assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
     }
     private void addEntityType(GraknGraph graknGraph){
-        graknGraph.open();
         graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
-            graknGraph.commit();
+            graknGraph.commitOnClose();
+            graknGraph.close();
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }
@@ -147,12 +147,16 @@ public class GraknTitanGraphTest extends TitanTestBase{
         graph.putEntityType(entityTypeName);
         assertNotNull(graph.getEntityType(entityTypeName));
 
-        graph.close();
+        try {
+            graph.close();
+        } catch (GraknValidationException e) {
+            e.printStackTrace();
+        }
 
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
 
-        graph.open();
+        graph.getEntityType(entityTypeName);
     }
 
     @Test

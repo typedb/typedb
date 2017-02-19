@@ -98,7 +98,8 @@ public class PostProcessingTest {
         ConceptId otherInstanceId3 = instance3.getId();
         ConceptId otherInstanceId4 = instance4.getId();
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         //Check Number of castings is as expected
         Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
@@ -129,7 +130,8 @@ public class PostProcessingTest {
         Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
         ConceptId relationId = relation.getId();
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         Graph rawGraph = ((AbstractGraknGraph) this.graph).getTinkerPopGraph();
 
@@ -177,7 +179,8 @@ public class PostProcessingTest {
         ResourceType<String> resourceType = graph.getResourceType(sample);
 
         Resource<String> resource = resourceType.putResource(value);
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
         assertEquals(1, resourceType.instances().size());
         waitForCache(false, keyspace, 1);
 

@@ -21,6 +21,7 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.controller.CommitLogController;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
 import spark.Spark;
@@ -105,13 +106,16 @@ public class GraphContext extends ExternalResource {
         // close the graph
         if(!graph.isClosed()) {
             graph.clear();
-            graph.close();
+            try {
+                graph.close();
+            } catch (GraknValidationException e) {
+                //Ignored
+            }
         }
     }
 
     private void loadGraph() {
-        //TODO: get rid of another ugly cast
-        graph = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace());
+        graph = EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace());
 
         // if data should be pre-loaded, load
         if(preLoad != null){

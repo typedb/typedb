@@ -254,7 +254,8 @@ public class ShortestPathTest {
             validPaths.add(validPath);
         }
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
         assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
@@ -313,7 +314,8 @@ public class ShortestPathTest {
                 .putRolePlayer(role1, entity3)
                 .putRolePlayer(role2, entity4).getId();
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 
     private void addOntologyAndEntities2() throws GraknValidationException {
@@ -349,6 +351,7 @@ public class ShortestPathTest {
                 .putRolePlayer(role3, entity1)
                 .putRolePlayer(role4, graph.getConcept(relationId12)).getId();
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 }

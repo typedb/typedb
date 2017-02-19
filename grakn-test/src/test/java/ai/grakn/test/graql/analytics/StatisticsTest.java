@@ -552,7 +552,8 @@ public class StatisticsTest {
                 .playsRole(resourceValue6)
                 .playsRole(resourceValue7));
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 
     private void addResourcesInstances() throws GraknValidationException {
@@ -576,7 +577,8 @@ public class StatisticsTest {
         graph.<String>getResourceType(resourceType4).putResource("b");
         graph.<String>getResourceType(resourceType4).putResource("c");
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 
     private void addResourceRelations() throws GraknValidationException {
@@ -651,6 +653,7 @@ public class StatisticsTest {
         graph.<Long>getResourceType(resourceType5).putResource(10L);
         graph.<Double>getResourceType(resourceType6).putResource(0.8);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 }

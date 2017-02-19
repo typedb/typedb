@@ -6,6 +6,7 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.test.EngineContext;
 import org.junit.ClassRule;
@@ -33,7 +34,8 @@ public class GraphTest {
 
         String thing = "thing";
         graph.putEntityType(thing);
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         graph = factory.getGraph();
         assertNotNull(graph.getEntityType(thing));
@@ -42,7 +44,8 @@ public class GraphTest {
         String related1 = "related1";
         String related2 = "related2";
         graph.putRelationType("related").hasRole(graph.putRoleType(related1)).hasRole(graph.putRoleType(related2));
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         graph = factory.getGraph();
         assertNotNull(graph.getRoleType(related1));
@@ -50,21 +53,25 @@ public class GraphTest {
         assertNotNull(graph.getRelationType(related));
 
         ConceptId e1 = graph.getEntityType(thing).addEntity().getId();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         graph = factory.getGraphBatchLoading();
         ConceptId e2 = graph.getEntityType(thing).addEntity().getId();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         graph = factory.getGraph();
         graph.getEntityType(thing).playsRole(graph.getRoleType(related1)).playsRole(graph.getRoleType(related2));
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         graph = factory.getGraphBatchLoading();
         ConceptId r1 = graph.getRelationType(related).addRelation()
                 .putRolePlayer(graph.getRoleType(related1),graph.getConcept(e1))
                 .putRolePlayer(graph.getRoleType(related2),graph.getConcept(e2)).getId();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         graph = factory.getGraph();
         Map<RoleType, Instance> rps = graph.getConcept(r1).asRelation().rolePlayers();
@@ -74,7 +81,8 @@ public class GraphTest {
 
         graph = factory.getGraphBatchLoading();
         graph.getConcept(r1).delete();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         graph = factory.getGraph();
         assertNull(graph.getConcept(r1));
@@ -85,7 +93,8 @@ public class GraphTest {
         GraknGraph graph = engine.graphWithNewKeyspace();
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         assertFalse(graph.isClosed());
 
@@ -105,14 +114,15 @@ public class GraphTest {
     private void addThingToBatch(String keyspace){
         try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
             graphBatchLoading.getEntityType("thing").addEntity();
-            graphBatchLoading.commit();
+            graphBatchLoading.commitOnClose();
+            graphBatchLoading.close();
         } catch (Exception e){
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    public void testSameGraphs(){
+    public void testSameGraphs() throws GraknValidationException {
         String key = "mykeyspace";
         GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).getGraph();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key);

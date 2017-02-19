@@ -70,7 +70,8 @@ public class MigratorTestUtils {
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 
-            graph.commit();
+            graph.commitOnClose();
+            graph.close();
         } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }

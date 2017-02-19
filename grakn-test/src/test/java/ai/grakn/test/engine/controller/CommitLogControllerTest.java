@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 
+import static ai.grakn.test.graql.query.AskQueryTest.graph;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -136,7 +137,8 @@ public class CommitLogControllerTest {
 
         relationType.addRelation().putRolePlayer(role1, entity).putRolePlayer(role2, resource);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 
     @Test
@@ -171,7 +173,8 @@ public class CommitLogControllerTest {
         resourceType.putResource("a");
         resourceType.putResource("b");
         resourceType.putResource("c");
-        graph1.commit();
+        graph1.commitOnClose();
+        graph1.close();
 
         assertEquals(0, cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME).size());
     }

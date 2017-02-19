@@ -79,7 +79,8 @@ public class AnalyticsTest {
         Entity thisThing = thing.addEntity();
         Resource thisResource = degree.putResource(1L);
         thisThing.hasResource(thisResource);
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         Map<Long, Set<String>> degrees;
         degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
@@ -110,7 +111,8 @@ public class AnalyticsTest {
 
         Entity thisThing = thing.addEntity();
         relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         // the null role-player caused analytics to fail at some stage
         try {

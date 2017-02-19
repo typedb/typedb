@@ -52,7 +52,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Shopping.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commit();
+            migrator.graph().commitOnClose();
+            migrator.graph().close();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -79,7 +80,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "shakespeare.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commit();
+            migrator.graph().commitOnClose();
+            migrator.graph().close();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -122,7 +124,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Product.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commit();
+            migrator.graph().commitOnClose();
+            migrator.graph().close();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -150,7 +153,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
             OWLOntology O = loadOntologyFromResource("owl", "test1.owl");
             O.axioms().forEach(System.out::println);            
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commit();
+            migrator.graph().commitOnClose();
+            migrator.graph().close();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -201,7 +205,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "family.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commit();
+            migrator.graph().commitOnClose();
+            migrator.graph().close();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

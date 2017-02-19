@@ -161,7 +161,8 @@ public class GraqlTest {
                 .putRolePlayer(resourceOwner, theResourceOwner)
                 .putRolePlayer(resourceValue, resource.putResource(3L));
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         // use graql to compute various statistics
         Optional<? extends Number> result = qb.<SumQuery>parse("compute sum of my-resource;").execute();
@@ -211,7 +212,8 @@ public class GraqlTest {
     @Test(expected = IllegalArgumentException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws GraknValidationException {
         graph.putEntityType(thing);
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         qb.parse("compute sum in thing;").execute();
     }
@@ -231,7 +233,8 @@ public class GraqlTest {
         assumeFalse(usingTinker());
 
         graph.putResourceType("number", ResourceType.DataType.LONG);
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         Set<String> analyticsCommands = new HashSet<>(Arrays.asList(
                 "compute count;",
@@ -276,7 +279,8 @@ public class GraqlTest {
                 .putRolePlayer(role1, entity2)
                 .putRolePlayer(role2, entity4).getId().getValue();
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
         graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 }

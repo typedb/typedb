@@ -76,7 +76,8 @@ public class CountTest {
         thing.addEntity().getId();
         thing.addEntity().getId();
         anotherThing.addEntity().getId();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         // assert computer returns the correct count of instances
         startTime = System.currentTimeMillis();

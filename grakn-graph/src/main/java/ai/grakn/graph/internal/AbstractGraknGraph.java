@@ -106,7 +106,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
-    private final ThreadLocal<Map<TypeName, TypeImpl>> localCloneCache = new ThreadLocal<>();
+    private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
 

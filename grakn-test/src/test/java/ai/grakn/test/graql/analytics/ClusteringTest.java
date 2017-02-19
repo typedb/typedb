@@ -155,7 +155,8 @@ public class ClusteringTest {
         Resource aResource = resourceType.putResource("blah");
         graph.getEntityType(thing).instances().forEach(instance -> instance.hasResource(aResource));
         graph.getEntityType(anotherThing).instances().forEach(instance -> instance.hasResource(aResource));
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
 
         Map<String, Set<String>> result = graph.graql().compute()
                 .cluster().in(thing, anotherThing, aResourceTypeName).members().execute();
@@ -324,7 +325,8 @@ public class ClusteringTest {
                 .playsRole(resourceValue6)
                 .playsRole(resourceValue7));
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 
     private void addResourceRelations() throws GraknValidationException {
@@ -398,6 +400,7 @@ public class ClusteringTest {
         graph.getResourceType(resourceType5).putResource(10L);
         graph.getResourceType(resourceType6).putResource(0.8);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 }
