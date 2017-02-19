@@ -36,7 +36,7 @@ public class GraknEngineServerException extends RuntimeException {
         this.status = status;
     }
 
-    public GraknEngineServerException(int status, Exception e) {
+    public GraknEngineServerException(int status, Throwable e) {
         super(e.toString());
         log(status, e);
         this.status = status;

@@ -55,8 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static ai.grakn.engine.controller.Utilities.getAcceptType;
-import static ai.grakn.engine.controller.Utilities.getKeyspace;
+import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
 import static ai.grakn.factory.EngineGraknGraphFactory.getInstance;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
@@ -65,6 +64,7 @@ import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.render
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static ai.grakn.util.REST.Response.ENTITIES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.RELATIONS_JSON_FIELD;
@@ -91,7 +91,6 @@ public class VisualiserController {
     private final static int separationDegree = properties.getPropertyAsInt(HAL_DEGREE_PROPERTY);
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
-
 
     //TODO: implement a pagination system.
     public VisualiserController() {
@@ -290,5 +289,24 @@ public class VisualiserController {
     private JSONArray instances(Type type) {
         List<String> list = type.subTypes().stream().map(Type::getName).map(TypeName::getValue).collect(toList());
         return new JSONArray(list);
+    }
+
+    /**
+     * Retrieve keyspace from the request
+     * @param request Request to extract information from
+     * @return The provided keyspace, or default
+     */
+    private static String getKeyspace(Request request){
+        String keyspace = request.queryParams(KEYSPACE_PARAM);
+        return keyspace == null ? properties.getProperty(DEFAULT_KEYSPACE_PROPERTY) : keyspace;
+    }
+
+    /**
+     * Get accept type from the request
+     * @param request  Request to extract information from
+     * @return The accept type
+     */
+    private static String getAcceptType(Request request){
+        return request.headers("Accept").split(",")[0];
     }
 }

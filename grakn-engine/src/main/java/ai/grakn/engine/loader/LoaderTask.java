@@ -41,7 +41,6 @@ import static ai.grakn.engine.util.ConfigProperties.LOADER_REPEAT_COMMITS;
 import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -56,6 +55,8 @@ public class LoaderTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoaderTask.class);
     private static final int repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
+    private static final String INSERTS = "inserts";
+
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
@@ -157,9 +158,9 @@ public class LoaderTask implements BackgroundTask {
      * @return insert queries from the configuration
      */
     private Collection<InsertQuery> getInserts(Json configuration){
-        if(configuration.has(TASK_LOADER_INSERTS)){
+        if(configuration.has(INSERTS)){
             List<String> inserts = new ArrayList<>();
-            configuration.at(TASK_LOADER_INSERTS).asJsonList().forEach(i -> inserts.add(i.asString()));
+            configuration.at(INSERTS).asJsonList().forEach(i -> inserts.add(i.asString()));
 
             return inserts.stream()
                     .map(builder::<InsertQuery>parse)

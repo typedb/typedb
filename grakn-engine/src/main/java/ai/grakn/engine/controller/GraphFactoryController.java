@@ -121,8 +121,7 @@ public class GraphFactoryController {
             return result.toString();
         }
         catch (Exception e) {
-            LOG.error("While retrieving keyspace list:", e);
-            throw e;
+            throw new GraknEngineServerException(500, ErrorMessage.COULD_NOT_GET_KEYSPACE.getMessage(e));
         }
     }
 }
