@@ -337,8 +337,9 @@ public class GraknGraphTest extends GraphTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
         pool.submit(() -> {
-            EntityType entityType = graknGraph.getEntityType("e1");
-            RoleType role = graknGraph.getRoleType("r1");
+            GraknGraph innerGraph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+            EntityType entityType = innerGraph.getEntityType("e1");
+            RoleType role = innerGraph.getRoleType("r1");
             entityType.deletePlaysRole(role);
         }).get();
 
