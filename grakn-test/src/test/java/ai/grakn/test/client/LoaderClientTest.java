@@ -24,6 +24,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.client.LoaderClient;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
@@ -40,9 +41,13 @@ import org.junit.rules.ExpectedException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class LoaderClientTest {
 
@@ -79,6 +84,67 @@ public class LoaderClientTest {
     public void loadWithSmallNumberActiveTasksToBlockTest(){
         loader.setNumberActiveTasks(1);
         loadAndTime();
+    }
+
+    @Test
+    public void engineRESTFailsWhileLoadingRetryTrue_LoaderRetriesAndWaits(){
+        AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
+        loader.setRetryPolicy(true);
+        loader.setBatchSize(5);
+        loader.setTaskCompletionConsumer((json) -> {
+            if(json != null){
+                tasksCompletedWithoutError.incrementAndGet();
+            }
+        });
+
+        for(int i = 0; i < 100; i++){
+            InsertQuery query = Graql.insert(
+                    var().isa("name_tag")
+                            .has("name_tag_string", UUID.randomUUID().toString())
+                            .has("name_tag_id", UUID.randomUUID().toString()));
+
+            loader.add(query);
+
+            GraknEngineServer.stopHTTP();
+            GraknEngineServer.startHTTP();
+        }
+
+        loader.waitToFinish();
+
+        assertEquals(20, tasksCompletedWithoutError.get());
+    }
+
+    @Test
+    public void engineRESTFailsWhileLoadingRetryFalse_LoaderDoesNotWait(){
+        AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
+        AtomicInteger tasksCompletedWithError = new AtomicInteger(0);
+        loader.setRetryPolicy(false);
+        loader.setBatchSize(5);
+        loader.setTaskCompletionConsumer((json) -> {
+            if(json != null){
+                tasksCompletedWithoutError.incrementAndGet();
+            } else {
+                tasksCompletedWithError.incrementAndGet();
+            }
+        });
+
+
+        for(int i = 0; i < 100; i++){
+            InsertQuery query = Graql.insert(
+                    var().isa("name_tag")
+                            .has("name_tag_string", UUID.randomUUID().toString())
+                            .has("name_tag_id", UUID.randomUUID().toString()));
+
+            loader.add(query);
+
+            GraknEngineServer.stopHTTP();
+            GraknEngineServer.startHTTP();
+        }
+
+        loader.waitToFinish();
+
+        assertThat(tasksCompletedWithoutError.get(), lessThan(20));
+        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(20));
     }
 
     public static void loadOntology(String keyspace){

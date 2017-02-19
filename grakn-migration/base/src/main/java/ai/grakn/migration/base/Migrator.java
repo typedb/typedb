@@ -57,6 +57,7 @@ public interface Migrator extends AutoCloseable {
      * @param batchSize The number of queries to execute in one transaction
      * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
      *                          to bot the system load. Default is 25.
+     * @param retry If the Loader should continue attempt to send tasks when Engine is not available
      */
-    void load(String uri, String keyspace, int batchSize, int numberActiveTasks);
+    void load(String uri, String keyspace, int batchSize, int numberActiveTasks, boolean retry);
 }

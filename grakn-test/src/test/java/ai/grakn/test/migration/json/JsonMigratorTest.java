@@ -19,8 +19,11 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.migration.base.AbstractMigrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -55,6 +58,7 @@ public class JsonMigratorTest {
 
     @Before
     public void setup(){
+        ((Logger) org.slf4j.LoggerFactory.getLogger(AbstractMigrator.class)).setLevel(Level.DEBUG);
         graph = engine.graphWithNewKeyspace();
     }
 
@@ -88,7 +92,6 @@ public class JsonMigratorTest {
 
         migrate(graph, new JsonMigrator(template, getFile("json", "simple-schema/data.json")));
 
-//        graph = factory.getGraph();
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
@@ -135,7 +138,6 @@ public class JsonMigratorTest {
 
         migrate(graph, new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
 
-//        graph = factory.getGraph();
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
         assertEquals(1, things.size());
@@ -168,7 +170,6 @@ public class JsonMigratorTest {
 
         migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
-//        graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
 
@@ -192,7 +193,6 @@ public class JsonMigratorTest {
 
         migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
-//        graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
     }
@@ -203,7 +203,6 @@ public class JsonMigratorTest {
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
         migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
-//        graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(1, theThing.instances().size());
     }
