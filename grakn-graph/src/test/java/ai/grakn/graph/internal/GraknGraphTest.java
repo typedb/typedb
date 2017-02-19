@@ -304,7 +304,7 @@ public class GraknGraphTest extends GraphTestBase {
         try{
             graph.putEntityType("A Thing");
         } catch (GraphRuntimeException e){
-            if(e.getMessage().equals(ErrorMessage.CLOSED_USER.getMessage())){
+            if(e.getMessage().equals(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))){
                 errorThrown = true;
             }
         }

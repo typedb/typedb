@@ -120,7 +120,7 @@ public class GraknGraphPropertyIT {
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraphRuntimeException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.CLOSED_USER.getMessage())));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }

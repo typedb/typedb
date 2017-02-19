@@ -62,7 +62,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> addEntityType(graknGraph)));
+            futures.add(pool.submit(this::addEntityType));
         }
 
         futures.forEach(future -> {
@@ -75,11 +75,12 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
         assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
     }
-    private void addEntityType(GraknGraph graknGraph){
-        graknGraph.putEntityType(UUID.randomUUID().toString());
+    private void addEntityType(){
+        GraknTitanGraph graph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        graph.putEntityType(UUID.randomUUID().toString());
         try {
-            graknGraph.commitOnClose();
-            graknGraph.close();
+            graph.commitOnClose();
+            graph.close();
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }
