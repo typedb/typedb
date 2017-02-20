@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -76,6 +77,8 @@ public class StatisticsTest {
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
+
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Before
@@ -83,7 +86,8 @@ public class StatisticsTest {
         // TODO: Fix tests in orientdb
         assumeFalse(usingOrientDB());
 
-        graph = context.graphWithNewKeyspace();
+        factory = context.factoryWithNewKeyspace();
+        graph = factory.getGraph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -95,7 +99,9 @@ public class StatisticsTest {
     @Test
     public void testStatisticsExceptions() throws Exception {
         addOntologyAndEntities();
+        graph = factory.getGraph();
         addResourceRelations();
+        graph = factory.getGraph();
 
         //TODO: add more detailed error messages
         // resources-type is not set
