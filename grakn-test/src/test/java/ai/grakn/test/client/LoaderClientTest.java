@@ -20,6 +20,7 @@ package ai.grakn.test.client;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.client.LoaderClient;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -50,6 +51,7 @@ import static org.junit.Assert.assertThat;
 public class LoaderClientTest {
 
     private LoaderClient loader;
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Rule
@@ -61,8 +63,8 @@ public class LoaderClientTest {
     @Before
     public void setup() {
         ((Logger) org.slf4j.LoggerFactory.getLogger(LoaderClient.class)).setLevel(Level.DEBUG);
-
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
         loader = new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
         loadOntology(graph.getKeyspace());
     }
@@ -180,6 +182,7 @@ public class LoaderClientTest {
         long duration = System.currentTimeMillis() - startTime;
         System.out.println("Time to load: " + duration);
 
+        graph = factory.getGraph();
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
         assertEquals(50, nameTags.size());
