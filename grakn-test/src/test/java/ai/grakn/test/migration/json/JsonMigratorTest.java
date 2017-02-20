@@ -90,7 +90,7 @@ public class JsonMigratorTest {
                 "  \n" +
                 "} ";
 
-        migrate(graph, new JsonMigrator(template, getFile("json", "simple-schema/data.json")));
+        graph = migrate(graph, new JsonMigrator(template, getFile("json", "simple-schema/data.json")));
 
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
@@ -136,7 +136,7 @@ public class JsonMigratorTest {
                 "  has a-string <a-string>\n" +
                 "  if (<a-null> != null) do {has a-null <a-null>};";
 
-        migrate(graph, new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
+        graph = migrate(graph, new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
 
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
@@ -168,7 +168,7 @@ public class JsonMigratorTest {
                 "        has a-string if (<the-thing.a-string> != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
+        graph = migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
@@ -191,7 +191,7 @@ public class JsonMigratorTest {
                 "        has a-string if (<the-thing.a-string> != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
+        graph = migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
@@ -201,7 +201,7 @@ public class JsonMigratorTest {
     public void testMissingDataDoesNotThrowError(){
         load(graph, getFile("json", "string-or-object/schema.gql"));
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
-        migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
+        graph = migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
 
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(1, theThing.instances().size());
