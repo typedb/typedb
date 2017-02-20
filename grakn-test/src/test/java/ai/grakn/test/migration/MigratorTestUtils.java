@@ -60,8 +60,10 @@ public class MigratorTestUtils {
         return new File(MigratorTestUtils.class.getResource(component + "/" + fileName).getPath());
     }
 
-    public static void migrate(GraknGraph graph, Migrator migrator){
+    public static GraknGraph migrate(GraknGraph graph, Migrator migrator){
         migrator.load(Grakn.DEFAULT_URI, graph.getKeyspace());
+        //Forcing the graph to reopen
+        return Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
     }
 
     public static void load(GraknGraph graph, File ontology) {
