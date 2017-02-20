@@ -105,8 +105,6 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         GraknGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
         keySpace = theGraph.getKeyspace();
 
-        // make sure we don't accidentally commit anything
-        theGraph.close();
         getAllSubTypes(theGraph);
     }
 
