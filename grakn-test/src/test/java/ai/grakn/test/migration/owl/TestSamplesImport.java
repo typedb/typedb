@@ -62,8 +62,8 @@ public class TestSamplesImport extends TestOwlGraknBase {
         // Verify
         try {
             graph = factory.getGraph();
-            EntityType type = migrator.graph().getEntityType("tMensWear");
-            EntityType sub = migrator.graph().getEntityType("tTshirts");
+            EntityType type = graph.getEntityType("tMensWear");
+            EntityType sub = graph.getEntityType("tTshirts");
             Assert.assertNotNull(type);
             Assert.assertNotNull(sub);
             assertThat(type.subTypes(), hasItem(sub));
@@ -90,20 +90,21 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            EntityType top = migrator.graph().getEntityType("tThing");
-            EntityType type = migrator.graph().getEntityType("tAuthor");
+            graph = factory.getGraph();
+            EntityType top = graph.getEntityType("tThing");
+            EntityType type = graph.getEntityType("tAuthor");
             Assert.assertNotNull(type);
-            Assert.assertNull(migrator.graph().getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
+            Assert.assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
             Assert.assertNotNull(type.superType());
             Assert.assertEquals("tPerson", type.superType().getName());
             Assert.assertEquals(top, type.superType().superType());
-            assertTrue(top.subTypes().contains(migrator.graph().getEntityType("tPlace")));
+            assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
             Assert.assertNotEquals(0, type.instances().size());
 
             assertTrue(
                 type.instances().stream()
                         .flatMap(inst -> inst.asEntity()
-                                .resources(migrator.graph().getResourceType(OwlModel.IRI.owlname())).stream())
+                                .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
                         .anyMatch(s -> s.getValue().equals("eShakespeare"))
             );
             final Entity author = getEntity("eShakespeare");
@@ -135,7 +136,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         // Verify
         try {
             graph = factory.getGraph();
-            EntityType type = migrator.graph().getEntityType("tProduct");
+            EntityType type = graph.getEntityType("tProduct");
             Assert.assertNotNull(type);
             Optional<Entity> e = findById(type.instances(), "eProduct5");
             assertTrue(e.isPresent());
@@ -165,10 +166,11 @@ public class TestSamplesImport extends TestOwlGraknBase {
         // Verify
         try {
             graph = factory.getGraph();
+            migrator.graph(graph);
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
             assertTrue(type.instances().stream().flatMap(inst -> inst.asEntity()
-                    .resources(migrator.graph().getResourceType(OwlModel.IRI.owlname())).stream())
+                    .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
                     .anyMatch(s -> s.getValue().equals("eItem1")));
 
             Entity item1 = getEntity("eItem1");
@@ -176,12 +178,12 @@ public class TestSamplesImport extends TestOwlGraknBase {
             assertTrue(item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item")));
             item1.resources().forEach(System.out::println);
             Entity item2 = getEntity("eItem2");
-            RoleType subjectRole = migrator.graph().getType(migrator.namer().subjectRole(TypeName.of("op-related")));
-            RoleType objectRole = migrator.graph().getType(migrator.namer().objectRole(TypeName.of("op-related")));
+            RoleType subjectRole = graph.getType(migrator.namer().subjectRole(TypeName.of("op-related")));
+            RoleType objectRole = graph.getType(migrator.namer().objectRole(TypeName.of("op-related")));
             assertTrue(item2.relations(subjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers().get(objectRole))));
-            RoleType catsubjectRole = migrator.graph().getType(migrator.namer().subjectRole(TypeName.of("op-hasCategory")));
-            RoleType catobjectRole = migrator.graph().getType(migrator.namer().objectRole(TypeName.of("op-hasCategory")));
+            RoleType catsubjectRole = graph.getType(migrator.namer().subjectRole(TypeName.of("op-hasCategory")));
+            RoleType catobjectRole = graph.getType(migrator.namer().objectRole(TypeName.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
             assertTrue(catsubjectRole.playedByTypes().contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
