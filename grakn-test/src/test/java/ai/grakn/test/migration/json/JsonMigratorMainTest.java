@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -46,6 +47,7 @@ public class JsonMigratorMainTest {
     private final String dataFile = getFile("json", "simple-schema/data.json").getAbsolutePath();
     private final String templateFile = getFile("json", "simple-schema/template.gql").getAbsolutePath();
 
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Rule
@@ -56,7 +58,8 @@ public class JsonMigratorMainTest {
 
     @Before
     public void setup() {
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
         load(graph, getFile("json", "simple-schema/schema.gql"));
     }
 
@@ -124,6 +127,7 @@ public class JsonMigratorMainTest {
     private void runAndAssertDataCorrect(String... args){
         run(args);
 
+        graph = factory.getGraph(); //Reopen graph for validation
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
