@@ -31,7 +31,6 @@ import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 
 /**
  *
@@ -70,12 +69,8 @@ public class GraphContext implements TestRule {
     }
 
     public void rollback() {
-        if (usingTinker()) {
-            graph.admin().clear(EngineCache.getInstance());
-            loadGraph();
-        } else if (!graph.isClosed()) {
-            graph.close();
-        }
+        graph.admin().clear(EngineCache.getInstance());
+        loadGraph();
         graph = getEngineGraph();
     }
 
@@ -89,21 +84,20 @@ public class GraphContext implements TestRule {
     }
 
     private void loadGraph() {
-        try (GraknGraph graph = getEngineGraph()){
+        GraknGraph graph = getEngineGraph();
 
-            // if data should be pre-loaded, load
-            if (preLoad != null) {
-                preLoad.accept(graph);
-            }
-
-            if (files != null) {
-                for (String file : files) {
-                    loadFromFile(graph, file);
-                }
-            }
-
-            graph.admin().commitNoLogs();
+        // if data should be pre-loaded, load
+        if (preLoad != null) {
+            preLoad.accept(graph);
         }
+
+        if (files != null) {
+            for (String file : files) {
+                loadFromFile(graph, file);
+            }
+        }
+
+        graph.admin().commitNoLogs();
     }
 
     @Override
