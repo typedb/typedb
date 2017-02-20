@@ -37,7 +37,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static ai.grakn.util.ErrorMessage.CANNOT_LOAD_EXAMPLE;
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 
@@ -55,19 +54,6 @@ public class PokemonGraphFactoryTest {
         factory.getGraph().commitOnClose();
         factory.getGraph().close();
         graknGraph = factory.getGraph();
-    }
-
-    @Test
-    public void failToLoad(){
-        GraknGraph graknGraph = factory.getGraph();
-        graknGraph.putRoleType("fake");
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(CANNOT_LOAD_EXAMPLE.getMessage());
-
-        PokemonGraphFactory.loadGraph(factory.getGraph());
-        factory.getGraph().commitOnClose();
-        factory.getGraph().close();
     }
 
     @Test(expected=InvocationTargetException.class)
