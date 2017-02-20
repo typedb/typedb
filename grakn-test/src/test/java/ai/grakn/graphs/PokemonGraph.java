@@ -19,13 +19,14 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.example.PokemonGraphFactory;
 
 import java.util.function.Consumer;
 
 public class PokemonGraph extends TestGraph {
 
-    public static Consumer<GraknGraph> get(){
+    public static Consumer<GraknGraphFactory> get(){
         return new MovieGraph().build();
     }
 

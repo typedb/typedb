@@ -45,7 +45,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startDistributedEngine;
     private final boolean startInMemoryEngine;
 
-    private EngineContext(boolean startKafka, boolean startDistributedEngine, boolean startInMemoryEngine){
+    protected EngineContext(boolean startKafka, boolean startDistributedEngine, boolean startInMemoryEngine){
         this.startDistributedEngine = startDistributedEngine;
         this.startInMemoryEngine = startInMemoryEngine;
         this.startKafka = startKafka;

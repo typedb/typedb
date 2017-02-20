@@ -19,10 +19,11 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 
@@ -41,13 +42,14 @@ public class MatrixGraphII extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> getGraph(int n, int m) {
+    public static Consumer<GraknGraphFactory> getGraph(int n, int m) {
         return new MatrixGraphII(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknGraphFactory> build(){
+        return (GraknGraphFactory factory) -> {
+            GraknGraph graph = factory.getGraph();
             loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };

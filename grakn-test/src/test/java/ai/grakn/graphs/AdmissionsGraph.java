@@ -19,10 +19,11 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class AdmissionsGraph extends TestGraph{
     private static RelationType decisionTypeRelation;
     private static ResourceType<String> decisionType;
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknGraphFactory> get() {
         return new AdmissionsGraph().build();
     }
 

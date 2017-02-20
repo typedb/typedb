@@ -19,12 +19,13 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 
 import java.util.function.Consumer;
 
 public class SNBGraph extends TestGraph{
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknGraphFactory> get() {
         return new SNBGraph().build();
     }
 

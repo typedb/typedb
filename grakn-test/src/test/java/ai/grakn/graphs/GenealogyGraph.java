@@ -19,6 +19,7 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 
 import java.util.function.Consumer;
 
@@ -28,13 +29,14 @@ public class GenealogyGraph extends TestGraph{
     final private static String dataFile = "genealogy/data.gql";
     final private static String rulesFile = "genealogy/rules.gql";
 
-    public static Consumer<GraknGraph> get() {
+    public static Consumer<GraknGraphFactory> get() {
         return new GenealogyGraph().build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknGraphFactory> build(){
+        return (GraknGraphFactory factory) -> {
+            GraknGraph graph = factory.getGraph();
             loadFromFile(graph, ontologyFile);
             loadFromFile(graph, dataFile);
             loadFromFile(graph, rulesFile);

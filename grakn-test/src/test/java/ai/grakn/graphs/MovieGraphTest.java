@@ -21,6 +21,7 @@ package ai.grakn.graphs;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
@@ -42,17 +43,18 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class MovieGraphTest {
-
-    private static Graph graph;
+    private static GraknGraphFactory factory;
     private static GraknGraph graknGraph;
+    private static Graph graph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void setUp() throws IOException{
-        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraph.get().accept(graknGraph);
+        factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
+        MovieGraph.get().accept(factory);
+        graknGraph = factory.getGraph();
         graph = ((AbstractGraknGraph) graknGraph).getTinkerPopGraph();
     }
 

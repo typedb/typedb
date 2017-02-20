@@ -18,11 +18,11 @@
 
 package ai.grakn.test;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.factory.EngineGraknGraphFactory;
-import org.junit.rules.ExternalResource;
 import spark.Spark;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,15 +37,17 @@ import static ai.grakn.test.GraknTestEnv.randomKeyspace;
  *
  * @author alexandraorth
  */
-public class GraphContext extends ExternalResource {
+public class GraphContext extends EngineContext {
     private String keyspace;
+    private GraknGraphFactory factory;
     private GraknGraph graph;
-    private Consumer<GraknGraph> preLoad;
+    private Consumer<GraknGraphFactory> preLoad;
     private String[] files;
 
     private final static AtomicInteger numberActiveContexts = new AtomicInteger(0);
 
-    private GraphContext(Consumer<GraknGraph> build, String[] files){
+    private GraphContext(Consumer<GraknGraphFactory> build, String[] files){
+        super(false, false, true); //This starts in memory engine
         this.preLoad = build;
         this.files = files;
         keyspace = randomKeyspace();
@@ -55,7 +57,7 @@ public class GraphContext extends ExternalResource {
         return new GraphContext(null, null);
     }
 
-    public static GraphContext preLoad(Consumer<GraknGraph> build){
+    public static GraphContext preLoad(Consumer<GraknGraphFactory> build){
         return new GraphContext(build, null);
     }
 
@@ -70,8 +72,13 @@ public class GraphContext extends ExternalResource {
         return graph;
     }
 
+    public GraknGraphFactory factory(){
+        return factory;
+    }
+
     @Override
-    protected void before() throws Throwable {
+    public void before() throws Throwable {
+        super.before();
         hideLogs();
 
         ensureCassandraRunning();
@@ -88,7 +95,9 @@ public class GraphContext extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void after() {
+        super.after();
+
         closeGraph();
         if (numberActiveContexts.decrementAndGet() == 0) {
             GraknEngineServer.stopHTTP();
@@ -108,7 +117,7 @@ public class GraphContext extends ExternalResource {
 
         // if data should be pre-loaded, load
         if(preLoad != null){
-            preLoad.accept(graph);
+            preLoad.accept(factory);
         }
 
         if(files != null){
@@ -124,6 +133,9 @@ public class GraphContext extends ExternalResource {
     }
 
     private GraknGraph refreshGraph(){
-        return EngineGraknGraphFactory.getInstance().getGraph(keyspace);
+        if(factory == null){
+            factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
+        }
+        return factory.getGraph();
     }
 }

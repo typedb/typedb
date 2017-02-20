@@ -19,6 +19,7 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
@@ -47,8 +48,9 @@ public abstract class TestGraph {
 
     protected void buildRules(GraknGraph graph){};
 
-    public Consumer<GraknGraph> build() {
-        return (GraknGraph graph) -> {
+    public Consumer<GraknGraphFactory> build() {
+        return (GraknGraphFactory factory) -> {
+            GraknGraph graph = factory.getGraph();
             buildOntology(graph);
             buildInstances(graph);
             buildRelations(graph);

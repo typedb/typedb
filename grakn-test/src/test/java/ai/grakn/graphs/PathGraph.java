@@ -19,6 +19,7 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
@@ -41,13 +42,14 @@ public class PathGraph extends TestGraph {
         this.children = children;
     }
 
-    public static Consumer<GraknGraph> get(int n, int children) {
+    public static Consumer<GraknGraphFactory> get(int n, int children) {
         return new PathGraph(n, children).build();
     }
 
     @Override
-    public Consumer<GraknGraph> build(){
-        return (GraknGraph graph) -> {
+    public Consumer<GraknGraphFactory> build(){
+        return (GraknGraphFactory factory) -> {
+            GraknGraph graph = factory.getGraph();
             loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, children);
         };
