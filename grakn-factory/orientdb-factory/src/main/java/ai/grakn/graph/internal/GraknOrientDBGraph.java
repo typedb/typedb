@@ -74,9 +74,4 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
 
         return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance()).V().hasLabel(labels);
     }
-
-    @Override
-    public void rollback(){
-        throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
-    }
 }
