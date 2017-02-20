@@ -20,14 +20,13 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -69,11 +68,6 @@ public class DeleteQueryTest {
         apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now"));
         kurtzCastRelation =
                 qb.match(var("a").rel("character-being-played", var().has("name", "Colonel Walter E. Kurtz")));
-    }
-
-    @After
-    public void rollback(){
-        movieGraph.rollback();
     }
 
     @Test

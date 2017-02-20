@@ -545,8 +545,6 @@ public class MatchQueryTest {
         //noinspection ResultOfMethodCallIgnored
         qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
 
-        // clean graph of inserts
-        movieGraph.rollback();
     }
 
     @Test
@@ -592,8 +590,6 @@ public class MatchQueryTest {
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
 
-        // clean graph of inserts
-        movieGraph.rollback();
     }
 
     @Test

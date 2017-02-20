@@ -38,6 +38,7 @@ import static ai.grakn.test.GraknTestEnv.randomKeyspace;
  * @author alexandraorth
  */
 public class GraphContext extends ExternalResource {
+    private String keyspace;
     private GraknGraph graph;
     private Consumer<GraknGraph> preLoad;
     private String[] files;
@@ -47,6 +48,7 @@ public class GraphContext extends ExternalResource {
     private GraphContext(Consumer<GraknGraph> build, String[] files){
         this.preLoad = build;
         this.files = files;
+        keyspace = randomKeyspace();
     }
 
     public static GraphContext empty(){
@@ -63,19 +65,9 @@ public class GraphContext extends ExternalResource {
 
     public GraknGraph graph(){
         if(graph.isClosed()){
-            graph = refreshGraph(graph.getKeyspace());
+            graph = refreshGraph();
         }
         return graph;
-    }
-
-    public void rollback(){
-        try {
-            graph.close();
-        } catch (UnsupportedOperationException e) {
-            // If operation unsupported, make a fresh graph
-            closeGraph();
-            loadGraph();
-        }
     }
 
     @Override
@@ -112,7 +104,7 @@ public class GraphContext extends ExternalResource {
     }
 
     private void loadGraph() {
-        graph = refreshGraph(randomKeyspace());
+        graph = refreshGraph();
 
         // if data should be pre-loaded, load
         if(preLoad != null){
@@ -126,7 +118,12 @@ public class GraphContext extends ExternalResource {
         }
     }
 
-    private GraknGraph refreshGraph(String keyspace){
+    public void clearGraph(){
+        graph.clear();
+        loadGraph();
+    }
+
+    private GraknGraph refreshGraph(){
         return EngineGraknGraphFactory.getInstance().getGraph(keyspace);
     }
 }

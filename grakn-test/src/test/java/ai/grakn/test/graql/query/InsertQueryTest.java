@@ -86,8 +86,8 @@ public class InsertQueryTest {
     }
 
     @After
-    public void rollback(){
-        movieGraph.rollback();
+    public void clear(){
+        movieGraph.clearGraph();
     }
 
     @After

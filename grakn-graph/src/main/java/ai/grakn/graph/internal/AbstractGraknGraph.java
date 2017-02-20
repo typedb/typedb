@@ -799,6 +799,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(getCommitRequired()){
             commit();
         }
+        localCommitRequired.remove();
         closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
     }
 
