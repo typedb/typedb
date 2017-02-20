@@ -34,6 +34,8 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.function.Consumer;
 
+import static ai.grakn.test.graql.query.AskQueryTest.graph;
+
 public class MovieGraph extends TestGraph {
 
     private static EntityType production, movie, person, genre, character, cluster, language;
@@ -66,7 +68,8 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    public void buildOntology(GraknGraph graph) {
+    public void buildOntology(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         productionBeingDirected = graph.putRoleType("production-being-directed");
         director = graph.putRoleType("director");
         directedBy = graph.putRelationType("directed-by")
@@ -137,7 +140,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknGraphFactory factory) {
         godfather = movie.addEntity();
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
@@ -240,7 +243,7 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
+    protected void buildRelations(GraknGraphFactory factory) {
         directedBy.addRelation()
                 .putRolePlayer(productionBeingDirected, chineseCoffee)
                 .putRolePlayer(director, alPacino);
@@ -285,7 +288,8 @@ public class MovieGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         // These rules are totally made up for testing purposes and don't work!
         aRuleType = graph.putRuleType("a-rule-type");
         aRuleType.hasResource(name);

@@ -67,12 +67,15 @@ public class GraphContext extends EngineContext {
 
     public GraknGraph graph(){
         if(graph.isClosed()){
-            graph = refreshGraph();
+            graph = factory().getGraph();
         }
         return graph;
     }
 
     public GraknGraphFactory factory(){
+        if(factory == null){
+            factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
+        }
         return factory;
     }
 
@@ -113,16 +116,16 @@ public class GraphContext extends EngineContext {
     }
 
     private void loadGraph() {
-        graph = refreshGraph();
+        graph = factory().getGraph();
 
         // if data should be pre-loaded, load
         if(preLoad != null){
-            preLoad.accept(factory);
+            preLoad.accept(factory());
         }
 
         if(files != null){
             for (String file : files) {
-                loadFromFile(graph, file);
+                loadFromFile(factory, file);
             }
         }
     }
@@ -130,12 +133,5 @@ public class GraphContext extends EngineContext {
     public void clearGraph(){
         graph.clear();
         loadGraph();
-    }
-
-    private GraknGraph refreshGraph(){
-        if(factory == null){
-            factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
-        }
-        return factory.getGraph();
     }
 }

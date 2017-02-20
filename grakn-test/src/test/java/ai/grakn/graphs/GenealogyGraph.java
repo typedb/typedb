@@ -18,7 +18,6 @@
 
 package ai.grakn.graphs;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 
 import java.util.function.Consumer;
@@ -36,10 +35,9 @@ public class GenealogyGraph extends TestGraph{
     @Override
     public Consumer<GraknGraphFactory> build(){
         return (GraknGraphFactory factory) -> {
-            GraknGraph graph = factory.getGraph();
-            loadFromFile(graph, ontologyFile);
-            loadFromFile(graph, dataFile);
-            loadFromFile(graph, rulesFile);
+            loadFromFile(factory, ontologyFile);
+            loadFromFile(factory, dataFile);
+            loadFromFile(factory, rulesFile);
         };
     }
 }

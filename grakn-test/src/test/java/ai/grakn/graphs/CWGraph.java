@@ -60,7 +60,8 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildOntology(GraknGraph graph) {
+    protected void buildOntology(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         nationalityTarget = graph.putRoleType("has-nationality-owner");
@@ -138,7 +139,8 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         colonelWest =  putEntity(graph, "colonelWest", person, key.getName());
         Nono =  putEntity(graph, "Nono", country, key.getName());
         America =  putEntity(graph, "America", country, key.getName());
@@ -149,7 +151,8 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph) {
+    protected void buildRelations(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         //Enemy(Nono, America)
         isEnemyOf.addRelation()
                 .putRolePlayer(enemySource, Nono)
@@ -167,7 +170,8 @@ public class CWGraph extends TestGraph {
     }
 
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"

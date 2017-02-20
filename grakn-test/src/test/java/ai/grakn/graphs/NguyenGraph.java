@@ -46,13 +46,13 @@ public class NguyenGraph extends TestGraph {
     @Override
     public Consumer<GraknGraphFactory> build(){
         return (GraknGraphFactory factory) -> {
-            GraknGraph graph = factory.getGraph();
-            loadFromFile(graph, gqlFile);
-            buildExtensionalDB(graph, n);
+            loadFromFile(factory, gqlFile);
+            buildExtensionalDB(factory, n);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n) {
+    private void buildExtensionalDB(GraknGraphFactory factory, int n) {
+        GraknGraph graph = factory.getGraph();
         RoleType Rfrom = graph.getRoleType("R-rA");
         RoleType Rto = graph.getRoleType("R-rB");
         RoleType Qfrom = graph.getRoleType("Q-rA");

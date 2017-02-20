@@ -31,6 +31,7 @@ import ai.grakn.graql.Pattern;
 import java.util.function.Consumer;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.test.graql.query.AskQueryTest.graph;
 
 public class AbstractGraph extends TestGraph {
 
@@ -46,7 +47,8 @@ public class AbstractGraph extends TestGraph {
     }
 
     @Override
-    protected void buildOntology(GraknGraph graph) {
+    protected void buildOntology(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         relRoleA = graph.putRoleType("rel-roleA");
@@ -71,14 +73,15 @@ public class AbstractGraph extends TestGraph {
     }
 
     @Override
-    protected void buildInstances(GraknGraph graph) {
+    protected void buildInstances(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         instanceU = putEntity(graph, "instanceU", u, key.getName());
         instanceT = putEntity(graph, "instanceT", t, key.getName());
         instanceP = putEntity(graph, "instanceP", P, key.getName());
     }
 
     @Override
-    protected void  buildRelations(GraknGraph graph) {
+    protected void  buildRelations(GraknGraphFactory factory) {
         rel.addRelation()
                 .putRolePlayer(relRoleA, instanceU)
                 .putRolePlayer(relRoleB, instanceT);
@@ -88,7 +91,8 @@ public class AbstractGraph extends TestGraph {
 
     }
     @Override
-    protected void buildRules(GraknGraph graph) {
+    protected void buildRules(GraknGraphFactory factory) {
+        GraknGraph graph = factory.getGraph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         Pattern R1_LHS = and(graph.graql().parsePatterns("$x isa p;$y isa q;($x, $y) isa rel;"));

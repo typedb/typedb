@@ -49,13 +49,13 @@ public class MatrixGraphII extends TestGraph {
     @Override
     public Consumer<GraknGraphFactory> build(){
         return (GraknGraphFactory factory) -> {
-            GraknGraph graph = factory.getGraph();
-            loadFromFile(graph, gqlFile);
-            buildExtensionalDB(graph, n, m);
+            loadFromFile(factory, gqlFile);
+            buildExtensionalDB(factory, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
+    private void buildExtensionalDB(GraknGraphFactory factory, int n, int m) {
+        GraknGraph graph = factory.getGraph();
         RoleType Qfrom = graph.getRoleType("Q-from");
         RoleType Qto = graph.getRoleType("Q-to");
 

@@ -19,9 +19,9 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
-import ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -32,11 +32,13 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
-import static ai.grakn.util.REST.Request.*;
+import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 import static junit.framework.TestCase.assertEquals;
@@ -44,6 +46,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest {
+    private static GraknGraphFactory factory;
     private static GraknGraph graph;
 
     @ClassRule
@@ -51,10 +54,12 @@ public class VisualiserControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
 
-        loadFromFile(graph, "genealogy/ontology.gql");
-        loadFromFile(graph, "genealogy/data.gql");
+        loadFromFile(factory, "genealogy/ontology.gql");
+        loadFromFile(factory, "genealogy/data.gql");
+
+        graph = factory.getGraph();
     }
 
     @Test

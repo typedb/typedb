@@ -19,6 +19,7 @@
 package ai.grakn.example;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -81,9 +82,9 @@ public class PokemonGraphFactory{
         throw new UnsupportedOperationException();
     }
 
-    public static void loadGraph(GraknGraph graknGraph) {
-        buildGraph(graknGraph);
-        try {
+    public static void loadGraph(GraknGraphFactory factory) {
+        try (GraknGraph graknGraph = factory.getGraph()){
+            buildGraph(graknGraph);
             graknGraph.commitOnClose();
             graknGraph.close();
         } catch (GraknValidationException e) {

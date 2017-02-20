@@ -49,14 +49,16 @@ public class PathGraph extends TestGraph {
     @Override
     public Consumer<GraknGraphFactory> build(){
         return (GraknGraphFactory factory) -> {
-            GraknGraph graph = factory.getGraph();
-            loadFromFile(graph, gqlFile);
-            buildExtensionalDB(graph, n, children);
+            loadFromFile(factory, gqlFile);
+            buildExtensionalDB(factory, n, children);
         };
     }
 
-    protected void buildExtensionalDB(GraknGraph graph, int n, int children) {
+    protected void buildExtensionalDB(GraknGraphFactory factory, int n, int children) {
         long startTime = System.currentTimeMillis();
+
+
+        GraknGraph graph = factory.getGraph();
 
         EntityType vertex = graph.getEntityType("vertex");
         EntityType startVertex = graph.getEntityType("start-vertex");

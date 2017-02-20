@@ -20,6 +20,7 @@ package ai.grakn.example;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
@@ -42,15 +43,16 @@ import static junit.framework.TestCase.assertTrue;
 
 public class PokemonGraphFactoryTest {
     private GraknGraph graknGraph;
+    private GraknGraphFactory factory;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setup() {
-        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        PokemonGraphFactory.loadGraph(graknGraph);
-        graknGraph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+        factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
+        PokemonGraphFactory.loadGraph(factory);
+        graknGraph = factory.getGraph();
     }
 
     @Test
@@ -61,7 +63,7 @@ public class PokemonGraphFactoryTest {
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(CANNOT_LOAD_EXAMPLE.getMessage());
 
-        PokemonGraphFactory.loadGraph(graknGraph);
+        PokemonGraphFactory.loadGraph(factory);
     }
 
     @Test(expected=InvocationTargetException.class)
