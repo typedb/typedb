@@ -20,6 +20,7 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -77,7 +78,8 @@ public class PostProcessingTest {
         graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
         graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraphBatchLoading();
+        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace());
+        graph = factory.getGraph();
         roleType1 = graph.getRoleType("role 1");
         roleType2 = graph.getRoleType("role 2");
         RelationType relationType = graph.getRelationType("rel type");
@@ -100,6 +102,7 @@ public class PostProcessingTest {
 
         graph.commitOnClose();
         graph.close();
+        graph = factory.getGraph();
 
         //Check Number of castings is as expected
         Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
@@ -129,9 +132,6 @@ public class PostProcessingTest {
         RoleType otherRoleType = graph.getConcept(otherRoleTypeId);
         Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
         ConceptId relationId = relation.getId();
-
-        graph.commitOnClose();
-        graph.close();
 
         Graph rawGraph = ((AbstractGraknGraph) this.graph).getTinkerPopGraph();
 
@@ -172,15 +172,18 @@ public class PostProcessingTest {
         //ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
+        GraknGraph graph = factory.getGraph();
         graph.putResourceType(sample, ResourceType.DataType.STRING);
 
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
+        graph = factory.getGraph();
         ResourceType<String> resourceType = graph.getResourceType(sample);
 
         Resource<String> resource = resourceType.putResource(value);
         graph.commitOnClose();
         graph.close();
+        graph = factory.getGraph();
+
         assertEquals(1, resourceType.instances().size());
         waitForCache(false, keyspace, 1);
 

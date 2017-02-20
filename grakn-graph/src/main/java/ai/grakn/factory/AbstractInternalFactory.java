@@ -128,16 +128,16 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             }
         } else {
             if(graknGraph.isClosed()){
-                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-            } else {
-                //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
-                G innerGraph = graknGraph.getTinkerPopGraph();
-                synchronized (innerGraph){
-                    if(isClosed(innerGraph)){
-                        graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-                    } else {
-                        getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
-                    }
+                graknGraph.openTransaction();
+            }
+
+            //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
+            G innerGraph = graknGraph.getTinkerPopGraph();
+            synchronized (innerGraph){
+                if(isClosed(innerGraph)){
+                    graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                } else {
+                    getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
                 }
             }
         }
