@@ -25,7 +25,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
@@ -155,8 +154,6 @@ public class LoaderClientTest {
             nameTag.hasResource(nameTagString);
             nameTag.hasResource(nameTagId);
             graph.commitOnClose();
-        } catch (GraknValidationException e){
-            throw new RuntimeException(e);
         }
     }
 

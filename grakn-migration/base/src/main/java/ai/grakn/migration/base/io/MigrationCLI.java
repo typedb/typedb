@@ -21,7 +21,6 @@ package ai.grakn.migration.base.io;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.client.Client;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;
@@ -161,11 +160,7 @@ public class MigrationCLI {
 
             System.out.println(builder);
 
-            try {
-                graph.close();
-            } catch (GraknValidationException e) {
-                //Ignored
-            }
+            graph.close();
         }
     }
 

@@ -89,8 +89,6 @@ public class LoaderTask implements BackgroundTask {
             }
 
             throwException("Could not insert");
-        } catch (GraknValidationException e) {
-            //Ignored
         }
     }
 

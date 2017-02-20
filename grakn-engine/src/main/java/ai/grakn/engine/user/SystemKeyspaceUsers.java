@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
@@ -156,8 +155,6 @@ public class SystemKeyspaceUsers extends UsersHandler {
                     return Password.isExpectedPassword(passwordClient.toCharArray(), salt, expectedPassword);
                 }
             }
-        } catch (GraknValidationException e) {
-            //Ignore. No Commit Happens
         }
         return false;
     }

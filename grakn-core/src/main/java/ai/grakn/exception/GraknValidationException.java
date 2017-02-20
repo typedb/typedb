@@ -23,7 +23,7 @@ package ai.grakn.exception;
  *
  * @author Filipe Teixeira
  */
-public class GraknValidationException extends Exception{
+public class GraknValidationException extends GraphRuntimeException{
     public GraknValidationException(String error) {
         super(error);
     }

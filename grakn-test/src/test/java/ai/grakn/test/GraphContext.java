@@ -21,7 +21,6 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.ExternalResource;
 import spark.Spark;
@@ -108,11 +107,7 @@ public class GraphContext extends ExternalResource {
         // close the graph
         if(!graph.isClosed()) {
             graph.clear();
-            try {
-                graph.close();
-            } catch (GraknValidationException e) {
-                //Ignored
-            }
+            graph.close();
         }
     }
 

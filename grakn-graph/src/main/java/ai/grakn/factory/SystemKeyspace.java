@@ -101,7 +101,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
                 }
                 graph.commitOnClose();
             } catch (GraknValidationException e) {
-                e.printStackTrace();
+                throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
             }
             return true;
         });

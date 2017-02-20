@@ -19,7 +19,6 @@ package ai.grakn.migration.export;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.io.MigrationCLI;
 
 import java.util.Optional;
@@ -60,10 +59,7 @@ public class Main {
             if (options.exportData()) {
                 writeToSout(graphWriter.dumpData());
             }
-        } catch (GraknValidationException e) {
-            //Ignored
         }
-
         initiateShutdown();
     }
 }
