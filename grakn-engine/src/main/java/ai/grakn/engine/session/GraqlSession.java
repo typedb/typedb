@@ -249,6 +249,8 @@ class GraqlSession {
             }
 
             sendEnd();
+
+            attemptRefresh();
         });
     }
 
