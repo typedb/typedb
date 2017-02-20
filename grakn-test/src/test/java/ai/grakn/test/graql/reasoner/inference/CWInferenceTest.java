@@ -239,6 +239,7 @@ public class CWInferenceTest {
                 "};" +
                 "}; select $x;";
 
+        cwGraph2.graph(); //Reopen transaction
         assertQueriesEqual(ilqb.parse(queryString), lqb.parse(explicitQuery));
     }
 
