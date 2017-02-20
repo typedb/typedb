@@ -515,8 +515,7 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyUniqueOwner() throws GraknValidationException {
-        // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
+        assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
@@ -531,6 +530,8 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyUniqueValue() throws GraknValidationException {
+        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
@@ -545,6 +546,8 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyRequiredOwner() throws GraknValidationException {
+        assumeTrue(usingTinker()); // This should only run on tinker because it commits
+
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
@@ -558,6 +561,8 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyRequiredValue() throws GraknValidationException {
+        assumeTrue(usingTinker());
+
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),

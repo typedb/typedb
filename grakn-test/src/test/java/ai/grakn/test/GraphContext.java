@@ -31,6 +31,7 @@ import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 
 /**
  *
@@ -69,9 +70,12 @@ public class GraphContext implements TestRule {
     }
 
     public void rollback() {
-        graph.admin().clear(EngineCache.getInstance());
-        loadGraph();
-        graph = getEngineGraph();
+        if (usingTinker()) {
+            graph.admin().clear(EngineCache.getInstance());
+            loadGraph();
+        } else if (!graph.isClosed()) {
+            graph.close();
+        }
     }
 
     public void load(Consumer<GraknGraph> build){
