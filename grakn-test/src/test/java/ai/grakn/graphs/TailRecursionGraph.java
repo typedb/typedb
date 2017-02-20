@@ -47,8 +47,8 @@ public class TailRecursionGraph extends TestGraph {
     @Override
     public Consumer<GraknGraphFactory> build(){
         return (GraknGraphFactory factory) -> {
-            GraknGraph graph = factory.getGraph();
             loadFromFile(factory, gqlFile);
+            GraknGraph graph = factory.getGraph();
             buildExtensionalDB(graph, n, m);
         };
     }

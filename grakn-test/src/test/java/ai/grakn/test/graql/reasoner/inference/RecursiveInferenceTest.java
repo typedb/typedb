@@ -84,6 +84,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test
     public void testTransitivity() {
+        transitivityContext.clearGraph();
         QueryBuilder qb = transitivityContext.graph().graql().infer(false);
         QueryBuilder iqb = transitivityContext.graph().graql().infer(true);
         String queryString = "match ($x, $y) isa R;$x has index 'i'; select $y;";
@@ -98,6 +99,7 @@ public class RecursiveInferenceTest {
     /**from Bancilhon - An Amateur's Introduction to Recursive Query Processing Strategies p. 25*/
     @Test
     public void testAncestor() {
+        ancestorContext.clearGraph();
         QueryBuilder qb = ancestorContext.graph().graql().infer(false);
         QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
 
@@ -126,6 +128,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testAncestor2() {
+        ancestorContext.clearGraph();
         QueryBuilder qb = ancestorContext.graph().graql().infer(false);
         QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
 
@@ -143,6 +146,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testAncestor2Prime() {
+        ancestorContext.clearGraph();
         QueryBuilder qb = ancestorContext.graph().graql().infer(false);
         QueryBuilder iqb = ancestorContext.graph().graql().infer(true);
         String queryString = "match ($X, $Y) isa Ancestor;";
@@ -171,6 +175,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend() {
+        ancestorFriendContext.clearGraph();
         QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
@@ -184,6 +189,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriendPrime() {
+        ancestorFriendContext.clearGraph();
         QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
@@ -197,6 +203,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend2() {
+        ancestorFriendContext.clearGraph();
         QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
@@ -211,6 +218,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend2Prime() {
+        ancestorFriendContext.clearGraph();
         QueryBuilder qb = ancestorFriendContext.graph().graql().infer(false);
         QueryBuilder iqb = ancestorFriendContext.graph().graql().infer(true);
 
@@ -240,6 +248,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Query Processing: The power of logic p. 18*/
     @Test
     public void testTC() {
+        recursivityTCContext.clearGraph();
         QueryBuilder qb = recursivityTCContext.graph().graql().infer(false);
         QueryBuilder iqb = recursivityTCContext.graph().graql().infer(true);
 
@@ -252,6 +261,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testReachability(){
+        reachabilityContext.clearGraph();
         QueryBuilder qb = reachabilityContext.graph().graql().infer(false);
         QueryBuilder iqb = reachabilityContext.graph().graql().infer(true);
 
@@ -271,6 +281,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testReachabilitySymmetric(){
+        reachabilitySymmetricContext.clearGraph();
         QueryBuilder qb = reachabilitySymmetricContext.graph().graql().infer(false);
         QueryBuilder iqb = reachabilitySymmetricContext.graph().graql().infer(true);
 
@@ -300,6 +311,7 @@ public class RecursiveInferenceTest {
     /** test 6.3 from Cao p 75*/
     @Test
     public void testTailRecursion(){
+        graphContext.clearGraph();
         final int N = 10;
         final int M = 5;
         TailRecursionGraph.get(N, M).accept(graphContext.factory());
@@ -331,6 +343,7 @@ public class RecursiveInferenceTest {
     //TODO bug #10635
     @Test
     public void testNguyen2(){
+        graphContext.clearGraph();
         final int N = 9;
         NguyenGraph.get(N).accept(graphContext.factory());
         QueryBuilder qb = graphContext.graph().graql().infer(false);
@@ -346,6 +359,7 @@ public class RecursiveInferenceTest {
     /**test 6.6 from Cao p.76*/
     @Test
     public void testSameGenerationCao(){
+        sameGenerationContext.clearGraph();
         QueryBuilder qb = sameGenerationContext.graph().graql().infer(false);
         QueryBuilder iqb = sameGenerationContext.graph().graql().infer(true);
 
@@ -450,6 +464,7 @@ public class RecursiveInferenceTest {
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
     @Test
     public void testReverseSameGeneration(){
+        recursivityRSGContext.clearGraph();
         QueryBuilder qb = recursivityRSGContext.graph().graql().infer(false);
         QueryBuilder iqb = recursivityRSGContext.graph().graql().infer(true);
 

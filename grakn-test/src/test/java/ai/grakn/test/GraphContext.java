@@ -130,7 +130,7 @@ public class GraphContext extends EngineContext {
     }
 
     public void clearGraph(){
-        graph.clear();
+        graph().clear();
         loadGraph();
     }
 }
