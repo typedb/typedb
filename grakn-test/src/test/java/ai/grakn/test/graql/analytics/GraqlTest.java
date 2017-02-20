@@ -59,8 +59,8 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -262,9 +262,11 @@ public class GraqlTest {
                 graph.graql().parse("insert thing sub entity;").execute();
                 // use analytics
                 graph.graql().parse(command).execute();
-                // see if the node was commited
-                assertNull(graph.getEntityType("thing"));
             }
+
+            GraknGraph graph = factory.getGraph();
+            // see if the node was commited
+            assertNull(graph.getEntityType("thing"));
         });
     }
 
