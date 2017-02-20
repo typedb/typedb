@@ -84,9 +84,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             succesfulMutation = true;
             try {
                 random.choose(mutators).run();
-            } catch (UnsupportedOperationException | GraphRuntimeException | GraphGeneratorException
-                    | ClassCastException e) {
-                // TODO: Remove ClassCastException when graph API no longer throws it
+            } catch (UnsupportedOperationException | GraphRuntimeException | GraphGeneratorException e) {
                 // We only catch acceptable exceptions for the graph API to throw
                 succesfulMutation = false;
             }
