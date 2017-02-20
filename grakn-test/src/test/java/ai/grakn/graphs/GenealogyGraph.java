@@ -19,7 +19,6 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 
 import java.util.function.Consumer;
 

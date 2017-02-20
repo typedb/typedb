@@ -54,10 +54,15 @@ public class VisualiserControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        graph = engine.factoryWithNewKeyspace().getGraph();
+        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
 
         loadFromFile(graph, "genealogy/ontology.gql");
         loadFromFile(graph, "genealogy/data.gql");
+
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
     }
 
     @AfterClass
