@@ -19,10 +19,11 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Resource;
+import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
-import ai.grakn.migration.sql.SQLMigrator;
 import org.jooq.exception.DataAccessException;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -41,7 +42,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
 public class SQLMigratorTest {
-
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Rule
@@ -52,7 +53,8 @@ public class SQLMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
     }
 
     @Test
@@ -63,6 +65,7 @@ public class SQLMigratorTest {
         try(Connection connection = setupExample(graph, "pets")){
             migrate(graph, new SQLMigrator(query, template, connection));
 
+            graph = factory.getGraph();
             assertPetGraphCorrect(graph);
         }
     }
@@ -97,6 +100,7 @@ public class SQLMigratorTest {
 
             migrate(graph, new SQLMigrator(query, template, connection));
 
+            graph = factory.getGraph();
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -134,6 +138,7 @@ public class SQLMigratorTest {
 
             migrate(graph, new SQLMigrator(query, template, connection));
 
+            graph = factory.getGraph();
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -146,7 +151,7 @@ public class SQLMigratorTest {
 
             migrate(graph, new SQLMigrator(query, template, connection));
 
-//            graph = factory.getGraph();
+            graph = factory.getGraph();
             Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));
