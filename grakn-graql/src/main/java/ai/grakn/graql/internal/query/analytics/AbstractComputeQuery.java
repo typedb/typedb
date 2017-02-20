@@ -106,11 +106,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         keySpace = theGraph.getKeyspace();
 
         // make sure we don't accidentally commit anything
-        try {
-            theGraph.rollback();
-        } catch (UnsupportedOperationException ignored) {
-            // TODO: Fix this properly. I.E. Don't run TinkerGraph Tests which hit this line.
-        }
+        theGraph.close();
         getAllSubTypes(theGraph);
     }
 

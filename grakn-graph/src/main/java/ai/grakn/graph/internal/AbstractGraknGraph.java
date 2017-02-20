@@ -766,16 +766,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return concept.asRelation();
     }
 
-    @Override
-    public void rollback() {
-        try {
-            getTinkerPopGraph().tx().rollback();
-        } catch (UnsupportedOperationException e){
-            throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
-        }
-        clearLocalVariables();
-    }
-
     /**
      * Clears the graph completely.
      */

@@ -382,13 +382,6 @@ public interface GraknGraph extends AutoCloseable{
      */
     QueryBuilder graql();
 
-    /**
-     * Resets the current transaction without committing.
-     *
-     * @throws GraphRuntimeException if the graph is closed
-     */
-    void rollback();
-
     // TODO: what does this do when the graph is closed?
     /**
      * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknGraphFactory} to

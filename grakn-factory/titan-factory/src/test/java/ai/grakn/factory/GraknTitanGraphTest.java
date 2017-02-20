@@ -40,7 +40,6 @@ import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
 import static ai.grakn.util.ErrorMessage.GRAPH_PERMANENTLY_CLOSED;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class GraknTitanGraphTest extends TitanTestBase{
     private GraknGraph graknGraph;
@@ -105,15 +104,6 @@ public class GraknTitanGraphTest extends TitanTestBase{
         });
 
         assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
-    }
-
-    @Test
-    public void testRollback() {
-        assertNull(graknGraph.getEntityType("X"));
-        graknGraph.putEntityType("X");
-        assertNotNull(graknGraph.getEntityType("X"));
-        graknGraph.rollback();
-        assertNull(graknGraph.getEntityType("X"));
     }
 
     @Test

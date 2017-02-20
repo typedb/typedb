@@ -247,7 +247,7 @@ public class GraqlTest {
             // use analytics
             qb.parse(command).execute();
             // see if the node was commited
-            graph.rollback();
+            graph.close();
             assertNull(graph.getEntityType("thing"));
         });
     }

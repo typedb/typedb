@@ -222,7 +222,7 @@ class GraqlSession {
 
                 if (errorMessage != null) {
                     if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
-                        attemptRollback();
+                        graph.close();
                     }
                     sendQueryError(errorMessage);
                 }
@@ -256,7 +256,7 @@ class GraqlSession {
      * Rollback the transaction, removing uncommitted changes
      */
     void rollback() {
-        queryExecutor.submit(graph::rollback);
+        queryExecutor.submit(graph::close);
     }
 
     private void attemptRefresh() {
@@ -276,18 +276,6 @@ class GraqlSession {
                     .toArray(ResourceType[]::new);
             printer = getPrinter(displayOptions);
         });
-    }
-
-    private boolean attemptRollback() {
-        try {
-            graph.rollback();
-            return true;
-        } catch (UnsupportedOperationException ignored) {
-            return false;
-        } catch (Throwable e) {
-            LOG.error("Error during rollback", e);
-            return false;
-        }
     }
 
     /**

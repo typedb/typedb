@@ -70,7 +70,7 @@ public class GraphContext extends ExternalResource {
 
     public void rollback(){
         try {
-            graph.rollback();
+            graph.close();
         } catch (UnsupportedOperationException e) {
             // If operation unsupported, make a fresh graph
             closeGraph();
