@@ -101,10 +101,10 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         }
     }
     protected M getGraph(M graknGraph, boolean batchLoading){
+        boolean hasCommitted = false;
         //This checks if the previous graph built with this factory is the same as the one we trying to build now.
         if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
             //This then checks if the previous graph built has undergone a commit
-            boolean hasCommitted;
             if(lastGraphBuiltBatchLoading) {
                 hasCommitted = batchLoadingGraknGraph.hasCommitted();
             } else {
@@ -127,7 +127,9 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 systemKeyspace.keyspaceOpened(this.keyspace);
             }
         } else {
-            if(graknGraph.isClosed()){
+            if(hasCommitted){//In this case we need a new one because we force closing the previous one. Need to think about this one more carefully
+                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+            } else if(graknGraph.isClosed()){
                 graknGraph.openTransaction();
             }
 
