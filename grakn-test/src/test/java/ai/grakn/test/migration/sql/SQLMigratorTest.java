@@ -51,7 +51,7 @@ public class SQLMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.graphWithNewKeyspace();
+        graph = engine.factoryWithNewKeyspace().getGraph();
     }
 
     @Test

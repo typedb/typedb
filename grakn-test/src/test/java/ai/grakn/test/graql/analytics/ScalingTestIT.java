@@ -116,7 +116,7 @@ public class ScalingTestIT {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        keyspace = context.graphWithNewKeyspace().getKeyspace();
+        keyspace = context.factoryWithNewKeyspace().getGraph().getKeyspace();
 
         headers = new ArrayList<>();
         headers.add("Size");

@@ -59,7 +59,7 @@ public class JsonMigratorTest {
     @Before
     public void setup(){
         ((Logger) org.slf4j.LoggerFactory.getLogger(AbstractMigrator.class)).setLevel(Level.DEBUG);
-        graph = engine.graphWithNewKeyspace();
+        graph = engine.factoryWithNewKeyspace().getGraph();
     }
 
     @Test

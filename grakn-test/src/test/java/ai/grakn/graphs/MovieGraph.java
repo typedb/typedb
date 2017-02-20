@@ -19,7 +19,6 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -53,7 +52,7 @@ public class MovieGraph extends TestGraph {
     private static Instance neilMcCauley, bradleyFine, nancyBArtingstall, winifred, sarah, harry;
     private static Instance cluster0, cluster1;
 
-    public static Consumer<GraknGraphFactory> get(){
+    public static Consumer<GraknGraph> get(){
         return new MovieGraph().build();
     }
 

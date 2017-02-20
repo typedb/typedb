@@ -19,7 +19,6 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -41,7 +40,7 @@ public class AbstractGraph extends TestGraph {
 
     private static Instance instanceU, instanceT, instanceP;
 
-    public static Consumer<GraknGraphFactory> get() {
+    public static Consumer<GraknGraph> get() {
         return new AbstractGraph().build();
     }
 

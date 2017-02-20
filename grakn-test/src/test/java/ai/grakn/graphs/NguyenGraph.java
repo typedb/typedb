@@ -39,20 +39,19 @@ public class NguyenGraph extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraphFactory> get(int n) {
+    public static Consumer<GraknGraph> get(int n) {
         return new NguyenGraph(n).build();
     }
 
     @Override
-    public Consumer<GraknGraphFactory> build(){
-        return (GraknGraphFactory factory) -> {
-            loadFromFile(factory, gqlFile);
-            buildExtensionalDB(factory, n);
+    public Consumer<GraknGraph> build(){
+        return (GraknGraph graph) -> {
+            loadFromFile(graph, gqlFile);
+            buildExtensionalDB(graph, n);
         };
     }
 
-    private void buildExtensionalDB(GraknGraphFactory factory, int n) {
-        GraknGraph graph = factory.getGraph();
+    private void buildExtensionalDB(GraknGraph graph, int n) {
         RoleType Rfrom = graph.getRoleType("R-rA");
         RoleType Rto = graph.getRoleType("R-rB");
         RoleType Qfrom = graph.getRoleType("Q-rA");

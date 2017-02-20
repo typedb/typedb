@@ -40,15 +40,14 @@ public class TailRecursionGraph extends TestGraph {
         this.m = m;
     }
 
-    public static Consumer<GraknGraphFactory> get(int n, int m) {
+    public static Consumer<GraknGraph> get(int n, int m) {
         return new TailRecursionGraph(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraphFactory> build(){
-        return (GraknGraphFactory factory) -> {
-            loadFromFile(factory, gqlFile);
-            GraknGraph graph = factory.getGraph();
+    public Consumer<GraknGraph> build(){
+        return (GraknGraph graph) -> {
+            loadFromFile(graph, gqlFile);
             buildExtensionalDB(graph, n, m);
         };
     }

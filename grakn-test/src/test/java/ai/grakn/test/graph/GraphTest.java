@@ -91,7 +91,7 @@ public class GraphTest {
 
     @Test
     public void isClosedTest() throws Exception {
-        GraknGraph graph = engine.graphWithNewKeyspace();
+        GraknGraph graph = engine.factoryWithNewKeyspace().getGraph();
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
         graph.commitOnClose();

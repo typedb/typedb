@@ -50,8 +50,7 @@ public class QueryBuilderTest {
 
     @After
     public void clear(){
-        movieGraph.clearGraph();
-        movieGraph.graph();
+        movieGraph.rollback();
     }
 
     @Test

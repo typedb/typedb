@@ -27,6 +27,7 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -46,7 +47,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest {
-    private static GraknGraphFactory factory;
     private static GraknGraph graph;
 
     @ClassRule
@@ -54,12 +54,15 @@ public class VisualiserControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        factory = engine.factoryWithNewKeyspace();
+        graph = engine.factoryWithNewKeyspace().getGraph();
 
-        loadFromFile(factory, "genealogy/ontology.gql");
-        loadFromFile(factory, "genealogy/data.gql");
+        loadFromFile(graph, "genealogy/ontology.gql");
+        loadFromFile(graph, "genealogy/data.gql");
+    }
 
-        graph = factory.getGraph();
+    @AfterClass
+    public static void tearDown(){
+        graph.close();
     }
 
     @Test

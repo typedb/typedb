@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -50,14 +51,14 @@ public class AnalyticsTest {
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
-    private GraknGraph graph;
+    private GraknGraphFactory factory;
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
 
-        graph = context.graphWithNewKeyspace();
+        factory = context.factoryWithNewKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -71,25 +72,28 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        TypeName resourceTypeName = TypeName.of("degree");
-        ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
-        EntityType thing = graph.putEntityType("thing");
-        thing.hasResource(degree);
+        try(GraknGraph graph = factory.getGraph()) {
+            TypeName resourceTypeName = TypeName.of("degree");
+            ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
+            EntityType thing = graph.putEntityType("thing");
+            thing.hasResource(degree);
 
-        Entity thisThing = thing.addEntity();
-        Resource thisResource = degree.putResource(1L);
-        thisThing.hasResource(thisResource);
-        graph.commitOnClose();
-        graph.close();
+            Entity thisThing = thing.addEntity();
+            Resource thisResource = degree.putResource(1L);
+            thisThing.hasResource(thisResource);
+            graph.commitOnClose();
+        }
 
-        Map<Long, Set<String>> degrees;
-        degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
-        assertEquals(1, degrees.size());
-        assertEquals(1, degrees.get(1L).size());
+        try(GraknGraph graph = factory.getGraph()) {
+            Map<Long, Set<String>> degrees;
+            degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
+            assertEquals(1, degrees.size());
+            assertEquals(1, degrees.get(1L).size());
 
-        degrees = graph.graql().compute().degree().in("thing", "degree").execute();
-        assertEquals(1, degrees.size());
-        assertEquals(2, degrees.get(1L).size());
+            degrees = graph.graql().compute().degree().in("thing", "degree").execute();
+            assertEquals(1, degrees.size());
+            assertEquals(2, degrees.get(1L).size());
+        }
     }
 
     @Test
@@ -97,25 +101,26 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        // make slightly odd graph
-        TypeName resourceTypeId = TypeName.of("degree");
-        EntityType thing = graph.putEntityType("thing");
+        try(GraknGraph graph = factory.getGraph()) {
+            // make slightly odd graph
+            TypeName resourceTypeId = TypeName.of("degree");
+            EntityType thing = graph.putEntityType("thing");
 
-        graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
-        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
-        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
-                .hasRole(degreeOwner)
-                .hasRole(degreeValue);
-        thing.playsRole(degreeOwner);
+            graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+            RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+            RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+            RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
+                    .hasRole(degreeOwner)
+                    .hasRole(degreeValue);
+            thing.playsRole(degreeOwner);
 
-        Entity thisThing = thing.addEntity();
-        relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
-        graph.commitOnClose();
-        graph.close();
+            Entity thisThing = thing.addEntity();
+            relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
+            graph.commitOnClose();
+        }
 
         // the null role-player caused analytics to fail at some stage
-        try {
+        try(GraknGraph graph = factory.getGraph()) {
             graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();

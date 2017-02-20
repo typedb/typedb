@@ -174,7 +174,7 @@ public class MatchQueryTest {
     @After
     public void tearDown() {
         if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
-        movieGraph.clearGraph();
+//        movieGraph.clearGraph();
     }
 
     @Test

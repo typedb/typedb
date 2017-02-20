@@ -19,7 +19,6 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -55,7 +54,7 @@ public class CWGraph extends TestGraph {
 
     private static Instance colonelWest, Nono, America, Tomahawk;
 
-    public static Consumer<GraknGraphFactory> get() {
+    public static Consumer<GraknGraph> get() {
         return new CWGraph().build();
     }
 

@@ -42,23 +42,20 @@ public class PathGraph extends TestGraph {
         this.children = children;
     }
 
-    public static Consumer<GraknGraphFactory> get(int n, int children) {
+    public static Consumer<GraknGraph> get(int n, int children) {
         return new PathGraph(n, children).build();
     }
 
     @Override
-    public Consumer<GraknGraphFactory> build(){
-        return (GraknGraphFactory factory) -> {
-            loadFromFile(factory, gqlFile);
-            buildExtensionalDB(factory, n, children);
+    public Consumer<GraknGraph> build(){
+        return (GraknGraph graph) -> {
+            loadFromFile(graph, gqlFile);
+            buildExtensionalDB(graph, n, children);
         };
     }
 
-    protected void buildExtensionalDB(GraknGraphFactory factory, int n, int children) {
+    protected void buildExtensionalDB(GraknGraph graph, int n, int children) {
         long startTime = System.currentTimeMillis();
-
-
-        GraknGraph graph = factory.getGraph();
 
         EntityType vertex = graph.getEntityType("vertex");
         EntityType startVertex = graph.getEntityType("start-vertex");

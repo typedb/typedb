@@ -32,14 +32,11 @@ public class GraphWriterMainTest {
     @ClassRule
     public static final EngineContext engineContext = EngineContext.startInMemoryServer();
 
-    private static GraknGraphFactory factory;
     private static GraknGraph graph;
 
     @BeforeClass
     public static void loadMovieGraph() {
-        factory = engineContext.factoryWithNewKeyspace();
-        MovieGraph.get().accept(factory);
-        graph =  factory.getGraph();
+        graph =  engineContext.factoryWithNewKeyspace().getGraph();
     }
 
     @Test

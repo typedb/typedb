@@ -41,20 +41,19 @@ public class MatrixGraph extends TestGraph{
         this.n = n;
     }
 
-    public static Consumer<GraknGraphFactory> get(int n, int m) {
+    public static Consumer<GraknGraph> get(int n, int m) {
         return new MatrixGraph(n, m).build();
     }
 
     @Override
-    public Consumer<GraknGraphFactory> build(){
-        return (GraknGraphFactory factory) -> {
-            loadFromFile(factory, gqlFile);
-            buildExtensionalDB(factory, n, m);
+    public Consumer<GraknGraph> build(){
+        return (GraknGraph graph) -> {
+            loadFromFile(graph, gqlFile);
+            buildExtensionalDB(graph, n, m);
         };
     }
 
-    private void buildExtensionalDB(GraknGraphFactory factory, int n, int m) {
-        GraknGraph graph = factory.getGraph();
+    private void buildExtensionalDB(GraknGraph graph, int n, int m) {
         RoleType R1from = graph.getRoleType("R1-from");
         RoleType R1to = graph.getRoleType("R1-to");
         RoleType R2from = graph.getRoleType("R2-from");

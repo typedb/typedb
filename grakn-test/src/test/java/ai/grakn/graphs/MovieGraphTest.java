@@ -19,23 +19,22 @@
 
 package ai.grakn.graphs;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.test.GraphContext;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -43,18 +42,18 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class MovieGraphTest {
-    private static GraknGraphFactory factory;
     private static GraknGraph graknGraph;
     private static Graph graph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
+    @ClassRule
+    public static final GraphContext context = GraphContext.preLoad(MovieGraph.get());
+
     @BeforeClass
     public static void setUp() throws IOException{
-        factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
-        MovieGraph.get().accept(factory);
-        graknGraph = factory.getGraph();
+        graknGraph = context.graph();
         graph = ((AbstractGraknGraph) graknGraph).getTinkerPopGraph();
     }
 

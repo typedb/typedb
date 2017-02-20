@@ -19,7 +19,6 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -47,7 +46,7 @@ public class GeoGraph extends TestGraph {
     private static Instance Poland, England, Germany, France, Italy;
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
-    public static Consumer<GraknGraphFactory> get(){
+    public static Consumer<GraknGraph> get(){
         return new GeoGraph().build();
     }
 

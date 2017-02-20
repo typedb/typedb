@@ -87,7 +87,7 @@ public class InsertQueryTest {
 
     @After
     public void clear(){
-        movieGraph.clearGraph();
+        movieGraph.rollback();
     }
 
     @After
@@ -511,9 +511,6 @@ public class InsertQueryTest {
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
-
-        movieGraph.graph().commitOnClose();
-        movieGraph.graph().close();
     }
 
     @Test
@@ -534,9 +531,6 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyUniqueValue() throws GraknValidationException {
-        // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
-
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
@@ -551,9 +545,6 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyRequiredOwner() throws GraknValidationException {
-        // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
-
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
@@ -567,9 +558,6 @@ public class InsertQueryTest {
 
     @Test
     public void testKeyRequiredValue() throws GraknValidationException {
-        // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
-
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),

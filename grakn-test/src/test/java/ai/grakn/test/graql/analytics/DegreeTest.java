@@ -63,7 +63,7 @@ public class DegreeTest {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
 
-        graph = context.graphWithNewKeyspace();
+        graph = context.factoryWithNewKeyspace().getGraph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);

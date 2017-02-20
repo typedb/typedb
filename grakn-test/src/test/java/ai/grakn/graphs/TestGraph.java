@@ -19,7 +19,6 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
@@ -40,23 +39,20 @@ import static java.util.stream.Collectors.toSet;
 
 public abstract class TestGraph {
 
-    protected void buildOntology(GraknGraph factory){};
+    protected void buildOntology(GraknGraph graph){};
 
-    protected void buildInstances(GraknGraph factory){};
+    protected void buildInstances(GraknGraph graph){};
 
-    protected void buildRelations(GraknGraph factory){};
+    protected void buildRelations(GraknGraph graph){};
 
-    protected void buildRules(GraknGraph factory){};
+    protected void buildRules(GraknGraph graph){};
 
-    public Consumer<GraknGraphFactory> build() {
-        return (GraknGraphFactory factory) -> {
-            try(GraknGraph graph = factory.getGraph()) {
-                buildOntology(graph);
-                buildInstances(graph);
-                buildRelations(graph);
-                buildRules(graph);
-                factory.getGraph().commitOnClose();
-            }
+    public Consumer<GraknGraph> build() {
+        return (GraknGraph graph) -> {
+            buildOntology(graph);
+            buildInstances(graph);
+            buildRelations(graph);
+            buildRules(graph);
         };
     }
 
@@ -79,14 +75,6 @@ public abstract class TestGraph {
         return instances.iterator().next();
     }
 
-    public static void loadFromFile(GraknGraphFactory factory, String file) {
-        try (GraknGraph graph = factory.getGraph()){
-            loadFromFile(graph, file);
-        } catch (GraknValidationException e){
-            throw new RuntimeException(e);
-        }
-    }
-
     public static void loadFromFile(GraknGraph graph, String file) {
         try {
             File graql = new File("src/test/graql/" + file);
@@ -94,9 +82,7 @@ public abstract class TestGraph {
             graph.graql()
                     .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .forEach(Query::execute);
-
-            graph.commitOnClose();
-        } catch (IOException e){
+        } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }
     }

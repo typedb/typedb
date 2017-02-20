@@ -73,7 +73,7 @@ public class DeleteQueryTest {
 
     @After
     public void cleanUp(){
-        movieGraph.clearGraph();
+        movieGraph.rollback();
     }
 
     @Test
