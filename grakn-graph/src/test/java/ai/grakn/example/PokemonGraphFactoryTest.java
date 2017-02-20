@@ -51,7 +51,9 @@ public class PokemonGraphFactoryTest {
     @Before
     public void setup() {
         factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
-        PokemonGraphFactory.loadGraph(factory);
+        PokemonGraphFactory.loadGraph(factory.getGraph());
+        factory.getGraph().commitOnClose();
+        factory.getGraph().close();
         graknGraph = factory.getGraph();
     }
 
@@ -63,7 +65,9 @@ public class PokemonGraphFactoryTest {
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(CANNOT_LOAD_EXAMPLE.getMessage());
 
-        PokemonGraphFactory.loadGraph(factory);
+        PokemonGraphFactory.loadGraph(factory.getGraph());
+        factory.getGraph().commitOnClose();
+        factory.getGraph().close();
     }
 
     @Test(expected=InvocationTargetException.class)

@@ -33,8 +33,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static ai.grakn.test.graql.query.AskQueryTest.graph;
-
 public class AdmissionsGraph extends TestGraph{
 
     private static ResourceType<String> key;
@@ -94,8 +92,7 @@ public class AdmissionsGraph extends TestGraph{
     }
 
     @Override
-    protected void buildOntology(GraknGraphFactory factory) {
-        GraknGraph graph = factory.getGraph();
+    protected void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         TOEFLtarget= graph.putRoleType("has-TOEFL-owner");
@@ -194,8 +191,7 @@ public class AdmissionsGraph extends TestGraph{
     }
 
     @Override
-    protected void buildInstances(GraknGraphFactory factory) {
-        GraknGraph graph = factory.getGraph();
+    protected void buildInstances(GraknGraph graph) {
         Instance Alice = putEntity(graph, "Alice", applicant, key.getName());
         Instance Bob = putEntity(graph, "Bob", applicant, key.getName());
         Instance Charlie = putEntity(graph, "Charlie", applicant, key.getName());
@@ -242,14 +238,13 @@ public class AdmissionsGraph extends TestGraph{
     }
 
     @Override
-    protected void buildRelations(GraknGraphFactory factory) {
+    protected void buildRelations(GraknGraph graph) {
 
     }
 
     @Override
-    protected void buildRules(GraknGraphFactory factory) {
+    protected void buildRules(GraknGraph graph) {
         try {
-            GraknGraph graph = factory.getGraph();
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/admission-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
             graph.graql().parse(query).execute();

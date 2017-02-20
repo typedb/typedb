@@ -52,8 +52,7 @@ public class GeoGraph extends TestGraph {
     }
 
     @Override
-    public void buildOntology(GraknGraphFactory factory) {
-        GraknGraph graph = factory.getGraph();
+    public void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         geoEntity = graph.putRoleType("geo-entity");
@@ -87,8 +86,7 @@ public class GeoGraph extends TestGraph {
     }
 
     @Override
-    public void buildInstances(GraknGraphFactory factory) {
-        GraknGraph graph = factory.getGraph();
+    public void buildInstances(GraknGraph graph) {
         Europe = putEntity(graph, "Europe", continent, key.getName());
         NorthAmerica = putEntity(graph, "NorthAmerica", continent, key.getName());
         Poland = putEntity(graph, "Poland", country, key.getName());
@@ -116,8 +114,7 @@ public class GeoGraph extends TestGraph {
     }
 
     @Override
-    public void buildRelations(GraknGraphFactory factory) {
-        GraknGraph graph = factory.getGraph();
+    public void buildRelations(GraknGraph graph) {
         isLocatedIn.addRelation()
                 .putRolePlayer(geoEntity, PW)
                 .putRolePlayer(entityLocation, Warsaw);
@@ -192,8 +189,7 @@ public class GeoGraph extends TestGraph {
     }
 
     @Override
-    public void buildRules(GraknGraphFactory factory) {
-        GraknGraph graph = factory.getGraph();
+    public void buildRules(GraknGraph graph) {
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
         Pattern transitivity_LHS = and(graph.graql().parsePatterns(
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +

@@ -35,26 +35,28 @@ import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static ai.grakn.test.graql.query.AskQueryTest.graph;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 public abstract class TestGraph {
 
-    protected void buildOntology(GraknGraphFactory factory){};
+    protected void buildOntology(GraknGraph factory){};
 
-    protected void buildInstances(GraknGraphFactory factory){};
+    protected void buildInstances(GraknGraph factory){};
 
-    protected void buildRelations(GraknGraphFactory factory){};
+    protected void buildRelations(GraknGraph factory){};
 
-    protected void buildRules(GraknGraphFactory factory){};
+    protected void buildRules(GraknGraph factory){};
 
     public Consumer<GraknGraphFactory> build() {
         return (GraknGraphFactory factory) -> {
-            buildOntology(factory);
-            buildInstances(factory);
-            buildRelations(factory);
-            buildRules(factory);
+            try(GraknGraph graph = factory.getGraph()) {
+                buildOntology(graph);
+                buildInstances(graph);
+                buildRelations(graph);
+                buildRules(graph);
+                factory.getGraph().commitOnClose();
+            }
         };
     }
 
@@ -79,6 +81,14 @@ public abstract class TestGraph {
 
     public static void loadFromFile(GraknGraphFactory factory, String file) {
         try (GraknGraph graph = factory.getGraph()){
+            loadFromFile(graph, file);
+        } catch (GraknValidationException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void loadFromFile(GraknGraph graph, String file) {
+        try {
             File graql = new File("src/test/graql/" + file);
 
             graph.graql()
@@ -86,7 +96,7 @@ public abstract class TestGraph {
                     .forEach(Query::execute);
 
             graph.commitOnClose();
-        } catch (IOException | GraknValidationException e){
+        } catch (IOException e){
             throw new RuntimeException(e);
         }
     }

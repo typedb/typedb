@@ -18,6 +18,7 @@
 
 package ai.grakn.graphs;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 
 import java.util.function.Consumer;
@@ -29,18 +30,18 @@ public class SNBGraph extends TestGraph{
     }
 
     @Override
-    protected void buildOntology(GraknGraphFactory factory) {
-        loadFromFile(factory, "ldbc-snb-ontology.gql");
-        loadFromFile(factory, "ldbc-snb-product-ontology.gql");
+    protected void buildOntology(GraknGraph graph) {
+        loadFromFile(graph, "ldbc-snb-ontology.gql");
+        loadFromFile(graph, "ldbc-snb-product-ontology.gql");
     }
 
     @Override
-    protected void buildRules(GraknGraphFactory factory) {
-        loadFromFile(factory, "ldbc-snb-rules.gql");
+    protected void buildRules(GraknGraph graph) {
+        loadFromFile(graph, "ldbc-snb-rules.gql");
     }
 
     @Override
-    protected void buildInstances(GraknGraphFactory factory) {
-        loadFromFile(factory, "ldbc-snb-data.gql");
+    protected void buildInstances(GraknGraph graph) {
+        loadFromFile(graph, "ldbc-snb-data.gql");
     }
 }
