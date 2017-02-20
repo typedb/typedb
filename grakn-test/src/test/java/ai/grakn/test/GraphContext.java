@@ -110,7 +110,6 @@ public class GraphContext extends EngineContext {
     private void closeGraph(){
         // close the graph
         if(!graph.isClosed()) {
-            graph.clear();
             graph.close();
         }
     }

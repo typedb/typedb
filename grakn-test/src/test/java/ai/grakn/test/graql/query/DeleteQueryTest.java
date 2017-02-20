@@ -27,6 +27,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -68,6 +69,11 @@ public class DeleteQueryTest {
         apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now"));
         kurtzCastRelation =
                 qb.match(var("a").rel("character-being-played", var().has("name", "Colonel Walter E. Kurtz")));
+    }
+
+    @After
+    public void cleanUp(){
+        movieGraph.clearGraph();
     }
 
     @Test

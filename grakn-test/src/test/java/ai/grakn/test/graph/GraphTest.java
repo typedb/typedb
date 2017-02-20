@@ -21,6 +21,7 @@ import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraphTest {
 
@@ -94,9 +95,9 @@ public class GraphTest {
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
         graph.commitOnClose();
-        graph.close();
-
         assertFalse(graph.isClosed());
+        graph.close();
+        assertTrue(graph.isClosed());
 
         HashSet<Future> futures = new HashSet<>();
         futures.add(Executors.newCachedThreadPool().submit(() -> addThingToBatch(keyspace)));
@@ -105,10 +106,7 @@ public class GraphTest {
             future.get();
         }
 
-        assertFalse(graph.isClosed());
-        assertFalse(graph.getEntityType("thing").instances().isEmpty());
-
-        graph.close();
+        assertTrue(graph.isClosed());
     }
 
     private void addThingToBatch(String keyspace){
