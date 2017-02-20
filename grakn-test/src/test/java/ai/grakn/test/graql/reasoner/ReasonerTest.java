@@ -198,6 +198,7 @@ public class ReasonerTest {
         snbGraph.graph().admin().getMetaRuleInference().addRule(body, head);
         Reasoner.commitGraph(snbGraph.graph());
 
+        snbGraph.graph(); //Reopen transaction
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         assertTrue(!answers.isEmpty());
     }
