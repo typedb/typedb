@@ -19,8 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.util.ErrorMessage;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -71,15 +69,14 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         finaliseClose(this::closeTitan, reason);
     }
 
-    @Override
-    public TitanGraph getTinkerPopGraph(){
-        TitanGraph graph =  super.getTinkerPopGraph();
-        if(graph.isClosed()){
+    //public TitanGraph getTinkerPopGraph(){
+        //return  super.getTinkerPopGraph();
+        /*if(graph.isClosed()){
             throw new GraphRuntimeException(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
         } else {
             return graph;
-        }
-    }
+        }*/
+    //}
 
     @Override
     public void commitTransaction(){
