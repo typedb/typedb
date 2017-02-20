@@ -33,5 +33,7 @@ public class PokemonGraph extends TestGraph {
     @Override
     public void buildOntology(GraknGraph graph) {
         PokemonGraphFactory.loadGraph(graph);
+        graph.commitOnClose();
+        graph.close();
     }
 }
