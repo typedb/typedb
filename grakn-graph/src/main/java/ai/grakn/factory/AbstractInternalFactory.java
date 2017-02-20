@@ -103,6 +103,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected M getGraph(M graknGraph, boolean batchLoading){
         boolean hasCommitted = false;
         //This checks if the previous graph built with this factory is the same as the one we trying to build now.
+        //TODO: Check is this features is still needed. It's very confusing at the end of the day
         if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
             //This then checks if the previous graph built has undergone a commit
             if(lastGraphBuiltBatchLoading) {
