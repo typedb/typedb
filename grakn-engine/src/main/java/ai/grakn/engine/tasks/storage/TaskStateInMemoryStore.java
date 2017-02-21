@@ -64,6 +64,10 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
         }
 
         return storage.get(id).get();
+
+    @Override
+    public boolean containsState(String id) {
+        return storage.containsKey(id);
     }
 
     @Override

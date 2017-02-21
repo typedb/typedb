@@ -185,6 +185,20 @@ public class TaskStateGraphStore implements TaskStateStorage {
         return result.get();
     }
 
+    @Override
+    public boolean containsState(String id) {
+        Optional<Boolean> result = attemptCommitToSystemGraph(graph -> {
+            Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
+            return instance != null;
+        }, false);
+
+        if(!result.isPresent()){
+            return false;
+        }
+
+        return result.get();
+    }
+
     /**
      * Given an instance concept, turn it into a TaskState object.
      * This is done by retrieving the serialized TaskState from the given graph and deserialising it.

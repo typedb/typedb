@@ -63,6 +63,13 @@ public interface TaskStateStorage {
     TaskState getState(String id) throws EngineStorageException;
 
     /**
+     * Returns whether the storage contains the given task
+     * @param id String id of task
+     * @return true if the storage contains the given state
+     */
+    boolean containsState(String id);
+
+    /**
      * Return a Set of Pairs of tasks that match any of the criteria. The first value of the Pair is the task id, whilst
      * the second is the TaskState. Parameters may be set to null to not match against then (rather than to match null
      * values), if *all* parameters are null then all known tasks in the system are returned.

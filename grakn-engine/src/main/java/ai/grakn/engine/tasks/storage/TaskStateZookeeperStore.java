@@ -141,6 +141,20 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
         return executeWithMutex(id, () -> (TaskState) deserialize(zookeeper.read(taskPath(id))));
     }
 
+    @Override
+    public boolean containsState(String id) {
+        InterProcessMutex mutex = mutex(id);
+
+        acquire(mutex);
+        try {
+            return zookeeper.connection().checkExists().forPath(taskPath(id)) != null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            release(mutex);
+        }
+    }
+
     /**
      * This implementation will fetch all of the tasks from zookeeper and then
      * filer them out.
