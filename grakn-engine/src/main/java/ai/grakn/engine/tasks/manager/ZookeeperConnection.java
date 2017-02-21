@@ -19,6 +19,7 @@
 
 package ai.grakn.engine.tasks.manager;
 
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
@@ -82,7 +83,7 @@ public class ZookeeperConnection {
         return zookeeperConnection;
     }
 
-    public InterProcessMutex mutex(String id){
+    public InterProcessMutex mutex(TaskId id){
         return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
     }
 

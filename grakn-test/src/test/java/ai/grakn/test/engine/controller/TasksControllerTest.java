@@ -18,9 +18,10 @@
 
 package ai.grakn.test.engine.controller;
 
+import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
-import ai.grakn.engine.controller.TasksController;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.LongRunningTask;
 import ai.grakn.test.engine.tasks.TestTask;
@@ -53,7 +54,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 
 public class TasksControllerTest {
-    private String singleTask;
+    private TaskId singleTask;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startDistributedServer();

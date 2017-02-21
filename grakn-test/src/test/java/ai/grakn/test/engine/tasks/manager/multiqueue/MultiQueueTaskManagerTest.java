@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
@@ -48,7 +49,7 @@ public class MultiQueueTaskManagerTest {
         manager = (MultiQueueTaskManager) engine.getTaskManager();
     }
 
-    private void waitToFinish(String id) {
+    private void waitToFinish(TaskId id) {
         while (true) {
             try {
                 TaskStatus status = manager.storage().getState(id).status();
@@ -70,7 +71,7 @@ public class MultiQueueTaskManagerTest {
      */
     @Test
     public void endToEndTest(){
-        Collection<String> ids = new HashSet<>();
+        Collection<TaskId> ids = new HashSet<>();
         final int startCount = TestTask.startedCounter.get();
 
         for(int i = 0; i < 20; i++) {

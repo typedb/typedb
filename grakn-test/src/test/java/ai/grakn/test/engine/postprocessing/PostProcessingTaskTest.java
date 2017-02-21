@@ -21,6 +21,8 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.test.EngineContext;
 import org.junit.Assert;
 import org.junit.ClassRule;

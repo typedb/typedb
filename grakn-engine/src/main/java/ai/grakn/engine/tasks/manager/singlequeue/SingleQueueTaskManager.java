@@ -19,6 +19,8 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -135,7 +137,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * Stop a task from running.
      */
     @Override
-    public TaskManager stopTask(String id, String requesterName) {
+    public TaskManager stopTask(TaskId id, String requesterName) {
         throw new UnsupportedOperationException("SingleQueueTaskManager does not support stopping tasks.");
     }
 

@@ -20,9 +20,10 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
@@ -67,7 +68,7 @@ public class StandaloneTaskManager implements TaskManager {
 
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
-    private final Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
+    private final Map<TaskId, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
     private final TaskStateStorage stateStorage;
     private final ReentrantLock stateUpdateLock;
 
@@ -124,7 +125,7 @@ public class StandaloneTaskManager implements TaskManager {
         }
     }
 
-    public TaskManager stopTask(String id, String requesterName) {
+    public TaskManager stopTask(TaskId id, String requesterName) {
         try {
             stateUpdateLock.lock();
 
@@ -184,7 +185,7 @@ public class StandaloneTaskManager implements TaskManager {
         };
     }
 
-    private Runnable runTask(String id, BackgroundTask task, Boolean recurring) {
+    private Runnable runTask(TaskId id, BackgroundTask task, Boolean recurring) {
         return () -> {
             stateUpdateLock.lock();
 

@@ -18,12 +18,13 @@
 
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
-import ai.grakn.engine.tasks.manager.multiqueue.Scheduler;
-import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskRunner;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskRunner;
+import ai.grakn.engine.tasks.manager.multiqueue.Scheduler;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.ExceptionWrapper;
@@ -62,7 +63,7 @@ public class SchedulerTest {
 
     private TaskStateStorage storage;
     private Scheduler scheduler;
-    private KafkaProducer<String, String> producer;
+    private KafkaProducer<TaskId, String> producer;
 
     private ZookeeperConnection connection;
     private Thread schedulerThread;

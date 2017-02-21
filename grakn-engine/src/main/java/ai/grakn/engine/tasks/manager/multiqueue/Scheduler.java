@@ -19,8 +19,9 @@
 
 package ai.grakn.engine.tasks.manager.multiqueue;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.ConfigProperties;
@@ -78,8 +79,8 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     private final TaskStateStorage storage;
 
-    private KafkaConsumer<String, String> consumer;
-    private KafkaProducer<String, String> producer;
+    private KafkaConsumer<TaskId, String> consumer;
+    private KafkaProducer<TaskId, String> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
@@ -119,11 +120,11 @@ public class Scheduler implements Runnable, AutoCloseable {
 
         try {
             while (running) {
-                ConsumerRecords<String, String> records = consumer.poll(1000);
+                ConsumerRecords<TaskId, String> records = consumer.poll(1000);
                 printConsumerStatus(records);
 
                 long startTime = System.currentTimeMillis();
-                for(ConsumerRecord<String, String> record:records) {
+                for(ConsumerRecord<TaskId, String> record:records) {
 
                     // Get the task from kafka
                     TaskState taskState = TaskState.deserialize(record.value());
@@ -239,7 +240,7 @@ public class Scheduler implements Runnable, AutoCloseable {
                 .forEach(this::scheduleTask);
     }
 
-    private void printConsumerStatus(ConsumerRecords<String, String> records){
+    private void printConsumerStatus(ConsumerRecords<TaskId, String> records){
         consumer.assignment().stream()
                 .map(p -> format(STATUS_MESSAGE, p.partition(), p.topic(), records.count(), consumer.position(p)))
                 .forEach(LOG::debug);

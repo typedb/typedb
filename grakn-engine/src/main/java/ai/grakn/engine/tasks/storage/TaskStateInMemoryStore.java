@@ -19,6 +19,7 @@
 package ai.grakn.engine.tasks.storage;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.exception.EngineStorageException;
@@ -39,14 +40,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Denis Lobanov, alexandraorth
  */
 public class TaskStateInMemoryStore implements TaskStateStorage {
-    private final Map<String, SoftReference<TaskState>> storage;
+    private final Map<TaskId, SoftReference<TaskState>> storage;
 
     public TaskStateInMemoryStore() {
         storage = new ConcurrentHashMap<>();
     }
 
     @Override
-    public String newState(TaskState state) {
+    public TaskId newState(TaskState state) {
         storage.put(state.getId(), new SoftReference<>(state.copy()));
         return state.getId();
     }
@@ -58,7 +59,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
     }
 
     @Override
-    public TaskState getState(String id) {
+    public TaskState getState(TaskId id) {
         SoftReference<TaskState> taskState = storage.get(id);
 
         if(taskState == null) {
@@ -69,7 +70,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
     }
 
     @Override
-    public boolean containsState(String id) {
+    public boolean containsState(TaskId id) {
         return storage.containsKey(id);
     }
 
@@ -78,7 +79,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
         Set<TaskState> res = new HashSet<>();
 
         int count = 0;
-        for(Map.Entry<String, SoftReference<TaskState>> x: storage.entrySet()) {
+        for(Map.Entry<TaskId, SoftReference<TaskState>> x: storage.entrySet()) {
             TaskState state = x.getValue().get();
             if(state == null) {
                 continue;

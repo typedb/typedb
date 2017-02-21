@@ -19,6 +19,7 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
@@ -74,7 +75,7 @@ public class SingleQueueTaskRunnerTest {
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
 
-    private MockGraknConsumer<String, String> consumer;
+    private MockGraknConsumer<TaskId, String> consumer;
     private TopicPartition partition;
     private ExecutorService executor;
 
@@ -128,19 +129,19 @@ public class SingleQueueTaskRunnerTest {
         return tasks.stream().flatMap(Collection::stream);
     }
 
-    public Set<String> completableTasks(List<? extends List<TaskState>> tasks) {
-        Map<String, Long> tasksById = tasks(tasks).collect(groupingBy(TaskState::getId, counting()));
-        Set<String> retriedTasks = Maps.filterValues(tasksById, count -> count != null && count > 1).keySet();
+    public Set<TaskId> completableTasks(List<? extends List<TaskState>> tasks) {
+        Map<TaskId, Long> tasksById = tasks(tasks).collect(groupingBy(TaskState::getId, counting()));
+        Set<TaskId> retriedTasks = Maps.filterValues(tasksById, count -> count != null && count > 1).keySet();
 
-        Set<String> completableTasks = Sets.newHashSet();
-        Set<String> visitedTasks = Sets.newHashSet();
+        Set<TaskId> completableTasks = Sets.newHashSet();
+        Set<TaskId> visitedTasks = Sets.newHashSet();
 
         tasks(tasks).forEach(task -> {
             // A task is expected to complete only if:
             // 1. It has not already executed and failed
             // 2. it is not a failing task
             // 3. it is RUNNING or not being retried
-            String id = task.getId();
+            TaskId id = task.getId();
             boolean visited = visitedTasks.contains(id);
             boolean willFail = task.taskClass().equals(FailingTask.class);
             boolean isRunning = task.status().equals(RUNNING);
@@ -156,16 +157,16 @@ public class SingleQueueTaskRunnerTest {
         return completableTasks;
     }
 
-    public Set<String> failingTasks(List<List<TaskState>> tasks) {
-        Set<String> completableTasks = completableTasks(tasks);
+    public Set<TaskId> failingTasks(List<List<TaskState>> tasks) {
+        Set<TaskId> completableTasks = completableTasks(tasks);
         return tasks(tasks).map(TaskState::getId).filter(task -> !completableTasks.contains(task)).collect(toSet());
     }
 
     private void createValidQueue(List<List<TaskState>> tasks) {
-        Set<String> appearedTasks = Sets.newHashSet();
+        Set<TaskId> appearedTasks = Sets.newHashSet();
 
         tasks(tasks).forEach(task -> {
-            String taskId = task.getId();
+            TaskId taskId = task.getId();
 
             if (!appearedTasks.contains(taskId)) {
                 task.status(CREATED);
@@ -233,7 +234,7 @@ public class SingleQueueTaskRunnerTest {
 
         waitToComplete();
 
-        Multiset<String> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks));
+        Multiset<TaskId> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks));
 
         assertEquals(expectedCompletedTasks, completedTasks());
     }

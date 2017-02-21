@@ -19,6 +19,8 @@
 
 package ai.grakn.engine.tasks.manager.multiqueue;
 
+import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -46,7 +48,7 @@ public final class MultiQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskManager.class);
 
-    private final KafkaProducer<String, String> producer;
+    private final KafkaProducer<TaskId, String> producer;
 
     private final SchedulerElector elector;
     private final ZookeeperConnection connection;
@@ -96,7 +98,7 @@ public final class MultiQueueTaskManager implements TaskManager {
     }
 
     @Override
-    public TaskManager stopTask(String id, String requesterName) {
+    public TaskManager stopTask(TaskId id, String requesterName) {
         throw new UnsupportedOperationException(this.getClass().getName() + " currently doesn't support stopping tasks");
     }
 

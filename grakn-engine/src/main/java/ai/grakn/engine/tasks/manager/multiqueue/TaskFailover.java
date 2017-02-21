@@ -19,17 +19,17 @@
 
 package ai.grakn.engine.tasks.manager.multiqueue;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
+import mjson.Json;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
@@ -65,7 +64,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final TreeCache cache;
 
     private Map<String, ChildData> current;
-    private KafkaProducer<String, String> producer;
+    private KafkaProducer<TaskId, String> producer;
 
     public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
         this.stateStorage = stateStorage;
@@ -145,9 +144,9 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         byte[] b = client.getData().forPath(RUNNERS_STATE+"/"+engineID);
 
         // Re-queue all of the IDs.
-        JSONArray ids = new JSONArray(new String(b, StandardCharsets.UTF_8));
-        for(Object o: ids) {
-            String id = (String)o;
+        Json ids = Json.read(new String(b, StandardCharsets.UTF_8));
+        for(Json j: ids.asJsonList()) {
+            TaskId id = TaskId.of(j.asString());
 
             // Mark task as SCHEDULED again
             TaskState taskState = stateStorage.getState(id);
@@ -172,7 +171,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         Set<String> deadRunners = new HashSet<>();
 
         for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
-            TaskState state = stateStorage.getState(id);
+            TaskState state = stateStorage.getState(TaskId.of(id));
 
             if(state.status() != RUNNING) {
                 break;

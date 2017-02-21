@@ -18,8 +18,9 @@
 
 package ai.grakn.test.engine.tasks.storage;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.engine.tasks.TestTask;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testInsertNewState() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
@@ -59,7 +60,7 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testUpdateTaskState() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         assertNotNull(id);
 
         // Get current values
@@ -86,7 +87,7 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testGetTasksByStatus() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
@@ -98,7 +99,7 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testGetTasksByCreator() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
 
         assertTrue(res.parallelStream()
@@ -110,7 +111,7 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testGetTasksByClassName() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
 
         assertTrue(res.parallelStream()
@@ -122,7 +123,7 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testGetAllTasks() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         Set<TaskState> res = stateStorage.getTasks(null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()

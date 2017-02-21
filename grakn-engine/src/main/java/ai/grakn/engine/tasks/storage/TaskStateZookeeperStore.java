@@ -19,6 +19,7 @@
 package ai.grakn.engine.tasks.storage;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
@@ -64,7 +65,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * @return Identifier of the created task
      */
     @Override
-    public String newState(TaskState task){
+    public TaskId newState(TaskState task){
        return executeWithMutex(task.getId(), () -> {
             zookeeper.connection().inTransaction()
                     .create().forPath(taskPath(task), serialize(task))
@@ -128,7 +129,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * @return State of the given task
      */
     @Override
-    public TaskState getState(String id) {
+    public TaskState getState(TaskId id) {
         return executeWithMutex(id, () -> {
             byte[] stateInZk = zookeeper.connection().getData().forPath(taskPath(id));
             return (TaskState) deserialize(stateInZk);
@@ -136,7 +137,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     }
 
     @Override
-    public boolean containsState(String id) {
+    public boolean containsState(TaskId id) {
         return executeWithMutex(id, () -> zookeeper.connection().checkExists().forPath(taskPath(id)) != null);
     }
 
@@ -156,6 +157,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
             Stream<TaskState> stream = zookeeper.connection().getChildren()
                     .forPath(TASKS_PATH_PREFIX).stream()
+                    .map(TaskId::of)
                     .map(this::getState);
 
             if (taskStatus != null) {
@@ -182,7 +184,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
         }
     }
 
-    private <T> T executeWithMutex(String id, SupplierWithException<T> function){
+    private <T> T executeWithMutex(TaskId id, SupplierWithException<T> function){
         InterProcessMutex mutex = zookeeper.mutex(id);
 
         zookeeper.acquire(mutex);
@@ -212,7 +214,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * Path the return a single task
      * @return Zookeeper path for a single task
      */
-    private String taskPath(String id){
+    private String taskPath(TaskId id){
         return format(ZK_TASK_PATH, id);
     }
 

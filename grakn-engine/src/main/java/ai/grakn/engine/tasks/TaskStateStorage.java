@@ -43,7 +43,7 @@ public interface TaskStateStorage {
      */
     //TODO call this addState
     //TODO return void
-    String newState(TaskState state) throws EngineStorageException;
+    TaskId newState(TaskState state) throws EngineStorageException;
 
     /**
      * Used to update task state. With the exception of @id any other fields may individually be null, however all parameters
@@ -60,14 +60,14 @@ public interface TaskStateStorage {
      * @param id String id of task.
      * @return TaskState object or null if no TaskState with this id could be found.
      */
-    TaskState getState(String id) throws EngineStorageException;
+    TaskState getState(TaskId id) throws EngineStorageException;
 
     /**
      * Returns whether the storage contains the given task
      * @param id String id of task
      * @return true if the storage contains the given state
      */
-    boolean containsState(String id);
+    boolean containsState(TaskId id);
 
     /**
      * Return a Set of Pairs of tasks that match any of the criteria. The first value of the Pair is the task id, whilst

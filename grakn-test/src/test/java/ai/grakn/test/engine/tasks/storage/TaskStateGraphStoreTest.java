@@ -18,8 +18,9 @@
 
 package ai.grakn.test.engine.tasks.storage;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.TestTask;
@@ -62,7 +63,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        String id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
+        TaskId id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
@@ -81,7 +82,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        String id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
+        TaskId id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
         assertNotNull(id);
 
         // Get current values
@@ -110,7 +111,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByStatus() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         stateStorage.newState(task().status(SCHEDULED));
         assertNotNull(id);
 
@@ -124,7 +125,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByCreator() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         stateStorage.newState(task().creator("other"));
         assertNotNull(id);
 
@@ -138,7 +139,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByClassName() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         assertNotNull(id);
 
         Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);

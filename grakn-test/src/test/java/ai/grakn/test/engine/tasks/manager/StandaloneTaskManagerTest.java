@@ -22,6 +22,9 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.test.engine.tasks.TestTask;
 import mjson.Json;
@@ -66,7 +69,7 @@ public class StandaloneTaskManagerTest {
         assertEquals(COMPLETED, taskManager.storage().getState(task.getId()).status());
     }
 
-    private void waitToFinish(String id) {
+    private void waitToFinish(TaskId id) {
         TaskStateStorage storage = taskManager.storage();
         final long initial = new Date().getTime();
 
@@ -90,7 +93,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void consecutiveRunSingle() {
         // Schedule tasks
-        List<String> ids = new ArrayList<>();
+        List<TaskId> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
             TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task" + i ));
             taskManager.addTask(task);
@@ -98,7 +101,7 @@ public class StandaloneTaskManagerTest {
         }
 
         // Check that they all finished
-        for(String id: ids) {
+        for(TaskId id: ids) {
             if(taskManager.storage().getState(id).status() != COMPLETED)
                 waitToFinish(id);
             assertEquals(COMPLETED, taskManager.storage().getState(id).status());

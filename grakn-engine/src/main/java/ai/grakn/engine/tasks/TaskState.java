@@ -25,7 +25,6 @@ import org.apache.commons.lang.SerializationUtils;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.UUID;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
@@ -37,7 +36,7 @@ public class TaskState implements Serializable {
     /**
      * Id of this task.
      */
-    private final String taskId;
+    private final TaskId taskId;
     /**
      * Task status, @see TaskStatus.
      */
@@ -89,10 +88,10 @@ public class TaskState implements Serializable {
     private Json configuration;
 
     public TaskState(Class<?> taskClass) {
-        this(taskClass, UUID.randomUUID().toString());
+        this(taskClass, TaskId.generate());
     }
 
-    public TaskState(Class<?> taskClass, String id) {
+    public TaskState(Class<?> taskClass, TaskId id) {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
         this.taskClassName = taskClass.getName();
@@ -121,7 +120,7 @@ public class TaskState implements Serializable {
         this.configuration = taskState.configuration;
     }
 
-    public String getId() {
+    public TaskId getId() {
         return taskId;
     }
 

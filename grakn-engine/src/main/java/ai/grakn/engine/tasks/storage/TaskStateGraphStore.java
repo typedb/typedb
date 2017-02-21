@@ -25,9 +25,10 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.EngineGraknGraphFactory;
@@ -83,7 +84,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     public TaskStateGraphStore() {}
 
     @Override
-    public String newState(TaskState task) throws EngineStorageException {
+    public TaskId newState(TaskState task) throws EngineStorageException {
         Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId())
                 .has(STATUS, var().value(CREATED.toString()))
@@ -172,7 +173,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     }
 
     @Override
-    public TaskState getState(String id) throws EngineStorageException {
+    public TaskState getState(TaskId id) throws EngineStorageException {
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
             Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
             return instanceToState(graph, instance);
@@ -186,7 +187,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     }
 
     @Override
-    public boolean containsState(String id) {
+    public boolean containsState(TaskId id) {
         Optional<Boolean> result = attemptCommitToSystemGraph(graph -> {
             Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
             return instance != null;

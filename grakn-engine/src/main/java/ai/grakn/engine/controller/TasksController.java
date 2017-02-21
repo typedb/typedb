@@ -20,6 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.EngineStorageException;
@@ -135,7 +136,7 @@ public class TasksController {
             response.status(200);
             response.type("application/json");
 
-            return serialiseStateFull(manager.storage().getState(id)).toString();
+            return serialiseStateFull(manager.storage().getState(TaskId.of(id))).toString();
         } catch (EngineStorageException e){
            throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
         } catch (Exception e) {
@@ -150,7 +151,7 @@ public class TasksController {
     private String stopTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            manager.stopTask(id, this.getClass().getName());
+            manager.stopTask(TaskId.of(id), this.getClass().getName());
             return "";
         }
         catch (Exception e) {

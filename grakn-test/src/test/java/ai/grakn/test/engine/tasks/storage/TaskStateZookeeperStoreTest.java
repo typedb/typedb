@@ -18,14 +18,13 @@
 
 package ai.grakn.test.engine.tasks.storage;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.TestTask;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -60,7 +59,7 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void testStoreRetrieve() throws Exception {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
 
         // Retrieve
         TaskState state = stateStorage.getState(id);
@@ -72,7 +71,7 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void whenUpdatingTask_StateChanges() throws Exception {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
 
         // Change
         String engineID = UUID.randomUUID().toString();
@@ -149,7 +148,7 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void testUpdateInvalid() throws Exception {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
 
         // update
         String engineID = UUID.randomUUID().toString();
@@ -168,7 +167,7 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void testGetTasksByStatus() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         stateStorage.newState(task().status(SCHEDULED));
         Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
 
@@ -181,7 +180,7 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void testGetTasksByCreator() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         stateStorage.newState(task().creator("another"));
         Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
 
@@ -194,7 +193,7 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void testGetTasksByClassName() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
 
         assertTrue(res.parallelStream()
@@ -206,7 +205,7 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void testGetAllTasks() {
-        String id = stateStorage.newState(task());
+        TaskId id = stateStorage.newState(task());
         Set<TaskState> res = stateStorage.getTasks(null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()

@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskId;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import mjson.Json;
@@ -34,9 +35,9 @@ public class TestTask implements BackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
-    private static final ConcurrentHashMultiset<String> completedTasks = ConcurrentHashMultiset.create();
+    private static final ConcurrentHashMultiset<TaskId> completedTasks = ConcurrentHashMultiset.create();
 
-    public static ImmutableMultiset<String> completedTasks() {
+    public static ImmutableMultiset<TaskId> completedTasks() {
         return ImmutableMultiset.copyOf(completedTasks);
     }
 
@@ -46,7 +47,7 @@ public class TestTask implements BackgroundTask {
 
     public void start(Consumer<String> saveCheckpoint, Json config) {
         startedCounter.incrementAndGet();
-        completedTasks.add(config.at("id").asString());
+        completedTasks.add(TaskId.of(config.at("id").asString()));
     }
 
     public void stop() {}

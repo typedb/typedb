@@ -20,8 +20,9 @@
 package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.ConfigProperties;
@@ -85,7 +86,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
     private final static String ENGINE_ID = EngineID.getInstance().id();
 
-    private final Set<String> runningTasks = new HashSet<>();
+    private final Set<TaskId> runningTasks = new HashSet<>();
     private final TaskStateStorage storage;
     private final ZookeeperConnection connection;
     private final CountDownLatch shutdownLatch;
@@ -93,7 +94,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final ExecutorService executor;
     private final int executorSize;
     private final AtomicInteger acceptedTasks = new AtomicInteger(0);
-    private final KafkaConsumer<String, String> consumer;
+    private final KafkaConsumer<TaskId, String> consumer;
 
     public MultiQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
@@ -135,10 +136,10 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     public void run()  {
         try {
             while (true) {
-                ConsumerRecords<String, String> records = consumer.poll(POLLING_FREQUENCY);
+                ConsumerRecords<TaskId, String> records = consumer.poll(POLLING_FREQUENCY);
 
                 long startTime = System.currentTimeMillis();
-                for(ConsumerRecord<String, String> record: records) {
+                for(ConsumerRecord<TaskId, String> record: records) {
 
                     // If TaskRunner capacity full commit offset as current record and exit
                     if(acceptedTasks.get() >= executorSize) {
@@ -192,7 +193,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
      *
      * @param record The record to execute.
      */
-    private void processAndAcknowledgeProcessed(ConsumerRecord<String, String> record) {
+    private void processAndAcknowledgeProcessed(ConsumerRecord<TaskId, String> record) {
         try {
             LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s",
                 record.key(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
@@ -303,12 +304,12 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
         return runningTasks.size();
     }
 
-    private synchronized void addRunningTask(String id) {
+    private synchronized void addRunningTask(TaskId id) {
         runningTasks.add(id);
         updateOwnState();
     }
 
-    private synchronized void removeRunningTask(String id) {
+    private synchronized void removeRunningTask(TaskId id) {
         runningTasks.remove(id);
         updateOwnState();
     }

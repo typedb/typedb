@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -48,13 +49,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
-    private final Consumer<String, String> consumer;
+    private final Consumer<TaskId, String> consumer;
     private final TaskStateStorage storage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private final ExecutorService executor;
-    private final Set<String> currentlyRunningTasks = ConcurrentHashMap.newKeySet();
+    private final Set<TaskId> currentlyRunningTasks = ConcurrentHashMap.newKeySet();
 
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
@@ -64,7 +65,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param consumer a Kafka consumer from which to poll for tasks
      */
     public SingleQueueTaskRunner(
-            TaskStateStorage storage, Consumer<String, String> consumer, ExecutorService executor) {
+            TaskStateStorage storage, Consumer<TaskId, String> consumer, ExecutorService executor) {
         this.storage = storage;
         this.consumer = consumer;
         this.executor = executor;
@@ -109,7 +110,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         countDownLatch.await();
     }
 
-    private void handleRecord(ConsumerRecord<String, String> record) {
+    private void handleRecord(ConsumerRecord<TaskId, String> record) {
         TaskState task = TaskState.deserialize(record.value());
 
         LOG.debug("{}\thandling", task);
@@ -134,7 +135,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     }
 
     private boolean shouldExecuteTask(TaskState task) {
-        String taskId = task.getId();
+        TaskId taskId = task.getId();
 
         // Don't run tasks that are already running on this machine right now
         if (currentlyRunningTasks.contains(taskId)) return false;

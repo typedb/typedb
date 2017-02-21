@@ -21,6 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.test.engine.tasks.FailingTask;
 import ai.grakn.test.engine.tasks.TestTask;
@@ -42,14 +43,14 @@ public class TaskStates extends Generator<TaskState> {
         // TODO: make this generate more classes
         Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(TestTask.class, FailingTask.class));
 
-        String taskId = random.choose(ImmutableSet.of("A", "B"));
+        TaskId taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B")));
 
         TaskStatus taskStatus = gen().type(TaskStatus.class).generate(random, status);
 
         // TODO: generate all the other params of a task state
 
         TaskState taskState = new TaskState(taskClass, taskId);
-        Json configuration = Json.object("id", taskState.getId());
+        Json configuration = Json.object("id", taskState.getId().getValue());
         return taskState.status(taskStatus).configuration(configuration);
     }
 }
