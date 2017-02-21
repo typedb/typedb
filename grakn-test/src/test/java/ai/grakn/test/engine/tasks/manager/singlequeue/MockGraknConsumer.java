@@ -71,6 +71,7 @@ public class MockGraknConsumer<K, V> implements Consumer<K, V> {
     private KafkaException exception;
 
     private AtomicBoolean wakeup;
+    private Runnable emptyPollTask = null;
 
     public MockGraknConsumer(OffsetResetStrategy offsetResetStrategy) {
         this.subscriptions = new SubscriptionState(offsetResetStrategy);
@@ -176,6 +177,9 @@ public class MockGraknConsumer<K, V> implements Consumer<K, V> {
         });
 
         ConsumerRecords<K, V> copy = new ConsumerRecords<K, V>(recordOffset);
+
+        if (copy.count() == 0 && emptyPollTask != null) emptyPollTask.run();
+
         return copy;
     }
 
@@ -367,6 +371,10 @@ public class MockGraknConsumer<K, V> implements Consumer<K, V> {
         synchronized (pollTasks) {
             pollTasks.add(task);
         }
+    }
+
+    public void scheduleEmptyPollTask(Runnable task) {
+        emptyPollTask = task;
     }
 
     public void scheduleNopPollTask() {

@@ -105,15 +105,16 @@ public class SingleQueueTaskRunnerTest {
             consumer.schedulePollTask(() -> taskList.forEach(this::addTask));
         }
 
-        Thread closeTaskRunner = new Thread(() -> {
-            try {
-                taskRunner.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        consumer.scheduleEmptyPollTask(() -> {
+            Thread closeTaskRunner = new Thread(() -> {
+                try {
+                    taskRunner.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            closeTaskRunner.start();
         });
-
-        consumer.schedulePollTask(closeTaskRunner::start);
     }
 
     public void waitToComplete() {
