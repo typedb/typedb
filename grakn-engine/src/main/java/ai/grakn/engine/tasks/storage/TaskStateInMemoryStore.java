@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.tasks.storage;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.exception.EngineStorageException;
 
 import java.lang.ref.SoftReference;
@@ -47,23 +47,26 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
 
     @Override
     public String newState(TaskState state) {
-        storage.put(state.getId(), new SoftReference<>(state));
+        storage.put(state.getId(), new SoftReference<>(state.copy()));
         return state.getId();
     }
 
     @Override
     public Boolean updateState(TaskState state) {
-        storage.put(state.getId(), new SoftReference<>(state));
+        storage.put(state.getId(), new SoftReference<>(state.copy()));
         return true;
     }
 
     @Override
     public TaskState getState(String id) {
-        if(id == null || !storage.containsKey(id)) {
+        SoftReference<TaskState> taskState = storage.get(id);
+
+        if(taskState == null) {
             throw new EngineStorageException("Could not retrieve id " + id);
         }
 
-        return storage.get(id).get();
+        return taskState.get().copy();
+    }
 
     @Override
     public boolean containsState(String id) {
@@ -101,7 +104,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
             }
             count++;
 
-            res.add(state);
+            res.add(state.copy());
         }
 
         return res;

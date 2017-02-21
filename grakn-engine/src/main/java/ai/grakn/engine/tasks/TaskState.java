@@ -89,16 +89,31 @@ public class TaskState implements Serializable {
     private Json configuration;
 
     public TaskState(Class<?> taskClass) {
-        this.status = TaskStatus.CREATED;
-        this.statusChangeTime = Instant.now();
-        this.taskId = UUID.randomUUID().toString();
-        this.taskClassName = taskClass.getName();
+        this(taskClass, UUID.randomUUID().toString());
     }
 
-    public TaskState(String taskClassName, String id, TaskStatus status){
+    public TaskState(Class<?> taskClass, String id) {
+        this.status = TaskStatus.CREATED;
+        this.statusChangeTime = Instant.now();
+        this.taskClassName = taskClass.getName();
         this.taskId = id;
-        this.taskClassName = taskClassName;
-        this.status = status;
+    }
+
+    private TaskState(TaskState taskState) {
+        this.taskId = taskState.taskId;
+        this.status = taskState.status;
+        this.statusChangeTime = taskState.statusChangeTime;
+        this.statusChangedBy = taskState.statusChangedBy;
+        this.taskClassName = taskState.taskClassName;
+        this.creator = taskState.creator;
+        this.engineID = taskState.engineID;
+        this.runAt = taskState.runAt;
+        this.recurring = taskState.recurring;
+        this.interval = taskState.interval;
+        this.stackTrace = taskState.stackTrace;
+        this.exception = taskState.exception;
+        this.taskCheckpoint = taskState.taskCheckpoint;
+        this.configuration = taskState.configuration;
     }
 
     public String getId() {
@@ -228,6 +243,15 @@ public class TaskState implements Serializable {
 
     public static TaskState deserialize(String task){
         return (TaskState) SerializationUtils.deserialize(Base64.getMimeDecoder().decode(task));
+    }
+
+    public TaskState copy() {
+        return new TaskState(this);
+    }
+
+    @Override
+    public String toString() {
+        return "TaskState(" + taskClass().getSimpleName() + ", \"" + getId() + "\").status(" + status() + ")";
     }
 }
 
