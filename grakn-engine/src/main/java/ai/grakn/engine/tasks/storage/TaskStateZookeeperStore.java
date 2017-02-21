@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.tasks.storage;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
@@ -30,9 +30,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_PATH;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
@@ -143,16 +142,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
     @Override
     public boolean containsState(String id) {
-        InterProcessMutex mutex = mutex(id);
-
-        acquire(mutex);
-        try {
-            return zookeeper.connection().checkExists().forPath(taskPath(id)) != null;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            release(mutex);
-        }
+        return executeWithMutex(id, () -> zookeeper.connection().checkExists().forPath(taskPath(id)) != null);
     }
 
     /**
