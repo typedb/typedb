@@ -44,8 +44,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -93,7 +94,7 @@ public class SingleQueueTaskRunnerTest {
         consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
 
-        executor = Executors.newCachedThreadPool();
+        executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1));
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
@@ -242,6 +243,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Property(trials=10)
     public void afterRunning_AllTasksHaveBeenSubmittedToExecutor(List<List<TaskState>> tasks) {
+        executor.shutdown();
         executor = mock(ExecutorService.class);
 
         setUpTasks(tasks);
