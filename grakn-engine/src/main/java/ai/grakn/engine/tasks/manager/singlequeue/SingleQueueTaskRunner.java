@@ -20,12 +20,12 @@
 package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -91,7 +92,16 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         try {
             while (!wakeUp.get()) {
-                consumer.poll(100).forEach(this::handleRecord);
+                ConsumerRecords<TaskId, String> records = consumer.poll(100);
+
+                LOG.debug("polled, got {} records", records.count());
+
+                for (ConsumerRecord<TaskId, String> record : records) {
+                    if (!handleRecord(record)) {
+                        // When executor is full, don't consume any further records
+                        break;
+                    }
+                }
             }
         } finally {
             countDownLatch.countDown();
@@ -110,10 +120,12 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         countDownLatch.await();
     }
 
-    private void handleRecord(ConsumerRecord<TaskId, String> record) {
+    private boolean handleRecord(ConsumerRecord<TaskId, String> record) {
         TaskState task = TaskState.deserialize(record.value());
 
         LOG.debug("{}\thandling", task);
+
+        boolean handled = true;
 
         if (shouldExecuteTask(task)) {
             task.status(TaskStatus.RUNNING);
@@ -125,13 +137,23 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             LOG.debug("{}\trecorded", task);
 
-            executor.submit(() -> executeTask(task));
+            try {
+                executor.submit(() -> executeTask(task));
+            } catch (RejectedExecutionException e) {
+                LOG.debug("{}\trejected by executor", task);
+                handled = false;
+                currentlyRunningTasks.remove(task.getId());
+            }
         }
 
-        consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
-        consumer.commitSync();
+        if (handled) {
+            consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+            consumer.commitSync();
 
-        LOG.debug("{}\tacknowledged", task);
+            LOG.debug("{}\tacknowledged", task);
+        }
+
+        return handled;
     }
 
     private boolean shouldExecuteTask(TaskState task) {
@@ -151,24 +173,17 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     }
 
     private void executeTask(TaskState task) {
-        BackgroundTask backgroundTask;
         try {
-            backgroundTask = task.taskClass().newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            backgroundTask.start(null, task.configuration());
+            task.taskClass().newInstance().start(null, task.configuration());
             task.status(TaskStatus.COMPLETED);
             LOG.debug("{}\tmarked as completed", task);
         } catch (Exception e) {
             task.status(FAILED);
             LOG.debug("{}\tmarked as failed", task);
+        } finally {
+            currentlyRunningTasks.remove(task.getId());
+            storage.updateState(task);
+            LOG.debug("{}\trecorded", task);
         }
-        currentlyRunningTasks.remove(task.getId());
-        storage.updateState(task);
-
-        LOG.debug("{}\trecorded", task);
     }
 }
