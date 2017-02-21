@@ -187,7 +187,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     }
 
     @Override
-    public boolean containsState(TaskId id) {
+    public boolean containsTask(TaskId id) {
         Optional<Boolean> result = attemptCommitToSystemGraph(graph -> {
             Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
             return instance != null;

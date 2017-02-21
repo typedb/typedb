@@ -70,7 +70,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
     }
 
     @Override
-    public boolean containsState(TaskId id) {
+    public boolean containsTask(TaskId id) {
         return storage.containsKey(id);
     }
 

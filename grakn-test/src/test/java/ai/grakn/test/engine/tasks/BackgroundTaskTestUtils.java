@@ -49,7 +49,7 @@ public class BackgroundTaskTestUtils {
                 .runAt(now())
                 .isRecurring(recurring)
                 .interval(interval);
-        return taskState.configuration(Json.object("id", taskState.getId(), "name", "task" + i));
+        return taskState.configuration(Json.object("id", taskState.getId().getValue(), "name", "task" + i));
     }
     
     public static void waitForStatus(TaskStateStorage storage, Set<TaskState> tasks, TaskStatus status) {

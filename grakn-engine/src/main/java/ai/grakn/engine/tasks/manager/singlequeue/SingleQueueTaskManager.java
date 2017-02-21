@@ -24,11 +24,13 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
+import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -36,14 +38,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
+import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -59,15 +64,15 @@ public class SingleQueueTaskManager implements TaskManager {
     private final static String TASK_RUNNER_THREAD_NAME = "task-runner-";
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
 
-    private final KafkaProducer<TaskId, String> producer;
-    private final KafkaConsumer<TaskId, String> consumer;
+    //TODO make these two classes with with the TaskId object by implementing a serializer
+    private final KafkaProducer<String, String> producer;
+    private final KafkaConsumer<String, String> consumer;
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
     private final FailoverElector failover;
 
     private ExecutorService taskRunnerThreadPool;
     private SingleQueueTaskRunner taskRunner;
-    private Thread taskRunnerThread;
 
     /**
      * Create a {@link SingleQueueTaskManager}
@@ -85,7 +90,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.failover = new FailoverElector(ENGINE_IDENTIFIER, zookeeper, storage);
 
         this.producer = ConfigHelper.kafkaProducer();
-        this.consumer = ConfigHelper.kafkaConsumer(NEW_TASKS_TOPIC);
+        this.consumer = ConfigHelper.kafkaConsumer(TASK_RUNNER_GROUP);
 
         createTaskRunner();
     }
@@ -128,7 +133,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addTask(TaskState taskState){
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), TaskState.serialize(taskState)));
+        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId().getValue(), TaskState.serialize(taskState)));
         producer.flush();
     }
 
@@ -150,14 +155,17 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     private void createTaskRunner(){
+        ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, zookeeper, this.getClass().getSimpleName());
+        this.consumer.subscribe(singletonList(NEW_TASKS_TOPIC), listener);
+
         int capacity = ConfigProperties.getInstance().getAvailableThreads();
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder().setNameFormat(TASK_RUNNER_THREAD_POOL_NAME).build();
 
-        this.taskRunnerThreadPool = Executors.newFixedThreadPool(capacity, taskRunnerPoolFactory);
+        this.taskRunnerThreadPool = new ThreadPoolExecutor(capacity, capacity, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), taskRunnerPoolFactory);
         this.taskRunner = new SingleQueueTaskRunner(storage, consumer, taskRunnerThreadPool);
-        this.taskRunnerThread = new Thread(taskRunner, TASK_RUNNER_THREAD_NAME);
-        this.taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
-        this.taskRunnerThread.start();
+        Thread taskRunnerThread = new Thread(taskRunner, TASK_RUNNER_THREAD_NAME);
+        taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
+        taskRunnerThread.start();
     }
 
     /**

@@ -52,6 +52,7 @@ public interface TaskStateStorage {
      * @param state State to update.
      * @return true if inserted successfully
      */
+    //TODO Remove newState and make updateState a put
     Boolean updateState(TaskState state);
 
     /**
@@ -67,7 +68,7 @@ public interface TaskStateStorage {
      * @param id String id of task
      * @return true if the storage contains the given state
      */
-    boolean containsState(TaskId id);
+    boolean containsTask(TaskId id);
 
     /**
      * Return a Set of Pairs of tasks that match any of the criteria. The first value of the Pair is the task id, whilst

@@ -18,10 +18,51 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
+import ai.grakn.test.EngineContext;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
+import java.util.Set;
+
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED  ;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+
 /**
  *
  */
 public class SingleQueueTaskManagerTest {
 
+    private TaskManager taskManager;
 
+    @Rule
+    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
+
+    @Before
+    public void setup(){
+        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
+        taskManager = new SingleQueueTaskManager();
+    }
+
+    @After
+    public void teardown() throws Exception {
+        taskManager.close();
+    }
+
+    @Test
+    public void afterSubmitting_AllTasksAreCompleted(){
+        Set<TaskState> tasks = createTasks(100, CREATED);
+        tasks.forEach(taskManager::addTask);
+        waitForStatus(taskManager.storage(), tasks, COMPLETED);
+    }
 }

@@ -19,7 +19,8 @@
 
 package ai.grakn.engine.tasks;
 
-import java.io.Serializable;
+import org.apache.kafka.common.serialization.StringSerializer;
+
 import java.util.UUID;
 
 /**
@@ -27,7 +28,7 @@ import java.util.UUID;
  *
  * @author Felix Chapman
  */
-public final class TaskId implements Serializable {
+public final class TaskId extends StringSerializer {
     private final String value;
 
     public static TaskId of(String value) {

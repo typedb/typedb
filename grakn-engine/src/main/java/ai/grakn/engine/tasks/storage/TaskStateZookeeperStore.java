@@ -137,7 +137,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     }
 
     @Override
-    public boolean containsState(TaskId id) {
+    public boolean containsTask(TaskId id) {
         return executeWithMutex(id, () -> zookeeper.connection().checkExists().forPath(taskPath(id)) != null);
     }
 

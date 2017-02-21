@@ -36,7 +36,7 @@ public class TaskState implements Serializable {
     /**
      * Id of this task.
      */
-    private final TaskId taskId;
+    private final String taskId;
     /**
      * Task status, @see TaskStatus.
      */
@@ -95,7 +95,7 @@ public class TaskState implements Serializable {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
         this.taskClassName = taskClass.getName();
-        this.taskId = id;
+        this.taskId = id.getValue();
 
         //TODO Defaults until we refactor TaskState class
         this.runAt = Instant.now();
@@ -121,7 +121,7 @@ public class TaskState implements Serializable {
     }
 
     public TaskId getId() {
-        return taskId;
+        return TaskId.of(taskId);
     }
 
     public TaskState status(TaskStatus status) {

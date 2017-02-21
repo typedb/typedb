@@ -50,7 +50,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
-    private final Consumer<TaskId, String> consumer;
+    private final Consumer<String, String> consumer;
     private final TaskStateStorage storage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
@@ -66,7 +66,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param consumer a Kafka consumer from which to poll for tasks
      */
     public SingleQueueTaskRunner(
-            TaskStateStorage storage, Consumer<TaskId, String> consumer, ExecutorService executor) {
+            TaskStateStorage storage, Consumer<String, String> consumer, ExecutorService executor) {
         this.storage = storage;
         this.consumer = consumer;
         this.executor = executor;
@@ -92,17 +92,19 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         try {
             while (!wakeUp.get()) {
-                ConsumerRecords<TaskId, String> records = consumer.poll(100);
+                ConsumerRecords<String, String> records = consumer.poll(100);
 
                 LOG.debug("polled, got {} records", records.count());
 
-                for (ConsumerRecord<TaskId, String> record : records) {
+                for (ConsumerRecord<String, String> record : records) {
                     if (!handleRecord(record)) {
                         // When executor is full, don't consume any further records
                         break;
                     }
                 }
             }
+        } catch (Throwable throwable){
+            throw new RuntimeException(throwable);
         } finally {
             countDownLatch.countDown();
             LOG.debug("stopped");
@@ -120,7 +122,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         countDownLatch.await();
     }
 
-    private boolean handleRecord(ConsumerRecord<TaskId, String> record) {
+    private boolean handleRecord(ConsumerRecord<String, String> record) {
         TaskState task = TaskState.deserialize(record.value());
 
         LOG.debug("{}\thandling", task);
@@ -132,7 +134,12 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             LOG.debug("{}\tmarked as running", task);
 
-            storage.updateState(task);
+            if(storage.containsTask(task.getId())) {
+                storage.updateState(task);
+            } else {
+                storage.newState(task);
+            }
+
             currentlyRunningTasks.add(task.getId());
 
             LOG.debug("{}\trecorded", task);
@@ -164,7 +171,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         if (task.status().equals(CREATED)) {
             // Only run created tasks if they are not being retried
-            return !storage.containsState(taskId);
+            return !storage.containsTask(taskId);
         } else {
             // Only run retried tasks if they are not marked completed or failed
             TaskStatus status = storage.getState(taskId).status();
