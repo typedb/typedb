@@ -76,6 +76,7 @@ public class GraphContext implements TestRule {
         } else if (!graph.isClosed()) {
             graph.close();
         }
+        graph = getEngineGraph();
     }
 
     public void load(Consumer<GraknGraph> build){
