@@ -19,18 +19,15 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.Instant;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
@@ -65,6 +62,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.storage = new TaskStateZookeeperStore(zookeeper);
 
         this.producer = ConfigHelper.kafkaProducer();
+
     }
 
     /**
@@ -91,20 +89,11 @@ public class SingleQueueTaskManager implements TaskManager {
 
     /**
      * Create an instance of a task based on the given parameters and submit it a Kafka queue.
-     *
-     * @param taskClass The class implementing the BackgroundTask interface
-     * @param createdBy Name of the class that created the task
-     * @param runAt Instant when task should run.
-     * @param period A non-zero value indicates that this should be a recurring task and period indicates the delay between
-     *               subsequent runs of the task after successful execution.
-     * @param configuration A JSONObject instance containing configuration and optionally data for the task. This is an
-     *                      optional parameter and may be set to null to not pass any configuration (task.start() will
-     *                      get an initialised but empty JSONObject).
-     * @return String identifier of the created task
+     * @param taskState Task to execute
      */
     @Override
-    public String createTask(Class<? extends BackgroundTask> taskClass, String createdBy, Instant runAt, long period, Json configuration) {
-        return null;
+    public void addTask(TaskState taskState){
+
     }
 
     /**

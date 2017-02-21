@@ -18,10 +18,6 @@
 
 package ai.grakn.engine.tasks;
 
-import mjson.Json;
-
-import java.time.Instant;
-
 /**
  * <p>
  *     The base TaskManager interface.
@@ -35,18 +31,10 @@ import java.time.Instant;
  */
 public interface TaskManager extends AutoCloseable {
     /**
-     * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds. All parameters must not be
-     * null unless stated otherwise.
-     * @param taskClass The class implementing the BackgroundTask interface that is to be scheduled for later execution.
-     * @param runAt Instant when task should run.
-     * @param period A non-zero value indicates that this should be a recurring task and period indicates the delay between
-     *               subsequent runs of the task after successful execution.
-     * @param configuration A JSONObject instance containing configuration and optionally data for the task. This is an
-     *                      optional parameter and may be set to null to not pass any configuration (task.start() will
-     *                      get an initialised but empty JSONObject).
-     * @return Assigned ID of task scheduled for later execution.
+     * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds.
+     * @param taskState Task to execute
      */
-    String createTask(Class<? extends BackgroundTask> taskClass, String createdBy, Instant runAt, long period, Json configuration);
+    void addTask(TaskState taskState);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

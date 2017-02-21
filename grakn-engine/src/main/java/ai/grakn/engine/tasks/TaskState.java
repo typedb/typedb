@@ -97,6 +97,11 @@ public class TaskState implements Serializable {
         this.statusChangeTime = Instant.now();
         this.taskClassName = taskClass.getName();
         this.taskId = id;
+
+        //TODO Defaults until we refactor TaskState class
+        this.runAt = Instant.now();
+        this.recurring = false;
+        this.interval = 0;
     }
 
     private TaskState(TaskState taskState) {

@@ -68,7 +68,7 @@ public class TaskStateGraphStoreTest {
         TaskState state = stateStorage.getState(id);
         assertNotNull(state);
 
-        Assert.assertEquals(task.getClass().getName(), state.taskClass());
+        Assert.assertEquals(task.getClass(), state.taskClass());
         Assert.assertEquals(this.getClass().getName(), state.creator());
         assertEquals(runAt, state.runAt());
         assertFalse(state.isRecurring());

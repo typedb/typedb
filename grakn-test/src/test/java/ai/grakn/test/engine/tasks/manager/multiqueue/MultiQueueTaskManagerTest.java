@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.TestTask;
@@ -73,10 +74,9 @@ public class MultiQueueTaskManagerTest {
         final int startCount = TestTask.startedCounter.get();
 
         for(int i = 0; i < 20; i++) {
-            String taskId = manager.createTask(TestTask.class, MultiQueueTaskManagerTest.class.getName(),
-                    Instant.now(), 0, Json.object("name", "task" + i));
-
-            ids.add(taskId);
+            TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task" + i));
+            manager.addTask(task);
+            ids.add(task.getId());
         }
 
         ids.forEach(this::waitToFinish);

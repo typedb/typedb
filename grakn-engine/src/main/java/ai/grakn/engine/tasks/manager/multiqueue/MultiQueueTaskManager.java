@@ -94,20 +94,9 @@ public final class MultiQueueTaskManager implements TaskManager {
     }
 
     @Override
-    public String createTask(Class<? extends BackgroundTask> taskClass, String createdBy, Instant runAt, long period, Json configuration) {
-        Boolean recurring = period > 0;
-
-        TaskState taskState = new TaskState(taskClass)
-                .creator(createdBy)
-                .runAt(runAt)
-                .isRecurring(recurring)
-                .interval(period)
-                .configuration(configuration);
-
+    public void addTask(TaskState taskState){
         producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), TaskState.serialize(taskState)));
         producer.flush();
-
-        return taskState.getId();
     }
 
     @Override

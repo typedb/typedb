@@ -95,30 +95,21 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     @Override
-    public String createTask(Class<? extends BackgroundTask> taskClass, String createdBy, Instant runAt, long period, Json configuration) {
-        Boolean recurring = (period != 0);
-
-        TaskState taskState = new TaskState(taskClass)
-                .creator(createdBy)
-                .runAt(runAt)
-                .isRecurring(recurring)
-                .interval(period)
-                .configuration(configuration);
-
+    public void addTask(TaskState taskState){
         stateStorage.newState(taskState);
 
         // Schedule task to run.
         Instant now = Instant.now();
-        long delay = Duration.between(now, runAt).toMillis();
+        long delay = Duration.between(now, taskState.runAt()).toMillis();
         try {
             stateStorage.updateState(taskState.status(SCHEDULED).statusChangedBy(this.getClass().getName()));
 
             // Instantiate task.
-            BackgroundTask task = taskClass.newInstance();
+            BackgroundTask task = taskState.taskClass().newInstance();
 
             ScheduledFuture<?> future;
-            if(recurring) {
-                future = schedulingService.scheduleAtFixedRate(runTask(taskState.getId(), task, true), delay, period, MILLISECONDS);
+            if(taskState.isRecurring()) {
+                future = schedulingService.scheduleAtFixedRate(runTask(taskState.getId(), task, true), delay, taskState.interval(), MILLISECONDS);
             } else {
                 future = schedulingService.schedule(runTask(taskState.getId(), task, false), delay, MILLISECONDS);
             }
@@ -130,10 +121,7 @@ public class StandaloneTaskManager implements TaskManager {
             LOG.error(getFullStackTrace(t));
             stateStorage.updateState(taskState.status(FAILED).exception(getFullStackTrace(t)));
             instantiatedTasks.remove(taskState.getId());
-            return null;
         }
-
-        return taskState.getId();
     }
 
     public TaskManager stopTask(String id, String requesterName) {

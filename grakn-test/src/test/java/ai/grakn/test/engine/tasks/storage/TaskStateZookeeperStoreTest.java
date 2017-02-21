@@ -66,7 +66,7 @@ public class TaskStateZookeeperStoreTest {
         TaskState state = stateStorage.getState(id);
         assertNotNull(state);
         assertEquals(CREATED, state.status());
-        assertEquals(TestTask.class.getName(), state.taskClass());
+        assertEquals(TestTask.class, state.taskClass());
         assertEquals(this.getClass().getName(), state.creator());
     }
 

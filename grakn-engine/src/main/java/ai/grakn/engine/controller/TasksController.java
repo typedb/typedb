@@ -173,9 +173,7 @@ public class TasksController {
         String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
         String createdBy = request.queryParams(TASK_CREATOR_PARAMETER);
         String runAt = request.queryParams(TASK_RUN_AT_PARAMETER);
-
         Long interval = 0L;
-        Json configuration = Json.object();
 
         if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null) {
             interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
@@ -185,17 +183,18 @@ public class TasksController {
         }
 
         try {
-            if(request.body() != null && (!request.body().isEmpty())) {
-                configuration = Json.read(request.body());
-            }
-
             Class<? extends BackgroundTask> clazz = (Class<? extends BackgroundTask>) Class.forName(className);
 
-            String id = manager.createTask(clazz, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
+            TaskState taskState = new TaskState(clazz);
+            taskState.creator(createdBy);
+            taskState.runAt(ofEpochMilli(parseLong(runAt)));
+            taskState.interval(interval);
+            taskState.configuration(Json.read(request.body()));
+
+            manager.addTask(taskState);
 
             response.type("application/json");
-
-            return Json.object("id", id).toString();
+            return Json.object("id", taskState.getId()).toString();
         } catch (Exception e) {
             LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);

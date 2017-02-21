@@ -18,6 +18,7 @@
 package ai.grakn.engine;
 
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.controller.AuthController;
@@ -151,11 +152,13 @@ public class GraknEngineServer {
 
     private static void startPostprocessing(){
         // Submit a recurring post processing task
-        taskManager.createTask(PostProcessingTask.class,
-                GraknEngineServer.class.getName(),
-                Instant.now(),
-                prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
-                Json.object());
+        TaskState postprocessing = new TaskState(PostProcessingTask.class)
+                .creator(GraknEngineServer.class.getName())
+                .runAt(Instant.now())
+                .isRecurring(true)
+                .interval(prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE))
+                .configuration(Json.object());
+        taskManager.addTask(postprocessing);
 
     }
 

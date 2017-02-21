@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.tasks.manager;
 
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.TaskStatus;
@@ -56,13 +57,13 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunSingle() {
-        String id = taskManager.createTask(TestTask.class, this.getClass().getName(), Instant.now(), 0,
-                Json.object("name", "task"));
+        TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task1"));
+        taskManager.addTask(task);
 
         // Wait for task to be executed.
-        waitToFinish(id);
+        waitToFinish(task.getId());
 
-        assertEquals(COMPLETED, taskManager.storage().getState(id).status());
+        assertEquals(COMPLETED, taskManager.storage().getState(task.getId()).status());
     }
 
     private void waitToFinish(String id) {
@@ -91,8 +92,9 @@ public class StandaloneTaskManagerTest {
         // Schedule tasks
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
-            ids.add(taskManager.createTask(TestTask.class, this.getClass().getName(), Instant.now(), 0,
-                    Json.object("name", "task" + i)));
+            TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task" + i ));
+            taskManager.addTask(task);
+            ids.add(task.getId());
         }
 
         // Check that they all finished
@@ -116,27 +118,25 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunRecurring() throws Exception {
-        String id = taskManager.createTask(TestTask.class, this.getClass().getName(), Instant.now(), 100,
-                Json.object("name", "task" + 1));
+        TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task1" )).isRecurring(true).interval(100);
         Thread.sleep(2000);
 
         assertTrue(TestTask.startedCounter.get() > 1);
 
         // Stop task..
-        taskManager.stopTask(id, null);
+        taskManager.stopTask(task.getId(), null);
     }
 
     @Test
     public void testStopSingle() {
-        String id = taskManager.createTask(TestTask.class, this.getClass().getName(), Instant.now().plus(10, ChronoUnit.SECONDS), 0,
-                Json.object("name", "task" + 1));
+        TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task1")).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
 
-        TaskStatus status = taskManager.storage().getState(id).status();
+        TaskStatus status = taskManager.storage().getState(task.getId()).status();
         assertTrue(status == SCHEDULED || status == RUNNING);
 
-        taskManager.stopTask(id, this.getClass().getName());
+        taskManager.stopTask(task.getId(), this.getClass().getName());
 
-        status = taskManager.storage().getState(id).status();
+        status = taskManager.storage().getState(task.getId()).status();
         assertEquals(STOPPED, status);
     }
 

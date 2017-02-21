@@ -88,7 +88,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
             if(taskStatus != null && state.status() != taskStatus) {
                 continue;
             }
-            if(taskClassName != null && !Objects.equals(state.taskClass(), taskClassName)) {
+            if(taskClassName != null && !Objects.equals(state.taskClass().getName(), taskClassName)) {
                 continue;
             }
             if(createdBy != null && !Objects.equals(state.creator(), createdBy)) {

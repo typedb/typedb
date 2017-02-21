@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.test.EngineContext;
@@ -26,6 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -40,27 +42,28 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStart() throws Exception {
-        String id= taskManager.createTask(PostProcessingTask.class, this.getClass().getName(), Instant.now(), 0, null);
-        Assert.assertNotEquals(CREATED, taskManager.storage().getState(id).status());
+        TaskState task = new TaskState(PostProcessingTask.class);
+        taskManager.addTask(task);
+        Assert.assertNotEquals(CREATED, taskManager.storage().getState(task.getId()).status());
 
         // Wait for supervisor thread to mark task as completed
         final long initial = new Date().getTime();
 
         while ((new Date().getTime())-initial < 10000) {
-            if (taskManager.storage().getState(id).status() == COMPLETED)
+            if (taskManager.storage().getState(task.getId()).status() == COMPLETED)
                 break;
 
             Thread.sleep(100);
         }
 
         // Check that task has ran
-        Assert.assertEquals(COMPLETED, taskManager.storage().getState(id).status());
+        Assert.assertEquals(COMPLETED, taskManager.storage().getState(task.getId()).status());
     }
 
     @Test
     public void testStop() {
-        String id = taskManager.createTask(PostProcessingTask.class, this.getClass().getName(), Instant.now(), 10000, null);
-        taskManager.stopTask(id, this.getClass().getName());
-        Assert.assertEquals(STOPPED, taskManager.storage().getState(id).status());
+        TaskState task = new TaskState(PostProcessingTask.class).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        taskManager.stopTask(task.getId(), this.getClass().getName());
+        Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());
     }
 }

@@ -51,7 +51,7 @@ public class TaskStateInMemoryStoreTest {
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
-        assertEquals("name", TestTask.class.getName(), state.taskClass());
+        assertEquals("name", TestTask.class, state.taskClass());
         assertEquals("creator", this.getClass().getName(), state.creator());
         assertEquals("recurring", false, state.isRecurring());
         assertEquals("interval", 0, state.interval());
