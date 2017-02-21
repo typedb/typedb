@@ -108,8 +108,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
-    private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
-
     private Cache<TypeName, Type> cachedOntology = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterAccess(10, TimeUnit.MINUTES)
@@ -132,7 +130,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         this.batchLoadingEnabled = batchLoadingEnabled;
-        this.committed = false;
         localShowImplicitStructures.set(false);
     }
 
@@ -194,10 +191,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public <T extends Concept> T buildConcept(Vertex vertex) {
         return getElementFactory().buildConcept(vertex);
-    }
-
-    public boolean hasCommitted(){
-        return committed;
     }
 
     @Override
@@ -900,7 +893,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } catch (UnsupportedOperationException e){
             LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
         }
-        committed = true;
     }
 
 

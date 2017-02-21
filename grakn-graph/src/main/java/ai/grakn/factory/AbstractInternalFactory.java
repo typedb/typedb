@@ -57,8 +57,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected G graph = null;
     private G batchLoadingGraph = null;
 
-    private Boolean lastGraphBuiltBatchLoading = null;
-    
     private SystemKeyspace<M, G> systemKeyspace;
 
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
@@ -90,47 +88,22 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     public synchronized M getGraph(boolean batchLoading){
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
-            lastGraphBuiltBatchLoading = true;
             batchLoadingGraknGraph.openTransaction();
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, false);
-            lastGraphBuiltBatchLoading = false;
             graknGraph.openTransaction();
             return graknGraph;
         }
     }
     protected M getGraph(M graknGraph, boolean batchLoading){
-        boolean hasCommitted = false;
-        //This checks if the previous graph built with this factory is the same as the one we trying to build now.
-        //TODO: Check is this features is still needed. It's very confusing at the end of the day
-        if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
-            //This then checks if the previous graph built has undergone a commit
-            if(lastGraphBuiltBatchLoading) {
-                hasCommitted = batchLoadingGraknGraph.hasCommitted();
-            } else {
-                hasCommitted = graknGraph.hasCommitted();
-            }
-
-            //Closes the graph to force a full refresh if the other graph has committed
-            if(hasCommitted){
-                try {
-                    graknGraph.finaliseClose(graknGraph::closePermanent, ErrorMessage.CLOSED_FACTORY.getMessage());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
                 systemKeyspace.keyspaceOpened(this.keyspace);
             }
         } else {
-            if(hasCommitted){//In this case we need a new one because we force closing the previous one. Need to think about this one more carefully
-                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-            } else if(graknGraph.isClosed()){
+            if(graknGraph.isClosed()){
                 graknGraph.openTransaction();
             }
 
