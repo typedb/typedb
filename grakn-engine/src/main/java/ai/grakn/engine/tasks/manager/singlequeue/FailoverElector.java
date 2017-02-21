@@ -66,13 +66,9 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
     /**
      *
      */
-    public void stop(){
+    public void renounce(){
         noThrow(leaderSelector::interruptLeadership, "Error interrupting leadership");
         noThrow(leaderSelector::close, "Error closing leadership elector");
-
-        if(failover != null){
-            noThrow(failover::close, "Error closing task failover");
-        }
     }
 
     /**
@@ -110,9 +106,7 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
     {
         switch (newState) {
             case LOST:
-                if(failover != null){
-                    noThrow(failover::close, "Error closing task failover");
-                }
+                noThrow(failover::close, "Error closing task failover");
                 throw new CancelLeadershipException();
             case CONNECTED:
                 break;
