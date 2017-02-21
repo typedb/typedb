@@ -19,7 +19,6 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
@@ -41,8 +40,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
+import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -60,8 +59,8 @@ public class SingleQueueTaskManager implements TaskManager {
     private final static String TASK_RUNNER_THREAD_NAME = "task-runner-";
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
 
-    private final KafkaProducer<String, String> producer;
-    private final KafkaConsumer<String, String> consumer;
+    private final KafkaProducer<TaskId, String> producer;
+    private final KafkaConsumer<TaskId, String> consumer;
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
     private final FailoverElector failover;
