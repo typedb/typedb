@@ -19,24 +19,27 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
-import ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
-import static ai.grakn.util.REST.Request.*;
+import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 import static junit.framework.TestCase.assertEquals;
@@ -51,10 +54,20 @@ public class VisualiserControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        graph = engine.graphWithNewKeyspace();
+        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
 
         loadFromFile(graph, "genealogy/ontology.gql");
         loadFromFile(graph, "genealogy/data.gql");
+
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
+    }
+
+    @AfterClass
+    public static void tearDown(){
+        graph.close();
     }
 
     @Test

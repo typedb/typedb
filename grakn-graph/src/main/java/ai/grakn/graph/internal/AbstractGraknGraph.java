@@ -101,10 +101,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
 
+    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
     private boolean committed; //Shared between multiple threads so we know if a refresh must be performed
@@ -136,6 +137,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     * Opens the thread bound transaction
+     */
+    public void openTransaction(){
+        localIsOpen.set(true);
+    }
+
+    /**
      * @param concept A concept in the graph
      * @return True if the concept has been modified in the transaction
      */
@@ -158,6 +166,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean implicitConceptsVisible(){
         return getBooleanFromLocalThread(localShowImplicitStructures);
+    }
+
+    private boolean getCommitRequired(){
+        return getBooleanFromLocalThread(localCommitRequired);
     }
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
@@ -754,16 +766,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return concept.asRelation();
     }
 
-    @Override
-    public void rollback() {
-        try {
-            getTinkerPopGraph().tx().rollback();
-        } catch (UnsupportedOperationException e){
-            throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
-        }
-        clearLocalVariables();
-    }
-
     /**
      * Clears the graph completely.
      */
@@ -793,18 +795,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Closes the current graph, rendering it unusable.
      */
     @Override
-    public void close() {
-        closeGraph(ErrorMessage.CLOSED_USER.getMessage());
-    }
-
-    /**
-     * Opens the graph. This must be called before a thread can use the graph
-     */
-    @Override
-    public void open(){
-        localIsOpen.set(true);
-        localClosedReason.remove();
-        getTinkerPopGraph();//Used to check graph is truly open.
+    public void close() throws GraknValidationException {
+        if(getCommitRequired()){
+            commit();
+        }
+        localCommitRequired.remove();
+        closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
     }
 
     //Standard Close Operation Overridden by Vendor
@@ -830,10 +826,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     * Sets a thread local flag indicating that a commit is required when cloding the graph.
+     */
+    public void commitOnClose(){
+        localCommitRequired.set(true);
+    }
+
+    /**
      * Commits the graph
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
-    @Override
     public void commit() throws GraknValidationException {
         commit(this::submitCommitLogs);
     }

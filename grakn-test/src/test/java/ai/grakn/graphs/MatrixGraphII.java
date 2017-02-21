@@ -19,10 +19,11 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 

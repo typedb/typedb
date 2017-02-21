@@ -19,35 +19,35 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.controller.CommitLogController;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import org.junit.rules.ExternalResource;
-import spark.Spark;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 
 /**
  *
  * @author alexandraorth
  */
-public class GraphContext extends ExternalResource {
+public class GraphContext implements TestRule {
 
     private GraknGraph graph;
+    private String keyspace;
     private Consumer<GraknGraph> preLoad;
     private String[] files;
-
-    private final static AtomicInteger numberActiveContexts = new AtomicInteger(0);
 
     private GraphContext(Consumer<GraknGraph> build, String[] files){
         this.preLoad = build;
         this.files = files;
+        this.keyspace = randomKeyspace();
     }
 
     public static GraphContext empty(){
@@ -63,65 +63,64 @@ public class GraphContext extends ExternalResource {
     }
 
     public GraknGraph graph(){
+        if(graph.isClosed()){
+            graph = getEngineGraph();
+        }
         return graph;
     }
 
-    public void rollback(){
-        try {
-            graph.rollback();
-        } catch (UnsupportedOperationException e) {
-            // If operation unsupported, make a fresh graph
-            closeGraph();
+    public void rollback() {
+        if (usingTinker()) {
+            graph.admin().clear(EngineCache.getInstance());
             loadGraph();
+        } else if (!graph.isClosed()) {
+            graph.close();
         }
+        graph = getEngineGraph();
     }
 
-    @Override
-    protected void before() throws Throwable {
-        hideLogs();
-
-        ensureCassandraRunning();
-
-        //TODO remove when Bug #12029 fixed
-        if (numberActiveContexts.getAndIncrement() == 0) {
-            new CommitLogController();
-            Spark.awaitInitialization();
-        }
-        //TODO finish remove
-
-        // create the graph
+    public void load(Consumer<GraknGraph> build){
+        this.preLoad = build;
         loadGraph();
     }
 
-    @Override
-    protected void after() {
-        closeGraph();
-        if (numberActiveContexts.decrementAndGet() == 0) {
-            GraknEngineServer.stopHTTP();
-        }
-    }
-
-    private void closeGraph(){
-        // close the graph
-        if(!graph.isClosed()) {
-            graph.clear();
-            graph.close();
-        }
+    private GraknGraph getEngineGraph(){
+        return EngineGraknGraphFactory.getInstance().getGraph(keyspace);
     }
 
     private void loadGraph() {
-        //TODO: get rid of another ugly cast
-        graph = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(randomKeyspace());
+        GraknGraph graph = getEngineGraph();
 
         // if data should be pre-loaded, load
-        if(preLoad != null){
+        if (preLoad != null) {
             preLoad.accept(graph);
         }
 
-        if(files != null){
+        if (files != null) {
             for (String file : files) {
                 loadFromFile(graph, file);
             }
         }
+
+        graph.admin().commitNoLogs();
     }
+
+    @Override
+    public Statement apply(final Statement base, Description description) {
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                hideLogs();
+                ensureCassandraRunning();
+
+                loadGraph();
+
+                try (GraknGraph graph = getEngineGraph()){
+                    GraphContext.this.graph = graph;
+                    base.evaluate();
+                }
+            }
+        };
+    }
+
 }

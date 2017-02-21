@@ -279,7 +279,6 @@ public class GraknGraphTest extends GraphTestBase {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
 
         final boolean[] errorThrown = {false};
-        final boolean[] errorNotThrown = {false};
 
         Future future = pool.submit(() -> {
             try{
@@ -289,20 +288,15 @@ public class GraknGraphTest extends GraphTestBase {
                     errorThrown[0] = true;
                 }
             }
-
-            graph.open();
-            graph.putEntityType("A Thing");
-            errorNotThrown[0] = true;
         });
 
         future.get();
 
         assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
-        assertTrue("Error thrown even after opening graph", errorNotThrown[0]);
     }
 
     @Test
-    public void testCloseAndReOpenGraph(){
+    public void testCloseAndReOpenGraph() throws GraknValidationException {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
         graph.close();
 
@@ -310,14 +304,13 @@ public class GraknGraphTest extends GraphTestBase {
         try{
             graph.putEntityType("A Thing");
         } catch (GraphRuntimeException e){
-            if(e.getMessage().equals(ErrorMessage.CLOSED_USER.getMessage())){
+            if(e.getMessage().equals(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))){
                 errorThrown = true;
             }
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        graph.open();
-
+        graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
         graph.putEntityType("A Thing");
     }
 
@@ -344,9 +337,9 @@ public class GraknGraphTest extends GraphTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
         pool.submit(() -> {
-            graknGraph.open();
-            EntityType entityType = graknGraph.getEntityType("e1");
-            RoleType role = graknGraph.getRoleType("r1");
+            GraknGraph innerGraph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+            EntityType entityType = innerGraph.getEntityType("e1");
+            RoleType role = innerGraph.getRoleType("r1");
             entityType.deletePlaysRole(role);
         }).get();
 

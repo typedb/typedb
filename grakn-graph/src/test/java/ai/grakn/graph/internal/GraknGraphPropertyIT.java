@@ -35,6 +35,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
@@ -119,7 +120,7 @@ public class GraknGraphPropertyIT {
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraphRuntimeException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.CLOSED_USER.getMessage())));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }
@@ -644,7 +645,7 @@ public class GraknGraphPropertyIT {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-        graph.open();
+
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
@@ -656,7 +657,6 @@ public class GraknGraphPropertyIT {
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
-        graph.open();
         assertNotNull(graph.getType(typeName));
     }
 
@@ -677,18 +677,11 @@ public class GraknGraphPropertyIT {
     }
 
     @Property
-    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) {
+    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws GraknValidationException {
         graph.close();
-
         assertTrue(graph.isClosed());
     }
 
-    @Property
-    public void whenCallingOpen_TheGraphIsOpen(GraknGraph graph) {
-        graph.open();
-
-        assertFalse(graph.isClosed());
-    }
 
     // TODO: Everything below this point should be moved to more appropriate test classes
 

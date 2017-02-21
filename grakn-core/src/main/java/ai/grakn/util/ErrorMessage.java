@@ -49,7 +49,6 @@ public enum ErrorMessage {
             "duplicate values"),
     INVALID_EDGE("The edge [%s] between concept [%s] and [%s] is invalid"),
     NOT_SUPPORTED("Not supported with a [%s] backend"),
-    CLOSED_USER("You have closed this graph"),
     CLOSED_FACTORY("This graph has been closed due to a transaction being committed and invalidating this graph"),
     CLOSED_CLEAR("This graph has been closed due to clearing it"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),

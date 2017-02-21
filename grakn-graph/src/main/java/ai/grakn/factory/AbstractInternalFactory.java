@@ -91,18 +91,21 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
             lastGraphBuiltBatchLoading = true;
+            batchLoadingGraknGraph.openTransaction();
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, false);
             lastGraphBuiltBatchLoading = false;
+            graknGraph.openTransaction();
             return graknGraph;
         }
     }
     protected M getGraph(M graknGraph, boolean batchLoading){
+        boolean hasCommitted = false;
         //This checks if the previous graph built with this factory is the same as the one we trying to build now.
+        //TODO: Check is this features is still needed. It's very confusing at the end of the day
         if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
             //This then checks if the previous graph built has undergone a commit
-            boolean hasCommitted;
             if(lastGraphBuiltBatchLoading) {
                 hasCommitted = batchLoadingGraknGraph.hasCommitted();
             } else {
@@ -125,17 +128,19 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 systemKeyspace.keyspaceOpened(this.keyspace);
             }
         } else {
-            if(graknGraph.isClosed()){
+            if(hasCommitted){//In this case we need a new one because we force closing the previous one. Need to think about this one more carefully
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-            } else {
-                //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
-                G innerGraph = graknGraph.getTinkerPopGraph();
-                synchronized (innerGraph){
-                    if(isClosed(innerGraph)){
-                        graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-                    } else {
-                        getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
-                    }
+            } else if(graknGraph.isClosed()){
+                graknGraph.openTransaction();
+            }
+
+            //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
+            G innerGraph = graknGraph.getTinkerPopGraph();
+            synchronized (innerGraph){
+                if(isClosed(innerGraph)){
+                    graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                } else {
+                    getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
                 }
             }
         }

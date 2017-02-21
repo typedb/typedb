@@ -40,7 +40,6 @@ import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
 import static ai.grakn.util.ErrorMessage.GRAPH_PERMANENTLY_CLOSED;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class GraknTitanGraphTest extends TitanTestBase{
     private GraknGraph graknGraph;
@@ -62,7 +61,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> addEntityType(graknGraph)));
+            futures.add(pool.submit(this::addEntityType));
         }
 
         futures.forEach(future -> {
@@ -75,14 +74,11 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
         assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
     }
-    private void addEntityType(GraknGraph graknGraph){
-        graknGraph.open();
-        graknGraph.putEntityType(UUID.randomUUID().toString());
-        try {
-            graknGraph.commit();
-        } catch (GraknValidationException e) {
-            e.printStackTrace();
-        }
+    private void addEntityType(){
+        GraknTitanGraph graph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        graph.putEntityType(UUID.randomUUID().toString());
+        graph.commitOnClose();
+        graph.close();
     }
 
     @Test
@@ -108,15 +104,6 @@ public class GraknTitanGraphTest extends TitanTestBase{
         });
 
         assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
-    }
-
-    @Test
-    public void testRollback() {
-        assertNull(graknGraph.getEntityType("X"));
-        graknGraph.putEntityType("X");
-        assertNotNull(graknGraph.getEntityType("X"));
-        graknGraph.rollback();
-        assertNull(graknGraph.getEntityType("X"));
     }
 
     @Test
@@ -152,7 +139,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
 
-        graph.open();
+        graph.getEntityType(entityTypeName);
     }
 
     @Test

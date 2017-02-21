@@ -20,11 +20,11 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import org.junit.After;
@@ -72,7 +72,7 @@ public class DeleteQueryTest {
     }
 
     @After
-    public void rollback(){
+    public void cleanUp(){
         movieGraph.rollback();
     }
 
