@@ -134,6 +134,7 @@ public class SingleQueueTaskManager implements TaskManager {
     @Override
     public void addTask(TaskState taskState){
         producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId().getValue(), TaskState.serialize(taskState)));
+        //TODO do we need to flush here? when you figure it out write in javadoc
         producer.flush();
     }
 
@@ -161,7 +162,8 @@ public class SingleQueueTaskManager implements TaskManager {
         int capacity = ConfigProperties.getInstance().getAvailableThreads();
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder().setNameFormat(TASK_RUNNER_THREAD_POOL_NAME).build();
 
-        this.taskRunnerThreadPool = new ThreadPoolExecutor(capacity, capacity, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), taskRunnerPoolFactory);
+        this.taskRunnerThreadPool = new ThreadPoolExecutor(capacity, capacity, 0L,
+                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(capacity), taskRunnerPoolFactory);
         this.taskRunner = new SingleQueueTaskRunner(storage, consumer, taskRunnerThreadPool);
         Thread taskRunnerThread = new Thread(taskRunner, TASK_RUNNER_THREAD_NAME);
         taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());

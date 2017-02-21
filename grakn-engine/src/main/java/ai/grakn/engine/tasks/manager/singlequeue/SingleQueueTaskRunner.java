@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -74,7 +75,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     /**
      * Poll Kafka for any new tasks. Will not return until {@link SingleQueueTaskRunner#close()} is called.
-     * After receiving tasks, accept as many as possible, up to the maximum allowed number of tasks (TODO).
+     * After receiving tasks, accept as many as possible, up to the maximum allowed number of tasks.
      * For each task, follow the workflow based on its type:
      *  - If not created or not in storage:
      *    - Record that this engine is running this task
@@ -97,13 +98,20 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 LOG.debug("polled, got {} records", records.count());
 
                 for (ConsumerRecord<String, String> record : records) {
-                    if (!handleRecord(record)) {
+                    if (handleRecord(record)) {
+                        consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+                        consumer.commitSync();
+
+                        LOG.debug("acknowledged");
+                    } else {
                         // When executor is full, don't consume any further records
                         break;
                     }
                 }
             }
         } catch (Throwable throwable){
+            //todo do we need to re-throw, figure out
+            LOG.error(getFullStackTrace(throwable));
             throw new RuntimeException(throwable);
         } finally {
             countDownLatch.countDown();
@@ -122,6 +130,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         countDownLatch.await();
     }
 
+    /**
+     * Returns false if cannot handle record because the executor is full
+     * @param record
+     * @return
+     */
     private boolean handleRecord(ConsumerRecord<String, String> record) {
         TaskState task = TaskState.deserialize(record.value());
 
@@ -153,13 +166,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             }
         }
 
-        if (handled) {
-            consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
-            consumer.commitSync();
-
-            LOG.debug("{}\tacknowledged", task);
-        }
-
         return handled;
     }
 
@@ -174,6 +180,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             return !storage.containsTask(taskId);
         } else {
             // Only run retried tasks if they are not marked completed or failed
+            // TODO: what if another task runner is running this task? (due to rebalance)
             TaskStatus status = storage.getState(taskId).status();
             return !status.equals(COMPLETED) && !status.equals(FAILED);
         }
