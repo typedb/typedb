@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.engine.tasks.FailingTask;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
@@ -30,7 +31,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.When;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
@@ -43,6 +43,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -60,6 +63,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
@@ -69,6 +76,7 @@ public class SingleQueueTaskRunnerTest {
 
     private MockGraknConsumer<String, String> consumer;
     private TopicPartition partition;
+    private ExecutorService executor;
 
     @Before
     public void setUp() {
@@ -84,10 +92,12 @@ public class SingleQueueTaskRunnerTest {
         consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
 
-        taskRunner = new SingleQueueTaskRunner(storage, consumer);
+        executor = Executors.newCachedThreadPool();
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
+        taskRunner = new SingleQueueTaskRunner(storage, consumer, executor);
+
         createValidQueue(tasks);
 
         for (List<TaskState> taskList : tasks) {
@@ -103,6 +113,15 @@ public class SingleQueueTaskRunnerTest {
         });
 
         consumer.schedulePollTask(closeTaskRunner::start);
+    }
+
+    public void waitToComplete() {
+        executor.shutdown();
+        try {
+            executor.awaitTermination(1, TimeUnit.HOURS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Stream<TaskState> tasks(List<? extends List<TaskState>> tasks) {
@@ -173,6 +192,8 @@ public class SingleQueueTaskRunnerTest {
 
         taskRunner.run();
 
+        waitToComplete();
+
         tasks(tasks).forEach(task ->
                 assertNotNull(storage.getState(task.getId()))
         );
@@ -183,6 +204,8 @@ public class SingleQueueTaskRunnerTest {
         setUpTasks(tasks);
 
         taskRunner.run();
+
+        waitToComplete();
 
         completableTasks(tasks).forEach(task ->
                 assertThat(storage.getState(task).status(), is(COMPLETED))
@@ -195,24 +218,43 @@ public class SingleQueueTaskRunnerTest {
 
         taskRunner.run();
 
+        waitToComplete();
+
         failingTasks(tasks).forEach(task ->
                 assertThat(storage.getState(task).status(), is(FAILED))
         );
     }
 
     @Property(trials=10)
-    public void afterRunning_AllNonFailingTasksHaveCompletedExactlyOnce(@When(seed=-620074060896865190L) List<List<TaskState>> tasks) throws Exception {
+    public void afterRunning_AllNonFailingTasksHaveCompletedExactlyOnce(List<List<TaskState>> tasks) throws Exception {
         setUpTasks(tasks);
 
         taskRunner.run();
+
+        waitToComplete();
 
         Multiset<String> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks));
 
         assertEquals(expectedCompletedTasks, completedTasks());
     }
 
+    @Property(trials=10)
+    public void afterRunning_AllTasksHaveBeenSubmittedToExecutor(List<List<TaskState>> tasks) {
+        executor = mock(ExecutorService.class);
+
+        setUpTasks(tasks);
+
+        taskRunner.run();
+
+        int expectedSubmissions = completableTasks(tasks).size() + failingTasks(tasks).size();
+
+        verify(executor, times(expectedSubmissions)).submit(any(Runnable.class));
+    }
+
     @Test
     public void whenRunIsCalled_DontReturnUntilCloseIsCalled() throws Exception {
+        setUpTasks(ImmutableList.of());
+
         Thread thread = new Thread(taskRunner);
         thread.start();
 
