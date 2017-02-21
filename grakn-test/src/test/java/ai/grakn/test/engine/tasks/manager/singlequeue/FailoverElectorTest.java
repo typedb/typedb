@@ -57,7 +57,7 @@ public class FailoverElectorTest {
     public void whenFailoverElectorIsInstantiated_ThisEngineBecomesLeader(){
         FailoverElector elector = new FailoverElector("Engine1", zookeeper, storage);
         assertEquals("Engine1", elector.awaitLeader());
-        elector.stop();
+        elector.renounce();
     }
 
     @Test
@@ -69,9 +69,9 @@ public class FailoverElectorTest {
 
         String currentLeader = elector1.awaitLeader();
         if(Objects.equals(currentLeader, "Engine1")){
-            elector1.stop();
+            elector1.renounce();
         } else {
-            elector2.stop();
+            elector2.renounce();
         }
 
         Thread.sleep(1000);
@@ -79,8 +79,7 @@ public class FailoverElectorTest {
         assertEquals(elector1.awaitLeader(), elector2.awaitLeader());
         assertNotEquals(currentLeader, elector1.awaitLeader());
 
-        elector1.stop();
-        elector2.stop();
+        elector1.renounce();
+        elector2.renounce();
     }
-
 }
