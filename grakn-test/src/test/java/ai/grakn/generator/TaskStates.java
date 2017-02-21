@@ -43,7 +43,7 @@ public class TaskStates extends Generator<TaskState> {
         // TODO: make this generate more classes
         Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(TestTask.class, FailingTask.class));
 
-        TaskId taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B")));
+        TaskId taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
 
         TaskStatus taskStatus = gen().type(TaskStatus.class).generate(random, status);
 

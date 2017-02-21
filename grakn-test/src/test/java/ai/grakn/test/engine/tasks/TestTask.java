@@ -46,6 +46,12 @@ public class TestTask implements BackgroundTask {
     }
 
     public void start(Consumer<String> saveCheckpoint, Json config) {
+        // A short sleep to allow tasks to step on each other's toes
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         startedCounter.incrementAndGet();
         completedTasks.add(TaskId.of(config.at("id").asString()));
     }
