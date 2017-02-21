@@ -87,7 +87,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId())
                 .has(STATUS, var().value(CREATED.toString()))
-                .has(TASK_CLASS_NAME, var().value(task.taskClassName()))
+                .has(TASK_CLASS_NAME, var().value(task.taskClass()))
                 .has(CREATED_BY, var().value(task.creator()))
                 .has(RUN_AT, var().value(task.runAt().toEpochMilli()))
                 .has(RECURRING, var().value(task.isRecurring()))

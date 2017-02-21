@@ -66,7 +66,7 @@ public class TaskStateZookeeperStoreTest {
         TaskState state = stateStorage.getState(id);
         assertNotNull(state);
         assertEquals(CREATED, state.status());
-        assertEquals(TestTask.class.getName(), state.taskClassName());
+        assertEquals(TestTask.class.getName(), state.taskClass());
         assertEquals(this.getClass().getName(), state.creator());
     }
 
@@ -229,7 +229,7 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(TestTask.class.getName())
+        return new TaskState(TestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
                 .runAt(now())

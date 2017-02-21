@@ -67,7 +67,7 @@ public class TasksControllerTest {
     public void setUp() throws Exception {
         MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
         singleTask = manager.storage().newState(
-                new TaskState(TestTask.class.getName())
+                new TaskState(TestTask.class)
                         .creator(this.getClass().getName())
                         .runAt(Instant.now())
                         .status(COMPLETED)

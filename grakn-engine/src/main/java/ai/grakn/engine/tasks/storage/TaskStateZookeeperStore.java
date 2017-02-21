@@ -161,7 +161,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
             }
 
             if (taskClassName != null) {
-                stream = stream.filter(t -> t.taskClassName().equals(taskClassName));
+                stream = stream.filter(t -> t.taskClass().equals(taskClassName));
             }
 
             if (createdBy != null) {

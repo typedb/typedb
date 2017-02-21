@@ -19,9 +19,10 @@
 
 package ai.grakn.engine.tasks.manager.multiqueue;
 
-import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
@@ -93,10 +94,10 @@ public final class MultiQueueTaskManager implements TaskManager {
     }
 
     @Override
-    public String createTask(String taskClassName, String createdBy, Instant runAt, long period, Json configuration) {
+    public String createTask(Class<? extends BackgroundTask> taskClass, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = period > 0;
 
-        TaskState taskState = new TaskState(taskClassName)
+        TaskState taskState = new TaskState(taskClass)
                 .creator(createdBy)
                 .runAt(runAt)
                 .isRecurring(recurring)

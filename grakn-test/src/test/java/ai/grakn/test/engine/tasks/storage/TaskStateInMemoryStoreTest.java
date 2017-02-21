@@ -51,7 +51,7 @@ public class TaskStateInMemoryStoreTest {
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
-        assertEquals("name", TestTask.class.getName(), state.taskClassName());
+        assertEquals("name", TestTask.class.getName(), state.taskClass());
         assertEquals("creator", this.getClass().getName(), state.creator());
         assertEquals("recurring", false, state.isRecurring());
         assertEquals("interval", 0, state.interval());
@@ -145,7 +145,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(TestTask.class.getName())
+        return new TaskState(TestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
                 .runAt(now())

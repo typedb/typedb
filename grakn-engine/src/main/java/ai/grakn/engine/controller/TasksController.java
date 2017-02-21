@@ -18,9 +18,10 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
@@ -188,7 +189,9 @@ public class TasksController {
                 configuration = Json.read(request.body());
             }
 
-            String id = manager.createTask(className, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
+            Class<? extends BackgroundTask> clazz = (Class<? extends BackgroundTask>) Class.forName(className);
+
+            String id = manager.createTask(clazz, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
 
             response.type("application/json");
 
@@ -204,7 +207,7 @@ public class TasksController {
         return new JSONObject().put("id", state.getId())
                 .put("status", state.status())
                 .put("creator", state.creator())
-                .put("className", state.taskClassName())
+                .put("className", state.taskClass())
                 .put("runAt", state.runAt())
                 .put("recurring", state.isRecurring());
     }

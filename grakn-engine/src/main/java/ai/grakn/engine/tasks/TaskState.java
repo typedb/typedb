@@ -88,11 +88,11 @@ public class TaskState implements Serializable {
      */
     private Json configuration;
 
-    public TaskState(String taskClassName) {
+    public TaskState(Class<?> taskClass) {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
-        this.taskClassName = taskClassName;
         this.taskId = UUID.randomUUID().toString();
+        this.taskClassName = taskClass.getName();
     }
 
     public TaskState(String taskClassName, String id, TaskStatus status){
@@ -133,8 +133,12 @@ public class TaskState implements Serializable {
         return statusChangedBy;
     }
 
-    public String taskClassName() {
-        return this.taskClassName;
+    public Class<? extends BackgroundTask> taskClass() {
+        try {
+            return (Class<? extends BackgroundTask>) Class.forName(taskClassName);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public TaskState creator(String creator) {

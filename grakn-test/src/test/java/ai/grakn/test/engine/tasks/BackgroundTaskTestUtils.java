@@ -42,14 +42,14 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(int i, TaskStatus status, boolean recurring, int interval) {
-        return new TaskState(TestTask.class.getName())
+        TaskState taskState = new TaskState(TestTask.class)
                 .status(status)
                 .creator(BackgroundTaskTestUtils.class.getName())
                 .statusChangedBy(BackgroundTaskTestUtils.class.getName())
                 .runAt(now())
                 .isRecurring(recurring)
-                .interval(interval)
-                .configuration(Json.object("name", "task" + i));
+                .interval(interval);
+        return taskState.configuration(Json.object("id", taskState.getId(), "name", "task" + i));
     }
     
     public static void waitForStatus(TaskStateStorage storage, Set<TaskState> tasks, TaskStatus status) {

@@ -95,10 +95,10 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     @Override
-    public String createTask(String taskClassName, String createdBy, Instant runAt, long period, Json configuration) {
+    public String createTask(Class<? extends BackgroundTask> taskClass, String createdBy, Instant runAt, long period, Json configuration) {
         Boolean recurring = (period != 0);
 
-        TaskState taskState = new TaskState(taskClassName)
+        TaskState taskState = new TaskState(taskClass)
                 .creator(createdBy)
                 .runAt(runAt)
                 .isRecurring(recurring)
@@ -114,8 +114,7 @@ public class StandaloneTaskManager implements TaskManager {
             stateStorage.updateState(taskState.status(SCHEDULED).statusChangedBy(this.getClass().getName()));
 
             // Instantiate task.
-            Class<?> c = Class.forName(taskClassName);
-            BackgroundTask task = (BackgroundTask) c.newInstance();
+            BackgroundTask task = taskClass.newInstance();
 
             ScheduledFuture<?> future;
             if(recurring) {

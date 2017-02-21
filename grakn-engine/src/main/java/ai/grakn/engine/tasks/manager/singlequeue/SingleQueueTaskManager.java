@@ -19,6 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
@@ -91,7 +92,7 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Create an instance of a task based on the given parameters and submit it a Kafka queue.
      *
-     * @param taskClassName Name of the class implementing the BackgroundTask interface
+     * @param taskClass The class implementing the BackgroundTask interface
      * @param createdBy Name of the class that created the task
      * @param runAt Instant when task should run.
      * @param period A non-zero value indicates that this should be a recurring task and period indicates the delay between
@@ -102,7 +103,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return String identifier of the created task
      */
     @Override
-    public String createTask(String taskClassName, String createdBy, Instant runAt, long period, Json configuration) {
+    public String createTask(Class<? extends BackgroundTask> taskClass, String createdBy, Instant runAt, long period, Json configuration) {
         return null;
     }
 

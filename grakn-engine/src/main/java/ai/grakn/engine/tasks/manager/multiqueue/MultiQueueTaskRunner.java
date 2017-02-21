@@ -236,8 +236,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
             addRunningTask(state.getId());
 
             // Instantiate task.
-            Class<?> c = Class.forName(state.taskClassName());
-            BackgroundTask task = (BackgroundTask) c.newInstance();
+            BackgroundTask task = state.taskClass().newInstance();
 
             // Resume task from the checkpoint, if it exists. Otherwise run from the beginning.
             if(state.checkpoint() != null){
