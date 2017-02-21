@@ -22,13 +22,11 @@ package ai.grakn.engine.tasks.manager.multiqueue;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 import org.apache.curator.framework.state.ConnectionState;
 
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
@@ -52,7 +50,6 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
     private final TaskStateStorage storage;
 
     private Scheduler scheduler;
-    private TreeCache cache;
     private TaskFailover failover;
     private ZookeeperConnection connection;
 
@@ -92,7 +89,6 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
         if(scheduler != null) {
             noThrow(scheduler::close, "Error closing the Scheduler");
             noThrow(failover::close, "Error shutting down task failover hook");
-            noThrow(cache::close, "Error closing zookeeper cache");
         }
     }
 
@@ -131,9 +127,6 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
     }
 
     private void registerFailover(CuratorFramework client) throws Exception {
-        cache = new TreeCache(client, RUNNERS_WATCH);
-        failover = new TaskFailover(client, cache, storage);
-        cache.getListenable().addListener(failover);
-        cache.start();
+        failover = new TaskFailover(client, storage);
     }
 }

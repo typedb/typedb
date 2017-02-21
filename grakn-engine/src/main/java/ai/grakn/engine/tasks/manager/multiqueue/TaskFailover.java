@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager.multiqueue;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskState;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
@@ -36,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.RUNNING;
@@ -57,40 +59,44 @@ import static java.lang.String.format;
  */
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final Logger LOG = LoggerFactory.getLogger(TaskFailover.class);
-    private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final TaskStateStorage stateStorage;
+    private final CountDownLatch blocker;
+    private final TreeCache cache;
 
     private Map<String, ChildData> current;
-    private TreeCache cache;
     private KafkaProducer<String, String> producer;
 
-    public TaskFailover(CuratorFramework client, TreeCache cache, TaskStateStorage stateStorage) throws Exception {
+    public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
         this.stateStorage = stateStorage;
+        this.blocker = new CountDownLatch(1);
+        this.cache = new TreeCache(client, RUNNERS_WATCH);
 
-        if(OPENED.compareAndSet(false, true)) {
-            this.cache = cache;
-            current = cache.getCurrentChildren(RUNNERS_WATCH);
-            producer = kafkaProducer();
+        this.cache.getListenable().addListener(this);
+        this.cache.getUnhandledErrorListenable().addListener((message, e) -> blocker.countDown());
 
-            scanStaleStates(client);
-        }
-        else {
-            LOG.error("TaskFailover already opened!");
-        }
+        current = cache.getCurrentChildren(RUNNERS_WATCH);
+        producer = kafkaProducer();
+        scanStaleStates(client);
     }
 
     @Override
     public void close() {
-        if(OPENED.compareAndSet(true, false)) {
-            noThrow(producer::flush, "Could not flush Kafka Producer.");
-            noThrow(producer::close, "Could not close Kafka Producer.");
-        }
-        else {
-            LOG.error("TaskFailover close() called before open().");
-        }
+        noThrow(producer::flush, "Could not flush Kafka Producer.");
+        noThrow(producer::close, "Could not close Kafka Producer.");
+        noThrow(cache::close, "Error closing zookeeper cache");
     }
 
+    /**
+     * Block until this instance of {@link TaskFailover} fails with an unhandled error.
+     */
+    public void await(){
+        try {
+            blocker.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
         Map<String, ChildData> nodes = cache.getCurrentChildren(RUNNERS_WATCH);

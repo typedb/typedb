@@ -28,11 +28,11 @@ package ai.grakn.engine.tasks.config;
 public interface ZookeeperPaths {
     String TASKS_NAMESPACE = "grakn";
     String SCHEDULER = "/scheduler";
+    String FAILOVER = "/failover";
     String TASK_RUNNERS = "/task_runners";
     String RUNNERS_WATCH = TASK_RUNNERS+"/watch";
     String RUNNERS_STATE = TASK_RUNNERS+"/last_state";
     String TASKS_PATH_PREFIX = "/tasks";
-    String TASK_STATE_SUFFIX = "/state";
     String TASK_LOCK_SUFFIX = "/lock";
     String PARTITION_PATH = "/partition/%s";
     String ENGINE_PATH = "/engine";

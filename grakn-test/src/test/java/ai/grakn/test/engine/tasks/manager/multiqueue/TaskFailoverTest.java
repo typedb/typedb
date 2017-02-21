@@ -58,7 +58,6 @@ public class TaskFailoverTest {
 
     private static ZookeeperConnection connection;
     private static TaskFailover taskFailover;
-    private static TreeCache treeCache;
     private static TaskStateInMemoryStore storage;
 
     private static Thread failoverThread;
@@ -77,10 +76,7 @@ public class TaskFailoverTest {
         CountDownLatch failoverStartup = new CountDownLatch(1);
         failoverThread = new Thread(() -> {
             try {
-                treeCache = new TreeCache(connection.connection(), RUNNERS_WATCH);
-                taskFailover = new TaskFailover(connection.connection(), treeCache, storage);
-                treeCache.getListenable().addListener(taskFailover);
-                treeCache.start();
+                taskFailover = new TaskFailover(connection.connection(), storage);
                 failoverStartup.countDown();
             } catch (Exception e){
                 throw new RuntimeException(e);
@@ -94,7 +90,6 @@ public class TaskFailoverTest {
     @AfterClass
     public static void teardown() throws Exception {
         taskFailover.close();
-        treeCache.close();
         connection.close();
 
         failoverThread.interrupt();
