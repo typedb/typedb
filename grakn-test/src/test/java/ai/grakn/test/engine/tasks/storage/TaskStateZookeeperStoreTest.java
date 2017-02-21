@@ -99,11 +99,11 @@ public class TaskStateZookeeperStoreTest {
 
         // Update previous
         stateStorage.updateState(task.engineID("Engine1"));
-        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(true));
+        assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
 
         // Check that getting engine-task path is not there
         stateStorage.updateState(task.engineID(null));
-        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
+        assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
     }
 
     @Test
@@ -113,11 +113,11 @@ public class TaskStateZookeeperStoreTest {
 
         // Set engine id to null
         stateStorage.updateState(task.engineID(null));
-        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
+        assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
 
         // Check that getting engine-task path is there
         stateStorage.updateState(task.engineID("Engine1"));
-        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(true));
+        assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
     }
 
     @Test
@@ -126,12 +126,12 @@ public class TaskStateZookeeperStoreTest {
         stateStorage.newState(task);
 
         stateStorage.updateState(task.engineID("Engine1"));
-        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(true));
+        assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
 
         // Check that getting engine-task path is not there
         stateStorage.updateState(task.engineID("Engine2"));
-        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
-        assertThat(pathExists("/tasks/engine/Engine2/" + task.getId()), is(true));
+        assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
+        assertThat(pathExists("/engine/Engine2/" + task.getId()), is(true));
     }
 
     @Test
@@ -140,11 +140,11 @@ public class TaskStateZookeeperStoreTest {
         stateStorage.newState(task);
 
         stateStorage.updateState(task.engineID(null));
-        assertThat(pathExists("/tasks/engine/Engine1/" + task.getId()), is(false));
+        assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
 
         // Check that getting engine-task path is not there
         stateStorage.updateState(task.engineID(null));
-        assertThat(pathExists("/tasks/engine/Engine2/" + task.getId()), is(false));
+        assertThat(pathExists("/engine/Engine2/" + task.getId()), is(false));
     }
 
     @Test

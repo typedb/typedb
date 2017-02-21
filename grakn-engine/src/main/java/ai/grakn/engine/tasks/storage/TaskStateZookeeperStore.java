@@ -26,7 +26,6 @@ import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -45,13 +44,12 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * by acquiring a distributed mutex so that no concurrent writes are possible. 
  * </p>
  * 
- * @author Denis Lobanov, Alexandra Orth
  *
  */
 public class TaskStateZookeeperStore implements TaskStateStorage {
     private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s";
-    private static final String ZK_ENGINE_PATH = TASKS_PATH_PREFIX + ENGINE_PATH + "/%s";
-    private static final String ZK_ENGINE_TASK_PATH =  TASKS_PATH_PREFIX + ENGINE_PATH + "/%s/%s";
+    private static final String ZK_ENGINE_PATH = ENGINE_PATH + "/%s";
+    private static final String ZK_ENGINE_TASK_PATH = ENGINE_PATH + "/%s/%s";
 
     private final ZookeeperConnection zookeeper;
 
@@ -96,30 +94,20 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
             CuratorTransactionBridge baseTransaction = zookeeper.connection().inTransaction()
                     .setData().forPath(taskPath(task), serialize(task));
 
-            // If the Engine was deleted
-            if(currentEngineId == null && previousEngineId != null){
-                baseTransaction = baseTransaction.and()
-                        .delete().forPath(engineTaskPath(previousEngineId, task));
+            // If previous engine is non null and this one is non null, delete previous
+            if(previousEngineId != null && !previousEngineId.equals(currentEngineId)){
+                baseTransaction = baseTransaction.and().delete().forPath(engineTaskPath(previousEngineId, task));
             }
-            // If the engine has been updated
-            else if(previousEngineId != null && !Objects.equals(currentEngineId, previousEngineId)){
 
-                if(zookeeper.connection().checkExists().forPath(enginePath(currentEngineId)) != null){
-                    zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(currentEngineId));
-                }
+            // If there is a new engine different from the previous one
+            if(currentEngineId != null && !currentEngineId.equals(previousEngineId)){
 
-                baseTransaction = baseTransaction.and()
-                        .delete().forPath(engineTaskPath(previousEngineId, task)).and()
-                        .create().forPath(engineTaskPath(currentEngineId, task));
-            }
-            // If the engine was added
-            else if(currentEngineId != null) {
+                // Ensure there is a path for the current engine
                 if(zookeeper.connection().checkExists().forPath(enginePath(currentEngineId)) == null){
                     zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(currentEngineId));
                 }
 
-                baseTransaction = baseTransaction.and()
-                        .create().forPath(engineTaskPath(currentEngineId, task));
+                baseTransaction = baseTransaction.and().create().forPath(engineTaskPath(currentEngineId, task));
             }
 
             baseTransaction.and().commit();
@@ -155,6 +143,9 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
         try {
+
+            zookeeper.connection().getChildren()
+                    .forPath(TASKS_PATH_PREFIX).stream().forEach(System.out::println);
 
             Stream<TaskState> stream = zookeeper.connection().getChildren()
                     .forPath(TASKS_PATH_PREFIX).stream()
