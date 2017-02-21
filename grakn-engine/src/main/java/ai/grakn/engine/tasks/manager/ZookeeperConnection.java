@@ -101,59 +101,6 @@ public class ZookeeperConnection {
         }
     }
 
-    /**
-     * Delete any records at the given path
-     * @param path
-     */
-    public void delete(String path) {
-        try {
-            zookeeperConnection.delete().forPath(path);
-        } catch (Exception e){
-            throw new EngineStorageException(e);
-        }
-    }
-
-    /**
-     *
-     * @param path
-     * @param toWrite
-     */
-    public void write(String path, byte[] toWrite) {
-        try {
-            zookeeperConnection.create()
-                    .creatingParentContainersIfNeeded()
-                    .forPath(path, toWrite);
-        } catch (Exception e){
-            throw new EngineStorageException(e);
-        }
-    }
-
-    /**
-     *
-     * @param path
-     * @param toWrite
-     */
-    public void put(String path, byte[] toWrite) {
-        try {
-            zookeeperConnection.setData().forPath(path, toWrite);
-        } catch (Exception e){
-            throw new EngineStorageException(e);
-        }
-    }
-
-    /**
-     * Read the data at the given path
-     * @param path
-     * @return
-     */
-    public byte[] read(String path){
-        try {
-            return zookeeperConnection.getData().forPath(path);
-        } catch (Exception e){
-            throw new EngineStorageException(e);
-        }
-    }
-
     private void createZKPaths() throws Exception {
         if(zookeeperConnection.checkExists().forPath(SCHEDULER) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(SCHEDULER);

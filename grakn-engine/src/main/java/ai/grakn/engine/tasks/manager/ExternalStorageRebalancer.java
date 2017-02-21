@@ -19,6 +19,7 @@
 
 package ai.grakn.engine.tasks.manager;
 
+import ai.grakn.exception.EngineStorageException;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
@@ -41,13 +42,13 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
 
     private final static Logger LOG = LoggerFactory.getLogger(ExternalStorageRebalancer.class);
 
-    private final ZookeeperConnection connection;
+    private final ZookeeperConnection zookeeper;
     private final KafkaConsumer consumer;
     private final String className;
 
-    public ExternalStorageRebalancer(KafkaConsumer consumer, ZookeeperConnection connection, String className){
+    public ExternalStorageRebalancer(KafkaConsumer consumer, ZookeeperConnection zookeeper, String className){
         this.className = className;
-        this.connection = connection;
+        this.zookeeper = zookeeper;
         this.consumer = consumer;
     }
 
@@ -84,12 +85,16 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      * @return The offset for the given partition.
      */
     private long getOffsetFromZookeeper(TopicPartition partition) {
-        String partitionPath = getPartitionPath(partition);
-        long offset = (long) deserialize(connection.read(partitionPath));
+        try {
+            String partitionPath = getPartitionPath(partition);
+            long offset = (long) deserialize(zookeeper.connection().getData().forPath(partitionPath));
 
-        LOG.debug(format("Offset %s read for partition %s", partitionPath, partitionPath));
+            LOG.debug(format("Offset %s read for partition %s", partitionPath, partitionPath));
 
-        return offset;
+            return offset;
+        } catch (Exception e){
+            throw new EngineStorageException("Error retrieving offset");
+        }
     }
 
     /**
@@ -98,11 +103,17 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      * @param partition Partition to save the offset of.
      */
     private void saveOffsetInZookeeper(TopicPartition partition){
-        long currentOffset = consumer.position(partition);
-        String partitionPath = getPartitionPath(partition);
+        try {
+            long currentOffset = consumer.position(partition);
+            String partitionPath = getPartitionPath(partition);
 
-        LOG.debug(format("Offset at %s writing for partition %s", currentOffset, partitionPath));
-        connection.write(partitionPath, serialize(currentOffset));
+            LOG.debug(format("Offset at %s writing for partition %s", currentOffset, partitionPath));
+            zookeeper.connection().create()
+                    .creatingParentContainersIfNeeded()
+                    .forPath(partitionPath, serialize(currentOffset));
+        } catch (Exception e){
+            throw new EngineStorageException("Error saving offset");
+        }
     }
 
     /**
@@ -111,10 +122,15 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      * @param partition Partition to delete the offset of.
      */
     private void deleteOffsetFromZookeeper(TopicPartition partition){
-        String partitionPath = getPartitionPath(partition);
+        try {
+            String partitionPath = getPartitionPath(partition);
 
-        LOG.debug(format("Offset at %s deleting", partitionPath));
-        connection.delete(partitionPath);
+            LOG.debug(format("Offset at %s deleting", partitionPath));
+            zookeeper.connection().delete()
+                    .forPath(partitionPath);
+        } catch (Exception e){
+            throw new EngineStorageException("Error deleting offset");
+        }
     }
 
     /**

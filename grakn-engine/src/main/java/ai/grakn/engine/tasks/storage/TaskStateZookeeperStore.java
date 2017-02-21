@@ -81,33 +81,37 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      *  + /tasks/id/state
      *  + /engine/tasks/id
      *
-     * @param task State to update in Zookeeper
+     * @param currentTask State to update in Zookeeper
      * @return True if successfully update, false otherwise
      */
     @Override
-    public Boolean updateState(TaskState task){
-        return executeWithMutex(task.getId(), () -> {
+    public Boolean updateState(TaskState currentTask){
+        return executeWithMutex(currentTask.getId(), () -> {
 
-            String currentEngineId = task.engineID();
-            String previousEngineId = ((TaskState) deserialize(zookeeper.read(taskPath(task.getId())))).engineID();
+            String taskPath = taskPath(currentTask.getId());
+            TaskState previousTask = (TaskState) deserialize(zookeeper.connection().getData().forPath(taskPath));
 
-            CuratorTransactionBridge baseTransaction = zookeeper.connection().inTransaction()
-                    .setData().forPath(taskPath(task), serialize(task));
+            // Start a transaction to write the current serialized task
+            CuratorTransactionBridge baseTransaction =
+                    zookeeper.connection().inTransaction().setData().forPath(taskPath(currentTask), serialize(currentTask));
+
+            String currentEngineId = currentTask.engineID();
+            String previousEngineId = previousTask.engineID();
 
             // If previous engine is non null and this one is non null, delete previous
-            if(previousEngineId != null && !previousEngineId.equals(currentEngineId)){
-                baseTransaction = baseTransaction.and().delete().forPath(engineTaskPath(previousEngineId, task));
+            if (previousEngineId != null && !previousEngineId.equals(currentEngineId)) {
+                baseTransaction = baseTransaction.and().delete().forPath(engineTaskPath(previousEngineId, currentTask));
             }
 
             // If there is a new engine different from the previous one
-            if(currentEngineId != null && !currentEngineId.equals(previousEngineId)){
+            if (currentEngineId != null && !currentEngineId.equals(previousEngineId)) {
 
                 // Ensure there is a path for the current engine
-                if(zookeeper.connection().checkExists().forPath(enginePath(currentEngineId)) == null){
+                if (zookeeper.connection().checkExists().forPath(enginePath(currentEngineId)) == null) {
                     zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(currentEngineId));
                 }
 
-                baseTransaction = baseTransaction.and().create().forPath(engineTaskPath(currentEngineId, task));
+                baseTransaction = baseTransaction.and().create().forPath(engineTaskPath(currentEngineId, currentTask));
             }
 
             baseTransaction.and().commit();
@@ -125,7 +129,10 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      */
     @Override
     public TaskState getState(String id) {
-        return executeWithMutex(id, () -> (TaskState) deserialize(zookeeper.read(taskPath(id))));
+        return executeWithMutex(id, () -> {
+            byte[] stateInZk = zookeeper.connection().getData().forPath(taskPath(id));
+            return (TaskState) deserialize(stateInZk);
+        });
     }
 
     @Override
