@@ -191,7 +191,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             task.taskClass().newInstance().start(null, task.configuration());
             task.status(TaskStatus.COMPLETED);
             LOG.debug("{}\tmarked as completed", task);
-        } catch (Exception e) {
+        } catch (Throwable throwable) {
             task.status(FAILED);
             LOG.debug("{}\tmarked as failed", task);
         } finally {
