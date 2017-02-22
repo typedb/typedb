@@ -2,6 +2,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -92,7 +93,6 @@ public abstract class GraknTestEnv {
 
             GraknEngineServer.stop();
             clearGraphs();
-//            GraknEngineServer.stopHTTP();
 
             LOG.info("ENGINE STOPPED.");
         }
@@ -110,7 +110,7 @@ public abstract class GraknTestEnv {
                 .forEach(x -> x.values().forEach(y -> {
                     String name = y.asResource().getValue().toString();
                     GraknGraph graph = engineGraknGraphFactory.getGraph(name);
-                    graph.clear();
+                    graph.admin().clear(EngineCache.getInstance());
                 }));
 
         engineGraknGraphFactory.refreshConnections();

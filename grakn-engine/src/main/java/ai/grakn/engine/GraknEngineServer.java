@@ -94,9 +94,6 @@ public class GraknEngineServer {
     }
 
     public static void stop() {
-        //TODO there is a bug where clear() on graphs still submits to the commit log (#12388). We
-        //TODO cannot stop http here until that is fixed, because in tests after stopping engine
-        //TODO we need to clear the graphs
         stopHTTP();
         stopTaskManager();
     }
@@ -156,10 +153,9 @@ public class GraknEngineServer {
                 .schedule(TaskSchedule.recurring(interval))
                 .configuration(Json.object());
         taskManager.addTask(postprocessing);
-
     }
 
-    public static void stopHTTP() {
+    private static void stopHTTP() {
         Spark.stop();
 
         // Block until server is truly stopped
