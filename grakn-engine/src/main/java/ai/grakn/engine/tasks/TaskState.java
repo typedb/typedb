@@ -62,17 +62,9 @@ public class TaskState implements Serializable {
      */
     private String engineID;
     /**
-     * When this task should be executed.
+     * Schedule for when this task should execute
      */
-    private Instant runAt;
-    /**
-     * Should this task be run again after it has finished executing successfully.
-     */
-    private Boolean recurring;
-    /**
-     * If a task is marked as recurring, this represents the time delay between the next executing of this task.
-     */
-    private long interval;
+    private TaskSchedule schedule;
     /**
      * Used to store any executing failures for the given task.
      */
@@ -98,9 +90,7 @@ public class TaskState implements Serializable {
         this.taskId = id.getValue();
 
         //TODO Defaults until we refactor TaskState class
-        this.runAt = Instant.now();
-        this.recurring = false;
-        this.interval = 0;
+        this.schedule = TaskSchedule.now();
     }
 
     private TaskState(TaskState taskState) {
@@ -111,9 +101,7 @@ public class TaskState implements Serializable {
         this.taskClassName = taskState.taskClassName;
         this.creator = taskState.creator;
         this.engineID = taskState.engineID;
-        this.runAt = taskState.runAt;
-        this.recurring = taskState.recurring;
-        this.interval = taskState.interval;
+        this.schedule = taskState.schedule;
         this.stackTrace = taskState.stackTrace;
         this.exception = taskState.exception;
         this.taskCheckpoint = taskState.taskCheckpoint;
@@ -178,31 +166,13 @@ public class TaskState implements Serializable {
         return engineID;
     }
 
-    public TaskState runAt(Instant runAt) {
-        this.runAt = runAt;
+    public TaskState schedule(TaskSchedule schedule) {
+        this.schedule = schedule;
         return this;
     }
 
-    public Instant runAt() {
-        return runAt;
-    }
-
-    public TaskState isRecurring(Boolean recurring) {
-        this.recurring = recurring;
-        return this;
-    }
-
-    public Boolean isRecurring() {
-        return recurring != null && recurring;
-    }
-
-    public TaskState interval(long interval) {
-        this.interval = interval;
-        return this;
-    }
-
-    public long interval() {
-        return interval;
+    public TaskSchedule schedule() {
+        return schedule;
     }
 
     public TaskState stackTrace(String stackTrace) {

@@ -18,16 +18,16 @@
 
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import mjson.Json;
-import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.zookeeper.CreateMode;
 import org.json.JSONArray;
 import org.junit.AfterClass;
@@ -127,11 +127,11 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add a task in each state (SCHEDULED, COMPLETED, STOPPED, FAILED, RUNNING) to fake task runner watch
-        TaskState scheduled = createTask(SCHEDULED, false, 0);
-        TaskState running = createTask(RUNNING, false, 0);
-        TaskState stopped = createTask(STOPPED, false, 0);
-        TaskState failed = createTask(FAILED, false, 0);
-        TaskState completed = createTask(COMPLETED, false, 0);
+        TaskState scheduled = createTask(SCHEDULED, TaskSchedule.now());
+        TaskState running = createTask(RUNNING, TaskSchedule.now());
+        TaskState stopped = createTask(STOPPED, TaskSchedule.now());
+        TaskState failed = createTask(FAILED, TaskSchedule.now());
+        TaskState completed = createTask(COMPLETED, TaskSchedule.now());
 
         Set<TaskState> tasks = Sets.newHashSet(scheduled, running, stopped, failed, completed);
         tasks.forEach(storage::newState);
@@ -165,7 +165,7 @@ public class TaskFailoverTest {
         Json configuration = Json.object("configuration", true);
         Json checkpoint = Json.object("configuration", false);
 
-        TaskState running = createTask(RUNNING, false, 0);
+        TaskState running = createTask(RUNNING, TaskSchedule.now());
         running.configuration(configuration);
         running.checkpoint(checkpoint.toString());
         storage.newState(running);

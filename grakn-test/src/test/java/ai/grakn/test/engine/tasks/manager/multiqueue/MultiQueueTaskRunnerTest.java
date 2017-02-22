@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
@@ -113,7 +114,7 @@ public class MultiQueueTaskRunnerTest {
         ShortExecutionTestTask.startedCounter.set(0);
         ShortExecutionTestTask.resumedCounter.set(0);
 
-        TaskState task = createTask(SCHEDULED, false, 0);
+        TaskState task = createTask(SCHEDULED, TaskSchedule.now());
         task.checkpoint("");
         storage.newState(task);
         sendTasksToWorkQueue(singleton(task));

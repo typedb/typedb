@@ -31,6 +31,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -38,7 +39,7 @@ import java.util.stream.IntStream;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static java.time.Instant.now;
+import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -63,7 +64,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
+        TaskId id = stateStorage.newState(task().configuration(configuration).schedule(at(runAt)));
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
@@ -71,9 +72,9 @@ public class TaskStateGraphStoreTest {
 
         Assert.assertEquals(task.getClass(), state.taskClass());
         Assert.assertEquals(this.getClass().getName(), state.creator());
-        assertEquals(runAt, state.runAt());
-        assertFalse(state.isRecurring());
-        assertEquals(0, state.interval());
+        assertEquals(runAt, state.schedule().runAt());
+        assertFalse(state.schedule().isRecurring());
+        assertEquals(Optional.empty(), state.schedule().interval());
         assertEquals(configuration.toString(), state.configuration().toString());
     }
 
@@ -82,7 +83,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task().configuration(configuration).runAt(runAt));
+        TaskId id = stateStorage.newState(task().configuration(configuration).schedule(at(runAt)));
         assertNotNull(id);
 
         // Get current values
@@ -179,9 +180,6 @@ public class TaskStateGraphStoreTest {
         return new TaskState(ShortExecutionTestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
-                .runAt(now())
-                .isRecurring(false)
-                .interval(0)
                 .engineID(UUID.randomUUID().toString())
                 .configuration(null);
     }

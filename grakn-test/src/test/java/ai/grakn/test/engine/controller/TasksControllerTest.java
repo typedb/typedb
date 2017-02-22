@@ -39,7 +39,6 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -70,7 +69,6 @@ public class TasksControllerTest {
         singleTask = manager.storage().newState(
                 new TaskState(ShortExecutionTestTask.class)
                         .creator(this.getClass().getName())
-                        .runAt(Instant.now())
                         .status(COMPLETED)
                         .configuration(Json.object()));
     }

@@ -17,8 +17,6 @@
  */
 package ai.grakn.engine;
 
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
@@ -29,6 +27,9 @@ import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
@@ -39,11 +40,12 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Spark;
 
-import java.time.Instant;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.awaitInitialization;
 import static spark.Spark.before;
@@ -54,8 +56,6 @@ import static spark.Spark.port;
 import static spark.Spark.staticFiles;
 import static spark.Spark.webSocket;
 import static spark.Spark.webSocketIdleTimeoutMillis;
-
-import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -149,11 +149,10 @@ public class GraknEngineServer {
 
     private static void startPostprocessing(){
         // Submit a recurring post processing task
+        Duration interval = Duration.ofMillis(prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE));
         TaskState postprocessing = new TaskState(PostProcessingTask.class)
                 .creator(GraknEngineServer.class.getName())
-                .runAt(Instant.now())
-                .isRecurring(true)
-                .interval(prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE))
+                .schedule(TaskSchedule.recurring(interval))
                 .configuration(Json.object());
         taskManager.addTask(postprocessing);
 

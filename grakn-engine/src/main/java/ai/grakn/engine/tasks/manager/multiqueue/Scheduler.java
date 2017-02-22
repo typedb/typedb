@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -193,17 +195,18 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param state state of the task
      */
     private void scheduleTask(TaskState state) {
-        long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
+        TaskSchedule schedule = state.schedule();
+        long delay = Duration.between(Instant.now(), schedule.runAt()).toMillis();
 
         Runnable submit = () -> {
             markAsScheduled(state);
             sendToWorkQueue(state);
         };
 
-        if(state.isRecurring()) {
-            schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
-        }
-        else {
+        Optional<Duration> interval = schedule.interval();
+        if(interval.isPresent()) {
+            schedulingService.scheduleAtFixedRate(submit, delay, interval.get().toMillis(), MILLISECONDS);
+        } else {
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
     }
@@ -235,7 +238,7 @@ public class Scheduler implements Runnable, AutoCloseable {
 
         Set<TaskState> tasks = storage.getTasks(null, null, null, 0, 0);
         tasks.stream()
-                .filter(TaskState::isRecurring)
+                .filter(state -> state.schedule().isRecurring())
                 .filter(p -> p.status() != STOPPED)
                 .forEach(this::scheduleTask);
     }

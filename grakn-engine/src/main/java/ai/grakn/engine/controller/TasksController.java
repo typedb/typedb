@@ -22,6 +22,7 @@ import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
@@ -41,7 +42,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 import static ai.grakn.util.REST.Request.OFFSET_PARAM;
@@ -174,11 +179,10 @@ public class TasksController {
         String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
         String createdBy = request.queryParams(TASK_CREATOR_PARAMETER);
         String runAt = request.queryParams(TASK_RUN_AT_PARAMETER);
-        Long interval = 0L;
 
-        if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null) {
-            interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
-        }
+        String intervalParam = request.queryParams(TASK_RUN_INTERVAL_PARAMETER);
+        Optional<Duration> optionalInterval = Optional.ofNullable(intervalParam).map(Long::valueOf).map(Duration::ofMillis);
+
         if(className == null || createdBy == null || runAt == null) {
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
         }
@@ -188,8 +192,14 @@ public class TasksController {
 
             TaskState taskState = new TaskState(clazz);
             taskState.creator(createdBy);
-            taskState.runAt(ofEpochMilli(parseLong(runAt)));
-            taskState.interval(interval);
+
+            Instant time = ofEpochMilli(parseLong(runAt));
+
+            TaskSchedule schedule = optionalInterval
+                    .map(interval -> recurring(time, interval))
+                    .orElse(TaskSchedule.at(time));
+
+            taskState.schedule(schedule);
             if(!request.body().isEmpty()) {
                 taskState.configuration(Json.read(request.body()));
             }
@@ -204,19 +214,19 @@ public class TasksController {
         }
     }
 
-
+    // TODO: Return 'schedule' object as its own object
     private JSONObject serialiseStateSubset(TaskState state) {
         return new JSONObject().put("id", state.getId().getValue())
                 .put("status", state.status())
                 .put("creator", state.creator())
                 .put("className", state.taskClass().getName())
-                .put("runAt", state.runAt())
-                .put("recurring", state.isRecurring());
+                .put("runAt", state.schedule().runAt())
+                .put("recurring", state.schedule().isRecurring());
     }
 
     private JSONObject serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                .put("interval", state.interval())
+                .put("interval", state.schedule().interval().orElse(Duration.ZERO).toMillis())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
                        .put("engineID", state.engineID())

@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
-import static java.time.Instant.now;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -231,9 +230,6 @@ public class TaskStateZookeeperStoreTest {
         return new TaskState(ShortExecutionTestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
-                .runAt(now())
-                .isRecurring(false)
-                .interval(0)
                 .configuration(null);
     }
 

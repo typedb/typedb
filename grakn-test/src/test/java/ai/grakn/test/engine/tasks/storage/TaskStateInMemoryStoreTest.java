@@ -26,12 +26,12 @@ import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static java.time.Instant.now;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -54,8 +54,8 @@ public class TaskStateInMemoryStoreTest {
         TaskState state = stateStorage.getState(id);
         assertEquals("name", ShortExecutionTestTask.class, state.taskClass());
         assertEquals("creator", this.getClass().getName(), state.creator());
-        assertEquals("recurring", false, state.isRecurring());
-        assertEquals("interval", 0, state.interval());
+        assertEquals("recurring", false, state.schedule().isRecurring());
+        assertEquals("interval", Optional.empty(), state.schedule().interval());
     }
 
     @Test
@@ -149,9 +149,6 @@ public class TaskStateInMemoryStoreTest {
         return new TaskState(ShortExecutionTestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
-                .runAt(now())
-                .isRecurring(false)
-                .interval(0)
                 .configuration(null);
     }
 }

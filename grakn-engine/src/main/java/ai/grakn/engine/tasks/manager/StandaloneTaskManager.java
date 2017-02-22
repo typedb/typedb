@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
@@ -100,19 +101,19 @@ public class StandaloneTaskManager implements TaskManager {
 
         // Schedule task to run.
         Instant now = Instant.now();
-        long delay = Duration.between(now, taskState.runAt()).toMillis();
+        TaskSchedule schedule = taskState.schedule();
+        long delay = Duration.between(now, schedule.runAt()).toMillis();
         try {
             stateStorage.updateState(taskState.status(SCHEDULED).statusChangedBy(this.getClass().getName()));
 
             // Instantiate task.
             BackgroundTask task = taskState.taskClass().newInstance();
 
-            ScheduledFuture<?> future;
-            if(taskState.isRecurring()) {
-                future = schedulingService.scheduleAtFixedRate(runTask(taskState.getId(), task, true), delay, taskState.interval(), MILLISECONDS);
-            } else {
-                future = schedulingService.schedule(runTask(taskState.getId(), task, false), delay, MILLISECONDS);
-            }
+            ScheduledFuture<?> future = schedule.interval().map(interval ->
+                schedulingService.scheduleAtFixedRate(runTask(taskState.getId(), task, true), delay, interval.toMillis(), MILLISECONDS)
+            ).orElseGet(() ->
+                (ScheduledFuture) schedulingService.schedule(runTask(taskState.getId(), task, false), delay, MILLISECONDS)
+            );
 
             instantiatedTasks.put(taskState.getId(), new Pair<>(future, task));
 
@@ -135,7 +136,7 @@ public class StandaloneTaskManager implements TaskManager {
 
             Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
             synchronized (pair) {
-                if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
+                if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.schedule().isRecurring())) {
                     LOG.info("Stopping a currently scheduled task " + id);
                     pair.getKey().cancel(true);
                     stateStorage.updateState(state.status(STOPPED));
@@ -189,12 +190,8 @@ public class StandaloneTaskManager implements TaskManager {
             stateUpdateLock.lock();
 
             TaskState state = stateStorage.getState(id);
-            if(recurring && (state.status() == SCHEDULED || state.status() == COMPLETED)) {
-                stateStorage.updateState(state.status(RUNNING).isRecurring(true));
-                executorService.submit(exceptionCatcher(state, task));
-            }
-            else if (!recurring && state.status() == SCHEDULED) {
-                stateStorage.updateState(state.status(RUNNING).isRecurring(false));
+            if (state.status() == SCHEDULED || (recurring && state.status() == COMPLETED)) {
+                stateStorage.updateState(state.status(RUNNING));
                 executorService.submit(exceptionCatcher(state, task));
             }
 

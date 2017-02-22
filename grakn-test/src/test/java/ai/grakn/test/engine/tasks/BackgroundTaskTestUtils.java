@@ -18,16 +18,16 @@
 
 package ai.grakn.test.engine.tasks;
 
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.TaskStatus;
 import mjson.Json;
 
 import java.util.Date;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static java.time.Instant.now;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -37,18 +37,16 @@ public class BackgroundTaskTestUtils {
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
         return IntStream.range(0, n)
-                .mapToObj(i -> createTask(status, false, 0))
+                .mapToObj(i -> createTask(status, TaskSchedule.now()))
                 .collect(toSet());
     }
 
-    public static TaskState createTask(TaskStatus status, boolean recurring, int interval) {
+    public static TaskState createTask(TaskStatus status, TaskSchedule schedule) {
         TaskState taskState = new TaskState(ShortExecutionTestTask.class)
                 .status(status)
                 .creator(BackgroundTaskTestUtils.class.getName())
-                .statusChangedBy(BackgroundTaskTestUtils.class.getName())
-                .runAt(now())
-                .isRecurring(recurring)
-                .interval(interval);
+                .schedule(schedule)
+                .statusChangedBy(BackgroundTaskTestUtils.class.getName());
         return taskState.configuration(Json.object("id", taskState.getId().getValue()));
     }
     

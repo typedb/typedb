@@ -27,6 +27,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.exception.EngineStorageException;
@@ -85,15 +86,17 @@ public class TaskStateGraphStore implements TaskStateStorage {
 
     @Override
     public TaskId newState(TaskState task) throws EngineStorageException {
+        TaskSchedule schedule = task.schedule();
         Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId())
                 .has(STATUS, var().value(CREATED.toString()))
                 .has(TASK_CLASS_NAME, var().value(task.taskClass().getName()))
                 .has(CREATED_BY, var().value(task.creator()))
-                .has(RUN_AT, var().value(task.runAt().toEpochMilli()))
-                .has(RECURRING, var().value(task.isRecurring()))
-                .has(RECUR_INTERVAL, var().value(task.interval()))
+                .has(RUN_AT, var().value(schedule.runAt().toEpochMilli()))
+                .has(RECURRING, var().value(schedule.isRecurring()))
                 .has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
+
+        schedule.interval().ifPresent(interval -> state.has(RECUR_INTERVAL, var().value(interval)));
 
         if(task.configuration() != null) {
             state.has(TASK_CONFIGURATION, var().value(task.configuration().toString()));

@@ -38,10 +38,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
@@ -132,14 +134,14 @@ public class SchedulerTest {
         stopScheduler();
 
         // persist a recurring task
-        TaskState recurring = createTask(CREATED, true, 10000);
+        TaskState recurring = createTask(CREATED, recurring(Duration.ofSeconds(10)));
         System.out.println("recurring task " + recurring.getId());
         storage.newState(recurring);
 
         // check the task actually exists and is recurring
         TaskState recurringPersisted = storage.getState(recurring.getId());
         assertNotNull(recurringPersisted);
-        assertTrue(recurringPersisted.isRecurring());
+        assertTrue(recurringPersisted.schedule().isRecurring());
 
         // Restart the scheduler
         startScheduler();

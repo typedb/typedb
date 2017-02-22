@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -26,13 +27,13 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.at;
+import static java.time.Instant.now;
 
 public class PostProcessingTaskTest {
     private StandaloneTaskManager taskManager = new StandaloneTaskManager();
@@ -62,7 +63,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStop() {
-        TaskState task = new TaskState(PostProcessingTask.class).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        TaskState task = new TaskState(PostProcessingTask.class).schedule(at(now().plusSeconds(10)));
         taskManager.addTask(task);
         taskManager.stopTask(task.getId(), this.getClass().getName());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());

@@ -18,18 +18,18 @@
 
 package ai.grakn.test.engine.tasks.manager;
 
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -42,8 +42,11 @@ import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.at;
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import static java.time.Instant.now;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -58,7 +61,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunSingle() {
-        TaskState task = createTask(CREATED, false, 0);
+        TaskState task = createTask(CREATED, TaskSchedule.now());
         taskManager.addTask(task);
 
         // Wait for task to be executed.
@@ -87,7 +90,7 @@ public class StandaloneTaskManagerTest {
         // Schedule tasks
         List<TaskId> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
-            TaskState task = createTask(CREATED, false, 0);
+            TaskState task = createTask(CREATED, TaskSchedule.now());
             taskManager.addTask(task);
             ids.add(task.getId());
         }
@@ -113,7 +116,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunRecurring() throws Exception {
-        TaskState task = createTask(CREATED, true, 100).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        TaskState task = createTask(CREATED, recurring(now().plusSeconds(10), Duration.ofSeconds(100)));
         taskManager.addTask(task);
 
         Thread.sleep(2000);
@@ -126,7 +129,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testStopSingle() {
-        TaskState task = createTask(CREATED, false, 0).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        TaskState task = createTask(CREATED, at(now().plusSeconds(10)));
         taskManager.addTask(task);
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();
