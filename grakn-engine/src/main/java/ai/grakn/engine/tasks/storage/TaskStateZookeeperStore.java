@@ -194,7 +194,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
 
     @FunctionalInterface
     private interface SupplierWithException<T> {
-        public T get() throws Exception;
+        T get() throws Exception;
     }
 
     /**

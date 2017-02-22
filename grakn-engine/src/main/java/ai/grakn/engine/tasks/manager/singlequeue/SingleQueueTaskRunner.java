@@ -189,7 +189,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private void executeTask(TaskState task) {
         try {
             task.taskClass().newInstance().start(null, task.configuration());
-            task.status(TaskStatus.COMPLETED);
+            task.status(COMPLETED);
             LOG.debug("{}\tmarked as completed", task);
         } catch (Throwable throwable) {
             task.status(FAILED);

@@ -20,12 +20,10 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
 import mjson.Json;
-import org.apache.commons.lang.SerializationUtils;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Base64;
 
 import static java.util.Objects.requireNonNull;
 
