@@ -19,9 +19,12 @@
 package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import com.google.common.collect.ConcurrentHashMultiset;
+import com.google.common.collect.ImmutableMultiset;
 import mjson.Json;
 
 import java.util.Date;
@@ -34,6 +37,20 @@ import static java.util.stream.Collectors.toSet;
  * Class holding useful methods for use throughout background task tests
  */
 public class BackgroundTaskTestUtils {
+
+    private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
+
+    static void addCompletedTask(TaskId taskId) {
+        COMPLETED_TASKS.add(taskId);
+    }
+
+    public static ImmutableMultiset<TaskId> completedTasks() {
+        return ImmutableMultiset.copyOf(COMPLETED_TASKS);
+    }
+
+    public static void clearCompletedTasks() {
+        COMPLETED_TASKS.clear();
+    }
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
         return IntStream.range(0, n)

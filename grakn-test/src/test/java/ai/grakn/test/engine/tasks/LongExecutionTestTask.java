@@ -20,26 +20,16 @@ package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
-import com.google.common.collect.ConcurrentHashMultiset;
-import com.google.common.collect.ImmutableMultiset;
 import mjson.Json;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCompletedTask;
+
 public class LongExecutionTestTask implements BackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
-
-    private static final ConcurrentHashMultiset<TaskId> completedTasks = ConcurrentHashMultiset.create();
-
-    public static ImmutableMultiset<TaskId> completedTasks() {
-        return ImmutableMultiset.copyOf(completedTasks);
-    }
-
-    public static void clearCompletedTasks() {
-        completedTasks.clear();
-    }
 
     public void start(Consumer<String> saveCheckpoint, Json config) {
         // A short sleep to allow tasks to step on each other's toes
@@ -50,7 +40,7 @@ public class LongExecutionTestTask implements BackgroundTask {
         }
 
         startedCounter.incrementAndGet();
-        completedTasks.add(TaskId.of(config.at("id").asString()));
+        addCompletedTask(TaskId.of(config.at("id").asString()));
     }
 
     public void stop() {}
