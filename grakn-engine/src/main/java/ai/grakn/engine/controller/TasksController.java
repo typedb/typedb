@@ -190,12 +190,14 @@ public class TasksController {
             taskState.creator(createdBy);
             taskState.runAt(ofEpochMilli(parseLong(runAt)));
             taskState.interval(interval);
-            taskState.configuration(Json.read(request.body()));
+            if(!request.body().isEmpty()) {
+                taskState.configuration(Json.read(request.body()));
+            }
 
             manager.addTask(taskState);
 
             response.type("application/json");
-            return Json.object("id", taskState.getId()).toString();
+            return Json.object("id", taskState.getId().getValue()).toString();
         } catch (Exception e) {
             LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
@@ -204,10 +206,10 @@ public class TasksController {
 
 
     private JSONObject serialiseStateSubset(TaskState state) {
-        return new JSONObject().put("id", state.getId())
+        return new JSONObject().put("id", state.getId().getValue())
                 .put("status", state.status())
                 .put("creator", state.creator())
-                .put("className", state.taskClass())
+                .put("className", state.taskClass().getName())
                 .put("runAt", state.runAt())
                 .put("recurring", state.isRecurring());
     }

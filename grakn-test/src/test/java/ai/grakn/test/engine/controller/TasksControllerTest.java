@@ -140,7 +140,7 @@ public class TasksControllerTest {
         get("/tasks/"+singleTask)
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
-                .and().body("id", equalTo(singleTask));
+                .and().body("id", equalTo(singleTask.getValue()));
 
         // Stopping tasks is not currently supported by the MultiQueueTaskManager.
 //                .and().body("status", equalTo(STOPPED.toString()));
