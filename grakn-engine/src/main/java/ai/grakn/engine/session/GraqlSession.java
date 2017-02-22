@@ -19,6 +19,7 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
@@ -28,6 +29,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
 import com.google.common.base.Splitter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -39,7 +41,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
@@ -69,7 +70,7 @@ class GraqlSession {
     private final boolean infer;
     private final boolean materialise;
     private GraknGraph graph;
-    private final Supplier<GraknGraph> getGraph;
+    private final GraknGraphFactory factory;
     private final String outputFormat;
     private Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
@@ -81,17 +82,18 @@ class GraqlSession {
     private boolean queryCancelled = false;
 
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
-    private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService queryExecutor =
+            Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("graql-session-%s").build());
 
     GraqlSession(
-            Session session, Supplier<GraknGraph> getGraph, String outputFormat,
+            Session session, GraknGraphFactory factory, String outputFormat,
             boolean showImplicitTypes, boolean infer, boolean materialise
     ) {
         this.showImplicitTypes = showImplicitTypes;
         this.infer = infer;
         this.materialise = materialise;
         this.session = session;
-        this.getGraph = getGraph;
+        this.factory = factory;
         this.outputFormat = outputFormat;
         this.printer = getPrinter();
 
@@ -113,7 +115,7 @@ class GraqlSession {
     }
 
     private void refreshGraph() {
-        graph = getGraph.get();
+        graph = factory.getGraph();
         graph.showImplicitConcepts(showImplicitTypes);
     }
 
@@ -258,7 +260,10 @@ class GraqlSession {
      * Rollback the transaction, removing uncommitted changes
      */
     void rollback() {
-        queryExecutor.submit(graph::close);
+        queryExecutor.submit(() -> {
+            graph.close();
+            attemptRefresh();
+        });
     }
 
     private void attemptRefresh() {
