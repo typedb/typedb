@@ -64,7 +64,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final TreeCache cache;
 
     private Map<String, ChildData> current;
-    private KafkaProducer<TaskId, String> producer;
+    private KafkaProducer<TaskId, TaskState> producer;
 
     public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
         this.stateStorage = stateStorage;
@@ -156,7 +156,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             if(taskState.status() == RUNNING) {
                 LOG.debug(format("Engine [%s] stopped, task [%s] requeued", engineID, taskState.getId()));
                 stateStorage.updateState(taskState.status(SCHEDULED));
-                producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState.configuration().toString()));
+                producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState));
             } else {
                 LOG.debug(format("Engine [%s] stopped, task [%s] not restarted because state [%s]"
                         , engineID, taskState.getId(), taskState.status()));

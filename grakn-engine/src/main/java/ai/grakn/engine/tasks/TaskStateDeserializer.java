@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.kafka.common.serialization.Deserializer;
 
+import java.util.Base64;
 import java.util.Map;
 
 /**
@@ -42,4 +43,8 @@ public class TaskStateDeserializer implements Deserializer<TaskState> {
 
     @Override
     public void close() {}
+
+    public static TaskState deserializeFromString(String data){
+        return (TaskState) SerializationUtils.deserialize(Base64.getMimeDecoder().decode(data));
+    }
 }

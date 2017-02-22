@@ -204,14 +204,6 @@ public class TaskState implements Serializable {
         return configuration;
     }
 
-    public String serialize(){
-        return Base64.getMimeEncoder().encodeToString(SerializationUtils.serialize(this));
-    }
-
-    public static TaskState deserialize(String task){
-        return (TaskState) SerializationUtils.deserialize(Base64.getMimeDecoder().decode(task));
-    }
-
     public TaskState copy() {
         return new TaskState(this);
     }

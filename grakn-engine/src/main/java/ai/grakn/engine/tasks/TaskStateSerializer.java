@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.kafka.common.serialization.Serializer;
 
+import java.util.Base64;
 import java.util.Map;
 
 /**
@@ -43,4 +44,8 @@ public class TaskStateSerializer implements Serializer<TaskState> {
 
     @Override
     public void close() {}
+
+    public static String serializeToString(TaskState data){
+        return Base64.getMimeEncoder().encodeToString(SerializationUtils.serialize(data));
+    }
 }

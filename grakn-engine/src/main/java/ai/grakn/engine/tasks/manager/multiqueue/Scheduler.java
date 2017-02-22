@@ -81,8 +81,8 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     private final TaskStateStorage storage;
 
-    private KafkaConsumer<TaskId, String> consumer;
-    private KafkaProducer<TaskId, String> producer;
+    private KafkaConsumer<TaskId, TaskState> consumer;
+    private KafkaProducer<TaskId, TaskState> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
@@ -122,14 +122,15 @@ public class Scheduler implements Runnable, AutoCloseable {
 
         try {
             while (running) {
-                ConsumerRecords<TaskId, String> records = consumer.poll(1000);
+                ConsumerRecords<TaskId, TaskState> records = consumer.poll(1000);
                 printConsumerStatus(records);
 
                 long startTime = System.currentTimeMillis();
-                for(ConsumerRecord<TaskId, String> record:records) {
+                for(ConsumerRecord<TaskId, TaskState> record:records) {
 
                     // Get the task from kafka
-                    TaskState taskState = TaskState.deserialize(record.value());
+                    TaskState taskState = record.value();
+
 
                     // Mark the task as created and schedule
                     try {
@@ -226,7 +227,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      */
     private void sendToWorkQueue(TaskState state) {
         LOG.debug("Sending to work queue " + state.getId());
-        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, state.getId(), state.serialize()), new KafkaLoggingCallback());
+        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, state.getId(), state), new KafkaLoggingCallback());
         producer.flush();
     }
 
@@ -243,7 +244,7 @@ public class Scheduler implements Runnable, AutoCloseable {
                 .forEach(this::scheduleTask);
     }
 
-    private void printConsumerStatus(ConsumerRecords<TaskId, String> records){
+    private void printConsumerStatus(ConsumerRecords<TaskId, TaskState> records){
         consumer.assignment().stream()
                 .map(p -> format(STATUS_MESSAGE, p.partition(), p.topic(), records.count(), consumer.position(p)))
                 .forEach(LOG::debug);

@@ -47,6 +47,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.tasks.TaskStateSerializer.serializeToString;
+import static ai.grakn.engine.tasks.TaskStateDeserializer.deserializeFromString;
 import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
 import static ai.grakn.engine.util.SystemOntologyElements.ENGINE_ID;
 import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
@@ -94,7 +96,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
                 .has(CREATED_BY, var().value(task.creator()))
                 .has(RUN_AT, var().value(schedule.runAt().toEpochMilli()))
                 .has(RECURRING, var().value(schedule.isRecurring()))
-                .has(SERIALISED_TASK, var().value(task.serialize()));
+                .has(SERIALISED_TASK, var().value(serializeToString(task)));
 
         schedule.interval().ifPresent(interval -> state.has(RECUR_INTERVAL, var().value(interval)));
 
@@ -123,7 +125,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Var resources = var(TASK_VAR);
 
         resourcesToDettach.add(SERIALISED_TASK);
-        resources.has(SERIALISED_TASK, var().value(task.serialize()));
+        resources.has(SERIALISED_TASK, var().value(serializeToString(task)));
 
         // TODO make sure all properties are being updated
         if(task.status() != null) {
@@ -215,7 +217,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         ResourceType<String> serialisedResourceType = graph.getResourceType(SERIALISED_TASK.getValue());
         String serialisedTask = (String) instance.resources(serialisedResourceType).iterator().next().getValue();
 
-        return TaskState.deserialize(serialisedTask);
+        return deserializeFromString(serialisedTask);
     }
 
     @Override

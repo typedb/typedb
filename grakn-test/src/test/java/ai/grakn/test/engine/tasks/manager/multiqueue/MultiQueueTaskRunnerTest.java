@@ -54,7 +54,7 @@ public class MultiQueueTaskRunnerTest {
 
     private TaskStateStorage storage;
     private MultiQueueTaskRunner multiQueueTaskRunner;
-    private KafkaProducer<TaskId, String> producer;
+    private KafkaProducer<TaskId, TaskState> producer;
 
     private Thread taskRunnerThread;
 
@@ -129,7 +129,7 @@ public class MultiQueueTaskRunnerTest {
     }
 
     private void sendTasksToWorkQueue(Set<TaskState> tasks) {
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), t.serialize())));
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), t)));
         producer.flush();
     }
 }

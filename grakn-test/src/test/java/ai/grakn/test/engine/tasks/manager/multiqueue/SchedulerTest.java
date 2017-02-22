@@ -61,7 +61,7 @@ public class SchedulerTest {
 
     private TaskStateStorage storage;
     private Scheduler scheduler;
-    private KafkaProducer<TaskId, String> producer;
+    private KafkaProducer<TaskId, TaskState> producer;
 
     private ZookeeperConnection connection;
     private Thread schedulerThread;
@@ -163,7 +163,7 @@ public class SchedulerTest {
 
     private void sendTasksToNewTasksQueue(Set<TaskState> tasks) {
         System.out.println("Producer sending to new tasks queue: " + tasks);
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), t.serialize())));
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), t)));
         producer.flush();
     }
 }

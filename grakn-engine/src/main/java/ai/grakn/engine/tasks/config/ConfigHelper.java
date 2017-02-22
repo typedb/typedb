@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.tasks.config;
 
+import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -62,7 +64,7 @@ public class ConfigHelper {
                     .build();
     }
 
-    public static <K,V> KafkaConsumer<K, V> kafkaConsumer(String groupId) {
+    public static KafkaConsumer<TaskId, TaskState> kafkaConsumer(String groupId) {
         Properties properties = new Properties();
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("group.id", groupId);
@@ -76,10 +78,10 @@ public class ConfigHelper {
         properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");
         properties.put("value.deserializer", "ai.grakn.engine.tasks.TaskStateDeserializer");
 
-        return new KafkaConsumer<>(properties);
+        return new KafkaConsumer<TaskId, TaskState>(properties);
     }
 
-    public static <K,V> KafkaProducer<K, V> kafkaProducer() {
+    public static KafkaProducer<TaskId, TaskState> kafkaProducer() {
         Properties properties = new Properties();
 
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
