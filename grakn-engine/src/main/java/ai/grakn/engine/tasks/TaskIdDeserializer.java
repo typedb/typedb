@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks;
 
 import org.apache.kafka.common.serialization.Deserializer;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -37,7 +38,7 @@ public class TaskIdDeserializer implements Deserializer<TaskId> {
 
     @Override
     public TaskId deserialize(String topic, byte[] data) {
-        return TaskId.of(new String(data));
+        return TaskId.of(new String(data, StandardCharsets.UTF_8));
     }
 
     @Override
