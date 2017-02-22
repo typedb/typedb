@@ -138,6 +138,8 @@ public class SingleQueueTaskRunnerTest {
         Set<TaskId> completableTasks = Sets.newHashSet();
         Set<TaskId> visitedTasks = Sets.newHashSet();
 
+        Set<TaskId> appearedTasks = Sets.newHashSet();
+
         tasks(tasks).forEach(task -> {
             // A task is expected to complete only if:
             // 1. It has not already executed and failed
@@ -146,7 +148,7 @@ public class SingleQueueTaskRunnerTest {
             TaskId id = task.getId();
             boolean visited = visitedTasks.contains(id);
             boolean willFail = task.taskClass().equals(FailingTask.class);
-            boolean isRunning = task.status().equals(RUNNING);
+            boolean isRunning = appearedTasks.contains(id);
             boolean isRetried = retriedTasks.contains(id);
             if (!visited && (isRunning || !isRetried)) {
                 if (!willFail) {
@@ -154,6 +156,7 @@ public class SingleQueueTaskRunnerTest {
                 }
                 visitedTasks.add(id);
             }
+            appearedTasks.add(id);
         });
 
         return completableTasks;
