@@ -190,15 +190,14 @@ public class TasksController {
         try {
             Class<? extends BackgroundTask> clazz = (Class<? extends BackgroundTask>) Class.forName(className);
 
-            TaskState taskState = new TaskState(clazz, createdBy);
-
             Instant time = ofEpochMilli(parseLong(runAt));
 
             TaskSchedule schedule = optionalInterval
                     .map(interval -> recurring(time, interval))
                     .orElse(TaskSchedule.at(time));
 
-            taskState.schedule(schedule);
+            TaskState taskState = new TaskState(clazz, createdBy, schedule);
+
             if(!request.body().isEmpty()) {
                 taskState.configuration(Json.read(request.body()));
             }

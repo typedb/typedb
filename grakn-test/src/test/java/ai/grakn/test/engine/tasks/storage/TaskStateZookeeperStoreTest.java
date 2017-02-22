@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks.storage;
 
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
@@ -231,7 +232,7 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(String creator){
-        return new TaskState(ShortExecutionTestTask.class, creator)
+        return new TaskState(ShortExecutionTestTask.class, creator, TaskSchedule.now())
                 .statusChangedBy(this.getClass().getName())
                 .configuration(null);
     }

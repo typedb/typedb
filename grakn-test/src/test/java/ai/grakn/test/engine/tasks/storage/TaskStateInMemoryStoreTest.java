@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks.storage;
 
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
@@ -146,7 +147,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(ShortExecutionTestTask.class, this.getClass().getName())
+        return new TaskState(ShortExecutionTestTask.class, this.getClass().getName(), TaskSchedule.now())
                 .statusChangedBy(this.getClass().getName())
                 .configuration(null);
     }

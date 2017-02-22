@@ -64,7 +64,7 @@ public class TaskState implements Serializable {
     /**
      * Schedule for when this task should execute
      */
-    private TaskSchedule schedule;
+    private final TaskSchedule schedule;
     /**
      * Used to store any executing failures for the given task.
      */
@@ -79,19 +79,17 @@ public class TaskState implements Serializable {
      */
     private Json configuration;
 
-    public TaskState(Class<?> taskClass, String creator) {
-        this(taskClass, creator, TaskId.generate());
+    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule) {
+        this(taskClass, creator, schedule, TaskId.generate());
     }
 
-    public TaskState(Class<?> taskClass, String creator, TaskId id) {
+    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, TaskId id) {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
         this.taskClassName = taskClass.getName();
         this.creator = creator;
+        this.schedule = schedule;
         this.taskId = id.getValue();
-
-        //TODO Defaults until we refactor TaskState class
-        this.schedule = TaskSchedule.now();
     }
 
     private TaskState(TaskState taskState) {
@@ -160,11 +158,6 @@ public class TaskState implements Serializable {
 
     public String engineID() {
         return engineID;
-    }
-
-    public TaskState schedule(TaskSchedule schedule) {
-        this.schedule = schedule;
-        return this;
     }
 
     public TaskSchedule schedule() {

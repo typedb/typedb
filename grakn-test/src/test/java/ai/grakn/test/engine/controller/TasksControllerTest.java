@@ -20,6 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
@@ -67,7 +68,7 @@ public class TasksControllerTest {
     public void setUp() throws Exception {
         MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
         singleTask = manager.storage().newState(
-                new TaskState(ShortExecutionTestTask.class, this.getClass().getName())
+                new TaskState(ShortExecutionTestTask.class, this.getClass().getName(), TaskSchedule.now())
                         .status(COMPLETED)
                         .configuration(Json.object()));
     }

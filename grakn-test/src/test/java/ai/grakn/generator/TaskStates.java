@@ -22,6 +22,7 @@ package ai.grakn.generator;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.test.engine.tasks.FailingTask;
 import ai.grakn.test.engine.tasks.LongExecutionTestTask;
@@ -51,7 +52,7 @@ public class TaskStates extends Generator<TaskState> {
 
         // TODO: generate all the other params of a task state
 
-        TaskState taskState = new TaskState(taskClass, creator, taskId);
+        TaskState taskState = new TaskState(taskClass, creator, TaskSchedule.now(), taskId);
         Json configuration = Json.object("id", taskState.getId().getValue());
         return taskState.status(taskStatus).configuration(configuration);
     }

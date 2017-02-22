@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks.storage;
 
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
@@ -67,7 +68,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task().configuration(configuration).schedule(at(runAt)));
+        TaskId id = stateStorage.newState(task(at(runAt)).configuration(configuration));
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
@@ -86,7 +87,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task().configuration(configuration).schedule(at(runAt)));
+        TaskId id = stateStorage.newState(task(at(runAt)).configuration(configuration));
         assertNotNull(id);
 
         // Get current values
@@ -128,7 +129,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByCreator() {
-        TaskId id = stateStorage.newState(task("other"));
+        TaskId id = stateStorage.newState(task(TaskSchedule.now(), "other"));
         assertNotNull(id);
 
         Set<TaskState> res = stateStorage.getTasks(null, null, "other", 0, 0);
@@ -178,11 +179,15 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(){
-        return task(getClass().getName());
+        return task(TaskSchedule.now(), getClass().getName());
     }
 
-    public TaskState task(String creator){
-        return new TaskState(ShortExecutionTestTask.class, creator)
+    public TaskState task(TaskSchedule schedule){
+        return task(schedule, getClass().getName());
+    }
+
+    public TaskState task(TaskSchedule schedule, String creator){
+        return new TaskState(ShortExecutionTestTask.class, creator, schedule)
                 .statusChangedBy(this.getClass().getName())
                 .engineID(UUID.randomUUID().toString())
                 .configuration(null);
