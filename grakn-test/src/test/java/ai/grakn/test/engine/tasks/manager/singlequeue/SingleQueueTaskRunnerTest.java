@@ -23,7 +23,7 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.test.engine.tasks.FailingTask;
+import ai.grakn.test.engine.tasks.FailingTestTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -147,7 +147,7 @@ public class SingleQueueTaskRunnerTest {
             // 3. it is RUNNING or not being retried
             TaskId id = task.getId();
             boolean visited = visitedTasks.contains(id);
-            boolean willFail = task.taskClass().equals(FailingTask.class);
+            boolean willFail = task.taskClass().equals(FailingTestTask.class);
             boolean isRunning = appearedTasks.contains(id);
             boolean isRetried = retriedTasks.contains(id);
             if (!visited && (isRunning || !isRetried)) {

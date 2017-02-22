@@ -24,7 +24,7 @@ import mjson.Json;
 
 import java.util.function.Consumer;
 
-public class FailingTask implements BackgroundTask {
+public class FailingTestTask implements BackgroundTask {
     @Override
     public void start(Consumer<String> saveCheckpoint, Json configuration) {
         throw new RuntimeException("deliberate test failure");

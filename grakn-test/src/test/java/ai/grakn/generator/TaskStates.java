@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.test.engine.tasks.FailingTask;
+import ai.grakn.test.engine.tasks.FailingTestTask;
 import ai.grakn.test.engine.tasks.LongExecutionTestTask;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import com.google.common.collect.ImmutableList;
@@ -43,7 +43,7 @@ public class TaskStates extends Generator<TaskState> {
     @Override
     public TaskState generate(SourceOfRandomness random, GenerationStatus status) {
         // TODO: make this generate more classes
-        Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionTestTask.class, ShortExecutionTestTask.class, FailingTask.class));
+        Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionTestTask.class, ShortExecutionTestTask.class, FailingTestTask.class));
 
         TaskId taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
 
