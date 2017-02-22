@@ -190,8 +190,7 @@ public class TasksController {
         try {
             Class<? extends BackgroundTask> clazz = (Class<? extends BackgroundTask>) Class.forName(className);
 
-            TaskState taskState = new TaskState(clazz);
-            taskState.creator(createdBy);
+            TaskState taskState = new TaskState(clazz, createdBy);
 
             Instant time = ofEpochMilli(parseLong(runAt));
 

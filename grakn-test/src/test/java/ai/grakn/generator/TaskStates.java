@@ -47,10 +47,11 @@ public class TaskStates extends Generator<TaskState> {
         TaskId taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
 
         TaskStatus taskStatus = gen().type(TaskStatus.class).generate(random, status);
+        String creator = gen().type(String.class).generate(random, status);
 
         // TODO: generate all the other params of a task state
 
-        TaskState taskState = new TaskState(taskClass, taskId);
+        TaskState taskState = new TaskState(taskClass, creator, taskId);
         Json configuration = Json.object("id", taskState.getId().getValue());
         return taskState.status(taskStatus).configuration(configuration);
     }

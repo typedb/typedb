@@ -21,7 +21,6 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.test.EngineContext;
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -43,7 +42,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStart() throws Exception {
-        TaskState task = new TaskState(PostProcessingTask.class);
+        TaskState task = new TaskState(PostProcessingTask.class, getClass().getName());
         taskManager.addTask(task);
         Assert.assertNotEquals(CREATED, taskManager.storage().getState(task.getId()).status());
 
@@ -63,7 +62,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStop() {
-        TaskState task = new TaskState(PostProcessingTask.class).schedule(at(now().plusSeconds(10)));
+        TaskState task = new TaskState(PostProcessingTask.class, getClass().getName()).schedule(at(now().plusSeconds(10)));
         taskManager.addTask(task);
         taskManager.stopTask(task.getId(), this.getClass().getName());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());

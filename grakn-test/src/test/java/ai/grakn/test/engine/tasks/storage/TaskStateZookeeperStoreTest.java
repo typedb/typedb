@@ -180,7 +180,7 @@ public class TaskStateZookeeperStoreTest {
     @Test
     public void testGetTasksByCreator() {
         TaskId id = stateStorage.newState(task());
-        stateStorage.newState(task().creator("another"));
+        stateStorage.newState(task("another"));
         Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
 
         assertTrue(res.parallelStream()
@@ -227,8 +227,11 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(ShortExecutionTestTask.class)
-                .creator(this.getClass().getName())
+        return task(this.getClass().getName());
+    }
+
+    public TaskState task(String creator){
+        return new TaskState(ShortExecutionTestTask.class, creator)
                 .statusChangedBy(this.getClass().getName())
                 .configuration(null);
     }

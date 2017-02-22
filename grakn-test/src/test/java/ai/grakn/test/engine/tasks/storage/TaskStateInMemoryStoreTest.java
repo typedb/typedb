@@ -146,8 +146,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(ShortExecutionTestTask.class)
-                .creator(this.getClass().getName())
+        return new TaskState(ShortExecutionTestTask.class, this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
                 .configuration(null);
     }

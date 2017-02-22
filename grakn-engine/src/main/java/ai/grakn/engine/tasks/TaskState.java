@@ -56,7 +56,7 @@ public class TaskState implements Serializable {
     /**
      * String identifying who created this task.
      */
-    private String creator;
+    private final String creator;
     /**
      * String identifying which engine instance is executing this task, set when task is scheduled.
      */
@@ -79,14 +79,15 @@ public class TaskState implements Serializable {
      */
     private Json configuration;
 
-    public TaskState(Class<?> taskClass) {
-        this(taskClass, TaskId.generate());
+    public TaskState(Class<?> taskClass, String creator) {
+        this(taskClass, creator, TaskId.generate());
     }
 
-    public TaskState(Class<?> taskClass, TaskId id) {
+    public TaskState(Class<?> taskClass, String creator, TaskId id) {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
         this.taskClassName = taskClass.getName();
+        this.creator = creator;
         this.taskId = id.getValue();
 
         //TODO Defaults until we refactor TaskState class
@@ -146,11 +147,6 @@ public class TaskState implements Serializable {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public TaskState creator(String creator) {
-        this.creator = creator;
-        return this;
     }
 
     public String creator() {

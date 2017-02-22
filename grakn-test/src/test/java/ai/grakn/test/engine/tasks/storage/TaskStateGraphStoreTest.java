@@ -128,7 +128,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByCreator() {
-        TaskId id = stateStorage.newState(task().creator("other"));
+        TaskId id = stateStorage.newState(task("other"));
         assertNotNull(id);
 
         Set<TaskState> res = stateStorage.getTasks(null, null, "other", 0, 0);
@@ -178,8 +178,11 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(ShortExecutionTestTask.class)
-                .creator(this.getClass().getName())
+        return task(getClass().getName());
+    }
+
+    public TaskState task(String creator){
+        return new TaskState(ShortExecutionTestTask.class, creator)
                 .statusChangedBy(this.getClass().getName())
                 .engineID(UUID.randomUUID().toString())
                 .configuration(null);
