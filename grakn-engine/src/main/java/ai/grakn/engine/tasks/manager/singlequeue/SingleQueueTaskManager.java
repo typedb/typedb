@@ -64,9 +64,8 @@ public class SingleQueueTaskManager implements TaskManager {
     private final static String TASK_RUNNER_THREAD_NAME = "task-runner-";
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
 
-    //TODO make these two classes with with the TaskId object by implementing a serializer
-    private final KafkaProducer<String, String> producer;
-    private final KafkaConsumer<String, String> consumer;
+    private final KafkaProducer<TaskId, String> producer;
+    private final KafkaConsumer<TaskId, String> consumer;
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
     private final FailoverElector failover;
@@ -133,7 +132,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addTask(TaskState taskState){
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId().getValue(), TaskState.serialize(taskState)));
+        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), TaskState.serialize(taskState)));
         //TODO do we need to flush here? when you figure it out write in javadoc
         producer.flush();
     }

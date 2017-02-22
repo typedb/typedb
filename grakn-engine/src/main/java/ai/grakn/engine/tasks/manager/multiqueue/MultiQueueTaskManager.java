@@ -19,7 +19,6 @@
 
 package ai.grakn.engine.tasks.manager.multiqueue;
 
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;

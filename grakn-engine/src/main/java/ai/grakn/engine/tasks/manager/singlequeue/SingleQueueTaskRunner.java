@@ -51,7 +51,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
-    private final Consumer<String, String> consumer;
+    private final Consumer<TaskId, String> consumer;
     private final TaskStateStorage storage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
@@ -67,7 +67,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param consumer a Kafka consumer from which to poll for tasks
      */
     public SingleQueueTaskRunner(
-            TaskStateStorage storage, Consumer<String, String> consumer, ExecutorService executor) {
+            TaskStateStorage storage, Consumer<TaskId, String> consumer, ExecutorService executor) {
         this.storage = storage;
         this.consumer = consumer;
         this.executor = executor;
@@ -93,11 +93,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         try {
             while (!wakeUp.get()) {
-                ConsumerRecords<String, String> records = consumer.poll(100);
+                ConsumerRecords<TaskId, String> records = consumer.poll(100);
 
                 LOG.debug("polled, got {} records", records.count());
 
-                for (ConsumerRecord<String, String> record : records) {
+                for (ConsumerRecord<TaskId, String> record : records) {
                     if (handleRecord(record)) {
                         consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                         consumer.commitSync();
@@ -135,7 +135,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param record
      * @return
      */
-    private boolean handleRecord(ConsumerRecord<String, String> record) {
+    private boolean handleRecord(ConsumerRecord<TaskId, String> record) {
         TaskState task = TaskState.deserialize(record.value());
 
         LOG.debug("{}\thandling", task);

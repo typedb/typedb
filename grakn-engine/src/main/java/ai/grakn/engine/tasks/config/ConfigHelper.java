@@ -71,7 +71,9 @@ public class ConfigHelper {
         properties.put("metadata.max.age.ms", 1000);
         properties.put("max.poll.records", 10);
         properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
-        properties.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
+        properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
+        properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
 
         return new KafkaConsumer<>(properties);
