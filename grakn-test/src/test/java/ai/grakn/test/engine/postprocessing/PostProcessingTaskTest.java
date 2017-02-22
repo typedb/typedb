@@ -63,6 +63,7 @@ public class PostProcessingTaskTest {
     @Test
     public void testStop() {
         TaskState task = new TaskState(PostProcessingTask.class).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        taskManager.addTask(task);
         taskManager.stopTask(task.getId(), this.getClass().getName());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());
     }
