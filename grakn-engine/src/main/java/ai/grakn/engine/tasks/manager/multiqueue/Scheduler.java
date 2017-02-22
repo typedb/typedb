@@ -226,7 +226,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      */
     private void sendToWorkQueue(TaskState state) {
         LOG.debug("Sending to work queue " + state.getId());
-        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, state.getId(), TaskState.serialize(state)), new KafkaLoggingCallback());
+        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, state.getId(), state.serialize()), new KafkaLoggingCallback());
         producer.flush();
     }
 

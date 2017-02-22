@@ -130,11 +130,6 @@ public class TaskState implements Serializable {
         return status;
     }
 
-    public TaskState statusChangeTime(Instant statusChangeTime) {
-        this.statusChangeTime = statusChangeTime;
-        return this;
-    }
-
     public Instant statusChangeTime() {
         return statusChangeTime;
     }
@@ -209,8 +204,8 @@ public class TaskState implements Serializable {
         return configuration;
     }
 
-    public static String serialize(TaskState task){
-        return Base64.getMimeEncoder().encodeToString(SerializationUtils.serialize(task));
+    public String serialize(){
+        return Base64.getMimeEncoder().encodeToString(SerializationUtils.serialize(this));
     }
 
     public static TaskState deserialize(String task){

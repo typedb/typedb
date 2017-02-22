@@ -129,7 +129,7 @@ public class MultiQueueTaskRunnerTest {
     }
 
     private void sendTasksToWorkQueue(Set<TaskState> tasks) {
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), TaskState.serialize(t))));
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, t.getId(), t.serialize())));
         producer.flush();
     }
 }

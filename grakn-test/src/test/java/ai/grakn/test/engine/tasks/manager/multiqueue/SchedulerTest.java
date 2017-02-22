@@ -163,7 +163,7 @@ public class SchedulerTest {
 
     private void sendTasksToNewTasksQueue(Set<TaskState> tasks) {
         System.out.println("Producer sending to new tasks queue: " + tasks);
-        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), TaskState.serialize(t))));
+        tasks.forEach(t -> producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, t.getId(), t.serialize())));
         producer.flush();
     }
 }

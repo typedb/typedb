@@ -94,7 +94,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
                 .has(CREATED_BY, var().value(task.creator()))
                 .has(RUN_AT, var().value(schedule.runAt().toEpochMilli()))
                 .has(RECURRING, var().value(schedule.isRecurring()))
-                .has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
+                .has(SERIALISED_TASK, var().value(task.serialize()));
 
         schedule.interval().ifPresent(interval -> state.has(RECUR_INTERVAL, var().value(interval)));
 
@@ -123,7 +123,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Var resources = var(TASK_VAR);
 
         resourcesToDettach.add(SERIALISED_TASK);
-        resources.has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
+        resources.has(SERIALISED_TASK, var().value(task.serialize()));
 
         // TODO make sure all properties are being updated
         if(task.status() != null) {
