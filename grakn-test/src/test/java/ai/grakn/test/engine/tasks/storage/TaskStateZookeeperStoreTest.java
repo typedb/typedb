@@ -232,7 +232,7 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(String creator){
-        return new TaskState(ShortExecutionTestTask.class, creator, TaskSchedule.now(), null)
+        return TaskState.of(ShortExecutionTestTask.class, creator, TaskSchedule.now(), null)
                 .statusChangedBy(this.getClass().getName());
     }
 

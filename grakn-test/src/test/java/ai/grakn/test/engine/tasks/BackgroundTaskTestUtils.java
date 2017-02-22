@@ -42,7 +42,7 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration) {
-        TaskState taskState = new TaskState(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
+        TaskState taskState = TaskState.of(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
                 .status(status)
                 .statusChangedBy(BackgroundTaskTestUtils.class.getName());
         configuration.set("id", taskState.getId().getValue());

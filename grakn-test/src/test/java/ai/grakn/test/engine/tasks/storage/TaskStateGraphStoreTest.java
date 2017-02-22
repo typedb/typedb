@@ -188,7 +188,7 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(TaskSchedule schedule, Json configuration, String creator){
-        return new TaskState(ShortExecutionTestTask.class, creator, schedule, configuration)
+        return TaskState.of(ShortExecutionTestTask.class, creator, schedule, configuration)
                 .statusChangedBy(this.getClass().getName())
                 .engineID(UUID.randomUUID().toString());
     }

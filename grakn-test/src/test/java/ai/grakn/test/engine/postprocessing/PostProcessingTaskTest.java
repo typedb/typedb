@@ -44,7 +44,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStart() throws Exception {
-        TaskState task = new TaskState(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
+        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
         taskManager.addTask(task);
         Assert.assertNotEquals(CREATED, taskManager.storage().getState(task.getId()).status());
 
@@ -64,7 +64,7 @@ public class PostProcessingTaskTest {
 
     @Test
     public void testStop() {
-        TaskState task = new TaskState(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
+        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
         taskManager.addTask(task);
         taskManager.stopTask(task.getId(), this.getClass().getName());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());

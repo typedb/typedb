@@ -82,11 +82,16 @@ public class TaskState implements Serializable {
      */
     private @Nullable Json configuration;
 
-    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration) {
-        this(taskClass, creator, schedule, configuration, TaskId.generate());
+    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration) {
+        return new TaskState(taskClass, creator, schedule, configuration, TaskId.generate());
     }
 
-    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
+    public static TaskState of(
+            Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
+        return new TaskState(taskClass, creator, schedule, configuration, id);
+    }
+
+    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
         this.taskClassName = taskClass.getName();

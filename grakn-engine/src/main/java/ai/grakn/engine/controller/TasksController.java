@@ -198,7 +198,7 @@ public class TasksController {
 
             Json configuration = request.body().isEmpty() ? Json.object() : Json.read(request.body());
 
-            TaskState taskState = new TaskState(clazz, createdBy, schedule, configuration);
+            TaskState taskState = TaskState.of(clazz, createdBy, schedule, configuration);
 
             manager.addTask(taskState);
 
