@@ -232,9 +232,8 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(String creator){
-        return new TaskState(ShortExecutionTestTask.class, creator, TaskSchedule.now())
-                .statusChangedBy(this.getClass().getName())
-                .configuration(null);
+        return new TaskState(ShortExecutionTestTask.class, creator, TaskSchedule.now(), null)
+                .statusChangedBy(this.getClass().getName());
     }
 
     /**

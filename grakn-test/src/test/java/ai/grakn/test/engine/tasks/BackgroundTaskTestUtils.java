@@ -37,15 +37,16 @@ public class BackgroundTaskTestUtils {
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
         return IntStream.range(0, n)
-                .mapToObj(i -> createTask(status, TaskSchedule.now()))
+                .mapToObj(i -> createTask(status, TaskSchedule.now(), Json.object()))
                 .collect(toSet());
     }
 
-    public static TaskState createTask(TaskStatus status, TaskSchedule schedule) {
-        TaskState taskState = new TaskState(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule)
+    public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration) {
+        TaskState taskState = new TaskState(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
                 .status(status)
                 .statusChangedBy(BackgroundTaskTestUtils.class.getName());
-        return taskState.configuration(Json.object("id", taskState.getId().getValue()));
+        configuration.set("id", taskState.getId().getValue());
+        return taskState;
     }
     
     public static void waitForStatus(TaskStateStorage storage, Set<TaskState> tasks, TaskStatus status) {

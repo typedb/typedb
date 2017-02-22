@@ -28,6 +28,7 @@ import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
@@ -114,7 +115,7 @@ public class MultiQueueTaskRunnerTest {
         ShortExecutionTestTask.startedCounter.set(0);
         ShortExecutionTestTask.resumedCounter.set(0);
 
-        TaskState task = createTask(SCHEDULED, TaskSchedule.now());
+        TaskState task = createTask(SCHEDULED, TaskSchedule.now(), Json.object());
         task.checkpoint("");
         storage.newState(task);
         sendTasksToWorkQueue(singleton(task));

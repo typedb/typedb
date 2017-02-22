@@ -29,7 +29,6 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -243,7 +242,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
             }
 
             // remove the configuration and mark as COMPLETED
-            state.configuration(Json.object());
+            state.clearConfiguration();
             storage.updateState(state.status(COMPLETED));
 
         } catch(Throwable t) {

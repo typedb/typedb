@@ -196,11 +196,9 @@ public class TasksController {
                     .map(interval -> recurring(time, interval))
                     .orElse(TaskSchedule.at(time));
 
-            TaskState taskState = new TaskState(clazz, createdBy, schedule);
+            Json configuration = request.body().isEmpty() ? Json.object() : Json.read(request.body());
 
-            if(!request.body().isEmpty()) {
-                taskState.configuration(Json.read(request.body()));
-            }
+            TaskState taskState = new TaskState(clazz, createdBy, schedule, configuration);
 
             manager.addTask(taskState);
 

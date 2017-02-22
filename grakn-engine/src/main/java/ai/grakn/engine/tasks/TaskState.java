@@ -22,9 +22,12 @@ import ai.grakn.engine.TaskStatus;
 import mjson.Json;
 import org.apache.commons.lang.SerializationUtils;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Base64;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
@@ -77,18 +80,19 @@ public class TaskState implements Serializable {
     /**
      * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
      */
-    private Json configuration;
+    private @Nullable Json configuration;
 
-    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule) {
-        this(taskClass, creator, schedule, TaskId.generate());
+    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration) {
+        this(taskClass, creator, schedule, configuration, TaskId.generate());
     }
 
-    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, TaskId id) {
+    public TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
         this.taskClassName = taskClass.getName();
-        this.creator = creator;
-        this.schedule = schedule;
+        this.creator = requireNonNull(creator);
+        this.schedule = requireNonNull(schedule);
+        this.configuration = configuration;
         this.taskId = id.getValue();
     }
 
@@ -191,12 +195,12 @@ public class TaskState implements Serializable {
         return taskCheckpoint;
     }
 
-    public TaskState configuration(Json configuration) {
-        this.configuration = configuration;
+    public TaskState clearConfiguration() {
+        this.configuration = null;
         return this;
     }
 
-    public Json configuration() {
+    public @Nullable Json configuration() {
         return configuration;
     }
 

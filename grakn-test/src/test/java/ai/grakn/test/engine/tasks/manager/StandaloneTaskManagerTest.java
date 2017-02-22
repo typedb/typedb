@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import mjson.Json;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -61,7 +62,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunSingle() {
-        TaskState task = createTask(CREATED, TaskSchedule.now());
+        TaskState task = createTask(CREATED, TaskSchedule.now(), Json.object());
         taskManager.addTask(task);
 
         // Wait for task to be executed.
@@ -90,7 +91,7 @@ public class StandaloneTaskManagerTest {
         // Schedule tasks
         List<TaskId> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
-            TaskState task = createTask(CREATED, TaskSchedule.now());
+            TaskState task = createTask(CREATED, TaskSchedule.now(), Json.object());
             taskManager.addTask(task);
             ids.add(task.getId());
         }
@@ -116,7 +117,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunRecurring() throws Exception {
-        TaskState task = createTask(CREATED, recurring(now().plusSeconds(10), Duration.ofSeconds(100)));
+        TaskState task = createTask(CREATED, recurring(now().plusSeconds(10), Duration.ofSeconds(100)), Json.object());
         taskManager.addTask(task);
 
         Thread.sleep(2000);
@@ -129,7 +130,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testStopSingle() {
-        TaskState task = createTask(CREATED, at(now().plusSeconds(10)));
+        TaskState task = createTask(CREATED, at(now().plusSeconds(10)), Json.object());
         taskManager.addTask(task);
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();

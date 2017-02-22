@@ -52,8 +52,9 @@ public class TaskStates extends Generator<TaskState> {
 
         // TODO: generate all the other params of a task state
 
-        TaskState taskState = new TaskState(taskClass, creator, TaskSchedule.now(), taskId);
-        Json configuration = Json.object("id", taskState.getId().getValue());
-        return taskState.status(taskStatus).configuration(configuration);
+        Json configuration = Json.object();
+        TaskState taskState = new TaskState(taskClass, creator, TaskSchedule.now(), configuration, taskId);
+        configuration.set("id", taskState.getId().getValue());
+        return taskState.status(taskStatus);
     }
 }

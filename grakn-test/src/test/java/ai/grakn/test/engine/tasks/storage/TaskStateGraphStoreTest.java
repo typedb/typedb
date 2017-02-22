@@ -60,6 +60,7 @@ public class TaskStateGraphStoreTest {
     public void setUp() {
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
         stateStorage = new TaskStateGraphStore();
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
     }
 
     @Test
@@ -68,7 +69,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task(at(runAt)).configuration(configuration));
+        TaskId id = stateStorage.newState(task(at(runAt), configuration));
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
@@ -87,7 +88,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task(at(runAt)).configuration(configuration));
+        TaskId id = stateStorage.newState(task(at(runAt), configuration));
         assertNotNull(id);
 
         // Get current values
@@ -129,7 +130,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByCreator() {
-        TaskId id = stateStorage.newState(task(TaskSchedule.now(), "other"));
+        TaskId id = stateStorage.newState(task(TaskSchedule.now(), Json.object(), "other"));
         assertNotNull(id);
 
         Set<TaskState> res = stateStorage.getTasks(null, null, "other", 0, 0);
@@ -179,17 +180,16 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(){
-        return task(TaskSchedule.now(), getClass().getName());
+        return task(TaskSchedule.now(), Json.object(), getClass().getName());
     }
 
-    public TaskState task(TaskSchedule schedule){
-        return task(schedule, getClass().getName());
+    public TaskState task(TaskSchedule schedule, Json configuration){
+        return task(schedule, configuration, getClass().getName());
     }
 
-    public TaskState task(TaskSchedule schedule, String creator){
-        return new TaskState(ShortExecutionTestTask.class, creator, schedule)
+    public TaskState task(TaskSchedule schedule, Json configuration, String creator){
+        return new TaskState(ShortExecutionTestTask.class, creator, schedule, configuration)
                 .statusChangedBy(this.getClass().getName())
-                .engineID(UUID.randomUUID().toString())
-                .configuration(null);
+                .engineID(UUID.randomUUID().toString());
     }
 }

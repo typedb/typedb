@@ -149,8 +149,7 @@ public class GraknEngineServer {
         // Submit a recurring post processing task
         Duration interval = Duration.ofMillis(prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE));
         String creator = GraknEngineServer.class.getName();
-        TaskState postprocessing = new TaskState(PostProcessingTask.class, creator, TaskSchedule.recurring(interval))
-                .configuration(Json.object());
+        TaskState postprocessing = new TaskState(PostProcessingTask.class, creator, TaskSchedule.recurring(interval), Json.object());
         taskManager.addTask(postprocessing);
     }
 
