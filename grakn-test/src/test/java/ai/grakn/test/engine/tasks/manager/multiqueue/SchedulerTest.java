@@ -73,11 +73,6 @@ public class SchedulerTest {
 
     @Before
     public void start() throws Exception {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ExceptionWrapper.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(MultiQueueTaskRunner.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
-
         storage = new TaskStateInMemoryStore();
         connection = new ZookeeperConnection(client());
         startScheduler();
@@ -137,7 +132,7 @@ public class SchedulerTest {
         stopScheduler();
 
         // persist a recurring task
-        TaskState recurring = createTask(1, CREATED, true, 10000);
+        TaskState recurring = createTask(CREATED, true, 10000);
         System.out.println("recurring task " + recurring.getId());
         storage.newState(recurring);
 

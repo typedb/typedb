@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.TestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -65,7 +65,7 @@ public class TaskStateZookeeperStoreTest {
         TaskState state = stateStorage.getState(id);
         assertNotNull(state);
         assertEquals(CREATED, state.status());
-        assertEquals(TestTask.class, state.taskClass());
+        assertEquals(ShortExecutionTestTask.class, state.taskClass());
         assertEquals(this.getClass().getName(), state.creator());
     }
 
@@ -194,7 +194,7 @@ public class TaskStateZookeeperStoreTest {
     @Test
     public void testGetTasksByClassName() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -228,7 +228,7 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(TestTask.class)
+        return new TaskState(ShortExecutionTestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
                 .runAt(now())

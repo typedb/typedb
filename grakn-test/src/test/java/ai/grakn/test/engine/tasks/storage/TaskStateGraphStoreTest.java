@@ -23,7 +23,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.TestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testTaskStateStoreRetrieve() {
-        TestTask task = new TestTask();
+        ShortExecutionTestTask task = new ShortExecutionTestTask();
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
@@ -142,7 +142,7 @@ public class TaskStateGraphStoreTest {
         TaskId id = stateStorage.newState(task());
         assertNotNull(id);
 
-        Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, 0, 0);
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
                         .filter(x -> x.equals(id))
@@ -176,7 +176,7 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(TestTask.class)
+        return new TaskState(ShortExecutionTestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
                 .runAt(now())

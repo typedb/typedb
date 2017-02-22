@@ -18,24 +18,21 @@
 
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
-import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.TestTask;
-import mjson.Json;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class MultiQueueTaskManagerTest {
     private MultiQueueTaskManager manager;
@@ -48,39 +45,18 @@ public class MultiQueueTaskManagerTest {
         manager = (MultiQueueTaskManager) engine.getTaskManager();
     }
 
-    private void waitToFinish(TaskId id) {
-        while (true) {
-            try {
-                TaskStatus status = manager.storage().getState(id).status();
-                if (status == COMPLETED || status == FAILED) {
-                    System.out.println(id + " ------> " + status);
-                    break;
-                }
-
-                System.out.println("Checking " + id + " " + status);
-
-                Thread.sleep(5000);
-            } catch (Exception ignored){}
-        }
-    }
-
     /**
      * Run end to end test and assert that the state
      * is correct in zookeeper.
      */
     @Test
     public void endToEndTest(){
-        Collection<TaskId> ids = new HashSet<>();
-        final int startCount = TestTask.startedCounter.get();
+        final int startCount = ShortExecutionTestTask.startedCounter.get();
 
-        for(int i = 0; i < 20; i++) {
-            TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task" + i));
-            manager.addTask(task);
-            ids.add(task.getId());
-        }
+        Set<TaskState> tasks = createTasks(20, CREATED);
+        tasks.forEach(manager::addTask);
 
-        ids.forEach(this::waitToFinish);
-        assertTrue(ids.stream().map(m -> manager.storage().getState(m).status()).allMatch(s -> s == COMPLETED));
-        assertEquals(20, TestTask.startedCounter.get()-startCount);
+        waitForStatus(manager.storage(), tasks, COMPLETED);
+        assertEquals(20, ShortExecutionTestTask.startedCounter.get()-startCount);
     }
 }

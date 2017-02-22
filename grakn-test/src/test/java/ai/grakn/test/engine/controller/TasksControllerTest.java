@@ -23,8 +23,8 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.LongRunningTask;
-import ai.grakn.test.engine.tasks.TestTask;
+import ai.grakn.test.engine.tasks.LongExecutionTestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.http.ContentType;
@@ -68,7 +68,7 @@ public class TasksControllerTest {
     public void setUp() throws Exception {
         MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
         singleTask = manager.storage().newState(
-                new TaskState(TestTask.class)
+                new TaskState(ShortExecutionTestTask.class)
                         .creator(this.getClass().getName())
                         .runAt(Instant.now())
                         .status(COMPLETED)
@@ -94,7 +94,7 @@ public class TasksControllerTest {
 
     @Test
     public void testTasksByClassName() {
-        Response response = given().queryParam("className", TestTask.class.getName())
+        Response response = given().queryParam("className", ShortExecutionTestTask.class.getName())
                                    .queryParam("limit", 10)
                                    .get("/tasks/all");
 
@@ -105,7 +105,7 @@ public class TasksControllerTest {
         JSONArray array = new JSONArray(response.body().asString());
         array.forEach(x -> {
             JSONObject o = (JSONObject)x;
-            assertEquals(TestTask.class.getName(), o.get("className"));
+            assertEquals(ShortExecutionTestTask.class.getName(), o.get("className"));
         });
     }
 
@@ -148,7 +148,7 @@ public class TasksControllerTest {
 
     @Test
     public void testScheduleWithoutOptional() {
-        given().queryParam("className", TestTask.class.getName())
+        given().queryParam("className", ShortExecutionTestTask.class.getName())
                .queryParam("creator", this.getClass().getName())
                .queryParam("runAt", new Date())
                .post(TASKS_SCHEDULE_URI)
@@ -162,7 +162,7 @@ public class TasksControllerTest {
     @Test
     public void testScheduleStopTask() {
         Response response = given()
-                .queryParam("className", LongRunningTask.class.getName())
+                .queryParam("className", LongExecutionTestTask.class.getName())
                 .queryParam("creator", this.getClass().getName())
                 .queryParam("runAt", new Date())
                 .queryParam("interval", 5000)

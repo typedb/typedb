@@ -23,11 +23,8 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
-import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.test.engine.tasks.TestTask;
-import mjson.Json;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,6 +43,7 @@ import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -60,12 +58,11 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunSingle() {
-        TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task1"));
+        TaskState task = createTask(CREATED, false, 0);
         taskManager.addTask(task);
 
         // Wait for task to be executed.
         waitToFinish(task.getId());
-
         assertEquals(COMPLETED, taskManager.storage().getState(task.getId()).status());
     }
 
@@ -76,11 +73,6 @@ public class StandaloneTaskManagerTest {
         while ((new Date().getTime())-initial < 10000) {
             if (storage.getState(id).status() == COMPLETED)
                 break;
-
-            System.out.println("created: "+storage.getTasks(CREATED, null, null, 0, 0).size());
-            System.out.println("scheduled: "+storage.getTasks(SCHEDULED, null, null,0, 0).size());
-            System.out.println("completed: "+storage.getTasks(COMPLETED, null, null,0, 0).size());
-            System.out.println("running: "+storage.getTasks(RUNNING, null, null,0, 0).size());
 
             try {
                 Thread.sleep(100);
@@ -95,7 +87,7 @@ public class StandaloneTaskManagerTest {
         // Schedule tasks
         List<TaskId> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
-            TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task" + i ));
+            TaskState task = createTask(CREATED, false, 0);
             taskManager.addTask(task);
             ids.add(task.getId());
         }
@@ -121,10 +113,12 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunRecurring() throws Exception {
-        TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task1" )).isRecurring(true).interval(100);
+        TaskState task = createTask(CREATED, true, 100).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        taskManager.addTask(task);
+
         Thread.sleep(2000);
 
-        assertTrue(TestTask.startedCounter.get() > 1);
+        assertTrue(ShortExecutionTestTask.startedCounter.get() > 1);
 
         // Stop task..
         taskManager.stopTask(task.getId(), null);
@@ -132,7 +126,8 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testStopSingle() {
-        TaskState task = new TaskState(TestTask.class).configuration(Json.object("name", "task1")).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        TaskState task = createTask(CREATED, false, 0).runAt(Instant.now().plus(10, ChronoUnit.SECONDS));
+        taskManager.addTask(task);
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();
         assertTrue(status == SCHEDULED || status == RUNNING);

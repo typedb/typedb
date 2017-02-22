@@ -37,19 +37,19 @@ public class BackgroundTaskTestUtils {
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
         return IntStream.range(0, n)
-                .mapToObj(i -> createTask(i, status, false, 0))
+                .mapToObj(i -> createTask(status, false, 0))
                 .collect(toSet());
     }
 
-    public static TaskState createTask(int i, TaskStatus status, boolean recurring, int interval) {
-        TaskState taskState = new TaskState(TestTask.class)
+    public static TaskState createTask(TaskStatus status, boolean recurring, int interval) {
+        TaskState taskState = new TaskState(ShortExecutionTestTask.class)
                 .status(status)
                 .creator(BackgroundTaskTestUtils.class.getName())
                 .statusChangedBy(BackgroundTaskTestUtils.class.getName())
                 .runAt(now())
                 .isRecurring(recurring)
                 .interval(interval);
-        return taskState.configuration(Json.object("id", taskState.getId().getValue(), "name", "task" + i));
+        return taskState.configuration(Json.object("id", taskState.getId().getValue()));
     }
     
     public static void waitForStatus(TaskStateStorage storage, Set<TaskState> tasks, TaskStatus status) {

@@ -23,15 +23,11 @@ import ai.grakn.engine.tasks.TaskId;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class TestTask implements BackgroundTask {
-    private final static Logger LOG = LoggerFactory.getLogger(TestTask.class);
-
+public class LongExecutionTestTask implements BackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
@@ -52,14 +48,14 @@ public class TestTask implements BackgroundTask {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
         startedCounter.incrementAndGet();
         completedTasks.add(TaskId.of(config.at("id").asString()));
     }
 
     public void stop() {}
 
-    public void pause() {
-    }
+    public void pause() {}
 
     public void resume(Consumer<String> c, String s) {
         resumedCounter.incrementAndGet();

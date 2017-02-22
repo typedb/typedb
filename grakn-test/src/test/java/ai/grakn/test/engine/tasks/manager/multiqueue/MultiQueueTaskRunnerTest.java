@@ -26,7 +26,7 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.TestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
@@ -83,21 +83,21 @@ public class MultiQueueTaskRunnerTest {
 
     @Test
     public void testSendReceive() throws Exception {
-        TestTask.startedCounter.set(0);
-        TestTask.resumedCounter.set(0);
+        ShortExecutionTestTask.startedCounter.set(0);
+        ShortExecutionTestTask.resumedCounter.set(0);
 
         Set<TaskState> tasks = createTasks(5, SCHEDULED);
         tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         waitForStatus(storage, tasks, COMPLETED);
 
-        assertEquals(5, TestTask.startedCounter.get());
+        assertEquals(5, ShortExecutionTestTask.startedCounter.get());
     }
 
     @Test
     public void testSendDuplicate() throws Exception {
-        TestTask.startedCounter.set(0);
-        TestTask.resumedCounter.set(0);
+        ShortExecutionTestTask.startedCounter.set(0);
+        ShortExecutionTestTask.resumedCounter.set(0);
 
         Set<TaskState> tasks = createTasks(5, SCHEDULED);
         tasks.forEach(storage::newState);
@@ -105,15 +105,15 @@ public class MultiQueueTaskRunnerTest {
         sendTasksToWorkQueue(tasks);
 
         waitForStatus(storage, tasks, COMPLETED);
-        assertEquals(5, TestTask.startedCounter.get());
+        assertEquals(5, ShortExecutionTestTask.startedCounter.get());
     }
 
     @Test
     public void testSendWithCheckpoint() {
-        TestTask.startedCounter.set(0);
-        TestTask.resumedCounter.set(0);
+        ShortExecutionTestTask.startedCounter.set(0);
+        ShortExecutionTestTask.resumedCounter.set(0);
 
-        TaskState task = createTask(0, SCHEDULED, false, 0);
+        TaskState task = createTask(SCHEDULED, false, 0);
         task.checkpoint("");
         storage.newState(task);
         sendTasksToWorkQueue(singleton(task));
@@ -122,8 +122,8 @@ public class MultiQueueTaskRunnerTest {
 
         // Task should be resumed, not started
         // This is because it was sent to the work queue with a non-null checkpoint
-        assertEquals(1, TestTask.resumedCounter.get());
-        assertEquals(0, TestTask.startedCounter.get());
+        assertEquals(1, ShortExecutionTestTask.resumedCounter.get());
+        assertEquals(0, ShortExecutionTestTask.startedCounter.get());
     }
 
     private void sendTasksToWorkQueue(Set<TaskState> tasks) {

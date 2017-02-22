@@ -127,11 +127,11 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add a task in each state (SCHEDULED, COMPLETED, STOPPED, FAILED, RUNNING) to fake task runner watch
-        TaskState scheduled = createTask(0, SCHEDULED, false, 0);
-        TaskState running = createTask(1, RUNNING, false, 0);
-        TaskState stopped = createTask(2, STOPPED, false, 0);
-        TaskState failed = createTask(3, FAILED, false, 0);
-        TaskState completed = createTask(4, COMPLETED, false, 0);
+        TaskState scheduled = createTask(SCHEDULED, false, 0);
+        TaskState running = createTask(RUNNING, false, 0);
+        TaskState stopped = createTask(STOPPED, false, 0);
+        TaskState failed = createTask(FAILED, false, 0);
+        TaskState completed = createTask(COMPLETED, false, 0);
 
         Set<TaskState> tasks = Sets.newHashSet(scheduled, running, stopped, failed, completed);
         tasks.forEach(storage::newState);
@@ -165,7 +165,7 @@ public class TaskFailoverTest {
         Json configuration = Json.object("configuration", true);
         Json checkpoint = Json.object("configuration", false);
 
-        TaskState running = createTask(1, RUNNING, false, 0);
+        TaskState running = createTask(RUNNING, false, 0);
         running.configuration(configuration);
         running.checkpoint(checkpoint.toString());
         storage.newState(running);

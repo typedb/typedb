@@ -22,7 +22,7 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.test.engine.tasks.TestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,7 +52,7 @@ public class TaskStateInMemoryStoreTest {
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
-        assertEquals("name", TestTask.class, state.taskClass());
+        assertEquals("name", ShortExecutionTestTask.class, state.taskClass());
         assertEquals("creator", this.getClass().getName(), state.creator());
         assertEquals("recurring", false, state.isRecurring());
         assertEquals("interval", 0, state.interval());
@@ -112,7 +112,7 @@ public class TaskStateInMemoryStoreTest {
     @Test
     public void testGetTasksByClassName() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -146,7 +146,7 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return new TaskState(TestTask.class)
+        return new TaskState(ShortExecutionTestTask.class)
                 .creator(this.getClass().getName())
                 .statusChangedBy(this.getClass().getName())
                 .runAt(now())
