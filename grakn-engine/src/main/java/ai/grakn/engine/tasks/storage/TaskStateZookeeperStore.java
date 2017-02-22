@@ -47,7 +47,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * by acquiring a distributed mutex so that no concurrent writes are possible. 
  * </p>
  * 
- *
+ * @author alexandraorth
  */
 public class TaskStateZookeeperStore implements TaskStateStorage {
     private final ZookeeperConnection zookeeper;

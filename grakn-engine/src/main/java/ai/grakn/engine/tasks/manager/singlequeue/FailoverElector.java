@@ -116,6 +116,8 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
             case RECONNECTED:
                 LOG.debug("Leadership regained");
                 break;
+            default:
+                break;
         }
     }
 }
