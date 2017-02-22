@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
@@ -33,6 +34,7 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
+import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
 
 /**
  * <p>
@@ -43,6 +45,7 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
  */
 public class ZookeeperConnection {
 
+    private static final int ZOOKEEPER_CONNECTION_TIMEOUT = ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT);
     private final CuratorFramework zookeeperConnection;
 
     /**
@@ -53,7 +56,7 @@ public class ZookeeperConnection {
 
         try {
             zookeeperConnection.start();
-            if(!zookeeperConnection.blockUntilConnected(30, TimeUnit.SECONDS)){
+            if(!zookeeperConnection.blockUntilConnected(ZOOKEEPER_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)){
                 throw new RuntimeException("Could not connect to zookeeper");
             }
 

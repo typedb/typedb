@@ -35,7 +35,7 @@ public class ClientTest {
 
     @Test
     public void graknEngineRunning() throws Throwable {
-        EngineContext engine = EngineContext.startDistributedServer();
+        EngineContext engine = EngineContext.startMultiQueueServer();
         engine.before();
 
         boolean running = Client.serverIsRunning(Grakn.DEFAULT_URI);

@@ -57,7 +57,7 @@ public class TasksControllerTest {
     private TaskId singleTask;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @BeforeClass
     public static void startEngine() throws Exception{

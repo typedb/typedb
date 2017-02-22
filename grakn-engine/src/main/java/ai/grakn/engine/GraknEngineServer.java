@@ -19,8 +19,6 @@ package ai.grakn.engine;
 
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
@@ -57,7 +55,7 @@ import static spark.Spark.staticFiles;
 import static spark.Spark.webSocket;
 import static spark.Spark.webSocketIdleTimeoutMillis;
 
-import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -67,6 +65,7 @@ import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
 
 public class GraknEngineServer {
     private static final ConfigProperties prop = ConfigProperties.getInstance();
+
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -79,17 +78,15 @@ public class GraknEngineServer {
     private static TaskManager taskManager;
 
     public static void main(String[] args) {
-        boolean distributed = prop.getPropertyAsBool(DISTRIBUTED_TASK_MANAGER);
-
         // close GraknEngineServer on SIGTERM
         Thread closeThread = new Thread(GraknEngineServer::stop, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
 
-        start(distributed);
+        start(prop.getProperty(TASK_MANAGER_IMPLEMENTATION));
     }
 
-    public static void start(boolean taskManagerIsDistributed){
-        startTaskManager(taskManagerIsDistributed);
+    public static void start(String taskManagerClass){
+        startTaskManager(taskManagerClass);
         startHTTP();
         startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -106,11 +103,11 @@ public class GraknEngineServer {
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
-    private static void startTaskManager(boolean taskManagerIsDistributed) {
-        if(taskManagerIsDistributed){
-            taskManager = new MultiQueueTaskManager();
-        } else {
-            taskManager = new StandaloneTaskManager();
+    private static void startTaskManager(String taskManagerClass) {
+        try {
+            taskManager = (TaskManager) Class.forName(taskManagerClass).newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            throw new IllegalArgumentException("Invalid or unavailable TaskManager class");
         }
     }
 

@@ -20,12 +20,15 @@ package ai.grakn.test.engine;
 
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
 import static junit.framework.TestCase.assertTrue;
 
 public class GraknEngineServerTest {
@@ -36,19 +39,31 @@ public class GraknEngineServerTest {
     @Test
     public void testInMemoryMain() throws Exception {
         // Should start engine with in-memory server
-        ConfigProperties.getInstance().setConfigProperty(DISTRIBUTED_TASK_MANAGER, "false");
+        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
         GraknEngineServer.main(new String[]{});
         assertTrue(GraknEngineServer.getTaskManager() instanceof StandaloneTaskManager);
         GraknEngineServer.stop();
-        GraknEngineServer.stopHTTP();
     }
 
     @Test
-    public void testDistributedMain() {
+    public void testDistributedMultiQueueMain() {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        ConfigProperties.getInstance().setConfigProperty(DISTRIBUTED_TASK_MANAGER, "true");
+        ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, MultiQueueTaskManager.class.getName());
+
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Could not connect to zookeeper");
+        GraknEngineServer.main(new String[]{});
+    }
+
+    @Test
+    public void testDistributedSingleQueueMain() {
+        // Should start engine with distributed server, which means we will get a cannot
+        // connect to Zookeeper exception (that has not been started)
+        ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
         exception.expect(RuntimeException.class);
         exception.expectMessage("Could not connect to zookeeper");

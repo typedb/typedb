@@ -30,7 +30,6 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,7 +52,7 @@ public class LoaderClientTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public final EngineContext engine = EngineContext.startDistributedServer();
+    public final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @Before
     public void setup() {

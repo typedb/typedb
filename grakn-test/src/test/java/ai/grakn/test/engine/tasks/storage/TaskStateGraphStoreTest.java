@@ -50,7 +50,7 @@ public class TaskStateGraphStoreTest {
     private TaskStateStorage stateStorage;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @Before
     public void setUp() {

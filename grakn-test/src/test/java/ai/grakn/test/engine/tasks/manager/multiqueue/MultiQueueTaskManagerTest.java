@@ -29,7 +29,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -42,7 +41,7 @@ public class MultiQueueTaskManagerTest {
     private MultiQueueTaskManager manager;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @Before
     public void setup() throws Exception {
