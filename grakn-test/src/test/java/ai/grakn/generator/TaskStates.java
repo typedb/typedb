@@ -31,10 +31,22 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import mjson.Json;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
 public class TaskStates extends Generator<TaskState> {
+
+    private Status statusConfig = null;
 
     public TaskStates() {
         super(TaskState.class);
@@ -47,7 +59,13 @@ public class TaskStates extends Generator<TaskState> {
 
         TaskId taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
 
-        TaskStatus taskStatus = gen().type(TaskStatus.class).generate(random, status);
+        TaskStatus taskStatus;
+        if (statusConfig == null) {
+            taskStatus = gen().type(TaskStatus.class).generate(random, status);
+        } else {
+            taskStatus = random.choose(statusConfig.value());
+        }
+
         String creator = gen().type(String.class).generate(random, status);
 
         // TODO: generate all the other params of a task state
@@ -56,5 +74,16 @@ public class TaskStates extends Generator<TaskState> {
         TaskState taskState = TaskState.of(taskClass, creator, TaskSchedule.now(), configuration, taskId);
         configuration.set("id", taskState.getId().getValue());
         return taskState.status(taskStatus);
+    }
+
+    public void configure(Status status) {
+        this.statusConfig = status;
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface Status {
+        TaskStatus[] value();
     }
 }

@@ -25,12 +25,21 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Sets;
 import mjson.Json;
 
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -66,20 +75,57 @@ public class BackgroundTaskTestUtils {
         return taskState;
     }
     
-    public static void waitForStatus(TaskStateStorage storage, Set<TaskState> tasks, TaskStatus status) {
-        tasks.forEach(t -> waitForStatus(storage, t, status));
+    public static void waitForStatus(TaskStateStorage storage, Collection<TaskState> tasks, TaskStatus... status) {
+        HashSet<TaskStatus> statusSet = Sets.newHashSet(status);
+        tasks.forEach(t -> waitForStatus(storage, t, statusSet));
     }
 
-    public static void waitForStatus(TaskStateStorage storage, TaskState task, TaskStatus status) {
+    private static void waitForStatus(TaskStateStorage storage, TaskState task, Set<TaskStatus> status) {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
             try {
                 TaskStatus currentStatus = storage.getState(task.getId()).status();
-                if (currentStatus == status) {
+                if (status.contains(currentStatus)) {
                     return;
                 }
             } catch (Exception ignored){}
         }
+    }
+
+    public static Multiset<TaskId> completableTasks(List<TaskState> tasks) {
+        Map<TaskId, Long> tasksById = tasks.stream().collect(groupingBy(TaskState::getId, counting()));
+        Set<TaskId> retriedTasks = Maps.filterValues(tasksById, count -> count != null && count > 1).keySet();
+
+        Set<TaskId> completableTasks = Sets.newHashSet();
+        Set<TaskId> visitedTasks = Sets.newHashSet();
+
+        Set<TaskId> appearedTasks = Sets.newHashSet();
+
+        tasks.forEach(task -> {
+            // A task is expected to complete only if:
+            // 1. It has not already executed and failed
+            // 2. it is not a failing task
+            // 3. it is RUNNING or not being retried
+            TaskId id = task.getId();
+            boolean visited = visitedTasks.contains(id);
+            boolean willFail = task.taskClass().equals(FailingTestTask.class);
+            boolean isRunning = appearedTasks.contains(id);
+            boolean isRetried = retriedTasks.contains(id);
+            if (!visited && (isRunning || !isRetried)) {
+                if (!willFail) {
+                    completableTasks.add(id);
+                }
+                visitedTasks.add(id);
+            }
+            appearedTasks.add(id);
+        });
+
+        return ImmutableMultiset.copyOf(completableTasks);
+    }
+
+    public static Set<TaskId> failingTasks(List<TaskState> tasks) {
+        Multiset<TaskId> completableTasks = completableTasks(tasks);
+        return tasks.stream().map(TaskState::getId).filter(task -> !completableTasks.contains(task)).collect(toSet());
     }
 }

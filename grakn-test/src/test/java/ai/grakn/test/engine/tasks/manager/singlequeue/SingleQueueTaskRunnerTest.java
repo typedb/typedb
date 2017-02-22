@@ -23,12 +23,10 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.test.engine.tasks.FailingTestTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
@@ -42,23 +40,21 @@ import org.junit.runner.RunWith;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
-import static java.util.stream.Collectors.counting;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toSet;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -118,6 +114,10 @@ public class SingleQueueTaskRunnerTest {
         });
     }
 
+    public static List<TaskState> tasks(List<? extends List<TaskState>> tasks) {
+        return tasks.stream().flatMap(Collection::stream).collect(toList());
+    }
+
     public void waitToComplete() {
         executor.shutdown();
         try {
@@ -125,46 +125,6 @@ public class SingleQueueTaskRunnerTest {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public Stream<TaskState> tasks(List<? extends List<TaskState>> tasks) {
-        return tasks.stream().flatMap(Collection::stream);
-    }
-
-    public Set<TaskId> completableTasks(List<? extends List<TaskState>> tasks) {
-        Map<TaskId, Long> tasksById = tasks(tasks).collect(groupingBy(TaskState::getId, counting()));
-        Set<TaskId> retriedTasks = Maps.filterValues(tasksById, count -> count != null && count > 1).keySet();
-
-        Set<TaskId> completableTasks = Sets.newHashSet();
-        Set<TaskId> visitedTasks = Sets.newHashSet();
-
-        Set<TaskId> appearedTasks = Sets.newHashSet();
-
-        tasks(tasks).forEach(task -> {
-            // A task is expected to complete only if:
-            // 1. It has not already executed and failed
-            // 2. it is not a failing task
-            // 3. it is RUNNING or not being retried
-            TaskId id = task.getId();
-            boolean visited = visitedTasks.contains(id);
-            boolean willFail = task.taskClass().equals(FailingTestTask.class);
-            boolean isRunning = appearedTasks.contains(id);
-            boolean isRetried = retriedTasks.contains(id);
-            if (!visited && (isRunning || !isRetried)) {
-                if (!willFail) {
-                    completableTasks.add(id);
-                }
-                visitedTasks.add(id);
-            }
-            appearedTasks.add(id);
-        });
-
-        return completableTasks;
-    }
-
-    public Set<TaskId> failingTasks(List<List<TaskState>> tasks) {
-        Set<TaskId> completableTasks = completableTasks(tasks);
-        return tasks(tasks).map(TaskState::getId).filter(task -> !completableTasks.contains(task)).collect(toSet());
     }
 
     private void createValidQueue(List<List<TaskState>> tasks) {
@@ -212,7 +172,7 @@ public class SingleQueueTaskRunnerTest {
 
         waitToComplete();
 
-        completableTasks(tasks).forEach(task ->
+        completableTasks(tasks(tasks)).forEach(task ->
                 assertThat(storage.getState(task).status(), is(COMPLETED))
         );
     }
@@ -225,7 +185,7 @@ public class SingleQueueTaskRunnerTest {
 
         waitToComplete();
 
-        failingTasks(tasks).forEach(task ->
+        failingTasks(tasks(tasks)).forEach(task ->
                 assertThat(storage.getState(task).status(), is(FAILED))
         );
     }
@@ -238,7 +198,7 @@ public class SingleQueueTaskRunnerTest {
 
         waitToComplete();
 
-        Multiset<TaskId> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks));
+        Multiset<TaskId> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks(tasks)));
 
         assertEquals(expectedCompletedTasks, completedTasks());
     }
@@ -252,7 +212,8 @@ public class SingleQueueTaskRunnerTest {
 
         taskRunner.run();
 
-        int expectedSubmissions = completableTasks(tasks).size() + failingTasks(tasks).size();
+        List<TaskState> allTasks = tasks(tasks);
+        int expectedSubmissions = completableTasks(allTasks).size() + failingTasks(allTasks).size();
 
         verify(executor, times(expectedSubmissions)).submit(any(Runnable.class));
     }

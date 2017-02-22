@@ -18,34 +18,51 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
+import ai.grakn.generator.TaskStates.Status;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.common.collect.Sets;
+import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED  ;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 /**
  *
  */
+@RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskManagerTest {
 
-    private TaskManager taskManager;
+    private static TaskManager taskManager;
 
     @Rule
     public final EngineContext kafkaServer = EngineContext.startKafkaServer();
+
+    @After
+    public void tearDown() {
+        clearCompletedTasks();
+    }
 
     @Before
     public void setup(){
@@ -55,14 +72,27 @@ public class SingleQueueTaskManagerTest {
     }
 
     @After
-    public void teardown() throws Exception {
+    public void closeTaskManager() throws Exception {
         taskManager.close();
     }
 
-    @Test
-    public void afterSubmitting_AllTasksAreCompleted(){
-        Set<TaskState> tasks = createTasks(100, CREATED);
+    @Property(trials=10)
+    public void afterSubmitting_AllTasksAreCompleted(List<@Status(CREATED) TaskState> tasks){
+        assumeValidQueue(tasks);
+
         tasks.forEach(taskManager::addTask);
-        waitForStatus(taskManager.storage(), tasks, COMPLETED);
+        waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
+
+        assertEquals(completableTasks(tasks), completedTasks());
+    }
+
+    private void assumeValidQueue(List<TaskState> tasks) {
+        Set<TaskId> appearedTasks = Sets.newHashSet();
+
+        tasks.forEach(task -> {
+            TaskId taskId = task.getId();
+            assumeFalse(appearedTasks.contains(taskId));
+            appearedTasks.add(taskId);
+        });
     }
 }

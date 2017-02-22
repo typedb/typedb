@@ -50,4 +50,6 @@ public interface TaskManager extends AutoCloseable {
      * @return A StateStorage instance.
      */
     TaskStateStorage storage();
+
+    // TODO: Add 'pause' and 'restart' methods
 }
