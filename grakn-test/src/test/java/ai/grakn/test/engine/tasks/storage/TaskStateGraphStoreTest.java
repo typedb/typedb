@@ -24,6 +24,8 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
@@ -55,6 +57,7 @@ public class TaskStateGraphStoreTest {
 
     @Before
     public void setUp() {
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
         stateStorage = new TaskStateGraphStore();
     }
 
@@ -112,8 +115,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByStatus() {
-        TaskId id = stateStorage.newState(task());
-        stateStorage.newState(task().status(SCHEDULED));
+        TaskId id = stateStorage.newState(task().status(SCHEDULED));
         assertNotNull(id);
 
         Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
@@ -126,11 +128,10 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByCreator() {
-        TaskId id = stateStorage.newState(task());
-        stateStorage.newState(task().creator("other"));
+        TaskId id = stateStorage.newState(task().creator("other"));
         assertNotNull(id);
 
-        Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, "other", 0, 0);
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
                         .filter(x -> x.equals(id))

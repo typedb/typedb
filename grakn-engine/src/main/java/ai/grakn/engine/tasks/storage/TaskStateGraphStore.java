@@ -88,7 +88,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     public TaskId newState(TaskState task) throws EngineStorageException {
         TaskSchedule schedule = task.schedule();
         Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
-                .has(TASK_ID.getValue(), task.getId())
+                .has(TASK_ID.getValue(), task.getId().getValue())
                 .has(STATUS, var().value(CREATED.toString()))
                 .has(TASK_CLASS_NAME, var().value(task.taskClass().getName()))
                 .has(CREATED_BY, var().value(task.creator()))
@@ -125,7 +125,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         resourcesToDettach.add(SERIALISED_TASK);
         resources.has(SERIALISED_TASK, var().value(TaskState.serialize(task)));
 
-        // TODO make sure all properties are being update
+        // TODO make sure all properties are being updated
         if(task.status() != null) {
             resourcesToDettach.add(STATUS);
             resourcesToDettach.add(STATUS_CHANGE_TIME);
@@ -158,7 +158,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         }
 
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
-            Instance taskConcept = graph.getResourcesByValue(task.getId()).iterator().next().owner();
+            Instance taskConcept = graph.getResourcesByValue(task.getId().getValue()).iterator().next().owner();
             // Remove relations to any resources we want to currently update
             resourcesToDettach.forEach(typeName -> {
                 RoleType roleType = graph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(typeName));
@@ -178,7 +178,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     @Override
     public TaskState getState(TaskId id) throws EngineStorageException {
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
-            Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
+            Instance instance = graph.getResourcesByValue(id.getValue()).iterator().next().owner();
             return instanceToState(graph, instance);
         }, false);
 
