@@ -28,6 +28,7 @@ import java.lang.ref.SoftReference;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -60,9 +61,9 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
 
     @Override
     public TaskState getState(TaskId id) {
-        SoftReference<TaskState> taskState = storage.get(id);
+        Optional<TaskState> taskState = Optional.ofNullable(storage.get(id)).map(SoftReference::get);
 
-        if(taskState == null) {
+        if(!taskState.isPresent()) {
             throw new EngineStorageException("Could not retrieve id " + id);
         }
 
