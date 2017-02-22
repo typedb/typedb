@@ -33,7 +33,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -87,8 +86,6 @@ public class LoaderClientTest {
         loadAndTime();
     }
 
-    //TODO FInd a way to stop and start rest
-    @Ignore
     @Test
     public void engineRESTFailsWhileLoadingRetryTrue_LoaderRetriesAndWaits(){
         AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
@@ -108,8 +105,8 @@ public class LoaderClientTest {
 
             loader.add(query);
 
-//            GraknEngineServer.stopHTTP();
-//            GraknEngineServer.startHTTP();
+            GraknEngineServer.stopHTTP();
+            GraknEngineServer.startHTTP();
         }
 
         loader.waitToFinish();
@@ -117,8 +114,6 @@ public class LoaderClientTest {
         assertEquals(20, tasksCompletedWithoutError.get());
     }
 
-    //TODO FInd a way to stop and start rest
-    @Ignore
     @Test
     public void engineRESTFailsWhileLoadingRetryFalse_LoaderDoesNotWait(){
         AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
@@ -126,7 +121,7 @@ public class LoaderClientTest {
         loader.setRetryPolicy(false);
         loader.setBatchSize(5);
         loader.setTaskCompletionConsumer((json) -> {
-            if(json != null){
+            if (json != null) {
                 tasksCompletedWithoutError.incrementAndGet();
             } else {
                 tasksCompletedWithError.incrementAndGet();
@@ -142,8 +137,8 @@ public class LoaderClientTest {
 
             loader.add(query);
 
-//            GraknEngineServer.stopHTTP();
-//            GraknEngineServer.startHTTP();
+            GraknEngineServer.stopHTTP();
+            GraknEngineServer.startHTTP();
         }
 
         loader.waitToFinish();

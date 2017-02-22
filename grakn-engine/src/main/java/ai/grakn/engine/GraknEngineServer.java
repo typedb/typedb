@@ -109,7 +109,7 @@ public class GraknEngineServer {
         }
     }
 
-    private static void startHTTP() {
+    public static void startHTTP() {
         // Set host name
         ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
 
@@ -153,7 +153,7 @@ public class GraknEngineServer {
         taskManager.addTask(postprocessing);
     }
 
-    private static void stopHTTP() {
+    public static void stopHTTP() {
         Spark.stop();
 
         // Block until server is truly stopped
