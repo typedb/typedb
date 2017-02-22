@@ -51,7 +51,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
-    private final Consumer<TaskId, String> consumer;
+    private final Consumer<TaskId, TaskState> consumer;
     private final TaskStateStorage storage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
@@ -67,7 +67,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param consumer a Kafka consumer from which to poll for tasks
      */
     public SingleQueueTaskRunner(
-            TaskStateStorage storage, Consumer<TaskId, String> consumer, ExecutorService executor) {
+            TaskStateStorage storage, Consumer<TaskId, TaskState> consumer, ExecutorService executor) {
         this.storage = storage;
         this.consumer = consumer;
         this.executor = executor;
@@ -93,11 +93,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         try {
             while (!wakeUp.get()) {
-                ConsumerRecords<TaskId, String> records = consumer.poll(100);
+                ConsumerRecords<TaskId, TaskState> records = consumer.poll(100);
 
                 LOG.debug("polled, got {} records", records.count());
 
-                for (ConsumerRecord<TaskId, String> record : records) {
+                for (ConsumerRecord<TaskId, TaskState> record : records) {
                     if (handleRecord(record)) {
                         consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                         consumer.commitSync();
@@ -135,8 +135,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param record
      * @return
      */
-    private boolean handleRecord(ConsumerRecord<TaskId, String> record) {
-        TaskState task = TaskState.deserialize(record.value());
+    private boolean handleRecord(ConsumerRecord<TaskId, TaskState> record) {
+        TaskState task = record.value();
 
         LOG.debug("{}\thandling", task);
 

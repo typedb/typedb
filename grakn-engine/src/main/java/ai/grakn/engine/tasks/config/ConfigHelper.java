@@ -73,8 +73,8 @@ public class ConfigHelper {
         properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
         properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
         properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
-        properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");
+        properties.put("value.deserializer", "ai.grakn.engine.tasks.TaskStateDeserializer");
 
         return new KafkaConsumer<>(properties);
     }
@@ -90,8 +90,8 @@ public class ConfigHelper {
         properties.put("buffer.memory", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_BUFFER_MEM));
         properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
         properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
-        properties.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        properties.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");
+        properties.put("value.deserializer", "ai.grakn.engine.tasks.TaskStateDeserializer");
 
         return new KafkaProducer<>(properties);
     }

@@ -47,7 +47,7 @@ public final class MultiQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskManager.class);
 
-    private final KafkaProducer<TaskId, String> producer;
+    private final KafkaProducer<TaskId, TaskState> producer;
 
     private final SchedulerElector elector;
     private final ZookeeperConnection connection;
@@ -92,7 +92,7 @@ public final class MultiQueueTaskManager implements TaskManager {
 
     @Override
     public void addTask(TaskState taskState){
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), TaskState.serialize(taskState)));
+        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), taskState));
         producer.flush();
     }
 

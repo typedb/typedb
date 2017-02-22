@@ -76,7 +76,7 @@ public class SingleQueueTaskRunnerTest {
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
 
-    private MockGraknConsumer<TaskId, String> consumer;
+    private MockGraknConsumer<TaskId, TaskState> consumer;
     private TopicPartition partition;
     private ExecutorService executor;
 
@@ -183,9 +183,8 @@ public class SingleQueueTaskRunnerTest {
     }
 
     private void addTask(TaskState task) {
-        String serialized = TaskState.serialize(task);
         Long offset = consumer.endOffsets(ImmutableSet.of(partition)).get(partition);
-        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), serialized));
+        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task));
         consumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
     }
 

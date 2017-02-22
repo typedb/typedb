@@ -91,7 +91,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final ExecutorService executor;
     private final int executorSize;
     private final AtomicInteger acceptedTasks = new AtomicInteger(0);
-    private final KafkaConsumer<TaskId, String> consumer;
+    private final KafkaConsumer<TaskId, TaskState> consumer;
 
     public MultiQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
@@ -132,10 +132,10 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     public void run()  {
         try {
             while (true) {
-                ConsumerRecords<TaskId, String> records = consumer.poll(POLLING_FREQUENCY);
+                ConsumerRecords<TaskId, TaskState> records = consumer.poll(POLLING_FREQUENCY);
 
                 long startTime = System.currentTimeMillis();
-                for(ConsumerRecord<TaskId, String> record: records) {
+                for(ConsumerRecord<TaskId, TaskState> record: records) {
 
                     // If TaskRunner capacity full commit offset as current record and exit
                     if(acceptedTasks.get() >= executorSize) {
@@ -189,7 +189,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
      *
      * @param record The record to execute.
      */
-    private void processAndAcknowledgeProcessed(ConsumerRecord<TaskId, String> record) {
+    private void processAndAcknowledgeProcessed(ConsumerRecord<TaskId, TaskState> record) {
         try {
             LOG.debug(format("Received [%s], currently running: %s has: %s allowed: %s",
                 record.key(), getRunningTasksCount(), acceptedTasks.get(), executorSize));
