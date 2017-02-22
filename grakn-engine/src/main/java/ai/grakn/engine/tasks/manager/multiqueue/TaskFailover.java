@@ -22,7 +22,6 @@ package ai.grakn.engine.tasks.manager.multiqueue;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import mjson.Json;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -33,8 +32,8 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -43,9 +42,9 @@ import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ALL_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_PATH;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 
@@ -56,6 +55,7 @@ import static java.lang.String.format;
  *
  * @author Denis lobanov
  */
+//TODO Re-write this because it is awful
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final Logger LOG = LoggerFactory.getLogger(TaskFailover.class);
 
@@ -69,12 +69,13 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
         this.stateStorage = stateStorage;
         this.blocker = new CountDownLatch(1);
-        this.cache = new TreeCache(client, RUNNERS_WATCH);
+        this.cache = new TreeCache(client, ALL_ENGINE_WATCH_PATH);
 
         this.cache.getListenable().addListener(this);
         this.cache.getUnhandledErrorListenable().addListener((message, e) -> blocker.countDown());
+        this.cache.start();
 
-        current = cache.getCurrentChildren(RUNNERS_WATCH);
+        current = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
         producer = kafkaProducer();
         scanStaleStates(client);
     }
@@ -98,7 +99,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     }
 
     public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
-        Map<String, ChildData> nodes = cache.getCurrentChildren(RUNNERS_WATCH);
+        Map<String, ChildData> nodes = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
 
         switch (event.getType()) {
             case NODE_ADDED:
@@ -134,23 +135,24 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     }
 
     /**
-     * Re-submit all tasks to the work queue that a dead MultiQueueTaskRunner was working on.
+     * GO through all of the children of the engine not, re-submitting
+     * all tasks to the work queue that the dead was working on.
+     *
      * @param client CuratorFramework
      * @param engineID String unique ID of engine
      * @throws Exception
      */
     private void reQueue(CuratorFramework client, String engineID) throws Exception {
-        // Get list of task last processed by this MultiQueueTaskRunner
-        byte[] b = client.getData().forPath(RUNNERS_STATE+"/"+engineID);
+        // Get list of tasks that were being processed
+        List<String> previouslyRunningTasks = client.getChildren().forPath(format(SINGLE_ENGINE_PATH, engineID));
 
         // Re-queue all of the IDs.
-        Json ids = Json.read(new String(b, StandardCharsets.UTF_8));
-        for(Json j: ids.asJsonList()) {
-            TaskId id = TaskId.of(j.asString());
+        for(String task:previouslyRunningTasks){
 
-            // Mark task as SCHEDULED again
+            TaskId id = TaskId.of(task);
             TaskState taskState = stateStorage.getState(id);
 
+            // Send the task to the appropriate queue
             if(taskState.status() == RUNNING) {
                 LOG.debug(format("Engine [%s] stopped, task [%s] requeued", engineID, taskState.getId()));
                 stateStorage.updateState(taskState.status(SCHEDULED));
@@ -188,7 +190,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             }
 
             // Check if assigned engine is still alive
-            if(client.checkExists().forPath(RUNNERS_WATCH+"/"+engineId) == null) {
+            if(client.checkExists().forPath(format(SINGLE_ENGINE_PATH, engineId)) == null) {
                 reQueue(client, engineId);
                 deadRunners.add(engineId);
             }

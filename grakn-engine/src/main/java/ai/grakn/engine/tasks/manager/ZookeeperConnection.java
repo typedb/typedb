@@ -29,8 +29,6 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.FAILOVER;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
@@ -113,14 +111,6 @@ public class ZookeeperConnection {
 
         if(zookeeperConnection.checkExists().forPath(FAILOVER) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(FAILOVER);
-        }
-
-        if(zookeeperConnection.checkExists().forPath(RUNNERS_WATCH) == null) {
-            zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(RUNNERS_WATCH);
-        }
-
-        if(zookeeperConnection.checkExists().forPath(RUNNERS_STATE) == null) {
-            zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(RUNNERS_STATE);
         }
 
         if(zookeeperConnection.checkExists().forPath(TASKS_PATH_PREFIX) == null) {

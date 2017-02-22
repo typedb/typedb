@@ -86,6 +86,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.zookeeper = new ZookeeperConnection(client());
         this.storage = new TaskStateZookeeperStore(zookeeper);
 
+        //TODO Single queue task manager should have its own impl of failover
         this.failover = new FailoverElector(ENGINE_IDENTIFIER, zookeeper, storage);
 
         this.producer = ConfigHelper.kafkaProducer();

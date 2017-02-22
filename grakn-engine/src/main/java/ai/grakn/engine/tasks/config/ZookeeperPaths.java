@@ -24,16 +24,19 @@ package ai.grakn.engine.tasks.config;
  * </p>
  *
  * @author Denis Lobanov, alexandraorth
- */
+ * */
+//TODO FIX THIS WHOLE CLASS IT IS AWFUL
 public interface ZookeeperPaths {
     String TASKS_NAMESPACE = "grakn";
     String SCHEDULER = "/scheduler";
     String FAILOVER = "/failover";
-    String TASK_RUNNERS = "/task_runners";
-    String RUNNERS_WATCH = TASK_RUNNERS+"/watch";
-    String RUNNERS_STATE = TASK_RUNNERS+"/last_state";
     String TASKS_PATH_PREFIX = "/tasks";
     String TASK_LOCK_SUFFIX = "/lock";
     String PARTITION_PATH = "/partition/%s";
-    String ENGINE_PATH = "/engine";
+    String ALL_ENGINE_PATH = "/engine";
+    String ALL_ENGINE_WATCH_PATH = "/engine/watch";
+    String SINGLE_ENGINE_WATCH_PATH = "/engine/watch/%s";
+    String SINGLE_ENGINE_PATH = ALL_ENGINE_PATH + "/%s";
+    String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s";
+    String ZK_ENGINE_TASK_PATH = ALL_ENGINE_PATH + "/%s/%s";
 }

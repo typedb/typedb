@@ -30,8 +30,10 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_ENGINE_TASK_PATH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_TASK_PATH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_PATH;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
@@ -48,10 +50,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  *
  */
 public class TaskStateZookeeperStore implements TaskStateStorage {
-    private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s";
-    private static final String ZK_ENGINE_PATH = ENGINE_PATH + "/%s";
-    private static final String ZK_ENGINE_TASK_PATH = ENGINE_PATH + "/%s/%s";
-
     private final ZookeeperConnection zookeeper;
 
     public TaskStateZookeeperStore(ZookeeperConnection zookeeper) {
@@ -152,9 +150,6 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
         try {
 
-            zookeeper.connection().getChildren()
-                    .forPath(TASKS_PATH_PREFIX).stream().forEach(System.out::println);
-
             Stream<TaskState> stream = zookeeper.connection().getChildren()
                     .forPath(TASKS_PATH_PREFIX).stream()
                     .map(TaskId::of)
@@ -234,6 +229,6 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * @return Path to the engine
      */
     private String enginePath(String engineId){
-        return format(ZK_ENGINE_PATH, engineId);
+        return format(SINGLE_ENGINE_PATH, engineId);
     }
 }

@@ -37,11 +37,9 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.zookeeper.CreateMode;
-import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -58,8 +56,7 @@ import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
@@ -109,7 +106,6 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
 
         // Create initial entries in ZK for TaskFailover to watch.
         registerAsRunning();
-        updateOwnState();
 
         // Instantiate the executor where tasks will run
         // executorSize is the maximum executor queue size
@@ -269,29 +265,12 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
         return checkpoint -> storage.updateState(taskState.checkpoint(checkpoint));
     }
 
-    private void updateOwnState() {
-        JSONArray out = new JSONArray();
-        out.put(runningTasks);
-
-        try {
-            connection.connection().setData().forPath(RUNNERS_STATE + "/" + ENGINE_ID, out.toString().getBytes(StandardCharsets.UTF_8));
-        } catch (Exception e) {
-            LOG.error("Could not update TaskRunner taskstorage in ZooKeeper! " + getFullStackTrace(e));
-        }
-    }
-
     private void registerAsRunning() {
         try {
-            if (connection.connection().checkExists().forPath(RUNNERS_WATCH + "/" + ENGINE_ID) == null) {
+            if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, ENGINE_ID)) == null) {
                 connection.connection().create()
                         .creatingParentContainersIfNeeded()
-                        .withMode(CreateMode.EPHEMERAL).forPath(RUNNERS_WATCH + "/" + ENGINE_ID);
-            }
-
-            if (connection.connection().checkExists().forPath(RUNNERS_STATE + "/" + ENGINE_ID) == null) {
-                connection.connection().create()
-                        .creatingParentContainersIfNeeded()
-                        .forPath(RUNNERS_STATE + "/" + ENGINE_ID);
+                        .withMode(CreateMode.EPHEMERAL).forPath(format(SINGLE_ENGINE_WATCH_PATH, ENGINE_ID));
             }
         } catch (Exception exception){
             throw new RuntimeException("Could not create Zookeeper paths in TaskRunner");
@@ -306,12 +285,10 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
 
     private synchronized void addRunningTask(TaskId id) {
         runningTasks.add(id);
-        updateOwnState();
     }
 
     private synchronized void removeRunningTask(TaskId id) {
         runningTasks.remove(id);
-        updateOwnState();
     }
 
     /**

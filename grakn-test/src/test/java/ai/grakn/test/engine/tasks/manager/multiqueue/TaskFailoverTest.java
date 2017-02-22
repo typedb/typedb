@@ -29,13 +29,11 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.zookeeper.CreateMode;
-import org.json.JSONArray;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -46,11 +44,12 @@ import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_ENGINE_TASK_PATH;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import static java.lang.String.format;
 import static java.util.Collections.singleton;
 import static junit.framework.TestCase.assertEquals;
 
@@ -97,7 +96,7 @@ public class TaskFailoverTest {
     }
 
     @Test
-    public void runningTasksWhenEngineFailAddedToWorkQueue() throws Exception {
+    public void runningTasksWhenEngineFail_AreAddedToWorkQueue() throws Exception {
         String fakeEngineID = UUID.randomUUID().toString();
         registerFakeEngine(fakeEngineID);
 
@@ -184,27 +183,25 @@ public class TaskFailoverTest {
     }
 
     private void registerFakeEngine(String id) throws Exception{
-        if (connection.connection().checkExists().forPath(RUNNERS_WATCH + "/" + id) == null) {
+        if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)) == null) {
             connection.connection().create()
                     .creatingParentContainersIfNeeded()
-                    .withMode(CreateMode.EPHEMERAL).forPath(RUNNERS_WATCH + "/" + id);
-        }
-
-        if (connection.connection().checkExists().forPath(RUNNERS_STATE + "/" + id) == null) {
-            connection.connection().create()
-                    .creatingParentContainersIfNeeded()
-                    .forPath(RUNNERS_STATE + "/" + id);
+                    .withMode(CreateMode.EPHEMERAL)
+                    .forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
         }
     }
 
     private void registerTasksInZKLikeTaskRunnerWould(String id, Set<TaskState> tasks) throws Exception{
-        JSONArray out = new JSONArray();
-        tasks.stream().map(TaskState::getId).forEach(out::put);
-
-        connection.connection().setData().forPath(RUNNERS_STATE + "/" + id, out.toString().getBytes(StandardCharsets.UTF_8));
+        tasks.forEach(t -> {
+            try {
+                connection.connection().create().creatingParentContainersIfNeeded().forPath(format(ZK_ENGINE_TASK_PATH, id, t.getId().getValue()));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void killFakeEngine(String id) throws Exception {
-        connection.connection().delete().forPath(RUNNERS_WATCH + "/" + id);
+        connection.connection().delete().forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
     }
 }
