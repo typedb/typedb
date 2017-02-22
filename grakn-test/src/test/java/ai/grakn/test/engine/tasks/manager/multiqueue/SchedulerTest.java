@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -35,6 +36,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
@@ -46,9 +48,13 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.util.Collections.singleton;
+import static java.util.stream.Collectors.toList;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 /**
  * Test the Scheduler with an In Memory state storage. Kafka needs to be running.
@@ -90,10 +96,8 @@ public class SchedulerTest {
         sendTasksToNewTasksQueue(tasks);
         waitForStatus(storage, tasks, SCHEDULED);
 
-        tasks.stream().map(TaskState::getId)
-                .map(storage::getState)
-                .map(TaskState::status)
-                .allMatch(t -> t.equals(SCHEDULED));
+        List<TaskStatus> statuses = tasks.stream().map(TaskState::getId).map(storage::getState).map(TaskState::status).collect(toList());
+        assertThat(statuses, everyItem(is(SCHEDULED)));
     }
 
     @Test
@@ -118,10 +122,8 @@ public class SchedulerTest {
         // Wait for new tasks to complete
         waitForStatus(storage, tasks, SCHEDULED);
 
-        tasks.stream().map(TaskState::getId)
-                .map(storage::getState)
-                .map(TaskState::status)
-                .allMatch(t -> t.equals(SCHEDULED));
+        List<TaskStatus> statuses = tasks.stream().map(TaskState::getId).map(storage::getState).map(TaskState::status).collect(toList());
+        assertThat(statuses, everyItem(is(SCHEDULED)));
     }
 
     @Test
