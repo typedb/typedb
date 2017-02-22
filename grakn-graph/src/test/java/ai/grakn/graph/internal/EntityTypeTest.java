@@ -30,7 +30,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -349,25 +348,6 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void testSetTypeName(){
-        EntityType entityType = graknGraph.putEntityType("Bob");
-        assertEquals("Bob", entityType.getName().getValue());
-        entityType.setName("Tim");
-        assertEquals("Tim", entityType.getName().getValue());
-    }
-
-    @Test
-    public void testSetTypeNameWithNameAlreadyTaken(){
-        EntityType entityType = graknGraph.putEntityType("Bob");
-        EntityType entityType2 = graknGraph.putEntityType("Tim");
-
-        expectedException.expect(ConceptNotUniqueException.class);
-        expectedException.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage("Bob", entityType));
-
-        entityType2.setName("Bob");
-    }
-
-    @Test
     public void testMetaTypeIsAbstractImmutable(){
         Type meta = graknGraph.getMetaRuleType();
 
@@ -604,5 +584,18 @@ public class EntityTypeTest extends GraphTestBase{
         assertThat(e5.subTypes(), containsInAnyOrder(e3, e5));
     }
 
+    @Test
+    public void checkThatResourceTypesCanBeRetrievedFromTypes(){
+        EntityType e1 = graknGraph.putEntityType("e1");
+        ResourceType r1 = graknGraph.putResourceType("r1", ResourceType.DataType.STRING);
+        ResourceType r2 = graknGraph.putResourceType("r2", ResourceType.DataType.LONG);
+        ResourceType r3 = graknGraph.putResourceType("r3", ResourceType.DataType.BOOLEAN);
+
+        assertTrue("Entity is linked to resources when it shouldn't", e1.resources().isEmpty());
+        e1.hasResource(r1);
+        e1.hasResource(r2);
+        e1.hasResource(r3);
+        assertThat(e1.resources(), containsInAnyOrder(r1, r2, r3));
+    }
 
 }

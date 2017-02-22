@@ -60,7 +60,6 @@ public class Main {
                 writeToSout(graphWriter.dumpData());
             }
         }
-
         initiateShutdown();
     }
 }

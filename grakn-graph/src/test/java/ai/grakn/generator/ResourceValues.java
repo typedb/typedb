@@ -26,25 +26,35 @@ import ai.grakn.concept.ResourceType;
  */
 public class ResourceValues extends AbstractGenerator<Object> {
 
+    private ResourceType.DataType<?> dataType = null;
+
     public ResourceValues() {
         super(Object.class);
     }
 
     @Override
     public Object generate() {
-        String type = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
-        switch (type) {
-            case "java.lang.String":
-                return gen(String.class);
-            case "java.lang.Boolean":
-                return gen(Boolean.class);
-            case "java.lang.Integer":
-            case "java.lang.Long":
-                return gen(Long.class);
-            case "java.lang.Double":
-                return gen(Double.class);
-            default:
-                throw new RuntimeException("unreachable: " + type);
+        String className;
+        if (dataType == null) {
+            className = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
+        } else {
+            className = dataType.getName();
         }
+
+        Class<?> clazz;
+
+        try {
+            clazz = Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Unrecognised class " + className);
+        }
+
+        return gen(clazz);
     }
+
+    ResourceValues dataType(ResourceType.DataType<?> dataType) {
+        this.dataType = dataType;
+        return this;
+    }
+
 }

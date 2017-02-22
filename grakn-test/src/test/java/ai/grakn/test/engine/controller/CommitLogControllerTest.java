@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import java.util.UUID;
 
+import static ai.grakn.test.graql.query.AskQueryTest.graph;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -76,6 +77,14 @@ public class CommitLogControllerTest {
     @After
     public void takeDown() throws InterruptedException {
         cache.getCastingJobs(KEYSPACE).clear();
+    }
+
+    @Test
+    public void checkDirectClearWorks(){
+        GraknGraph test = Grakn.factory(Grakn.DEFAULT_URI, KEYSPACE).getGraph();
+        test.admin().clear(EngineCache.getInstance());
+        assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
     }
 
     @Test
@@ -128,7 +137,8 @@ public class CommitLogControllerTest {
 
         relationType.addRelation().putRolePlayer(role1, entity).putRolePlayer(role2, resource);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
     }
 
     @Test
@@ -163,7 +173,8 @@ public class CommitLogControllerTest {
         resourceType.putResource("a");
         resourceType.putResource("b");
         resourceType.putResource("c");
-        graph1.commit();
+        graph1.commitOnClose();
+        graph1.close();
 
         assertEquals(0, cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME).size());
     }

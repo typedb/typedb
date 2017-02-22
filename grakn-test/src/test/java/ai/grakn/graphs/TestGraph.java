@@ -53,12 +53,6 @@ public abstract class TestGraph {
             buildInstances(graph);
             buildRelations(graph);
             buildRules(graph);
-
-            try {
-                graph.commit();
-            } catch (GraknValidationException e) {
-                throw new RuntimeException(e);
-            }
         };
     }
 
@@ -88,8 +82,6 @@ public abstract class TestGraph {
             graph.graql()
                     .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .forEach(Query::execute);
-
-            graph.commit();
         } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }

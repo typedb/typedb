@@ -65,6 +65,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      *
      * @return A new or existing grakn graph with the defined name
      */
+    @Override
     public GraknGraph getGraph(){
         return getConfiguredFactory().factory.getGraph(false);
     }
@@ -73,6 +74,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      *
      * @return A new or existing grakn graph with the defined name connecting to the specified remote location with batch loading enabled
      */
+    @Override
     public GraknGraph getGraphBatchLoading(){
         return getConfiguredFactory().factory.getGraph(true);
     }
@@ -84,6 +86,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     /**
      * @return A new or existing grakn graph compute with the defined name
      */
+    @Override
     public GraknComputer getGraphComputer() {
         ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);

@@ -58,7 +58,8 @@ public class TestReasoning extends TestOwlGraknBase {
     public void loadOwlFiles() throws GraknValidationException {
         OWLOntology family = loadOntologyFromResource("owl", "family.owl");
         migrator.ontology(family).graph(graph).migrate();
-        migrator.graph().commit();
+        migrator.graph().commitOnClose();
+        migrator.graph().close();
         hermit = new org.semanticweb.HermiT.Reasoner(new Configuration(), family);
     }
 

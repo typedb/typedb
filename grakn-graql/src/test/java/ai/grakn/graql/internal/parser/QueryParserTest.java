@@ -169,6 +169,15 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testValueEqualsVariableQuery() {
+        MatchQuery expected = match(var("s1").value(var("s2")));
+
+        MatchQuery parsed = parse("match $s1 value = $s2;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testMoviesReleasedAfterOrAtTheSameTimeAsSpy() {
         MatchQuery expected = match(
                 var("x").has("release-date", gte(var("r"))),

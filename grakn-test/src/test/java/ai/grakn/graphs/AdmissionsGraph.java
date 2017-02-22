@@ -19,10 +19,10 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 
 import java.io.IOException;
@@ -237,7 +237,9 @@ public class AdmissionsGraph extends TestGraph{
     }
 
     @Override
-    protected void buildRelations(GraknGraph graph){}
+    protected void buildRelations(GraknGraph graph) {
+
+    }
 
     @Override
     protected void buildRules(GraknGraph graph) {

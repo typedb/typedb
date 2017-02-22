@@ -144,7 +144,6 @@ export default {
         materialiseAll(){
           EngineClient.preMaterialiseAll();
         }
-
     }
 }
 </script>

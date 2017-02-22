@@ -39,7 +39,6 @@ import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -67,10 +66,22 @@ import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.test.matcher.GraknMatchers.allVariables;
+import static ai.grakn.test.matcher.GraknMatchers.concept;
+import static ai.grakn.test.matcher.GraknMatchers.constraintRule;
+import static ai.grakn.test.matcher.GraknMatchers.entity;
+import static ai.grakn.test.matcher.GraknMatchers.hasType;
+import static ai.grakn.test.matcher.GraknMatchers.hasValue;
+import static ai.grakn.test.matcher.GraknMatchers.inferenceRule;
+import static ai.grakn.test.matcher.GraknMatchers.isCasting;
+import static ai.grakn.test.matcher.GraknMatchers.isInstance;
+import static ai.grakn.test.matcher.GraknMatchers.resource;
+import static ai.grakn.test.matcher.GraknMatchers.results;
+import static ai.grakn.test.matcher.GraknMatchers.rule;
+import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static ai.grakn.test.matcher.MovieMatchers.aRuleType;
 import static ai.grakn.test.matcher.MovieMatchers.action;
 import static ai.grakn.test.matcher.MovieMatchers.alPacino;
-import static ai.grakn.test.matcher.GraknMatchers.allVariables;
 import static ai.grakn.test.matcher.MovieMatchers.apocalypseNow;
 import static ai.grakn.test.matcher.MovieMatchers.benjaminLWillard;
 import static ai.grakn.test.matcher.MovieMatchers.betteMidler;
@@ -78,12 +89,9 @@ import static ai.grakn.test.matcher.MovieMatchers.character;
 import static ai.grakn.test.matcher.MovieMatchers.chineseCoffee;
 import static ai.grakn.test.matcher.MovieMatchers.cluster;
 import static ai.grakn.test.matcher.MovieMatchers.comedy;
-import static ai.grakn.test.matcher.GraknMatchers.concept;
-import static ai.grakn.test.matcher.GraknMatchers.constraintRule;
 import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
 import static ai.grakn.test.matcher.MovieMatchers.crime;
 import static ai.grakn.test.matcher.MovieMatchers.drama;
-import static ai.grakn.test.matcher.GraknMatchers.entity;
 import static ai.grakn.test.matcher.MovieMatchers.family;
 import static ai.grakn.test.matcher.MovieMatchers.fantasy;
 import static ai.grakn.test.matcher.MovieMatchers.gender;
@@ -92,13 +100,8 @@ import static ai.grakn.test.matcher.MovieMatchers.genreOfProduction;
 import static ai.grakn.test.matcher.MovieMatchers.godfather;
 import static ai.grakn.test.matcher.MovieMatchers.harry;
 import static ai.grakn.test.matcher.MovieMatchers.hasTitle;
-import static ai.grakn.test.matcher.GraknMatchers.hasType;
-import static ai.grakn.test.matcher.GraknMatchers.hasValue;
 import static ai.grakn.test.matcher.MovieMatchers.heat;
 import static ai.grakn.test.matcher.MovieMatchers.hocusPocus;
-import static ai.grakn.test.matcher.GraknMatchers.inferenceRule;
-import static ai.grakn.test.matcher.GraknMatchers.isCasting;
-import static ai.grakn.test.matcher.GraknMatchers.isInstance;
 import static ai.grakn.test.matcher.MovieMatchers.judeLaw;
 import static ai.grakn.test.matcher.MovieMatchers.kermitTheFrog;
 import static ai.grakn.test.matcher.MovieMatchers.language;
@@ -115,10 +118,7 @@ import static ai.grakn.test.matcher.MovieMatchers.person;
 import static ai.grakn.test.matcher.MovieMatchers.production;
 import static ai.grakn.test.matcher.MovieMatchers.realName;
 import static ai.grakn.test.matcher.MovieMatchers.releaseDate;
-import static ai.grakn.test.matcher.GraknMatchers.resource;
-import static ai.grakn.test.matcher.GraknMatchers.results;
 import static ai.grakn.test.matcher.MovieMatchers.robertDeNiro;
-import static ai.grakn.test.matcher.GraknMatchers.rule;
 import static ai.grakn.test.matcher.MovieMatchers.runtime;
 import static ai.grakn.test.matcher.MovieMatchers.sarah;
 import static ai.grakn.test.matcher.MovieMatchers.sarahJessicaParker;
@@ -127,7 +127,6 @@ import static ai.grakn.test.matcher.MovieMatchers.theMuppets;
 import static ai.grakn.test.matcher.MovieMatchers.title;
 import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteAverage;
 import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteCount;
-import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static ai.grakn.test.matcher.MovieMatchers.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
@@ -161,8 +160,8 @@ public class MatchQueryTest {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
-    @ClassRule
-    public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
+    @Rule
+    public final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -175,6 +174,7 @@ public class MatchQueryTest {
     @After
     public void tearDown() {
         if (movieGraph.graph() != null) movieGraph.graph().showImplicitConcepts(false);
+//        movieGraph.clearGraph();
     }
 
     @Test
@@ -231,6 +231,19 @@ public class MatchQueryTest {
         );
 
         assertThat(query, variable("x", containsInAnyOrder(hocusPocus, godfather, theMuppets)));
+    }
+
+    @Test
+    public void testValueEqualsVarQuery() {
+        MatchQuery query = qb.match(var("x").value(var("y")));
+
+        assertThat(query.execute(), hasSize(greaterThan(10)));
+
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            assertEquals(x.asResource().getValue(), y.asResource().getValue());
+        });
     }
 
     @Test
@@ -532,8 +545,6 @@ public class MatchQueryTest {
         //noinspection ResultOfMethodCallIgnored
         qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
 
-        // clean graph of inserts
-        movieGraph.rollback();
     }
 
     @Test
@@ -579,8 +590,6 @@ public class MatchQueryTest {
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
         });
 
-        // clean graph of inserts
-        movieGraph.rollback();
     }
 
     @Test

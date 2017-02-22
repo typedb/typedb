@@ -50,8 +50,8 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
-    private Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+    private ComponentCache<Set<Type>> cachedDirectPlayedByTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+    private ComponentCache<Set<RelationType>> cachedRelationTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -63,6 +63,22 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v, RoleType type, Boolean isImplicit) {
         super(graknGraph, v, type, isImplicit);
+    }
+
+    private RoleTypeImpl(RoleTypeImpl role){
+        super(role);
+    }
+
+    @Override
+    public RoleType copy(){
+        return new RoleTypeImpl(this);
+    }
+
+    @Override
+    void copyCachedConcepts(RoleType type){
+        super.copyCachedConcepts(type);
+        ((RoleTypeImpl) type).cachedDirectPlayedByTypes.ifPresent(value -> this.cachedDirectPlayedByTypes.set(getGraknGraph().clone(value)));
+        ((RoleTypeImpl) type).cachedRelationTypes.ifPresent(value -> this.cachedRelationTypes.set(getGraknGraph().clone(value)));
     }
 
     /**
@@ -146,14 +162,14 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     }
 
     @Override
-    public void innerDelete(){
+    public void delete(){
         boolean hasHasRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.HAS_ROLE.getLabel()).hasNext();
         boolean hasPlaysRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
 
         if(hasHasRoles || hasPlaysRoles){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
-            super.innerDelete();
+            super.delete();
 
             //Clear all internal caching
             cachedRelationTypes.clear();

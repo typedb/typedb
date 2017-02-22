@@ -56,7 +56,7 @@ const checkIfAuthNeeded = function contactEngine(next) {
 router.beforeEach((to, from, next) => {
   if (authNeeded === undefined) {
     checkIfAuthNeeded(next);
-  } else if (User.isAuthenticated() || authNeeded === false) {
+  } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
     next();
   } else {
     next('/login');

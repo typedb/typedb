@@ -34,8 +34,8 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.graql.Graql.insert;
 import static ai.grakn.graql.Graql.match;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
 import static ai.grakn.test.matcher.GraknMatchers.variable;
+import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,7 @@ public class QueryBuilderTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @After
-    public void rollback(){
+    public void clear(){
         movieGraph.rollback();
     }
 

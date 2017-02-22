@@ -57,8 +57,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected G graph = null;
     private G batchLoadingGraph = null;
 
-    private Boolean lastGraphBuiltBatchLoading = null;
-    
     private SystemKeyspace<M, G> systemKeyspace;
 
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
@@ -90,35 +88,15 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     public synchronized M getGraph(boolean batchLoading){
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
-            lastGraphBuiltBatchLoading = true;
+            batchLoadingGraknGraph.openTransaction();
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, false);
-            lastGraphBuiltBatchLoading = false;
+            graknGraph.openTransaction();
             return graknGraph;
         }
     }
     protected M getGraph(M graknGraph, boolean batchLoading){
-        //This checks if the previous graph built with this factory is the same as the one we trying to build now.
-        if(lastGraphBuiltBatchLoading != null && lastGraphBuiltBatchLoading != batchLoading && graknGraph != null){
-            //This then checks if the previous graph built has undergone a commit
-            boolean hasCommitted;
-            if(lastGraphBuiltBatchLoading) {
-                hasCommitted = batchLoadingGraknGraph.hasCommitted();
-            } else {
-                hasCommitted = graknGraph.hasCommitted();
-            }
-
-            //Closes the graph to force a full refresh if the other graph has committed
-            if(hasCommitted){
-                try {
-                    graknGraph.finaliseClose(graknGraph::closePermanent, ErrorMessage.CLOSED_FACTORY.getMessage());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
@@ -126,16 +104,16 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             }
         } else {
             if(graknGraph.isClosed()){
-                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-            } else {
-                //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
-                G innerGraph = graknGraph.getTinkerPopGraph();
-                synchronized (innerGraph){
-                    if(isClosed(innerGraph)){
-                        graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-                    } else {
-                        getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
-                    }
+                graknGraph.openTransaction();
+            }
+
+            //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
+            G innerGraph = graknGraph.getTinkerPopGraph();
+            synchronized (innerGraph){
+                if(isClosed(innerGraph)){
+                    graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                } else {
+                    getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
                 }
             }
         }

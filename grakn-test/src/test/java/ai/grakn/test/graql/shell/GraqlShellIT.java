@@ -257,7 +257,7 @@ public class GraqlShellIT {
                 "insert man sub entity has-resource name; person sub entity; name sub resource datatype string;\n" +
                 "insert has name 'felix' isa man;\n" +
                 "match isa person, has name $x;\n" +
-                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
+                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n commit\n" +
                 "match isa person, has name $x;\n", "--infer"
         );
 
@@ -296,6 +296,7 @@ public class GraqlShellIT {
         assertThat(result, containsString("\n3\n"));
     }
 
+    @Ignore //TODO: Fix rollback function in graql because the graph no longer has a rollback function
     @Test
     public void testRollback() throws Exception {
         // Tinker graph doesn't support rollback
@@ -342,6 +343,7 @@ public class GraqlShellIT {
         assertTrue(x.has("_baseType"));
     }
 
+    @Ignore //TODO: Fix rollback function in graql because the graph no longer has a rollback function
     @Test
     public void testRollbackSemicolon() throws Exception {
         // Tinker graph doesn't support rollback

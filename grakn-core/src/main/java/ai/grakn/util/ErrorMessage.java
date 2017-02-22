@@ -49,7 +49,6 @@ public enum ErrorMessage {
             "duplicate values"),
     INVALID_EDGE("The edge [%s] between concept [%s] and [%s] is invalid"),
     NOT_SUPPORTED("Not supported with a [%s] backend"),
-    CLOSED_USER("You have closed this graph"),
     CLOSED_FACTORY("This graph has been closed due to a transaction being committed and invalidating this graph"),
     CLOSED_CLEAR("This graph has been closed due to clearing it"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
@@ -67,6 +66,7 @@ public enum ErrorMessage {
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
+    CANNOT_FIND_VERTEX("Cannot find vertex using id [%s] on graph [%s] on a already constructed concept. This may be due to the vertex being deleted."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -124,6 +124,7 @@ public enum ErrorMessage {
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
 
+    VARIABLE_NOT_IN_QUERY("the variable %s is not in the query"),
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
@@ -134,6 +135,7 @@ public enum ErrorMessage {
 
     INSERT_RULE_WITHOUT_LHS("the rule '%s' doesn't have a lhs specified"),
     INSERT_RULE_WITHOUT_RHS("the rule '%s' doesn't have a rhs specified"),
+    INSERT_UNSUPPORTED_PROPERTY("the property '%s' can only be inserted on a '%s'"),
     INSERT_WITHOUT_TYPE("'%s' doesn't have an 'isa' or a 'sub'"),
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),

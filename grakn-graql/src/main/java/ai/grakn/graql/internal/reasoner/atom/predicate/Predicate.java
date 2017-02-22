@@ -17,11 +17,11 @@
  */
 package ai.grakn.graql.internal.reasoner.atom.predicate;
 
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.HashMap;
@@ -39,7 +39,7 @@ import java.util.Map;
  */
 public abstract class Predicate<T> extends AtomBase {
 
-    protected T predicate = null;
+    protected T predicate;
 
     protected Predicate(VarAdmin pattern, ReasonerQuery par) {
         super(pattern, par);

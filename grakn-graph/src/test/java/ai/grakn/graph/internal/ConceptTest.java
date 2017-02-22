@@ -78,20 +78,6 @@ public class ConceptTest extends GraphTestBase{
     }
 
     @Test
-    public void testSetType() {
-        concept.setType("test_type");
-        Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getId().getRawValue()).next();
-        assertEquals("test_type", conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
-    }
-
-    @Test
-    public void testGetType() {
-        concept.setType("test_type");
-        Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getId().getRawValue()).next();
-        assertEquals(concept.getType().getValue(), conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
-    }
-
-    @Test
     public void testEquality() {
         ConceptImpl c1= (ConceptImpl) graknGraph.putEntityType("Value_1");
         Concept c1_copy = graknGraph.getEntityType("Value_1");
@@ -127,6 +113,17 @@ public class ConceptTest extends GraphTestBase{
     public void testToString() {
         EntityType concept = graknGraph.putEntityType("a");
         Instance concept2 = concept.addEntity();
+
+        assertFalse(concept2.toString().contains("ConceptType"));
+        assertFalse(concept2.toString().contains("Subject Identifier"));
+        assertFalse(concept2.toString().contains("Subject Locator"));
+    }
+
+    @Test
+    public void testToStringOnDeletedConceptDoesntThrow() {
+        EntityType concept = graknGraph.putEntityType("a");
+        Instance concept2 = concept.addEntity();
+        concept2.delete();
 
         assertFalse(concept2.toString().contains("ConceptType"));
         assertFalse(concept2.toString().contains("Subject Identifier"));

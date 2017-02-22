@@ -21,7 +21,6 @@ import ai.grakn.graphs.PokemonGraph;
 import ai.grakn.migration.export.GraphWriter;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,8 +32,8 @@ public class PokemonGraphWriterTest {
 
     private GraphWriter writer;
 
-    @ClassRule
-    public static GraphContext original = GraphContext.preLoad(PokemonGraph.get());
+    @Rule
+    public GraphContext original = GraphContext.preLoad(PokemonGraph.get());
 
     @Rule
     public GraphContext copy = GraphContext.empty();

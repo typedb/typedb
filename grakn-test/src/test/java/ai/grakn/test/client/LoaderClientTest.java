@@ -20,11 +20,12 @@ package ai.grakn.test.client;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.client.LoaderClient;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.client.LoaderClient;
-import ai.grakn.exception.GraknValidationException;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
@@ -39,13 +40,18 @@ import org.junit.rules.ExpectedException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class LoaderClientTest {
 
     private LoaderClient loader;
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Rule
@@ -57,8 +63,8 @@ public class LoaderClientTest {
     @Before
     public void setup() {
         ((Logger) org.slf4j.LoggerFactory.getLogger(LoaderClient.class)).setLevel(Level.DEBUG);
-
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
         loader = new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
         loadOntology(graph.getKeyspace());
     }
@@ -80,20 +86,76 @@ public class LoaderClientTest {
         loadAndTime();
     }
 
+    @Test
+    public void engineRESTFailsWhileLoadingRetryTrue_LoaderRetriesAndWaits(){
+        AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
+        loader.setRetryPolicy(true);
+        loader.setBatchSize(5);
+        loader.setTaskCompletionConsumer((json) -> {
+            if(json != null){
+                tasksCompletedWithoutError.incrementAndGet();
+            }
+        });
+
+        for(int i = 0; i < 100; i++){
+            InsertQuery query = Graql.insert(
+                    var().isa("name_tag")
+                            .has("name_tag_string", UUID.randomUUID().toString())
+                            .has("name_tag_id", UUID.randomUUID().toString()));
+
+            loader.add(query);
+
+            GraknEngineServer.stopHTTP();
+            GraknEngineServer.startHTTP();
+        }
+
+        loader.waitToFinish();
+
+        assertEquals(20, tasksCompletedWithoutError.get());
+    }
+
+    @Test
+    public void engineRESTFailsWhileLoadingRetryFalse_LoaderDoesNotWait(){
+        AtomicInteger tasksCompletedWithoutError = new AtomicInteger(0);
+        AtomicInteger tasksCompletedWithError = new AtomicInteger(0);
+        loader.setRetryPolicy(false);
+        loader.setBatchSize(5);
+        loader.setTaskCompletionConsumer((json) -> {
+            if(json != null){
+                tasksCompletedWithoutError.incrementAndGet();
+            } else {
+                tasksCompletedWithError.incrementAndGet();
+            }
+        });
+
+
+        for(int i = 0; i < 100; i++){
+            InsertQuery query = Graql.insert(
+                    var().isa("name_tag")
+                            .has("name_tag_string", UUID.randomUUID().toString())
+                            .has("name_tag_id", UUID.randomUUID().toString()));
+
+            loader.add(query);
+
+            GraknEngineServer.stopHTTP();
+            GraknEngineServer.startHTTP();
+        }
+
+        loader.waitToFinish();
+
+        assertThat(tasksCompletedWithoutError.get(), lessThan(20));
+        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(20));
+    }
+
     public static void loadOntology(String keyspace){
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        try(GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()){
+            EntityType nameTag = graph.putEntityType("name_tag");
+            ResourceType<String> nameTagString = graph.putResourceType("name_tag_string", ResourceType.DataType.STRING);
+            ResourceType<String> nameTagId = graph.putResourceType("name_tag_id", ResourceType.DataType.STRING);
 
-        EntityType nameTag = graph.putEntityType("name_tag");
-        ResourceType<String> nameTagString = graph.putResourceType("name_tag_string", ResourceType.DataType.STRING);
-        ResourceType<String> nameTagId = graph.putResourceType("name_tag_id", ResourceType.DataType.STRING);
-
-        nameTag.hasResource(nameTagString);
-        nameTag.hasResource(nameTagId);
-
-        try {
-            graph.commit();
-        } catch (GraknValidationException e){
-            throw new RuntimeException(e);
+            nameTag.hasResource(nameTagString);
+            nameTag.hasResource(nameTagId);
+            graph.commitOnClose();
         }
     }
 
@@ -120,6 +182,7 @@ public class LoaderClientTest {
         long duration = System.currentTimeMillis() - startTime;
         System.out.println("Time to load: " + duration);
 
+        graph = factory.getGraph();
         Collection<Entity> nameTags = graph.getEntityType("name_tag").instances();
 
         assertEquals(50, nameTags.size());

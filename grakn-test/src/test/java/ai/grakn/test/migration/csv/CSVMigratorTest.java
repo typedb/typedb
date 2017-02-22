@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
@@ -46,6 +47,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CSVMigratorTest {
 
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @ClassRule
@@ -53,7 +55,8 @@ public class CSVMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
     }
 
     @Test
@@ -83,6 +86,7 @@ public class CSVMigratorTest {
         migrate(graph, new CSVMigrator(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv")));
         migrate(graph, new CSVMigrator(edgeTemplate, getFile("csv", "multi-file/data/edges.csv")));
 
+        graph = factory.getGraph();//Re Open Transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -91,6 +95,7 @@ public class CSVMigratorTest {
         load(graph, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
         migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.quotes")));
+        graph = factory.getGraph();//Re Open Transaction
         assertPetGraphCorrect(graph);
     }
 
@@ -99,6 +104,7 @@ public class CSVMigratorTest {
         load(graph, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
         migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.empty")).setNullString(""));
+        graph = factory.getGraph();//Re Open Transaction
 
 //        graph = factory.getGraph();
         Collection<Entity> pets = graph.getEntityType("pet").instances();

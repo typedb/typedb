@@ -72,10 +72,6 @@ public class EngineContext extends ExternalResource {
         return new EngineContext(false, false, false, true);
     }
 
-    public GraknGraph graphWithNewKeyspace(){
-        return factoryWithNewKeyspace().getGraph();
-    }
-
     public TaskManager getTaskManager(){
         return GraknEngineServer.getTaskManager();
     }

@@ -99,7 +99,7 @@ public class OWLMigrator {
         ontology.axioms().forEach(ax -> {
             ax.accept(visitor); 
         });
-        graph.commit();
+        graph.commitOnClose();
     }
 
     public ResourceType.DataType<?> owlBuiltInToGraknDatatype(OWL2Datatype propertyType) {

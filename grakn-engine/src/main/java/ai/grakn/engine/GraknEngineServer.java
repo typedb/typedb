@@ -82,6 +82,7 @@ public class GraknEngineServer {
         Thread closeThread = new Thread(GraknEngineServer::stop, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
 
+        // Start Engine
         start(prop.getProperty(TASK_MANAGER_IMPLEMENTATION));
     }
 

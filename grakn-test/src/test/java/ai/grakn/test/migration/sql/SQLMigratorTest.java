@@ -20,9 +20,9 @@ package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Resource;
+import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.migration.MigratorTestUtils;
-import ai.grakn.migration.sql.SQLMigrator;
 import org.jooq.exception.DataAccessException;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -41,7 +41,6 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
 public class SQLMigratorTest {
-
     private GraknGraph graph;
 
     @Rule
@@ -52,7 +51,7 @@ public class SQLMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.graphWithNewKeyspace();
+        graph = engine.factoryWithNewKeyspace().getGraph();
     }
 
     @Test
@@ -61,7 +60,7 @@ public class SQLMigratorTest {
         String query = "SELECT * FROM pet";
 
         try(Connection connection = setupExample(graph, "pets")){
-            migrate(graph, new SQLMigrator(query, template, connection));
+            graph = migrate(graph, new SQLMigrator(query, template, connection));
 
             assertPetGraphCorrect(graph);
         }
@@ -95,7 +94,7 @@ public class SQLMigratorTest {
                     "   $pokemon isa pokemon has description <IDENTIFIER> ;" +
                     "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 
-            migrate(graph, new SQLMigrator(query, template, connection));
+            graph = migrate(graph, new SQLMigrator(query, template, connection));
 
             assertPokemonGraphCorrect(graph);
         }
@@ -132,7 +131,7 @@ public class SQLMigratorTest {
                     "      $pokemon isa pokemon has description   <SPECIES>; \n" +
                     "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 
-            migrate(graph, new SQLMigrator(query, template, connection));
+            graph = migrate(graph, new SQLMigrator(query, template, connection));
 
             assertPokemonGraphCorrect(graph);
         }
@@ -144,9 +143,8 @@ public class SQLMigratorTest {
             String template = "insert $x isa count value <COUNT>;";
             String query = "SELECT count(*) AS count FROM pet";
 
-            migrate(graph, new SQLMigrator(query, template, connection));
+            graph = migrate(graph, new SQLMigrator(query, template, connection));
 
-//            graph = factory.getGraph();
             Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));

@@ -22,9 +22,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Rule;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -35,6 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
@@ -52,8 +53,20 @@ public class JsonPrinterTest {
     }
 
     @Test
+    public void testJsonNull() {
+        assertJsonEquals(Json.nil(), null);
+    }
+
+    @Test
     public void testJsonEmptyMap() {
         assertJsonEquals(Json.object(), new HashMap<>());
+    }
+
+    @Test
+    public void testJsonMapNullKey() {
+        Map<String, String> map = new HashMap<>();
+        map.put(null, "hello");
+        assertJsonEquals(Json.object("", "hello"), map);
     }
 
     @Test

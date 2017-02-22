@@ -215,7 +215,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Deletes the concept as a Relation
      */
     @Override
-    public void innerDelete() {
+    public void delete() {
         scopes().forEach(this::deleteScope);
         Set<CastingImpl> castings = getMappingCasting();
 
@@ -230,11 +230,11 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             }
         }
 
-        super.innerDelete();
+        super.delete();
     }
 
     @Override
-    public String toString(){
+    public String innerToString(){
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(getId()).append("] Type [").append(type().getName()).append("] Roles and Role Players: \n");
         for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
