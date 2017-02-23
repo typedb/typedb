@@ -30,7 +30,9 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -100,6 +102,16 @@ public class Resource extends MultiPredicateBinary{
     public boolean isSelectable(){ return true;}
     @Override
     public boolean requiresMaterialisation(){ return true;}
+
+    @Override
+    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
+        if (!(parentAtom instanceof TypeAtom)) return super.getUnifiers(parentAtom);
+
+        Map<VarName, VarName> unifiers = new HashMap<>();
+        unifiers.put(this.getValueVariable(), parentAtom.getVarName());
+        if (parentAtom.containsVar(this.getVarName())) unifiers.put(this.getVarName(), VarName.anon());
+        return unifiers;
+    }
 
     @Override
     public Set<ValuePredicate> getValuePredicates(){

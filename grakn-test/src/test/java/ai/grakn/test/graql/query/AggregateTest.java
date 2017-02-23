@@ -20,10 +20,10 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.matcher.MovieMatchers;
 import org.junit.Assert;
@@ -35,10 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static ai.grakn.graql.Graql.mean;
 import static ai.grakn.graql.Graql.count;
 import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.max;
+import static ai.grakn.graql.Graql.mean;
 import static ai.grakn.graql.Graql.median;
 import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.select;

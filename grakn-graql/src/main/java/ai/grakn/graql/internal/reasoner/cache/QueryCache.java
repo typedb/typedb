@@ -21,12 +21,12 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import com.google.common.collect.Sets;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import javafx.util.Pair;
 
 /**
@@ -38,56 +38,60 @@ import javafx.util.Pair;
  * @author Kasper Piskorski
  *
  */
-public class QueryCache<T extends ReasonerQuery>{
-
-    private final Map<T, Pair<T, QueryAnswers>> cache = new HashMap<>();
+public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> {
 
     public QueryCache(){ super();}
-    public boolean contains(T query){ return cache.containsKey(query);}
 
-    /**
-     * updates the cache by the specified query
-     * @param atomicQuery query to be added/updated
-     * @param answers answers to the query
-     */
-    public void record(T atomicQuery, QueryAnswers answers){
-        T equivalentQuery = contains(atomicQuery)? cache.get(atomicQuery).getKey() : null;
+    @Override
+    public QueryAnswers record(Q query, QueryAnswers answers) {
+        Q equivalentQuery = contains(query)? cache.get(query).getKey() : null;
         if (equivalentQuery != null) {
-            QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, atomicQuery, answers);
-            cache.get(atomicQuery).getValue().addAll(unifiedAnswers);
+            QueryAnswers unifiedAnswers = QueryAnswers.getUnifiedAnswers(equivalentQuery, query, answers);
+            cache.get(query).getValue().addAll(unifiedAnswers);
         } else {
-            cache.put(atomicQuery, new Pair<>(atomicQuery, answers));
+            cache.put(query, new Pair<>(query, answers));
+        }
+        return getAnswers(query);
+    }
+
+    @Override
+    public Stream<Map<VarName, Concept>> record(Q query, Stream<Map<VarName, Concept>> answers) {
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match!= null) {
+            Stream<Map<VarName, Concept>> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
+            return unifiedStream.peek(ans -> match.getValue().add(ans));
+        } else {
+            Pair<Q, QueryAnswers> put = cache.put(query, new Pair<>(query, new QueryAnswers()));
+            return answers.peek(ans -> put.getValue().add(ans));
         }
     }
 
-    public void record(T atomicQuery, Map<VarName, Concept> answer){
-        record(atomicQuery, answer, getRecordUnifiers(atomicQuery));
+    @Override
+    public LazyIterator<Map<VarName, Concept>> recordRetrieveLazy(Q query, Stream<Map<VarName, Concept>> answers) {
+        return new LazyIterator<>(record(query, answers));
     }
 
-    public void record(T atomicQuery, Map<VarName, Concept> answer, Map<VarName, VarName> unifiers){
-        T equivalentQuery = contains(atomicQuery)? cache.get(atomicQuery).getKey() : null;
-        if (equivalentQuery != null) {
-            cache.get(equivalentQuery).getValue().add(QueryAnswers.unify(answer, unifiers));
-        } else {
-            cache.put(atomicQuery, new Pair<>(atomicQuery, new QueryAnswers(Sets.newHashSet(Collections.singletonList(QueryAnswers.unify(answer, unifiers))))));
-        }
-    }
-
-    public QueryAnswers getAnswers(T query){
-        T equivalentQuery = contains(query)? cache.get(query).getKey() : null;
+    @Override
+    public QueryAnswers getAnswers(Q query) {
+        Q equivalentQuery = contains(query)? cache.get(query).getKey() : null;
         if (equivalentQuery != null) {
             return QueryAnswers.getUnifiedAnswers(query, equivalentQuery, cache.get(equivalentQuery).getValue());
         }
         else return new QueryAnswers();
     }
 
-    private Map<VarName, VarName> getRecordUnifiers(T toRecord){
-        T equivalentQuery = contains(toRecord)? cache.get(toRecord).getKey() : null;
-        if (equivalentQuery != null) return toRecord.getUnifiers(equivalentQuery);
-        else return new HashMap<>();
+    @Override
+    public Stream<Map<VarName, Concept>> getAnswerStream(Q query) {
+        return getAnswers(query).stream();
     }
 
-    public int answerSize(Set<T> queries){
+    @Override
+    public LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query) {
+        return new LazyIterator<>(getAnswers(query).stream());
+    }
+
+    @Override
+    public long answerSize(Set<Q> queries) {
         return cache.values().stream()
                 .filter(p -> queries.contains(p.getKey()))
                 .map(v -> v.getValue().size()).mapToInt(Integer::intValue).sum();

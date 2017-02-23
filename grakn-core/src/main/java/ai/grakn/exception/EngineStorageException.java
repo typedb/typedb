@@ -30,4 +30,7 @@ public class EngineStorageException extends RuntimeException {
     public EngineStorageException(String e) {
         super(ErrorMessage.STATE_STORAGE_ERROR.getMessage() + e);
     }
+    public EngineStorageException(Exception e) {
+        super(ErrorMessage.STATE_STORAGE_ERROR.getMessage() + e);
+    }
 }

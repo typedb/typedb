@@ -119,10 +119,9 @@ public class GraphFactoryController {
                 result.add(names.iterator().next().getValue());
             }
             return result.toString();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOG.error("While retrieving keyspace list:", e);
-            throw e;
+            throw new RuntimeException("Error while retrieving key spaces", e);
         }
     }
 }

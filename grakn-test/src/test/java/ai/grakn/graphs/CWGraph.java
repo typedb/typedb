@@ -19,14 +19,14 @@
 package ai.grakn.graphs;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RuleType;
-import ai.grakn.graql.Pattern;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Graql;
+import ai.grakn.graql.Pattern;
 
 import java.util.function.Consumer;
 

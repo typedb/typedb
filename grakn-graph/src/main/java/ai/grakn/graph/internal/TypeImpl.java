@@ -27,17 +27,20 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -58,17 +61,31 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type {
+class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type{
+    protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
+
     private TypeName cachedTypeName;
-    private Cache<Boolean> cachedIsImplicit = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
-    private Cache<Boolean> cachedIsAbstract = new Cache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private Cache<T> cachedSuperType = new Cache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.SUB));
-    private Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
-    private Cache<Set<RoleType>> cachedDirectPlaysRoles = new Cache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
+    private ComponentCache<Boolean> cachedIsImplicit = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
+    private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
+    private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.SUB));
+    private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
+
+    //This cache is different in order to keep track of which plays roles are required
+    private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlaysRoles = new ComponentCache<>(() -> {
+        Map<RoleType, Boolean> roleTypes = new HashMap<>();
+
+        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).forEach(edge -> {
+            RoleType roleType = edge.getTarget();
+            Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
+            roleTypes.put(roleType, required);
+        });
+
+        return roleTypes;
+    });
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        getName();//This is called to ensure the cachedTypeName is loaded.
+        cachedTypeName = TypeName.of(v.value(Schema.ConceptProperty.NAME.name()));
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
@@ -80,6 +97,25 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         this(graknGraph, v, superType);
         setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit, getProperty(Schema.ConceptProperty.IS_IMPLICIT), Function.identity());
         cachedIsImplicit.set(isImplicit);
+    }
+
+    TypeImpl(TypeImpl<T, V> type) {
+        super(type);
+        this.cachedTypeName = type.getName();
+        type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
+        type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
+    }
+
+    @Override
+    public Type copy(){
+        //noinspection unchecked
+        return new TypeImpl(this);
+    }
+
+    @SuppressWarnings("unchecked")
+    void copyCachedConcepts(T type){
+        ((TypeImpl<T, V>) type).cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().clone(value)));
+        ((TypeImpl<T, V>) type).cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().clone(value)));
     }
 
     /**
@@ -106,17 +142,38 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<RoleType> allRoleTypes = new HashSet<>();
 
         //Get the immediate plays roles which may be cached
-        allRoleTypes.addAll(cachedDirectPlaysRoles.get());
+        allRoleTypes.addAll(cachedDirectPlaysRoles.get().keySet());
 
         //Now get the super type plays roles (Which may also be cached locally within their own context
         Set<T> superSet = superTypeSet();
         superSet.remove(this); //We already have the plays roles from ourselves
-        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlaysRoles()));
+        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlaysRoles().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
     }
 
-    private Set<RoleType> directPlaysRoles(){
+    @Override
+    public Collection<ResourceType> resources() {
+        boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
+        
+        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retreived
+
+        Set<ResourceType> resourceTypes = new HashSet<>();
+        //A traversal is not used in this caching so that ontology caching can be taken advantage of.
+        playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+            if(relationType.isImplicit()){
+                //This is faster than doing the traversal
+                TypeName prefix = Schema.Resource.HAS_RESOURCE.getName(TypeName.of(""));
+                TypeName resourceTypeName = TypeName.of(relationType.getName().getValue().replace(prefix.getValue(), ""));
+                resourceTypes.add(getGraknGraph().getType(resourceTypeName));
+            }
+        }));
+
+        getGraknGraph().showImplicitConcepts(implicitFlag);
+        return resourceTypes;
+    }
+
+    Map<RoleType, Boolean> directPlaysRoles(){
         return cachedDirectPlaysRoles.get();
     }
 
@@ -131,7 +188,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * Deletes the concept as  type
      */
     @Override
-    public void innerDelete(){
+    public void delete(){
         checkTypeMutation();
         boolean hasSubs = getVertex().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
         boolean hasInstances = getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
@@ -148,7 +205,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Update neighbouring caches
             //noinspection unchecked
             ((TypeImpl<T, V>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
-            cachedDirectPlaysRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+            cachedDirectPlaysRoles.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
 
             //Clear internal caching
             cachedIsImplicit.clear();
@@ -156,6 +213,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedSuperType.clear();
             cachedDirectSubTypes.clear();
             cachedDirectPlaysRoles.clear();
+
+            //Clear Global ComponentCache
+            getGraknGraph().getConceptLog().removeConcept(this);
         }
     }
 
@@ -165,26 +225,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     public T superType() {
         return cachedSuperType.get();
-    }
-
-    /**
-     * Changes the name of the type
-     *
-     * @param name The new name of the type
-     * @return The Type name
-     */
-    public TypeName setName(String name){
-        //TODO: Propagate name change to all instances
-        TypeName typeName = TypeName.of(name);
-        Type foundType = getGraknGraph().getType(typeName);
-
-        if(foundType == null) {
-            setProperty(Schema.ConceptProperty.NAME, name);
-        } else if (!equals(foundType)){
-            throw new ConceptNotUniqueException(foundType, name);
-        }
-        cachedTypeName = typeName;
-        return cachedTypeName;
     }
 
     /**
@@ -394,7 +434,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
 
         //Update the internal cache of role types played
-        cachedDirectPlaysRoles.ifPresent(set -> set.add(roleType));
+        cachedDirectPlaysRoles.ifPresent(map -> map.put(roleType, required));
 
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
@@ -484,6 +524,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
     public RelationType hasResource(ResourceType resourceType, boolean required){
+        //Check if this is a met type
+        checkTypeMutation();
+
+        //Check if resource type is the meta
+        if(Schema.MetaSchema.RESOURCE.getName().equals(resourceType.getName())){
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
+        }
+
         TypeName resourceTypeName = resourceType.getName();
         RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
         RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
@@ -521,9 +569,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public TypeName getName() {
-        if(cachedTypeName == null){
-            cachedTypeName = TypeName.of(getProperty(Schema.ConceptProperty.NAME));
-        }
         return cachedTypeName;
     }
 

@@ -210,8 +210,6 @@ public class ValidatorTest extends GraphTestBase{
 
     @Test
     public void testValidateAfterManualAssertionDelete() throws GraknValidationException {
-        graknGraph.initialiseMetaConcepts();
-
         // ontology
         EntityType person = graknGraph.putEntityType("person");
         EntityType movie = graknGraph.putEntityType("movie");

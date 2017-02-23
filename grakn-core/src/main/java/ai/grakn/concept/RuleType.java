@@ -18,7 +18,7 @@
 
 package ai.grakn.concept;
 
-import ai.grakn.graph.GraknAdmin;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
 
 import java.util.Collection;
@@ -103,4 +103,10 @@ public interface RuleType extends Type {
      * @return All the rule instances of this Rule Type.
      */
     Collection<Rule> instances();
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    RuleType copy();
 }

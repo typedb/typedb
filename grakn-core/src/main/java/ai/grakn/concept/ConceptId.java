@@ -34,6 +34,7 @@ import java.io.Serializable;
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
     private Object conceptId;
+    private int hashCode = 0;
 
     private ConceptId(Object conceptId){
         this.conceptId = conceptId;
@@ -56,8 +57,25 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     }
 
     @Override
-    public boolean equals(Object object) {
-        return object instanceof ConceptId && ((ConceptId) object).getValue().equals(getValue());
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConceptId cast = (ConceptId) o;
+        if (conceptId instanceof String) {
+            return conceptId.equals(cast.conceptId.toString());
+        }
+        else if (cast.conceptId instanceof String) {
+            return cast.conceptId.equals(conceptId.toString());
+        }
+        return conceptId.equals(cast.conceptId);
+    }
+
+    @Override
+    public int hashCode() {
+        if (hashCode == 0 ){
+            hashCode = conceptId.toString().hashCode();
+        }
+        return hashCode;
     }
 
     @Override
@@ -68,11 +86,6 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
     @Override
     public String toString(){
         return getValue();
-    }
-
-    @Override
-    public int hashCode(){
-        return getValue().hashCode();
     }
 
     /**

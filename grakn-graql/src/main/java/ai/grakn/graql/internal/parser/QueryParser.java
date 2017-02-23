@@ -69,7 +69,6 @@ public class QueryParser {
      */
     private QueryParser(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
-        registerDefaultAggregates();
     }
 
     /**
@@ -78,7 +77,9 @@ public class QueryParser {
      *  @return a query parser that operates with the specified graph
      */
     public static QueryParser create(QueryBuilder queryBuilder) {
-        return new QueryParser(queryBuilder);
+        QueryParser parser = new QueryParser(queryBuilder);
+        parser.registerDefaultAggregates();
+        return parser;
     }
 
     private void registerAggregate(String name, int numArgs, Function<List<Object>, Aggregate> aggregateMethod) {

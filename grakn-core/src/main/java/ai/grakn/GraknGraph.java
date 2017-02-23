@@ -34,7 +34,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.graph.GraknAdmin;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 
 import java.util.Collection;
@@ -382,30 +382,19 @@ public interface GraknGraph extends AutoCloseable{
      */
     QueryBuilder graql();
 
+    // TODO: what does this do when the graph is closed?
     /**
-     * Resets the current transaction without committing.
+     * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknGraphFactory} to
+     * get a new open transaction.
      *
-     * @throws GraphRuntimeException if the graph is closed
+     * This will result in a commit if {@link GraknGraph#commitOnClose()} was called before hand. Otherwise the
+     * transaction will be rolled back.
      */
-    void rollback();
+    void close() throws GraknValidationException;
 
     // TODO: what does this do when the graph is closed?
     /**
-     * Closes the current transaction. If no transactions remain open the graph connection is closed permanently and
-     * the {@link GraknGraphFactory} must be used to get a new connection.
+     * Will cause the current transaction to be committed when closing the transaction.
      */
-    void close();
-
-    /**
-     * Opens the graph. This must be called before a new thread can use the graph.
-     */
-    void open();
-
-    /**
-     * Validates and attempts to commit the graph. Also submits commit logs for post processing
-     * An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
-     *
-     * @throws GraknValidationException is thrown when a structural validation fails.
-     */
-    void commit() throws GraknValidationException;
+    void commitOnClose();
 }

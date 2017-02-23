@@ -20,9 +20,9 @@ package ai.grakn.graql.internal.query.predicate;
 
 import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -120,7 +120,11 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             String thisVar = UUID.randomUUID().toString();
             VarName otherVar = theVar.getVarName();
             String otherValue = UUID.randomUUID().toString();
-            Traversal[] traversals = Stream.of(VALUE_PROPERTIES).map(prop -> __.values(prop).as(otherValue).select(thisVar).values(prop).where(gremlinPredicate(otherValue))).toArray(Traversal[]::new);
+
+            Traversal[] traversals = Stream.of(VALUE_PROPERTIES)
+                    .map(prop -> __.values(prop).as(otherValue).select(thisVar).values(prop).where(gremlinPredicate(otherValue)))
+                    .toArray(Traversal[]::new);
+
             traversal.as(thisVar).select(otherVar.getValue()).or(traversals).select(thisVar);
         });
 
@@ -131,4 +135,5 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
             traversal.has(property.name(), gremlinPredicate(theValue));
         });
     }
+
 }

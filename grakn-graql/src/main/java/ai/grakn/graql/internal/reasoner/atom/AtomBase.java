@@ -46,8 +46,8 @@ import static ai.grakn.graql.internal.reasoner.Utility.capture;
  */
 public abstract class AtomBase implements Atomic {
 
-    protected VarName varName = null;
-    protected PatternAdmin atomPattern = null;
+    protected VarName varName;
+    protected PatternAdmin atomPattern;
     private ReasonerQuery parent = null;
 
     protected AtomBase(VarAdmin pattern, ReasonerQuery par) {

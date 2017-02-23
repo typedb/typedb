@@ -51,13 +51,13 @@ public class TypeNames extends FromGraphGenerator<TypeName> {
                 TypeName name;
 
                 do {
-                    name = TypeName.of(gen(String.class));
+                    name = randomName();
                 } while (graph.getType(name) != null);
 
                 return name;
             });
         } else {
-            return TypeName.of(gen(String.class));
+            return randomName();
         }
     }
 
@@ -68,6 +68,14 @@ public class TypeNames extends FromGraphGenerator<TypeName> {
     TypeNames mustBeUnused() {
         mustBeUnused = true;
         return this;
+    }
+
+    private TypeName randomName() {
+        if (random.nextBoolean()) {
+            return TypeName.of(gen(String.class));
+        } else {
+            return TypeName.of("foo");
+        }
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

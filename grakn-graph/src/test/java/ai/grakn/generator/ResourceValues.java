@@ -34,26 +34,22 @@ public class ResourceValues extends AbstractGenerator<Object> {
 
     @Override
     public Object generate() {
-        String type;
+        String className;
         if (dataType == null) {
-            type = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
+            className = random.choose(ResourceType.DataType.SUPPORTED_TYPES.keySet());
         } else {
-            type = dataType.getName();
+            className = dataType.getName();
         }
 
-        switch (type) {
-            case "java.lang.String":
-                return gen(String.class);
-            case "java.lang.Boolean":
-                return gen(Boolean.class);
-            case "java.lang.Integer":
-            case "java.lang.Long":
-                return gen(Long.class);
-            case "java.lang.Double":
-                return gen(Double.class);
-            default:
-                throw new RuntimeException("unreachable: " + type);
+        Class<?> clazz;
+
+        try {
+            clazz = Class.forName(className);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("Unrecognised class " + className);
         }
+
+        return gen(clazz);
     }
 
     ResourceValues dataType(ResourceType.DataType<?> dataType) {

@@ -19,8 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.exception.GraknBackendException;
-import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.util.ErrorMessage;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -60,25 +58,15 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
+    public int numOpenTx() {
+        return ((StandardTitanGraph)getTinkerPopGraph()).getOpenTxs();
+    }
+
+    @Override
     protected void clearGraph() {
         TitanGraph titanGraph = getTinkerPopGraph();
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
-    }
-
-    @Override
-    public void closeGraph(String reason){
-        finaliseClose(this::closeTitan, reason);
-    }
-
-    @Override
-    public TitanGraph getTinkerPopGraph(){
-        TitanGraph graph =  super.getTinkerPopGraph();
-        if(graph.isClosed()){
-            throw new GraphRuntimeException(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
-        } else {
-            return graph;
-        }
     }
 
     @Override
@@ -88,27 +76,10 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         } catch (TitanException e){
             throw new GraknBackendException(e);
         }
-
-        if(!getTinkerPopGraph().tx().isOpen()){
-            getTinkerPopGraph().tx().open(); //Until we sort out the transaction handling properly commits have to result in transactions being auto opened
-        }
     }
 
     @Override
     public boolean validVertex(Vertex vertex) {
         return !((TitanVertex) vertex).isRemoved() && super.validVertex(vertex);
-    }
-
-    private void closeTitan(){
-        StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
-        synchronized (graph) { //Have to block here because the list of open transactions in Titan is not thread safe.
-            if(graph.tx().isOpen()) {
-                graph.tx().close();
-            }
-
-            if (graph.getOpenTxs() == 0) {
-                closePermanent();
-            }
-        }
     }
 }

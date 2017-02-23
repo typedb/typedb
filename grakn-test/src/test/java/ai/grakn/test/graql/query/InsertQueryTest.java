@@ -56,6 +56,8 @@ import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
+import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -84,7 +86,7 @@ public class InsertQueryTest {
     }
 
     @After
-    public void rollback(){
+    public void clear(){
         movieGraph.rollback();
     }
 
@@ -409,7 +411,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertRuleType() {
-        assertInsert(var("x").name("my-inference-rule").sub(Schema.MetaSchema.RULE.getName().getValue()));
+        assertInsert(var("x").name("my-inference-rule").sub(RULE.getName().getValue()));
     }
 
     @Test
@@ -509,14 +511,11 @@ public class InsertQueryTest {
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
-
-        movieGraph.graph().commit();
     }
 
     @Test
     public void testKeyUniqueOwner() throws GraknValidationException {
-        // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
+        assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
@@ -525,13 +524,13 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
     public void testKeyUniqueValue() throws GraknValidationException {
-        // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
+        assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
@@ -541,13 +540,13 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
     public void testKeyRequiredOwner() throws GraknValidationException {
-        // This should only run on tinker because it commits
-        assumeTrue(usingTinker());
+        assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
                 name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
@@ -556,12 +555,12 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
     public void testKeyRequiredValue() throws GraknValidationException {
-        // This should only run on tinker because it commits
         assumeTrue(usingTinker());
 
         qb.insert(
@@ -571,7 +570,8 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commit();
+        movieGraph.graph().commitOnClose();
+        movieGraph.graph().close();
     }
 
     @Test
@@ -720,6 +720,20 @@ public class InsertQueryTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("rhs")));
         qb.insert(var().isa("inference-rule").lhs(var("x").isa("movie"))).execute();
+    }
+
+    @Test
+    public void testInsertNonRuleWithLhs() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("lhs", RULE.getName()));
+        qb.insert(var().isa("movie").lhs(var("x"))).execute();
+    }
+
+    @Test
+    public void testInsertNonRuleWithRHS() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(INSERT_UNSUPPORTED_PROPERTY.getMessage("rhs", RULE.getName()));
+        qb.insert(name("thing").sub("movie").rhs(var("x"))).execute();
     }
 
     @Test

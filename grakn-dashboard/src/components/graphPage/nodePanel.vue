@@ -50,7 +50,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .node-panel {
     z-index: 2;
     position: absolute;
-    left: 83%;
+    left: 80%;
     top: 20px;
     width: 270px;
     background-color: #0f0f0f;

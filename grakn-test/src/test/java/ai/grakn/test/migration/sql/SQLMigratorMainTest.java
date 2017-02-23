@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.migration.sql.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
@@ -45,6 +46,7 @@ public class SQLMigratorMainTest {
     private final String templateFile = getFile("sql", "pets/template.gql").getAbsolutePath();
     private final String query = "SELECT * FROM pet";
     private Connection connection;
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Rule
@@ -55,7 +57,8 @@ public class SQLMigratorMainTest {
 
     @Before
     public void setup() throws SQLException {
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
         connection = setupExample(graph, "pets");
     }
 
@@ -125,6 +128,7 @@ public class SQLMigratorMainTest {
     @Test
     public void sqlMainPropertiesTest() throws SQLException {
         connection.close();
+        graph = factory.getGraph(); //Reopen transaction
         connection = setupExample(graph, "pokemon");
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
@@ -133,6 +137,7 @@ public class SQLMigratorMainTest {
                 "-pass", PASS, "-user", USER, "-k", graph.getKeyspace(),
                 "-c", configurationFile);
 
+        graph = factory.getGraph(); //Reopen transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -142,6 +147,7 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
+        graph = factory.getGraph(); //Reopen transaction
         assertPetGraphCorrect(graph);
     }
 

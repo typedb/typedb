@@ -84,9 +84,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             succesfulMutation = true;
             try {
                 random.choose(mutators).run();
-            } catch (UnsupportedOperationException | GraphRuntimeException | GraphGeneratorException
-                    | ClassCastException e) {
-                // TODO: Remove ClassCastException when graph API no longer throws it
+            } catch (UnsupportedOperationException | GraphRuntimeException | GraphGeneratorException e) {
                 // We only catch acceptable exceptions for the graph API to throw
                 succesfulMutation = false;
             }
@@ -105,11 +103,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         // Close graphs randomly, unless parameter is set
         boolean shouldOpen = open != null ? open : random.nextBoolean();
 
-        if (shouldOpen) {
-            graph.open();
-        } else {
-            graph.close();
-        }
+        if (!shouldOpen) graph.close();
 
         lastGeneratedGraph = graph;
         return graph;
@@ -203,7 +197,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public static List<Concept> allConceptsFrom(GraknGraph graph) {
-        List<Concept> concepts = Lists.newArrayList(allTypesFrom(graph));
+        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allTypesFrom(graph));
         concepts.addAll(allInstancesFrom(graph));
         return concepts;
     }

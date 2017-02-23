@@ -19,6 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graph.admin.ConceptCache;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -42,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author fppt
  */
-public class EngineCache {
+public class EngineCache implements ConceptCache{
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
     private final Map<String, Map<String, Set<ConceptId>>> resources;
@@ -67,7 +68,7 @@ public class EngineCache {
         return saveInProgress.get();
     }
 
-    public Set<String> getKeyspaces(){
+    Set<String> getKeyspaces(){
         Set<String> keyspaces = new HashSet<>();
         keyspaces.addAll(castings.keySet());
         keyspaces.addAll(resources.keySet());
@@ -95,10 +96,12 @@ public class EngineCache {
         return castings.computeIfAbsent(keyspace, key -> new ConcurrentHashMap<>());
     }
 
+    @Override
     public void addJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
         addJob(castings, keyspace, castingIndex, castingId);
     }
 
+    @Override
     public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
         deleteJob(castings, keyspace, castingIndex, castingId);
     }
@@ -108,10 +111,12 @@ public class EngineCache {
         return resources.computeIfAbsent(keyspace, key -> new ConcurrentHashMap<>());
     }
 
+    @Override
     public void addJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
         addJob(resources, keyspace, resourceIndex, resourceId);
     }
 
+    @Override
     public void deleteJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
         deleteJob(resources, keyspace, resourceIndex, resourceId);
     }
@@ -134,16 +139,28 @@ public class EngineCache {
         }
     }
 
+    @Override
     public void clearJobSetResources(String keyspace, String conceptIndex){
         clearJobSet(conceptIndex, resources.get(keyspace));
     }
+
+    @Override
     public void clearJobSetCastings(String keyspace, String conceptIndex){
         clearJobSet(conceptIndex, castings.get(keyspace));
     }
     private void clearJobSet(String conceptIndex, Map<String, Set<ConceptId>> cache){
-       if(cache.containsKey(conceptIndex) && cache.get(conceptIndex).isEmpty()){
+        updateLastTimeJobAdded();
+
+        if(cache.containsKey(conceptIndex) && cache.get(conceptIndex).isEmpty()){
            cache.remove(conceptIndex);
-       }
+        }
+    }
+
+    @Override
+    public void clearAllJobs(String keyspace){
+        updateLastTimeJobAdded();
+        if(castings.containsKey(keyspace)) castings.remove(keyspace);
+        if(resources.containsKey(keyspace)) resources.remove(keyspace);
     }
 
     /**

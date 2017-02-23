@@ -37,9 +37,11 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.Cache;
+import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -159,14 +161,32 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return unifiers;
     }
 
+    private LazyIterator<Map<VarName, Concept>> lazyLookup(Cache<ReasonerAtomicQuery, ?> cache) {
+        boolean queryVisited = cache.contains(this);
+        return queryVisited ? cache.getAnswerIterator(this) : lazyDBlookup(cache);
+    }
+    private LazyIterator<Map<VarName, Concept>> lazyDBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
+        Stream<Map<VarName, Concept>> dbStream = getMatchQuery().admin().streamWithVarNames();
+        return cache.recordRetrieveLazy(this, dbStream);
+    }
+
     /**
      * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
      *
      * @param cache container of already performed query resolutions
      */
-    public Stream<Map<VarName, Concept>> lookup(LazyQueryCache<ReasonerAtomicQuery> cache) {
+    public Stream<Map<VarName, Concept>> lookup(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
-        return queryVisited ? cache.getAnswers(this) : DBlookup(cache);
+        return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
+    }
+
+    /**
+     * resolve the query by performing a db lookup with subsequent cache update
+     */
+    private Stream<Map<VarName, Concept>> DBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
+        Stream<Map<VarName, Concept>> dbStream = getMatchQuery().admin().streamWithVarNames();
+        cache.record(this, dbStream);
+        return cache.getAnswerStream(this);
     }
 
     /**
@@ -174,14 +194,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Stream<Map<VarName, Concept>> DBlookup() {
         return getMatchQuery().admin().streamWithVarNames();
-    }
-
-    /**
-     * resolve the query by performing a db lookup with subsequent cache update
-     */
-    private Stream<Map<VarName, Concept>> DBlookup(LazyQueryCache<ReasonerAtomicQuery> cache) {
-        Stream<Map<VarName, Concept>> dbStream = getMatchQuery().admin().streamWithVarNames();
-        return cache.record(this, dbStream);
     }
 
     /**
@@ -269,7 +281,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param materialise materialisation flag
      * @return answers from rule resolution
      */
-    private Stream<Map<VarName, Concept>> resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, LazyQueryCache<ReasonerAtomicQuery> cache, boolean materialise){
+    private Stream<Map<VarName, Concept>> resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, Cache<ReasonerAtomicQuery, ?> cache, boolean materialise){
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
@@ -282,17 +294,21 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         ReasonerAtomicQuery childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Map<VarName, Concept>> subs = childAtomicQuery.answerStream(subGoals, cache, materialise);
+        Set<VarName> joinedVars = childAtomicQuery.getVarNames();
         while(atIt.hasNext()){
             childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
+            Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Map<VarName, Concept>> localSubs = childAtomicQuery.answerStream(subGoals, cache, materialise);
-            subs = join(subs, localSubs);
+            subs = join(subs, localSubs, ImmutableSet.copyOf(joinVars));
+            joinedVars.addAll(childAtomicQuery.getVarNames());
         }
 
         Stream<Map<VarName, Concept>> answers = subs
                 .filter(a -> nonEqualsFilter(a, ruleBody.getFilters()))
                 .flatMap(a -> varFilterFunction.apply(a, ruleHead.getVarNames()));
+
         if (materialise || ruleHead.getAtom().requiresMaterialisation()) {
-            LazyIterator<Map<VarName, Concept>> known = new LazyIterator<>(ruleHead.lookup(cache));
+            LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
             Stream<Map<VarName, Concept>> newAnswers = answers.distinct()
                     .filter(a -> knownFilter(a, known.stream()))
                     .flatMap(ruleHead::materialise);
@@ -309,7 +325,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return cache.record(this, answers);
     }
 
-    public Stream<Map<VarName, Concept>> answerStream(Set<ReasonerAtomicQuery> subGoals, LazyQueryCache<ReasonerAtomicQuery> cache, boolean materialise){
+    public Stream<Map<VarName, Concept>> answerStream(Set<ReasonerAtomicQuery> subGoals, Cache<ReasonerAtomicQuery, ?> cache, boolean materialise){
         boolean queryAdmissible = !subGoals.contains(this);
         Stream<Map<VarName, Concept>> answerStream = lookup(cache);
         if(queryAdmissible) {

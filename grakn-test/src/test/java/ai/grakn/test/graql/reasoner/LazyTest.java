@@ -10,20 +10,20 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -61,8 +61,8 @@ public class LazyTest {
         Stream<Map<VarName, Concept>> dbStream = query.DBlookup();
         cache.record(query, dbStream);
 
-        Set<Map<VarName, Concept>> collect = cache.getAnswers(query).collect(toSet());
-        Set<Map<VarName, Concept>> collect2 = cache.getAnswers(query2).collect(toSet());
+        Set<Map<VarName, Concept>> collect = cache.getAnswerStream(query).collect(toSet());
+        Set<Map<VarName, Concept>> collect2 = cache.getAnswerStream(query2).collect(toSet());
         assertEquals(collect.size(), collect2.size());
     }
 
@@ -87,7 +87,7 @@ public class LazyTest {
         joinedStream = cache.record(query3, joinedStream.flatMap(a -> varFilterFunction.apply(a, query3.getVarNames())));
 
         Set<Map<VarName, Concept>> collect = joinedStream.collect(toSet());
-        Set<Map<VarName, Concept>> collect2 = cache.getAnswers(query3).collect(toSet());
+        Set<Map<VarName, Concept>> collect2 = cache.getAnswerStream(query3).collect(toSet());
 
         assertEquals(collect.size(), 37);
         assertEquals(collect.size(), collect2.size());
@@ -133,16 +133,10 @@ public class LazyTest {
         final int N = 30;
 
         long startTime = System.currentTimeMillis();
-        MatrixGraphII.getGraph(N, N).accept(graphContext.graph());
+        MatrixGraphII.get(N, N).accept(graphContext.graph());
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
-
         GraknGraph graph = graphContext.graph();
-
-        startTime = System.currentTimeMillis();
-        Reasoner.linkConceptTypes(graph);
-        long linkTime = System.currentTimeMillis() - startTime;
-        System.out.println("linkTime: " + linkTime);
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";

@@ -19,6 +19,8 @@
 package ai.grakn;
 
 
+import ai.grakn.exception.GraphRuntimeException;
+
 /**
  * <p>
  *     Builds a Grakn Graph factory
@@ -58,4 +60,23 @@ public interface GraknGraphFactory {
      * @see GraknComputer
      */
     GraknComputer getGraphComputer();
+
+    /**
+     * Closes the main connection to the graph. This should be done at the end of using the graph.
+     *
+     * @throws GraphRuntimeException when more than 1 transaction is open on the graph
+     */
+    void close() throws GraphRuntimeException;
+
+    /**
+     *
+     * @return The number of transactions open on the graph.
+     */
+    int openGraphTxs();
+
+    /**
+     *
+     * @return The number of batch transactions open on the graph.
+     */
+    int openGraphBatchTxs();
 }

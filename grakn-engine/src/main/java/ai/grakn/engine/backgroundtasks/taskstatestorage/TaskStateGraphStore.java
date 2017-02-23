@@ -253,8 +253,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
                 T result = function.apply(graph);
                 if (commit) {
-                    EngineCache engineCache = EngineCache.getInstance();
-                    graph.admin().commit(engineCache.getResourceJobs(graph.getKeyspace()), engineCache.getCastingJobs(graph.getKeyspace()));
+                    graph.admin().commit(EngineCache.getInstance());
                 }
 
                 return Optional.of(result);

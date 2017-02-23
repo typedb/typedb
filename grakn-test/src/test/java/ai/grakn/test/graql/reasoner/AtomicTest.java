@@ -71,8 +71,6 @@ public class AtomicTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        Reasoner.linkConceptTypes(snbGraph.graph());
-        Reasoner.linkConceptTypes(cwGraph.graph());
     }
 
     @org.junit.Rule

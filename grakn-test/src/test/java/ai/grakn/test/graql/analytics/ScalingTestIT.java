@@ -116,7 +116,7 @@ public class ScalingTestIT {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        keyspace = context.graphWithNewKeyspace().getKeyspace();
+        keyspace = context.factoryWithNewKeyspace().getGraph().getKeyspace();
 
         headers = new ArrayList<>();
         headers.add("Size");
@@ -391,7 +391,7 @@ public class ScalingTestIT {
         thing.hasResource(id);
         ResourceType<Long> degree = graph.putResourceType("degree", ResourceType.DataType.LONG);
         thing.hasResource(degree);
-        graph.commit();
+        graph.commitOnClose();
         graph.close();
     }
 
@@ -402,7 +402,7 @@ public class ScalingTestIT {
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
             superNodes.add(thing.addEntity().getId().getValue());
         }
-        graph.commit();
+        graph.commitOnClose();
         graph.close();
         return superNodes;
     }

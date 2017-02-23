@@ -51,7 +51,6 @@ public class RoleTypeTest extends GraphTestBase {
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage("original", relationType.toString()));
 
-
         graknGraph.putRoleType("original");
     }
 

@@ -42,14 +42,6 @@ import java.util.Collection;
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Changes the name of the type
-     *
-     * @param name The new name of the type
-     * @return The Type name
-     */
-    TypeName setName(String name);
-
-    /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
@@ -94,6 +86,12 @@ public interface Type extends Concept {
      * @return A list of Role Types which instances of this Type can play.
      */
     Collection<RoleType> playsRoles();
+
+    /**
+     *
+     * @return The resource types which this type is linked with.
+     */
+    Collection<ResourceType> resources();
 
     /**
      *
@@ -154,4 +152,10 @@ public interface Type extends Concept {
      * @return The Type itself.
      */
     Type deletePlaysRole(RoleType roleType);
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    Type copy();
 }

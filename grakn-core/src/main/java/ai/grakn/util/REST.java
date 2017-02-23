@@ -130,6 +130,7 @@ public class REST {
         public static final String ACTION_QUERY_ABORT = "queryAbort";
         public static final String ACTION_COMMIT = "commit";
         public static final String ACTION_ROLLBACK = "rollback";
+        public static final String ACTION_CLEAN = "clean";
         public static final String ACTION_PING = "ping";
         public static final String ACTION_TYPES = "types";
         public static final String ACTION_DISPLAY = "display";
