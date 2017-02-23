@@ -750,21 +750,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return hash;
     }
 
-    @Override
-    public Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
-        String hash = RelationImpl.generateNewHash(relationType, roleMap);
-        Concept concept = getConceptLog().getCachedRelation(hash);
-
-        if(concept == null) {
-            concept = getConcept(Schema.ConceptProperty.INDEX, hash);
-        }
-
-        if(concept == null) {
-            return null;
-        }
-        return concept.asRelation();
-    }
-
     /**
      * Clears the graph completely.
      */
@@ -1096,14 +1081,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             }
         }
 
-        Relation foundRelation = getRelation(relationType, rolePlayers);
-
-        //Delete old Relation
         deleteRelations(Collections.singleton((RelationImpl) otherRelation));
-
-        if(foundRelation != null){
-            return;
-        }
 
         //Relation was not found so create a new one
         Relation relation = relationType.addRelation();
