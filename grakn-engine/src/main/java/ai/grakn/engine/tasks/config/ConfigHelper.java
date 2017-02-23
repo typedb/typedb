@@ -48,6 +48,7 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
  * </p>
  *
  * @author Denis Lobanov, alexandraorth
+ * //TODO Refactor this class
  */
 public class ConfigHelper {
 
@@ -68,17 +69,23 @@ public class ConfigHelper {
         Properties properties = new Properties();
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("group.id", groupId);
-        properties.put("enable.auto.commit", false);
+        properties.put("enable.auto.commit", "false");
         properties.put("auto.offset.reset", "earliest");
-        properties.put("metadata.max.age.ms", 1000);
-        properties.put("max.poll.records", 10);
+        properties.put("metadata.max.age.ms", "1000");
         properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
         properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
         properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
         properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");
         properties.put("value.deserializer", "ai.grakn.engine.tasks.TaskStateDeserializer");
 
-        return new KafkaConsumer<TaskId, TaskState>(properties);
+        // The max poll time should be set to its largest value
+        // Our task runners will only poll again after the tasks have completed
+        properties.put("max.poll.interval.ms", Integer.MAX_VALUE);
+
+        // Max poll records should be set to one: each TaskRunner should only handle one record at a time
+        properties.put("max.poll.records", "1");
+
+        return new KafkaConsumer<>(properties);
     }
 
     public static KafkaProducer<TaskId, TaskState> kafkaProducer() {

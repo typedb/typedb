@@ -30,26 +30,27 @@ import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static java.lang.String.format;
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import static java.util.concurrent.Executors.newFixedThreadPool;
+import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.generate;
 
 /**
  * {@link TaskManager} implementation that operates using a single Kafka queue and controls the
@@ -61,17 +62,16 @@ public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
     private final static String ENGINE_IDENTIFIER = EngineID.getInstance().id();
-    private final static String TASK_RUNNER_THREAD_NAME = "task-runner-";
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
+    private final static int CAPACITY = ConfigProperties.getInstance().getAvailableThreads();
 
     private final KafkaProducer<TaskId, TaskState> producer;
-    private final KafkaConsumer<TaskId, TaskState> consumer;
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
     private final FailoverElector failover;
 
+    private Set<Pair<SingleQueueTaskRunner, KafkaConsumer>> taskRunners;
     private ExecutorService taskRunnerThreadPool;
-    private SingleQueueTaskRunner taskRunner;
 
     /**
      * Create a {@link SingleQueueTaskManager}
@@ -88,11 +88,15 @@ public class SingleQueueTaskManager implements TaskManager {
 
         //TODO Single queue task manager should have its own impl of failover
         this.failover = new FailoverElector(ENGINE_IDENTIFIER, zookeeper, storage);
-
         this.producer = ConfigHelper.kafkaProducer();
-        this.consumer = ConfigHelper.kafkaConsumer(TASK_RUNNER_GROUP);
 
-        createTaskRunner();
+        // Create thread pool for the task runners
+        ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder().setNameFormat(TASK_RUNNER_THREAD_POOL_NAME).build();
+        this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY, taskRunnerPoolFactory);
+
+        // Create and start the task runners
+        this.taskRunners = generate(this::createTaskRunner).limit(CAPACITY).collect(toSet());
+        this.taskRunners.stream().map(Pair::getKey).forEach(taskRunnerThreadPool::submit);
     }
 
     /**
@@ -107,11 +111,11 @@ public class SingleQueueTaskManager implements TaskManager {
         // close kafka producer
         noThrow(producer::close, "Error shutting down producer in TaskManager");
 
-        // close task runner
-        noThrow(taskRunner::close, "Error shutting down TaskRunner");
-
-        // close the kafka consumer used in the task runner
-        noThrow(consumer::close, "Error closing the new tasks consumer");
+        // Close all the task runners
+        for(Pair<SingleQueueTaskRunner, KafkaConsumer> taskRunner:taskRunners) {
+            noThrow(taskRunner.getKey()::close, "Error shutting down TaskRunner");
+            noThrow(taskRunner.getValue()::close, "Error closing the TaskRunner consumer");
+        }
 
         // close the thread pool and wait for shutdown
         noThrow(taskRunnerThreadPool::shutdown, "Error closing task runner thread pool");
@@ -154,48 +158,50 @@ public class SingleQueueTaskManager implements TaskManager {
         return storage;
     }
 
-    private void createTaskRunner(){
-        ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, zookeeper, this.getClass().getSimpleName());
-        this.consumer.subscribe(singletonList(NEW_TASKS_TOPIC), listener);
-
-        int capacity = ConfigProperties.getInstance().getAvailableThreads();
-        ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder().setNameFormat(TASK_RUNNER_THREAD_POOL_NAME).build();
-
-        this.taskRunnerThreadPool = new ThreadPoolExecutor(capacity, capacity, 0L,
-                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(capacity), taskRunnerPoolFactory);
-        this.taskRunner = new SingleQueueTaskRunner(storage, consumer, taskRunnerThreadPool);
-        Thread taskRunnerThread = new Thread(taskRunner, TASK_RUNNER_THREAD_NAME);
-        taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
-        taskRunnerThread.start();
+    /**
+     * Create a {@link SingleQueueTaskRunner}
+     */
+    private Pair<SingleQueueTaskRunner, KafkaConsumer> createTaskRunner(){
+        KafkaConsumer<TaskId, TaskState> taskRunnerConsumer = createNewTasksConsumer();
+        SingleQueueTaskRunner taskRunner = new SingleQueueTaskRunner(storage, createNewTasksConsumer());
+        return Pair.of(taskRunner, taskRunnerConsumer);
     }
 
     /**
-     * Implementation of UncaughtExceptionHandler that will restart the TaskRunner in a new thread
-     * if it throws any unchecked exception
-     *
-     * @author alexandraorth
-     * TODO This method needs some serious testing
+     * Create a consumer that is part of the task runners group and which will listen to the new tasks queue
+     * @return A new tasks consumer
      */
-    private class TaskRunnerResurrection implements Thread.UncaughtExceptionHandler {
-
-        public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
-            LOG.debug(format("TaskRunner [%s] threw an exception. Will attempt to close and reopen. Exception is: %n [%s]",
-                    paramThread.getName(), getFullStackTrace(paramThrowable)));
-
-            // close the task runner
-            noThrow(taskRunner::close, "Error shutting down TaskRunner");
-
-            // close the thread pool
-            noThrow(taskRunnerThreadPool::shutdown, "Error closing task runner thread pool");
-            noThrow(() -> taskRunnerThreadPool.awaitTermination(1, TimeUnit.MINUTES),
-                    "Error waiting for TaskRunner executor to shutdown.");
-
-            LOG.debug("TaskRunner closed.");
-
-            // re-instantiate task runner
-            createTaskRunner();
-
-            LOG.debug("Re-instantiation of TaskRunner completed.");
-        }
+    private KafkaConsumer<TaskId, TaskState> createNewTasksConsumer(){
+        KafkaConsumer<TaskId, TaskState> taskRunnerConsumer = kafkaConsumer(TASK_RUNNER_GROUP);
+        taskRunnerConsumer.subscribe(
+                singletonList(NEW_TASKS_TOPIC),
+                new ExternalStorageRebalancer(taskRunnerConsumer, zookeeper)
+        );
+        return taskRunnerConsumer;
     }
+
+//    /**
+//     * Implementation of UncaughtExceptionHandler that will restart the TaskRunner in a new thread
+//     * if it throws any unchecked exception
+//     *
+//     * @author alexandraorth
+//     * TODO This method needs some serious testing
+//     */
+//    private class TaskRunnerResurrection implements Thread.UncaughtExceptionHandler {
+//
+//        public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
+//            LOG.debug(format("TaskRunner [%s] threw an exception. Will attempt to close and reopen. Exception is: %n [%s]",
+//                    paramThread.getName(), getFullStackTrace(paramThrowable)));
+//
+//            // close the task runner
+//            noThrow(taskRunner::close, "Error shutting down TaskRunner");
+//
+//            LOG.debug("TaskRunner closed.");
+//
+//            // re-instantiate task runner
+//            createTaskRunner();
+//
+//            LOG.debug("Re-instantiation of TaskRunner completed.");
+//        }
+//    }
 }

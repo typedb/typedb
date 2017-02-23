@@ -30,17 +30,12 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -56,8 +51,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
-    private final ExecutorService executor;
-    private final Set<TaskId> currentlyRunningTasks = ConcurrentHashMap.newKeySet();
 
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
@@ -67,10 +60,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param consumer a Kafka consumer from which to poll for tasks
      */
     public SingleQueueTaskRunner(
-            TaskStateStorage storage, Consumer<TaskId, TaskState> consumer, ExecutorService executor) {
+            TaskStateStorage storage, Consumer<TaskId, TaskState> consumer) {
         this.storage = storage;
         this.consumer = consumer;
-        this.executor = executor;
     }
 
     /**
@@ -93,26 +85,23 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         try {
             while (!wakeUp.get()) {
-                ConsumerRecords<TaskId, TaskState> records = consumer.poll(100);
+                ConsumerRecords<TaskId, TaskState> records = consumer.poll(1000);
 
                 LOG.debug("polled, got {} records", records.count());
+                for(TopicPartition partition: consumer.assignment()){
+                    LOG.debug("TopicPartition {}{} has offset {} after receiving {} records",
+                            partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
+                }
 
+                // This TskRunner should only ever receive one record
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
-                    if (handleRecord(record)) {
-                        consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
-                        consumer.commitSync();
 
-                        LOG.debug("acknowledged");
-                    } else {
-                        // When executor is full, don't consume any further records
-                        break;
-                    }
+                    handleRecord(record);
+
+                    consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+                    consumer.commitSync();
                 }
             }
-        } catch (Throwable throwable){
-            //todo do we need to re-throw, figure out
-            LOG.error(getFullStackTrace(throwable));
-            throw new RuntimeException(throwable);
         } finally {
             countDownLatch.countDown();
             LOG.debug("stopped");
@@ -132,48 +121,43 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     /**
      * Returns false if cannot handle record because the executor is full
-     * @param record
-     * @return
      */
-    private boolean handleRecord(ConsumerRecord<TaskId, TaskState> record) {
+    private void handleRecord(ConsumerRecord<TaskId, TaskState> record) {
         TaskState task = record.value();
 
-        LOG.debug("{}\thandling", task);
-
-        boolean handled = true;
+        LOG.debug("{}\treceived", task);
 
         if (shouldExecuteTask(task)) {
+
+            // Mark as running
             task.status(TaskStatus.RUNNING);
 
-            LOG.debug("{}\tmarked as running", task);
-
+            //TODO Make this a put within state storage
             if(storage.containsTask(task.getId())) {
                 storage.updateState(task);
             } else {
                 storage.newState(task);
             }
 
-            currentlyRunningTasks.add(task.getId());
+            LOG.debug("{}\tmarked as running", task);
 
-            LOG.debug("{}\trecorded", task);
-
+            // Execute task
             try {
-                executor.submit(() -> executeTask(task));
-            } catch (RejectedExecutionException e) {
-                LOG.debug("{}\trejected by executor", task);
-                handled = false;
-                currentlyRunningTasks.remove(task.getId());
+                task.taskClass().newInstance().start(null, task.configuration());
+                task.status(COMPLETED);
+                LOG.debug("{}\tmarked as completed", task);
+            } catch (Throwable throwable) {
+                task.status(FAILED);
+                LOG.debug("{}\tmarked as failed", task);
+            } finally {
+                storage.updateState(task);
+                LOG.debug("{}\trecorded", task);
             }
         }
-
-        return handled;
     }
 
     private boolean shouldExecuteTask(TaskState task) {
         TaskId taskId = task.getId();
-
-        // Don't run tasks that are already running on this machine right now
-        if (currentlyRunningTasks.contains(taskId)) return false;
 
         if (task.status().equals(CREATED)) {
             // Only run created tasks if they are not being retried
@@ -183,21 +167,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             // TODO: what if another task runner is running this task? (due to rebalance)
             TaskStatus status = storage.getState(taskId).status();
             return !status.equals(COMPLETED) && !status.equals(FAILED);
-        }
-    }
-
-    private void executeTask(TaskState task) {
-        try {
-            task.taskClass().newInstance().start(null, task.configuration());
-            task.status(COMPLETED);
-            LOG.debug("{}\tmarked as completed", task);
-        } catch (Throwable throwable) {
-            task.status(FAILED);
-            LOG.debug("{}\tmarked as failed", task);
-        } finally {
-            currentlyRunningTasks.remove(task.getId());
-            storage.updateState(task);
-            LOG.debug("{}\trecorded", task);
         }
     }
 }

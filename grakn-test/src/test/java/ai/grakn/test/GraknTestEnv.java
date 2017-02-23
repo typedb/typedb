@@ -16,6 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 
 /**
  * <p>
@@ -74,6 +75,7 @@ public abstract class GraknTestEnv {
 
     static void startKafka() throws Exception {
         kafkaUnit.startup();
+        kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads());
     }
 
     static void stopKafka() throws Exception {

@@ -44,10 +44,8 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
 
     private final ZookeeperConnection zookeeper;
     private final KafkaConsumer consumer;
-    private final String className;
 
-    public ExternalStorageRebalancer(KafkaConsumer consumer, ZookeeperConnection zookeeper, String className){
-        this.className = className;
+    public ExternalStorageRebalancer(KafkaConsumer consumer, ZookeeperConnection zookeeper){
         this.zookeeper = zookeeper;
         this.consumer = consumer;
     }
@@ -59,7 +57,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      */
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-        LOG.debug(format("%s consumer partitions assigned %s", className, partitions));
+        LOG.debug(format("Consumer partitions assigned %s", partitions));
 
         for(TopicPartition partition : partitions){
             consumer.seek(partition, getOffsetFromZookeeper(partition));
@@ -73,7 +71,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      */
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-        LOG.debug(format("%s consumer partitions revoked %s", className, partitions));
+        LOG.debug(format("Consumer partitions revoked %s", partitions));
 
         partitions.forEach(this::saveOffsetInZookeeper);
     }

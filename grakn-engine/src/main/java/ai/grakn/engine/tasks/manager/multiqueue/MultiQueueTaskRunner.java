@@ -100,7 +100,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
         consumer = kafkaConsumer(TASK_RUNNER_GROUP);
 
         // Configure callback for a Kafka rebalance
-        ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection, this.getClass().getSimpleName());
+        ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection);
         consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), listener);
 
         // Create initial entries in ZK for TaskFailover to watch.

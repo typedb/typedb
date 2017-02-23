@@ -95,7 +95,7 @@ public class Scheduler implements Runnable, AutoCloseable {
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
 
             // Configure callback for a Kafka rebalance
-            ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection, this.getClass().getSimpleName());
+            ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection);
             consumer.subscribe(singletonList(NEW_TASKS_TOPIC), listener);
 
             // Kafka writer

@@ -41,10 +41,6 @@ import org.junit.runner.RunWith;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
@@ -61,10 +57,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
@@ -74,7 +66,6 @@ public class SingleQueueTaskRunnerTest {
 
     private MockGraknConsumer<TaskId, TaskState> consumer;
     private TopicPartition partition;
-    private ExecutorService executor;
 
     @Before
     public void setUp() {
@@ -89,12 +80,10 @@ public class SingleQueueTaskRunnerTest {
         consumer.assign(ImmutableSet.of(partition));
         consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
-
-        executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1));
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(storage, consumer, executor);
+        taskRunner = new SingleQueueTaskRunner(storage, consumer);
 
         createValidQueue(tasks);
 
@@ -116,15 +105,6 @@ public class SingleQueueTaskRunnerTest {
 
     public static List<TaskState> tasks(List<? extends List<TaskState>> tasks) {
         return tasks.stream().flatMap(Collection::stream).collect(toList());
-    }
-
-    public void waitToComplete() {
-        executor.shutdown();
-        try {
-            executor.awaitTermination(1, TimeUnit.HOURS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void createValidQueue(List<List<TaskState>> tasks) {
@@ -157,8 +137,6 @@ public class SingleQueueTaskRunnerTest {
 
         taskRunner.run();
 
-        waitToComplete();
-
         tasks(tasks).forEach(task ->
                 assertNotNull(storage.getState(task.getId()))
         );
@@ -169,8 +147,6 @@ public class SingleQueueTaskRunnerTest {
         setUpTasks(tasks);
 
         taskRunner.run();
-
-        waitToComplete();
 
         completableTasks(tasks(tasks)).forEach(task ->
                 assertThat(storage.getState(task).status(), is(COMPLETED))
@@ -183,8 +159,6 @@ public class SingleQueueTaskRunnerTest {
 
         taskRunner.run();
 
-        waitToComplete();
-
         failingTasks(tasks(tasks)).forEach(task ->
                 assertThat(storage.getState(task).status(), is(FAILED))
         );
@@ -196,26 +170,9 @@ public class SingleQueueTaskRunnerTest {
 
         taskRunner.run();
 
-        waitToComplete();
-
         Multiset<TaskId> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks(tasks)));
 
         assertEquals(expectedCompletedTasks, completedTasks());
-    }
-
-    @Property(trials=10)
-    public void afterRunning_AllTasksHaveBeenSubmittedToExecutor(List<List<TaskState>> tasks) {
-        executor.shutdown();
-        executor = mock(ExecutorService.class);
-
-        setUpTasks(tasks);
-
-        taskRunner.run();
-
-        List<TaskState> allTasks = tasks(tasks);
-        int expectedSubmissions = completableTasks(allTasks).size() + failingTasks(allTasks).size();
-
-        verify(executor, times(expectedSubmissions)).submit(any(Runnable.class));
     }
 
     @Test

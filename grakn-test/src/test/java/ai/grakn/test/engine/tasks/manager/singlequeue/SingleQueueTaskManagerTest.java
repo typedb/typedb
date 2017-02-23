@@ -18,18 +18,16 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
-import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
-import ai.grakn.generator.TaskStates;
 import ai.grakn.generator.TaskStates.Status;
 import ai.grakn.generator.TaskStates.UniqueIds;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.After;
@@ -38,7 +36,6 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
@@ -48,7 +45,6 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTask
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
 
 /**
  *
