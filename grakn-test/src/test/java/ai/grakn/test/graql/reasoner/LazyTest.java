@@ -22,7 +22,9 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.GeoGraph;
+import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
@@ -32,9 +34,9 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
+import java.util.List;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Map;
@@ -142,6 +144,27 @@ public class LazyTest {
                 .filter(a -> QueryAnswerStream.knownFilter(a, answers.stream()))
                 .count();
         assertEquals(count, 0);
+    }
+
+    @Test //(timeout = 30000)
+    public void testLazy()  {
+        final int N = 30;
+
+        long startTime = System.currentTimeMillis();
+        MatrixGraphII.get(N, N).accept(graphContext.graph());
+        long loadTime = System.currentTimeMillis() - startTime;
+        System.out.println("loadTime: " + loadTime);
+        GraknGraph graph = graphContext.graph();
+
+        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+        String queryString = "match (P-from: $x, P-to: $y) isa P;";
+        MatchQuery query = iqb.parse(queryString);
+
+        int limit = 100;
+        startTime = System.currentTimeMillis();
+        List<Map<String, Concept>> results = query.limit(limit).execute();
+        long answerTime = System.currentTimeMillis() - startTime;
+        System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
 
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
