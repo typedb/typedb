@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
@@ -57,6 +58,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private static final String COMPUTER = "graph.computer";
     private final String location;
     private final String keyspace;
+
+    //Flags so we don't have to open a graph just to check the count of the transactions
     private boolean graphOpen = false;
     private boolean graphBatchOpen = false;
 
@@ -101,8 +104,24 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
 
     @Override
     public void close() throws GraphRuntimeException {
+        checkClosure(openGraphTxs(), this::getGraph);
+        checkClosure(openGraphBatchTxs(), this::getGraphBatchLoading);
 
+        //Close the main graph connections
+        try {
+            if(graphOpen) ((AbstractGraknGraph)getGraph()).getTinkerPopGraph().close();
+            if(graphBatchOpen) ((AbstractGraknGraph)getGraphBatchLoading()).getTinkerPopGraph().close();
+        } catch (Exception e) {
+            throw new GraphRuntimeException("Could not close graph.", e);
+        }
     }
+    private void checkClosure(int numOpenTransactions, Supplier<GraknGraph> graphSupplier){
+        if(numOpenTransactions > 1){
+            GraknGraph graph = graphSupplier.get();
+            throw new GraphRuntimeException(ErrorMessage.TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), numOpenTransactions));
+        }
+    }
+
 
     @Override
     public int openGraphTxs() {
