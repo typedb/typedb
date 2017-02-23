@@ -124,7 +124,7 @@ public class HALConceptRepresentationBuilder {
                                     .map(RelationPlayer::getRolePlayer).forEach(otherVar -> {
 
                                 if(resultLine.get(otherVar.getVarName())!=null) {
-                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(String.valueOf(currentRelation.hashCode())), currentVarName, otherVar.getVarName(), relationType, keyspace);
+                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(currentRelation.toString()), currentVarName, otherVar.getVarName(), relationType, keyspace);
                                 }
                             });
 
@@ -188,7 +188,7 @@ public class HALConceptRepresentationBuilder {
         final Map<String,Map<VarName,String>> roleTypes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             if (var.getProperty(RelationProperty.class).isPresent()) {
-                final String varHashCode =String.valueOf(var.hashCode());
+                final String varHashCode = var.toString();
                 roleTypes.put(varHashCode,new HashMap<>());
                 var.getProperty(RelationProperty.class)
                         .get()
