@@ -38,9 +38,10 @@ import java.util.stream.Stream;
 public class LazyAnswerIterator extends LazyIterator<Map<VarName, Concept>> {
 
     public LazyAnswerIterator(Stream<Map<VarName, Concept>> stream){ super(stream);}
-    public LazyAnswerIterator(Iterator<Map<VarName, Concept>> iterator){ super(iterator);}
+    private LazyAnswerIterator(Iterator<Map<VarName, Concept>> iterator){ super(iterator);}
 
     public LazyAnswerIterator unify(Map<VarName, VarName> unifiers){
+        if (unifiers.isEmpty()) return this;
         Iterator<Map<VarName, Concept>> transform = Iterators.transform(iterator(), input -> QueryAnswers.unify(input, unifiers));
         return new LazyAnswerIterator(transform);
     }

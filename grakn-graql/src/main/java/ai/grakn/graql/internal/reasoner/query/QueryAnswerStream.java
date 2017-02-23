@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -139,6 +140,7 @@ public class QueryAnswerStream {
      * @return unified answer stream
      */
     public static Stream<Map<VarName, Concept>> unify(Stream<Map<VarName, Concept>> answers, Map<VarName, VarName> unifiers) {
+        if(unifiers.isEmpty()) return answers;
         return answers.map(ans -> QueryAnswers.unify(ans, unifiers));
     }
 
@@ -175,13 +177,15 @@ public class QueryAnswerStream {
         LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
         return stream.flatMap(a1 -> {
             Stream<Map<VarName, Concept>> answerStream = l2.stream();
-            for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(a1.get(v)));
-            return answerStream.map(a2 -> {
-                Map<VarName, Concept> merged = new HashMap<>(a1);
-                merged.putAll(a2);
-                return merged;
+            answerStream = answerStream.filter(ans -> {
+                for(VarName v: joinVars)
+                    if (!ans.get(v).equals(a1.get(v))) return false;
+                return true;
             });
-        });
+            return answerStream.map(a2 ->
+                    Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a)));
+            });
     }
 }
 

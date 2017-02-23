@@ -1,11 +1,28 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graphs.GeoGraph;
-import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
@@ -20,7 +37,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -31,13 +47,10 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-/**
- * Created by kasper on 10/02/17.
- */
 public class LazyTest {
 
-    @Rule
-    public final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+    @ClassRule
+    public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
 
     @ClassRule
     public static final GraphContext graphContext = GraphContext.empty();
@@ -52,12 +65,13 @@ public class LazyTest {
         GraknGraph graph = geoGraph.graph();
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
-        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(pattern, graph);
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
 
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Stream<Map<VarName, Concept>> dbStream = query.DBlookup();
         cache.record(query, dbStream);
 
@@ -72,7 +86,7 @@ public class LazyTest {
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $x, entity-location: $z) isa is-located-in;}";
-        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
         Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
@@ -80,6 +94,7 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Stream<Map<VarName, Concept>> stream = query.lookup(cache);
         Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
         Stream<Map<VarName, Concept>> joinedStream = QueryAnswerStream.join(stream, stream2);
@@ -99,7 +114,7 @@ public class LazyTest {
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
         String patternString2 = "{(geo-entity: $y, entity-location: $z) isa is-located-in;}";
         String patternString3 = "{(geo-entity: $z, entity-location: $w) isa is-located-in;}";
-        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
         Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
@@ -107,6 +122,7 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
+        LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         Stream<Map<VarName, Concept>> stream = query.lookup(cache);
         Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
         Stream<Map<VarName, Concept>> stream3 = query3.lookup(cache);
@@ -126,27 +142,6 @@ public class LazyTest {
                 .filter(a -> QueryAnswerStream.knownFilter(a, answers.stream()))
                 .count();
         assertEquals(count, 0);
-    }
-
-    @Test //(timeout = 30000)
-    public void testLazy()  {
-        final int N = 30;
-
-        long startTime = System.currentTimeMillis();
-        MatrixGraphII.getGraph(N, N).accept(graphContext.graph());
-        long loadTime = System.currentTimeMillis() - startTime;
-        System.out.println("loadTime: " + loadTime);
-        GraknGraph graph = graphContext.graph();
-
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
-        String queryString = "match (P-from: $x, P-to: $y) isa P;";
-        MatchQuery query = iqb.parse(queryString);
-
-        int limit = 100;
-        startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> results = query.limit(limit).execute();
-        long answerTime = System.currentTimeMillis() - startTime;
-        System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
 
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){

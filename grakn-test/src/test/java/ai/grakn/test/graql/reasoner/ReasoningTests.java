@@ -30,7 +30,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assume.assumeTrue;
 

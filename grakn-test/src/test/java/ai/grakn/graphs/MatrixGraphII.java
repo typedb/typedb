@@ -42,7 +42,7 @@ public class MatrixGraphII extends TestGraph {
         this.n = n;
     }
 
-    public static Consumer<GraknGraph> getGraph(int n, int m) {
+    public static Consumer<GraknGraph> get(int n, int m) {
         return new MatrixGraphII(n, m).build();
     }
 

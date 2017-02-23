@@ -273,6 +273,29 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
     }
 
+    private Stream<Map<VarName, Concept>> differentialJoin(List<ReasonerAtomicQuery> queries,
+                                                                 Set<ReasonerAtomicQuery> subGoals,
+                                                                 Cache<ReasonerAtomicQuery, ?> cache,
+                                                                 Cache<ReasonerAtomicQuery, ?> dCache,
+                                                                 boolean materialise){
+        Stream<Map<VarName, Concept>> join = Stream.empty();
+        Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
+
+        for(ReasonerAtomicQuery qi : uniqueQueries){
+            Stream<Map<VarName, Concept>> subs = qi.answerStream(subGoals, cache, dCache, materialise);
+            Set<VarName> joinedVars = qi.getVarNames();
+            for(ReasonerAtomicQuery qj : queries){
+                if ( qj != qi ){
+                    Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
+                    subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars));
+                    joinedVars.addAll(qj.getVarNames());
+                }
+            }
+            join = Stream.concat(join, subs);
+        }
+        return join.distinct();
+    }
+
     /**
      * attempt query resolution via application of a specific rule
      * @param rl rule through which to resolve the query
@@ -281,27 +304,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @param materialise materialisation flag
      * @return answers from rule resolution
      */
-    private Stream<Map<VarName, Concept>> resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, Cache<ReasonerAtomicQuery, ?> cache, boolean materialise){
+    private Stream<Map<VarName, Concept>> resolveViaRule(Rule rl, Set<ReasonerAtomicQuery> subGoals, Cache<ReasonerAtomicQuery, ?> cache, Cache<ReasonerAtomicQuery, ?> dCache, boolean materialise){
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
 
-        Set<Atom> atoms = ruleBody.selectAtoms();
-        Iterator<Atom> atIt = atoms.iterator();
         subGoals.add(this);
-
-        ReasonerAtomicQuery childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
-        Stream<Map<VarName, Concept>> subs = childAtomicQuery.answerStream(subGoals, cache, materialise);
-        Set<VarName> joinedVars = childAtomicQuery.getVarNames();
-        while(atIt.hasNext()){
-            childAtomicQuery = new ReasonerAtomicQuery(atIt.next());
-            Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
-            Stream<Map<VarName, Concept>> localSubs = childAtomicQuery.answerStream(subGoals, cache, materialise);
-            subs = join(subs, localSubs, ImmutableSet.copyOf(joinVars));
-            joinedVars.addAll(childAtomicQuery.getVarNames());
-        }
+        Stream<Map<VarName, Concept>> subs = differentialJoin(
+                ruleBody.selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList()),
+                subGoals,
+                cache,
+                dCache,
+                materialise);
 
         Stream<Map<VarName, Concept>> answers = subs
                 .filter(a -> nonEqualsFilter(a, ruleBody.getFilters()))
@@ -309,10 +325,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()) {
             LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
+            LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
             Stream<Map<VarName, Concept>> newAnswers = answers.distinct()
                     .filter(a -> knownFilter(a, known.stream()))
+                    .filter(a -> knownFilter(a, dknown.stream()))
                     .flatMap(ruleHead::materialise);
-            answers = cache.record(ruleHead, newAnswers)
+
+            answers = dCache.record(ruleHead, newAnswers)
                     .filter(a -> entityTypeFilter(a, atom.getMappedTypeConstraints()));
         }
 
@@ -322,22 +341,32 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .filter(a -> subFilter(a, atom.getUnmappedIdPredicates()))
                 .filter(a -> entityTypeFilter(a, atom.getUnmappedTypeConstraints()));
 
-        return cache.record(this, answers);
+        return dCache.record(this, answers);
     }
 
-    public Stream<Map<VarName, Concept>> answerStream(Set<ReasonerAtomicQuery> subGoals, Cache<ReasonerAtomicQuery, ?> cache, boolean materialise){
+    /**
+     * resolves the query by performing lookups and rule resolution and returns a stream of new answers
+     * @param subGoals visited subGoals (recursive queries)
+     * @param cache global query cache
+     * @param dCache differential query cache
+     * @param materialise whether inferred information should be materialised
+     * @return stream of differential answers
+     */
+    public Stream<Map<VarName, Concept>> answerStream(Set<ReasonerAtomicQuery> subGoals, Cache<ReasonerAtomicQuery, ?> cache, Cache<ReasonerAtomicQuery, ?> dCache, boolean materialise){
         boolean queryAdmissible = !subGoals.contains(this);
-        Stream<Map<VarName, Concept>> answerStream = lookup(cache);
+
+        Stream<Map<VarName, Concept>> answerStream = cache.contains(this)? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
             Set<Rule> rules = getAtom().getApplicableRules();
             Iterator<Rule> rIt = rules.iterator();
             while(rIt.hasNext()){
                 Rule rule = rIt.next();
-                Stream<Map<VarName, Concept>> localStream = resolveViaRule(rule, subGoals, cache, materialise);
+                Stream<Map<VarName, Concept>> localStream = resolveViaRule(rule, subGoals, cache, dCache, materialise);
                 answerStream = Stream.concat(answerStream, localStream);
             }
         }
-        return answerStream;
+
+        return dCache.record(this, answerStream);
     }
 
     @Override

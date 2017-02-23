@@ -27,6 +27,7 @@ import java.util.Optional;
  * A pair of role type and role player (where the role type may not be present)
  */
 class RelationPlayerImpl implements RelationPlayer {
+    private int hashCode = 0;
     private final Optional<VarAdmin> roleType;
     private final VarAdmin rolePlayer;
 
@@ -76,8 +77,10 @@ class RelationPlayerImpl implements RelationPlayer {
 
     @Override
     public int hashCode() {
-        int result = roleType.hashCode();
-        result = 31 * result + rolePlayer.hashCode();
-        return result;
+        if (hashCode == 0) {
+            hashCode = roleType.hashCode();
+            hashCode = 31 * hashCode + rolePlayer.hashCode();
+        }
+        return hashCode;
     }
 }
