@@ -224,7 +224,6 @@ public class Relation extends TypeAtom {
     }
 
     private boolean isRuleApplicableViaType(Relation childAtom) {
-        boolean ruleRelevant = true;
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Iterator<Type> it = varTypeMap.entrySet().stream()
                 .filter(entry -> containsVar(entry.getKey()))
@@ -232,19 +231,20 @@ public class Relation extends TypeAtom {
                 .filter(Objects::nonNull)
                 .iterator();
         Set<RoleType> roles = childAtom.getRoleVarTypeMap().keySet();
-        while (it.hasNext() && ruleRelevant) {
+        while (it.hasNext()){
             Type type = it.next();
             if (!Schema.MetaSchema.isMetaName(type.getName())) {
                 Set<RoleType> roleIntersection = new HashSet<>(roles);
                 roleIntersection.retainAll(type.playsRoles());
-                ruleRelevant = !roleIntersection.isEmpty();
+                if (roleIntersection.isEmpty()){
+                    return false;
+                }
             }
         }
-        return ruleRelevant;
+        return true ;
     }
 
     private boolean isRuleApplicableViaAtom(Relation childAtom, InferenceRule child) {
-        boolean ruleRelevant = true;
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         Map<RoleType, Pair<VarName, Type>> childRoleMap = childAtom.getRoleVarTypeMap();
         Map<RoleType, Pair<VarName, Type>> parentRoleMap = getRoleVarTypeMap();
@@ -259,11 +259,8 @@ public class Relation extends TypeAtom {
         //case when child atom non-unifiable
         if (unificationMappings.getKey().size() != childAtom.getRelationPlayers().size()) return false;
 
-        Iterator<Map.Entry<RoleType, Pair<VarName, Type>>> it = childRoleMap.entrySet().iterator();
-        while (it.hasNext() && ruleRelevant) {
-            Map.Entry<RoleType, Pair<VarName, Type>> entry = it.next();
+        for (Map.Entry<RoleType, Pair<VarName, Type>> entry : childRoleMap.entrySet()) {
             RoleType childRole = entry.getKey();
-
             Type chType = entry.getValue().getValue();
             RoleType parentRole = unificationMappings.getValue().get(childRole);
             //check type compatibility by looking at matched role types
@@ -271,20 +268,24 @@ public class Relation extends TypeAtom {
                 Type pType = parentRoleMap.get(parentRole).getValue();
                 //check type compatibility
                 if (pType != null) {
-                    ruleRelevant = checkTypesCompatible(pType, chType);
+                    if (!checkTypesCompatible(pType, chType)) {
+                        return false;
+                    }
                     //Check for any constraints on the variables
                     VarName chVar = entry.getValue().getKey();
                     VarName pVar = parentRoleMap.get(parentRole).getKey();
                     Predicate childPredicate = child.getBody().getIdPredicate(chVar);
                     Predicate parentPredicate = parent.getIdPredicate(pVar);
-                    if (childPredicate != null && parentPredicate != null) {
-                        ruleRelevant &= childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue());
+                    if (childPredicate != null
+                            && parentPredicate != null
+                            && !childPredicate.getPredicateValue().equals(parentPredicate.getPredicateValue())) {
+                        return false;
                     }
                 }
             }
         }
 
-        return ruleRelevant;
+        return true;
     }
 
     @Override

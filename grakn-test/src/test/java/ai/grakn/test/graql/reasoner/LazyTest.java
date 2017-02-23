@@ -31,9 +31,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-/**
- * Created by kasper on 10/02/17.
- */
 public class LazyTest {
 
     @Rule
