@@ -20,10 +20,8 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -140,27 +138,5 @@ public class GraknTitanGraphTest extends TitanTestBase{
         expectedException.expectMessage(GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
 
         graph.getEntityType(entityTypeName);
-    }
-
-    @Test
-    public void testStableTransactions() throws GraknValidationException {
-        GraknTitanGraph graph = new TitanInternalFactory("stabletransactions", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
-        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
-
-        graph.putEntityType("name 1");
-        graph.commit();
-        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
-
-        graph.putEntityType("name 2");
-        graph.commit();
-        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
-
-        graph.putEntityType("name 3");
-        graph.commit();
-        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
-
-        graph.putEntityType("name 4");
-        graph.commit();
-        assertEquals(1, ((StandardTitanGraph) graph.getTinkerPopGraph()).getOpenTxs());
     }
 }
