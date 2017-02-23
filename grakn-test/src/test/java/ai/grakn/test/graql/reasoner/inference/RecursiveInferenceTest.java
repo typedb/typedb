@@ -18,14 +18,15 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
+import ai.grakn.graphs.DiagonalGraph;
 import ai.grakn.graphs.MatrixGraph;
 import ai.grakn.graphs.MatrixGraphII;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graphs.NguyenGraph;
 import ai.grakn.graphs.PathGraph;
 import ai.grakn.graphs.PathGraphII;
 import ai.grakn.graphs.PathGraphSymmetric;
 import ai.grakn.graphs.TailRecursionGraph;
+import ai.grakn.graphs.TransitivityChainGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
@@ -364,7 +365,7 @@ public class RecursiveInferenceTest {
     public void testMatrixII(){
         final int N = 5;
         final int M = 5;
-        graphContext.load(MatrixGraphII.getGraph(N, M));
+        graphContext.load(MatrixGraphII.get(N, M));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -478,6 +479,32 @@ public class RecursiveInferenceTest {
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testTransitiveChain(){
+        final int N = 10;
+        graphContext.load(TransitivityChainGraph.get(N));
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
+
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; select $y;";
+        String explicitQuery = "match $y isa a-entity;";
+
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testDiagonal(){
+        final int N = 10;
+        graphContext.load(DiagonalGraph.get(N, N));
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
+
+        String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
+
+        assertEquals(iqb.materialise(false).<MatchQuery>parse(queryString).execute().size(), 64);
+        assertEquals(iqb.materialise(true).<MatchQuery>parse(queryString).execute().size(), 64);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
