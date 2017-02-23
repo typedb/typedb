@@ -23,7 +23,9 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
+import ai.grakn.generator.TaskStates;
 import ai.grakn.generator.TaskStates.Status;
+import ai.grakn.generator.TaskStates.UniqueIds;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -77,22 +79,10 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@Status(CREATED) TaskState> tasks){
-        assumeValidQueue(tasks);
-
+    public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
         tasks.forEach(taskManager::addTask);
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 
         assertEquals(completableTasks(tasks), completedTasks());
-    }
-
-    private void assumeValidQueue(List<TaskState> tasks) {
-        Set<TaskId> appearedTasks = Sets.newHashSet();
-
-        tasks.forEach(task -> {
-            TaskId taskId = task.getId();
-            assumeFalse(appearedTasks.contains(taskId));
-            appearedTasks.add(taskId);
-        });
     }
 }

@@ -47,6 +47,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 public class TaskStates extends Generator<TaskState> {
 
     private Status statusConfig = null;
+    private boolean uniqueIds = false;
 
     public TaskStates() {
         super(TaskState.class);
@@ -57,7 +58,12 @@ public class TaskStates extends Generator<TaskState> {
         // TODO: make this generate more classes
         Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionTestTask.class, ShortExecutionTestTask.class, FailingTestTask.class));
 
-        TaskId taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
+        TaskId taskId;
+        if (uniqueIds) {
+            taskId = TaskId.generate();
+        } else {
+            taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
+        }
 
         TaskStatus taskStatus;
         if (statusConfig == null) {
@@ -80,10 +86,20 @@ public class TaskStates extends Generator<TaskState> {
         this.statusConfig = status;
     }
 
+    public void configure(UniqueIds uniqueIds) {
+        this.uniqueIds = true;
+    }
+
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface Status {
         TaskStatus[] value();
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface UniqueIds {
     }
 }
