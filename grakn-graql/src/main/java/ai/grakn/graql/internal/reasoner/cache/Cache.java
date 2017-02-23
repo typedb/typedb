@@ -44,8 +44,28 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
     public Cache(){ super();}
     public boolean contains(Q query){ return cache.containsKey(query);}
 
+    /**
+     * record answer iterable for a specific query and retrieve the updated answers
+     * @param query to be recorded
+     * @param answers to this query
+     * @return updated answer iterable
+     */
     public abstract T record(Q query, T answers);
+
+    /**
+     * record answer stream for a specific query and retrieve the updated stream
+     * @param query to be recorded
+     * @param answers answer stream of the query
+     * @return updated answer stream
+     */
     public abstract Stream<Map<VarName, Concept>> record(Q query, Stream<Map<VarName, Concept>> answers);
+
+    /**
+     * record answer stream for a specific query and retrieve the updated stream in a lazy iterator
+     * @param query to be recorded
+     * @param answers answer stream of the query
+     * @return lazy iterator of updated answers
+     */
     public abstract LazyIterator<Map<VarName, Concept>> recordRetrieveLazy(Q query, Stream<Map<VarName, Concept>> answers);
 
     public abstract T getAnswers(Q query);
@@ -63,6 +83,23 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
         if (equivalentQuery != null) return  equivalentQuery.getUnifiers(toRetrieve);
         else return new HashMap<>();
     }
+
+    /**
+     * cache union
+     * @param c2 union right operand
+     */
+    public void add(Cache<Q, T> c2){
+        c2.cache.keySet().forEach( q -> this.record(q, c2.getAnswers(q)));
+    }
+
+    /**
+     * cache subtraction of specified queries
+     * @param c2 subtraction right operand
+     * @param queries to which answers shall be subtracted
+     */
+    public abstract void remove(Cache<Q, T> c2, Set<Q> queries);
+
+    public void clear(){ cache.clear();}
 
     public abstract long answerSize(Set<Q> queries);
 }

@@ -117,10 +117,10 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
-        //QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
-        //assertEquals(answers.size(), 51);
-        //assertEquals(answers, answers2);
+        assertEquals(answers.size(), 51);
+        assertEquals(answers, answers2);
     }
 
     @Test

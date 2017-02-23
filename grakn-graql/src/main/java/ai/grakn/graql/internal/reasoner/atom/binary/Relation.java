@@ -83,6 +83,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
  */
 public class Relation extends TypeAtom {
 
+    private int hashCode = 0;
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
 
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
@@ -163,9 +164,11 @@ public class Relation extends TypeAtom {
 
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + getVarNames().hashCode();
+        if (hashCode == 0) {
+            hashCode = 1;
+            hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+            hashCode = hashCode * 37 + getVarNames().hashCode();
+        }
         return hashCode;
     }
 

@@ -43,19 +43,19 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
     private final ReasonerAtomicQuery query;
     final private QueryAnswers answers = new QueryAnswers();
 
-    private long oldAns = 0;
     private int iter = 0;
     private final boolean materialise;
     private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
     private final LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-
+    private final LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
     private Iterator<Map<VarName, Concept>> answerIterator;
+
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
     public QueryAnswerIterator(ReasonerAtomicQuery q, boolean materialise){
         this.query = q;
         this.materialise = materialise;
-        this.answerIterator = query.answerStream(subGoals, cache, materialise).iterator();
+        this.answerIterator = query.answerStream(subGoals, cache, dCache, materialise).iterator();
     }
 
     /**
@@ -67,11 +67,9 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
     }
 
     private void computeNext(){
-        oldAns = answerSize();
-        cache.reload();
         iter++;
         subGoals.clear();
-        answerIterator = query.answerStream(subGoals, cache, materialise).iterator();
+        answerIterator = query.answerStream(subGoals, cache, dCache, materialise).iterator();
     }
 
     /**
@@ -83,7 +81,8 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
         if (answerIterator.hasNext()) return true;
         //iter finished
         else {
-            long dAns = answerSize() - oldAns;
+            updateCache();
+            long dAns = differentialAnswerSize();
             if (dAns != 0 || iter == 0) {
                 LOG.debug("Atom: " + query.getAtom() + " iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                 computeNext();
@@ -91,6 +90,12 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
             }
             else return false;
         }
+    }
+
+    private void updateCache(){
+        dCache.remove(cache, subGoals);
+        cache.add(dCache);
+        cache.reload();
     }
 
     /**
@@ -103,7 +108,7 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
         return answer;
     }
 
-    private long answerSize(){
-        return cache.answerSize(subGoals);
+    private long differentialAnswerSize(){
+        return dCache.answerSize(subGoals);
     }
 }

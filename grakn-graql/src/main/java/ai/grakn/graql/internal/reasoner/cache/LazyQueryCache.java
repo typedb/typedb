@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
 
@@ -47,7 +48,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     @Override
     public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
-        if (match!= null) {
+        if (match != null) {
             Stream<Map<VarName, Concept>> unifiedStream = answers.unify(getRecordUnifiers(query)).stream();
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
         } else {
@@ -114,12 +115,28 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
                 .map(v -> v.getValue().size()).mapToLong(Long::longValue).sum();
     }
 
+    @Override
+    public void remove(Cache<Q, LazyAnswerIterator> c2, Set<Q> queries) {
+        c2.cache.keySet().stream()
+                .filter(queries::contains)
+                .filter(this::contains)
+                .forEach( q -> {
+                    Pair<Q, LazyAnswerIterator> match = cache.get(q);
+                    Set<Map<VarName, Concept>> s = match.getValue().stream().collect(Collectors.toSet());
+                    s.removeAll(c2.getAnswerStream(q).collect(Collectors.toSet()));
+                    cache.put(match.getKey(), new Pair<>(match.getKey(), new LazyAnswerIterator(s.stream())));
+                });
+    }
+
+    /**
+     * force stream consumption and reload cache
+     */
     public void reload(){
         Map<Q, Pair<Q, LazyAnswerIterator>> newCache = new HashMap<>();
         cache.entrySet().forEach(entry ->
                 newCache.put(entry.getKey(), new Pair<>(
                         entry.getKey(),
-                        new LazyAnswerIterator(entry.getValue().getValue().accumulator.stream()))));
+                        new LazyAnswerIterator(entry.getValue().getValue().stream().collect(Collectors.toSet()).stream()))));
         cache.clear();
         cache.putAll(newCache);
     }

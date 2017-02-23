@@ -90,6 +90,7 @@ public class Reasoner {
 
     public static void precomputeInferences(GraknGraph graph){
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+        LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
         Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
@@ -98,7 +99,7 @@ public class Reasoner {
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                Set<Map<VarName, Concept>> answers = atomicQuery.answerStream(SG, cache, true).collect(Collectors.toSet());
+                Set<Map<VarName, Concept>> answers = atomicQuery.answerStream(SG, cache, dCache, true).collect(Collectors.toSet());
                 LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + answers.size() + " dAns: " + dAns);
                 dAns = cache.answerSize(SG) - dAns;
                 Reasoner.commitGraph(graph);
