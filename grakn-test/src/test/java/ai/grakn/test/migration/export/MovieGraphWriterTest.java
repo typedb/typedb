@@ -21,6 +21,7 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.migration.export.GraphWriter;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,8 +33,8 @@ public class MovieGraphWriterTest {
 
     private GraphWriter writer;
 
-    @Rule
-    public GraphContext original = GraphContext.preLoad(MovieGraph.get());
+    @ClassRule
+    public static GraphContext original = GraphContext.preLoad(MovieGraph.get());
 
     @Rule
     public GraphContext copy = GraphContext.empty();

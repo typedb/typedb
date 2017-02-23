@@ -296,7 +296,6 @@ public class GraqlShellIT {
         assertThat(result, containsString("\n3\n"));
     }
 
-    @Ignore //TODO: Fix rollback function in graql because the graph no longer has a rollback function
     @Test
     public void testRollback() throws Exception {
         // Tinker graph doesn't support rollback
@@ -343,7 +342,6 @@ public class GraqlShellIT {
         assertTrue(x.has("_baseType"));
     }
 
-    @Ignore //TODO: Fix rollback function in graql because the graph no longer has a rollback function
     @Test
     public void testRollbackSemicolon() throws Exception {
         // Tinker graph doesn't support rollback
