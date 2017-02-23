@@ -19,7 +19,6 @@
 package ai.grakn.test;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
@@ -81,7 +80,7 @@ public class EngineContext extends ExternalResource {
     }
 
     @Override
-    public void before() throws Throwable {
+    public void before() {
         hideLogs();
 
         if(startKafka){
@@ -103,16 +102,12 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
-        try {
-            if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
-                stopEngine();
-            }
+        if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
+            stopEngine();
+        }
 
-            if(startKafka){
-                stopKafka();
-            }
-        } catch (Exception e){
-            throw new RuntimeException("Could not shut down ", e);
+        if(startKafka){
+            stopKafka();
         }
     }
 }

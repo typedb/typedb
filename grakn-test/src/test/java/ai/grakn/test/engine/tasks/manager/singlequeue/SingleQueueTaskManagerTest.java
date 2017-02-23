@@ -56,11 +56,6 @@ public class SingleQueueTaskManagerTest {
     @Rule
     public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @After
-    public void tearDown() {
-        clearCompletedTasks();
-    }
-
     @Before
     public void setup(){
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
@@ -69,8 +64,9 @@ public class SingleQueueTaskManagerTest {
     }
 
     @After
-    public void closeTaskManager() throws Exception {
+    public void tearDown() throws Exception {
         taskManager.close();
+        clearCompletedTasks();
     }
 
     @Property(trials=10)

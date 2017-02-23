@@ -36,9 +36,11 @@ public abstract class GraknTestEnv {
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static AtomicBoolean ENGINE_RUNNING = new AtomicBoolean(false);
 
-    private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
+    // The KafkaUnit should be created only once because it adds itself as a shutdown hook, preventing it being
+    // properly garbage-collected.
+    private static final KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
 
-    public static void ensureCassandraRunning() throws Exception {
+    public static void ensureCassandraRunning() {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
             startEmbeddedCassandra();
             LOG.info("CASSANDRA RUNNING.");
@@ -48,7 +50,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static void startEngine(String taskManagerClass) throws Exception {
+    static void startEngine(String taskManagerClass) {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -72,15 +74,15 @@ public abstract class GraknTestEnv {
         }
     }
 
-    static void startKafka() throws Exception {
+    static void startKafka() {
         kafkaUnit.startup();
     }
 
-    static void stopKafka() throws Exception {
+    static void stopKafka() {
         kafkaUnit.shutdown();
     }
 
-    static void stopEngine() throws Exception {
+    static void stopEngine() {
         if(ENGINE_RUNNING.compareAndSet(true, false)) {
             LOG.info("STOPPING ENGINE...");
 
