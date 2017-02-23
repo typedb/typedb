@@ -97,7 +97,7 @@ public class LoaderClientTest {
             }
         });
 
-        for(int i = 0; i < 100; i++){
+        for(int i = 0; i < 20; i++){
             InsertQuery query = Graql.insert(
                     var().isa("name_tag")
                             .has("name_tag_string", UUID.randomUUID().toString())
@@ -111,7 +111,7 @@ public class LoaderClientTest {
 
         loader.waitToFinish();
 
-        assertEquals(20, tasksCompletedWithoutError.get());
+        assertEquals(4, tasksCompletedWithoutError.get());
     }
 
     @Test
@@ -129,7 +129,7 @@ public class LoaderClientTest {
         });
 
 
-        for(int i = 0; i < 100; i++){
+        for(int i = 0; i < 20; i++){
             InsertQuery query = Graql.insert(
                     var().isa("name_tag")
                             .has("name_tag_string", UUID.randomUUID().toString())
@@ -143,8 +143,8 @@ public class LoaderClientTest {
 
         loader.waitToFinish();
 
-        assertThat(tasksCompletedWithoutError.get(), lessThan(20));
-        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(20));
+        assertThat(tasksCompletedWithoutError.get(), lessThan(4));
+        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(4));
     }
 
     public static void loadOntology(String keyspace){
