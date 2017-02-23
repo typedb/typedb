@@ -818,9 +818,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     void closePermanent(){
         try {
-            graph.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            graph.tx().close();
+        } catch (UnsupportedOperationException e) {
+            //Ignored for Tinker
         }
     }
 

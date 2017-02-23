@@ -81,10 +81,6 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         } catch (TitanException e){
             throw new GraknBackendException(e);
         }
-
-        if(!getTinkerPopGraph().tx().isOpen()){
-            getTinkerPopGraph().tx().open(); //Until we sort out the transaction handling properly commits have to result in transactions being auto opened
-        }
     }
 
     @Override
