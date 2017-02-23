@@ -31,6 +31,7 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -69,6 +70,7 @@ public class SingleQueueTaskManagerTest {
         clearCompletedTasks();
     }
 
+    @Ignore
     @Property(trials=10)
     public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
         tasks.forEach(taskManager::addTask);
