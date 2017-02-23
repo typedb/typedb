@@ -44,6 +44,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
@@ -135,6 +136,9 @@ class GraqlSession {
                 break;
             case ACTION_ROLLBACK:
                 rollback();
+                break;
+            case ACTION_CLEAN:
+                clean();
                 break;
             case ACTION_DISPLAY:
                 setDisplayOptions(json);
@@ -248,11 +252,10 @@ class GraqlSession {
                 graph.close();
             } catch (GraknValidationException e) {
                 sendCommitError(e.getMessage());
+            } finally {
+                sendEnd();
+                attemptRefresh();
             }
-
-            sendEnd();
-
-            attemptRefresh();
         });
     }
 
@@ -262,6 +265,16 @@ class GraqlSession {
     void rollback() {
         queryExecutor.submit(() -> {
             graph.close();
+            attemptRefresh();
+        });
+    }
+
+    /**
+     * Clean the transaction, removing everything in the graph (but not committing)
+     */
+    void clean() {
+        queryExecutor.submit(() -> {
+            graph.clear();
             attemptRefresh();
         });
     }
