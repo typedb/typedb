@@ -179,7 +179,9 @@ public class QueryAnswerStream {
             Stream<Map<VarName, Concept>> answerStream = l2.stream();
             answerStream = answerStream.filter(ans -> {
                 for(VarName v: joinVars)
-                    if (!ans.get(v).equals(a1.get(v))) return false;
+                    if (!ans.get(v).equals(a1.get(v))){
+                        return false;
+                    }
                 return true;
             });
             return answerStream.map(a2 ->
