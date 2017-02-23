@@ -205,7 +205,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @SuppressWarnings("unchecked")
-    boolean initialiseMetaConcepts(){
+    private boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             Vertex type = putVertex(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
             Vertex entityType = putVertex(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
