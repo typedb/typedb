@@ -61,7 +61,7 @@ public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
     private final static String ENGINE_IDENTIFIER = EngineID.getInstance().id();
-    private final static String TASK_RUNNER_THREAD_NAME = "task-runner-";
+    private final static String TASK_RUNNER_THREAD_NAME = "task-runner";
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
 
     private final KafkaProducer<TaskId, TaskState> producer;
@@ -164,6 +164,8 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunnerThreadPool = new ThreadPoolExecutor(capacity, capacity, 0L,
                 TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(capacity), taskRunnerPoolFactory);
         this.taskRunner = new SingleQueueTaskRunner(storage, consumer, taskRunnerThreadPool);
+
+        // Start the task runner in a thread
         Thread taskRunnerThread = new Thread(taskRunner, TASK_RUNNER_THREAD_NAME);
         taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
         taskRunnerThread.start();

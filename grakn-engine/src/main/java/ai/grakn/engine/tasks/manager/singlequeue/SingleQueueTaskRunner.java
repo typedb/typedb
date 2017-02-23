@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -93,10 +92,16 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         try {
             while (!wakeUp.get()) {
-                ConsumerRecords<TaskId, TaskState> records = consumer.poll(100);
+                ConsumerRecords<TaskId, TaskState> records = consumer.poll(1000);
 
-                LOG.debug("polled, got {} records", records.count());
+                LOG.debug("Polled: Got {} records", records.count());
+                for(TopicPartition partition: consumer.assignment()){
+                    LOG.debug("TopicPartition {}{} has offset {} after receiving {} records",
+                            partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
+                }
 
+                // Seek resets the consumer position in the next poll
+                // Commit persists the consumer position (from the sync) to zookeeper and will be read in case of a restart
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
                     if (handleRecord(record)) {
                         consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
@@ -105,14 +110,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                         LOG.debug("acknowledged");
                     } else {
                         // When executor is full, don't consume any further records
+                        consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset());
+                        consumer.commitSync();
+
                         break;
                     }
                 }
             }
-        } catch (Throwable throwable){
-            //todo do we need to re-throw, figure out
-            LOG.error(getFullStackTrace(throwable));
-            throw new RuntimeException(throwable);
         } finally {
             countDownLatch.countDown();
             LOG.debug("stopped");

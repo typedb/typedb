@@ -40,7 +40,6 @@ public abstract class GraknTestEnv {
     private static AtomicBoolean ENGINE_RUNNING = new AtomicBoolean(false);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
-    private static Path tempDirectory;
 
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
@@ -77,14 +76,11 @@ public abstract class GraknTestEnv {
     }
 
     static void startKafka() throws Exception {
-        tempDirectory = Files.createTempDirectory("graknKafkaUnit " + UUID.randomUUID());
-        kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
         kafkaUnit.startup();
     }
 
     static void stopKafka() throws Exception {
         kafkaUnit.shutdown();
-        FileUtils.deleteDirectory(tempDirectory.toFile());
     }
 
     static void stopEngine() throws Exception {
