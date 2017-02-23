@@ -58,6 +58,11 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
+    public int numOpenTx() {
+        return ((StandardTitanGraph)getTinkerPopGraph()).getOpenTxs();
+    }
+
+    @Override
     protected void clearGraph() {
         TitanGraph titanGraph = getTinkerPopGraph();
         titanGraph.close();

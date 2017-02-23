@@ -2,6 +2,7 @@ package ai.grakn.test.graph;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.test.EngineContext;
@@ -9,9 +10,11 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashSet;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -59,5 +62,33 @@ public class GraphTest {
         assertEquals(graph1, graph2);
         graph1.close();
         graph2.close();
+    }
+
+    @Test
+    public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
+        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, "MyWonderFullGraph");
+        assertEquals(0, factory.openGraphTxs());
+        assertEquals(0, factory.openGraphBatchTxs());
+
+        factory.getGraph();
+        assertEquals(1, factory.openGraphTxs());
+        assertEquals(0, factory.openGraphBatchTxs());
+
+        factory.getGraph();
+        factory.getGraphBatchLoading();
+        assertEquals(1, factory.openGraphTxs());
+        assertEquals(1, factory.openGraphBatchTxs());
+
+        int expectedValue = 1;
+
+        for(int i = 0; i < 5; i ++){
+            Executors.newSingleThreadExecutor().submit(factory::getGraph).get();
+            Executors.newSingleThreadExecutor().submit(factory::getGraphBatchLoading).get();
+
+            if(!usingTinker()) expectedValue++;
+
+            assertEquals(expectedValue, factory.openGraphTxs());
+            assertEquals(expectedValue, factory.openGraphBatchTxs());
+        }
     }
 }

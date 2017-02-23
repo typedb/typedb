@@ -134,17 +134,23 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     * @param concept A concept in the graph
+     * @return True if the concept has been modified in the transaction
+     */
+    public abstract boolean isConceptModified(ConceptImpl concept);
+
+    /**
+     *
+     * @return The number of open transactions currently.
+     */
+    public abstract int numOpenTx();
+
+    /**
      * Opens the thread bound transaction
      */
     public void openTransaction(){
         localIsOpen.set(true);
     }
-
-    /**
-     * @param concept A concept in the graph
-     * @return True if the concept has been modified in the transaction
-     */
-    public abstract boolean isConceptModified(ConceptImpl concept);
 
     @Override
     public String getKeyspace(){
@@ -199,7 +205,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @SuppressWarnings("unchecked")
-    public boolean initialiseMetaConcepts(){
+    boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             Vertex type = putVertex(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
             Vertex entityType = putVertex(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
@@ -801,7 +807,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         finaliseClose(this::closePermanent, closedReason);
     }
 
-    public void finaliseClose(Runnable closer, String closedReason){
+    void finaliseClose(Runnable closer, String closedReason){
         if(!isClosed()) {
             closer.run();
             localClosedReason.set(closedReason);
@@ -810,7 +816,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    public void closePermanent(){
+    void closePermanent(){
         try {
             graph.close();
         } catch (Exception e) {

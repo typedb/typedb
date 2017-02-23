@@ -22,6 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
+import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
@@ -55,6 +57,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private static final String COMPUTER = "graph.computer";
     private final String location;
     private final String keyspace;
+    private boolean graphOpen = false;
+    private boolean graphBatchOpen = false;
 
     public GraknGraphFactoryImpl(String keyspace, String location){
         this.location = location;
@@ -67,6 +71,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      */
     @Override
     public GraknGraph getGraph(){
+        graphOpen = true;
         return getConfiguredFactory().factory.getGraph(false);
     }
 
@@ -76,6 +81,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      */
     @Override
     public GraknGraph getGraphBatchLoading(){
+        graphBatchOpen = true;
         return getConfiguredFactory().factory.getGraph(true);
     }
 
@@ -91,6 +97,23 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
         ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph, configuredFactory.graphComputer);
+    }
+
+    @Override
+    public void close() throws GraphRuntimeException {
+
+    }
+
+    @Override
+    public int openGraphTxs() {
+        if(!graphOpen) return 0;
+        return ((AbstractGraknGraph)getGraph()).numOpenTx();
+    }
+
+    @Override
+    public int openGraphBatchTxs() {
+        if(!graphBatchOpen) return 0;
+        return ((AbstractGraknGraph)getGraphBatchLoading()).numOpenTx();
     }
 
     /**
