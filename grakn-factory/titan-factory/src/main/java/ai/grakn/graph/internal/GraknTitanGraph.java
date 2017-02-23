@@ -70,11 +70,6 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public void closeGraph(String reason){
-        finaliseClose(this::closeTitan, reason);
-    }
-
-    @Override
     public void commitTransaction(){
         try {
             super.commitTransaction();
@@ -86,18 +81,5 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     @Override
     public boolean validVertex(Vertex vertex) {
         return !((TitanVertex) vertex).isRemoved() && super.validVertex(vertex);
-    }
-
-    private void closeTitan(){
-        StandardTitanGraph graph = (StandardTitanGraph) getTinkerPopGraph();
-        synchronized (graph) { //Have to block here because the list of open transactions in Titan is not thread safe.
-            if(graph.tx().isOpen()) {
-                graph.tx().close();
-            }
-
-            if (graph.getOpenTxs() == 0) {
-                closePermanent();
-            }
-        }
     }
 }
