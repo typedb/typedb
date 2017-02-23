@@ -23,7 +23,6 @@ import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,21 +53,19 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     private static final String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s" + TASK_STATE_SUFFIX;
 
     private final Logger LOG = LoggerFactory.getLogger(TaskStateZookeeperStore.class);
-    private final CuratorFramework zookeeperConnection;
+    private final ZookeeperConnection zookeeper;
 
-    public TaskStateZookeeperStore(ZookeeperConnection connection) {
-        zookeeperConnection = connection.connection();
+    public TaskStateZookeeperStore(ZookeeperConnection zookeeper) {
+        this.zookeeper = zookeeper;
     }
 
     @Override
     public String newState(TaskState task){
         InterProcessMutex mutex = mutex(task.getId());
+
         acquire(mutex);
         try {
-            zookeeperConnection.create()
-                    .creatingParentContainersIfNeeded()
-                    .forPath(format(ZK_TASK_PATH, task.getId()), serialize(task));
-
+            zookeeper.write(taskPath(task), serialize(task));
         } catch (Exception exception){
             throw new EngineStorageException("Could not write state to storage " + getFullStackTrace(exception));
         } finally {
@@ -81,10 +78,10 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public Boolean updateState(TaskState task){
         InterProcessMutex mutex = mutex(task.getId());
+
         acquire(mutex);
         try {
-            zookeeperConnection.setData()
-                    .forPath(format(ZK_TASK_PATH, task.getId()), serialize(task));
+            zookeeper.put(taskPath(task), serialize(task));
         } catch (Exception e) {
             LOG.error("Could not write to ZooKeeper! - "+e);
             return false;
@@ -104,11 +101,10 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public TaskState getState(String id) {
         InterProcessMutex mutex = mutex(id);
-        try {
-            mutex.acquire();
 
-            byte[] b = zookeeperConnection.getData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX);
-            return (TaskState) deserialize(b);
+        acquire(mutex);
+        try {
+            return (TaskState) deserialize(zookeeper.read(taskPath(id)));
         } catch (Exception e) {
             throw new EngineStorageException("Could not get state from storage " + getFullStackTrace(e));
         } finally {
@@ -127,7 +123,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
         try {
 
-            Stream<TaskState> stream = zookeeperConnection.getChildren()
+            Stream<TaskState> stream = zookeeper.connection().getChildren()
                     .forPath(TASKS_PATH_PREFIX).stream()
                     .map(this::getState);
 
@@ -155,8 +151,24 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
         }
     }
 
+    /**
+     * Path the return a single task
+     * @return Zookeeper path for a single task
+     */
+    private String taskPath(TaskState task){
+        return taskPath(task.getId());
+    }
+
+    /**
+     * Path the return a single task
+     * @return Zookeeper path for a single task
+     */
+    private String taskPath(String id){
+        return format(ZK_TASK_PATH, id);
+    }
+
     private InterProcessMutex mutex(String id){
-        return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
+        return new InterProcessMutex(zookeeper.connection(), TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
     }
 
     private void acquire(InterProcessMutex mutex){

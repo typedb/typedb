@@ -46,10 +46,10 @@ public class GraknEngineServerException extends RuntimeException {
         return this.status;
     }
 
-    private void log(int status, Object message){
+    private static void log(int status, Object message){
         Logger logger = LoggerFactory.getLogger(GraknEngineServerException.class);
         if(status == 404){
-            logger.warn("New Grakn Engine Server exception {}", message);
+            logger.trace("New Grakn Engine Server exception {}", message);
         } else{
             logger.error("New Grakn Engine Server exception", message);
         }

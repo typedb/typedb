@@ -54,16 +54,16 @@ public class TemplateParser {
     /**
      * Create a template parser.
      */
-    private TemplateParser(){
-        registerDefaultMacros();
-    }
+    private TemplateParser(){}
 
     /**
      * Create a template parser.
      * @return the created template parser
      */
     public static TemplateParser create(){
-        return new TemplateParser();
+        TemplateParser parser = new TemplateParser();
+        parser.registerDefaultMacros();
+        return parser;
     }
 
     /**

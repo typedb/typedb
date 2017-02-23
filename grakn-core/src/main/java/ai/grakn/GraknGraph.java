@@ -382,30 +382,18 @@ public interface GraknGraph extends AutoCloseable{
      */
     QueryBuilder graql();
 
-    /**
-     * Resets the current transaction without committing.
-     *
-     * @throws GraphRuntimeException if the graph is closed
-     */
-    void rollback();
-
     // TODO: what does this do when the graph is closed?
     /**
-     * Closes the current transaction. If no transactions remain open the graph connection is closed permanently and
-     * the {@link GraknGraphFactory} must be used to get a new connection.
-     */
-    void close();
-
-    /**
-     * Opens the graph. This must be called before a new thread can use the graph.
-     */
-    void open();
-
-    /**
-     * Validates and attempts to commit the graph. Also submits commit logs for post processing
-     * An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
+     * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknGraphFactory} to
+     * get a new open transaction.
      *
-     * @throws GraknValidationException is thrown when a structural validation fails.
+     * This will result in a commit if {@link GraknGraph#commitOnClose()} was called before hand. Otherwise the
+     * transaction will be rolled back.
      */
-    void commit() throws GraknValidationException;
+    void close() throws GraknValidationException;
+
+    /**
+     * Will cause the current transaction to be committed when closing the transaction.
+     */
+    void commitOnClose();
 }

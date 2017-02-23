@@ -34,9 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 public class GraknOrientDBGraphTest {
     private static final String TEST_NAME = "grakntest";
@@ -79,15 +77,4 @@ public class GraknOrientDBGraphTest {
 
         assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
     }
-
-    @Ignore
-    @Test
-    public void testRollback() {
-        assertNull(graknGraph.getEntityType("X"));
-        graknGraph.putEntityType("X");
-        assertNotNull(graknGraph.getEntityType("X"));
-        graknGraph.rollback();
-        assertNull(graknGraph.getEntityType("X"));
-    }
-
 }

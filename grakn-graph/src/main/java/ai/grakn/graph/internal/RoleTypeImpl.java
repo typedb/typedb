@@ -65,6 +65,22 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         super(graknGraph, v, type, isImplicit);
     }
 
+    private RoleTypeImpl(RoleTypeImpl role){
+        super(role);
+    }
+
+    @Override
+    public RoleType copy(){
+        return new RoleTypeImpl(this);
+    }
+
+    @Override
+    void copyCachedConcepts(RoleType type){
+        super.copyCachedConcepts(type);
+        ((RoleTypeImpl) type).cachedDirectPlayedByTypes.ifPresent(value -> this.cachedDirectPlayedByTypes.set(getGraknGraph().clone(value)));
+        ((RoleTypeImpl) type).cachedRelationTypes.ifPresent(value -> this.cachedRelationTypes.set(getGraknGraph().clone(value)));
+    }
+
     /**
      *
      * @return The Relation Type which this role takes part in.

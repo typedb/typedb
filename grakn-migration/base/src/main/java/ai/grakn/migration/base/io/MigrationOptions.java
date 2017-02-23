@@ -49,6 +49,7 @@ public class MigrationOptions {
         options.addOption("u", "uri", true, "Location of Grakn Engine.");
         options.addOption("n", "no", false, "Write to standard out.");
         options.addOption("c", "config", true, "Configuration file.");
+        options.addOption("r", "retry", true, "Retry sending tasks if engine is not available");
     }
 
     public boolean isVerbose() {
@@ -101,6 +102,10 @@ public class MigrationOptions {
         }
 
         return resolvePath(command.getOptionValue("t"));
+    }
+
+    public boolean getRetry(){
+        return command.hasOption("r") && Boolean.getBoolean(command.getOptionValue("r"));
     }
 
     protected <T extends MigrationOptions> T parse(String[] args){

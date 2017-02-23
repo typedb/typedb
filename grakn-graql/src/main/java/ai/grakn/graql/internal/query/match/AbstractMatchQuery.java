@@ -48,6 +48,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Order.asc;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -133,7 +134,12 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<Concept> get(String name) {
-        return stream().map(result -> result.get(name));
+        return stream().map(result -> {
+            if (!result.containsKey(name)) {
+                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of(name)));
+            }
+            return result.get(name);
+        });
     }
 
     @Override

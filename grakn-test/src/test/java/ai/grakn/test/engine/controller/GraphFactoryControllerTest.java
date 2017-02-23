@@ -20,6 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST.GraphConfig;
@@ -46,7 +47,7 @@ public class GraphFactoryControllerTest {
     public static final EngineContext engine = EngineContext.startDistributedServer();
 
 	@Test
-	public void testKeyspaceList() {
+	public void testKeyspaceList() throws GraknValidationException {
 		Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph().close();
         Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").getGraph().close();
         Response response = get(KEYSPACE_LIST).then().statusCode(200).extract().response();
@@ -82,7 +83,7 @@ public class GraphFactoryControllerTest {
     }
 
     @Test
-    public void testGrakn() {
+    public void testGrakn() throws GraknValidationException {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph();
         AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").getGraph();
         AbstractGraknGraph graphCopy = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph();

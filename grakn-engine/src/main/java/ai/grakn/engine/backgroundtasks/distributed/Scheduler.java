@@ -20,6 +20,9 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.EngineStorageException;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -35,14 +38,14 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
@@ -52,6 +55,7 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.SCHEDULERS_GROUP
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -60,12 +64,13 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * Monitor new tasks queue to add them to ScheduledExecutorService.
  * ScheduledExecutorService will be given a function to add the task in question to the work queue.
  *
- * @author Denis Lobanov
+ * @author Denis Lobanov, alexandraorth
  */
 public class Scheduler implements Runnable, AutoCloseable {
     private static final String STATUS_MESSAGE = "Topic [%s], partition [%s] received [%s] records, next offset is [%s]";
 
     private final static Logger LOG = LoggerFactory.getLogger(Scheduler.class);
+    private final static int SCHEDULER_THREADS = ConfigProperties.getInstance().getAvailableThreads();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final TaskStateStorage storage;
@@ -76,19 +81,25 @@ public class Scheduler implements Runnable, AutoCloseable {
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
 
-    public Scheduler(TaskStateStorage storage){
+    public Scheduler(TaskStateStorage storage, ZookeeperConnection connection){
         this.storage = storage;
 
         if(OPENED.compareAndSet(false, true)) {
             // Kafka listener
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
-            consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC), new HandleRebalance());
+
+            // Configure callback for a Kafka rebalance
+            ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection, this.getClass().getSimpleName());
+            consumer.subscribe(singletonList(NEW_TASKS_TOPIC), listener);
 
             // Kafka writer
             producer = kafkaProducer();
 
             waitToClose = new CountDownLatch(1);
-            schedulingService = Executors.newScheduledThreadPool(1);
+
+            ThreadFactory namedThreadFactory = new ThreadFactoryBuilder()
+                    .setNameFormat("scheduler-pool-%d").build();
+            schedulingService = Executors.newScheduledThreadPool(SCHEDULER_THREADS, namedThreadFactory);
 
             LOG.debug("Scheduler started");
         }
@@ -108,18 +119,33 @@ public class Scheduler implements Runnable, AutoCloseable {
                 ConsumerRecords<String, String> records = consumer.poll(1000);
                 printConsumerStatus(records);
 
+                long startTime = System.currentTimeMillis();
                 for(ConsumerRecord<String, String> record:records) {
+
+                    // Get the task from kafka
                     TaskState taskState = TaskState.deserialize(record.value());
 
-                    // mark the task as created
-                    storage.newState(taskState);
+                    // Mark the task as created and schedule
+                    try {
+                        storage.newState(taskState);
 
-                    // schedule the task
-                    scheduleTask(taskState);
+                        // schedule the task
+                        scheduleTask(taskState);
+                    } catch (EngineStorageException e){
+                        LOG.debug("Already processed " + taskState.getId());
 
-                    //acknowledge that the record was read to the consumer
-                    consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+                        // If that task is marked as created, re-schedule
+                        if(storage.getState(taskState.getId()).status() == CREATED){
+                            scheduleTask(taskState);
+                        }
+                    } finally {
+                        //acknowledge that the record was read to the consumer
+                        consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
+                    }
                 }
+
+                LOG.debug(format("Took [%s] ms to process [%s] records in scheduler",
+                        System.currentTimeMillis() - startTime, records.count()));
             }
         }
         catch (WakeupException e) {
@@ -127,7 +153,6 @@ public class Scheduler implements Runnable, AutoCloseable {
         } catch (Throwable t){
             LOG.error("Error in scheduler poll " + getFullStackTrace(t));
         } finally {
-            noThrow(consumer::commitSync, "Exception syncing commits while closing in Scheduler");
             noThrow(consumer::close, "Exception while closing consumer in Scheduler");
             noThrow(waitToClose::countDown, "Exception while counting down close latch in Scheduler");
         }
@@ -166,16 +191,15 @@ public class Scheduler implements Runnable, AutoCloseable {
     private void scheduleTask(TaskState state) {
         long delay = Duration.between(Instant.now(), state.runAt()).toMillis();
 
-        markAsScheduled(state);
+        Runnable submit = () -> {
+            markAsScheduled(state);
+            sendToWorkQueue(state);
+        };
+
         if(state.isRecurring()) {
-            Runnable submit = () -> {
-                markAsScheduled(state);
-                sendToWorkQueue(state);
-            };
             schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
         }
         else {
-            Runnable submit = () -> sendToWorkQueue(state);
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
     }
@@ -203,6 +227,8 @@ public class Scheduler implements Runnable, AutoCloseable {
      * Get all recurring tasks from the graph and schedule them
      */
     private void restartRecurringTasks() {
+        LOG.debug("Restarting recurring tasks");
+
         Set<TaskState> tasks = storage.getTasks(null, null, null, 0, 0);
         tasks.stream()
                 .filter(TaskState::isRecurring)
@@ -222,16 +248,6 @@ public class Scheduler implements Runnable, AutoCloseable {
             if(exception != null) {
                 LOG.debug(getFullStackTrace(exception));
             }
-        }
-    }
-
-    private class HandleRebalance implements ConsumerRebalanceListener {
-        public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-            LOG.debug("Scheduler partitions assigned " + partitions);
-        }
-        public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            consumer.commitSync();
-            LOG.debug("Scheduler partitions revoked " + partitions);
         }
     }
 }

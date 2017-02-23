@@ -70,7 +70,7 @@ class Plan implements Comparable<Plan> {
     public List<Fragment> fragments() {
         List<Fragment> fragments = new ArrayList<>();
         Plan plan = this;
-        while (plan.fragment != null) {
+        while (plan != null && plan.fragment != null) {
             assert innerPlan != null; // These are always either both null or both non-null
             fragments.add(plan.fragment);
             plan = plan.innerPlan;

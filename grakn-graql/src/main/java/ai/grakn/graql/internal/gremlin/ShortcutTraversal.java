@@ -67,20 +67,22 @@ public class ShortcutTraversal {
      * @return a EquivalentFragmentSet that follows shortcut edges
      */
     EquivalentFragmentSet getEquivalentFragmentSet() {
-        if (equivalentFragmentSet == null) makeEquivalentFragmentSet();
+        if (equivalentFragmentSet == null) {
+            equivalentFragmentSet = makeEquivalentFragmentSet();
+        }
         return equivalentFragmentSet;
     }
 
     /**
      * Create a EquivalentFragmentSet that follows shortcut edges
      */
-    private void makeEquivalentFragmentSet() {
+    private EquivalentFragmentSet makeEquivalentFragmentSet() {
         Optional<TypeName> roleA = roletypes.get(0);
         VarName playerA = roleplayers.get(0);
         Optional<TypeName> roleB = roletypes.get(1);
         VarName playerB = roleplayers.get(1);
 
-        equivalentFragmentSet = EquivalentFragmentSet.create(
+        return EquivalentFragmentSet.create(
                 Fragments.shortcut(type, roleA, roleB, playerA, playerB),
                 Fragments.shortcut(type, roleB, roleA, playerB, playerA)
         );

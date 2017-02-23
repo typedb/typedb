@@ -18,8 +18,8 @@
 
 package ai.grakn.test.graql.query;
 
-import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;

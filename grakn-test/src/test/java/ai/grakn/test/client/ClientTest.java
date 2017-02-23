@@ -42,8 +42,9 @@ public class ClientTest {
         assertTrue(running);
 
         // Check that we've loaded the ontology
-        GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
-        assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
+        try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)){
+            assertEquals(1, graph.graql().match(var("x").name("scheduled-task")).execute().size());
+        }
 
         engine.after();
     }

@@ -38,7 +38,7 @@ const stringsMap = {
       return `"${node}"; $y id `;
     },
     function secondClick(node) {
-      return `"${node}"; ($x, $y);`;
+      return `"${node}"; $r ($x, $y);`;
     },
   ],
 };

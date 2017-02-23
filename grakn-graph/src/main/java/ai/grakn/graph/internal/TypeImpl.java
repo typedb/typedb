@@ -61,7 +61,7 @@ import java.util.stream.Collectors;
  * @param <T> The leaf interface of the object concept. For example an {@link ai.grakn.concept.EntityType} or {@link RelationType}
  * @param <V> The instance of this type. For example {@link ai.grakn.concept.Entity} or {@link ai.grakn.concept.Relation}
  */
-class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type, Cloneable {
+class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
     private TypeName cachedTypeName;
@@ -99,13 +99,23 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         cachedIsImplicit.set(isImplicit);
     }
 
+    TypeImpl(TypeImpl<T, V> type) {
+        super(type);
+        this.cachedTypeName = type.getName();
+        type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
+        type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
+    }
+
     @Override
-    public TypeImpl clone() {
-        try {
-            return (TypeImpl) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("Could not clone type [" + cachedTypeName.getValue() + "]", e);
-        }
+    public Type copy(){
+        //noinspection unchecked
+        return new TypeImpl(this);
+    }
+
+    @SuppressWarnings("unchecked")
+    void copyCachedConcepts(T type){
+        ((TypeImpl<T, V>) type).cachedSuperType.ifPresent(value -> this.cachedSuperType.set(getGraknGraph().clone(value)));
+        ((TypeImpl<T, V>) type).cachedDirectSubTypes.ifPresent(value -> this.cachedDirectSubTypes.set(getGraknGraph().clone(value)));
     }
 
     /**
@@ -514,6 +524,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
     public RelationType hasResource(ResourceType resourceType, boolean required){
+        //Check if this is a met type
+        checkTypeMutation();
+
+        //Check if resource type is the meta
+        if(Schema.MetaSchema.RESOURCE.getName().equals(resourceType.getName())){
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
+        }
+
         TypeName resourceTypeName = resourceType.getName();
         RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
         RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));

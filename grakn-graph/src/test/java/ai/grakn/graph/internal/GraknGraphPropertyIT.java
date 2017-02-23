@@ -35,6 +35,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
@@ -48,13 +49,17 @@ import ai.grakn.generator.ResourceValues;
 import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -70,7 +75,9 @@ import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
@@ -81,7 +88,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -96,6 +102,13 @@ public class GraknGraphPropertyIT {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    @BeforeClass
+    public static void setUpClass() {
+        // TODO: When creating a graph does not print a warning, remove this
+        Logger logger = (Logger) LoggerFactory.getLogger(AbstractGraknGraph.class);
+        logger.setLevel(Level.ERROR);
+    }
+
     @Ignore //TODO: This is breaking because your mocked concepts have null concept IDs this is an impossible state so I think you should get your generater to mock valid concepts
     @Property
     public void whenCallingMostMethodOnAClosedGraph_Throw(
@@ -107,7 +120,7 @@ public class GraknGraphPropertyIT {
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraphRuntimeException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.CLOSED_USER.getMessage())));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }
@@ -488,7 +501,6 @@ public class GraknGraphPropertyIT {
         assertEquals(type, graph.getType(typeName));
     }
 
-    @Ignore // TODO: Re-enable this test when issue with types being super type of themselves is resolved
     @Property
     public void whenCallingGetTypeWithANonExistingTypeName_ItReturnsNull(@Open GraknGraph graph, TypeName typeName) {
         Set<TypeName> allTypes = allTypesFrom(graph).stream().map(Type::getName).collect(toSet());
@@ -581,11 +593,23 @@ public class GraknGraphPropertyIT {
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRuleType(typeName.getValue()));
     }
 
-    @Ignore // TODO: Fix this test
+    @Ignore //Fix this. The behaviour of the getRelation method is still poorly defined
     @Property
     public void whenCallingGetRelationAndTheRelationExists_ReturnThatRelation(
             @Open GraknGraph graph, @FromGraph Relation relation) {
-        assertEquals(relation, graph.getRelation(relation.type(), relation.rolePlayers()));
+        //Cannot compare against the exact relation because it is possible to temporarily create (within a transaction)
+        // duplicate relations. In this case it was creating 2 relations with no roles and roleplayers of the same type
+        // and returning one of them which is valid but may not be the one you are comparing against. Hence why the
+        // comparison is more defined.
+
+        Relation foundRelation = graph.getRelation(relation.type(), relation.rolePlayers());
+        if(foundRelation.getId().equals(relation.getId())){
+            assertEquals(relation, foundRelation);
+        } else { //This is possible when we have created duplicate empty relations. So we check everything we can.
+            assertThat(relation.rolePlayers().keySet(), containsInAnyOrder(foundRelation.rolePlayers().keySet()));
+            assertThat(relation.rolePlayers().values(), containsInAnyOrder(foundRelation.rolePlayers().values()));
+            assertEquals(relation.type(), foundRelation.type());
+        }
     }
 
     @Property
@@ -617,33 +641,29 @@ public class GraknGraphPropertyIT {
         assertTrue(graph.isClosed());
     }
 
-    @Ignore // TODO: Re-enable this when test below is fixed
+    @Ignore // TODO: Re-enable this when test below is fixed and AFTER the transaction refactor
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-        graph.open();
 
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
             assertTrue(isMetaName(concept.asType().getName()));
-        });
+            });
     }
 
-    @Ignore // TODO: Fix this
+    @Ignore // TODO: Fix this AFTER transaction refactor
     @Property
-    public void whenCallingClear_AllMetaConceptsArePresent(
-            @Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
+    public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
-        graph.open();
         assertNotNull(graph.getType(typeName));
     }
 
-    @Ignore // TODO: Fix this, or remove the test
     @Property
-    public void whenCallingGetKeySpace_ReturnTheKeyspaceOfTheGraph(String keyspace) {
+    public void whenCallingGetKeySpace_ReturnTheLowercaseKeyspaceOfTheGraph(String keyspace) {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-        assertEquals(keyspace, graph.getKeyspace());
+        assertEquals(keyspace.toLowerCase(), graph.getKeyspace());
     }
 
     @Property
@@ -657,18 +677,11 @@ public class GraknGraphPropertyIT {
     }
 
     @Property
-    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) {
+    public void whenCallingClose_TheGraphIsClosed(GraknGraph graph) throws GraknValidationException {
         graph.close();
-
         assertTrue(graph.isClosed());
     }
 
-    @Property
-    public void whenCallingOpen_TheGraphIsOpen(GraknGraph graph) {
-        graph.open();
-
-        assertFalse(graph.isClosed());
-    }
 
     // TODO: Everything below this point should be moved to more appropriate test classes
 
@@ -733,7 +746,6 @@ public class GraknGraphPropertyIT {
         }
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenGettingSuperType_TheResultIsNeverItself(@Open GraknGraph graph, TypeName typeName) {
         Type type = graph.getType(typeName);

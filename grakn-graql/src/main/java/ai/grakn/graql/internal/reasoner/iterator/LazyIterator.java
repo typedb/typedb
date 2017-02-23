@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.iterator;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -37,6 +38,7 @@ public class LazyIterator<T> implements Iterable<T>{
     private final Iterator<T> iterator;
     public final List<T> accumulator = new ArrayList<>();
 
+    public LazyIterator(){iterator = Collections.emptyIterator();}
     public LazyIterator(Stream<T> stream){
         this.iterator = stream.distinct().iterator();
     }
