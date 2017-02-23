@@ -51,6 +51,11 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     }
 
     @Override
+    public int numOpenTx() {
+        return 1;
+    }
+
+    @Override
     public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         try {
             return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));

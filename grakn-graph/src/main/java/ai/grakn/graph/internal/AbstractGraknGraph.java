@@ -134,17 +134,23 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
+     * @param concept A concept in the graph
+     * @return True if the concept has been modified in the transaction
+     */
+    public abstract boolean isConceptModified(ConceptImpl concept);
+
+    /**
+     *
+     * @return The number of open transactions currently.
+     */
+    public abstract int numOpenTx();
+
+    /**
      * Opens the thread bound transaction
      */
     public void openTransaction(){
         localIsOpen.set(true);
     }
-
-    /**
-     * @param concept A concept in the graph
-     * @return True if the concept has been modified in the transaction
-     */
-    public abstract boolean isConceptModified(ConceptImpl concept);
 
     @Override
     public String getKeyspace(){
@@ -199,7 +205,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @SuppressWarnings("unchecked")
-    public boolean initialiseMetaConcepts(){
+    private boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             Vertex type = putVertex(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
             Vertex entityType = putVertex(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
@@ -776,7 +782,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void innerClear(){
         clearGraph();
-        finaliseClose(this::closePermanent, ErrorMessage.CLOSED_CLEAR.getMessage());
+        closeGraph(ErrorMessage.CLOSED_CLEAR.getMessage());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -796,26 +802,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
     }
 
-    //Standard Close Operation Overridden by Vendor
-    public void closeGraph(String closedReason){
-        finaliseClose(this::closePermanent, closedReason);
-    }
-
-    public void finaliseClose(Runnable closer, String closedReason){
-        if(!isClosed()) {
-            closer.run();
-            localClosedReason.set(closedReason);
-            localIsOpen.set(false);
-            clearLocalVariables();
-        }
-    }
-
-    public void closePermanent(){
+    private void closeGraph(String closedReason){
         try {
-            graph.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            graph.tx().close();
+        } catch (UnsupportedOperationException e) {
+            //Ignored for Tinker
         }
+        localClosedReason.set(closedReason);
+        localIsOpen.set(false);
+        clearLocalVariables();
     }
 
     /**
