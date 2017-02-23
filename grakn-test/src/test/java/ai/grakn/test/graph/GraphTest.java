@@ -74,7 +74,7 @@ public class GraphTest {
 
     @Test
     public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
-        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, "MyWonderFullGraph");
+        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
         assertEquals(0, factory.openGraphTxs());
         assertEquals(0, factory.openGraphBatchTxs());
 
@@ -104,7 +104,7 @@ public class GraphTest {
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
         assumeFalse(usingTinker()); //Tinker does not have any connections to close
 
-        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, "MyWonderFullGraph");
+        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.getGraph();
         factory.close();
 
@@ -118,7 +118,7 @@ public class GraphTest {
     public void attemptToCloseGraphWithOpenTransactionsThenThrowException() throws ExecutionException, InterruptedException {
         assumeFalse(usingTinker()); //Only tinker really supports transactions
 
-        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, "MyWonderFullGraph");
+        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.getGraph();
         Executors.newSingleThreadExecutor().submit(factory::getGraph).get();
 
