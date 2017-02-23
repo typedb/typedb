@@ -62,7 +62,6 @@ public class LoaderClientTest {
 
     @Before
     public void setup() {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(LoaderClient.class)).setLevel(Level.DEBUG);
         factory = engine.factoryWithNewKeyspace();
         graph = factory.getGraph();
         loader = new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
