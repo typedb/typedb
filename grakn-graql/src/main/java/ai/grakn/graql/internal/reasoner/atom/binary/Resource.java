@@ -56,21 +56,20 @@ public class Resource extends MultiPredicateBinary{
     protected boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
         if(!(ruleAtom instanceof Resource)) return false;
-        boolean ruleApplicable = false;
         Resource childAtom = (Resource) ruleAtom;
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
 
-        Iterator<Predicate> childIt = childAtom.getMultiPredicate().iterator();
-        while(childIt.hasNext() && !ruleApplicable){
-            Predicate childPredicate = childIt.next();
+        for (Predicate childPredicate : childAtom.getMultiPredicate()) {
             Iterator<Predicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
-            while(parentIt.hasNext() && !predicateCompatible) {
+            while (parentIt.hasNext() && !predicateCompatible) {
                 predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
             }
-            ruleApplicable = predicateCompatible;
+            if (predicateCompatible) {
+                return true;
+            }
         }
-        return ruleApplicable;
+        return false;
     }
 
     @Override

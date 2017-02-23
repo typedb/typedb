@@ -58,47 +58,46 @@ public class QueryAnswerStream {
     }
 
     public static boolean knownFilter(Map<VarName, Concept> answer, Stream<Map<VarName, Concept>> known) {
-        boolean isKnown = false;
         Iterator<Map<VarName, Concept>> it = known.iterator();
-        while (it.hasNext() && !isKnown) {
+        while (it.hasNext()) {
             Map<VarName, Concept> knownAnswer = it.next();
-            isKnown = knownAnswer.entrySet().containsAll(answer.entrySet());
+            if(knownAnswer.entrySet().containsAll(answer.entrySet())){
+                return false;
+            }
         }
-        return !isKnown;
+        return true;
     }
 
     public static boolean nonEqualsFilter(Map<VarName, Concept> answer, Set<NotEquals> atoms) {
         if(atoms.isEmpty()) return true;
-        boolean pass = true;
-        Iterator<NotEquals> it = atoms.iterator();
-        while (it.hasNext() && pass) {
-            pass = NotEquals.notEqualsOperator(answer, it.next());
+        for (NotEquals atom : atoms) {
+            if (!NotEquals.notEqualsOperator(answer, atom)) {
+                return false;
+            }
         }
-        return pass;
+        return true;
     }
 
     public static boolean subFilter(Map<VarName, Concept> answer, Set<IdPredicate> subs){
         if (subs.isEmpty()) return true;
-        boolean pass = true;
-        Iterator<IdPredicate> it = subs.iterator();
-        while (it.hasNext() && pass) {
-            IdPredicate sub = it.next();
-            pass = answer.get(sub.getVarName()).getId().equals(sub.getPredicate());
+        for (IdPredicate sub : subs) {
+            if (!answer.get(sub.getVarName()).getId().equals(sub.getPredicate())) {
+                return false;
+            }
         }
-        return pass;
+        return true;
     }
 
     public static boolean entityTypeFilter(Map<VarName, Concept> answer, Set<TypeAtom> types){
         if (types.isEmpty()) return true;
-        boolean pass = true;
-        Iterator<TypeAtom> it = types.stream().iterator();
-        while( it.hasNext() && pass){
-            TypeAtom type = it.next();
+        for (TypeAtom type : types){
             VarName var = type.getVarName();
             Type t = type.getType();
-            pass = answer.get(var).asInstance().type().equals(t);
+            if(!answer.get(var).asInstance().type().equals(t)){
+                return false;
+            }
         }
-        return pass;
+        return true;
     }
 
     private static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Map<VarName, VarName>> unifierSet){
