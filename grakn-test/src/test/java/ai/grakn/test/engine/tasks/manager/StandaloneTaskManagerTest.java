@@ -27,7 +27,7 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import mjson.Json;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -52,10 +52,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class StandaloneTaskManagerTest {
-    private static TaskManager taskManager;
+    private TaskManager taskManager;
 
-    @BeforeClass
-    public static void setUp() {
+    @Before
+    public void setUp() {
         hideLogs();
         taskManager = new StandaloneTaskManager() ;
     }

@@ -8,13 +8,10 @@ import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
