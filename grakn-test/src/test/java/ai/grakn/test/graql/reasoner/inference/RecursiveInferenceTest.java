@@ -18,8 +18,6 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.graphs.DiagonalGraph;
-import ai.grakn.graphs.TransitivityChainGraph;
 import ai.grakn.graphs.MatrixGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graphs.NguyenGraph;
@@ -480,34 +478,7 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
-
-    @Test
-    public void testTransitiveChain(){
-        final int N = 10;
-        graphContext.load(TransitivityChainGraph.get(N));
-        QueryBuilder qb = graphContext.graph().graql().infer(false);
-        QueryBuilder iqb = graphContext.graph().graql().infer(true);
-
-        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; select $y;";
-        String explicitQuery = "match $y isa a-entity;";
-
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-    }
-
-    @Test
-    public void testDiagonal(){
-        final int N = 10;
-        graphContext.load(DiagonalGraph.get(N, N));
-        QueryBuilder iqb = graphContext.graph().graql().infer(true);
-
-        String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
-
-        assertEquals(iqb.materialise(false).<MatchQuery>parse(queryString).execute().size(), 64);
-        assertEquals(iqb.materialise(true).<MatchQuery>parse(queryString).execute().size(), 64);
-    }
-
-
+    
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }
