@@ -782,7 +782,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void innerClear(){
         clearGraph();
-        finaliseClose(this::closePermanent, ErrorMessage.CLOSED_CLEAR.getMessage());
+        closeGraph(ErrorMessage.CLOSED_CLEAR.getMessage());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -802,26 +802,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
     }
 
-    //Standard Close Operation Overridden by Vendor
-    public void closeGraph(String closedReason){
-        finaliseClose(this::closePermanent, closedReason);
-    }
-
-    void finaliseClose(Runnable closer, String closedReason){
-        if(!isClosed()) {
-            closer.run();
-            localClosedReason.set(closedReason);
-            localIsOpen.set(false);
-            clearLocalVariables();
-        }
-    }
-
-    void closePermanent(){
+    private void closeGraph(String closedReason){
         try {
             graph.tx().close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         }
+        localClosedReason.set(closedReason);
+        localIsOpen.set(false);
+        clearLocalVariables();
     }
 
     /**
