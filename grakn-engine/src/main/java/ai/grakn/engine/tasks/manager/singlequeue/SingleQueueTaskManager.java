@@ -23,7 +23,6 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
@@ -43,6 +42,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
@@ -86,17 +86,20 @@ public class SingleQueueTaskManager implements TaskManager {
         this.zookeeper = new ZookeeperConnection(client());
         this.storage = new TaskStateZookeeperStore(zookeeper);
 
+        //TODO check that the number of partitions is at least the capacity
         //TODO Single queue task manager should have its own impl of failover
         this.failover = new FailoverElector(ENGINE_IDENTIFIER, zookeeper, storage);
-        this.producer = ConfigHelper.kafkaProducer();
+        this.producer = kafkaProducer();
 
         // Create thread pool for the task runners
-        ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder().setNameFormat(TASK_RUNNER_THREAD_POOL_NAME).build();
+        ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
+                .setNameFormat(TASK_RUNNER_THREAD_POOL_NAME)
+                .build();
         this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY, taskRunnerPoolFactory);
 
         // Create and start the task runners
         this.taskRunners = generate(this::createTaskRunner).limit(CAPACITY).collect(toSet());
-        this.taskRunners.stream().map(Pair::getKey).forEach(taskRunnerThreadPool::submit);
+        this.taskRunners.stream().map(Pair::getKey).forEach(taskRunnerThreadPool::execute);
     }
 
     /**
@@ -179,29 +182,4 @@ public class SingleQueueTaskManager implements TaskManager {
         );
         return taskRunnerConsumer;
     }
-
-//    /**
-//     * Implementation of UncaughtExceptionHandler that will restart the TaskRunner in a new thread
-//     * if it throws any unchecked exception
-//     *
-//     * @author alexandraorth
-//     * TODO This method needs some serious testing
-//     */
-//    private class TaskRunnerResurrection implements Thread.UncaughtExceptionHandler {
-//
-//        public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
-//            LOG.debug(format("TaskRunner [%s] threw an exception. Will attempt to close and reopen. Exception is: %n [%s]",
-//                    paramThread.getName(), getFullStackTrace(paramThrowable)));
-//
-//            // close the task runner
-//            noThrow(taskRunner::close, "Error shutting down TaskRunner");
-//
-//            LOG.debug("TaskRunner closed.");
-//
-//            // re-instantiate task runner
-//            createTaskRunner();
-//
-//            LOG.debug("Re-instantiation of TaskRunner completed.");
-//        }
-//    }
 }

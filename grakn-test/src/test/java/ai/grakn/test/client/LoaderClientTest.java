@@ -29,8 +29,6 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;

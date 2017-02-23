@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -55,6 +56,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
+     * TODO Create the consumer within the task runner and expose it to the taskmanager
      *
      * @param storage a place to store and retrieve information about tasks.
      * @param consumer a Kafka consumer from which to poll for tasks
@@ -83,29 +85,27 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void run() {
         LOG.debug("started");
 
-        try {
-            while (!wakeUp.get()) {
+        while (!wakeUp.get()) {
+            try {
                 ConsumerRecords<TaskId, TaskState> records = consumer.poll(1000);
-
-                LOG.debug("polled, got {} records", records.count());
-                for(TopicPartition partition: consumer.assignment()){
-                    LOG.debug("TopicPartition {}{} has offset {} after receiving {} records",
-                            partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
-                }
+                debugConsumerStatus(records);
 
                 // This TskRunner should only ever receive one record
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
-
                     handleRecord(record);
 
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
+
+                    LOG.debug("{} acknowledged", record.key().getValue());
                 }
+            } catch (Throwable throwable){
+                LOG.error("error thrown", getFullStackTrace(throwable));
             }
-        } finally {
-            countDownLatch.countDown();
-            LOG.debug("stopped");
         }
+
+        countDownLatch.countDown();
+        LOG.debug("stopped");
     }
 
     /**
@@ -167,6 +167,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             // TODO: what if another task runner is running this task? (due to rebalance)
             TaskStatus status = storage.getState(taskId).status();
             return !status.equals(COMPLETED) && !status.equals(FAILED);
+        }
+    }
+
+    private void debugConsumerStatus(ConsumerRecords<TaskId, TaskState> records ){
+        LOG.debug("Polled, got {} records", records.count());
+        for (TopicPartition partition : consumer.assignment()) {
+            LOG.debug("Partition {}{} has offset {} after receiving {} records",
+                    partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
         }
     }
 }

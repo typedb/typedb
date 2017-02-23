@@ -30,6 +30,7 @@ import java.util.Collection;
 
 import static java.lang.String.format;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.PARTITION_PATH;
+import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
 import static org.apache.commons.lang.SerializationUtils.serialize;
 
@@ -60,8 +61,15 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
         LOG.debug(format("Consumer partitions assigned %s", partitions));
 
         for(TopicPartition partition : partitions){
-            consumer.seek(partition, getOffsetFromZookeeper(partition));
-            deleteOffsetFromZookeeper(partition);
+            try {
+                consumer.seek(partition, getOffsetFromZookeeper(partition));
+                deleteOffsetFromZookeeper(partition);
+            } catch (EngineStorageException e){
+                consumer.seekToBeginning(singletonList(partition));
+                LOG.debug("Could not retrieve offset for partition {}, seeking to beginning", partition);
+            } finally {
+                consumer.commitSync();
+            }
         }
     }
 
