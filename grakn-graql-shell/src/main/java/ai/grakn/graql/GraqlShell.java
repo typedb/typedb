@@ -511,10 +511,14 @@ public class GraqlShell {
 
     private void clean() throws IOException {
         // Get user confirmation to clean graph
-        console.println("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)");
+        console.println("Are you sure? This will clean ALL data in the current keyspace and immediately commit.");
+        console.println("Type 'confirm' to continue.");
         String line = console.readLine();
-        if (line != null && (line.equalsIgnoreCase("y") || line.equalsIgnoreCase("yes"))) {
+        if (line != null && line.equals("confirm")) {
+            console.println("Cleaning...");
             session.sendJson(Json.object(ACTION, ACTION_CLEAN));
+        } else {
+            console.println("Cancelling clean.");
         }
     }
 

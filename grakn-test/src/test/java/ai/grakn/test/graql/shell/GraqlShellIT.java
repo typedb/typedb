@@ -426,7 +426,7 @@ public class GraqlShellIT {
     }
 
     @Test
-    public void whenRunningCleanCommand_TheGraphIsCleanedButNotCommitted() throws Exception {
+    public void whenRunningCleanCommand_TheGraphIsCleanedAndCommitted() throws Exception {
         assertShellMatches(
                 "insert my-type sub entity;",
                 is("{}"),
@@ -435,19 +435,14 @@ public class GraqlShellIT {
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
-                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
-                "Y",
+                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+                is("Type 'confirm' to continue."),
+                "confirm",
+                is("Cleaning..."),
                 "match $x sub entity;",
                 containsString("entity"),
                 "rollback",
                 "match $x sub entity;",
-                containsString("entity"),
-                containsString("entity"),
-                "clean",
-                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
-                "yes",
-                "commit",
-                "rollback",
                 containsString("entity")
         );
     }
@@ -461,14 +456,18 @@ public class GraqlShellIT {
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
-                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
+                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+                is("Type 'confirm' to continue."),
                 "n",
+                is("Cancelling clean."),
                 "match $x sub entity;",
                 containsString("entity"),
                 containsString("entity"),
                 "clean",
-                is("Are you sure? This will clean ALL data in the current keyspace, but will not commit (y/n)"),
+                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+                is("Type 'confirm' to continue."),
                 "no thanks bad idea thanks for warning me",
+                is("Cancelling clean."),
                 "match $x sub entity;",
                 containsString("entity"),
                 containsString("entity")

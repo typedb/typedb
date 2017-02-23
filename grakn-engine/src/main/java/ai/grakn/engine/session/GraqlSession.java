@@ -275,7 +275,7 @@ class GraqlSession {
     void clean() {
         queryExecutor.submit(() -> {
             graph.clear();
-            graph.open();
+            attemptRefresh();
         });
     }
 
