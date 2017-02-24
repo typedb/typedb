@@ -213,8 +213,7 @@ public class QueryAnswerStream {
             while(vit.hasNext()){
                 matchAnswers = Sets.intersection(matchAnswers, findMatchingAnswers(a1, stream2InverseMap, vit.next()));
             }
-            Stream<Map<VarName, Concept>> answerStream = !matchAnswers.isEmpty()? matchAnswers.stream() : Stream.empty();
-            return answerStream.map(a2 ->
+            return matchAnswers.stream().map(a2 ->
                     Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
                             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a)));
         });
