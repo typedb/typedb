@@ -20,13 +20,17 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.SchemaViolationException;
@@ -65,18 +69,33 @@ public class PostProcessingTestIT {
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScale() throws GraknValidationException, ExecutionException, InterruptedException {
-        int numAttempts = 500;
-        int numResTypes = 50;
-        int numResVar = 10;
         int transactionSize = 50;
+        int numAttempts = 500;
+
+        //Resource Variables
+        int numResTypes = 100;
+        int numResVar = 100;
+
+        //Entity Variables
+        int numEntTypes = 50;
+        int numEntVar = 50;
+
         ExecutorService pool = Executors.newFixedThreadPool(40);
         Set<Future> futures = new HashSet<>();
 
         //Create Simple Ontology
+        for(int i = 0; i < numEntTypes; i ++){
+            EntityType entityType = graph.putEntityType("ent" + i);
+            for(int j = 0; j < numEntVar; j ++){
+                entityType.addEntity();
+            }
+        }
+
         for(int i = 0; i < numResTypes; i ++){
             ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
-            graph.putEntityType("e1").hasResource(rt);
-            graph.putEntityType("e2").hasResource(rt);
+            for(int j = 0; j < numEntTypes; j ++){
+                graph.getEntityType("ent" + j).hasResource(rt);
+            }
         }
         graph.commitOnClose();
         graph.close();
@@ -90,13 +109,15 @@ public class PostProcessingTestIT {
                     for(int j = 0; j < transactionSize; j ++) {
                         int resType = r.nextInt(numResTypes);
                         int resValue = r.nextInt(numResVar);
-                        forceDuplicateResources(graph, resType, resValue);
+                        int entType = r.nextInt(numEntTypes);
+                        int entNum = r.nextInt(numEntVar);
+                        forceDuplicateResources(graph, resType, resValue, entType, entNum);
                     }
 
                     graph.commitOnClose();
 
                     Thread.sleep((long) Math.floor(Math.random() * 5000));
-                } catch (InterruptedException | SchemaViolationException e) {
+                } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     e.printStackTrace();
                 }
             }));
@@ -133,20 +154,24 @@ public class PostProcessingTestIT {
     private boolean graphIsBroken(GraknGraph graph){
         Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
         for (ResourceType<?> resourceType : resourceTypes) {
-            Set<Integer> foundValues = new HashSet<>();
-            for (Resource<?> resource : resourceType.instances()) {
-                if(foundValues.contains(resource.getValue())){
-                    return true;
-                } else {
-                    foundValues.add((Integer) resource.getValue());
+            if(!Schema.MetaSchema.RESOURCE.getName().equals(resourceType.getName())) {
+                Set<Integer> foundValues = new HashSet<>();
+                for (Resource<?> resource : resourceType.instances()) {
+                    if (foundValues.contains(resource.getValue())) {
+                        return true;
+                    } else {
+                        foundValues.add((Integer) resource.getValue());
+                    }
                 }
             }
         }
         return false;
     }
 
-    private void forceDuplicateResources(GraknGraph graph, int resourceTypeNum, int resourceValueNum){
-        graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
+    private void forceDuplicateResources(GraknGraph graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){
+        Resource resource = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
+        Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
+        entity.hasResource(resource);
     }
 
     private void waitForCache(String keyspace, int value) throws InterruptedException {

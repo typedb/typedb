@@ -1058,7 +1058,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 Collection<Relation> otherRelations = otherResource.relations();
 
                 for (Relation otherRelation : otherRelations) {
-                    copyRelation(mainResource, otherResource, otherRelation);
+                    //copyRelation(mainResource, otherResource, otherRelation);
                 }
 
                 otherResource.delete();

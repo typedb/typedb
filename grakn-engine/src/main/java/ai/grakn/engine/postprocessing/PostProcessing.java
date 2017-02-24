@@ -56,12 +56,14 @@ public class PostProcessing {
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     private ExecutorService postpool;
+    private ExecutorService postpoolResources;
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
     private final EngineCache cache;
 
     private PostProcessing() {
+        postpoolResources = Executors.newFixedThreadPool(20);
         postpool = Executors.newFixedThreadPool(Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
         cache = EngineCache.getInstance();
@@ -100,13 +102,6 @@ public class PostProcessing {
         }
 
         isRunning.set(false);
-    }
-
-    public void reset() {
-        isRunning.set(false);
-        futures.clear();
-        postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getAvailableThreads());
-        statDump = Executors.newSingleThreadExecutor();
     }
 
     private void performTasks() {
@@ -149,7 +144,7 @@ public class PostProcessing {
                             if(ids.isEmpty()) {
                                 completedJobs.add(index);
                             } else {
-                                futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids)));
+                                futures.add(postpoolResources.submit(() -> ConceptFixer.checkResources(keyspace, index, ids)));
                             }
                         });
                 completedJobs.forEach(index -> cache.clearJobSetResources(keyspace, index));
@@ -200,10 +195,10 @@ public class PostProcessing {
             } else if(typeName.equals("Resources")){
                 numJobs = cache.getNumResourceJobs(keyspace);
             }
-            LOG.info("        Post processing step [" + typeName + " for Graph [" + keyspace + "] has jobs : " + numJobs);
+            LOG.info("        For Graph [" + keyspace + "] has jobs : " + numJobs);
             total += numJobs;
         }
 
-        LOG.info("    Total " + typeName + " Jobs: " + total);
+        LOG.info("    Total Jobs: " + total);
     }
 }
