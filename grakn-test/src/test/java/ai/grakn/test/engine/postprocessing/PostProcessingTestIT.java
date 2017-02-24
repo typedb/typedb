@@ -18,22 +18,25 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.thinkaurelius.titan.core.SchemaViolationException;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -47,6 +50,7 @@ public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
     private EngineCache cache = EngineCache.getInstance();
 
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @ClassRule
@@ -54,81 +58,95 @@ public class PostProcessingTestIT {
 
     @Before
     public void setUp() throws Exception {
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
         ((Logger) org.slf4j.LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT)).setLevel(Level.ALL);
     }
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScale() throws GraknValidationException, ExecutionException, InterruptedException {
         int numAttempts = 500;
+        int numResTypes = 50;
+        int numResVar = 10;
+        int transactionSize = 50;
         ExecutorService pool = Executors.newFixedThreadPool(40);
         Set<Future> futures = new HashSet<>();
 
         //Create Simple Ontology
-        ResourceType<String> res1 = graph.putResourceType("res1", ResourceType.DataType.STRING);
-        ResourceType<String> res2 = graph.putResourceType("res2", ResourceType.DataType.STRING);
-        graph.putEntityType("e1").hasResource(res1);
-        graph.putEntityType("e1").hasResource(res2);
-
-        graph.commit();
+        for(int i = 0; i < numResTypes; i ++){
+            ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
+            graph.putEntityType("e1").hasResource(rt);
+            graph.putEntityType("e2").hasResource(rt);
+        }
+        graph.commitOnClose();
+        graph.close();
 
         //Try to force duplicate resources
         for(int i = 0; i < numAttempts; i++){
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res1", "1")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res1", "2")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res1", "3")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res1", "4")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res1", "5")));
+            futures.add(pool.submit(() -> {
+                try(GraknGraph graph = factory.getGraph()){
+                    Random r = new Random();
 
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res2", "1")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res2", "2")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res2", "3")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res2", "4")));
-            futures.add(pool.submit(() -> forceDuplicateResources(graph, "res2", "5")));
+                    for(int j = 0; j < transactionSize; j ++) {
+                        int resType = r.nextInt(numResTypes);
+                        int resValue = r.nextInt(numResVar);
+                        forceDuplicateResources(graph, resType, resValue);
+                    }
+
+                    graph.commitOnClose();
+
+                    Thread.sleep((long) Math.floor(Math.random() * 5000));
+                } catch (InterruptedException | SchemaViolationException e) {
+                    e.printStackTrace();
+                }
+            }));
         }
 
         for (Future future : futures) {
             future.get();
         }
 
+        graph.close();
+
         //Give some time for jobs to go through REST API
-        Thread.sleep(5000);
+        Thread.sleep(30000);
 
         //Wait for cache to have some jobs
         waitForCache(graph.getKeyspace(), 2);
 
         //Check current broken state of graph
-        graph.close();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
-        boolean res1IsBroken = graph.getResourceType("res1").instances().size() >= 2;
-        boolean res2IsBroken = graph.getResourceType("res2").instances().size() >= 2;
-
-        assertTrue("Failed at breaking resource 1 or 2", res1IsBroken || res2IsBroken);
+        graph = factory.getGraph();
+        assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
         //Force PP
         postProcessing.run();
 
         //Check current broken state of graph
         graph.close();
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+        factory.close();
+        graph = factory.getGraph();
 
-        res1IsBroken = graph.getResourceType("res1").instances().size() >= 2;
-        res2IsBroken = graph.getResourceType("res2").instances().size() >= 2;
-
-        assertFalse("Failed at fixing resource 1 or 2", res1IsBroken || res2IsBroken);
+        assertFalse("Failed at fixing graph", graphIsBroken(graph));
     }
 
-    private void forceDuplicateResources(GraknGraph graph, String resourceType, String resourceValue){
-        try {
-            graph.open();
-            graph.getResourceType(resourceType).putResource(resourceValue);
-            graph.commit();
-        } catch (GraknValidationException | ConceptNotUniqueException e) {
-            //Ignore
-        } finally {
-            graph.close();
+    @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
+    private boolean graphIsBroken(GraknGraph graph){
+        Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
+        for (ResourceType<?> resourceType : resourceTypes) {
+            Set<Integer> foundValues = new HashSet<>();
+            for (Resource<?> resource : resourceType.instances()) {
+                if(foundValues.contains(resource.getValue())){
+                    return true;
+                } else {
+                    foundValues.add((Integer) resource.getValue());
+                }
+            }
         }
+        return false;
+    }
+
+    private void forceDuplicateResources(GraknGraph graph, int resourceTypeNum, int resourceValueNum){
+        graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
     }
 
     private void waitForCache(String keyspace, int value) throws InterruptedException {
