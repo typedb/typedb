@@ -93,7 +93,7 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
     }
 
     private void updateCache(){
-        dCache.remove(cache, subGoals);
+        dCache.remove(cache);
         cache.add(dCache);
         cache.reload();
     }
