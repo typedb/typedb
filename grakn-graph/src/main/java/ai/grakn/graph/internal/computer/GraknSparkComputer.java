@@ -183,8 +183,9 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
             }
 
             final boolean computedGraphCreated = computedGraphRDD != null;
-            if (!computedGraphCreated)
+            if (!computedGraphCreated) {
                 computedGraphRDD = graknGraphRDD.loadedGraphRDD;
+            }
 
             final Memory.Admin finalMemory = null == memory ? new MapMemory() : new MapMemory(memory);
 
@@ -192,19 +193,6 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
             // process the map reducers //
             //////////////////////////////
             if (!this.mapReducers.isEmpty()) {
-//                if (computedGraphCreated && !graknGraphRDD.outputToSpark) {
-//                    // drop all the edges of the graph as they are not used in mapReduce processing
-////                        computedGraphRDD = computedGraphRDD.mapValues(vertexWritable -> {
-////                            vertexWritable.get().dropEdges();
-////                            return vertexWritable;
-////                        });
-//                    // if there is only one MapReduce to execute, don't bother wasting the clock cycles.
-//                    if (this.mapReducers.size() > 1) {
-//                        computedGraphRDD = computedGraphRDD.persist(StorageLevel.fromString(hadoopConfiguration
-//                                .get(Constants.GREMLIN_SPARK_GRAPH_STORAGE_LEVEL, "MEMORY_ONLY")));
-//                    }
-//                }
-
                 for (final MapReduce mapReduce : this.mapReducers) {
                     // execute the map reduce job
                     final HadoopConfiguration newApacheConfiguration = new HadoopConfiguration(apacheConfiguration);
@@ -232,8 +220,9 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
             }
 
             // unpersist the computed graph if it will not be used again (no PersistedOutputRDD)
-            if (!graknGraphRDD.outputToSpark || this.persist.equals(GraphComputer.Persist.NOTHING))
+            if (!graknGraphRDD.outputToSpark || this.persist.equals(GraphComputer.Persist.NOTHING)) {
                 computedGraphRDD.unpersist();
+            }
             // delete any file system or rdd data if persist nothing
             if (null != graknGraphRDD.outputLocation && this.persist.equals(GraphComputer.Persist.NOTHING)) {
                 if (graknGraphRDD.outputToHDFS) {
