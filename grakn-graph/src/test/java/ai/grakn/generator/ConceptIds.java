@@ -32,10 +32,6 @@ public class ConceptIds extends AbstractGenerator<ConceptId> {
 
     @Override
     public ConceptId generate() {
-        if (random.nextBoolean()) {
-            return ConceptId.of(gen(String.class));
-        } else {
-            return ConceptId.of("bar");
-        }
+        return ConceptId.of(gen(String.class));
     }
 }
