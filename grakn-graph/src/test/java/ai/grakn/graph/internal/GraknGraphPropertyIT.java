@@ -47,11 +47,11 @@ import ai.grakn.generator.ResourceValues;
 import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -74,7 +74,6 @@ import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -558,6 +557,13 @@ public class GraknGraphPropertyIT {
                 allResources.stream().filter(resource -> resource.getValue().equals(resourceValue)).collect(toSet());
 
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
+    }
+
+    @Ignore // TODO: Fix this test
+    @Property
+    public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknGraph graph, List value) {
+        exception.expect(GraphRuntimeException.class); // TODO: Better define the expected error
+        graph.getResourcesByValue(value);
     }
 
     @Property
