@@ -91,14 +91,14 @@ public interface QueryBuilder {
      * @param queryString a string representing several queries
      * @return a list of queries
      */
-     List<Query<?>> parseList(String queryString);
+    <T extends Query<?>> List<T> parseList(String queryString);
 
     /**
      * @param template a string representing a templated graql query
      * @param data data to use in template
      * @return a query, the type will depend on the type of template.
      */
-    <T extends Query<?>> T  parseTemplate(String template, Map<String, Object> data);
+    <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data);
 
     /**
      * Register an aggregate that can be used when parsing a Graql query

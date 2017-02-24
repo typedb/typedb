@@ -32,7 +32,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -81,9 +80,7 @@ public class JsonMigrator extends AbstractMigrator {
         return readers.stream()
                 .map(this::asString)
                 .map(this::toJsonMap)
-                .map(data -> template(template, data))
-                .filter(Optional::isPresent)
-                .map(Optional::get);
+                .flatMap(data -> template(template, data).stream());
     }
 
     /**

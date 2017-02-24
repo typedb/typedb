@@ -177,7 +177,7 @@ public class QueryBuilderImpl implements QueryBuilder {
     }
 
     @Override
-    public List<Query<?>> parseList(String queryString) {
+    public <T extends Query<?>> List<T> parseList(String queryString) {
         return queryParser.parseList(queryString);
     }
 
@@ -187,8 +187,8 @@ public class QueryBuilderImpl implements QueryBuilder {
      * @return a resolved graql query
      */
     @Override
-    public <T extends Query<?>> T parseTemplate(String template, Map<String, Object> data){
-        return parse(templateParser.parseTemplate(template, data));
+    public <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data){
+        return parseList(templateParser.parseTemplate(template, data));
     }
 
     @Override

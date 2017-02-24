@@ -32,7 +32,6 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
@@ -122,10 +121,7 @@ public class CSVMigrator extends AbstractMigrator {
                             .parse(reader);
 
             Iterator<CSVRecord> it = csvParser.iterator();
-            return stream(it)
-                    .map(col -> template(template, parse(col)))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get);
+            return stream(it).flatMap(col -> template(template, parse(col)).stream());
         } catch (IOException e){
             throw new RuntimeException(e);
         }
