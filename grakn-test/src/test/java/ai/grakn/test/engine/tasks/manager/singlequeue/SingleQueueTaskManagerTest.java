@@ -70,7 +70,6 @@ public class SingleQueueTaskManagerTest {
         clearCompletedTasks();
     }
 
-    @Ignore
     @Property(trials=10)
     public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
         tasks.forEach(taskManager::addTask);
