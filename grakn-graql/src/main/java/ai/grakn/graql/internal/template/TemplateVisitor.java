@@ -156,8 +156,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
     // ;
     @Override
     public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
-        String macro = ctx.ID_MACRO().getText().replace("@", "");
-
+        String macro = ctx.ID_MACRO().getText().replace("@", "").toLowerCase();
         List<Object> values = ctx.expr().stream().map(this::visit).collect(toList());
         return macros.get(macro).apply(values);
     }
@@ -413,11 +412,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
 
     public String formatVar(Object variable){
         String var = variable instanceof UnescapedString ? ((UnescapedString) variable).get() : variable.toString();
-        if(var.contains(" ")){
-            return var.replaceAll("(\\S)\\s(\\S)", "$1-$2");
-        }
-
-        return var;
+        return var.replaceAll("[^a-zA-Z0-9]", "-");
     }
 
     @Override

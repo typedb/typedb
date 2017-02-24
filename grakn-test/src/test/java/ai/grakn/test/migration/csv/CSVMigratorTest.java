@@ -43,6 +43,7 @@ import static ai.grakn.test.migration.MigratorTestUtils.migrate;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class CSVMigratorTest {
@@ -106,7 +107,6 @@ public class CSVMigratorTest {
         migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.empty")).setNullString(""));
         graph = factory.getGraph();//Re Open Transaction
 
-//        graph = factory.getGraph();
         Collection<Entity> pets = graph.getEntityType("pet").instances();
         assertEquals(1, pets.size());
 
@@ -118,6 +118,16 @@ public class CSVMigratorTest {
 
         Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
         assertEquals(1, fluffy.resources(death).size());
+    }
+
+    @Test
+    public void parsedLineIsEmpty_MigratorSkipsThatLine(){
+        load(graph, getFile("csv", "pets/schema.gql"));
+
+        // Only insert Puffball
+        String template = "if (<name> != \"Puffball\") do { insert $x isa pet; }";
+        migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.quotes")));
+        assertEquals(1, graph.getEntityType("pet").instances().size());
     }
 
     @Ignore //Ignored because this feature is not yet supported
