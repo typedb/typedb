@@ -152,7 +152,6 @@ public class SingleQueueTaskRunnerTest {
         consumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
     }
 
-    @Ignore
     @Property(trials=10)
     public void afterRunning_AllTasksAreAddedToStorage(List<List<TaskState>> tasks) throws Exception {
         setUpTasks(tasks);
@@ -166,7 +165,6 @@ public class SingleQueueTaskRunnerTest {
         );
     }
 
-    @Ignore
     @Property(trials=10)
     public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(List<List<TaskState>> tasks) throws Exception {
         setUpTasks(tasks);
@@ -180,7 +178,6 @@ public class SingleQueueTaskRunnerTest {
         );
     }
 
-    @Ignore
     @Property(trials=10)
     public void afterRunning_AllFailingTasksAreRecordedAsFailed(List<List<TaskState>> tasks) throws Exception {
         setUpTasks(tasks);
@@ -194,7 +191,6 @@ public class SingleQueueTaskRunnerTest {
         );
     }
 
-    @Ignore
     @Property(trials=10)
     public void afterRunning_AllNonFailingTasksHaveCompletedExactlyOnce(List<List<TaskState>> tasks) throws Exception {
         setUpTasks(tasks);
@@ -208,7 +204,6 @@ public class SingleQueueTaskRunnerTest {
         assertEquals(expectedCompletedTasks, completedTasks());
     }
 
-    @Ignore
     @Property(trials=10)
     public void afterRunning_AllTasksHaveBeenSubmittedToExecutor(List<List<TaskState>> tasks) {
         executor.shutdown();
@@ -224,7 +219,6 @@ public class SingleQueueTaskRunnerTest {
         verify(executor, times(expectedSubmissions)).submit(any(Runnable.class));
     }
 
-    @Ignore
     @Test
     public void whenRunIsCalled_DontReturnUntilCloseIsCalled() throws Exception {
         setUpTasks(ImmutableList.of());
