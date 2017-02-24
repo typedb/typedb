@@ -59,8 +59,8 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilter;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.newJoin;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
@@ -287,7 +287,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
                     Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars));
+
+                    /*
+                    subs = join(
+                            subs,
+                            cache.getAnswerStream(qj),
+                            ImmutableSet.copyOf(joinVars));
+                    */
+
+                    subs = newJoin(
+                            subs,
+                            cache.getAnswerStream(qj),
+                            cache.getInverseAnswerMap(qj, joinVars),
+                            ImmutableSet.copyOf(joinVars));
+
                     joinedVars.addAll(qj.getVarNames());
                 }
             }

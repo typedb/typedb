@@ -22,14 +22,19 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
+import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
+
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
 /**
  *
@@ -106,6 +111,41 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     @Override
     public LazyAnswerIterator getAnswerIterator(Q query) {
         return getAnswers(query);
+    }
+
+    @Override
+    public Stream<Map<VarName, Concept>> getLimitedAnswerStream(Q query, LazyIterator<Map<VarName, Concept>> subIter, Set<VarName> subVars){
+        Set<Concept> concepts = subIter.stream()
+                .flatMap(a -> varFilterFunction.apply(a, subVars))
+                .map(Map::values).flatMap(Collection::stream).collect(Collectors.toSet());
+        return getAnswerStream(query).filter(ans -> {
+            for (VarName var : subVars)
+                if (!concepts.contains(ans.get(var))) return false;
+            return true;
+        }
+        );
+    }
+
+    @Override
+    public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars){
+        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
+        Set<Map<VarName, Concept>> answers = getAnswers(query).stream().collect(Collectors.toSet());
+        answers.forEach(answer -> {
+            answer.entrySet().stream()
+                    .filter(e -> vars.contains(e.getKey()))
+                    .forEach(entry -> {
+                Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
+                Set<Map<VarName, Concept>> match = inverseAnswerMap.get(key);
+                if (match != null){
+                    match.add(answer);
+                } else {
+                    Set<Map<VarName, Concept>> ans = new HashSet<>();
+                    ans.add(answer);
+                    inverseAnswerMap.put(key, ans);
+                }
+            });
+        });
+        return inverseAnswerMap;
     }
 
     @Override

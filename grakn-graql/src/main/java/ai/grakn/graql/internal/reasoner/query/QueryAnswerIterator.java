@@ -50,6 +50,8 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
     private final LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
     private Iterator<Map<VarName, Concept>> answerIterator;
 
+    private long time = System.currentTimeMillis();
+
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
     public QueryAnswerIterator(ReasonerAtomicQuery q, boolean materialise){
@@ -67,6 +69,7 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
     }
 
     private void computeNext(){
+        time = System.currentTimeMillis();
         iter++;
         subGoals.clear();
         answerIterator = query.answerStream(subGoals, cache, dCache, materialise).iterator();
@@ -84,7 +87,8 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
             updateCache();
             long dAns = differentialAnswerSize();
             if (dAns != 0 || iter == 0) {
-                LOG.debug("Atom: " + query.getAtom() + " iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+                System.out.println("Atom: " + query.getAtom() + " iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+                System.out.println("iter: " + (System.currentTimeMillis() - time));
                 computeNext();
                 return answerIterator.hasNext();
             }
@@ -93,7 +97,7 @@ class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
     }
 
     private void updateCache(){
-        dCache.remove(cache, subGoals);
+        dCache.remove(cache, dCache.getQueries() /*subGoals*/);
         cache.add(dCache);
         cache.reload();
     }

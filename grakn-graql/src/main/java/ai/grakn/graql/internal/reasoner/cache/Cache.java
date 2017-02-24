@@ -43,6 +43,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
 
     public Cache(){ super();}
     public boolean contains(Q query){ return cache.containsKey(query);}
+    public Set<Q> getQueries(){ return cache.keySet();}
 
     /**
      * record answer iterable for a specific query and retrieve the updated answers
@@ -70,6 +71,8 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
 
     public abstract T getAnswers(Q query);
     public abstract Stream<Map<VarName, Concept>> getAnswerStream(Q query);
+    public abstract Stream<Map<VarName, Concept>> getLimitedAnswerStream(Q query, LazyIterator<Map<VarName, Concept>> subIter, Set<VarName> subVars);
+    public abstract Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars);
     public abstract LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query);
 
     Map<VarName, VarName> getRecordUnifiers(Q toRecord){

@@ -87,6 +87,16 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
     }
 
     @Override
+    public Stream<Map<VarName, Concept>> getLimitedAnswerStream(Q query, LazyIterator<Map<VarName, Concept>> subIter, Set<VarName> subVars) {
+        return null;
+    }
+
+    @Override
+    public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars) {
+        return null;
+    }
+
+    @Override
     public LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query) {
         return new LazyIterator<>(getAnswers(query).stream());
     }
