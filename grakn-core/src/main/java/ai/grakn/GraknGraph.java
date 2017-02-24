@@ -21,8 +21,6 @@ package ai.grakn;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -38,7 +36,6 @@ import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
 
 import java.util.Collection;
-import java.util.Map;
 
 /**
  * <p>
@@ -313,18 +310,6 @@ public interface GraknGraph extends AutoCloseable{
      * @throws GraphRuntimeException if the graph is closed
      */
     RuleType getRuleType(String name);
-
-    /**
-     * Get a Relation that has the specified Relation Type and role map, if it exists. Otherwise, return {@code null}.
-     * Caller specifies a Relation Type and a role map, which lists the Instances or Resources in the relationship, and the roles each play.
-     *
-     * @param relationType The Relation Type which we wish to find a Relation instance of.
-     * @param roleMap A role map specifying the rolePlayers (Instances or Resources) in the relationship and the roles (Role Types) they play.
-     * @return a Relation which meet the above requirements or {@code null} if no relationship exists fulfilling the above requirements.
-     *
-     * @throws GraphRuntimeException if the graph is closed
-     */
-    Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap);
 
     //------------------------------------- Utilities ----------------------------------
     // TODO: what does this do when the graph is closed?

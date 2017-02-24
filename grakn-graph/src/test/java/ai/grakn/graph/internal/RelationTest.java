@@ -441,25 +441,6 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void testGetRelationWithMissingRolePlayers(){
-        RelationType relationType2 = graknGraph.putRelationType("relationType2");
-
-        Map<RoleType, Instance> roleMap = new HashMap<>();
-        roleMap.put(role1, null);
-        roleMap.put(role2, rolePlayer2);
-        roleMap.put(role3, null);
-
-        relationType.hasRole(role1);
-        relationType.hasRole(role2);
-        relationType.hasRole(role3);
-        relationType.addRelation().
-                putRolePlayer(role1, null).putRolePlayer(role2, rolePlayer2).putRolePlayer(role3, null);
-
-        assertNotNull(graknGraph.getRelation(relationType, roleMap));
-        assertNull(graknGraph.getRelation(relationType2, roleMap));
-    }
-
-    @Test
     public void testAddRelationshipWithNullRole(){
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(ROLE_IS_NULL.getMessage(rolePlayer1));
@@ -571,39 +552,4 @@ public class RelationTest extends GraphTestBase{
         assertEquals(inCount, Iterators.size(v.edges(Direction.IN, type.getLabel())));
         assertEquals(outCount, Iterators.size(v.edges(Direction.OUT, type.getLabel())));
     }
-
-    @Test
-    public void testGetRelationViaMap() {
-        RoleType role1 = graknGraph.putRoleType("Role 1");
-        RoleType role2 = graknGraph.putRoleType("Role 2");
-        EntityType entityType = graknGraph.putEntityType("entityType").playsRole(role1).playsRole(role2);
-        RelationType relationType = graknGraph.putRelationType("relationTypes").hasRole(role1).hasRole(role2);
-
-        Entity instance1 = entityType.addEntity();
-        Entity instance2 = entityType.addEntity();
-        Relation relation = relationType.addRelation().
-                putRolePlayer(role1, instance1).
-                putRolePlayer(role2, instance2);
-
-        Map<RoleType, Instance> map = new HashMap<>();
-        map.put(role1, instance1);
-        map.put(role2, instance2);
-
-        assertEquals(relation, graknGraph.getRelation(relationType, map));
-    }
-
-    @Test
-    public void getRelationViaMapWhenRoleIsAddedAfterRelation(){
-        RoleType role1 = graknGraph.putRoleType("Role 1");
-        RelationType relationType = graknGraph.putRelationType("relationTypes");
-
-        Relation relation = relationType.addRelation();
-
-        relationType.hasRole(role1);
-        assertEquals(relation, graknGraph.getRelation(relation.type(), relation.rolePlayers()));
-
-        relationType.deleteHasRole(role1);
-        assertEquals(relation, graknGraph.getRelation(relation.type(), relation.rolePlayers()));
-    }
-
 }

@@ -24,8 +24,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -65,7 +63,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -77,7 +74,6 @@ import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
@@ -591,36 +587,6 @@ public class GraknGraphPropertyIT {
     public void whenCallingGetRuleType_TheResultIsTheSameAsGetType(@Open GraknGraph graph, @FromGraph RuleType type) {
         TypeName typeName = type.getName();
         assertSameResult(() -> graph.getType(typeName), () -> graph.getRuleType(typeName.getValue()));
-    }
-
-    @Ignore //Fix this. The behaviour of the getRelation method is still poorly defined
-    @Property
-    public void whenCallingGetRelationAndTheRelationExists_ReturnThatRelation(
-            @Open GraknGraph graph, @FromGraph Relation relation) {
-        //Cannot compare against the exact relation because it is possible to temporarily create (within a transaction)
-        // duplicate relations. In this case it was creating 2 relations with no roles and roleplayers of the same type
-        // and returning one of them which is valid but may not be the one you are comparing against. Hence why the
-        // comparison is more defined.
-
-        Relation foundRelation = graph.getRelation(relation.type(), relation.rolePlayers());
-        if(foundRelation.getId().equals(relation.getId())){
-            assertEquals(relation, foundRelation);
-        } else { //This is possible when we have created duplicate empty relations. So we check everything we can.
-            assertThat(relation.rolePlayers().keySet(), containsInAnyOrder(foundRelation.rolePlayers().keySet()));
-            assertThat(relation.rolePlayers().values(), containsInAnyOrder(foundRelation.rolePlayers().values()));
-            assertEquals(relation.type(), foundRelation.type());
-        }
-    }
-
-    @Property
-    public void whenCallingGetRelationAndTheRelationDoesntExist_ReturnNull(
-            @Open GraknGraph graph,
-            @FromGraph RelationType type, Map<@FromGraph RoleType, @FromGraph Instance> roleMap) {
-        Collection<Relation> instances = type.instances();
-        Set<Map<RoleType, Instance>> roleMaps = instances.stream().map(Relation::rolePlayers).collect(toSet());
-        assumeThat(roleMaps, not(hasItem(roleMap)));
-
-        assertNull(graph.getRelation(type, roleMap));
     }
 
     @Property

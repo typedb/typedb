@@ -36,7 +36,7 @@ import java.util.Objects;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public abstract class GraphWriterTestUtil {
 
@@ -106,7 +106,14 @@ public abstract class GraphWriterTestUtil {
                 e -> getInstanceUniqueByResourcesFromGraph(two, e.getValue())
         ));
 
-        assertNotNull(two.getRelation(relationType, rolemap));
+        boolean relationFound = false;
+        for (Relation relation : relationType.instances()) {
+            if(relation.rolePlayers().equals(rolemap)){
+                relationFound = true;
+            }
+        }
+
+        assertTrue("The copied relation [" + relation1 + "] was not found.", relationFound);
     }
 
     public static void assertResourceCopied(Resource resource1, GraknGraph two){
