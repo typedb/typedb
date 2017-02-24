@@ -30,7 +30,10 @@ import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
@@ -54,19 +57,23 @@ public class SingleQueueTaskManagerTest {
 
     private static TaskManager taskManager;
 
-    @Rule
-    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
+    @ClassRule
+    public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @Before
-    public void setup(){
+    @BeforeClass
+    public static void setup(){
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
         taskManager = new SingleQueueTaskManager();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDown() throws Exception {
         taskManager.close();
+    }
+
+    @After
+    public void clear(){
         clearCompletedTasks();
     }
 
