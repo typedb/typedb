@@ -136,13 +136,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if any of the atoms constituting the query can be resolved through a rule
      */
     public boolean isRuleResolvable(){
-        boolean ruleResolvable = false;
         Iterator<Atom> it = atomSet.stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
-        while(it.hasNext() && !ruleResolvable) {
-            Atom at = it.next();
-            ruleResolvable = at.isRuleResolvable();
+        while(it.hasNext()) {
+            if (it.next().isRuleResolvable()){
+                return true;
+            }
         }
-        return ruleResolvable;
+        return false;
     }
 
     /**
@@ -427,17 +427,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return true if two queries are alpha-equivalent
      */
     public boolean isEquivalent(ReasonerQueryImpl q) {
-        boolean equivalent = true;
         Set<Atom> atoms = atomSet.stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .collect(Collectors.toSet());
         if(atoms.size() != q.getAtoms().stream().filter(Atomic::isAtom).count()) return false;
-        Iterator<Atom> it = atoms.iterator();
-        while (it.hasNext() && equivalent) {
-            Atom atom = it.next();
-            equivalent = q.containsEquivalentAtom(atom);
+        for (Atom atom : atoms){
+            if(!q.containsEquivalentAtom(atom)){
+                return false;
+            }
         }
-        return equivalent;
+        return true;
     }
 
     /**

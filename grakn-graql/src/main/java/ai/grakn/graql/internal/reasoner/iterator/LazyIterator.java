@@ -36,13 +36,14 @@ import java.util.stream.StreamSupport;
  */
 public class LazyIterator<T> implements Iterable<T>{
     private final Iterator<T> iterator;
-    public final List<T> accumulator = new ArrayList<>();
+    private final List<T> accumulator = new ArrayList<>();
 
     public LazyIterator(){iterator = Collections.emptyIterator();}
     public LazyIterator(Stream<T> stream){
         this.iterator = stream.distinct().iterator();
     }
     public LazyIterator(Iterator<T> iterator){ this.iterator = iterator;}
+
     @Override
     public Iterator<T> iterator() {
         return new Iterator<T>(){

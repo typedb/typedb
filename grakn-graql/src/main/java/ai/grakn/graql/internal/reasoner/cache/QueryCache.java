@@ -57,11 +57,12 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
     @Override
     public Stream<Map<VarName, Concept>> record(Q query, Stream<Map<VarName, Concept>> answers) {
         Pair<Q, QueryAnswers> match =  cache.get(query);
-        if (match!= null) {
+        if (match != null) {
             Stream<Map<VarName, Concept>> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
             return unifiedStream.peek(ans -> match.getValue().add(ans));
         } else {
-            Pair<Q, QueryAnswers> put = cache.put(query, new Pair<>(query, new QueryAnswers()));
+            cache.put(query, new Pair<>(query, new QueryAnswers()));
+            Pair<Q, QueryAnswers> put = cache.get(query);
             return answers.peek(ans -> put.getValue().add(ans));
         }
     }
@@ -88,6 +89,14 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
     @Override
     public LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query) {
         return new LazyIterator<>(getAnswers(query).stream());
+    }
+
+    @Override
+    public void remove(Cache<Q, QueryAnswers> c2, Set<Q> queries) {
+        c2.cache.keySet().stream()
+                .filter(queries::contains)
+                .filter(this::contains)
+                .forEach( q -> cache.get(q).getValue().removeAll(c2.getAnswers(q)));
     }
 
     @Override
