@@ -167,10 +167,6 @@ public class QueryAnswerStream {
         return join(joinFunction, stream, stream2);
     }
 
-    public static long joins = 0;
-    public static long equalityChecks = 0;
-    public static long merges = 0;
-
     /**
      * lazy stream join with quasi- sideways information propagation
      * @param stream left stream operand
@@ -183,16 +179,13 @@ public class QueryAnswerStream {
         return stream.flatMap(a1 -> {
             Stream<Map<VarName, Concept>> answerStream = l2.stream();
             answerStream = answerStream.filter(ans -> {
-                joins++;
                 for(VarName v: joinVars) {
-                    equalityChecks++;
                     if (!ans.get(v).equals(a1.get(v))) {
                         return false;
                     }
                 }
                 return true;
             });
-            merges++;
             return answerStream.map(a2 ->
                     Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a)));

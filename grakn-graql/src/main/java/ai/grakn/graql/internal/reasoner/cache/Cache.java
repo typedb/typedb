@@ -101,6 +101,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
      * @param queries to which answers shall be subtracted
      */
     public abstract void remove(Cache<Q, T> c2, Set<Q> queries);
+    public void remove(Cache<Q, T> c2){ remove(c2, getQueries());}
 
     public void clear(){ cache.clear();}
 

@@ -279,9 +279,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                                                  Cache<ReasonerAtomicQuery, ?> dCache,
                                                                  boolean materialise){
         Stream<Map<VarName, Concept>> join = Stream.empty();
-        Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
 
-        for(ReasonerAtomicQuery qi : uniqueQueries){
+        for(ReasonerAtomicQuery qi : queries){
             Stream<Map<VarName, Concept>> subs = qi.answerStream(subGoals, cache, dCache, materialise);
             Set<VarName> joinedVars = qi.getVarNames();
             for(ReasonerAtomicQuery qj : queries){
