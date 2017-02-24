@@ -27,6 +27,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -124,30 +125,6 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         }
         );
     }
-
-    /*
-    @Override
-    public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars){
-        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
-        Set<Map<VarName, Concept>> answers = getAnswers(query).stream().collect(Collectors.toSet());
-        answers.forEach(answer -> {
-            answer.entrySet().stream()
-                    .filter(e -> vars.contains(e.getKey()))
-                    .forEach(entry -> {
-                Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
-                Set<Map<VarName, Concept>> match = inverseAnswerMap.get(key);
-                if (match != null){
-                    match.add(answer);
-                } else {
-                    Set<Map<VarName, Concept>> ans = new HashSet<>();
-                    ans.add(answer);
-                    inverseAnswerMap.put(key, ans);
-                }
-            });
-        });
-        return inverseAnswerMap;
-    }
-    */
 
     @Override
     public long answerSize(Set<Q> queries){
