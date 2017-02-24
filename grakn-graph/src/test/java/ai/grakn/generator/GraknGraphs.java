@@ -34,7 +34,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
+import static ai.grakn.graql.Graql.var;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -140,7 +140,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> resourceType().putResource(gen().make(ResourceValues.class).generate(random, status)),
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> ruleType().superType(ruleType()),
-            () -> ruleType().addRule(gen(Pattern.class), gen(Pattern.class)),
+            () -> ruleType().addRule(var("x"), var("x")), // TODO: generate more complicated rules
             () -> instance().hasResource(resource()),
             () -> relation().scope(instance()),
             () -> relation().putRolePlayer(roleType(), instance()),

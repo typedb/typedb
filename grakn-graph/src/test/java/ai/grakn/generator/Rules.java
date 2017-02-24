@@ -21,7 +21,8 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.graql.Pattern;
+
+import static ai.grakn.graql.Graql.var;
 
 public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
 
@@ -31,6 +32,7 @@ public class Rules extends AbstractInstanceGenerator<Rule, RuleType> {
 
     @Override
     protected Rule newInstance(RuleType type) {
-        return type.addRule(gen(Pattern.class), gen(Pattern.class));
+        // TODO: generate more complicated rules
+        return type.addRule(var("x"), var("x"));
     }
 }
