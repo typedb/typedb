@@ -3,6 +3,7 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -10,6 +11,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
@@ -80,6 +82,14 @@ public abstract class GraknTestEnv {
 
     static void stopKafka() {
         kafkaUnit.shutdown();
+
+        // Delete everything in Zookeeper
+        CuratorFramework client = ConfigHelper.client();
+        try {
+            client.delete().deletingChildrenIfNeeded().forPath("/");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     static void stopEngine() {
