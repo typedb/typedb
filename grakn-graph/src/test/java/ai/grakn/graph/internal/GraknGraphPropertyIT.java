@@ -47,17 +47,13 @@ import ai.grakn.generator.ResourceValues;
 import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -97,13 +93,6 @@ public class GraknGraphPropertyIT {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void setUpClass() {
-        // TODO: When creating a graph does not print a warning, remove this
-        Logger logger = (Logger) LoggerFactory.getLogger(AbstractGraknGraph.class);
-        logger.setLevel(Level.ERROR);
-    }
 
     @Ignore //TODO: This is breaking because your mocked concepts have null concept IDs this is an impossible state so I think you should get your generater to mock valid concepts
     @Property
