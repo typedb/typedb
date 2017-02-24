@@ -44,7 +44,7 @@ public class Methods extends AbstractGenerator<Method> {
 
     @Override
     protected Method generate() {
-        if (clazz == null) throw new IllegalStateException("Must use annotation OfClass");
+        if (clazz == null) throw new IllegalStateException("Must use annotation MethodOf");
 
         return random.choose(clazz.getMethods());
     }

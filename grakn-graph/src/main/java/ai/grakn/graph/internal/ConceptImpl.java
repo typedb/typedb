@@ -69,7 +69,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     private final AbstractGraknGraph graknGraph;
     private final ConceptId conceptId;
     private final Vertex vertex;
-    
+
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;

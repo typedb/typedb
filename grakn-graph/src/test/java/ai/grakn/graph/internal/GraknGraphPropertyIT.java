@@ -72,7 +72,6 @@ import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -84,6 +83,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -557,6 +557,13 @@ public class GraknGraphPropertyIT {
                 allResources.stream().filter(resource -> resource.getValue().equals(resourceValue)).collect(toSet());
 
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
+    }
+
+    @Ignore // TODO: Fix this test
+    @Property
+    public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknGraph graph, List value) {
+        exception.expect(GraphRuntimeException.class); // TODO: Better define the expected error
+        graph.getResourcesByValue(value);
     }
 
     @Property

@@ -19,18 +19,15 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
+import com.google.common.collect.ImmutableList;
 
-public class Vars extends AbstractGenerator<Var> {
-
-    public Vars() {
-        super(Var.class);
+public class CommonStrings extends AbstractGenerator<String> {
+    public CommonStrings() {
+        super(String.class);
     }
 
     @Override
-    public Var generate() {
-        // TODO: Add random properties to variable patterns
-        return Graql.var();
+    protected String generate() {
+        return random.choose(ImmutableList.of("foo", "bar", "baz"));
     }
 }
