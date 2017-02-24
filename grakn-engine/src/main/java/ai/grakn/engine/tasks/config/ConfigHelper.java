@@ -24,8 +24,10 @@ import ai.grakn.engine.util.ConfigProperties;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 
 import java.util.Properties;
 
@@ -65,7 +67,7 @@ public class ConfigHelper {
                     .build();
     }
 
-    public static KafkaConsumer<TaskId, TaskState> kafkaConsumer(String groupId) {
+    public static Consumer<TaskId, TaskState> kafkaConsumer(String groupId) {
         Properties properties = new Properties();
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("group.id", groupId);
@@ -88,7 +90,7 @@ public class ConfigHelper {
         return new KafkaConsumer<>(properties);
     }
 
-    public static KafkaProducer<TaskId, TaskState> kafkaProducer() {
+    public static Producer<TaskId, TaskState> kafkaProducer() {
         Properties properties = new Properties();
 
         properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));

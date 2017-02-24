@@ -28,6 +28,7 @@ import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final TreeCache cache;
 
     private Map<String, ChildData> current;
-    private KafkaProducer<TaskId, TaskState> producer;
+    private Producer<TaskId, TaskState> producer;
 
     public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
         this.stateStorage = stateStorage;

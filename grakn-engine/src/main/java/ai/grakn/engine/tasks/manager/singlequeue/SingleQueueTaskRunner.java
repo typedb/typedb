@@ -23,6 +23,9 @@ import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.config.ConfigHelper;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import com.google.common.collect.ImmutableList;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -36,6 +39,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
+import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -54,9 +61,23 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
 
     /**
+     * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
+     * to retrieve tasks and uses the given {@param storage} to store and retrieve information about tasks.
+     *
+     * @param storage a place to store and retrieve information about tasks.
+     * @param zookeeper a connection to the running zookeeper instance.
+     */
+
+    public SingleQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection zookeeper){
+        this.storage = storage;
+
+        consumer = ConfigHelper.kafkaConsumer(TASK_RUNNER_GROUP);
+        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
+    }
+
+    /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
-     * TODO Create the consumer within the task runner and expose it to the taskmanager
      *
      * @param storage a place to store and retrieve information about tasks.
      * @param consumer a Kafka consumer from which to poll for tasks
@@ -116,7 +137,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     @Override
     public void close() throws Exception {
         wakeUp.set(true);
-        countDownLatch.await();
+        noThrow(countDownLatch::await, "Error waiting for the TaskRunner loop to finish");
+        noThrow(consumer::close, "Error closing the task runner");
     }
 
     /**
@@ -170,6 +192,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         }
     }
 
+    /**
+     * Log debug information about the given set of {@param records} polled from Kafka
+     * @param records Polled-for records to return information about
+     */
     private void debugConsumerStatus(ConsumerRecords<TaskId, TaskState> records ){
         LOG.debug("Polled, got {} records", records.count());
         for (TopicPartition partition : consumer.assignment()) {

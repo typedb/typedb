@@ -29,10 +29,10 @@ import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.zookeeper.CreateMode;
@@ -46,7 +46,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -56,6 +55,7 @@ import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
+import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
@@ -90,7 +90,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final ExecutorService executor;
     private final int executorSize;
     private final AtomicInteger acceptedTasks = new AtomicInteger(0);
-    private final KafkaConsumer<TaskId, TaskState> consumer;
+    private final Consumer<TaskId, TaskState> consumer;
 
     public MultiQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
         this.storage = storage;
@@ -100,8 +100,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
         consumer = kafkaConsumer(TASK_RUNNER_GROUP);
 
         // Configure callback for a Kafka rebalance
-        ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection);
-        consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), listener);
+        consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), rebalanceListener(consumer, connection));
 
         // Create initial entries in ZK for TaskFailover to watch.
         registerAsRunning();
@@ -260,7 +259,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
      * @param taskState task to update in storage
      * @return A Consumer<String> function that can be called by the background task on demand to save its checkpoint.
      */
-    private Consumer<String> saveCheckpoint(TaskState taskState) {
+    private java.util.function.Consumer<String> saveCheckpoint(TaskState taskState) {
         return checkpoint -> storage.updateState(taskState.checkpoint(checkpoint));
     }
 

@@ -29,7 +29,7 @@ import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import mjson.Json;
-import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
 import org.junit.Before;
@@ -54,7 +54,7 @@ public class MultiQueueTaskRunnerTest {
 
     private TaskStateStorage storage;
     private MultiQueueTaskRunner multiQueueTaskRunner;
-    private KafkaProducer<TaskId, TaskState> producer;
+    private Producer<TaskId, TaskState> producer;
 
     private Thread taskRunnerThread;
 

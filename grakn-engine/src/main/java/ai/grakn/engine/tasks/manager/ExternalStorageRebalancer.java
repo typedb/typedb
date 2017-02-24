@@ -21,16 +21,15 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.exception.EngineStorageException;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
 
-import static java.lang.String.format;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.PARTITION_PATH;
-import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
 import static org.apache.commons.lang.SerializationUtils.serialize;
 
@@ -44,11 +43,15 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
     private final static Logger LOG = LoggerFactory.getLogger(ExternalStorageRebalancer.class);
 
     private final ZookeeperConnection zookeeper;
-    private final KafkaConsumer consumer;
+    private final Consumer consumer;
 
-    public ExternalStorageRebalancer(KafkaConsumer consumer, ZookeeperConnection zookeeper){
+    private ExternalStorageRebalancer(Consumer consumer, ZookeeperConnection zookeeper){
         this.zookeeper = zookeeper;
         this.consumer = consumer;
+    }
+
+    public static ExternalStorageRebalancer rebalanceListener(Consumer consumer, ZookeeperConnection zookeeper){
+        return new ExternalStorageRebalancer(consumer, zookeeper);
     }
 
     /**
@@ -58,14 +61,14 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      */
     @Override
     public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-        LOG.debug(format("Consumer partitions assigned %s", partitions));
+        LOG.debug("Consumer partitions assigned {}", partitions);
 
         for(TopicPartition partition : partitions){
             try {
                 consumer.seek(partition, getOffsetFromZookeeper(partition));
                 deleteOffsetFromZookeeper(partition);
             } catch (EngineStorageException e){
-                consumer.seekToBeginning(singletonList(partition));
+                consumer.seekToBeginning(Collections.singletonList(partition));
                 LOG.debug("Could not retrieve offset for partition {}, seeking to beginning", partition);
             } finally {
                 consumer.commitSync();
@@ -79,11 +82,10 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      */
     @Override
     public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-        LOG.debug(format("Consumer partitions revoked %s", partitions));
+        LOG.debug("Consumer partitions revoked {}", partitions);
 
         partitions.forEach(this::saveOffsetInZookeeper);
     }
-
 
     /**
      * Get the offset from Zookeeper for the given partition.
@@ -95,7 +97,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
             String partitionPath = getPartitionPath(partition);
             long offset = (long) deserialize(zookeeper.connection().getData().forPath(partitionPath));
 
-            LOG.debug(format("Offset %s read for partition %s", partitionPath, partitionPath));
+            LOG.debug("Offset {} read for partition %{}", partitionPath, partitionPath);
 
             return offset;
         } catch (Exception e){
@@ -113,7 +115,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
             long currentOffset = consumer.position(partition);
             String partitionPath = getPartitionPath(partition);
 
-            LOG.debug(format("Offset at %s writing for partition %s", currentOffset, partitionPath));
+            LOG.debug("Offset at %s writing for partition {}", currentOffset, partitionPath);
             zookeeper.connection().create()
                     .creatingParentContainersIfNeeded()
                     .forPath(partitionPath, serialize(currentOffset));
@@ -131,7 +133,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
         try {
             String partitionPath = getPartitionPath(partition);
 
-            LOG.debug(format("Offset at %s deleting", partitionPath));
+            LOG.debug("Offset at {} deleting", partitionPath);
             zookeeper.connection().delete()
                     .forPath(partitionPath);
         } catch (Exception e){
@@ -146,6 +148,6 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
      */
     private String getPartitionPath(TopicPartition partition){
         String identifier = partition.topic() + partition.partition();
-        return format(PARTITION_PATH, identifier);
+        return String.format(PARTITION_PATH, identifier);
     }
 }

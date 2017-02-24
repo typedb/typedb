@@ -28,12 +28,14 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
@@ -59,6 +61,7 @@ import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.SCHEDULERS_GROUP;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
@@ -81,8 +84,8 @@ public class Scheduler implements Runnable, AutoCloseable {
 
     private final TaskStateStorage storage;
 
-    private KafkaConsumer<TaskId, TaskState> consumer;
-    private KafkaProducer<TaskId, TaskState> producer;
+    private Consumer<TaskId, TaskState> consumer;
+    private Producer<TaskId, TaskState> producer;
     private ScheduledExecutorService schedulingService;
     private CountDownLatch waitToClose;
     private volatile boolean running = false;
@@ -95,8 +98,7 @@ public class Scheduler implements Runnable, AutoCloseable {
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
 
             // Configure callback for a Kafka rebalance
-            ConsumerRebalanceListener listener = new ExternalStorageRebalancer(consumer, connection);
-            consumer.subscribe(singletonList(NEW_TASKS_TOPIC), listener);
+            consumer.subscribe(singletonList(NEW_TASKS_TOPIC), rebalanceListener(consumer, connection));
 
             // Kafka writer
             producer = kafkaProducer();
