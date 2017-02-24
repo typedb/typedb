@@ -98,7 +98,6 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
-        checkTypeMutation();
         Resource<D> resource = getResource(value);
         if(resource == null){
             resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->
