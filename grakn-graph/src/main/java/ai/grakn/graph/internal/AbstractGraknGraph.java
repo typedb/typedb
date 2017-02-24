@@ -752,16 +752,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
         String hash = RelationImpl.generateNewHash(relationType, roleMap);
-        Concept concept = getConceptLog().getCachedRelation(hash);
-
+        Relation concept = getConceptLog().getCachedRelation(hash);
         if(concept == null) {
             concept = getConcept(Schema.ConceptProperty.INDEX, hash);
         }
-
-        if(concept == null) {
-            return null;
-        }
-        return concept.asRelation();
+        return concept;
     }
 
     /**
