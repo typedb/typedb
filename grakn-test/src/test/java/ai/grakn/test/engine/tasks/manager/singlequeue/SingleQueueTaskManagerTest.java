@@ -27,6 +27,7 @@ import ai.grakn.generator.TaskStates.UniqueIds;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.After;
@@ -36,9 +37,11 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
@@ -46,13 +49,15 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import static com.google.common.collect.Sets.newHashSet;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
 /**
  *
  */
-@RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskManagerTest {
 
     private static TaskManager taskManager;
@@ -77,11 +82,12 @@ public class SingleQueueTaskManagerTest {
         clearCompletedTasks();
     }
 
-    @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
+    @Test
+    public void afterSubmitting_AllTasksAreCompleted(){
+        Set<TaskState> tasks = createTasks(10, CREATED);
         tasks.forEach(taskManager::addTask);
-        waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
+        waitForStatus(taskManager.storage(), tasks, COMPLETED);
 
-        assertEquals(completableTasks(tasks), completedTasks());
+        assertEquals(tasks.stream().map(TaskState::getId).collect(toSet()), newHashSet(completedTasks()));
     }
 }
