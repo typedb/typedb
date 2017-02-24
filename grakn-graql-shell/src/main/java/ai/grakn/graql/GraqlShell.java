@@ -82,6 +82,7 @@ import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -385,6 +386,7 @@ public class GraqlShell {
             // Load from a file if load command used
             if (queryString.startsWith(LOAD_COMMAND + " ")) {
                 String path = queryString.substring(LOAD_COMMAND.length() + 1);
+                path = unescapeJavaScript(path);
 
                 try {
                     queryString = loadQuery(path);
