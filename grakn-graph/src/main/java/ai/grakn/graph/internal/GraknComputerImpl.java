@@ -30,18 +30,18 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * <p>
- *     Graph Computer Used For Analytics Algorithms
+ * Graph Computer Used For Analytics Algorithms
  * </p>
- *
  * <p>
- *     Wraps a Tinkerpop {@link GraphComputer} which enables the execution of pregel programs.
- *     These programs are defined either via a {@link MapReduce} or a {@link VertexProgram}.
- *
- *     A {@link VertexProgram} is a computation executed on each vertex in parallel.
- *     Vertices communicate with each other through message passing.
- *
- *     {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
- *     MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
+ * <p>
+ * Wraps a Tinkerpop {@link GraphComputer} which enables the execution of pregel programs.
+ * These programs are defined either via a {@link MapReduce} or a {@link VertexProgram}.
+ * <p>
+ * A {@link VertexProgram} is a computation executed on each vertex in parallel.
+ * Vertices communicate with each other through message passing.
+ * <p>
+ * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
+ * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  * </p>
  *
  * @author duckofyork

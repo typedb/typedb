@@ -30,12 +30,14 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -73,6 +75,11 @@ public class DegreeTest {
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
+    }
+
+    @After
+    public void close() {
+        GraknSparkComputer.close();
     }
 
     @Test
@@ -122,9 +129,7 @@ public class DegreeTest {
         correctDegrees.put(id3, 2L);
 
         // compute degrees
-        long start = System.currentTimeMillis();
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(3, degrees.size());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -134,9 +139,7 @@ public class DegreeTest {
                 }
         ));
 
-        start = System.currentTimeMillis();
         Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
-        System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(2, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
@@ -160,9 +163,7 @@ public class DegreeTest {
                 }
         ));
 
-        start = System.currentTimeMillis();
         degrees2 = graph.graql().compute().degree().of().execute();
-        System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(3, degrees2.size());
         assertEquals(3, degrees2.get(1L).size());

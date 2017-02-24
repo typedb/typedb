@@ -45,7 +45,7 @@ public abstract class CommonOLAP {
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
-    public static final Set<TypeName> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
+    static final Set<TypeName> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
             Schema.Analytics.DEGREE.getName(),
             Schema.Resource.HAS_RESOURCE.getName(Schema.Analytics.DEGREE.getName()),
             Schema.Analytics.CLUSTER.getName(),
