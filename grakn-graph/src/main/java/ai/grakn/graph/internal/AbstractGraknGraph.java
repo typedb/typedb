@@ -63,7 +63,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1058,7 +1057,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 Collection<Relation> otherRelations = otherResource.relations();
 
                 for (Relation otherRelation : otherRelations) {
-                    //copyRelation(mainResource, otherResource, otherRelation);
+                    copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
                 otherResource.delete();
@@ -1076,29 +1075,31 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param other The other instance which already posses the relation
      * @param otherRelation The other relation to potentially be absorbed
      */
-    private void copyRelation(Instance main, Instance other, Relation otherRelation){
+    private void copyRelation(ResourceImpl main, ResourceImpl other, RelationImpl otherRelation){
         RelationType relationType = otherRelation.type();
+        RoleTypeImpl roleTypeOfResource = null;
         Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
 
         //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
         for (Map.Entry<RoleType, Instance> rolePlayer : rolePlayers.entrySet()) {
             if(rolePlayer.getValue().equals(other)){
                 rolePlayers.put(rolePlayer.getKey(), main);
+                roleTypeOfResource = (RoleTypeImpl) rolePlayer.getKey();
             }
         }
 
+        //See if a duplicate relation already exists
         Relation foundRelation = getRelation(relationType, rolePlayers);
 
         //Delete old Relation
-        deleteRelations(Collections.singleton((RelationImpl) otherRelation));
+        //deleteRelations(Collections.singleton((RelationImpl) otherRelation));
 
-        if(foundRelation != null){
-            return;
+        if(foundRelation != null){//If it exists delete the other one
+            otherRelation.deleteNode(); //Raw deletion because the castings should remain
+        } else { //If it doesn't exist transfer the edge to the relevant casting node
+            putCasting(roleTypeOfResource, main, otherRelation);
         }
 
-        //Relation was not found so create a new one
-        Relation relation = relationType.addRelation();
-        rolePlayers.entrySet().forEach(entry -> relation.putRolePlayer(entry.getKey(), entry.getValue()));
     }
 
 }

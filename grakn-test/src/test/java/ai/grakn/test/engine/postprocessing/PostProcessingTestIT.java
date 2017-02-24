@@ -26,14 +26,12 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.postprocessing.PostProcessing;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.SchemaViolationException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -47,8 +45,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
@@ -64,11 +64,18 @@ public class PostProcessingTestIT {
     public void setUp() throws Exception {
         factory = engine.factoryWithNewKeyspace();
         graph = factory.getGraph();
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT)).setLevel(Level.ALL);
+    }
+
+    @After
+    public void takeDown() throws InterruptedException {
+        cache.getCastingJobs(graph.getKeyspace()).clear();
+        cache.getResourceJobs(graph.getKeyspace()).clear();
     }
 
     @Test
-    public void checkThatDuplicateResourcesAtLargerScale() throws GraknValidationException, ExecutionException, InterruptedException {
+    public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws GraknValidationException, ExecutionException, InterruptedException {
+        assumeFalse(usingTinker());
+
         int transactionSize = 50;
         int numAttempts = 500;
 
@@ -118,7 +125,7 @@ public class PostProcessingTestIT {
 
                     Thread.sleep((long) Math.floor(Math.random() * 5000));
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
-                    e.printStackTrace();
+                    //IGNORED
                 }
             }));
         }
@@ -130,7 +137,7 @@ public class PostProcessingTestIT {
         graph.close();
 
         //Give some time for jobs to go through REST API
-        Thread.sleep(30000);
+        Thread.sleep(5000);
 
         //Wait for cache to have some jobs
         waitForCache(graph.getKeyspace(), 2);
