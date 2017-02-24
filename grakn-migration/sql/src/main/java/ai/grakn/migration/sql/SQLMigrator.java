@@ -29,7 +29,6 @@ import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -62,9 +61,7 @@ public class SQLMigrator extends AbstractMigrator {
     public Stream<InsertQuery> migrate() {
         return records.map(Record::intoMap)
                 .map(this::convertToValidValues)
-                .map(r -> template(template, r))
-                .filter(Optional::isPresent)
-                .map(Optional::get);
+                .flatMap(r -> template(template, r).stream());
     }
 
     /**

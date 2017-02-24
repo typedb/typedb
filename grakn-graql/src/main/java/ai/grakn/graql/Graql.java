@@ -137,7 +137,7 @@ public class Graql {
      * @param data data to use in template
      * @return a query, the type will depend on the type indicated in the template
      */
-    public static <T extends Query<?>> T parseTemplate(String template, Map<String, Object> data){
+    public static <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data){
         return withoutGraph().parseTemplate(template, data);
     }
 

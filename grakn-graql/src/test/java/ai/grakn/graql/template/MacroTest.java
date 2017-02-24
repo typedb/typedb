@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.parse;
@@ -67,6 +68,15 @@ public class MacroTest {
     @Test
     public void intMacroTest(){
         String template = "insert $x value @int(<value>);";
+        String expected = "insert $x0 value 4;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", 4), expected);
+    }
+
+    @Test
+    public void whenMacroIsWrongCase_ResolvedToLowerCase(){
+        String template = "insert $x value @InT(<value>);";
         String expected = "insert $x0 value 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
@@ -265,8 +275,7 @@ public class MacroTest {
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        Query<?> result = Graql.parseTemplate(template, data);
-        System.out.println(result);
-        assertEquals(parse(expected), result);
+        List<Query> result = Graql.parseTemplate(template, data);
+        assertEquals(parse(expected), result.get(0));
     }
 }

@@ -29,9 +29,10 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -116,15 +117,17 @@ public abstract class AbstractMigrator implements Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected Optional<InsertQuery> template(String template, Map<String, Object> data){
+    protected List<InsertQuery> template(String template, Map<String, Object> data){
         try {
-            return Optional.of(queryBuilder.parseTemplate(template, data));
-        } catch (GraqlTemplateParsingException e){
+            return queryBuilder.parseTemplate(template, data);
+
+            //TODO Graql should throw a GraqlParsignException so we do not need to catch IllegalArgumentException
+        } catch (GraqlTemplateParsingException | IllegalArgumentException e){
             LOG.warn("Query was not sent to loader- " + e.getMessage());
             LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
         }
 
-        return Optional.empty();
+        return Collections.emptyList();
     }
 
     /**

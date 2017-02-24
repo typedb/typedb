@@ -123,22 +123,22 @@ public class QueryParser {
      * @param queryString a string representing several queries
      * @return a list of queries
      */
-    public List<Query<?>> parseList(String queryString) {
-        List<Query<?>> queries = parseQueryFragment(GraqlParser::queryList, QueryVisitor::visitQueryList, queryString);
+    public <T extends Query<?>> List<T> parseList(String queryString) {
+        List<T> queries = parseQueryFragment(GraqlParser::queryList, (q, t) -> (List<T>) q.visitQueryList(t), queryString);
 
         // Merge any match...insert queries together
         // TODO: Find a way to NOT do this horrid thing
-        List<Query<?>> merged = Lists.newArrayList();
+        List<T> merged = Lists.newArrayList();
 
         if (queries.isEmpty()) return queries;
 
-        Query<?> previous = queries.get(0);
+        T previous = queries.get(0);
 
         for (int i = 1; i < queries.size(); i ++) {
-            Query<?> current = queries.get(i);
+            T current = queries.get(i);
 
             if (previous instanceof MatchQuery && current instanceof InsertQuery) {
-                previous = ((MatchQuery) previous).insert(((InsertQuery) current).admin().getVars());
+                previous = (T) ((MatchQuery) previous).insert(((InsertQuery) current).admin().getVars());
             } else {
                 merged.add(previous);
                 previous = current;
