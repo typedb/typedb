@@ -197,7 +197,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param records Polled-for records to return information about
      */
     private void debugConsumerStatus(ConsumerRecords<TaskId, TaskState> records ){
-        LOG.debug("Polled, got {} records", records.count());
         for (TopicPartition partition : consumer.assignment()) {
             LOG.debug("Partition {}{} has offset {} after receiving {} records",
                     partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());

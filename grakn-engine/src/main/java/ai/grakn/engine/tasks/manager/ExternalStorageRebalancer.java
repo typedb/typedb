@@ -115,7 +115,7 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
             long currentOffset = consumer.position(partition);
             String partitionPath = getPartitionPath(partition);
 
-            LOG.debug("Offset at %s writing for partition {}", currentOffset, partitionPath);
+            LOG.debug("Offset at {} writing for partition {}", currentOffset, partitionPath);
             zookeeper.connection().create()
                     .creatingParentContainersIfNeeded()
                     .forPath(partitionPath, serialize(currentOffset));

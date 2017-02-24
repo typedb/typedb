@@ -94,6 +94,8 @@ public class SingleQueueTaskManager implements TaskManager {
         // Create and start the task runners
         this.taskRunners = generate(this::newTaskRunner).limit(CAPACITY).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
+
+        LOG.debug("TaskManager started");
     }
 
     /**
