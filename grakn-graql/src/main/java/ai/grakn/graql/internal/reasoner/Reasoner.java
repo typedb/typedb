@@ -95,14 +95,16 @@ public class Reasoner {
         getRules(graph).forEach(rl -> {
             InferenceRule rule = new InferenceRule(rl, graph);
             ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead());
+            int iter = 0;
             long dAns = 0;
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                Set<Map<VarName, Concept>> answers = atomicQuery.answerStream(SG, cache, dCache, true).collect(Collectors.toSet());
+                Set<Map<VarName, Concept>> answers = atomicQuery.answerStream(SG, cache, dCache, true, iter != 0).collect(Collectors.toSet());
                 LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + answers.size() + " dAns: " + dAns);
                 dAns = cache.answerSize(SG) - dAns;
                 Reasoner.commitGraph(graph);
+                iter++;
             } while (dAns != 0);
             subGoals.addAll(SG);
         });
