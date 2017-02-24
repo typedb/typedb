@@ -55,6 +55,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.javatuples.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -121,12 +122,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         localIsOpen.set(true);
 
-        if(initialiseMetaConcepts()) {
-            try {
-                commit();
-            } catch (GraknValidationException e) {
-                throw new RuntimeException(ErrorMessage.CREATING_ONTOLOGY_ERROR.getMessage(e.getMessage()));
-            }
+        if(initialiseMetaConcepts() && !(graph instanceof TinkerGraph)) {
+            commitTransaction();
         }
 
         this.batchLoadingEnabled = batchLoadingEnabled;
