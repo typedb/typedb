@@ -1110,7 +1110,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             putCasting(roleTypeOfResource, main, otherRelation);
         }
 
-        //getConceptLog().cacheConcept(foundRelation);
+        //Explicitly track this new relation so we don't create duplicates
         String newHash = generateNewHash(relationType, rolePlayers);
         getConceptLog().getModifiedRelations().put(newHash, foundRelation);
     }

@@ -56,14 +56,12 @@ public class PostProcessing {
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     private ExecutorService postpool;
-    private ExecutorService postpoolResources;
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
     private final EngineCache cache;
 
     private PostProcessing() {
-        postpoolResources = Executors.newFixedThreadPool(20);
         postpool = Executors.newFixedThreadPool(Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
         cache = EngineCache.getInstance();
@@ -144,7 +142,7 @@ public class PostProcessing {
                             if(ids.isEmpty()) {
                                 completedJobs.add(index);
                             } else {
-                                futures.add(postpoolResources.submit(() -> ConceptFixer.checkResources(keyspace, index, ids)));
+                                futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids)));
                             }
                         });
                 completedJobs.forEach(index -> cache.clearJobSetResources(keyspace, index));
