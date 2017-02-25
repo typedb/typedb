@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
  * @author fppt
  */
 class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
-    private boolean markedDead = false;
 
     CastingImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);

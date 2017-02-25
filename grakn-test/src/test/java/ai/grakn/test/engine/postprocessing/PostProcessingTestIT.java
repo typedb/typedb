@@ -70,6 +70,9 @@ public class PostProcessingTestIT {
     public void takeDown() throws InterruptedException {
         cache.getCastingJobs(graph.getKeyspace()).clear();
         cache.getResourceJobs(graph.getKeyspace()).clear();
+
+        graph.close();
+        factory.close();
     }
 
     @Test

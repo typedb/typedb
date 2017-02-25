@@ -1111,7 +1111,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         //getConceptLog().cacheConcept(foundRelation);
-        String newHash = RelationImpl.generateNewHash(relationType, rolePlayers);
+        String newHash = generateNewHash(relationType, rolePlayers);
         getConceptLog().getModifiedRelations().put(newHash, foundRelation);
     }
 }
