@@ -158,8 +158,28 @@ public class GraqlShellIT {
     @Test
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("", err, "-f", "src/test/graql/shell-test.gql");
+        testShell("", err, "-f", "src/test/graql/shell test(weird name).gql");
         assertEquals("", err.toString());
+    }
+
+    @Test
+    public void testLoadCommand() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell test(weird name).gql",
+                anything(),
+                "match movie sub entity; ask;",
+                containsString("True")
+        );
+    }
+
+    @Test
+    public void testLoadCommandWithEscapes() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
+                anything(),
+                "match movie sub entity; ask;",
+                containsString("True")
+        );
     }
 
     @Test
