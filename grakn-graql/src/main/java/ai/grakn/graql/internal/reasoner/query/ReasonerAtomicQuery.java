@@ -102,8 +102,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        return super.equals(obj);
+        return !(obj == null || this.getClass() != obj.getClass()) && super.equals(obj);
     }
 
     @Override
