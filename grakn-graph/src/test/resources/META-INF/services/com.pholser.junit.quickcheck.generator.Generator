@@ -32,4 +32,4 @@ ai.grakn.generator.Rules
 ai.grakn.generator.Resources
 ai.grakn.generator.MetaTypeNames
 ai.grakn.generator.Methods
-ai.grakn.generator.CommonStrings
+ai.grakn.generator.MetasyntacticStrings

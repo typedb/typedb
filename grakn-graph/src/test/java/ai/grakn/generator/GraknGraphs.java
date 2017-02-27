@@ -120,11 +120,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     // A list of methods that will mutate the graph in some random way when called
     private final ImmutableList<Runnable> mutators = ImmutableList.of(
-            () -> graph.putEntityType(gen(TypeName.class)),
-            () -> graph.putResourceType(gen(TypeName.class), gen(ResourceType.DataType.class)),
-            () -> graph.putResourceTypeUnique(gen(TypeName.class), gen(ResourceType.DataType.class)),
-            () -> graph.putRoleType(gen(TypeName.class)),
-            () -> graph.putRelationType(gen(TypeName.class)),
+            () -> graph.putEntityType(typeName()),
+            () -> graph.putResourceType(typeName(), gen(ResourceType.DataType.class)),
+            () -> graph.putResourceTypeUnique(typeName(), gen(ResourceType.DataType.class)),
+            () -> graph.putRoleType(typeName()),
+            () -> graph.putRelationType(typeName()),
             () -> graph.showImplicitConcepts(gen(Boolean.class)),
             () -> type().playsRole(roleType()),
             () -> type().hasResource(resourceType()),
@@ -147,6 +147,10 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> rule().addHypothesis(type()),
             () -> rule().addConclusion(type())
     );
+
+    private TypeName typeName() {
+        return gen().make(TypeNames.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
+    }
 
     private Type type() {
         return random.choose(graph.admin().getMetaConcept().subTypes());
