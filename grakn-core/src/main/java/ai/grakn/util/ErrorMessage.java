@@ -82,7 +82,7 @@ public enum ErrorMessage {
     VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE("RoleType [%s] has more than one has-role connections to Relation Types. \n"),
     VALIDATION_RELATION_TYPE("Relation Type [%s] does not have two or more roles \n"),
     VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type [%s] is playing role [%s] which it is not allowed \n"),
-    VALIDATION_INSTANCE("Instance [%s] does not play all required roles \n"),
+    VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
