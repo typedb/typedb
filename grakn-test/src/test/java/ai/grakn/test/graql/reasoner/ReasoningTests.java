@@ -194,8 +194,7 @@ public class ReasoningTests {
      * recursive relation having same type for different role players
      * tests for handling recursivity and equivalence of queries and relations
      */
-    @Ignore
-    @Test //Expected result: The query should return a unique match (note: this test seems to behave non-deterministically)
+    @Test //Expected result: The query should return a unique match
     public void transRelationWithEntityGuardsAtBothEnds() {
         QueryBuilder iqb = testSet10.graph().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation2;";
