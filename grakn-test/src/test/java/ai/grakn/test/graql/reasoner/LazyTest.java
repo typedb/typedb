@@ -16,7 +16,6 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
