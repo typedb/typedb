@@ -83,7 +83,6 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Test
-    @Ignore
     public void afterSubmitting_AllTasksAreCompleted(){
         Set<TaskState> tasks = createTasks(10, CREATED);
         tasks.forEach(taskManager::addTask);
