@@ -486,7 +486,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         private void updateCache(){
-            dCache.remove(cache, subGoals);
+            dCache.remove(cache);
             cache.add(dCache);
             cache.reload();
         }
