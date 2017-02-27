@@ -646,7 +646,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
         return casting;
     }
-    CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
+    CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
         CastingImpl foundCasting  = null;
         if(rolePlayer != null) {
             foundCasting = getCasting(role, rolePlayer);
@@ -1107,7 +1107,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            putCasting(roleTypeOfResource, main, otherRelation);
+            addCasting(roleTypeOfResource, main, otherRelation);
         }
 
         //Explicitly track this new relation so we don't create duplicates

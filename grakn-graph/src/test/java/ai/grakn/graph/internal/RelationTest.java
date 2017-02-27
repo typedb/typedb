@@ -93,8 +93,8 @@ public class RelationTest extends GraphTestBase{
 
         relation = (RelationImpl) relationType.addRelation();
 
-        casting1 = graknGraph.putCasting(role1, rolePlayer1, relation);
-        casting2 = graknGraph.putCasting(role2, rolePlayer2, relation);
+        casting1 = graknGraph.addCasting(role1, rolePlayer1, relation);
+        casting2 = graknGraph.addCasting(role2, rolePlayer2, relation);
     }
 
     @Test

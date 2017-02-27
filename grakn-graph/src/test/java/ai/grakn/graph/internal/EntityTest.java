@@ -67,8 +67,8 @@ public class EntityTest extends GraphTestBase{
         RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
         Relation relation = relationType.addRelation();
         Relation relation2 = relationType.addRelation();
-        CastingImpl casting1 = graknGraph.putCasting(role, rolePlayer1, (RelationImpl) relation);
-        CastingImpl casting2 = graknGraph.putCasting(role2, rolePlayer1, (RelationImpl) relation2);
+        CastingImpl casting1 = graknGraph.addCasting(role, rolePlayer1, (RelationImpl) relation);
+        CastingImpl casting2 = graknGraph.addCasting(role2, rolePlayer1, (RelationImpl) relation2);
 
         Set<ConceptImpl> castings = rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER);
 

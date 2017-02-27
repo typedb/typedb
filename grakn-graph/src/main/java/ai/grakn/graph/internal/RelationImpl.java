@@ -173,8 +173,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
                         out(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
-                    ConceptImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
-                    throw new ConceptNotUniqueException(resource, foundNeighbour.asInstance());
+                    InstanceImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
+                    throw new ConceptNotUniqueException(resource, foundNeighbour);
                 }
             }
         }
@@ -196,7 +196,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
         if(instance != null) {
-            getGraknGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
+            getGraknGraph().addCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
         }
         return this;
     }
