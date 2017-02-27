@@ -6,7 +6,7 @@ import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils;
+import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;

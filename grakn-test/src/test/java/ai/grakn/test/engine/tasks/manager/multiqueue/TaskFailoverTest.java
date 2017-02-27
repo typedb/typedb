@@ -191,15 +191,6 @@ public class TaskFailoverTest {
                     .forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
         }
         assertNotNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)));
-
-
-        if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)) == null) {
-            connection.connection().create()
-                    .creatingParentContainersIfNeeded()
-                    .withMode(CreateMode.EPHEMERAL)
-                    .forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
-        }
-        assertNotNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
     }
 
     private void registerTasksInZKLikeTaskRunnerWould(String id, Set<TaskState> tasks) throws Exception{
@@ -214,7 +205,6 @@ public class TaskFailoverTest {
 
     private void killFakeEngine(String id) throws Exception {
         connection.connection().delete().forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
-        assertNull(connection.connection().delete().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)));
-
+        assertNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)));
     }
 }

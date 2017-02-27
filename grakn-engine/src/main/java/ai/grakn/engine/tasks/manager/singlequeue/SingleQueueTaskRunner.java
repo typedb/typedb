@@ -118,7 +118,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
 
-                    LOG.debug("{} acknowledged", record.key().getValue());
+                    LOG.trace("{} acknowledged", record.key().getValue());
                 }
             } catch (Throwable throwable){
                 LOG.error("error thrown", getFullStackTrace(throwable));
@@ -173,7 +173,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 LOG.debug("{}\tmarked as failed", task);
             } finally {
                 storage.updateState(task);
-                LOG.debug("{}\trecorded", task);
             }
         }
     }
