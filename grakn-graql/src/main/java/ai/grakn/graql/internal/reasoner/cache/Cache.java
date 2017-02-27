@@ -23,8 +23,10 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
 
@@ -72,6 +74,25 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
     public abstract T getAnswers(Q query);
     public abstract Stream<Map<VarName, Concept>> getAnswerStream(Q query);
     public abstract LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query);
+
+    public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars){
+        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
+        Set<Map<VarName, Concept>> answers = getAnswerStream(query).collect(Collectors.toSet());
+        answers.forEach(answer -> answer.entrySet().stream()
+                    .filter(e -> vars.contains(e.getKey()))
+                    .forEach(entry -> {
+                        Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
+                        Set<Map<VarName, Concept>> match = inverseAnswerMap.get(key);
+                        if (match != null){
+                            match.add(answer);
+                        } else {
+                            Set<Map<VarName, Concept>> ans = new HashSet<>();
+                            ans.add(answer);
+                            inverseAnswerMap.put(key, ans);
+                        }
+                    }));
+        return inverseAnswerMap;
+    }
 
     Map<VarName, VarName> getRecordUnifiers(Q toRecord){
         Q equivalentQuery = contains(toRecord)? cache.get(toRecord).getKey() : null;
