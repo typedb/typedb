@@ -146,7 +146,7 @@ public class LazyTest {
         assertEquals(count, 0);
     }
 
-    @Test //(timeout = 30000)
+    @Test 
     public void testLazy()  {
         final int N = 30;
 
