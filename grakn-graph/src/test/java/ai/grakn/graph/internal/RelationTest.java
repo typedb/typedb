@@ -58,10 +58,12 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ID;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_TYPE_NAME;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class RelationTest extends GraphTestBase{
@@ -551,5 +553,28 @@ public class RelationTest extends GraphTestBase{
         Vertex v= graknGraph.getTinkerPopGraph().traversal().V(concept.getId().getRawValue()).next();
         assertEquals(inCount, Iterators.size(v.edges(Direction.IN, type.getLabel())));
         assertEquals(outCount, Iterators.size(v.edges(Direction.OUT, type.getLabel())));
+    }
+
+    @Test
+    public void checkMultipleRolePlayersCanBeAddedToSingleRole(){
+        RoleType role1 = graknGraph.putRoleType("r1");
+        RoleType role2 = graknGraph.putRoleType("r2");
+        EntityType entityType = graknGraph.putEntityType("et").playsRole(role1).playsRole(role2);
+        RelationType relationType = graknGraph.putRelationType("rt").hasRole(role1).hasRole(role2);
+
+        Entity entity1 = entityType.addEntity();
+        Entity entity2 = entityType.addEntity();
+        Entity entity3 = entityType.addEntity();
+        Entity entity4 = entityType.addEntity();
+
+        Relation relation = relationType.addRelation().
+                addRolePlayer(role1, entity1).
+                addRolePlayer(role1, entity2).
+                addRolePlayer(role1, entity3).
+                addRolePlayer(role2, entity4);
+
+        assertThat(relation.newRolePlayers(role1), containsInAnyOrder(entity1, entity2, entity3));
+        assertThat(relation.newRolePlayers(role2), containsInAnyOrder(entity4));
+        assertThat(relation.newRolePlayers(), containsInAnyOrder(entity1, entity2, entity3, entity4));
     }
 }
