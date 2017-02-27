@@ -70,7 +70,13 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 /**
+ * <p>
+ * This is a modified version of Spark Computer.
+ * We change its behaviour so it can won't destroy the rdd after every job.
+ * </p>
+ *
  * @author Jason Liu
+ * @author Marko A. Rodriguez
  */
 public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
 

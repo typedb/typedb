@@ -49,7 +49,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * <p>
+ * This is a modified version of Spark Executor.
+ * We change its behaviour so it can work with our own graph computer.
+ * </p>
+ *
  * @author Jason Liu
+ * @author Marko A. Rodriguez
  */
 public class GraknSparkExecutor {
 

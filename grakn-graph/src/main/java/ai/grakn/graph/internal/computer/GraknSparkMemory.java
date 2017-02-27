@@ -40,7 +40,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * <p>
+ * This is a modified version of Spark Memory.
+ * We change its behaviour so it can work with our own graph computer.
+ * </p>
+ *
  * @author Jason Liu
+ * @author Marko A. Rodriguez
  */
 public class GraknSparkMemory implements Memory.Admin, Serializable {
 
