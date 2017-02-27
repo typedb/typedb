@@ -22,12 +22,14 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.util.ErrorMessage;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.regex.PatternSyntaxException;
 
 import static junit.framework.TestCase.assertNull;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -75,7 +77,7 @@ public class ResourceTypeTest extends GraphTestBase{
         resourceType.setRegex("[abc]");
         resourceType.putResource("a");
         expectedException.expect(InvalidConceptValueException.class);
-        expectedException.expectMessage("regular expressions");
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(resourceType.getName().getValue())));
         resourceType.putResource("1");
     }
 
