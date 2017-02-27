@@ -25,7 +25,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
@@ -70,7 +69,6 @@ public class RelationPropertyIT {
         assertThat(relation.newRolePlayers(roleType), hasItem(rolePlayer));
     }
 
-    @Ignore // TODO: Fix this
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
             Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
