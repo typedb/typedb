@@ -103,7 +103,7 @@ public class RelationTest extends GraphTestBase{
         RoleType roleType = graknGraph.putRoleType("A role");
         Instance instance = type.addEntity();
 
-        relation.putRolePlayer(roleType, instance);
+        relation.addRolePlayer(roleType, instance);
         assertEquals(4, relation.rolePlayers().size());
         assertTrue(relation.rolePlayers().keySet().contains(roleType));
         assertTrue(relation.rolePlayers().values().contains(instance));
@@ -121,17 +121,17 @@ public class RelationTest extends GraphTestBase{
 
         Relation relation = relationType.addRelation();
 
-        relation.putRolePlayer(role1, a);
+        relation.addRolePlayer(role1, a);
         assertEquals(0, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
         assertEquals(0, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
         assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
 
-        relation.putRolePlayer(role2, b);
+        relation.addRolePlayer(role2, b);
         assertEquals(1, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
         assertEquals(1, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
         assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
 
-        relation.putRolePlayer(role3, c);
+        relation.addRolePlayer(role3, c);
         assertEquals(2, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
         assertEquals(2, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
         assertEquals(2, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
@@ -266,9 +266,9 @@ public class RelationTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("Relation Type");
 
         Relation rel = relationType.addRelation().
-                putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2).putRolePlayer(roleType3, resource);
+                addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2).addRolePlayer(roleType3, resource);
 
-        relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance3);
+        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance3);
 
         assertEquals(1, instance1.resources().size());
         assertEquals(2, resource.ownerInstances().size());
@@ -305,8 +305,8 @@ public class RelationTest extends GraphTestBase{
         roleMap.put(roleType1, instance1);
         roleMap.put(roleType2, null);
 
-        relation.putRolePlayer(roleType1, instance1);
-        relation.putRolePlayer(roleType2, null);
+        relation.addRolePlayer(roleType1, instance1);
+        relation.addRolePlayer(roleType2, null);
 
         graknGraph.commit();
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
@@ -331,8 +331,8 @@ public class RelationTest extends GraphTestBase{
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
 
-        Relation relation1 = relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
-        relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        Relation relation1 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()));
@@ -348,7 +348,7 @@ public class RelationTest extends GraphTestBase{
         RelationType relationType1 = graknGraph.putRelationType("Another relation type").hasRole(roleType1).hasRole(roleType2);
         Instance instance1 = type.addEntity();
 
-        Relation relation1 = relationType1.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, null);
+        Relation relation1 = relationType1.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, null);
 
         Map<RoleType, Instance> roleTypeInstanceMap = new HashMap<>();
         roleTypeInstanceMap.put(roleType1, instance1);
@@ -370,8 +370,8 @@ public class RelationTest extends GraphTestBase{
         Resource<Long> degree1 = degreeType.putResource(100L);
         Resource<Long> degree2 = degreeType.putResource(101L);
 
-        Relation relation1 = hasDegree.addRelation().putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree1);
-        hasDegree.addRelation().putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree2);
+        Relation relation1 = hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree1);
+        hasDegree.addRelation().addRolePlayer(entityRole, entity).addRolePlayer(degreeRole, degree2);
 
         assertEquals(2, entity.relations().size());
 
@@ -389,7 +389,7 @@ public class RelationTest extends GraphTestBase{
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
 
-        Relation relation = relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        Relation relation = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
         String mainDescription = "ID [" + relation.getId() +  "] Type [" + relation.type().getName() + "] Roles and Role Players:";
         String rolerp1 = "    Role [" + roleType1.getName() + "] played by [" + instance1.getId() + "]";
@@ -412,7 +412,7 @@ public class RelationTest extends GraphTestBase{
         Entity b = type.addEntity();
         Entity c = type.addEntity();
 
-        ConceptId relationId = relation.addRelation().putRolePlayer(roleA, a).putRolePlayer(roleB, b).putRolePlayer(roleC, c).getId();
+        ConceptId relationId = relation.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b).addRolePlayer(roleC, c).getId();
 
         a.delete();
         assertNotNull(graknGraph.getConcept(relationId));
@@ -433,8 +433,8 @@ public class RelationTest extends GraphTestBase{
         Instance godfather = movie.addEntity();
 
         RelationImpl relation = (RelationImpl) cast.addRelation().
-                putRolePlayer(feature, null).putRolePlayer(actor, pacino);
-        relation.putRolePlayer(feature, godfather);
+                addRolePlayer(feature, null).addRolePlayer(actor, pacino);
+        relation.addRolePlayer(feature, godfather);
         assertEquals(2, relation.getMappingCasting().size());
         assertTrue(relation.rolePlayers().values().contains(pacino));
         assertTrue(relation.rolePlayers().values().contains(godfather));
@@ -445,7 +445,7 @@ public class RelationTest extends GraphTestBase{
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(ROLE_IS_NULL.getMessage(rolePlayer1));
 
-        relationType.addRelation().putRolePlayer(null, rolePlayer1);
+        relationType.addRelation().addRolePlayer(null, rolePlayer1);
     }
 
     @Test
@@ -473,10 +473,10 @@ public class RelationTest extends GraphTestBase{
         cast.hasRole(actor);
 
         RelationImpl assertion = (RelationImpl) cast.addRelation().
-                putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
+                addRolePlayer(feature, godfather).addRolePlayer(actor, pacino);
 
         movieHasGenre.addRelation().
-                putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
+                addRolePlayer(movieOfGenre, godfather).addRolePlayer(movieGenre, crime);
 
         movieHasGenre.hasRole(movieOfGenre);
         movieHasGenre.hasRole(movieGenre);

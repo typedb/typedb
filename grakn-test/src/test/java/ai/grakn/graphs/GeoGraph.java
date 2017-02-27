@@ -115,75 +115,75 @@ public class GeoGraph extends TestGraph {
     @Override
     public void buildRelations(GraknGraph graph) {
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, PW)
-                .putRolePlayer(entityLocation, Warsaw);
+                .addRolePlayer(geoEntity, PW)
+                .addRolePlayer(entityLocation, Warsaw);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, UW)
-                .putRolePlayer(entityLocation, Warsaw);
+                .addRolePlayer(geoEntity, UW)
+                .addRolePlayer(entityLocation, Warsaw);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Imperial)
-                .putRolePlayer(entityLocation, London);
+                .addRolePlayer(geoEntity, Imperial)
+                .addRolePlayer(entityLocation, London);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, UCL)
-                .putRolePlayer(entityLocation, London);
+                .addRolePlayer(geoEntity, UCL)
+                .addRolePlayer(entityLocation, London);
 
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Warsaw)
-                .putRolePlayer(entityLocation, Masovia);
+                .addRolePlayer(geoEntity, Warsaw)
+                .addRolePlayer(entityLocation, Masovia);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Masovia)
-                .putRolePlayer(entityLocation, Poland);
+                .addRolePlayer(geoEntity, Masovia)
+                .addRolePlayer(entityLocation, Poland);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Wroclaw)
-                .putRolePlayer(entityLocation, Silesia);
+                .addRolePlayer(geoEntity, Wroclaw)
+                .addRolePlayer(entityLocation, Silesia);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Silesia)
-                .putRolePlayer(entityLocation, Poland);
+                .addRolePlayer(geoEntity, Silesia)
+                .addRolePlayer(entityLocation, Poland);
 
 
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Poland)
-                .putRolePlayer(entityLocation, Europe);
+                .addRolePlayer(geoEntity, Poland)
+                .addRolePlayer(entityLocation, Europe);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, London)
-                .putRolePlayer(entityLocation, GreaterLondon);
+                .addRolePlayer(geoEntity, London)
+                .addRolePlayer(entityLocation, GreaterLondon);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, GreaterLondon)
-                .putRolePlayer(entityLocation, England);
+                .addRolePlayer(geoEntity, GreaterLondon)
+                .addRolePlayer(entityLocation, England);
 
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, England)
-               .putRolePlayer(entityLocation, Europe);
+                .addRolePlayer(geoEntity, England)
+               .addRolePlayer(entityLocation, Europe);
 
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Munich)
-                .putRolePlayer(entityLocation, Bavaria);
+                .addRolePlayer(geoEntity, Munich)
+                .addRolePlayer(entityLocation, Bavaria);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Bavaria)
-                .putRolePlayer(entityLocation, Germany);
+                .addRolePlayer(geoEntity, Bavaria)
+                .addRolePlayer(entityLocation, Germany);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Germany)
-                .putRolePlayer(entityLocation, Europe);
+                .addRolePlayer(geoEntity, Germany)
+                .addRolePlayer(entityLocation, Europe);
 
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Milan)
-                .putRolePlayer(entityLocation, Lombardy);
+                .addRolePlayer(geoEntity, Milan)
+                .addRolePlayer(entityLocation, Lombardy);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Lombardy)
-                .putRolePlayer(entityLocation, Italy);
+                .addRolePlayer(geoEntity, Lombardy)
+                .addRolePlayer(entityLocation, Italy);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Italy)
-                .putRolePlayer(entityLocation, Europe);
+                .addRolePlayer(geoEntity, Italy)
+                .addRolePlayer(entityLocation, Europe);
 
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, Paris)
-                .putRolePlayer(entityLocation, IleDeFrance);
+                .addRolePlayer(geoEntity, Paris)
+                .addRolePlayer(entityLocation, IleDeFrance);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, IleDeFrance)
-                .putRolePlayer(entityLocation, France);
+                .addRolePlayer(geoEntity, IleDeFrance)
+                .addRolePlayer(entityLocation, France);
         isLocatedIn.addRelation()
-                .putRolePlayer(geoEntity, France)
-                .putRolePlayer(entityLocation, Europe);
+                .addRolePlayer(geoEntity, France)
+                .addRolePlayer(entityLocation, Europe);
 
     }
 

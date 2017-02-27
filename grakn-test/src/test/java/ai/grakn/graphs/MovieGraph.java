@@ -242,8 +242,8 @@ public class MovieGraph extends TestGraph {
     @Override
     protected void buildRelations(GraknGraph graph) {
         directedBy.addRelation()
-                .putRolePlayer(productionBeingDirected, chineseCoffee)
-                .putRolePlayer(director, alPacino);
+                .addRolePlayer(productionBeingDirected, chineseCoffee)
+                .addRolePlayer(director, alPacino);
 
         hasCast(godfather, marlonBrando, donVitoCorleone);
         hasCast(godfather, alPacino, michaelCorleone);
@@ -305,21 +305,21 @@ public class MovieGraph extends TestGraph {
 
     private static void hasCast(Instance movie, Instance person, Instance character) {
         hasCast.addRelation()
-                .putRolePlayer(productionWithCast, movie)
-                .putRolePlayer(actor, person)
-                .putRolePlayer(characterBeingPlayed, character);
+                .addRolePlayer(productionWithCast, movie)
+                .addRolePlayer(actor, person)
+                .addRolePlayer(characterBeingPlayed, character);
     }
 
     private static void hasGenre(Instance movie, Instance genre) {
         hasGenre.addRelation()
-                .putRolePlayer(productionWithGenre, movie)
-                .putRolePlayer(genreOfProduction, genre);
+                .addRolePlayer(productionWithGenre, movie)
+                .addRolePlayer(genreOfProduction, genre);
     }
 
     private static void hasCluster(Instance cluster, Instance... movies) {
-        Relation relation = hasCluster.addRelation().putRolePlayer(clusterOfProduction, cluster);
+        Relation relation = hasCluster.addRelation().addRolePlayer(clusterOfProduction, cluster);
         for (Instance movie : movies) {
-            relation.putRolePlayer(productionWithCluster, movie);
+            relation.addRolePlayer(productionWithCluster, movie);
         }
     }
 }

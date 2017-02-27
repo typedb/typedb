@@ -90,7 +90,7 @@ public class PostProcessingTest {
         Instance instance3 = thing.addEntity();
         Instance instance4 = thing.addEntity();
 
-        relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
         //Record Needed Ids
         ConceptId relationTypeId = relationType.getId();
@@ -130,7 +130,7 @@ public class PostProcessingTest {
         RelationType relationType = graph.getConcept(relationTypeId);
         Instance otherInstance = graph.getConcept(otherInstanceId);
         RoleType otherRoleType = graph.getConcept(otherRoleTypeId);
-        Relation relation = relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
+        Relation relation = relationType.addRelation().addRolePlayer(otherRoleType, otherInstance);
         ConceptId relationId = relation.getId();
 
         Graph rawGraph = ((AbstractGraknGraph) this.graph).getTinkerPopGraph();

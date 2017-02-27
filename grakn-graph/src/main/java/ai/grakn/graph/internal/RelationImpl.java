@@ -158,7 +158,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     @Override
-    public Relation putRolePlayer(RoleType roleType, Instance instance) {
+    public Relation addRolePlayer(RoleType roleType, Instance instance) {
         if(roleType == null){
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
         }
@@ -181,6 +181,11 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
         //Do the actual put of the role and role player
         return addNewRolePlayer(roleType, instance);
+    }
+
+    @Override
+    public void removeRolePlayer(RoleType roleType, Instance... instances) {
+        //TODO: Implement this thing
     }
 
     /**

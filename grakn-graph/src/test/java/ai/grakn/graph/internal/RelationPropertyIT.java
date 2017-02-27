@@ -53,7 +53,7 @@ public class RelationPropertyIT {
 
         assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
 
-        relation.putRolePlayer(roleType, rolePlayer);
+        relation.addRolePlayer(roleType, rolePlayer);
 
         assertThat(relation.newRolePlayers(), hasItem(rolePlayer));
     }
@@ -64,7 +64,7 @@ public class RelationPropertyIT {
 
         assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
 
-        relation.putRolePlayer(roleType, rolePlayer);
+        relation.addRolePlayer(roleType, rolePlayer);
 
         assertThat(relation.newRolePlayers(roleType), hasItem(rolePlayer));
     }
@@ -77,7 +77,7 @@ public class RelationPropertyIT {
 
         Instance[] rolePlayers = relation.newRolePlayers().toArray(new Instance[0]);
 
-        relation.putRolePlayer(roleType, rolePlayer);
+        relation.addRolePlayer(roleType, rolePlayer);
 
         assertThat(relation.newRolePlayers(roleType), hasItems(rolePlayers));
     }

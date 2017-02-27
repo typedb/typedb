@@ -95,8 +95,16 @@ public interface Relation extends Instance {
      *
      * @throws ConceptNotUniqueException if the concept is only allowed to play this role once.
      */
-    // TODO: Rename this to `addRolePlayer`?
-    Relation putRolePlayer(RoleType roleType, Instance instance);
+    Relation addRolePlayer(RoleType roleType, Instance instance);
+
+    /**
+     * Removes the provided role players from this relation.
+     * If no instance is provided then all instances playing the role are removed.
+     *
+     * @param roleType The role type of the roleplayer(s) to remove
+     * @param instances The instances to remove
+     */
+    void removeRolePlayer(RoleType roleType, Instance ... instances);
 
     //------------------------------------- Other ----------------------------------
 

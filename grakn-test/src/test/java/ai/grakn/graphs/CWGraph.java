@@ -151,18 +151,18 @@ public class CWGraph extends TestGraph {
     protected void buildRelations(GraknGraph graph) {
         //Enemy(Nono, America)
         isEnemyOf.addRelation()
-                .putRolePlayer(enemySource, Nono)
-                .putRolePlayer(enemyTarget, America);
+                .addRolePlayer(enemySource, Nono)
+                .addRolePlayer(enemyTarget, America);
 
         //Owns(Nono, Missile)
         owns.addRelation()
-                .putRolePlayer(owner, Nono)
-                .putRolePlayer(ownedItem, Tomahawk);
+                .addRolePlayer(owner, Nono)
+                .addRolePlayer(ownedItem, Tomahawk);
 
         //isPaidBy(West, Nono)
         isPaidBy.addRelation()
-                .putRolePlayer(payee, colonelWest)
-                .putRolePlayer(payer, Nono);
+                .addRolePlayer(payee, colonelWest)
+                .addRolePlayer(payer, Nono);
     }
 
     @Override

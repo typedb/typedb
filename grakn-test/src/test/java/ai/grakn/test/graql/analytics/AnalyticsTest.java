@@ -122,7 +122,7 @@ public class AnalyticsTest {
             thing.playsRole(degreeOwner);
 
             Entity thisThing = thing.addEntity();
-            relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
+            relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
             graph.commitOnClose();
         }
 
