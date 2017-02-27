@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -96,6 +97,7 @@ public class CountTest {
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
+        GraknSparkComputer.close();
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");

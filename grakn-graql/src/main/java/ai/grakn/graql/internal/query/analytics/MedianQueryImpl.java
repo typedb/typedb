@@ -37,6 +37,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     @Override
     public Optional<Number> execute() {
         LOGGER.info("MedianVertexProgram is called");
+        long startTime = System.currentTimeMillis();
+
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
@@ -44,7 +46,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
 
         ComputerResult result = getGraphComputer().compute(
                 new MedianVertexProgram(allSubTypes, statisticsResourceTypeNames, dataType));
-        LOGGER.info("MedianVertexProgram is done");
+
+        LOGGER.info("MedianVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
     }
 

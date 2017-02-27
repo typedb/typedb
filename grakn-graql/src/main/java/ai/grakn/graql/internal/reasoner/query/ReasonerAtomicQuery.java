@@ -102,8 +102,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        return super.equals(obj);
+        return !(obj == null || this.getClass() != obj.getClass()) && super.equals(obj);
     }
 
     @Override
@@ -304,9 +303,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                                            Cache<ReasonerAtomicQuery, ?> dCache,
                                                            boolean materialise){
         Stream<Map<VarName, Concept>> join = Stream.empty();
-        Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
 
-        for(ReasonerAtomicQuery qi : uniqueQueries){
+        for(ReasonerAtomicQuery qi : queries){
             Stream<Map<VarName, Concept>> subs = qi.answerStream(subGoals, cache, dCache, materialise, true);
             Set<VarName> joinedVars = qi.getVarNames();
             for(ReasonerAtomicQuery qj : queries){
@@ -488,7 +486,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         private void updateCache(){
-            dCache.remove(cache, subGoals);
+            dCache.remove(cache);
             cache.add(dCache);
             cache.reload();
         }

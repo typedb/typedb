@@ -29,6 +29,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -43,6 +44,7 @@ import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -93,10 +95,15 @@ public class GraqlTest {
         logger.setLevel(Level.DEBUG);
     }
 
+    @After
+    public void close() {
+        GraknSparkComputer.close();
+    }
+
     @Test
     public void testGraqlCount() throws GraknValidationException, InterruptedException, ExecutionException {
         addOntologyAndEntities();
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             assertEquals(6L, ((Long) graph.graql().parse("compute count;").execute()).longValue());
             assertEquals(3L, ((Long) graph.graql().parse("compute count in thing, thing;").execute()).longValue());
         }
@@ -108,8 +115,8 @@ public class GraqlTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        try(GraknGraph graph = factory.getGraph()) {
-            Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery > parse("compute degrees;").execute();
+        try (GraknGraph graph = factory.getGraph()) {
+            Map<Long, Set<String>> degrees = graph.graql().<DegreeQuery>parse("compute degrees;").execute();
 
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
@@ -131,7 +138,7 @@ public class GraqlTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidIdWithAnalytics() {
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             graph.graql().parse("compute sum of thing;").execute();
         }
     }
@@ -141,7 +148,7 @@ public class GraqlTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             TypeName resourceTypeId = TypeName.of("my-resource");
 
             RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
@@ -168,7 +175,7 @@ public class GraqlTest {
             graph.commitOnClose();
         }
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             // use graql to compute various statistics
             Optional<? extends Number> result = graph.graql().<SumQuery>parse("compute sum of my-resource;").execute();
             assertEquals(Optional.of(6L), result);
@@ -189,7 +196,7 @@ public class GraqlTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             Map<String, Long> sizeMap =
                     graph.graql().<ClusterQuery<Map<String, Long>>>parse("compute cluster;").execute();
             assertTrue(sizeMap.isEmpty());
@@ -206,7 +213,7 @@ public class GraqlTest {
 
         addOntologyAndEntities();
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             PathQuery query = graph.graql().parse("compute path from '" + entityId1 + "' to '" + entityId2 + "';");
 
             Optional<List<Concept>> path = query.execute();
@@ -221,19 +228,19 @@ public class GraqlTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws GraknValidationException {
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             graph.putEntityType(thing);
             graph.commitOnClose();
         }
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             graph.graql().parse("compute sum in thing;").execute();
         }
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws GraknValidationException {
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             graph.graql().parse("compute sum;").execute();
             graph.graql().parse("compute min;").execute();
             graph.graql().parse("compute max;").execute();
@@ -246,7 +253,7 @@ public class GraqlTest {
     public void testAnalyticsDoesNotCommitByMistake() throws GraknValidationException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             graph.putResourceType("number", ResourceType.DataType.LONG);
             graph.commitOnClose();
         }
@@ -257,7 +264,7 @@ public class GraqlTest {
                 "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
-            try(GraknGraph graph = factory.getGraph()) {
+            try (GraknGraph graph = factory.getGraph()) {
                 // insert a node but do not commit it
                 graph.graql().parse("insert thing sub entity;").execute();
                 // use analytics
@@ -271,7 +278,7 @@ public class GraqlTest {
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -300,5 +307,6 @@ public class GraqlTest {
 
             graph.commitOnClose();
         }
+        GraknSparkComputer.close();
     }
 }

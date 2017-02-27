@@ -43,6 +43,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
 
     public Cache(){ super();}
     public boolean contains(Q query){ return cache.containsKey(query);}
+    public Set<Q> getQueries(){ return cache.keySet();}
 
     /**
      * record answer iterable for a specific query and retrieve the updated answers
@@ -98,6 +99,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
      * @param queries to which answers shall be subtracted
      */
     public abstract void remove(Cache<Q, T> c2, Set<Q> queries);
+    public void remove(Cache<Q, T> c2){ remove(c2, getQueries());}
 
     public void clear(){ cache.clear();}
 
