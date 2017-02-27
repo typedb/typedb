@@ -27,6 +27,7 @@ import ai.grakn.graphs.PathGraphII;
 import ai.grakn.graphs.PathGraphSymmetric;
 import ai.grakn.graphs.TailRecursionGraph;
 import ai.grakn.graphs.TransitivityChainGraph;
+import ai.grakn.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
@@ -485,6 +486,20 @@ public class RecursiveInferenceTest {
     public void testTransitiveChain(){
         final int N = 10;
         graphContext.load(TransitivityChainGraph.get(N));
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
+
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; select $y;";
+        String explicitQuery = "match $y isa a-entity;";
+
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testTransitiveMatrix(){
+        final int N = 5;
+        graphContext.load(TransitivityMatrixGraph.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
