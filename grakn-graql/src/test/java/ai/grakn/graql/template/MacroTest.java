@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.parse;
+import static junit.framework.TestCase.assertEquals;
 
 public class MacroTest {
 
