@@ -21,7 +21,10 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.backgroundtasks.distributed.TaskFailover;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Set;
@@ -34,6 +37,7 @@ import static java.util.stream.Collectors.toSet;
  * Class holding useful methods for use throughout background task tests
  */
 public class BackgroundTaskTestUtils {
+    private final static Logger LOG = LoggerFactory.getLogger(TaskFailover.class);
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
         return IntStream.range(0, n)
@@ -59,7 +63,7 @@ public class BackgroundTaskTestUtils {
     public static void waitForStatus(TaskStateStorage storage, TaskState task, TaskStatus status) {
         final long initial = new Date().getTime();
 
-        while((new Date().getTime())-initial < 60000) {
+        while((new Date().getTime())-initial < 15000) {
             try {
                 TaskStatus currentStatus = storage.getState(task.getId()).status();
                 if (currentStatus == status) {
@@ -67,5 +71,7 @@ public class BackgroundTaskTestUtils {
                 }
             } catch (Exception ignored){}
         }
+
+        LOG.debug("Timed out waiting for status of {}", task.getId());
     }
 }

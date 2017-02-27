@@ -30,12 +30,14 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javafx.util.Pair;
 
 /**
  *
@@ -177,16 +179,52 @@ public class QueryAnswerStream {
         return stream.flatMap(a1 -> {
             Stream<Map<VarName, Concept>> answerStream = l2.stream();
             answerStream = answerStream.filter(ans -> {
-                for(VarName v: joinVars)
-                    if (!ans.get(v).equals(a1.get(v))){
+                for(VarName v: joinVars) {
+                    if (!ans.get(v).equals(a1.get(v))) {
                         return false;
                     }
+                }
                 return true;
             });
             return answerStream.map(a2 ->
                     Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a)));
             });
+    }
+
+    private static Set<Map<VarName, Concept>> findMatchingAnswers(Map<VarName, Concept> answer, Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseMap, VarName joinVar){
+        Pair<VarName, Concept> key = new Pair<>(joinVar, answer.get(joinVar));
+        return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
+    }
+
+    /**
+     * lazy stream join with fast lookup from inverse answer map
+     * @param stream left stream operand
+     * @param stream2 right stream operand
+     * @param stream2InverseMap inverse map of right operand from cache
+     * @param joinVars intersection on variables of two streams
+     * @return joined stream
+     */
+    public static Stream<Map<VarName, Concept>> joinWithInverse(Stream<Map<VarName, Concept>> stream,
+                                                        Stream<Map<VarName, Concept>> stream2,
+                                                        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> stream2InverseMap,
+                                                        ImmutableSet<VarName> joinVars) {
+        if (joinVars.isEmpty()){
+            LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
+            return stream.flatMap(a1 -> l2.stream().map(a2 ->
+                    Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a))));
+        }
+        return stream.flatMap(a1 -> {
+            Iterator<VarName> vit = joinVars.iterator();
+            Set<Map<VarName, Concept>> matchAnswers = findMatchingAnswers(a1, stream2InverseMap, vit.next());
+            while(vit.hasNext()){
+                matchAnswers = Sets.intersection(matchAnswers, findMatchingAnswers(a1, stream2InverseMap, vit.next()));
+            }
+            return matchAnswers.stream().map(a2 ->
+                    Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a)));
+        });
     }
 }
 

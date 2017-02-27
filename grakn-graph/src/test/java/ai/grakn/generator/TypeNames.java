@@ -71,11 +71,7 @@ public class TypeNames extends FromGraphGenerator<TypeName> {
     }
 
     private TypeName randomName() {
-        if (random.nextBoolean()) {
-            return TypeName.of(gen(String.class));
-        } else {
-            return TypeName.of("foo");
-        }
+        return TypeName.of(gen(String.class));
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

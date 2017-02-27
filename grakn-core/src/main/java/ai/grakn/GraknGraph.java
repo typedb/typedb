@@ -377,6 +377,7 @@ public interface GraknGraph extends AutoCloseable{
      */
     void close() throws GraknValidationException;
 
+    // TODO: what does this do when the graph is closed?
     /**
      * Will cause the current transaction to be committed when closing the transaction.
      */

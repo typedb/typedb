@@ -34,8 +34,12 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -51,7 +55,9 @@ import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.creat
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.util.Collections.singleton;
+import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class TaskFailoverTest {
 
@@ -193,12 +199,14 @@ public class TaskFailoverTest {
                     .creatingParentContainersIfNeeded()
                     .withMode(CreateMode.EPHEMERAL).forPath(RUNNERS_WATCH + "/" + id);
         }
+        assertNotNull(connection.connection().checkExists().forPath(RUNNERS_WATCH + "/" + id));
 
         if (connection.connection().checkExists().forPath(RUNNERS_STATE + "/" + id) == null) {
             connection.connection().create()
                     .creatingParentContainersIfNeeded()
                     .forPath(RUNNERS_STATE + "/" + id);
         }
+        assertNotNull(connection.connection().checkExists().forPath(RUNNERS_STATE + "/" + id));
     }
 
     private void registerTasksInZKLikeTaskRunnerWould(String id, Set<TaskState> tasks) throws Exception{
@@ -210,5 +218,6 @@ public class TaskFailoverTest {
 
     private void killFakeEngine(String id) throws Exception {
         connection.connection().delete().forPath(RUNNERS_WATCH + "/" + id);
+        assertNull(connection.connection().checkExists().forPath(RUNNERS_WATCH + "/" + id));
     }
 }
