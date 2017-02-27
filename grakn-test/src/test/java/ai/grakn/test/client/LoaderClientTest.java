@@ -29,8 +29,6 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,11 +56,10 @@ public class LoaderClientTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Rule
-    public final EngineContext engine = EngineContext.startDistributedServer();
+    public final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @Before
     public void setup() {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(LoaderClient.class)).setLevel(Level.DEBUG);
         factory = engine.factoryWithNewKeyspace();
         graph = factory.getGraph();
         loader = new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
@@ -97,7 +94,7 @@ public class LoaderClientTest {
             }
         });
 
-        for(int i = 0; i < 100; i++){
+        for(int i = 0; i < 20; i++){
             InsertQuery query = Graql.insert(
                     var().isa("name_tag")
                             .has("name_tag_string", UUID.randomUUID().toString())
@@ -111,7 +108,7 @@ public class LoaderClientTest {
 
         loader.waitToFinish();
 
-        assertEquals(20, tasksCompletedWithoutError.get());
+        assertEquals(4, tasksCompletedWithoutError.get());
     }
 
     @Test
@@ -121,7 +118,7 @@ public class LoaderClientTest {
         loader.setRetryPolicy(false);
         loader.setBatchSize(5);
         loader.setTaskCompletionConsumer((json) -> {
-            if(json != null){
+            if (json != null) {
                 tasksCompletedWithoutError.incrementAndGet();
             } else {
                 tasksCompletedWithError.incrementAndGet();
@@ -129,7 +126,7 @@ public class LoaderClientTest {
         });
 
 
-        for(int i = 0; i < 100; i++){
+        for(int i = 0; i < 20; i++){
             InsertQuery query = Graql.insert(
                     var().isa("name_tag")
                             .has("name_tag_string", UUID.randomUUID().toString())
@@ -143,8 +140,8 @@ public class LoaderClientTest {
 
         loader.waitToFinish();
 
-        assertThat(tasksCompletedWithoutError.get(), lessThan(20));
-        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(20));
+        assertThat(tasksCompletedWithoutError.get(), lessThan(4));
+        assertThat(tasksCompletedWithoutError.get() + tasksCompletedWithError.get(), equalTo(4));
     }
 
     public static void loadOntology(String keyspace){
