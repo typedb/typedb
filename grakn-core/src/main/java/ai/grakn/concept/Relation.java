@@ -20,6 +20,7 @@ package ai.grakn.concept;
 
 
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 
 import java.util.Collection;
 import java.util.Map;
@@ -66,7 +67,17 @@ public interface Relation extends Instance {
      *
      * @return A list of all the Instances and their Role Types.
      */
+    @Deprecated // TODO: Remove this method
     Map<RoleType, Instance> rolePlayers();
+
+    /**
+     * Retrieves a list of every {@link Instance} involved in the {@link Relation}, filtered by {@link RoleType} played.
+     * @param roleTypes used to filter the returned instances only to ones that play any of the role types.
+     *                  If blank, returns all role players.
+     * @return a list of every {@link Instance} involved in the {@link Relation}.
+     */
+    // TODO: Rename this method to `rolePlayers`
+    Collection<Instance> newRolePlayers(RoleType... roleTypes);
 
     /**
      * Retrieve a list of the Instances that scope this Relation.
@@ -81,7 +92,10 @@ public interface Relation extends Instance {
      * @param roleType The Role Type of the new role player.
      * @param instance The new role player.
      * @return The Relation itself.
+     *
+     * @throws ConceptNotUniqueException if the concept is only allowed to play this role once.
      */
+    // TODO: Rename this to `addRolePlayer`?
     Relation putRolePlayer(RoleType roleType, Instance instance);
 
     //------------------------------------- Other ----------------------------------
