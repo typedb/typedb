@@ -2,23 +2,22 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 
 /**
  * <p>
@@ -40,7 +39,6 @@ public abstract class GraknTestEnv {
     private static AtomicBoolean ENGINE_RUNNING = new AtomicBoolean(false);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
-    private static Path tempDirectory;
 
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
@@ -52,7 +50,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static void startEngine(boolean useDistributedEngine) throws Exception {
+    static void startEngine(String taskManagerClass) throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -70,21 +68,19 @@ public abstract class GraknTestEnv {
 
             // start engine
             RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-            GraknEngineServer.start(useDistributedEngine);
+            GraknEngineServer.start(taskManagerClass);
 
             LOG.info("ENGINE STARTED.");
         }
     }
 
     static void startKafka() throws Exception {
-        tempDirectory = Files.createTempDirectory("graknKafkaUnit " + UUID.randomUUID());
-        kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
         kafkaUnit.startup();
+        kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads());
     }
 
     static void stopKafka() throws Exception {
         kafkaUnit.shutdown();
-        FileUtils.deleteDirectory(tempDirectory.toFile());
     }
 
     static void stopEngine() throws Exception {
@@ -93,7 +89,6 @@ public abstract class GraknTestEnv {
 
             GraknEngineServer.stop();
             clearGraphs();
-            GraknEngineServer.stopHTTP();
 
             LOG.info("ENGINE STOPPED.");
         }
@@ -111,7 +106,7 @@ public abstract class GraknTestEnv {
                 .forEach(x -> x.values().forEach(y -> {
                     String name = y.asResource().getValue().toString();
                     GraknGraph graph = engineGraknGraphFactory.getGraph(name);
-                    graph.clear();
+                    graph.admin().clear(EngineCache.getInstance());
                 }));
 
         engineGraknGraphFactory.refreshConnections();

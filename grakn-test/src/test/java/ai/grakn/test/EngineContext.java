@@ -22,7 +22,10 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import org.junit.rules.ExternalResource;
 
 import static ai.grakn.test.GraknTestEnv.hideLogs;
@@ -42,25 +45,31 @@ import static ai.grakn.test.GraknTestEnv.stopKafka;
 public class EngineContext extends ExternalResource {
 
     private final boolean startKafka;
-    private final boolean startDistributedEngine;
-    private final boolean startInMemoryEngine;
+    private final boolean startMultiQueueEngine;
+    private final boolean startSingleQueueEngine;
+    private final boolean startStandaloneEngine;
 
-    protected EngineContext(boolean startKafka, boolean startDistributedEngine, boolean startInMemoryEngine){
-        this.startDistributedEngine = startDistributedEngine;
-        this.startInMemoryEngine = startInMemoryEngine;
+    private EngineContext(boolean startKafka, boolean startMultiQueueEngine, boolean startSingleQueueEngine, boolean startStandaloneEngine){
+        this.startMultiQueueEngine = startMultiQueueEngine;
+        this.startSingleQueueEngine = startSingleQueueEngine;
+        this.startStandaloneEngine = startStandaloneEngine;
         this.startKafka = startKafka;
     }
 
     public static EngineContext startKafkaServer(){
-        return new EngineContext(true, false, false);
+        return new EngineContext(true, false, false, false);
     }
 
-    public static EngineContext startDistributedServer(){
-        return new EngineContext(true, true, false);
+    public static EngineContext startMultiQueueServer(){
+        return new EngineContext(true, true, false, false);
+    }
+
+    public static EngineContext startSingleQueueServer(){
+        return new EngineContext(true, false, true, false);
     }
 
     public static EngineContext startInMemoryServer(){
-        return new EngineContext(false, false, true);
+        return new EngineContext(false, false, false, true);
     }
 
     public TaskManager getTaskManager(){
@@ -79,19 +88,23 @@ public class EngineContext extends ExternalResource {
             startKafka();
         }
 
-        if (startDistributedEngine){
-            startEngine(true);
+        if(startSingleQueueEngine){
+            startEngine(SingleQueueTaskManager.class.getName());
         }
 
-        if (startInMemoryEngine){
-            startEngine(false);
+        if (startMultiQueueEngine){
+            startEngine(MultiQueueTaskManager.class.getName());
+        }
+
+        if (startStandaloneEngine){
+            startEngine(StandaloneTaskManager.class.getName());
         }
     }
 
     @Override
     public void after() {
         try {
-            if(startDistributedEngine | startInMemoryEngine){
+            if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
                 stopEngine();
             }
 

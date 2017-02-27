@@ -208,7 +208,9 @@ public class LoaderClient {
         }
 
         try {
-            CompletableFuture<Json> status = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
+            String taskId = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
+
+            CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
 
             // Add this status to the set of completable futures
             futures.put(status.hashCode(), status);
@@ -240,7 +242,7 @@ public class LoaderClient {
      *
      * @return A Completable future that terminates when the task is finished
      */
-    private CompletableFuture<Json> executePost(String body) throws HttpRetryException {
+    private String executePost(String body) throws HttpRetryException {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(format(POST, uri) + "?" + getPostParams());
@@ -259,9 +261,8 @@ public class LoaderClient {
 
             // get response
             Json response = Json.read(readResponse(connection.getInputStream()));
-            String id = response.at("id").asString();
 
-            return makeTaskCompletionFuture(id);
+            return response.at("id").asString();
         }
         catch (IOException e){
             if(retry){
