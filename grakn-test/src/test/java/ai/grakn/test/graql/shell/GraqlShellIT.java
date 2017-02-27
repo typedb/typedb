@@ -158,8 +158,28 @@ public class GraqlShellIT {
     @Test
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("", err, "-f", "src/test/graql/shell-test.gql");
+        testShell("", err, "-f", "src/test/graql/shell test(weird name).gql");
         assertEquals("", err.toString());
+    }
+
+    @Test
+    public void testLoadCommand() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell test(weird name).gql",
+                anything(),
+                "match movie sub entity; ask;",
+                containsString("True")
+        );
+    }
+
+    @Test
+    public void testLoadCommandWithEscapes() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
+                anything(),
+                "match movie sub entity; ask;",
+                containsString("True")
+        );
     }
 
     @Test
@@ -554,8 +574,9 @@ public class GraqlShellIT {
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
-        // Intercept stderr and stdout, but make sure it is still printed using the TeeOutputStream
-        PrintStream out = new PrintStream(new TeeOutputStream(bout, trueOut));
+        PrintStream out = new PrintStream(bout);
+
+        // Intercept stderr, but make sure it is still printed using the TeeOutputStream
         PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
 
         try {

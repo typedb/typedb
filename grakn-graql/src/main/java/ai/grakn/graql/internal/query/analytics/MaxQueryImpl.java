@@ -41,6 +41,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     @Override
     public Optional<Number> execute() {
         LOGGER.info("MaxMapReduce is called");
+        long startTime = System.currentTimeMillis();
+
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
@@ -50,7 +52,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new MaxMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
-        LOGGER.info("MaxMapReduce is done");
+
+        LOGGER.info("MaxMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(max.get(MapReduce.NullObject.instance()));
     }
 

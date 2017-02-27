@@ -26,6 +26,7 @@ import java.text.ParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.parse;
@@ -92,6 +93,16 @@ public class MacroTest {
 
     @Test
     public void doubleMacroTest(){
+        String template = "insert $x value @double(<value>);";
+        String expected = "insert $x0 value 4.0;";
+
+        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+    }
+
+    @Test
+    public void whenParsingDoubleInFrenchLocale_DontUseComma(){
+        Locale.setDefault(Locale.FRANCE);
         String template = "insert $x value @double(<value>);";
         String expected = "insert $x0 value 4.0;";
 

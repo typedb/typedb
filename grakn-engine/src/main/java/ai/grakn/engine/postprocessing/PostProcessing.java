@@ -102,13 +102,6 @@ public class PostProcessing {
         isRunning.set(false);
     }
 
-    public void reset() {
-        isRunning.set(false);
-        futures.clear();
-        postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getAvailableThreads());
-        statDump = Executors.newSingleThreadExecutor();
-    }
-
     private void performTasks() {
         currentStage = CASTING_STAGE;
         LOG.info(currentStage);
@@ -200,10 +193,10 @@ public class PostProcessing {
             } else if(typeName.equals("Resources")){
                 numJobs = cache.getNumResourceJobs(keyspace);
             }
-            LOG.info("        Post processing step [" + typeName + " for Graph [" + keyspace + "] has jobs : " + numJobs);
+            LOG.info("        For Graph [" + keyspace + "] has jobs : " + numJobs);
             total += numJobs;
         }
 
-        LOG.info("    Total " + typeName + " Jobs: " + total);
+        LOG.info("    Total Jobs: " + total);
     }
 }
