@@ -105,8 +105,10 @@ public class LoaderClientTest {
 
             loader.add(query);
 
-            GraknEngineServer.stopHTTP();
-            GraknEngineServer.startHTTP();
+            if(i%5 == 0) {
+                GraknEngineServer.stopHTTP();
+                GraknEngineServer.startHTTP();
+            }
         }
 
         loader.waitToFinish();
@@ -137,8 +139,10 @@ public class LoaderClientTest {
 
             loader.add(query);
 
-            GraknEngineServer.stopHTTP();
-            GraknEngineServer.startHTTP();
+            if(i%5 == 0) {
+                GraknEngineServer.stopHTTP();
+                GraknEngineServer.startHTTP();
+            }
         }
 
         loader.waitToFinish();

@@ -5,6 +5,7 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.test.engine.backgroundtasks.BackgroundTaskTestUtils;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
@@ -141,6 +142,7 @@ public abstract class GraknTestEnv {
     public static void hideLogs() {
         ((Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).setLevel(Level.OFF);
         ((Logger) org.slf4j.LoggerFactory.getLogger(GraknTestEnv.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(BackgroundTaskTestUtils.class)).setLevel(Level.DEBUG);
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
     }
 

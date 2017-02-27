@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
@@ -291,7 +291,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             childAtomicQuery = qit.next();
             Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Map<VarName, Concept>> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
-            join = join(join, localSubs, ImmutableSet.copyOf(joinVars));
+            join = joinWithInverse(
+                    join,
+                    localSubs,
+                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
+                    ImmutableSet.copyOf(joinVars));
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
         return join;
@@ -310,7 +314,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
                     Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars));
+                    subs = joinWithInverse(
+                            subs,
+                            cache.getAnswerStream(qj),
+                            cache.getInverseAnswerMap(qj, joinVars),
+                            ImmutableSet.copyOf(joinVars));
                     joinedVars.addAll(qj.getVarNames());
                 }
             }
