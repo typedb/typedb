@@ -168,11 +168,11 @@ public class PostprocessingTest extends GraphTestBase{
 
     @Test
     public void testMergingResourcesWithRelations(){
-        RoleType roleEntity = graknGraph.putRoleType("A Entity Role Type");
-        RoleType roleResource = graknGraph.putRoleType("A Resource Role Type");
-        RelationType relationType = graknGraph.putRelationType("A Relation Type").hasRole(roleEntity).hasRole(roleResource);
+        RoleType roleEntity = graknGraph.putRoleType("Entity Role");
+        RoleType roleResource = graknGraph.putRoleType("Resource Role");
+        RelationType relationType = graknGraph.putRelationType("Relation Type").hasRole(roleEntity).hasRole(roleResource);
         ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).playsRole(roleResource);
-        EntityType entityType = graknGraph.putEntityType("An Entity Type").playsRole(roleEntity);
+        EntityType entityType = graknGraph.putEntityType("Entity Type").playsRole(roleEntity);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Entity e3 = entityType.addEntity();

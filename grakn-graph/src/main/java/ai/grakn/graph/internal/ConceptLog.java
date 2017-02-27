@@ -131,6 +131,14 @@ class ConceptLog {
 
     /**
      *
+     * @return All the relations which have been affected in the transaction
+     */
+    Map<String, RelationImpl> getModifiedRelations(){
+        return modifiedRelations;
+    }
+
+    /**
+     *
      * @param concept The concept to nio longer track
      */
     @SuppressWarnings("SuspiciousMethodCalls")

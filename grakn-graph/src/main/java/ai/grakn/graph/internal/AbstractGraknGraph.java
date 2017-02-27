@@ -51,6 +51,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -63,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -77,6 +77,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
 import static com.sun.corba.se.impl.util.RepositoryId.cache;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
@@ -656,11 +657,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         // Relation To Casting
-        EdgeImpl relationToCasting = addEdge(relation, foundCasting, Schema.EdgeLabel.CASTING);
+        EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
         relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
         getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
-        putShortcutEdges(relation, relation.type());
+        putShortcutEdges(relation, relation.type(), foundCasting);
 
         return foundCasting;
     }
@@ -679,8 +680,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void putShortcutEdges(Relation relation, RelationType relationType){
+    private void putShortcutEdges(Relation relation, RelationType relationType, CastingImpl newCasting){
         Map<RoleType, Instance> roleMap = relation.rolePlayers();
+
+        //This ensures the latest casting is taken into account when transferring relations
+        roleMap.put(newCasting.getRole(), newCasting.getRolePlayer());
+
         if(roleMap.size() > 1) {
             for(Map.Entry<RoleType, Instance> from : roleMap.entrySet()){
                 for(Map.Entry<RoleType, Instance> to :roleMap.entrySet()){
@@ -747,9 +752,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return hash;
     }
 
-    private Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
-        String hash = RelationImpl.generateNewHash(relationType, roleMap);
-        Relation concept = getConceptLog().getCachedRelation(hash);
+    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
+        String hash = generateNewHash(relationType, roleMap);
+        RelationImpl concept = getConceptLog().getCachedRelation(hash);
+
         if(concept == null) {
             concept = getConcept(Schema.ConceptProperty.INDEX, hash);
         }
@@ -1057,8 +1063,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 ResourceImpl<?> otherResource = it.next();
                 Collection<Relation> otherRelations = otherResource.relations();
 
+                //Delete the shortcut edges of the resource we going to delete.
+                //This is so we can copy them uniquely later
+                otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
+
+                //Cope the actual relation
                 for (Relation otherRelation : otherRelations) {
-                    copyRelation(mainResource, otherResource, otherRelation);
+                    copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
                 otherResource.delete();
@@ -1076,29 +1087,31 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param other The other instance which already posses the relation
      * @param otherRelation The other relation to potentially be absorbed
      */
-    private void copyRelation(Instance main, Instance other, Relation otherRelation){
+    private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
         RelationType relationType = otherRelation.type();
+        RoleTypeImpl roleTypeOfResource = null;
         Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
 
         //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
         for (Map.Entry<RoleType, Instance> rolePlayer : rolePlayers.entrySet()) {
             if(rolePlayer.getValue().equals(other)){
                 rolePlayers.put(rolePlayer.getKey(), main);
+                roleTypeOfResource = (RoleTypeImpl) rolePlayer.getKey();
             }
         }
 
-        Relation foundRelation = getRelation(relationType, rolePlayers);
+        //See if a duplicate relation already exists
+        RelationImpl foundRelation = getRelation(relationType, rolePlayers);
 
-        //Delete old Relation
-        deleteRelations(Collections.singleton((RelationImpl) otherRelation));
-
-        if(foundRelation != null){
-            return;
+        if(foundRelation != null){//If it exists delete the other one
+            otherRelation.deleteNode(); //Raw deletion because the castings should remain
+        } else { //If it doesn't exist transfer the edge to the relevant casting node
+            foundRelation = otherRelation;
+            putCasting(roleTypeOfResource, main, otherRelation);
         }
 
-        //Relation was not found so create a new one
-        Relation relation = relationType.addRelation();
-        rolePlayers.entrySet().forEach(entry -> relation.putRolePlayer(entry.getKey(), entry.getValue()));
+        //Explicitly track this new relation so we don't create duplicates
+        String newHash = generateNewHash(relationType, rolePlayers);
+        getConceptLog().getModifiedRelations().put(newHash, foundRelation);
     }
-
 }
