@@ -9,6 +9,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -16,6 +17,7 @@ import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -69,6 +71,11 @@ public class ShortestPathTest {
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
+    }
+
+    @After
+    public void close() {
+        GraknSparkComputer.close();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -333,6 +340,7 @@ public class ShortestPathTest {
 
             graph.commitOnClose();
         }
+        GraknSparkComputer.close();
     }
 
     private void addOntologyAndEntities2() throws GraknValidationException {
@@ -371,5 +379,6 @@ public class ShortestPathTest {
 
             graph.commitOnClose();
         }
+        GraknSparkComputer.close();
     }
 }

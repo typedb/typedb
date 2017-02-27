@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.ClusterQuery;
@@ -46,40 +45,41 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     @Override
     public T execute() {
         LOGGER.info("ConnectedComponentsVertexProgram is called");
+        long startTime = System.currentTimeMillis();
         initSubGraph();
         if (!selectedTypesHaveInstance()) return (T) Collections.emptyMap();
 
         ComputerResult result;
-        GraknComputer computer = getGraphComputer();
-
         Set<TypeName> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeNames);
 
         if (members) {
             if (anySize) {
-                result = computer.compute(
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(withResourceRelationTypes),
                         new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
             } else {
-                result = computer.compute(
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(withResourceRelationTypes),
                         new ClusterMemberMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                 clusterSize));
             }
-            LOGGER.info("ConnectedComponentsVertexProgram is done");
+            LOGGER.info("ConnectedComponentsVertexProgram is done in "
+                    + (System.currentTimeMillis() - startTime) + " ms");
             return result.memory().get(ClusterMemberMapReduce.class.getName());
         } else {
             if (anySize) {
-                result = computer.compute(
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(withResourceRelationTypes),
                         new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL));
             } else {
-                result = computer.compute(
+                result = getGraphComputer().compute(
                         new ConnectedComponentVertexProgram(withResourceRelationTypes),
                         new ClusterSizeMapReduce(subTypeNames, ConnectedComponentVertexProgram.CLUSTER_LABEL,
                                 clusterSize));
             }
-            LOGGER.info("ConnectedComponentsVertexProgram is done");
+            LOGGER.info("ConnectedComponentsVertexProgram is done in "
+                    + (System.currentTimeMillis() - startTime) + " ms");
             return result.memory().get(ClusterSizeMapReduce.class.getName());
         }
     }

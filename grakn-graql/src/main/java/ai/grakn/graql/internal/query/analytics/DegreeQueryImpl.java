@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -52,6 +51,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     @Override
     public Map<Long, Set<String>> execute() {
         LOGGER.info("DegreeVertexProgram is called");
+        long startTime = System.currentTimeMillis();
         initSubGraph();
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         ofTypeNames.forEach(type -> {
@@ -62,7 +62,6 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
         });
 
         ComputerResult result;
-        GraknComputer computer = getGraphComputer();
 
         Set<TypeName> withResourceRelationTypes = getHasResourceRelationTypes();
         withResourceRelationTypes.addAll(subTypeNames);
@@ -71,10 +70,10 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
             ofTypeNames.addAll(subTypeNames);
         }
 
-        result = computer.compute(new DegreeVertexProgram(withResourceRelationTypes, ofTypeNames),
+        result = getGraphComputer().compute(new DegreeVertexProgram(withResourceRelationTypes, ofTypeNames),
                 new DegreeDistributionMapReduce(ofTypeNames));
 
-        LOGGER.info("DegreeVertexProgram is done");
+        LOGGER.info("DegreeVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return result.memory().get(DegreeDistributionMapReduce.class.getName());
     }
 

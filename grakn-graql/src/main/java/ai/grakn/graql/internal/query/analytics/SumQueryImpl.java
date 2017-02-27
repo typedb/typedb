@@ -41,6 +41,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     @Override
     public Optional<Number> execute() {
         LOGGER.info("SumMapReduce is called");
+        long startTime = System.currentTimeMillis();
+
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
@@ -50,7 +52,8 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
                 new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new SumMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
-        LOGGER.info("SumMapReduce is done");
+
+        LOGGER.info("SumMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(sum.get(MapReduce.NullObject.instance()));
     }
 
