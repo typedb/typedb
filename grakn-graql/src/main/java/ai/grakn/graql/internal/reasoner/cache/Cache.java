@@ -73,7 +73,6 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
 
     public abstract T getAnswers(Q query);
     public abstract Stream<Map<VarName, Concept>> getAnswerStream(Q query);
-    public abstract Stream<Map<VarName, Concept>> getLimitedAnswerStream(Q query, LazyIterator<Map<VarName, Concept>> subIter, Set<VarName> subVars);
     public abstract LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query);
 
     public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars){

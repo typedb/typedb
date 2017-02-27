@@ -27,7 +27,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -111,19 +110,6 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     @Override
     public LazyAnswerIterator getAnswerIterator(Q query) {
         return getAnswers(query);
-    }
-
-    @Override
-    public Stream<Map<VarName, Concept>> getLimitedAnswerStream(Q query, LazyIterator<Map<VarName, Concept>> subIter, Set<VarName> subVars){
-        Set<Concept> concepts = subIter.stream()
-                .flatMap(a -> varFilterFunction.apply(a, subVars))
-                .map(Map::values).flatMap(Collection::stream).collect(Collectors.toSet());
-        return getAnswerStream(query).filter(ans -> {
-            for (VarName var : subVars)
-                if (!concepts.contains(ans.get(var))) return false;
-            return true;
-        }
-        );
     }
 
     @Override

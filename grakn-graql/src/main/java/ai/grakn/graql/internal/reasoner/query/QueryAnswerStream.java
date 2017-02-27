@@ -198,12 +198,12 @@ public class QueryAnswerStream {
     }
 
     /**
-     *
-     * @param stream
-     * @param stream2
-     * @param stream2InverseMap
-     * @param joinVars
-     * @return
+     * lazy stream join with fast lookup from inverse answer map
+     * @param stream left stream operand
+     * @param stream2 right stream operand
+     * @param stream2InverseMap inverse map of right operand from cache
+     * @param joinVars intersection on variables of two streams
+     * @return joined stream
      */
     public static Stream<Map<VarName, Concept>> joinWithInverse(Stream<Map<VarName, Concept>> stream,
                                                         Stream<Map<VarName, Concept>> stream2,
