@@ -21,6 +21,7 @@ package ai.grakn.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -276,11 +277,8 @@ public class MovieGraph extends TestGraph {
         hasGenre(spy, musical);
         hasGenre(chineseCoffee, drama);
 
-        hasCluster(godfather, cluster0);
-        hasCluster(apocalypseNow, cluster0);
-        hasCluster(heat, cluster0);
-        hasCluster(theMuppets, cluster1);
-        hasCluster(hocusPocus, cluster1);
+        hasCluster(cluster0, godfather, apocalypseNow, heat);
+        hasCluster(cluster1, theMuppets, hocusPocus);
     }
 
     @Override
@@ -318,9 +316,10 @@ public class MovieGraph extends TestGraph {
                 .putRolePlayer(genreOfProduction, genre);
     }
 
-    private static void hasCluster(Instance movie, Instance cluster) {
-        hasCluster.addRelation()
-                .putRolePlayer(productionWithCluster, movie)
-                .putRolePlayer(clusterOfProduction, cluster);
+    private static void hasCluster(Instance cluster, Instance... movies) {
+        Relation relation = hasCluster.addRelation().putRolePlayer(clusterOfProduction, cluster);
+        for (Instance movie : movies) {
+            relation.putRolePlayer(productionWithCluster, movie);
+        }
     }
 }

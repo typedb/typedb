@@ -33,10 +33,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ValidatorTest extends GraphTestBase{
@@ -535,6 +537,70 @@ public class ValidatorTest extends GraphTestBase{
         RoleType insured = graknGraph.putRoleType("insured");
         RelationType insure = graknGraph.putRelationType("insure").hasRole(insurer).hasRole(insured);
         graknGraph.putRelationType("monoline-insure").hasRole(monoline).hasRole(insured).superType(insure);
+        graknGraph.commit();
+    }
+
+    @Test
+    public void whenARoleInARelationIsNotPlayed_TheGraphIsValid() {
+        RoleType role1 = graknGraph.putRoleType("role-1");
+        RoleType role2 = graknGraph.putRoleType("role-2");
+        RelationType relationType = graknGraph.putRelationType("my-relation").hasRole(role1).hasRole(role2);
+
+        Instance instance = graknGraph.putEntityType("my-entity").playsRole(role1).addEntity();
+
+        relationType.addRelation().putRolePlayer(role1, instance);
+
+        graknGraph.commit();
+    }
+
+    @Test
+    public void whenARoleInARelationIsPlayedTwice_TheGraphIsValid() {
+        RoleType role1 = graknGraph.putRoleType("role-1");
+        RoleType role2 = graknGraph.putRoleType("role-2");
+        RelationType relationType = graknGraph.putRelationType("my-relation").hasRole(role1).hasRole(role2);
+
+        EntityType entityType = graknGraph.putEntityType("my-entity").playsRole(role1);
+        Instance instance1 = entityType.addEntity();
+        Instance instance2 = entityType.addEntity();
+
+        Relation relation = relationType.addRelation();
+        relation.putRolePlayer(role1, instance1);
+        relation.putRolePlayer(role1, instance2);
+
+        assertThat(relation.newRolePlayers(role1), hasItems(instance1, instance2));
+
+        graknGraph.commit();
+    }
+
+    @Test
+    public void whenARoleInARelationIsPlayedAZillionTimes_TheGraphIsValid() {
+        RoleType role1 = graknGraph.putRoleType("role-1");
+        RoleType role2 = graknGraph.putRoleType("role-2");
+        RelationType relationType = graknGraph.putRelationType("my-relation").hasRole(role1).hasRole(role2);
+
+        EntityType entityType = graknGraph.putEntityType("my-entity").playsRole(role1);
+
+        Relation relation = relationType.addRelation();
+
+        Set<Instance> instances = new HashSet<>();
+
+        int oneZillion = 100;
+        for (int i = 0 ; i < oneZillion; i ++) {
+            Instance instance = entityType.addEntity();
+            instances.add(instance);
+            relation.putRolePlayer(role1, instance);
+        }
+
+        assertEquals(instances, relation.newRolePlayers(role1));
+
+        graknGraph.commit();
+    }
+
+    @Test
+    public void whenARelationTypeHasOnlyOneRole_TheGraphIsValid() {
+        RoleType role = graknGraph.putRoleType("role-1");
+        graknGraph.putRelationType("my-relation").hasRole(role);
+
         graknGraph.commit();
     }
 
