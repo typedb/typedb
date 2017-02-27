@@ -41,6 +41,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     @Override
     public Optional<Double> execute() {
         LOGGER.info("MeanMapReduce is called");
+        long startTime = System.currentTimeMillis();
+
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
@@ -51,7 +53,8 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
                 new MeanMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
-        LOGGER.info("MeanMapReduce is done");
+
+        LOGGER.info("MeanMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
     }
 

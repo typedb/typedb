@@ -117,7 +117,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.info("Finished Degree Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Degree Iteration " + memory.getIteration());
         return memory.getIteration() == 2;
     }
 

@@ -47,17 +47,13 @@ import ai.grakn.generator.ResourceValues;
 import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -72,7 +68,6 @@ import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -84,6 +79,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -97,13 +93,6 @@ public class GraknGraphPropertyIT {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    @BeforeClass
-    public static void setUpClass() {
-        // TODO: When creating a graph does not print a warning, remove this
-        Logger logger = (Logger) LoggerFactory.getLogger(AbstractGraknGraph.class);
-        logger.setLevel(Level.ERROR);
-    }
 
     @Ignore //TODO: This is breaking because your mocked concepts have null concept IDs this is an impossible state so I think you should get your generater to mock valid concepts
     @Property
@@ -557,6 +546,13 @@ public class GraknGraphPropertyIT {
                 allResources.stream().filter(resource -> resource.getValue().equals(resourceValue)).collect(toSet());
 
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
+    }
+
+    @Ignore // TODO: Fix this test
+    @Property
+    public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknGraph graph, List value) {
+        exception.expect(GraphRuntimeException.class); // TODO: Better define the expected error
+        graph.getResourcesByValue(value);
     }
 
     @Property

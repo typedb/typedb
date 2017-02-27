@@ -53,6 +53,8 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
     @Override
     public Optional<List<Concept>> execute() {
         LOGGER.info("ShortestPathVertexProgram is called");
+        long startTime = System.currentTimeMillis();
+
         if (sourceId == null) throw new IllegalStateException(ErrorMessage.NO_SOURCE.getMessage());
         if (destinationId == null) throw new IllegalStateException(ErrorMessage.NO_DESTINATION.getMessage());
         initSubGraph();
@@ -63,12 +65,14 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
             return Optional.of(Collections.singletonList(graph.get().getConcept(sourceId)));
         }
         ComputerResult result;
+
         try {
             result = getGraphComputer().compute(
                     new ShortestPathVertexProgram(subTypeNames, sourceId, destinationId),
                     new ClusterMemberMapReduce(subTypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         } catch (IllegalStateException e) {
             if (e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) {
+                LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
                 return Optional.empty();
             }
             throw e;
@@ -84,8 +88,9 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
                 .map(pair -> ConceptId.of(pair.getValue().iterator().next()))
                 .collect(Collectors.toList()));
         path.add(destinationId);
+
         LOGGER.debug("The path found is: " + path);
-        LOGGER.info("ShortestPathVertexProgram is done");
+        LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(path.stream().map(graph.get()::<Instance>getConcept).collect(Collectors.toList()));
     }
 

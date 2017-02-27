@@ -28,12 +28,14 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -67,12 +69,17 @@ public class AnalyticsTest {
         logger.setLevel(Level.DEBUG);
     }
 
+    @After
+    public void close() {
+        GraknSparkComputer.close();
+    }
+
     @Test
     public void testInferredResourceRelation() throws GraknValidationException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             TypeName resourceTypeName = TypeName.of("degree");
             ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
             EntityType thing = graph.putEntityType("thing");
@@ -84,7 +91,7 @@ public class AnalyticsTest {
             graph.commitOnClose();
         }
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             Map<Long, Set<String>> degrees;
             degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
             assertEquals(1, degrees.size());
@@ -101,7 +108,7 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             // make slightly odd graph
             TypeName resourceTypeId = TypeName.of("degree");
             EntityType thing = graph.putEntityType("thing");
@@ -120,7 +127,7 @@ public class AnalyticsTest {
         }
 
         // the null role-player caused analytics to fail at some stage
-        try(GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.getGraph()) {
             graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();

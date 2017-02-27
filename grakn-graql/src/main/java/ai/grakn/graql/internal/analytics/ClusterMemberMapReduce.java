@@ -45,7 +45,7 @@ import static ai.grakn.graql.internal.analytics.Utility.reduceSet;
 public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
-    private static final String CLUSTER_SIZE = "clusterSizeMapReduce.clusterSize";
+    private static final String CLUSTER_SIZE = "clusterMemberMapReduce.clusterSize";
 
     // Needed internally for OLAP tasks
     public ClusterMemberMapReduce() {
@@ -63,10 +63,11 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<String>> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
-        if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
-            emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
-                    Collections.singleton(vertex.id().toString()));
+        if (vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
+            if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)),
+                        Collections.singleton(vertex.id().toString()));
+            }
         } else {
             emitter.emit(NullObject.instance(), Collections.emptySet());
         }
