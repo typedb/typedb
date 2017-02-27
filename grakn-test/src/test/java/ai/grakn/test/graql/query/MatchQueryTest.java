@@ -856,4 +856,33 @@ public class MatchQueryTest {
     public void testMatchEmpty() {
         qb.match().execute();
     }
+
+    @Test
+    public void whenQueryingForSameRoleTwice_ReturnResultsWithMultipleRolePlayers() {
+        MatchQuery query = qb.match(
+                var().rel("cluster-of-production", "x").rel("cluster-of-production", "y").rel("z"),
+                var("z").has("name", "1")
+        );
+
+        assertThat(query, results(containsInAnyOrder(
+                allOf(hasEntry(is("x"), hocusPocus), hasEntry(is("y"), theMuppets)),
+                allOf(hasEntry(is("x"), theMuppets), hasEntry(is("y"), hocusPocus))
+        )));
+    }
+
+    @Test
+    public void whenQueryingForSameRoleTwiceWhenItIsPlayedOnce_ReturnNoResults() {
+        MatchQuery query = qb.match(var().rel("actor", "x").rel("actor", "y"));
+
+        assertThat(query.execute(), empty());
+    }
+
+    @Test
+    public void whenQueryingForSameRoleTwice_DoNotReturnDuplicateRolePlayers() {
+        MatchQuery query = qb.match(var().rel("cluster-of-production", "x").rel("cluster-of-production", "y"));
+
+        query.forEach(result -> {
+            assertNotEquals(result.get("x"), result.get("y"));
+        });
+    }
 }
