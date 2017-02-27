@@ -197,7 +197,15 @@ public class QueryAnswerStream {
         return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
     }
 
-    public static Stream<Map<VarName, Concept>> newJoin(Stream<Map<VarName, Concept>> stream,
+    /**
+     *
+     * @param stream
+     * @param stream2
+     * @param stream2InverseMap
+     * @param joinVars
+     * @return
+     */
+    public static Stream<Map<VarName, Concept>> joinWithInverse(Stream<Map<VarName, Concept>> stream,
                                                         Stream<Map<VarName, Concept>> stream2,
                                                         Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> stream2InverseMap,
                                                         ImmutableSet<VarName> joinVars) {

@@ -25,7 +25,9 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
@@ -77,7 +79,7 @@ public class StringConverter {
         if (value instanceof String) {
             return quoteString((String) value);
         } else if (value instanceof Double) {
-            DecimalFormat df = new DecimalFormat("#");
+            DecimalFormat df = new DecimalFormat("#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
             df.setMinimumFractionDigits(1);
             df.setMaximumFractionDigits(12);
             df.setMinimumIntegerDigits(1);
