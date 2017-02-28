@@ -123,18 +123,10 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     @Test
     public void testValidateRelationTypeHasRoles() throws Exception {
         RoleType hunter = graknGraph.putRoleType("hunter");
-        RoleType monster = graknGraph.putRoleType("monster");
-        RoleType creature = graknGraph.putRoleType("creature");
         RelationType kills = graknGraph.putRelationType("kills");
 
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
         kills.hasRole(hunter);
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
-        kills.hasRole(hunter);
-        assertTrue(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
-        kills.hasRole(monster);
-        assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
-        kills.hasRole(creature);
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(kills).isPresent());
     }
 
