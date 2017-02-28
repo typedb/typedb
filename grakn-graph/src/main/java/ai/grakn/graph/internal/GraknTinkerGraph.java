@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -53,6 +54,12 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     @Override
     public int numOpenTx() {
         return 1;
+    }
+
+    @Override
+    public void commit(){
+        LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(TinkerGraph.class.getName()));
+        super.commit();
     }
 
     @Override
