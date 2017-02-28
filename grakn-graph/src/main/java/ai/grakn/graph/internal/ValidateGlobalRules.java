@@ -157,7 +157,9 @@ class ValidateGlobalRules {
         Set<CastingImpl> castings = relation.getMappingCasting();
         Collection<RoleType> roleTypes = relationType.hasRoles();
 
-        if(castings.size() > roleTypes.size()) {
+        Set<RoleType> rolesViaCastings = castings.stream().map(CastingImpl::getRole).collect(Collectors.toSet());
+
+        if(rolesViaCastings.size() > roleTypes.size()) {
             return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
         }
 
