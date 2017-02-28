@@ -1089,7 +1089,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
         RelationType relationType = otherRelation.type();
-        RoleTypeImpl roleTypeOfResource = null;
+        Set<RoleTypeImpl> roleTypesOfResource = new HashSet<>(); //All the role types which the resource must play by the end
         Map<RoleType, Set<Instance>> allRolePlayers = otherRelation.allRolePlayers();
 
         //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
@@ -1099,10 +1099,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             while (it.hasNext()){
                 Instance instance = it.next();
                 if(instance.isResource() && instance.asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
-                    //TODO: What if the resource to be replaced plays multiple roles?
-                    roleTypeOfResource = (RoleTypeImpl) allRolePlayerEntries.getKey();
                     it.remove();
                     allRolePlayerEntries.getValue().add(main);
+                    roleTypesOfResource.add((RoleTypeImpl) allRolePlayerEntries.getKey());
                 }
             }
         }
@@ -1114,7 +1113,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            addCasting(roleTypeOfResource, main, otherRelation);
+            roleTypesOfResource.forEach(roleType -> addCasting(roleType, main, otherRelation));
         }
 
         //Explicitly track this new relation so we don't create duplicates
