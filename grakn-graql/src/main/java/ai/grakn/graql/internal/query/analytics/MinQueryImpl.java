@@ -53,6 +53,7 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
                 new MinMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
+        LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));
         LOGGER.info("MinMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(min.get(MapReduce.NullObject.instance()));
     }
