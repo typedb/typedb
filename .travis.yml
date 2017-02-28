@@ -12,7 +12,7 @@ cache:
 
 env:
   global:
-    - MAVEN_OPTS=-Xmx4g
+    - export MAVEN_OPTS="-Xmx4g"
   matrix:
     - TESTS=**/*Test*
     - TESTS=**/*IT*
