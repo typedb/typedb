@@ -1097,12 +1097,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
             Iterator<Instance> it = allRolePlayerEntries.getValue().iterator();
             while (it.hasNext()){
-                if(it.next().asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
+                Instance instance = it.next();
+                if(instance.isResource() && instance.asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
+                    //TODO: What if the resource to be replaced plays multiple roles?
+                    roleTypeOfResource = (RoleTypeImpl) allRolePlayerEntries.getKey();
                     it.remove();
+                    allRolePlayerEntries.getValue().add(main);
                 }
             }
-
-            allRolePlayerEntries.getValue().add(main);
         }
 
         //See if a duplicate relation already exists
