@@ -88,7 +88,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
      */
-    public SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
+    SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
         openSpaces.computeIfAbsent(keyspace, name -> {
             try (GraknGraph graph = factory.getGraph(false)) {
                 ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
@@ -99,7 +99,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
                 if (resource.owner() == null) {
                     graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
                 }
-                graph.commitOnClose();
+                graph.admin().commitNoLogs();
             } catch (GraknValidationException e) {
                 throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
             }
@@ -113,7 +113,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
      * only consists of types, the inserts are idempotent and it is safe to load it
      * multiple times.
      */
-    public void loadSystemOntology() {
+    void loadSystemOntology() {
         try (GraknGraph graph = factory.getGraph(false)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;
@@ -126,7 +126,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
             LOG.info("System ontology is " + query);
             graph.graql().parse(query).execute();
             graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
-            graph.commitOnClose();
+            graph.admin().commitNoLogs();
             LOG.info("Loaded system ontology to system keyspace.");
         } catch(IOException |GraknValidationException |NullPointerException e) {
             e.printStackTrace(System.err);
