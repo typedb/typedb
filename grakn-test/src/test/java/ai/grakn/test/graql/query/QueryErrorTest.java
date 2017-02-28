@@ -88,24 +88,9 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testErrorInvalidRole() {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(
-                containsString("relation"), containsString("has-cast"), containsString("director"),
-                containsString("production-with-cast"), containsString("character-being-played"),
-                containsString("actor")
-        ));
-        qb.match(var().isa("has-cast").rel("director", "x")).stream();
-    }
-
-    @Test
     public void testErrorInvalidNonExistentRole() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(
-                containsString("relation"), containsString("has-cast"), containsString("character-in-production"),
-                containsString("production-with-cast"), containsString("character-being-played"),
-                containsString("actor")
-        ));
+        exception.expectMessage(ErrorMessage.NOT_A_ROLE_TYPE.getMessage("character-in-production", "character-in-production"));
         qb.match(var().isa("has-cast").rel("character-in-production", "x")).stream();
     }
 
