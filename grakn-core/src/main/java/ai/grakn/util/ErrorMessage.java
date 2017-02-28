@@ -80,7 +80,7 @@ public enum ErrorMessage {
     VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a has-role connection to any Relation Type. \n"),
     VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE("RoleType [%s] has more than one has-role connections to Relation Types. \n"),
-    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have two or more roles \n"),
+    VALIDATION_RELATION_TYPE("Relation Type [%s] is not abstract and does not have one or more roles \n"),
     VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type [%s] is playing role [%s] which it is not allowed \n"),
     VALIDATION_INSTANCE("Instance [%s] does not play all required roles \n"),
 

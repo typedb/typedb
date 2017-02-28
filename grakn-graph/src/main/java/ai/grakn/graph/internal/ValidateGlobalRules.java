@@ -139,7 +139,7 @@ class ValidateGlobalRules {
      * @return An error message if the relationTypes does not have at least 2 roles
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationType) {
-        if(relationType.isAbstract() || relationType.hasRoles().size() >= 2){
+        if(relationType.isAbstract() || relationType.hasRoles().size() >= 1){
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getName()));
