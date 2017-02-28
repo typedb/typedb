@@ -43,7 +43,6 @@ import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -104,7 +103,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     @Override
     public void run() {
-        LOG.debug("started");
+//        LOG.debug("started");
 
         while (!wakeUp.get()) {
             try {
@@ -118,15 +117,15 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
 
-                    LOG.trace("{} acknowledged", record.key().getValue());
+//                    LOG.trace("{} acknowledged", record.key().getValue());
                 }
             } catch (Throwable throwable){
-                LOG.error("error thrown", getFullStackTrace(throwable));
+//                LOG.error("error thrown", getFullStackTrace(throwable));
             }
         }
 
         countDownLatch.countDown();
-        LOG.debug("stopped");
+//        LOG.debug("stopped");
     }
 
     /**
@@ -147,7 +146,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private void handleRecord(ConsumerRecord<TaskId, TaskState> record) {
         TaskState task = record.value();
 
-        LOG.debug("{}\treceived", task);
+//        LOG.debug("{}\treceived", task);
 
         if (shouldExecuteTask(task)) {
 
@@ -161,16 +160,16 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 storage.newState(task);
             }
 
-            LOG.debug("{}\tmarked as running", task);
+//            LOG.debug("{}\tmarked as running", task);
 
             // Execute task
             try {
                 task.taskClass().newInstance().start(null, task.configuration());
                 task.status(COMPLETED);
-                LOG.debug("{}\tmarked as completed", task);
+//                LOG.debug("{}\tmarked as completed", task);
             } catch (Throwable throwable) {
                 task.status(FAILED);
-                LOG.debug("{}\tmarked as failed", task);
+//                LOG.debug("{}\tmarked as failed", task);
             } finally {
                 storage.updateState(task);
             }
@@ -197,8 +196,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private void debugConsumerStatus(ConsumerRecords<TaskId, TaskState> records ){
         for (TopicPartition partition : consumer.assignment()) {
-            LOG.debug("Partition {}{} has offset {} after receiving {} records",
-                    partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
+//            LOG.debug("Partition {}{} has offset {} after receiving {} records",
+//                    partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
         }
     }
 }
