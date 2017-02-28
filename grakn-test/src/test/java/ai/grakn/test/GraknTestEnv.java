@@ -75,6 +75,8 @@ public abstract class GraknTestEnv {
     }
 
     static void startKafka() throws Exception {
+        // Clean-up ironically uses a lot of memory
+        kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
         kafkaUnit.startup();
         kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads());
     }
