@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,9 +39,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -143,12 +141,16 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
     @Override
     public Collection<Instance> newRolePlayers(RoleType... roleTypes) {
-        // TODO: Implement this in a way that is not pure shit
-        Set<RoleType> validTypes = Stream.of(roleTypes).flatMap(roleType -> roleType.subTypes().stream()).collect(toSet());
-        return this.<CastingImpl>getOutgoingNeighbours(Schema.EdgeLabel.CASTING).stream()
-                .filter(casting -> validTypes.isEmpty() || validTypes.contains(casting.type()))
-                .flatMap(casting -> casting.<Instance>getOutgoingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).stream())
-                .collect(toSet());
+        Set<Instance> rolePlayers = new HashSet<>();
+        Set<RoleType> validRoleTypes = new HashSet<>(Arrays.asList(roleTypes));
+
+        getMappingCasting().forEach(casting -> {
+            if(validRoleTypes.isEmpty() || validRoleTypes.contains(casting.getRole())){
+                rolePlayers.add(casting.getRolePlayer());
+            }
+        });
+
+        return rolePlayers;
     }
 
     /**
