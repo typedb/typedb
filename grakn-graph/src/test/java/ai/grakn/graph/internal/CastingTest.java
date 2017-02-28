@@ -45,7 +45,7 @@ public class CastingTest extends GraphTestBase{
         rolePlayer = (InstanceImpl) conceptType.addEntity();
         RelationTypeImpl relationType = (RelationTypeImpl) graknGraph.putRelationType("A type");
         relation = (RelationImpl) relationType.addRelation();
-        casting = graknGraph.putCasting(role, rolePlayer, relation);
+        casting = graknGraph.addCasting(role, rolePlayer, relation);
     }
 
     @Test
@@ -58,7 +58,7 @@ public class CastingTest extends GraphTestBase{
         EntityType type = graknGraph.putEntityType("Another entity type");
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
         InstanceImpl rolePlayer = (InstanceImpl) type.addEntity();
-        CastingImpl casting2 = graknGraph.putCasting(role, rolePlayer, relation);
+        CastingImpl casting2 = graknGraph.addCasting(role, rolePlayer, relation);
         assertNotEquals(casting, casting2);
     }
 

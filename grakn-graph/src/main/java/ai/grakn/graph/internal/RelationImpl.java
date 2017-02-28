@@ -38,6 +38,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -74,7 +77,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Sets the internal hash in order to perform a faster lookup
      */
     public void setHash(){
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), rolePlayers()));
+        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
     }
 
     /**
@@ -83,20 +86,23 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @param roleMap The roles and their corresponding role players
      * @return A unique hash identifying this relation
      */
-    public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
+    static String generateNewHash(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
         hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
 
         for(RoleType role: sortedRoleIds){
             hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
-            Instance instance = roleMap.get(role);
-            if(instance != null){
-                hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
-            }
+
+            roleMap.get(role).forEach(instance -> {
+                if(instance != null){
+                    hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
+                }
+            });
         }
         return hash.toString();
     }
+
 
     /**
      *
@@ -114,6 +120,35 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         castings.forEach(casting -> roleMap.put(casting.getRole(), casting.getRolePlayer()));
 
         return roleMap;
+    }
+
+    /**
+     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * @see RoleType
+     *
+     * @return A list of all the role types and the instances playing them in this relation.
+     */
+    public Map<RoleType, Set<Instance>> allRolePlayers(){
+        Set<CastingImpl> castings = getMappingCasting();
+        HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
+
+        //Gets roles based on all roles of the relation type
+        type().hasRoles().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
+
+        //Now iterate over castings
+        castings.forEach(c -> roleMap.computeIfAbsent(c.getRole(), (k) -> new HashSet<>()).add(c.getRolePlayer()));
+
+        return roleMap;
+    }
+
+    @Override
+    public Collection<Instance> newRolePlayers(RoleType... roleTypes) {
+        // TODO: Implement this in a way that is not pure shit
+        Set<RoleType> validTypes = Stream.of(roleTypes).flatMap(roleType -> roleType.subTypes().stream()).collect(toSet());
+        return this.<CastingImpl>getOutgoingNeighbours(Schema.EdgeLabel.CASTING).stream()
+                .filter(casting -> validTypes.isEmpty() || validTypes.contains(casting.type()))
+                .flatMap(casting -> casting.<Instance>getOutgoingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).stream())
+                .collect(toSet());
     }
 
     /**
@@ -145,7 +180,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     @Override
-    public Relation putRolePlayer(RoleType roleType, Instance instance) {
+    public Relation addRolePlayer(RoleType roleType, Instance instance) {
         if(roleType == null){
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
         }
@@ -160,14 +195,19 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
                         out(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
-                    ConceptImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
-                    throw new ConceptNotUniqueException(resource, foundNeighbour.asInstance());
+                    InstanceImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
+                    throw new ConceptNotUniqueException(resource, foundNeighbour);
                 }
             }
         }
 
         //Do the actual put of the role and role player
         return addNewRolePlayer(roleType, instance);
+    }
+
+    @Override
+    public void removeRolePlayer(RoleType roleType, Instance... instances) {
+        //TODO: Implement this thing
     }
 
     /**
@@ -178,7 +218,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
         if(instance != null) {
-            getGraknGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
+            getGraknGraph().addCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
         }
         return this;
     }

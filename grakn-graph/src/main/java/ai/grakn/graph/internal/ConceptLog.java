@@ -101,7 +101,7 @@ class ConceptLog {
         //Caching of relations in memory so they can be retrieved without needing a commit
         if (concept.isRelation()) {
             RelationImpl relation = (RelationImpl) concept;
-            modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.rolePlayers()), relation);
+            modifiedRelations.put(RelationImpl.generateNewHash(relation.type(), relation.allRolePlayers()), relation);
         }
     }
 

@@ -61,13 +61,13 @@ public class ResourceTest extends GraphTestBase{
         assertEquals(0, birthDate.ownerInstances().size());
 
         hasResource.addRelation().
-                putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, pacino);
+                addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, pacino);
         hasResource.addRelation().
-                putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, jennifer);
+                addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, jennifer);
         hasResource.addRelation().
-                putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, bob);
+                addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, bob);
         hasResource.addRelation().
-                putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, alice);
+                addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, alice);
 
         assertEquals(4, birthDate.ownerInstances().size());
         assertTrue(birthDate.ownerInstances().contains(pacino));
@@ -164,15 +164,15 @@ public class ResourceTest extends GraphTestBase{
 
         //Link Entities to resources
         assertNull(pimaryKey1.owner());
-        hasPrimaryKey.addRelation().putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity1);
+        hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey1).addRolePlayer(entityRole, entity1);
         assertEquals(entity1, pimaryKey1.owner());
 
-        hasPrimaryKey.addRelation().putRolePlayer(primaryKeyRole, pimaryKey2).putRolePlayer(entityRole, entity2);
+        hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey2).addRolePlayer(entityRole, entity2);
 
         expectedException.expect(ConceptNotUniqueException.class);
         expectedException.expectMessage(RESOURCE_TYPE_UNIQUE.getMessage(pimaryKey1.getId(), entity1.getId()));
 
-        hasPrimaryKey.addRelation().putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity3);
+        hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey1).addRolePlayer(entityRole, entity3);
     }
 
     @Test

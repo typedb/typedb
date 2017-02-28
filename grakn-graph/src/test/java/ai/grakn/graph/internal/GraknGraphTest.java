@@ -90,7 +90,7 @@ public class GraknGraphTest extends GraphTestBase {
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(ErrorMessage.TOO_MANY_CASTINGS.getMessage(role, rolePlayer));
 
-        graknGraph.putCasting(role, rolePlayer, relation);
+        graknGraph.addCasting(role, rolePlayer, relation);
     }
     private void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());

@@ -63,13 +63,13 @@ public class TransitivityChainGraph extends TestGraph {
                 aInstanceIds[i] = putEntity(graph, "a" + i, aEntity, key).getId();
 
         Q.addRelation()
-                .putRolePlayer(Qfrom, aInst)
-                .putRolePlayer(Qto, graph.getConcept(aInstanceIds[0]));
+                .addRolePlayer(Qfrom, aInst)
+                .addRolePlayer(Qto, graph.getConcept(aInstanceIds[0]));
 
         for(int i = 0 ; i < n - 1 ; i++) {
                     Q.addRelation()
-                            .putRolePlayer(Qfrom, graph.getConcept(aInstanceIds[i]))
-                            .putRolePlayer(Qto, graph.getConcept(aInstanceIds[i+1]));
+                            .addRolePlayer(Qfrom, graph.getConcept(aInstanceIds[i]))
+                            .addRolePlayer(Qto, graph.getConcept(aInstanceIds[i+1]));
         }
     }
 }

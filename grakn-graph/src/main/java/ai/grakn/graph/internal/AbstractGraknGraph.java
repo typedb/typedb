@@ -646,7 +646,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
         return casting;
     }
-    CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
+    CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
         CastingImpl foundCasting  = null;
         if(rolePlayer != null) {
             foundCasting = getCasting(role, rolePlayer);
@@ -752,7 +752,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return hash;
     }
 
-    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
+    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
         String hash = generateNewHash(relationType, roleMap);
         RelationImpl concept = getConceptLog().getCachedRelation(hash);
 
@@ -1090,28 +1090,33 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
         RelationType relationType = otherRelation.type();
         RoleTypeImpl roleTypeOfResource = null;
-        Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
+        Map<RoleType, Set<Instance>> allRolePlayers = otherRelation.allRolePlayers();
 
         //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
-        for (Map.Entry<RoleType, Instance> rolePlayer : rolePlayers.entrySet()) {
-            if(rolePlayer.getValue().equals(other)){
-                rolePlayers.put(rolePlayer.getKey(), main);
-                roleTypeOfResource = (RoleTypeImpl) rolePlayer.getKey();
+        for (Map.Entry<RoleType, Set<Instance>> allRolePlayerEntries : allRolePlayers.entrySet()) {
+
+            Iterator<Instance> it = allRolePlayerEntries.getValue().iterator();
+            while (it.hasNext()){
+                if(it.next().asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
+                    it.remove();
+                }
             }
+
+            allRolePlayerEntries.getValue().add(main);
         }
 
         //See if a duplicate relation already exists
-        RelationImpl foundRelation = getRelation(relationType, rolePlayers);
+        RelationImpl foundRelation = getRelation(relationType, allRolePlayers);
 
         if(foundRelation != null){//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            putCasting(roleTypeOfResource, main, otherRelation);
+            addCasting(roleTypeOfResource, main, otherRelation);
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        String newHash = generateNewHash(relationType, rolePlayers);
+        String newHash = generateNewHash(relationType, allRolePlayers);
         getConceptLog().getModifiedRelations().put(newHash, foundRelation);
     }
 }

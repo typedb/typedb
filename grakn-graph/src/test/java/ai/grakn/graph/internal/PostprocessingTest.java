@@ -59,7 +59,7 @@ public class PostprocessingTest extends GraphTestBase{
         instance3 = (InstanceImpl) thing.addEntity();
         instance4 = (InstanceImpl) thing.addEntity();
 
-        relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
         assertEquals(2, graknGraph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
@@ -79,7 +79,7 @@ public class PostprocessingTest extends GraphTestBase{
     }
 
     private CastingImpl buildDuplicateCastingWithNewRelation(CastingImpl mainCasting, RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
-        RelationImpl relation = (RelationImpl) relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
+        RelationImpl relation = (RelationImpl) relationType.addRelation().addRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
         Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
@@ -188,11 +188,11 @@ public class PostprocessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        relationType.addRelation().putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
-        relationType.addRelation().putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
-        relationType.addRelation().putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e2); //Absorb
-        relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e2); //Don't Absorb
-        relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
+        relationType.addRelation().addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1);
+        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
+        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2); //Absorb
+        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2); //Don't Absorb
+        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3); //Absorb
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());

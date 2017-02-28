@@ -20,9 +20,11 @@ package ai.grakn.concept;
 
 
 import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>
@@ -66,7 +68,25 @@ public interface Relation extends Instance {
      *
      * @return A list of all the Instances and their Role Types.
      */
+    @Deprecated // TODO: Remove this method
     Map<RoleType, Instance> rolePlayers();
+
+    /**
+     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * @see RoleType
+     *
+     * @return A list of all the role types and the instances playing them in this relation.
+     */
+    Map<RoleType, Set<Instance>> allRolePlayers();
+
+    /**
+     * Retrieves a list of every {@link Instance} involved in the {@link Relation}, filtered by {@link RoleType} played.
+     * @param roleTypes used to filter the returned instances only to ones that play any of the role types.
+     *                  If blank, returns all role players.
+     * @return a list of every {@link Instance} involved in the {@link Relation}.
+     */
+    // TODO: Rename this method to `rolePlayers`
+    Collection<Instance> newRolePlayers(RoleType... roleTypes);
 
     /**
      * Retrieve a list of the Instances that scope this Relation.
@@ -81,8 +101,19 @@ public interface Relation extends Instance {
      * @param roleType The Role Type of the new role player.
      * @param instance The new role player.
      * @return The Relation itself.
+     *
+     * @throws ConceptNotUniqueException if the concept is only allowed to play this role once.
      */
-    Relation putRolePlayer(RoleType roleType, Instance instance);
+    Relation addRolePlayer(RoleType roleType, Instance instance);
+
+    /**
+     * Removes the provided role players from this relation.
+     * If no instance is provided then all instances playing the role are removed.
+     *
+     * @param roleType The role type of the roleplayer(s) to remove
+     * @param instances The instances to remove
+     */
+    void removeRolePlayer(RoleType roleType, Instance ... instances);
 
     //------------------------------------- Other ----------------------------------
 
