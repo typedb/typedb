@@ -61,6 +61,12 @@ export default class Visualiser {
           y: 2,
         },
       },
+      physics: {
+        barnesHut: {
+          springLength: 140,
+        },
+        minVelocity: 0.75,
+      },
       edges: {
         hoverWidth: 2,
         selectionWidth: 2,
@@ -69,22 +75,30 @@ export default class Visualiser {
           to: true,
         },
         smooth: {
+          enabled: false,
           forceDirection: 'none',
         },
       },
       interaction: {
         hover: true,
-        multiselect: false,
+        multiselect: true,
       },
       layout: {
         improvedLayout: false,
       },
     };
 
-        // Additional properties to show in node label by type.
+    // Additional properties to show in node label by type.
     this.displayProperties = {};
     this.alreadyFittedToWindow = false;
     this.clusters = [];
+
+    // working on stopping nodes from moving
+    this.lastFixTime = 0; // this is needed to stop a redraw loop due to the update of the vis dataset
+    this.draggingNode = false;
+
+    this.draggingRect = false;
+    this.rectangleCleared = false;
   }
 
     /**
@@ -152,15 +166,126 @@ export default class Visualiser {
     this.network.on('dragEnd', this.callbacks.dragEnd);
     this.network.on('hold', this.callbacks.hold);
 
-    this.network.on('stabilized', () => {
-      this.setSimulation(false);
+    this.network.on('dragStart', (params) => {
+      this.draggingNode = true;
+      this.releaseNodes(params.nodes);
     });
+
+    this.network.on('stabilized', (params) => {
+      if (this.draggingNode === false) {
+        this.fixNodes();
+      }
+    });
+
+    this.network.on('dragEnd', (params) => {
+      this.draggingNode = false;
+      this.fixNodes(params.nodes);
+    });
+
+
+    this.network.on('afterDrawing', (params) => {
+      if (this.draggingRect) {
+        this.drawRectangle();
+      }
+    });
+
+    // Variables used to draw selection rectangle.
+    this.canvas = this.network.canvas.frame.canvas;
+    this.ctx = this.canvas.getContext('2d');
+    this.rect = {};
+
 
     return this;
   }
 
+  // Methods used to draw a selection rectangle on the canvas and select multiple nodes
+
+  resetRectangle() {
+    this.draggingRect = false;
+    this.selectNodesFromHighlight();
+    this.rect.w = 0;
+    this.rect.h = 0;
+  }
+
+  startRectangle(x, y) {
+    this.rect.startX = x;
+    this.rect.startY = y;
+  }
+
+  updateRectangle(x, y) {
+    if (this.draggingRect) {
+      const canvasPosition = this.network.DOMtoCanvas({ x, y });
+      this.rect.w = canvasPosition.x - this.rect.startX;
+      this.rect.h = canvasPosition.y - this.rect.startY;
+      // Force redraw the canvas which will also draw the rectangle with new size.
+      this.network.redraw();
+    }
+  }
+
+  drawRectangle() {
+    this.ctx.setLineDash([5]);
+    this.ctx.strokeStyle = 'rgb(0, 102, 0)';
+    this.ctx.strokeRect(this.rect.startX, this.rect.startY, this.rect.w, this.rect.h);
+    this.ctx.setLineDash([]);
+    this.ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+    this.ctx.fillRect(this.rect.startX, this.rect.startY, this.rect.w, this.rect.h);
+  }
+
+  selectNodesFromHighlight() {
+    const nodesIdInDrawing = [];
+    const xRange = Visualiser.getStartToEnd(this.rect.startX, this.rect.w);
+    const yRange = Visualiser.getStartToEnd(this.rect.startY, this.rect.h);
+
+    const allNodes = this.nodes.get();
+    const arrayLength = allNodes.length;
+    for (let i = 0; i < arrayLength; i++) {
+      const curNode = allNodes[i];
+      const nodePosition = this.network.getPositions([curNode.id]);
+      const nodeXY = nodePosition[curNode.id];
+      if (xRange.start <= nodeXY.x && nodeXY.x <= xRange.end && yRange.start <= nodeXY.y && nodeXY.y <= yRange.end) {
+        nodesIdInDrawing.push(curNode.id);
+      }
+    }
+    this.network.selectNodes(nodesIdInDrawing);
+  }
+
+  static getStartToEnd(start, theLen) {
+    return theLen > 0 ? { start, end: start + theLen } : { start: start + theLen, end: start };
+  }
+
+  //  ----------------------------------------------  //
+
+
+  // Methods used to fix and release nodes when one or more are dragged //
+
+  fixNodes(nodeIds) {
+    if (new Date() - this.lastFixTime > 100) {
+      // this.network.storePositions();
+      this.lastFixTime = new Date();
+      if (nodeIds !== undefined) {
+        nodeIds.forEach(nodeId => this.fixSingleNode(nodeId));
+      } else {
+        this.nodes.forEach((node) => { this.fixSingleNode(node.id); });
+      }
+    }
+  }
+
+  fixSingleNode(nodeId) {
+    if (nodeId === undefined) return;
+    this.nodes.update({ id: nodeId, fixed: { x: true, y: true } });
+  }
+
+  releaseNodes(nodeIds) {
+    if (nodeIds === undefined) return;
+    nodeIds.forEach(nodeId => this.nodes.update({ id: nodeId, fixed: { x: false, y: false } }));
+  }
+
+  // --------------------------  //
+
+
   // Fit the graph to the window size only on the first ajax call,
   // then leave zoom control to the user
+
   fitGraphToWindow() {
     if (!this.alreadyFittedToWindow) {
       this.network.fit();
@@ -245,15 +370,6 @@ export default class Visualiser {
     return this;
   }
 
-    /**
-     * Stop/start physics simulation and all animation in displayed graph.
-     */
-  setSimulation(state) {
-    if (state) { this.network.startSimulation(); } else {
-      this.network.stopSimulation();
-    }
-    return this;
-  }
 
   getNodeType(id) {
     if (id in this.nodes._data) {
