@@ -192,6 +192,7 @@ export default {
                 this.state.eventHub.$off('keyspace-changed', this.loadMetaTypeInstances);
                 this.state.eventHub.$off('inject-query', this.injectQuery);
                 this.state.eventHub.$off('append-query', this.appendQuery);
+                this.state.eventHub.$off('keyspace-changed',this.refreshSavedQueries);
             }
 
             switch (this.$route.fullPath) {
@@ -210,6 +211,7 @@ export default {
             this.state.eventHub.$on('keyspace-changed', this.loadMetaTypeInstances);
             this.state.eventHub.$on('inject-query', this.injectQuery);
             this.state.eventHub.$on('append-query', this.appendQuery);
+            this.state.eventHub.$on('keyspace-changed',this.refreshSavedQueries);
 
         },
         startBuilder(nameFunction){
