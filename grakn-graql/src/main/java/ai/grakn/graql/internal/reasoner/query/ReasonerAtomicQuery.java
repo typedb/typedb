@@ -159,7 +159,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Set<Atomic> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
             Atomic equiv = toUnify.stream().findFirst().orElse(null);
             if (equiv != null){
-                unifiers.putAll(type.getUnifiers(equiv));
+                type.getUnifiers(equiv).forEach(unifiers::putIfAbsent);
                 unified.add(equiv);
             }
         });
