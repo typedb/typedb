@@ -98,7 +98,7 @@ public class StatisticsTest {
 
     @After
     public void close() {
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     @Test
@@ -596,7 +596,7 @@ public class StatisticsTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     private void addResourcesInstances() throws GraknValidationException {
@@ -623,7 +623,7 @@ public class StatisticsTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     private void addResourceRelations() throws GraknValidationException {
@@ -701,6 +701,6 @@ public class StatisticsTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 }

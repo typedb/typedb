@@ -57,8 +57,11 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         double sum = stdTuple.get(StdMapReduce.SUM);
         double count = stdTuple.get(StdMapReduce.COUNT);
 
+        double finalResult = Math.sqrt(squareSum / count - (sum / count) * (sum / count));
+        LOGGER.debug("Std = " + finalResult);
+
         LOGGER.info("StdMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(Math.sqrt(squareSum / count - (sum / count) * (sum / count)));
+        return Optional.of(finalResult);
     }
 
     @Override

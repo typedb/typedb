@@ -97,7 +97,7 @@ public class CountTest {
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
