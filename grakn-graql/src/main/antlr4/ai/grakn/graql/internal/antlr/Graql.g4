@@ -68,26 +68,26 @@ pattern        : varPattern                    # varPatternCase
 varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
-property       : 'isa' variable                     # isa
-               | 'sub' variable                     # sub
-               | 'has-role' variable                # hasRole
-               | 'plays-role' variable              # playsRole
-               | 'has-scope' VARIABLE               # hasScope
-               | 'id' id                            # propId
-               | 'type-name' name                   # propName
-               | 'value' predicate?                 # propValue
-               | 'lhs' '{' patterns '}'             # propLhs
-               | 'rhs' '{' varPatterns '}'          # propRhs
-               | 'has' name? VARIABLE               # propHasVariable
-               | 'has' name (predicate | VARIABLE)? # propHas
-               | 'has-resource' variable            # propResource
-               | 'has-key' variable                 # propKey
-               | '(' casting (',' casting)* ')'     # propRel
-               | 'plays' variable                   # plays
-               | 'is-abstract'                      # isAbstract
-               | 'datatype' DATATYPE                # propDatatype
-               | 'regex' REGEX                      # propRegex
-               | '!=' variable                      # propNeq
+property       : 'isa' variable                 # isa
+               | 'sub' variable                 # sub
+               | 'has-role' variable            # hasRole
+               | 'plays-role' variable          # playsRole
+               | 'has-scope' VARIABLE           # hasScope
+               | 'id' id                        # propId
+               | 'type-name' name               # propName
+               | 'value' predicate              # propValue
+               | 'lhs' '{' patterns '}'         # propLhs
+               | 'rhs' '{' varPatterns '}'      # propRhs
+               | 'has' name? VARIABLE           # propHasVariable
+               | 'has' name predicate           # propHas
+               | 'has-resource' variable        # propResource
+               | 'has-key' variable             # propKey
+               | '(' casting (',' casting)* ')' # propRel
+               | 'plays' variable               # plays
+               | 'is-abstract'                  # isAbstract
+               | 'datatype' DATATYPE            # propDatatype
+               | 'regex' REGEX                  # propRegex
+               | '!=' variable                  # propNeq
                ;
 
 casting        : variable (':' VARIABLE)?
@@ -95,17 +95,20 @@ casting        : variable (':' VARIABLE)?
 
 variable       : name | VARIABLE ;
 
-predicate      : '='? value                # predicateEq
-               | '!=' value                # predicateNeq
-               | '>' value                 # predicateGt
-               | '>=' value                # predicateGte
-               | '<' value                 # predicateLt
-               | '<=' value                # predicateLte
-               | 'contains' STRING         # predicateContains
-               | REGEX                     # predicateRegex
+predicate      : '='? value        # predicateEq
+               | '=' VARIABLE      # predicateVariable
+               | '!=' valueOrVar   # predicateNeq
+               | '>' valueOrVar    # predicateGt
+               | '>=' valueOrVar   # predicateGte
+               | '<' valueOrVar    # predicateLt
+               | '<=' valueOrVar   # predicateLte
+               | 'contains' STRING # predicateContains
+               | REGEX             # predicateRegex
                ;
-value          : VARIABLE # valueVariable
-               | STRING   # valueString
+valueOrVar     : VARIABLE # valueVariable
+               | value    # valuePrimitive
+               ;
+value          : STRING   # valueString
                | INTEGER  # valueInteger
                | REAL     # valueReal
                | BOOLEAN  # valueBoolean

@@ -16,18 +16,23 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graph;
+package ai.grakn.graph.admin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Set;
 
 /**
  * Admin interface for {@link GraknGraph}.
@@ -115,4 +120,57 @@ public interface GraknAdmin {
      */
     RuleType getMetaRuleConstraint();
 
+    //------------------------------------- Admin Specific Operations ----------------------------------
+
+    /**
+     * Commits the graph and adds concepts for post processing directly to the cache bypassing the REST API.
+     *
+     * @param conceptCache The concept Cache to store concepts in for processing later
+     * @throws GraknValidationException when the graph does not conform to the object concept
+     */
+    void commit(ConceptCache conceptCache) throws GraknValidationException;
+
+    /**
+     * Clears the graph and empties the provided cache.
+     *
+     * @param conceptCache The concept Cache to store concepts in for processing later
+     */
+    void clear(ConceptCache conceptCache);
+
+    /**
+     * Commits to the graph without submitting any commit logs.
+     *
+     * @throws GraknValidationException when the graph does not conform to the object concept
+     */
+    void commitNoLogs() throws GraknValidationException;
+
+    /**
+     * Merges the provided duplicate castings.
+     *
+     * @param castingVertexIds The vertex Ids of the duplicate castings
+     * @return if castings were merged and a commit is required.
+     */
+    boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds);
+
+    /**
+     *
+     * @param resourceVertexIds The resource vertex ids which need to be merged.
+     * @return True if a commit is required.
+     */
+    boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
+
+    /**
+     *
+     * @param key The concept property tp search by.
+     * @param value The value of the concept
+     * @return A concept with the matching key and value
+     */
+    <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value);
+
+    /**
+     *
+     * @param vertex The vertex to be checked against the underlaying graph
+     * @return true if the vertex is still valid and has not been removed
+     */
+    boolean validVertex(Vertex vertex);
 }

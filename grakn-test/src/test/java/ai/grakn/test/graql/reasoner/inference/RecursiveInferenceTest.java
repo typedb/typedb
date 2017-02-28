@@ -18,8 +18,7 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graphs.DiagonalGraph;
 import ai.grakn.graphs.MatrixGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graphs.NguyenGraph;
@@ -27,6 +26,10 @@ import ai.grakn.graphs.PathGraph;
 import ai.grakn.graphs.PathGraphII;
 import ai.grakn.graphs.PathGraphSymmetric;
 import ai.grakn.graphs.TailRecursionGraph;
+import ai.grakn.graphs.TransitivityChainGraph;
+import ai.grakn.graphs.TransitivityMatrixGraph;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -286,7 +289,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testMatrix(){
         final int N = 5;
-        MatrixGraph.get(N, N).accept(graphContext.graph());
+        graphContext.load(MatrixGraph.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -302,7 +305,7 @@ public class RecursiveInferenceTest {
     public void testTailRecursion(){
         final int N = 10;
         final int M = 5;
-        TailRecursionGraph.get(N, M).accept(graphContext.graph());
+        graphContext.load(TailRecursionGraph.get(N, M));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -317,7 +320,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testNguyen(){
         final int N = 9;
-        NguyenGraph.get(N).accept(graphContext.graph());
+        graphContext.load(NguyenGraph.get(N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -332,7 +335,8 @@ public class RecursiveInferenceTest {
     @Test
     public void testNguyen2(){
         final int N = 9;
-        NguyenGraph.get(N).accept(graphContext.graph());
+        graphContext.load(NguyenGraph.get(N));
+
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -362,7 +366,7 @@ public class RecursiveInferenceTest {
     public void testMatrixII(){
         final int N = 5;
         final int M = 5;
-        MatrixGraphII.getGraph(N, M).accept(graphContext.graph());
+        graphContext.load(MatrixGraphII.get(N, M));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -377,7 +381,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPath(){
         final int N = 3;
-        PathGraph.get(N, 3).accept(graphContext.graph());
+        graphContext.load(PathGraph.get(N, 3));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -391,7 +395,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathPrime(){
         final int N = 3;
-        PathGraph.get(N, 3).accept(graphContext.graph());
+        graphContext.load(PathGraph.get(N, 3));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -406,7 +410,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPathSymmetric(){
         final int N = 3;
-        PathGraphSymmetric.get(N, 3).accept(graphContext.graph());
+        graphContext.load(PathGraphSymmetric.get(N, 3));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -421,7 +425,7 @@ public class RecursiveInferenceTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 3;
-        PathGraphII.get(N, N).accept(graphContext.graph());
+        graphContext.load(PathGraphII.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -436,7 +440,7 @@ public class RecursiveInferenceTest {
     /*modified test 6.10 from Cao p. 82*/
     public void testPathIIPrime(){
         final int N = 3;
-        PathGraphII.get(N, N).accept(graphContext.graph());
+        graphContext.load(PathGraphII.get(N, N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
@@ -476,6 +480,46 @@ public class RecursiveInferenceTest {
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testTransitiveChain(){
+        final int N = 10;
+        graphContext.load(TransitivityChainGraph.get(N));
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
+
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; select $y;";
+        String explicitQuery = "match $y isa a-entity;";
+
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testTransitiveMatrix(){
+        final int N = 5;
+        graphContext.load(TransitivityMatrixGraph.get(N, N));
+        QueryBuilder qb = graphContext.graph().graql().infer(false);
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
+
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; select $y;";
+        String explicitQuery = "match $y isa a-entity;";
+
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testDiagonal(){
+        final int N = 10;
+        graphContext.load(DiagonalGraph.get(N, N));
+        QueryBuilder iqb = graphContext.graph().graql().infer(true);
+
+        String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal;";
+
+        assertEquals(iqb.materialise(false).<MatchQuery>parse(queryString).execute().size(), 64);
+        assertEquals(iqb.materialise(true).<MatchQuery>parse(queryString).execute().size(), 64);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

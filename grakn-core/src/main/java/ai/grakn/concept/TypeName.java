@@ -35,7 +35,6 @@ import java.util.function.Function;
  */
 public class TypeName implements Comparable<TypeName>, Serializable {
     private String name;
-
     private TypeName(String name){
         this.name = name;
     }
@@ -54,8 +53,18 @@ public class TypeName implements Comparable<TypeName>, Serializable {
     }
 
     @Override
-    public boolean equals(Object object) {
-        return object instanceof TypeName && ((TypeName) object).getValue().equals(name);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TypeName typeName = (TypeName) o;
+
+        return name.equals(typeName.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
     }
 
     @Override
@@ -66,11 +75,6 @@ public class TypeName implements Comparable<TypeName>, Serializable {
     @Override
     public String toString(){
         return name;
-    }
-
-    @Override
-    public int hashCode(){
-        return name.hashCode();
     }
 
     /**

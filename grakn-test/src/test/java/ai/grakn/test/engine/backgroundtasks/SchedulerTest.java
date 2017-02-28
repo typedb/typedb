@@ -23,6 +23,7 @@ import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
+import ai.grakn.engine.backgroundtasks.distributed.ZookeeperConnection;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateGraphStore;
 import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.ExceptionWrapper;
@@ -63,6 +64,7 @@ public class SchedulerTest {
     private Scheduler scheduler;
     private KafkaProducer<String, String> producer;
 
+    private ZookeeperConnection connection;
     private Thread schedulerThread;
 
     @ClassRule
@@ -76,6 +78,7 @@ public class SchedulerTest {
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskStateGraphStore.class)).setLevel(Level.DEBUG);
 
         storage = new TaskStateInMemoryStore();
+        connection = new ZookeeperConnection();
         startScheduler();
         producer = ConfigHelper.kafkaProducer();
     }
@@ -83,6 +86,7 @@ public class SchedulerTest {
     @After
     public void stop() throws Exception {
         producer.close();
+        connection.close();
         stopScheduler();
     }
 
@@ -157,7 +161,7 @@ public class SchedulerTest {
 
     private void startScheduler(){
         // Restart the scheduler
-        scheduler = new Scheduler(storage);
+        scheduler = new Scheduler(storage, connection);
 
         schedulerThread = new Thread(scheduler);
         schedulerThread.start();

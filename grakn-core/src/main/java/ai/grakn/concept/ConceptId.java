@@ -33,19 +33,49 @@ import java.io.Serializable;
  * @author fppt
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
-    private String conceptId;
+    private Object conceptId;
+    private int hashCode = 0;
 
-    private ConceptId(String conceptId){
+    private ConceptId(Object conceptId){
         this.conceptId = conceptId;
     }
 
+    /**
+     *
+     * @return Used for indexing purposes and for graql traversals
+     */
     public String getValue(){
+        return conceptId.toString();
+    }
+
+    /**
+     *
+     * @return the raw vertex id. This is used for traversing across vertices directly.
+     */
+    public Object getRawValue(){
         return conceptId;
     }
 
     @Override
-    public boolean equals(Object object) {
-        return object instanceof ConceptId && ((ConceptId) object).getValue().equals(conceptId);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConceptId cast = (ConceptId) o;
+        if (conceptId instanceof String) {
+            return conceptId.equals(cast.conceptId.toString());
+        }
+        else if (cast.conceptId instanceof String) {
+            return cast.conceptId.equals(conceptId.toString());
+        }
+        return conceptId.equals(cast.conceptId);
+    }
+
+    @Override
+    public int hashCode() {
+        if (hashCode == 0 ){
+            hashCode = conceptId.toString().hashCode();
+        }
+        return hashCode;
     }
 
     @Override
@@ -55,12 +85,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
 
     @Override
     public String toString(){
-        return conceptId;
-    }
-
-    @Override
-    public int hashCode(){
-        return conceptId.hashCode();
+        return getValue();
     }
 
     /**
@@ -68,7 +93,7 @@ public class ConceptId implements Comparable<ConceptId>, Serializable {
      * @param value The string which potentially represents a Concept
      * @return The matching concept ID
      */
-    public static ConceptId of(String value){
+    public static ConceptId of(Object value){
         return new ConceptId(value);
     }
 }

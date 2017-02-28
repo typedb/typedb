@@ -30,7 +30,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                    <div class="left"><input type="checkbox" v-model="useReasoner"></div><div class="right"> Activate inference</div>
                 </div>
                 <div class="dd-item">
-                  <div class="left"><input type="checkbox" v-model="materialiseReasoner"></div><div class="right">Materialise inference</div>
+                  <div class="left"><input type="checkbox" v-model="materialiseReasoner" :disabled="!useReasoner"></div><div v-bind:class="[useReasoner ? 'right' : 'right grey']" :disabled="!useReasoner">Materialise inference</div>
+                </div>
+                <div class="dd-item">
+                  <button @click="materialiseAll()" class="btn materialise">Materialise All</button>
                 </div>
             </div>
         </div>
@@ -44,6 +47,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     padding: 5px 10px;
     display: flex;
     justify-content: space-between;
+    margin-bottom: 10px;
 }
 .left{
   display: inline-flex;
@@ -52,6 +56,13 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 .right{
   display: inline-flex;
   flex:1;
+}
+.fa-times{
+  cursor: pointer;
+}
+
+.grey{
+  opacity: 0.5;
 }
 
 .page-header-icon {
@@ -68,10 +79,9 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 .dd-item {
     display: flex;
     flex-direction: row;
+    align-items: center;
     flex: 1;
-    align-items: flex-start;
-    margin: auto;
-    margin-top: 5px;
+    margin: 10px 5px;
     padding-left: 7px;
 }
 
@@ -90,10 +100,18 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     padding: 10px;
 }
 
+.btn.materialise{
+  padding: 7px;
+  margin:0;
+  line-height: 20px;
+  margin: auto;
+}
+
 </style>
 
 <script>
 import User from '../../js/User.js'
+import EngineClient from '../../js/EngineClient';
 
 export default {
     name: "QuerySettings",
@@ -113,6 +131,7 @@ export default {
     watch: {
         useReasoner: function(newVal, oldVal) {
             User.setReasonerStatus(newVal);
+            if(!newVal) this.materialiseReasoner=false;
         },
         materialiseReasoner: function(newVal, oldVal) {
             User.setMaterialiseStatus(newVal);
@@ -121,6 +140,9 @@ export default {
     methods: {
         closeSettings() {
             this.showSettings = false;
+        },
+        materialiseAll(){
+          EngineClient.preMaterialiseAll();
         }
     }
 }

@@ -21,7 +21,6 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.util.ErrorMessage;
 
 import java.io.FileInputStream;
@@ -34,8 +33,7 @@ import java.util.Properties;
  * </p>
  *
  * <p>
- *     This internal factory is used to produce {@link EngineGraknGraph}s. These are different from {@link GraknGraph}s
- *     in that they provide more low level functionality. Also these graphs do not submit commit logs via the REST API.
+ *     This internal factory is used to produce {@link GraknGraph}s.
  *
  *     It is also worth noting that both this class and {@link Grakn#factory(String, String)} us the same
  *     {@link FactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
@@ -67,11 +65,11 @@ public class EngineGraknGraphFactory {
         }
     }
 
-    public synchronized EngineGraknGraph getGraph(String keyspace) {
+    public synchronized GraknGraph getGraph(String keyspace) {
         return getGraph(keyspace, false);
     }
 
-    public synchronized EngineGraknGraph getGraphBatchLoading(String keyspace) {
+    public synchronized GraknGraph getGraphBatchLoading(String keyspace) {
         return getGraph(keyspace, true);
     }
 
@@ -79,9 +77,8 @@ public class EngineGraknGraphFactory {
         FactoryBuilder.refresh();
     }
 
-    private EngineGraknGraph getGraph(String keyspace, boolean batchLoading){
-        //TODO: Get rid of ugly casting
-        return (EngineGraknGraph) FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(batchLoading);
+    private GraknGraph getGraph(String keyspace, boolean batchLoading){
+        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(batchLoading);
     }
 }
 

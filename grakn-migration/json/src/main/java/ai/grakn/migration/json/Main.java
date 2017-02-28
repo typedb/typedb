@@ -66,7 +66,7 @@ public class Main {
             if(options.isNo()){
                 writeToSout(jsonMigrator.migrate());
             } else {
-                jsonMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch(), options.getNumberActiveTasks());
+                jsonMigrator.load(options.getUri(), options.getKeyspace(), options.getBatch(), options.getNumberActiveTasks(), options.getRetry());
                 printWholeCompletionMessage(options);
             }
         } catch (Throwable throwable){

@@ -65,7 +65,7 @@ class HALConceptData {
     private final static String TYPE_PROPERTY = "_type";
     private final static String BASETYPE_PROPERTY = "_baseType";
     private final static String DIRECTION_PROPERTY = "_direction";
-    private final static String VALUE_PROPERTY = "value";
+    private final static String VALUE_PROPERTY = "_value";
 
     private final boolean embedType;
     private final Set<TypeName> typesInQuery;
@@ -129,7 +129,6 @@ class HALConceptData {
         }
 
         if (concept.isType()) {
-
             generateTypeEmbedded(halResource, concept.asType(), separationDegree);
         }
 
@@ -191,12 +190,8 @@ class HALConceptData {
        generateConceptState(resource,concept);
 
         //Resources and links
-        if (concept.isEntity()) {
-            generateResources(resource, concept.asEntity().resources());
-        }
-
-        if (concept.isRelation()) {
-            generateResources(resource, concept.asRelation().resources());
+        if (concept.isInstance()) {
+            generateResources(resource, concept.asInstance().resources());
         }
     }
 

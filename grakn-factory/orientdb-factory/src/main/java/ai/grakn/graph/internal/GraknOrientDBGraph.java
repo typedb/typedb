@@ -18,8 +18,6 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -34,10 +32,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * <p>
  *     Wraps up a {@link OrientGraph} as a method of storing the Grakn Graph object Model.
  *     With this vendor some issues to be aware of:
- *     1. {@link GraknGraph#rollback()} is not supported at this stage.
- *     2. {@link AbstractGraknGraph#isConceptModified(ConceptImpl)} always returns true due to methods not available
+ *     1. {@link AbstractGraknGraph#isConceptModified(ConceptImpl)} always returns true due to methods not available
  *        yet on orient's side.
- *     3. Indexing is done across labels as opposed to global indices
+ *     2. Indexing is done across labels as opposed to global indices
  * </p>
  *
  * @author fppt
@@ -59,6 +56,11 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
     }
 
     @Override
+    public int numOpenTx() {
+        return 1;
+    }
+
+    @Override
     protected void commitTransaction(){
         getTinkerPopGraph().commit();
     }
@@ -73,10 +75,5 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
         }
 
         return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance()).V().hasLabel(labels);
-    }
-
-    @Override
-    public void rollback(){
-        throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
     }
 }

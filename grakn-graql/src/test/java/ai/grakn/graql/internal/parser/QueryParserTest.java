@@ -70,6 +70,7 @@ import static ai.grakn.graql.Graql.parseList;
 import static ai.grakn.graql.Graql.parsePatterns;
 import static ai.grakn.graql.Graql.regex;
 import static ai.grakn.graql.Graql.select;
+import static ai.grakn.graql.Graql.std;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
@@ -168,6 +169,15 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testValueEqualsVariableQuery() {
+        MatchQuery expected = match(var("s1").value(var("s2")));
+
+        MatchQuery parsed = parse("match $s1 value = $s2;");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
     public void testMoviesReleasedAfterOrAtTheSameTimeAsSpy() {
         MatchQuery expected = match(
                 var("x").has("release-date", gte(var("r"))),
@@ -233,13 +243,6 @@ public class QueryParserTest {
     public void testOrderQuery() {
         MatchQuery expected = match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", desc);
         MatchQuery parsed = parse("match $x isa movie, has release-date $r; order by $r desc;");
-        assertEquals(expected, parsed);
-    }
-
-    @Test
-    public void testHasValueQuery() {
-        MatchQuery expected = match(var("x").value());
-        MatchQuery parsed = parse("match $x value;");
         assertEquals(expected, parsed);
     }
 
@@ -436,6 +439,16 @@ public class QueryParserTest {
 
         AggregateQuery<Map<String, Object>> parsed =
                 parse("match $x isa movie; aggregate (count as c, group $x as g);");
+
+        assertEquals(expected, parsed);
+    }
+
+    @Test
+    public void testParseStdev() {
+        AggregateQuery<?> expected = match(var("x").isa("movie")).aggregate(std("x"));
+
+        AggregateQuery<Map<String, Object>> parsed =
+                parse("match $x isa movie; aggregate std $x;");
 
         assertEquals(expected, parsed);
     }

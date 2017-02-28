@@ -1,4 +1,4 @@
-import EngineClient from '../js/EngineClient';
+import EngineClient from './EngineClient';
 
 
 // Default constant values

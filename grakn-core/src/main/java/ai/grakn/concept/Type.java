@@ -42,14 +42,6 @@ import java.util.Collection;
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Changes the name of the type
-     *
-     * @param name The new name of the type
-     * @return The Type name
-     */
-    TypeName setName(String name);
-
-    /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
@@ -97,6 +89,12 @@ public interface Type extends Concept {
 
     /**
      *
+     * @return The resource types which this type is linked with.
+     */
+    Collection<ResourceType> resources();
+
+    /**
+     *
      * @return The super of this Type
      */
     Type superType();
@@ -114,6 +112,9 @@ public interface Type extends Concept {
     Collection<? extends Instance> instances();
 
     /**
+     * Return if the type is set to abstract.
+     *
+     * By default, types are not abstract.
      *
      * @return returns true if the type is set to be abstract.
      */
@@ -121,6 +122,8 @@ public interface Type extends Concept {
 
     /**
      * Return whether the Type was created implicitly.
+     *
+     * By default, types are not implicit.
      *
      * @return returns true if the type was created implicitly through {@link #hasResource}
      */
@@ -149,4 +152,10 @@ public interface Type extends Concept {
      * @return The Type itself.
      */
     Type deletePlaysRole(RoleType roleType);
+
+    /**
+     *
+     * @return a deep copy of this concept.
+     */
+    Type copy();
 }

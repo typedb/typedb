@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import mjson.Json;
 import org.apache.commons.io.output.TeeOutputStream;
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -42,8 +43,11 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -130,8 +134,10 @@ public class GraqlShellIT {
     public void testDefaultKeyspace() throws Exception {
         testShell("insert im-in-the-default-keyspace sub entity;\ncommit\n");
 
-        String result = testShell("match im-in-the-default-keyspace sub entity; ask;\n", "-k", "grakn");
-        assertThat(result, containsString("True"));
+        assertShellMatches(ImmutableList.of("-k", "grakn"),
+                "match im-in-the-default-keyspace sub entity; ask;",
+                containsString("True")
+        );
     }
 
     @Test
@@ -152,8 +158,28 @@ public class GraqlShellIT {
     @Test
     public void testFileOption() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("", err, "-f", "src/test/graql/shell-test.gql");
+        testShell("", err, "-f", "src/test/graql/shell test(weird name).gql");
         assertEquals("", err.toString());
+    }
+
+    @Test
+    public void testLoadCommand() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell test(weird name).gql",
+                anything(),
+                "match movie sub entity; ask;",
+                containsString("True")
+        );
+    }
+
+    @Test
+    public void testLoadCommandWithEscapes() throws Exception {
+        assertShellMatches(
+                "load src/test/graql/shell\\ test\\(weird\\ name\\).gql",
+                anything(),
+                "match movie sub entity; ask;",
+                containsString("True")
+        );
     }
 
     @Test
@@ -167,42 +193,40 @@ public class GraqlShellIT {
 
     @Test
     public void testAskQuery() throws Exception {
-        String result = testShell("match $x isa relation; ask;\n");
-        assertThat(result, containsString("False"));
+        assertShellMatches(
+                "match $x isa relation; ask;",
+                containsString("False")
+        );
     }
 
     @Test
     public void testInsertQuery() throws Exception {
-        String result = testShell(
-                "insert entity2 sub entity; match $x isa entity2; ask;\ninsert $x isa entity2;\nmatch $x isa entity2; ask;\n"
+        assertShellMatches(
+                "insert entity2 sub entity;",
+                anything(),
+                "match $x isa entity2; ask;",
+                containsString("False"),
+                "insert $x isa entity2;",
+                anything(),
+                "match $x isa entity2; ask;",
+                containsString("True")
         );
-        assertThat(result, allOf(containsString("False"), containsString("True")));
     }
 
     @Test
     public void testInsertOutput() throws Exception {
-        String result = testShell("insert X sub entity; $thingy isa X;\n");
-        List<String> resultLines = Lists.newArrayList(result.split("\r\n?|\n"));
-
-        // Expect seven lines output - four for the license, one for the query, one results and a new prompt
-        //noinspection unchecked
-        assertThat(resultLines, contains(
-                anything(),
-                anything(),
-                anything(),
-                anything(),
-                is(">>> insert X sub entity; $thingy isa X;"),
-                allOf(containsString("$thingy"), containsString("isa"), containsString("X")),
-                is(">>> ")
-        ));
+        assertShellMatches(
+                "insert X sub entity; $thingy isa X;",
+                allOf(containsString("$thingy"), containsString("isa"), containsString("X"))
+        );
     }
 
     @Test
     public void testAggregateQuery() throws Exception {
-        String result = testShell("match $x sub concept; aggregate count;\n");
-
-        // Expect to see the whole meta-ontology
-        assertThat(result, containsString("\n8\n"));
+        assertShellMatches(
+                "match $x sub concept; aggregate count;",
+                is("8") // Expect to see the whole meta-ontology
+        );
     }
 
     @Test
@@ -235,51 +259,38 @@ public class GraqlShellIT {
 
     @Test
     public void testReasonerOff() throws Exception {
-        String result = testShell(
-                "insert man sub entity has-resource name; person sub entity; name sub resource datatype string;\n" +
-                        "insert has name 'felix' isa man;\n" +
-                        "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
-                        "match isa person, has name $x;\n"
+        assertShellMatches(
+                "insert man sub entity has-resource name; name sub resource datatype string;",
+                anything(),
+                "insert person sub entity;",
+                anything(),
+                "insert has name 'felix' isa man;",
+                anything(),
+                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};",
+                anything(),
+                "commit",
+                "match isa person, has name $x;"
+                // No results
         );
-
-        // Make sure first 'match' query has no results and second has exactly one result
-        String[] results = result.split("\n");
-        for (int i = 0; i < results.length; i ++) {
-            if (results[i].contains(">>> match isa person, has name $x;")) {
-                assertFalse(results[i + 1].contains("felix"));
-            }
-        }
     }
 
     @Test
     public void testReasoner() throws Exception {
-        String result = testShell(
-                "insert man sub entity has-resource name; person sub entity; name sub resource datatype string;\n" +
-                "insert has name 'felix' isa man;\n" +
-                "match isa person, has name $x;\n" +
-                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
-                "match isa person, has name $x;\n", "--infer"
+        assertShellMatches(ImmutableList.of("--infer"),
+                "insert man sub entity has-resource name; name sub resource datatype string;",
+                anything(),
+                "insert person sub entity;",
+                anything(),
+                "insert has name 'felix' isa man;",
+                anything(),
+                "match isa person, has name $x;",
+                // No results
+                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};",
+                anything(),
+                "commit",
+                "match isa person, has name $x;",
+                containsString("felix") // Results after result is added
         );
-
-        // Make sure first 'match' query has no results and second has exactly one result
-        String[] results = result.split("\n");
-        int matchCount = 0;
-        for (int i = 0; i < results.length; i ++) {
-            if (results[i].contains(">>> match isa person, has name $x;")) {
-
-                if (matchCount == 0) {
-                    // First 'match' result is before rule is added, so should have no results
-                    assertFalse(results[i + 1].contains("felix"));
-                } else {
-                    // Second 'match' result is after rule is added, so should have a result
-                    assertTrue(results[i + 1].contains("felix"));
-                }
-
-                matchCount ++;
-            }
-        }
-
-        assertEquals(result, 2, matchCount);
     }
 
     @Test
@@ -292,8 +303,13 @@ public class GraqlShellIT {
 
     @Test
     public void testComputeCount() throws Exception {
-        String result = testShell("insert X sub entity; $a isa X; $b isa X; $c isa X;\ncommit\ncompute count;\n");
-        assertThat(result, containsString("\n3\n"));
+        assertShellMatches(
+                "insert X sub entity; $a isa X; $b isa X; $c isa X;",
+                anything(),
+                "commit",
+                "compute count;",
+                is("3")
+        );
     }
 
     @Test
@@ -310,10 +326,10 @@ public class GraqlShellIT {
 
     @Test
     public void testLimit() throws Exception {
-        String result = testShell("match $x sub concept; limit 1;\n");
-
-        // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
-        assertEquals(result, 7, result.split("\n").length);
+        assertShellMatches(
+                "match $x sub concept; limit 1;",
+                anything() // Only one result
+        );
     }
 
     @Test
@@ -385,8 +401,13 @@ public class GraqlShellIT {
     @Test
     public void testLargeQuery() throws Exception {
         String value = Strings.repeat("really-", 100000) + "long-value";
-        String[] result = testShell("insert X sub resource datatype string; value '" + value + "' isa X;\nmatch $x isa X;\n").split("\n");
-        assertThat(result[result.length-2], allOf(containsString("$x"), containsString(value)));
+
+        assertShellMatches(
+                "insert X sub resource datatype string; value '" + value + "' isa X;",
+                anything(),
+                "match $x isa X;",
+                allOf(containsString("$x"), containsString(value))
+        );
     }
 
     @Test
@@ -405,38 +426,83 @@ public class GraqlShellIT {
 
     @Test
     public void testDefaultDontDisplayResources() throws Exception {
-        String result = testShell(
-                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';\n" +
-                "match $x isa X;\n"
+        assertShellMatches(
+                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';",
+                anything(),
+                "match $x isa X;",
+                allOf(containsString("id"), not(containsString("\"foo\"")))
         );
-
-        // Confirm there is a result, but no resource value
-        assertThat(result, allOf(containsString("id"), not(containsString("\"foo\""))));
     }
 
     @Test
     public void testDisplayResourcesCommand() throws Exception {
-        String result = testShell(
-                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';\n" +
-                "display R;\n" +
-                "match $x isa X;\n"
+        assertShellMatches(
+                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';",
+                anything(),
+                "display R;",
+                "match $x isa X;",
+                allOf(containsString("id"), containsString("\"foo\""))
         );
+    }
 
-        // Confirm there is a result, plus a resource value
-        assertThat(result, allOf(containsString("id"), containsString("\"foo\"")));
+    @Test
+    public void whenRunningCleanCommand_TheGraphIsCleanedAndCommitted() throws Exception {
+        assertShellMatches(
+                "insert my-type sub entity;",
+                is("{}"),
+                "commit",
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity"),
+                "clean",
+                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+                is("Type 'confirm' to continue."),
+                "confirm",
+                is("Cleaning..."),
+                "match $x sub entity;",
+                containsString("entity"),
+                "rollback",
+                "match $x sub entity;",
+                containsString("entity")
+        );
+    }
+
+    @Test
+    public void whenCancellingCleanCommand_TheGraphIsNotCleaned() throws Exception {
+        assertShellMatches(
+                "insert my-type sub entity;",
+                is("{}"),
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity"),
+                "clean",
+                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+                is("Type 'confirm' to continue."),
+                "n",
+                is("Cancelling clean."),
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity"),
+                "clean",
+                is("Are you sure? This will clean ALL data in the current keyspace and immediately commit."),
+                is("Type 'confirm' to continue."),
+                "no thanks bad idea thanks for warning me",
+                is("Cancelling clean."),
+                "match $x sub entity;",
+                containsString("entity"),
+                containsString("entity")
+        );
     }
 
     @Test
     public void testExecuteMultipleQueries() throws Exception {
-        String result = testShell("insert X sub entity; $x isa X; match $y isa X; match $y isa X; aggregate count;\n");
-
-        String[] lines = result.split("\n");
-
-        // Make sure we see results from all three queries
-        assertThat(lines[lines.length-2], is("1"));
-        assertThat(lines[lines.length-3], containsString("$y"));
-        assertThat(lines[lines.length-4], containsString("$x"));
-        assertThat(lines[lines.length-5], containsString(">>> insert X sub entity"));
+        assertShellMatches(
+                "insert X sub entity; $x isa X; match $y isa X; match $y isa X; aggregate count;",
+                // Make sure we see results from all three queries
+                containsString("$x"),
+                containsString("$y"),
+                is("1")
+        );
     }
 
     @Test
@@ -466,6 +532,30 @@ public class GraqlShellIT {
         return sb.toString();
     }
 
+    private void assertShellMatches(Object... matchers) throws Exception {
+        assertShellMatches(ImmutableList.of(), matchers);
+    }
+
+    // Arguments should be strings or matchers. Strings are interpreted as input, matchers as expected output
+    private void assertShellMatches(List<String> arguments, Object... matchers) throws Exception {
+        String input = Stream.of(matchers)
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .collect(joining("\n", "", "\n"));
+
+        List<Matcher<? super String>> matcherList = Stream.of(matchers)
+                .map(obj -> (obj instanceof Matcher) ? (Matcher<String>) obj : is(">>> " + obj))
+                .collect(toList());
+
+        String output = testShell(input, arguments.toArray(new String[arguments.size()]));
+
+        List<String> outputLines = Lists.newArrayList(output.replace(" \r", "").split("\n"));
+        // Remove first four lines containing license and last line containing prompt
+        outputLines = outputLines.subList(4, outputLines.size() - 1);
+
+        assertThat(outputLines, contains(matcherList));
+    }
+
     private String testShell(String input, String... args) throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         String result = testShell(input, err, args);
@@ -484,8 +574,9 @@ public class GraqlShellIT {
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
-        // Intercept stderr and stdout, but make sure it is still printed using the TeeOutputStream
-        PrintStream out = new PrintStream(new TeeOutputStream(bout, trueOut));
+        PrintStream out = new PrintStream(bout);
+
+        // Intercept stderr, but make sure it is still printed using the TeeOutputStream
         PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
 
         try {

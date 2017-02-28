@@ -25,6 +25,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Query;
 import com.google.common.io.Files;
 
 import java.io.File;
@@ -52,12 +53,6 @@ public abstract class TestGraph {
             buildInstances(graph);
             buildRelations(graph);
             buildRules(graph);
-
-            try {
-                graph.commit();
-            } catch (GraknValidationException e) {
-                throw new RuntimeException(e);
-            }
         };
     }
 
@@ -85,10 +80,8 @@ public abstract class TestGraph {
             File graql = new File("src/test/graql/" + file);
 
             graph.graql()
-                    .parse(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(joining("\n")))
-                    .execute();
-
-            graph.commit();
+                    .parseList(Files.readLines(graql, StandardCharsets.UTF_8).stream().collect(joining("\n")))
+                    .forEach(Query::execute);
         } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }

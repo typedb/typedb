@@ -22,6 +22,8 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
+import ai.grakn.exception.GraphRuntimeException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.EngineCommunicator;
 import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
@@ -31,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
@@ -56,6 +59,10 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private final String location;
     private final String keyspace;
 
+    //Flags so we don't have to open a graph just to check the count of the transactions
+    private boolean graphOpen = false;
+    private boolean graphBatchOpen = false;
+
     public GraknGraphFactoryImpl(String keyspace, String location){
         this.location = location;
         this.keyspace = keyspace;
@@ -65,7 +72,9 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      *
      * @return A new or existing grakn graph with the defined name
      */
+    @Override
     public GraknGraph getGraph(){
+        graphOpen = true;
         return getConfiguredFactory().factory.getGraph(false);
     }
 
@@ -73,7 +82,9 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      *
      * @return A new or existing grakn graph with the defined name connecting to the specified remote location with batch loading enabled
      */
+    @Override
     public GraknGraph getGraphBatchLoading(){
+        graphBatchOpen = true;
         return getConfiguredFactory().factory.getGraph(true);
     }
 
@@ -84,10 +95,44 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     /**
      * @return A new or existing grakn graph compute with the defined name
      */
+    @Override
     public GraknComputer getGraphComputer() {
         ConfiguredFactory configuredFactory = configureGraphFactory(keyspace, location, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
         return new GraknComputerImpl(graph, configuredFactory.graphComputer);
+    }
+
+    @Override
+    public void close() throws GraphRuntimeException {
+        checkClosure(openGraphTxs(), this::getGraph);
+        checkClosure(openGraphBatchTxs(), this::getGraphBatchLoading);
+
+        //Close the main graph connections
+        try {
+            if(graphOpen) ((AbstractGraknGraph)getGraph()).getTinkerPopGraph().close();
+            if(graphBatchOpen) ((AbstractGraknGraph)getGraphBatchLoading()).getTinkerPopGraph().close();
+        } catch (Exception e) {
+            throw new GraphRuntimeException("Could not close graph.", e);
+        }
+    }
+    private void checkClosure(int numOpenTransactions, Supplier<GraknGraph> graphSupplier){
+        if(numOpenTransactions > 1){
+            GraknGraph graph = graphSupplier.get();
+            throw new GraphRuntimeException(ErrorMessage.TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), numOpenTransactions));
+        }
+    }
+
+
+    @Override
+    public int openGraphTxs() {
+        if(!graphOpen) return 0;
+        return ((AbstractGraknGraph)getGraph()).numOpenTx();
+    }
+
+    @Override
+    public int openGraphBatchTxs() {
+        if(!graphBatchOpen) return 0;
+        return ((AbstractGraknGraph)getGraphBatchLoading()).numOpenTx();
     }
 
     /**

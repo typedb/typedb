@@ -26,11 +26,15 @@ import ai.grakn.engine.backgroundtasks.taskstatestorage.TaskStateZookeeperStore;
 import mjson.Json;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Class to manage tasks distributed using Kafka.
@@ -39,14 +43,17 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
  * This class begins the TaskRunner instance that will be running on this machine.
  */
 public final class DistributedTaskManager implements TaskManager {
+
+    private final static Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
+
     private final KafkaProducer<String, String> producer;
 
     private final SchedulerElector elector;
     private final ZookeeperConnection connection;
-    private final TaskRunner taskRunner;
     private final TaskStateStorage stateStorage;
 
     private static final String TASKRUNNER_THREAD_NAME = "taskrunner-";
+    private TaskRunner taskRunner;
     private Thread taskRunnerThread;
 
     public DistributedTaskManager() {
@@ -54,9 +61,7 @@ public final class DistributedTaskManager implements TaskManager {
         stateStorage = new TaskStateZookeeperStore(connection);
 
         // run the TaskRunner in a thread
-        taskRunner = new TaskRunner(stateStorage, connection);
-        taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
-        taskRunnerThread.start();
+        startTaskRunner();
 
         // Elect the scheduler or add yourself to the scheduler pool
         elector = new SchedulerElector(stateStorage, connection);
@@ -66,14 +71,22 @@ public final class DistributedTaskManager implements TaskManager {
 
     @Override
     public void close() {
+        LOG.debug("Closing TaskManager");
+
+        // close kafka producer
         noThrow(producer::close, "Error shutting down producer in TaskManager");
 
+        // remove this engine from leadership election
         noThrow(elector::stop, "Error stopping Scheduler elector from TaskManager");
+
+        // close task runner
         noThrow(taskRunner::close, "Error shutting down TaskRunner");
         noThrow(taskRunnerThread::join, "Error waiting for TaskRunner to close");
 
         // stop zookeeper connection
         noThrow(connection::close, "Error waiting for zookeeper connection to close");
+
+        LOG.debug("TaskManager closed");
     }
 
     @Override
@@ -101,5 +114,42 @@ public final class DistributedTaskManager implements TaskManager {
     @Override
     public TaskStateStorage storage() {
         return stateStorage;
+    }
+
+    /**
+     * Start a new instance of TaskRunner in a thread.
+     *
+     * We want to revive the TaskRunner if an unhandled exception is thrown. To handle:
+     *        It is instantiated with a TaskRunnerResurrection exception
+     *        handler that will restart the task runner if any unchecked exception is thrown.
+     */
+    private void startTaskRunner(){
+        taskRunner = new TaskRunner(stateStorage, connection);
+        taskRunnerThread = new Thread(taskRunner, TASKRUNNER_THREAD_NAME + taskRunner.hashCode());
+        taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
+        taskRunnerThread.start();
+    }
+
+    /**
+     * Implementation of UncaughtExceptionHandler that will restart the TaskRunner in a new thread
+     * if it throws any unchecked exception
+     *
+     * @author alexandraorth
+     */
+    private class TaskRunnerResurrection implements Thread.UncaughtExceptionHandler {
+
+        public void uncaughtException(Thread paramThread, Throwable paramThrowable) {
+            LOG.debug(format("TaskRunner [%s] threw an exception. Will attempt to close and reopen. Exception is: %n [%s]",
+                    paramThread.getName(), getFullStackTrace(paramThrowable)));
+
+            noThrow(taskRunner::close, "Error shutting down TaskRunner");
+            // no need to call taskRunnerThread.join() here - recursive wait, are still in thread
+
+            LOG.debug("TaskRunner closed.");
+
+            startTaskRunner();
+
+            LOG.debug("Re-instantiation of TaskRunner completed.");
+        }
     }
 }

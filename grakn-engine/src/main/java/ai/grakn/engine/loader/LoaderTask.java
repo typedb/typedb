@@ -20,11 +20,10 @@ package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -39,12 +38,10 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.util.ConfigProperties.LOADER_REPEAT_COMMITS;
-
-import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
-import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
+import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
-
+import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -84,7 +81,7 @@ public class LoaderTask implements BackgroundTask {
     }
 
     private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts) {
-        try(EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraphBatchLoading(keyspace)) {
+        try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraphBatchLoading(keyspace)) {
             for (int i = 0; i < repeatCommits; i++) {
                 if(insertQueriesInOneTransaction(graph, inserts)){
                     return;
@@ -101,15 +98,15 @@ public class LoaderTask implements BackgroundTask {
      * @param inserts graql queries to insert into the graph
      * @return true if the data was inserted, false otherwise
      */
-    private boolean insertQueriesInOneTransaction(EngineGraknGraph graph, Collection<InsertQuery> inserts) {
+    private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<InsertQuery> inserts) {
 
         try {
             graph.showImplicitConcepts(true);
 
-            inserts.forEach(q -> q.withGraph((GraknGraph) graph).execute());
+            inserts.forEach(q -> q.withGraph(graph).execute());
 
             // commit the transaction
-            graph.commit(EngineCacheImpl.getInstance());
+            graph.admin().commit(EngineCache.getInstance());
         } catch (GraknValidationException e) {
             //If it's a validation exception there is no point in re-trying
             throwException(FAILED_VALIDATION.getMessage(e.getMessage()), inserts);

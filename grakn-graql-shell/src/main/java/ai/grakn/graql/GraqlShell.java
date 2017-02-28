@@ -57,6 +57,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
+import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_DISPLAY;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
@@ -81,6 +82,7 @@ import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -110,6 +112,7 @@ public class GraqlShell {
     private static final String CLEAR_COMMAND = "clear";
     private static final String EXIT_COMMAND = "exit";
     private static final String LICENSE_COMMAND = "license";
+    private static final String CLEAN_COMMAND = "clean";
 
     private static final int QUERY_CHUNK_SIZE = 1000;
 
@@ -118,7 +121,7 @@ public class GraqlShell {
      */
     public static final ImmutableList<String> COMMANDS = ImmutableList.of(
             EDIT_COMMAND, COMMIT_COMMAND, ROLLBACK_COMMAND, LOAD_COMMAND, DISPLAY_COMMAND, CLEAR_COMMAND, EXIT_COMMAND,
-            LICENSE_COMMAND
+            LICENSE_COMMAND, CLEAN_COMMAND
     );
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
@@ -363,6 +366,9 @@ public class GraqlShell {
                     case ROLLBACK_COMMAND:
                         rollback();
                         continue;
+                    case CLEAN_COMMAND:
+                        clean();
+                        continue;
                     case CLEAR_COMMAND:
                         console.clearScreen();
                         continue;
@@ -380,6 +386,7 @@ public class GraqlShell {
             // Load from a file if load command used
             if (queryString.startsWith(LOAD_COMMAND + " ")) {
                 String path = queryString.substring(LOAD_COMMAND.length() + 1);
+                path = unescapeJavaScript(path);
 
                 try {
                     queryString = loadQuery(path);
@@ -502,6 +509,19 @@ public class GraqlShell {
 
     private void rollback() throws IOException {
         session.sendJson(Json.object(ACTION, ACTION_ROLLBACK));
+    }
+
+    private void clean() throws IOException {
+        // Get user confirmation to clean graph
+        console.println("Are you sure? This will clean ALL data in the current keyspace and immediately commit.");
+        console.println("Type 'confirm' to continue.");
+        String line = console.readLine();
+        if (line != null && line.equals("confirm")) {
+            console.println("Cleaning...");
+            session.sendJson(Json.object(ACTION, ACTION_CLEAN));
+        } else {
+            console.println("Cancelling clean.");
+        }
     }
 
     /**

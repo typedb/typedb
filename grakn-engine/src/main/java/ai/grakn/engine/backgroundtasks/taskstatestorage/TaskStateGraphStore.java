@@ -18,20 +18,20 @@
 
 package ai.grakn.engine.backgroundtasks.taskstatestorage;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
-import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.postprocessing.EngineCacheImpl;
+import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.EngineGraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
@@ -51,6 +51,7 @@ import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
 import static ai.grakn.engine.util.SystemOntologyElements.RECUR_INTERVAL;
 import static ai.grakn.engine.util.SystemOntologyElements.RUN_AT;
 import static ai.grakn.engine.util.SystemOntologyElements.SCHEDULED_TASK;
+import static ai.grakn.engine.util.SystemOntologyElements.SERIALISED_TASK;
 import static ai.grakn.engine.util.SystemOntologyElements.STACK_TRACE;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_BY;
@@ -60,7 +61,6 @@ import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_ID;
-import static ai.grakn.engine.util.SystemOntologyElements.SERIALISED_TASK;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
@@ -193,7 +193,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
      * @param instance Task instance to turn into task state
      * @return TaskState representing given instance
      */
-    public TaskState instanceToState(EngineGraknGraph graph, Instance instance){
+    public TaskState instanceToState(GraknGraph graph, Instance instance){
         ResourceType<String> serialisedResourceType = graph.getResourceType(SERIALISED_TASK.getValue());
         String serialisedTask = (String) instance.resources(serialisedResourceType).iterator().next().getValue();
 
@@ -243,17 +243,17 @@ public class TaskStateGraphStore implements TaskStateStorage {
         return result.isPresent() ? result.get() : new HashSet<>();
     }
 
-    private <T> Optional<T> attemptCommitToSystemGraph(Function<EngineGraknGraph, T> function, boolean commit){
+    private <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
         double sleepFor = 100;
         for (int i = 0; i < retries; i++) {
 
             LOG.debug("Attempting "  + (commit ? "commit" : "query") + " on system graph @ t"+Thread.currentThread().getId());
             long time = System.currentTimeMillis();
 
-            try (EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
                 T result = function.apply(graph);
                 if (commit) {
-                    graph.commit(EngineCacheImpl.getInstance());
+                    graph.admin().commit(EngineCache.getInstance());
                 }
 
                 return Optional.of(result);

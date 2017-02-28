@@ -64,6 +64,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
@@ -439,11 +440,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropValue(GraqlParser.PropValueContext ctx) {
-        if (ctx.predicate() != null) {
-            return var -> var.value(visitPredicate(ctx.predicate()));
-        } else {
-            return Var::value;
-        }
+        return var -> var.value(visitPredicate(ctx.predicate()));
     }
 
     @Override
@@ -471,17 +468,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeName type = visitName(ctx.name());
-
-        Var resource;
-
-        if (ctx.predicate() != null) {
-            resource = var().value(visitPredicate(ctx.predicate()));
-        } else if (ctx.VARIABLE() != null) {
-            resource = var(getVariable(ctx.VARIABLE()));
-        } else {
-            resource = var();
-        }
-
+        Var resource = var().value(visitPredicate(ctx.predicate()));
         return var -> var.has(type, resource);
     }
 
@@ -591,32 +578,37 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateEq(GraqlParser.PredicateEqContext ctx) {
-        return applyPredicate(Graql::eq, Graql::eq, visitValue(ctx.value()));
+        return eq(visitValue(ctx.value()));
+    }
+
+    @Override
+    public ValuePredicate visitPredicateVariable(GraqlParser.PredicateVariableContext ctx) {
+        return eq(var(getVariable(ctx.VARIABLE())));
     }
 
     @Override
     public ValuePredicate visitPredicateNeq(GraqlParser.PredicateNeqContext ctx) {
-        return applyPredicate(Graql::neq, Graql::neq, visitValue(ctx.value()));
+        return applyPredicate(Graql::neq, Graql::neq, visitValueOrVar(ctx.valueOrVar()));
     }
 
     @Override
     public ValuePredicate visitPredicateGt(GraqlParser.PredicateGtContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::gt, Graql::gt, visitValue(ctx.value()));
+        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::gt, Graql::gt, visitValueOrVar(ctx.valueOrVar()));
     }
 
     @Override
     public ValuePredicate visitPredicateGte(GraqlParser.PredicateGteContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::gte, Graql::gte, visitValue(ctx.value()));
+        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::gte, Graql::gte, visitValueOrVar(ctx.valueOrVar()));
     }
 
     @Override
     public ValuePredicate visitPredicateLt(GraqlParser.PredicateLtContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::lt, Graql::lt, visitValue(ctx.value()));
+        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::lt, Graql::lt, visitValueOrVar(ctx.valueOrVar()));
     }
 
     @Override
     public ValuePredicate visitPredicateLte(GraqlParser.PredicateLteContext ctx) {
-        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::lte, Graql::lte, visitValue(ctx.value()));
+        return applyPredicate((Function<Comparable<?>, ValuePredicate>) Graql::lte, Graql::lte, visitValueOrVar(ctx.valueOrVar()));
     }
 
     @Override
@@ -682,6 +674,10 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private ValuePredicate visitPredicate(GraqlParser.PredicateContext ctx) {
         return (ValuePredicate) visit(ctx);
+    }
+
+    private Object visitValueOrVar(GraqlParser.ValueOrVarContext ctx) {
+        return visit(ctx);
     }
 
     private Object visitValue(GraqlParser.ValueContext ctx) {

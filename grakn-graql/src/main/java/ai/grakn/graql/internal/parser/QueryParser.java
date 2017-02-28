@@ -69,7 +69,6 @@ public class QueryParser {
      */
     private QueryParser(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
-        registerDefaultAggregates();
     }
 
     /**
@@ -78,7 +77,9 @@ public class QueryParser {
      *  @return a query parser that operates with the specified graph
      */
     public static QueryParser create(QueryBuilder queryBuilder) {
-        return new QueryParser(queryBuilder);
+        QueryParser parser = new QueryParser(queryBuilder);
+        parser.registerDefaultAggregates();
+        return parser;
     }
 
     private void registerAggregate(String name, int numArgs, Function<List<Object>, Aggregate> aggregateMethod) {
@@ -122,22 +123,22 @@ public class QueryParser {
      * @param queryString a string representing several queries
      * @return a list of queries
      */
-    public List<Query<?>> parseList(String queryString) {
-        List<Query<?>> queries = parseQueryFragment(GraqlParser::queryList, QueryVisitor::visitQueryList, queryString);
+    public <T extends Query<?>> List<T> parseList(String queryString) {
+        List<T> queries = parseQueryFragment(GraqlParser::queryList, (q, t) -> (List<T>) q.visitQueryList(t), queryString);
 
         // Merge any match...insert queries together
         // TODO: Find a way to NOT do this horrid thing
-        List<Query<?>> merged = Lists.newArrayList();
+        List<T> merged = Lists.newArrayList();
 
         if (queries.isEmpty()) return queries;
 
-        Query<?> previous = queries.get(0);
+        T previous = queries.get(0);
 
         for (int i = 1; i < queries.size(); i ++) {
-            Query<?> current = queries.get(i);
+            T current = queries.get(i);
 
             if (previous instanceof MatchQuery && current instanceof InsertQuery) {
-                previous = ((MatchQuery) previous).insert(((InsertQuery) current).admin().getVars());
+                previous = (T) ((MatchQuery) previous).insert(((InsertQuery) current).admin().getVars());
             } else {
                 merged.add(previous);
                 previous = current;
@@ -299,6 +300,7 @@ public class QueryParser {
         registerAggregate("min", 1, args -> Aggregates.min((VarName) args.get(0)));
         registerAggregate("mean", 1, args -> Aggregates.mean((VarName) args.get(0)));
         registerAggregate("median", 1, args -> Aggregates.median((VarName) args.get(0)));
+        registerAggregate("std", 1, args -> Aggregates.std((VarName) args.get(0)));
 
         registerAggregate("group", 1, 2, args -> {
             if (args.size() < 2) {

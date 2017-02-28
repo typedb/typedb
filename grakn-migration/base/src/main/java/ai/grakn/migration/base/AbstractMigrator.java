@@ -29,15 +29,18 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static java.lang.String.format;
 
 /**
  * <p>
@@ -49,11 +52,17 @@ import java.util.stream.StreamSupport;
  */
 public abstract class AbstractMigrator implements Migrator {
 
-    private final static AtomicInteger numberQueriedSubmitted = new AtomicInteger(0);
+    private final static AtomicInteger numberQueriesSubmitted = new AtomicInteger(0);
+    private final static AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
+
     private final static Logger LOG = LoggerFactory.getLogger(AbstractMigrator.class);
     private final QueryBuilderImpl queryBuilder = (QueryBuilderImpl) Graql.withoutGraph().infer(false);
     public static final int BATCH_SIZE = 25;
     public static final int ACTIVE_TASKS = 25;
+    public static final boolean RETRY = false;
+
+    private int batchSize;
+    private long startTime;
 
     /**
      * Register a macro to use in templating
@@ -73,7 +82,7 @@ public abstract class AbstractMigrator implements Migrator {
      * @param keyspace The name of the keyspace where the data should be persisted
      */
     public void load(String uri, String keyspace) {
-        load(uri, keyspace, AbstractMigrator.BATCH_SIZE, AbstractMigrator.ACTIVE_TASKS);
+        load(uri, keyspace, AbstractMigrator.BATCH_SIZE, AbstractMigrator.ACTIVE_TASKS, AbstractMigrator.RETRY);
     }
 
     /**
@@ -85,14 +94,19 @@ public abstract class AbstractMigrator implements Migrator {
      * @param batchSize The number of queries to execute in one transaction. Default is 25.
      * @param numberActiveTasks Number of tasks running on the server at any one time. Consider this a safeguard
      *                  to bot the system load. Default is 25.
+     * @param retry If the Loader should continue attempt to send tasks when Engine is not available
      */
-    public void load(String uri, String keyspace, int batchSize, int numberActiveTasks){
+    public void load(String uri, String keyspace, int batchSize, int numberActiveTasks, boolean retry){
+        this.batchSize = batchSize;
+        this.startTime = System.currentTimeMillis();
+
         LoaderClient loader = new LoaderClient(keyspace, uri, recordMigrationStates());
         loader.setBatchSize(batchSize);
         loader.setNumberActiveTasks(numberActiveTasks);
+        loader.setRetryPolicy(retry);
 
         migrate().forEach(q -> {
-            numberQueriedSubmitted.incrementAndGet();
+            numberQueriesSubmitted.incrementAndGet();
             loader.add(q);
         });
         loader.waitToFinish();
@@ -103,15 +117,17 @@ public abstract class AbstractMigrator implements Migrator {
      * @param data data used in the template
      * @return an insert query
      */
-    protected Optional<InsertQuery> template(String template, Map<String, Object> data){
+    protected List<InsertQuery> template(String template, Map<String, Object> data){
         try {
-            return Optional.of(queryBuilder.parseTemplate(template, data));
-        } catch (GraqlTemplateParsingException e){
+            return queryBuilder.parseTemplate(template, data);
+
+            //TODO Graql should throw a GraqlParsignException so we do not need to catch IllegalArgumentException
+        } catch (GraqlTemplateParsingException | IllegalArgumentException e){
             LOG.warn("Query was not sent to loader- " + e.getMessage());
             LOG.warn("See the Grakn engine logs for more detail about loading status and any resulting stacktraces");
         }
 
-        return Optional.empty();
+        return Collections.emptyList();
     }
 
     /**
@@ -145,11 +161,18 @@ public abstract class AbstractMigrator implements Migrator {
         return (Json json) -> {
             TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
             Json configuration = Json.read(json.at("configuration").asString());
-            int batchNumber = configuration.at("batchNumber").asInteger();
+            int batch = configuration.at("batchNumber").asInteger();
 
-            LOG.info("Status of finished batch: " + status);
-            LOG.info("Batches finished: " + batchNumber);
-            LOG.info("Number Queries finished: " + numberQueriedSubmitted.get());
+            numberBatchesCompleted.incrementAndGet();
+
+            long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;
+            long numberQueriesCompleted = numberBatchesCompleted.get() * batchSize;
+
+            LOG.info(format("Status of batch [%s]: %s", batch, status));
+            LOG.info(format("Number queries submitted: %s", numberQueriesSubmitted.get()));
+            LOG.info(format("Number batches completed: %s", numberBatchesCompleted.get()));
+            LOG.info(format("~Number queries completed: %s", numberQueriesCompleted));
+            LOG.info(format("~Rate of completion (queries/second): %s", numberQueriesCompleted / timeElapsedSeconds));
         };
     }
 }

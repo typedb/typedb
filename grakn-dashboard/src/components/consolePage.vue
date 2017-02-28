@@ -43,7 +43,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
 
 .panel-body {
     display: inline-flex;
-    flex: 3;
+    flex: 4;
     background-color: green;
     margin-top: 20px;
     margin-bottom: 25px;
@@ -51,6 +51,16 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     margin-left: 15px;
     margin-right: 15px;
     padding: 10px 15px;
+    position: relative;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+.panel-body::-webkit-scrollbar {
+    display: none;
+}
+
+pre{
+  width: 100%;
 }
 </style>
 

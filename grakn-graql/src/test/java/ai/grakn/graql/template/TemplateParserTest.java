@@ -28,11 +28,15 @@ import org.junit.rules.ExpectedException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.parse;
 import static java.util.Collections.singletonMap;
+import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 
 public class TemplateParserTest {
 
@@ -94,12 +98,12 @@ public class TemplateParserTest {
                         "   $<address> has address <address>;\n" +
                         "}";
 
-        String expected = "insert $22-Hornsey has address \"22 Hornsey\";\n" +
+        String expected = "insert $22--Hornsey has address \"22. Hornsey\";\n" +
                 "$Something has address \"Something\";";
 
 
         Map<String, Object> data = new HashMap<>();
-        data.put("addresses", Arrays.asList("22 Hornsey", "Something"));
+        data.put("addresses", Arrays.asList("22. Hornsey", "Something"));
 
         assertParseEquals(template, data, expected);
     }
@@ -708,8 +712,31 @@ public class TemplateParserTest {
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
+    @Test
+    public void templateWithMultipleQueries_IsCorrectlyParsed() {
+        String template = "insert $x isa <type1>; insert $y isa <type2>;";
+
+        String[] expected = {
+                "insert $x0 isa thing1;",
+                "insert $y0 isa thing2;"
+        };
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("type1", "thing1");
+        data.put("type2", "thing2");
+
+        assertParseContains(template, data, expected);
+    }
+
+    private void assertParseContains(String template, Map<String, Object> data, String... expected){
+        List<String> result = Graql.parseTemplate(template, data).stream().map(Query::toString).collect(toList());
+        for(String e:expected){
+            assertThat(result, hasItem(e));
+        }
+    }
+
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        Query<?> result = Graql.parseTemplate(template, data);
-        assertEquals(parse(expected), result);
+        List<Query> result = Graql.parseTemplate(template, data);
+        assertEquals(parse(expected), result.get(0));
     }
 }

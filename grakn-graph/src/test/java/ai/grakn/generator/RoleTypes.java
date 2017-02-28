@@ -19,17 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeName;
 
-public class PatternAdmins extends AbstractGenerator<PatternAdmin> {
+public class RoleTypes extends AbstractTypeGenerator<RoleType> {
 
-    public PatternAdmins() {
-        super(PatternAdmin.class);
+    public RoleTypes() {
+        super(RoleType.class);
     }
 
     @Override
-    protected PatternAdmin generate() {
-        return gen(Pattern.class).admin();
+    protected RoleType newType(TypeName name) {
+        return graph().putRoleType(name);
+    }
+
+    @Override
+    protected RoleType metaType() {
+        return graph().admin().getMetaRoleType();
     }
 }

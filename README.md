@@ -4,12 +4,12 @@
 [![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
 [![Coverage Status](https://codecov.io/gh/graknlabs/grakn/branch/master/graph/badge.svg)](https://codecov.io/gh/graknlabs/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
-[![Download count](https://img.shields.io/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
+[![Download count](http://shields.grakn.ai/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
 [![Code Triagers Badge](https://www.codetriage.com/graknlabs/grakn/badges/users.svg)](https://www.codetriage.com/graknlabs/grakn)
 
 Copyright (C) 2016  Grakn Labs Limited.  
 
-### Version 0.9.0 (21 December 2016)
+### Version 0.11.0 (21 December 2016)
 
 For release notes, please see our separate changelog file.   
 

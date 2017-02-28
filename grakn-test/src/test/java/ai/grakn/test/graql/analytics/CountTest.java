@@ -19,8 +19,10 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -42,6 +44,7 @@ public class CountTest {
     @ClassRule
     public static final EngineContext rule = EngineContext.startInMemoryServer();
 
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Before
@@ -49,7 +52,8 @@ public class CountTest {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
 
-        graph = rule.graphWithNewKeyspace();
+        factory = rule.factoryWithNewKeyspace();
+        graph = factory.getGraph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
@@ -76,7 +80,9 @@ public class CountTest {
         thing.addEntity().getId();
         thing.addEntity().getId();
         anotherThing.addEntity().getId();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         // assert computer returns the correct count of instances
         startTime = System.currentTimeMillis();
@@ -91,6 +97,7 @@ public class CountTest {
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3L, graph.graql().compute().count().execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
+        GraknSparkComputer.close();
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");

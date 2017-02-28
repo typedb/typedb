@@ -210,8 +210,6 @@ public class ValidatorTest extends GraphTestBase{
 
     @Test
     public void testValidateAfterManualAssertionDelete() throws GraknValidationException {
-        graknGraph.initialiseMetaConcepts();
-
         // ontology
         EntityType person = graknGraph.putEntityType("person");
         EntityType movie = graknGraph.putEntityType("movie");
@@ -442,6 +440,7 @@ public class ValidatorTest extends GraphTestBase{
 
         graknGraph.commit();
     }
+
     @Test
     public void testRelationTypeToRoleTypeSchemaValidationValid2() throws GraknValidationException {
         RoleType relative = graknGraph.putRoleType("relative").setAbstract(true);
@@ -486,6 +485,7 @@ public class ValidatorTest extends GraphTestBase{
 
         graknGraph.commit();
     }
+
     @Test
     public void testRelationTypeToRoleTypeSchemaValidationInvalid1() throws GraknValidationException {
         RoleType pChild = graknGraph.putRoleType("pChild");
@@ -506,6 +506,7 @@ public class ValidatorTest extends GraphTestBase{
 
         graknGraph.commit();
     }
+
     @Test
     public void testRelationTypeToRoleTypeSchemaValidationInvalid2() throws GraknValidationException {
         RoleType parent = graknGraph.putRoleType("parent");
@@ -526,4 +527,15 @@ public class ValidatorTest extends GraphTestBase{
 
         graknGraph.commit();
     }
+
+    @Test
+    public void checkRoleTypeValidSuperOfSelfTypeWhenLinkedToRelationsWhichAreSubsOfEachOther() throws GraknValidationException {
+        RoleType insurer = graknGraph.putRoleType("insurer");
+        RoleType monoline = graknGraph.putRoleType("monoline").superType(insurer);
+        RoleType insured = graknGraph.putRoleType("insured");
+        RelationType insure = graknGraph.putRelationType("insure").hasRole(insurer).hasRole(insured);
+        graknGraph.putRelationType("monoline-insure").hasRole(monoline).hasRole(insured).superType(insure);
+        graknGraph.commit();
+    }
+
 }

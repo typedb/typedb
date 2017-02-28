@@ -21,6 +21,7 @@ package ai.grakn.test.graql.query;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
@@ -28,7 +29,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -141,7 +141,7 @@ public class AdminTest {
 
     @Test
     public void testInsertQueryGetTypes() {
-        InsertQuery query = qb.insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
+        InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
         Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
         assertEquals(types, query.admin().getTypes());
     }
@@ -149,7 +149,7 @@ public class AdminTest {
     @Test
     public void testMatchInsertQueryGetTypes() {
         InsertQuery query = qb.match(var("y").isa("movie"))
-                        .insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
+                        .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
         Set<Type> types =
                 Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());

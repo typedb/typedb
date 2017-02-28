@@ -82,6 +82,8 @@ const computeComponentCenterLeft = function(path) {
     return null;
 };
 
+import User from '../../js/User';
+
 
 export default {
     name: 'MainTemplate',
@@ -120,13 +122,20 @@ export default {
               "preventDuplicates": false,
               "showDuration": "300",
               "hideDuration": "1000",
-              "timeOut": "2000",
+              "timeOut": "3000",
               "extendedTimeOut": "1000",
               "showEasing": "swing",
               "hideEasing": "linear",
               "showMethod": "fadeIn",
               "hideMethod": "fadeOut"
           };
+
+          if (!User.getModalShown()){
+            var modal = document.getElementById('myModal');
+            modal.style.display = "block";
+            User.setModalShown(true);
+          }
+
         });
     },
     watch: {

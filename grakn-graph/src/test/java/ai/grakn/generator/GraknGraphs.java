@@ -21,6 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -33,15 +34,23 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
-import ai.grakn.graql.Pattern;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
+import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
+
+import static ai.grakn.graql.Graql.var;
+import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.PARAMETER;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Generator to create random {@link GraknGraph}s.
@@ -49,16 +58,20 @@ import java.util.UUID;
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
 public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
-    private static final int MAX_CACHED_GRAPHS = 10;
-
-    // A cache of graphs keyed by their size (how many mutations were applied).
-    // Used to speed up testing.
-    private static Map<Integer, Set<GraknGraph>> GRAPH_CACHE = new HashMap<>();
+    private static GraknGraph lastGeneratedGraph;
 
     private GraknGraph graph;
+    private Boolean open = null;
 
     public GraknGraphs() {
         super(GraknGraph.class);
+    }
+
+    public static GraknGraph lastGeneratedGraph() {
+        if (lastGeneratedGraph == null) {
+            throw new IllegalStateException("No graph to generate from");
+        }
+        return lastGeneratedGraph;
     }
 
     /**
@@ -71,9 +84,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             succesfulMutation = true;
             try {
                 random.choose(mutators).run();
-            } catch (UnsupportedOperationException | GraphRuntimeException | GraphGeneratorException
-                    | ClassCastException e) {
-                // TODO: Remove ClassCastException when graph API no longer throws it
+            } catch (UnsupportedOperationException | GraphRuntimeException | GraphGeneratorException e) {
                 // We only catch acceptable exceptions for the graph API to throw
                 succesfulMutation = false;
             }
@@ -82,35 +93,39 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     @Override
     public GraknGraph generate() {
-        Set<GraknGraph> cache = GRAPH_CACHE.computeIfAbsent(status.size(), key -> Sets.newHashSet());
+        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
+        graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
 
-        if (cache.size() >= MAX_CACHED_GRAPHS) {
-            return random.choose(cache);
-        } else {
-            String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-            graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-
-            for (int i = 0; i < status.size(); i++) {
-                mutateOnce();
-            }
-
-            cache.add(graph);
-
-            return graph;
+        for (int i = 0; i < status.size(); i++) {
+            mutateOnce();
         }
+
+        // Close graphs randomly, unless parameter is set
+        boolean shouldOpen = open != null ? open : random.nextBoolean();
+
+        if (!shouldOpen) graph.close();
+
+        lastGeneratedGraph = graph;
+        return graph;
+    }
+
+    public void configure(Open open) {
+        setOpen(open.value());
+    }
+
+    public GraknGraphs setOpen(boolean open) {
+        this.open = open;
+        return this;
     }
 
     // A list of methods that will mutate the graph in some random way when called
     private final ImmutableList<Runnable> mutators = ImmutableList.of(
-            () -> graph.putEntityType(gen(TypeName.class)),
-            () -> graph.putResourceType(gen(TypeName.class), gen(ResourceType.DataType.class)),
-            () -> graph.putResourceTypeUnique(gen(TypeName.class), gen(ResourceType.DataType.class)),
-            () -> graph.putRoleType(gen(TypeName.class)),
-            () -> graph.putRelationType(gen(TypeName.class)),
+            () -> graph.putEntityType(typeName()),
+            () -> graph.putResourceType(typeName(), gen(ResourceType.DataType.class)),
+            () -> graph.putResourceTypeUnique(typeName(), gen(ResourceType.DataType.class)),
+            () -> graph.putRoleType(typeName()),
+            () -> graph.putRelationType(typeName()),
             () -> graph.showImplicitConcepts(gen(Boolean.class)),
-            () -> graph.rollback(),
-            () -> graph.close(),
-            () -> graph.open(),
             () -> type().playsRole(roleType()),
             () -> type().hasResource(resourceType()),
             () -> type().key(resourceType()),
@@ -118,22 +133,24 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> entityType().superType(entityType()),
             () -> entityType().addEntity(),
             () -> roleType().superType(roleType()),
-            () -> resourceType().superType(resourceType()),
+            () -> relationType().superType(relationType()),
             () -> relationType().addRelation(),
             () -> relationType().hasRole(roleType()),
             () -> resourceType().superType(resourceType()),
             () -> resourceType().putResource(gen().make(ResourceValues.class).generate(random, status)),
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> ruleType().superType(ruleType()),
-            () -> ruleType().addRule(gen(Pattern.class), gen(Pattern.class)),
+            () -> ruleType().addRule(var("x"), var("x")), // TODO: generate more complicated rules
             () -> instance().hasResource(resource()),
             () -> relation().scope(instance()),
             () -> relation().putRolePlayer(roleType(), instance()),
-            () -> rule().setExpectation(true),
-            () -> rule().setMaterialise(true),
             () -> rule().addHypothesis(type()),
             () -> rule().addConclusion(type())
     );
+
+    private TypeName typeName() {
+        return gen().make(TypeNames.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
+    }
 
     private Type type() {
         return random.choose(graph.admin().getMetaConcept().subTypes());
@@ -182,10 +199,37 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             return random.choose(collection);
         }
     }
+
+    public static List<Concept> allConceptsFrom(GraknGraph graph) {
+        List<Concept> concepts = Lists.newArrayList(GraknGraphs.allTypesFrom(graph));
+        concepts.addAll(allInstancesFrom(graph));
+        return concepts;
+    }
+
+    public static Collection<? extends Type> allTypesFrom(GraknGraph graph) {
+        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().subTypes());
+    }
+
+    public static Collection<? extends Instance> allInstancesFrom(GraknGraph graph) {
+        return withImplicitConceptsVisible(graph, g -> g.admin().getMetaConcept().instances());
+    }
+
+    public static <T> T withImplicitConceptsVisible(GraknGraph graph, Function<GraknGraph, T> function) {
+        boolean implicitFlag = graph.implicitConceptsVisible();
+        graph.showImplicitConcepts(true);
+        T result = function.apply(graph);
+        graph.showImplicitConcepts(implicitFlag);
+        return result;
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface Open {
+        boolean value() default true;
+    }
+
+    private class GraphGeneratorException extends RuntimeException {
+
+    }
 }
-
-class GraphGeneratorException extends RuntimeException {
-
-}
-
-

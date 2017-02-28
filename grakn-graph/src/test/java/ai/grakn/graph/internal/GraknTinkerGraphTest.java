@@ -35,10 +35,8 @@ import java.util.concurrent.Future;
 
 import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class GraknTinkerGraphTest extends GraphTestBase{
 
@@ -48,23 +46,22 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> addEntityType(graknGraph)));
+            futures.add(pool.submit(this::addEntityType));
         }
 
         futures.forEach(future -> {
             try {
-                future.get();
+                future.get();   
             } catch (InterruptedException | ExecutionException ignored) {
-
+                ignored.printStackTrace();
             }
         });
         assertEquals(108, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
-    private void addEntityType(GraknGraph graknGraph){
-        graknGraph.open();
-        graknGraph.putEntityType(UUID.randomUUID().toString());
-        try {
-            graknGraph.commit();
+    private void addEntityType(){
+        try(GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph()){
+            graph.putEntityType(UUID.randomUUID().toString());
+            graknGraph.commitOnClose();
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }
@@ -80,8 +77,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                GraknGraph innerTranscation = graknGraph;
-                innerTranscation.open();
+                GraknGraph innerTranscation = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }
@@ -90,7 +86,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException ignored) {
-
+                ignored.printStackTrace();
             }
         });
 
@@ -108,38 +104,14 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     }
 
     @Test
-    public void testCommitted() throws GraknValidationException {
-        assertFalse(graknGraph.hasCommitted());
-        graknGraph.putEntityType("Thing");
-        graknGraph.commit();
-        assertTrue(graknGraph.hasCommitted());
-    }
-
-    @Test
-    public void testCloseStandard(){
+    public void testCloseStandard() throws GraknValidationException {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(ErrorMessage.CLOSED_USER.getMessage());
+        expectedException.expectMessage(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
 
         graph.putEntityType("thing");
-    }
-
-    @Test
-    public void testCloseWhenSwitchingBetweenBatchAndNormal() throws GraknValidationException {
-        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
-        AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraphBatchLoading();
-
-        graphBatch.commit();
-
-        //We get this so we force the other refernce to be invalidated
-        AbstractGraknGraph graphNormal2 = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
-
-        expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(ErrorMessage.CLOSED_FACTORY.getMessage());
-
-        graphNormal.getEntityType("thing");
     }
 
     @Test

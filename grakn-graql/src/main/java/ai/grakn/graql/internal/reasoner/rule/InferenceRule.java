@@ -33,11 +33,12 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import com.google.common.collect.Sets;
-import java.util.HashMap;
-import java.util.HashSet;
 import javafx.util.Pair;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -62,7 +63,7 @@ public class InferenceRule {
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
     }
 
-    private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
+    private static Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
         Set<VarAdmin> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
@@ -124,14 +125,15 @@ public class InferenceRule {
     private void rewriteBody(){
         body.getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
+                .filter(Atom::isRelation)
                 .filter(at -> !at.isUserDefinedName())
+                .filter(at -> Objects.nonNull(at.getType()))
+                .filter(at -> at.getType().equals(head.getAtom().getType()))
                 .forEach(at -> {
                     Atom rewrite = at.rewriteToUserDefined();
-                    if (rewrite.isEquivalent(getHead().getAtom())) {
-                        body.removeAtom(at);
-                        body.addAtom(rewrite);
-                    }
-                });
+                    body.removeAtom(at);
+                    body.addAtom(rewrite);
+                    });
     }
 
     private void unify(Map<VarName, VarName> unifiers){
@@ -159,11 +161,11 @@ public class InferenceRule {
      * make rule consistent variable-wise with the parent atom by means of unification
      * @param parentAtom atom the rule should be unified with
      */
-   public void unify(Atom parentAtom) {
+    public void unify(Atom parentAtom) {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
-        rewriteBody();
-        if(parentAtom.isRelation() || parentAtom.isResource()) {
+        if (head.getAtom().isUserDefinedName()) rewriteBody();
+        if (parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);
         }
     }

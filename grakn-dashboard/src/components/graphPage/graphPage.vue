@@ -27,7 +27,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </div>
 </template>
 
-<style>
+<style scoped>
 .graph-panel-body {
     height: 100%;
     width: 100%;
@@ -96,7 +96,6 @@ export default {
         this.state.eventHub.$on('clear-page', this.onClear);
         this.state.eventHub.$on('configure-node', this.configureNode);
 
-
     },
     beforeDestroy() {
         // Destroy listeners when component is destroyed - although it never gets detroyed for now. [keep-alive]
@@ -132,22 +131,29 @@ export default {
         },
 
         onClickSubmit(query) {
+            this.state.stopBuilderMode();
+
             if (query.includes('aggregate')) {
-                this.showWarning("Invalid query: 'aggregate' queries are not allowed from the Graph page. Please use the Console page.");
+                // Error message until we will not properly support aggregate queries in graph page.
+                this.state.eventHub.$emit('error-message', 'Invalid query: \'aggregate\' queries are not allowed from the Graph page. Please use the Console page.');
                 return;
             }
 
             if (query.trim().startsWith('compute')) {
                 EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             } else {
-                let queryToExecute=query;
-                if(!(query.includes('offset')))
-                  queryToExecute=queryToExecute+' offset 0;';
-                if(!(query.includes('limit')))
-                  queryToExecute=queryToExecute+' limit 100;';
+                let queryToExecute = query.trim();
 
-                this.state.eventHub.$emit('inject-query',queryToExecute);
+                // Add trailing semi-colon
+                if(queryToExecute.charAt(queryToExecute.length-1)!==';')
+                    queryToExecute+=';';
 
+                if (!(query.includes('offset'))&&!(query.includes('delete')))
+                    queryToExecute = queryToExecute + ' offset 0;';
+                if (!(query.includes('limit'))&&!(query.includes('delete')))
+                    queryToExecute = queryToExecute + ' limit 100;';
+
+                this.state.eventHub.$emit('inject-query', queryToExecute);
                 EngineClient.graqlHAL(queryToExecute, this.onGraphResponse);
             }
         },
@@ -161,27 +167,36 @@ export default {
                 return;
             }
 
-            // When we will enable clustering, also need to check && !visualiser.expandCluster(node)
-            if (eventKeys.altKey) {
-                if (visualiser.nodes._data[node].ontology) {
-                    EngineClient.request({
-                        url: visualiser.nodes._data[node].ontology,
-                        callback: this.onGraphResponse,
-                    });
+            if (!this.state.queryBuilderMode) {
+                // When we will enable clustering, also need to check && !visualiser.expandCluster(node)
+                if (eventKeys.altKey) {
+                    if (visualiser.nodes._data[node].ontology) {
+                        EngineClient.request({
+                            url: visualiser.nodes._data[node].ontology,
+                            callback: this.onGraphResponse,
+                        });
+                    }
+                } else {
+                    const props = visualiser.getNode(node);
+                    this.allNodeOntologyProps = {
+                        id: props.id,
+                        type: props.type,
+                        baseType: props.baseType,
+                    };
+
+                    this.allNodeResources = this.prepareResources(props.properties);
+                    this.selectedNodeLabel = visualiser.getNodeLabel(node);
+
+                    this.showNodePanel = true;
                 }
-            } else {
-                const props = visualiser.getNode(node);
-                this.allNodeOntologyProps = {
-                    id: props.id,
-                    type: props.type,
-                    baseType: props.baseType,
-                };
-
-                this.allNodeResources = this.prepareResources(props.properties);
-                this.selectedNodeLabel = visualiser.getNodeLabel(node);
-
-                this.showNodePanel = true;
+            }else{
+              this.handleBuildQuery(node);
             }
+        },
+        handleBuildQuery(node) {
+            this.state.numOfClickedNodesInBuilding+=1;
+            let stringa = this.state.nextBuildingStep(node);
+            this.state.eventHub.$emit('append-query', stringa);
         },
         /**
          * Prepare the list of resources to be shown in the right div panel
@@ -221,18 +236,30 @@ export default {
 
             const eventKeys = param.event.srcEvent;
 
-            if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
-                visualiser.deleteNode(node);
-            }
+            if (eventKeys.altKey) {
+                if (visualiser.nodes._data[node].ontology) {
+                    EngineClient.request({
+                        url: visualiser.nodes._data[node].ontology,
+                        callback: this.onGraphResponse,
+                    });
+                }
+            } else {
+                let generatedNode = false;
+                //If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
+                if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
+                  generatedNode = true;
+                }
 
-            if (eventKeys.shiftKey) {
-                visualiser.clearGraph();
-            }
+                EngineClient.request({
+                    url: visualiser.getNode(node).href,
+                    appendReasonerParams: generatedNode,
+                    callback: this.onGraphResponse,
+                });
 
-            EngineClient.request({
-                url: visualiser.getNode(node).href,
-                callback: this.onGraphResponse,
-            });
+                if (generatedNode) {
+                    visualiser.deleteNode(node);
+                }
+            }
         },
         rightClick(param) {
             const node = param.nodes[0];
@@ -246,20 +273,20 @@ export default {
                 });
             }
         },
-        configureNode(nodeType,selectedProps) {
+        configureNode(nodeType, selectedProps) {
             visualiser.setDisplayProperties(nodeType, selectedProps);
         },
         holdOnNode(param) {
             const node = param.nodes[0];
             if (node === undefined) return;
 
-            this.state.eventHub.$emit('show-label-panel',visualiser.getAllNodeProperties(node),visualiser.getNodeType(node));
+            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node));
         },
 
         onGraphResponseAnalytics(resp, err) {
             if (resp != null) {
                 if (resp.type === 'string') {
-                    this.state.eventHub.$emit('analytics-string-response',resp.response);
+                    this.state.eventHub.$emit('analytics-string-response', resp.response);
                 } else {
                     this.halParser.parseResponse(resp.response);
                     visualiser.fitGraphToWindow();

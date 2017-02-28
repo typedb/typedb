@@ -39,12 +39,15 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     @Override
     public Long execute() {
         LOGGER.info("CountMapReduce is called");
+        long startTime = System.currentTimeMillis();
+
         initSubGraph();
         if (!selectedTypesHaveInstance()) return 0L;
 
         ComputerResult result = getGraphComputer().compute(new CountMapReduce(subTypeNames));
         Map<Serializable, Long> count = result.memory().get(CountMapReduce.class.getName());
-        LOGGER.info("CountMapReduce is done");
+
+        LOGGER.info("CountMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return count.getOrDefault(MapReduce.NullObject.instance(), 0L);
     }
 

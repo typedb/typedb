@@ -37,7 +37,11 @@ public class EquivalentFragmentSet {
     private final ImmutableSet<Fragment> fragments;
 
     public static EquivalentFragmentSet create(Fragment... fragments) {
-        return new EquivalentFragmentSet(fragments);
+        EquivalentFragmentSet fragmentSet = new EquivalentFragmentSet(fragments);
+        for (Fragment fragment : fragments) {
+            fragment.setEquivalentFragmentSet(fragmentSet);
+        }
+        return fragmentSet;
     }
 
     /**
@@ -45,7 +49,6 @@ public class EquivalentFragmentSet {
      */
     private EquivalentFragmentSet(Fragment... fragments) {
         this.fragments = ImmutableSet.copyOf(fragments);
-        this.fragments.forEach(f -> f.setEquivalentFragmentSet(this));
     }
 
     /**

@@ -245,7 +245,6 @@ export default {
 
     mounted: function() {
         this.$nextTick(function() {
-            User.setModalShown(true);
             // Get the modal
             var modal = document.getElementById('myModal');
 

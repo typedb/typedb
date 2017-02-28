@@ -92,18 +92,12 @@ export default {
     props: ['showSideBar'],
     data: function() {
         return {
-            version: undefined,
             isUserAuth: User.isAuthenticated(),
         }
     },
     created: function() {},
     mounted: function() {
         this.$nextTick(function() {
-            EngineClient.getConfig((r, e) => {
-                this.version = (r == null ? 'error' : r['project.version'])
-            });
-            // if (!User.getModalShown())
-            // $('#signupModal').modal('show');
         })
     },
     methods: {

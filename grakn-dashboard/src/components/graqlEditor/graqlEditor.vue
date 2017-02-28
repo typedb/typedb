@@ -20,6 +20,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <transition name="slideInDown" appear>
     <div class="graqlEditor-container">
         <div class="left-side">
+            <query-builders-list v-on:start-builder="startBuilder"></query-builders-list>
             <fav-queries-list v-on:type-query="typeFavQuery" ref="savedQueries"></fav-queries-list>
             <button @click="toggleTypeInstances" class="btn types-button"><span>Types</span><i style="padding-left:3px;" v-bind:class="[showTypeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
                       </button>
@@ -35,7 +36,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
             <button @click="runQuery" class="btn"><i
                           class="pe-7s-angle-right-circle"></i></button>
-            <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-refresh"></i>
+            <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-close-circle"></i>
                           </button>
             <query-settings></query-settings>
         </div>
@@ -115,6 +116,7 @@ const FavQueriesList = require('./favQueriesList.vue');
 const TypesPanel = require('./typesPanel.vue');
 const MessagePanel = require('./messagePanel.vue');
 const QuerySettings = require('./querySettings.vue');
+const QueryBuildersList = require('./queryBuildersList.vue');
 
 
 export default {
@@ -124,7 +126,9 @@ export default {
         FavQueriesList,
         TypesPanel,
         MessagePanel,
-        QuerySettings
+        QuerySettings,
+        QueryBuildersList
+
     },
     props: ['errorMessage', 'errorPanelClass'],
     data: function() {
@@ -143,6 +147,10 @@ export default {
     created: function() {
         this.loadState();
         this.loadMetaTypeInstances();
+
+        //Global key bindings
+        window.addEventListener('keyup', (e)=>{if(e.keyCode===13&&!e.shiftKey) this.runQuery();})
+
     },
     mounted: function() {
         this.$nextTick(function() {
@@ -151,10 +159,15 @@ export default {
                 theme: "dracula",
                 mode: "graql",
                 viewportMargin: Infinity,
+                autofocus: true,
                 extraKeys: {
-                    Enter: this.runQuery,
+                    // Enter key is now binded globally on the window object so that a runQuery can be fired even if the curson is not in the editor
+                    // But here we need to bind Enter to a behaviour that is not the default "newLine", otherwise everytime we hit enter the cursors goes to new line.
+                    Enter: "goLineEnd",
+                    "Shift-Enter":"newlineAndIndent",
                     "Shift-Delete": this.clearGraph,
-                    "Shift-Backspace": this.clearGraph
+                    "Shift-Backspace": this.clearGraph,
+                    "Shift-Ctrl-Backspace": this.clearGraphAndPage
                 }
             });
 
@@ -178,6 +191,8 @@ export default {
                 this.state.eventHub.$off('warning-message', this.onWarningMessage);
                 this.state.eventHub.$off('keyspace-changed', this.loadMetaTypeInstances);
                 this.state.eventHub.$off('inject-query', this.injectQuery);
+                this.state.eventHub.$off('append-query', this.appendQuery);
+                this.state.eventHub.$off('keyspace-changed',this.refreshSavedQueries);
             }
 
             switch (this.$route.fullPath) {
@@ -195,6 +210,15 @@ export default {
             this.state.eventHub.$on('warning-message', this.onWarningMessage);
             this.state.eventHub.$on('keyspace-changed', this.loadMetaTypeInstances);
             this.state.eventHub.$on('inject-query', this.injectQuery);
+            this.state.eventHub.$on('append-query', this.appendQuery);
+            this.state.eventHub.$on('keyspace-changed',this.refreshSavedQueries);
+
+        },
+        startBuilder(nameFunction){
+          this.state.queryBuilderMode=true;
+          this.state.nameBuildingFunction=nameFunction;
+          let stringa = this.state.nextBuildingStep();
+          this.codeMirror.setValue(stringa);
         },
         refreshSavedQueries() {
             this.$refs.savedQueries.refreshList();
@@ -222,14 +246,13 @@ export default {
         },
         runQuery(ev) {
             const query = this.codeMirror.getValue();
+            this.showMessagePanel = false;
 
             // Empty query.
-            if (query == undefined || query.length === 0)
+            if (query == undefined || query.trim().length === 0)
                 return;
 
             this.state.eventHub.$emit('click-submit', query);
-
-            this.resetMsg();
         },
         updateCurrentQuery() {
             this.currentQuery = this.codeMirror.getValue();
@@ -245,28 +268,20 @@ export default {
         injectQuery(query) {
             this.codeMirror.setValue(query);
         },
+        appendQuery(query) {
+            this.codeMirror.setValue(this.codeMirror.getValue()+query);
+        },
         emitResponseAnalytics(resp, err) {
             this.$emit('response-analytics', resp, err);
         },
         emitCloseError() {
             this.$emit('close-error');
         },
-
-        resetMsg() {
-            $('.search-button')
-                .removeClass('btn-danger')
-                .removeClass('btn-warning')
-                .addClass('btn-default');
-        },
-
         clearGraph(ev) {
             this.codeMirror.setValue("");
             this.graqlResponse = undefined;
             this.showMessagePanel = false;
             this.message = undefined;
-
-            this.$emit('clear', ev);
-
         },
         clearGraphAndPage(ev) {
             this.clearGraph(ev);

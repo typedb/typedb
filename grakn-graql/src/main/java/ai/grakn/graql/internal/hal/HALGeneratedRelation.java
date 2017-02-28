@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.hal;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeName;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
@@ -43,9 +44,9 @@ class HALGeneratedRelation {
         this.factory = new StandardRepresentationFactory();
     }
 
-    Representation getNewGeneratedRelation(String assertionID, Optional<TypeName> relationType) {
+    Representation getNewGeneratedRelation(ConceptId firstID, ConceptId secondID, String assertionID, Optional<TypeName> relationType) {
         Representation representation = factory.newRepresentation(assertionID)
-                .withProperty(ID_PROPERTY, "temp-assertion")
+                .withProperty(ID_PROPERTY, "temp-assertion-" + firstID.getValue() + secondID.getValue())
                 .withProperty(BASETYPE_PROPERTY, "generated-relation")
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, "");

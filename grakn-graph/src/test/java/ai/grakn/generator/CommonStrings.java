@@ -19,29 +19,15 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Set;
-
-public class Conjunctions extends AbstractGenerator<Conjunction> {
-
-    public Conjunctions() {
-        super(Conjunction.class);
+public class CommonStrings extends AbstractGenerator<String> {
+    public CommonStrings() {
+        super(String.class);
     }
 
     @Override
-    public Conjunction<PatternAdmin> generate() {
-        Set<PatternAdmin> patterns = Sets.newHashSet();
-
-        // TODO: actuall fill conjunctions
-//        int size = random.nextInt(status.size());
-//        for (int i = 0; i < size; i ++) {
-//            patterns.add(gen(PatternAdmin.class));
-//        }
-
-        return Patterns.conjunction(patterns);
+    protected String generate() {
+        return random.choose(ImmutableList.of("foo", "bar", "baz"));
     }
 }

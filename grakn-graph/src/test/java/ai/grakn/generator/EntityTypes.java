@@ -19,29 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
-import com.google.common.collect.Sets;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.TypeName;
 
-import java.util.Set;
+public class EntityTypes extends AbstractTypeGenerator<EntityType> {
 
-public class Disjunctions extends AbstractGenerator<Disjunction> {
-
-    public Disjunctions() {
-        super(Disjunction.class);
+    public EntityTypes() {
+        super(EntityType.class);
     }
 
     @Override
-    public Disjunction<?> generate() {
-        Set<PatternAdmin> patterns = Sets.newHashSet();
+    protected EntityType newType(TypeName name) {
+        return graph().putEntityType(name);
+    }
 
-        // TODO: actually fill disjunctions
-//        int size = random.nextInt(status.size());
-//        for (int i = 0; i < size; i ++) {
-//            patterns.add(gen(PatternAdmin.class));
-//        }
-
-        return Patterns.disjunction(patterns);
+    @Override
+    protected EntityType metaType() {
+        return graph().admin().getMetaEntityType();
     }
 }

@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
  * @author fppt
  */
 class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
+
     CastingImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
     }
@@ -87,7 +88,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
     public CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         String hash;
         if(getGraknGraph().isBatchLoadingEnabled()) {
-            hash = "CastingBaseId_" + this.getBaseIdentifier() + UUID.randomUUID().toString();
+            hash = "CastingBaseId_" + this.getId().getValue() + UUID.randomUUID().toString();
         } else {
             hash = generateNewHash(role, rolePlayer);
         }

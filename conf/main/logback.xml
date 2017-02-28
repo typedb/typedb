@@ -85,7 +85,11 @@
 
     <logger name="ai.grakn.migration.base.AbstractMigrator" level="WARN">
         <appender-ref ref="STDOUT"/>
-    </logger>>
+    </logger>
+
+    <logger name="ai.grakn.client.LoaderClient" level="DEBUG">
+        <appender-ref ref="MAIN"/>
+    </logger>
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->
     <!--<logger name="ai.grakn.engine.postprocessing.PostProcessing" level="DEBUG">-->

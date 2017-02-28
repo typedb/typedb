@@ -70,7 +70,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         this.originalVars = vars;
 
         // Get all variables, including ones nested in other variables
-        this.vars = vars.stream().flatMap(v -> v.getImplicitInnerVars().stream()).collect(toImmutableList());
+        this.vars = vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toImmutableList());
 
         for (VarAdmin var : this.vars) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));

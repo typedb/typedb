@@ -20,9 +20,47 @@ import Vue from 'vue';
 
 const eventHub = new Vue();
 
+const stringsMap = {
+  computePath: [function initialString(node) {
+    return 'compute path from ';
+  },
+    function firstClick(node) {
+      return `"${node}" to `;
+    },
+    function secondClick(node) {
+      return `"${node}";`;
+    },
+  ],
+  relationsBetweenNodes: [function initialString(node) {
+    return 'match $x id ';
+  },
+    function firstClick(node) {
+      return `"${node}"; $y id `;
+    },
+    function secondClick(node) {
+      return `"${node}"; $r ($x, $y);`;
+    },
+  ],
+};
+
 const store = {
   debug: true,
   stateName: 'graphState',
+  queryBuilderMode: false,
+  numOfClickedNodesInBuilding: 0,
+  nameBuildingFunction: undefined,
+  nextBuildingStep(node) {
+    const stepString = stringsMap[this.nameBuildingFunction][this.numOfClickedNodesInBuilding](node);
+    // Disable query builder mode if we reach the max number of clickable nodes for current query builder function
+    if (this.numOfClickedNodesInBuilding === (stringsMap[this.nameBuildingFunction].length - 1)) {
+      this.stopBuilderMode();
+    }
+    return stepString;
+  },
+  stopBuilderMode() {
+    this.queryBuilderMode = false;
+    this.numOfClickedNodesInBuilding = 0;
+  },
   eventHub,
 };
 

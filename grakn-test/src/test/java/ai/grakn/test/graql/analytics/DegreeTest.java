@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -29,12 +30,14 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -56,6 +59,7 @@ public class DegreeTest {
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @Before
@@ -63,13 +67,19 @@ public class DegreeTest {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
 
-        graph = context.graphWithNewKeyspace();
+        factory = context.factoryWithNewKeyspace();
+        graph = factory.getGraph();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
+    }
+
+    @After
+    public void close() {
+        GraknSparkComputer.close();
     }
 
     @Test
@@ -105,7 +115,9 @@ public class DegreeTest {
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -117,9 +129,7 @@ public class DegreeTest {
         correctDegrees.put(id3, 2L);
 
         // compute degrees
-        long start = System.currentTimeMillis();
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
-        System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(3, degrees.size());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -129,9 +139,7 @@ public class DegreeTest {
                 }
         ));
 
-        start = System.currentTimeMillis();
         Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
-        System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(2, degrees2.size());
         assertEquals(2, degrees2.get(1L).size());
@@ -155,9 +163,7 @@ public class DegreeTest {
                 }
         ));
 
-        start = System.currentTimeMillis();
         degrees2 = graph.graql().compute().degree().of().execute();
-        System.out.println(System.currentTimeMillis() - start + " ms");
 
         assertEquals(3, degrees2.size());
         assertEquals(3, degrees2.get(1L).size());
@@ -206,7 +212,9 @@ public class DegreeTest {
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
         EntityType dog = graph.putEntityType("dog").superType(animal);
         ConceptId foofoo = dog.addEntity().getId();
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         // set subgraph
         HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("person"), TypeName.of("animal"), TypeName.of("mans-best-friend"));
@@ -268,7 +276,9 @@ public class DegreeTest {
         referenceDegrees.put(cocoName.getId(), 2L);
         referenceDegrees.put(cocoAltName.getId(), 2L);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         // create a subgraph excluding resources and the relationship
         HashSet<TypeName> subGraphTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"));
@@ -329,7 +339,9 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         // compute and persist degrees
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -394,7 +406,9 @@ public class DegreeTest {
         referenceDegrees2.put(dave.getId(), 1L);
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         // create a subgraph with assertion on assertion
         HashSet<TypeName> ct =
@@ -453,7 +467,9 @@ public class DegreeTest {
                 .putRolePlayer(characterBeingPlayed, donVitoCorleone);
         ConceptId relationId = relation.getId();
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         assertTrue(degrees.get(3L).contains(relationId.getValue()));
@@ -490,7 +506,9 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 2L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
 
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         assertFalse(degrees.isEmpty());
@@ -535,7 +553,9 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsBeast.getId(), 2L);
 
         // validate
-        graph.commit();
+        graph.commitOnClose();
+        graph.close();
+        graph = factory.getGraph();
 
         // check degree for dave owning cats
         //TODO: should we count the relationship even if there is no cat attached?

@@ -59,6 +59,17 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity());
     }
 
+    private ResourceTypeImpl(ResourceTypeImpl resourceType){
+        //noinspection unchecked
+        super(resourceType);
+    }
+
+    @Override
+    public ResourceType<D> copy(){
+        //noinspection unchecked
+        return new ResourceTypeImpl(this);
+    }
+
     /**
      * @param regex The regular expression which instances of this resource must conform to.
      * @return The Resource Type itself.
@@ -76,7 +87,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                 String value = (String) resource.getValue();
                 matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.toString()));
+                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, getName()));
                 }
             }
         }

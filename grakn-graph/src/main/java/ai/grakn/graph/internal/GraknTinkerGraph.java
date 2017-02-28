@@ -31,7 +31,6 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  *     Wraps up a {@link TinkerGraph} as a method of storing the Grakn Graph object Model.
  *     With this vendor some exceptions are in place:
  *     1. Transactions do not exists and all threads work on the same graph at the same time.
- *     2. The {@link #rollback} operation is unsupported due to Tinkerpop Transactions not being supported.
  * </p>
  *
  * @author fppt
@@ -53,6 +52,17 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     }
 
     @Override
+    public int numOpenTx() {
+        return 1;
+    }
+
+    @Override
+    public void commit(){
+        LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(TinkerGraph.class.getName()));
+        super.commit();
+    }
+
+    @Override
     public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
         try {
             return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
@@ -60,10 +70,4 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
             return null;
         }
     }
-
-    @Override
-    public void rollback(){
-        throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
-    }
-
 }

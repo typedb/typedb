@@ -13,6 +13,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -29,11 +30,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTest extends GraphTestBase {
@@ -276,7 +279,6 @@ public class GraknGraphTest extends GraphTestBase {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
 
         final boolean[] errorThrown = {false};
-        final boolean[] errorNotThrown = {false};
 
         Future future = pool.submit(() -> {
             try{
@@ -286,20 +288,15 @@ public class GraknGraphTest extends GraphTestBase {
                     errorThrown[0] = true;
                 }
             }
-
-            graph.open();
-            graph.putEntityType("A Thing");
-            errorNotThrown[0] = true;
         });
 
         future.get();
 
         assertTrue("Error not thrown when graph is closed in another thread", errorThrown[0]);
-        assertTrue("Error thrown even after opening graph", errorNotThrown[0]);
     }
 
     @Test
-    public void testCloseAndReOpenGraph(){
+    public void testCloseAndReOpenGraph() throws GraknValidationException {
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
         graph.close();
 
@@ -307,14 +304,161 @@ public class GraknGraphTest extends GraphTestBase {
         try{
             graph.putEntityType("A Thing");
         } catch (GraphRuntimeException e){
-            if(e.getMessage().equals(ErrorMessage.CLOSED_USER.getMessage())){
+            if(e.getMessage().equals(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))){
                 errorThrown = true;
             }
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        graph.open();
-
+        graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
         graph.putEntityType("A Thing");
+    }
+
+    @Test
+    public void checkThatMainCentralCacheIsNotAffectedByTransactionModifications() throws GraknValidationException, ExecutionException, InterruptedException {
+        //Check Central cache is empty
+        assertTrue(graknGraph.getCachedOntology().asMap().isEmpty());
+
+        RoleType r1 = graknGraph.putRoleType("r1");
+        RoleType r2 = graknGraph.putRoleType("r2");
+        EntityType e1 = graknGraph.putEntityType("e1").playsRole(r1).playsRole(r2);
+        RelationType rel1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
+
+        //Purge the above concepts into the main cache
+        graknGraph.commit();
+
+        //Check cache is in good order
+        assertThat(graknGraph.getCachedOntology().asMap().values(), containsInAnyOrder(r1, r2, e1, rel1,
+                graknGraph.getMetaConcept(), graknGraph.getMetaEntityType(),
+                graknGraph.getMetaRelationType(), graknGraph.getMetaRoleType()));
+
+        assertThat(e1.playsRoles(), containsInAnyOrder(r1, r2));
+
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        //Mutate Ontology in a separate thread
+        pool.submit(() -> {
+            GraknGraph innerGraph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+            EntityType entityType = innerGraph.getEntityType("e1");
+            RoleType role = innerGraph.getRoleType("r1");
+            entityType.deletePlaysRole(role);
+        }).get();
+
+        //Check the above mutation did not affect central repo
+        Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
+        assertTrue("Main cache was affected by transaction", foundE1.playsRoles().contains(r1));
+    }
+
+    @Test
+    public void checkComplexOntologyCanLoad() throws GraknValidationException {
+        graknGraph.graql().parse("insert\n" +
+                "user-interaction sub relation is-abstract;\n" +
+                "qa sub user-interaction\n" +
+                "    has-resource helpful-votes\n" +
+                "    has-resource unhelpful-votes\n" +
+                "    has-role asked-question\n" +
+                "    has-role given-answer\n" +
+                "    has-role item;\n" +
+                "product-review sub user-interaction\n" +
+                "    has-resource rating\n" +
+                "    has-role reviewer\n" +
+                "    has-role feedback\n" +
+                "    has-role item;\n" +
+                "comment sub entity\n" +
+                "    has-resource text\n" +
+                "    has-resource time;\n" +
+                "time sub resource datatype long;\n" +
+                "question sub comment\n" +
+                "    plays-role asked-question; \n" +
+                "yes-no sub question;\n" +
+                "open sub question;\n" +
+                "answer sub comment\n" +
+                "    plays-role given-answer\n" +
+                "    has-resource answer-type;\n" +
+                "answer-type sub resource datatype string;\n" +
+                "review sub comment\n" +
+                "    plays-role feedback\n" +
+                "    has-resource summary;\n" +
+                "summary sub text;\n" +
+                "text sub resource datatype string;\n" +
+                "rating sub resource datatype double;\n" +
+                "helpful-votes sub resource datatype long;\n" +
+                "unhelpful-votes sub resource datatype long;\n" +
+                "ID sub resource is-abstract datatype string;\n" +
+                "product sub entity\n" +
+                "    has-resource asin\n" +
+                "    has-resource price\n" +
+                "    has-resource image-url\n" +
+                "    has-resource brand\n" +
+                "    has-resource name\n" +
+                "    has-resource text\n" +
+                "    plays-role item\n" +
+                "    plays-role recommended;\n" +
+                "asin sub ID;\n" +
+                "image-url sub resource datatype string;\n" +
+                "brand sub name;\n" +
+                "price sub resource datatype double;\n" +
+                "category sub entity\n" +
+                "    has-resource name\n" +
+                "    plays-role subcategory\n" +
+                "    plays-role supercategory\n" +
+                "    plays-role label\n" +
+                "    plays-role item\n" +
+                "    plays-role recommended;\n" +
+                "name sub resource datatype string;\n" +
+                "hierarchy sub relation\n" +
+                "    has-role subcategory\n" +
+                "    has-role supercategory;\n" +
+                "category-assignment sub relation\n" +
+                "    has-resource rank\n" +
+                "    has-role item #product\n" +
+                "    has-role label; #category \n" +
+                "rank sub resource datatype long;\n" +
+                "user sub entity\n" +
+                "    has-resource uid\n" +
+                "    has-resource username\n" +
+                "    plays-role reviewer\n" +
+                "    plays-role buyer;\n" +
+                "uid sub ID;\n" +
+                "username sub name;\n" +
+                "completed-recommendation sub relation\n" +
+                "    has-role successful-recommendation\n" +
+                "    has-role buyer;\n" +
+                "implied-recommendation sub relation\n" +
+                "    has-role category-recommendation\n" +
+                "    has-role product-recommendation;\n" +
+                "recommendation sub relation is-abstract\n" +
+                "    plays-role successful-recommendation\n" +
+                "    plays-role product-recommendation;\n" +
+                "co-categories sub relation\n" +
+                "    plays-role category-recommendation\n" +
+                "    has-role item\n" +
+                "    has-role recommended;\n" +
+                "also-viewed sub recommendation\n" +
+                "    has-role item\n" +
+                "    has-role recommended;\n" +
+                "also-bought sub recommendation\n" +
+                "    has-role item\n" +
+                "    has-role recommended;\n" +
+                "bought-together sub recommendation\n" +
+                "    has-role item\n" +
+                "    has-role recommended;\n" +
+                "transaction sub relation\n" +
+                "    has-role buyer\n" +
+                "    has-role item;\n" +
+                "asked-question sub role;\n" +
+                "given-answer sub role;\n" +
+                "item sub role;\n" +
+                "feedback sub role;\n" +
+                "reviewer sub role;\n" +
+                "buyer sub role;\n" +
+                "recommended sub role;\n" +
+                "subcategory sub role;\n" +
+                "supercategory sub role;\n" +
+                "label sub role;\n" +
+                "successful-recommendation sub role;\n" +
+                "category-recommendation sub role;\n" +
+                "product-recommendation sub role;").execute();
+
+        graknGraph.commit();
     }
 }

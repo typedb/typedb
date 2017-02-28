@@ -19,19 +19,22 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.graql.Pattern;
-import ai.grakn.graql.Var;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.TypeName;
 
-public class PatternGenerator extends AbstractGenerator<Pattern> {
+public class RelationTypes extends AbstractTypeGenerator<RelationType> {
 
-    public PatternGenerator() {
-        super(Pattern.class);
+    public RelationTypes() {
+        super(RelationType.class);
     }
 
     @Override
-    protected Pattern generate() {
-        // TODO: Make this produce conjunctions and disjunctions
-        return gen(Var.class);
-        // return gen().oneOf(Disjunction.class, Conjunction.class, Var.class).generate(random, status);
+    protected RelationType newType(TypeName name) {
+        return graph().putRelationType(name);
+    }
+
+    @Override
+    protected RelationType metaType() {
+        return graph().admin().getMetaRelationType();
     }
 }

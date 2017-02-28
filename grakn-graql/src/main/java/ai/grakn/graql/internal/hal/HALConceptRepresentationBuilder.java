@@ -124,7 +124,7 @@ public class HALConceptRepresentationBuilder {
                                     .map(RelationPlayer::getRolePlayer).forEach(otherVar -> {
 
                                 if(resultLine.get(otherVar.getVarName())!=null) {
-                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(String.valueOf(currentRelation.hashCode())), currentVarName, otherVar.getVarName(), relationType, keyspace);
+                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(currentRelation.toString()), currentVarName, otherVar.getVarName(), relationType, keyspace);
                                 }
                             });
 
@@ -153,9 +153,10 @@ public class HALConceptRepresentationBuilder {
             firstRole = (roleTypes.get(otherVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
         }
 
-        String isaString = (relationType.isPresent()) ? "isa " + relationType.map(StringConverter::typeNameToString) : "";
+        String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeNameToString(relationType.get()) : "";
+
         String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString);
-        currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(assertionID, relationType));
+        currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(firstID,secondID,assertionID, relationType));
     }
 
     private static Map<VarName, Collection<VarAdmin>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
@@ -187,7 +188,7 @@ public class HALConceptRepresentationBuilder {
         final Map<String,Map<VarName,String>> roleTypes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             if (var.getProperty(RelationProperty.class).isPresent()) {
-                final String varHashCode =String.valueOf(var.hashCode());
+                final String varHashCode = var.toString();
                 roleTypes.put(varHashCode,new HashMap<>());
                 var.getProperty(RelationProperty.class)
                         .get()

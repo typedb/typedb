@@ -18,11 +18,10 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.graph.EngineGraknGraph;
-import ai.grakn.util.EngineCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
@@ -31,8 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -50,27 +49,26 @@ class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final int MAX_RETRY = 10;
 
-    public static void checkResources(String keyspace, String index, Set<ConceptId> conceptIds){
-        runPostProcessingJob(ConceptFixer::runResourceFix, keyspace, index, conceptIds);
+    static void checkResources(String keyspace, String index, Set<ConceptId> conceptIds){
+        runPostProcessingJob((graph) -> ConceptFixer.runResourceFix(graph, index, conceptIds), keyspace, index, conceptIds);
     }
 
-    public static void checkCastings(String keyspace, String index, Set<ConceptId> conceptIds){
-        runPostProcessingJob(ConceptFixer::runCastingFix, keyspace, index, conceptIds);
+    static void checkCastings(String keyspace, String index, Set<ConceptId> conceptIds){
+        runPostProcessingJob((graph) -> ConceptFixer.runCastingFix(graph, index, conceptIds), keyspace, index, conceptIds);
     }
 
     /**
      * Main method which attempts to run all post processing jobs.
      *
      * @param postProcessor The post processing job.
-     *                      Either {@link ConceptFixer#runResourceFix(EngineGraknGraph, Set)} or
-     *                      {@link ConceptFixer#runCastingFix(EngineGraknGraph, Set)}.
+     *                      Either {@link ConceptFixer#runResourceFix(GraknGraph, String, Set)} or
+     *                      {@link ConceptFixer#runCastingFix(GraknGraph, String, Set)}.
      *                      This then returns a function which will complete the job after going through validation
      * @param keyspace The keyspace to post process against.
      * @param conceptIndex The unique index of the concept which must exist at the end
      * @param conceptIds The conceptIds which effectively need to be merged.
-     * @return true if the job was executed successfully, otherwise false.
      */
-    private static boolean runPostProcessingJob(BiFunction<EngineGraknGraph, Set<ConceptId>, BiConsumer<EngineCache, String>> postProcessor,
+    private static void runPostProcessingJob(Function<GraknGraph, Consumer<EngineCache>> postProcessor,
                                                 String keyspace, String conceptIndex, Set<ConceptId> conceptIds){
         String jobId = UUID.randomUUID().toString();
         boolean notDone = true;
@@ -78,10 +76,10 @@ class ConceptFixer {
 
         while (notDone) {
             //Try to Fix the job
-            try(EngineGraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
+            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
 
                 //Perform the fix
-                BiConsumer<EngineCache, String> jobFinaliser = postProcessor.apply(graph, conceptIds);
+                Consumer<EngineCache> jobFinaliser = postProcessor.apply(graph);
 
                 //Check if the fix worked
                 validateMerged(graph, conceptIndex, conceptIds).
@@ -90,12 +88,13 @@ class ConceptFixer {
                         });
 
                 //Commit the fix
-                graph.commit(null); //TODO: Fix null passing here. Null is passed to avoid sending commit logs again
+                graph.admin().commitNoLogs();
 
                 //Finally clear the cache
-                jobFinaliser.accept(EngineCacheImpl.getInstance(), conceptIndex);
+                jobFinaliser.accept(EngineCache.getInstance());
 
-                return true; //If it can get here. All post processing has succeeded.
+                return; //If it can get here. All post processing has succeeded.
+
             } catch (Throwable t) { //These exceptions need to become more specialised
                 LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage(jobId, t.getMessage()), t);
             }
@@ -109,9 +108,10 @@ class ConceptFixer {
         }
 
         StringBuilder failingConcepts = new StringBuilder();
-        conceptIds.stream().map(id -> failingConcepts.append(id.getValue()).append(","));
-        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(failingConcepts, jobId));
-        return false;
+        for (ConceptId id : conceptIds) {
+            failingConcepts.append(id.getValue()).append(",");
+        }
+        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(failingConcepts.toString(), jobId));
     }
 
     /**
@@ -123,7 +123,7 @@ class ConceptFixer {
      * @param conceptIds The concpet ids which should only return 1 valid concept
      * @return An error if one of the above rules are not satisfied.
      */
-    private static Optional<String> validateMerged(EngineGraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
+    private static Optional<String> validateMerged(GraknGraph graph, String conceptIndex, Set<ConceptId> conceptIds){
         //Check number of valid concept Ids
         int numConceptFound = 0;
         for (ConceptId conceptId : conceptIds) {
@@ -131,30 +131,36 @@ class ConceptFixer {
                 numConceptFound++;
                 if (numConceptFound > 1) {
                     StringBuilder conceptIdValues = new StringBuilder();
-                    conceptIds.stream().map(c -> conceptIdValues.append(c.getValue()).append(","));
-                    return Optional.of("Not all concept were merged. The set of concept IDs [" + conceptIdValues + "] matched more than one concept");
+                    for (ConceptId id : conceptIds) {
+                        conceptIdValues.append(id.getValue()).append(",");
+                    }
+                    return Optional.of("Not all concept were merged. The set of concepts [" + conceptIds.size() + "] with IDs [" + conceptIdValues.toString() + "] matched more than one concept");
                 }
             }
         }
 
         //Check index
-        if(graph.getConcept(Schema.ConceptProperty.INDEX, conceptIndex) == null){
+        if(graph.admin().getConcept(Schema.ConceptProperty.INDEX, conceptIndex) == null){
             return Optional.of("The concept index [" + conceptIndex + "] did not return any concept");
         }
 
         return Optional.empty();
     }
 
-    private static BiConsumer<EngineCache, String> runResourceFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
-        graph.fixDuplicateResources(conceptIds);
-        return (cache, index) -> {conceptIds.
-                forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));};
+    private static Consumer<EngineCache> runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        graph.admin().fixDuplicateResources(index, conceptIds);
+        return (cache) -> {
+            conceptIds.forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));
+            cache.clearJobSetResources(graph.getKeyspace(), index);
+        };
     }
 
-    private static BiConsumer<EngineCache, String> runCastingFix(EngineGraknGraph graph, Set<ConceptId> conceptIds) {
-        graph.fixDuplicateCastings(conceptIds);
-        return (cache, index) -> {conceptIds.
-                forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));};
+    private static Consumer<EngineCache> runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        graph.admin().fixDuplicateCastings(index, conceptIds);
+        return (cache) -> {
+            conceptIds.forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));
+            cache.clearJobSetCastings(graph.getKeyspace(), index);
+        };
     }
 
     private static int performRetry(int retry){

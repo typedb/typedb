@@ -30,7 +30,9 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -54,21 +56,20 @@ public class Resource extends MultiPredicateBinary{
     protected boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
         if(!(ruleAtom instanceof Resource)) return false;
-        boolean ruleApplicable = false;
         Resource childAtom = (Resource) ruleAtom;
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
 
-        Iterator<Predicate> childIt = childAtom.getMultiPredicate().iterator();
-        while(childIt.hasNext() && !ruleApplicable){
-            Predicate childPredicate = childIt.next();
+        for (Predicate childPredicate : childAtom.getMultiPredicate()) {
             Iterator<Predicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
-            while(parentIt.hasNext() && !predicateCompatible) {
+            while (parentIt.hasNext() && !predicateCompatible) {
                 predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
             }
-            ruleApplicable = predicateCompatible;
+            if (predicateCompatible) {
+                return true;
+            }
         }
-        return ruleApplicable;
+        return false;
     }
 
     @Override
@@ -100,6 +101,16 @@ public class Resource extends MultiPredicateBinary{
     public boolean isSelectable(){ return true;}
     @Override
     public boolean requiresMaterialisation(){ return true;}
+
+    @Override
+    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
+        if (!(parentAtom instanceof TypeAtom)) return super.getUnifiers(parentAtom);
+
+        Map<VarName, VarName> unifiers = new HashMap<>();
+        unifiers.put(this.getValueVariable(), parentAtom.getVarName());
+        if (parentAtom.containsVar(this.getVarName())) unifiers.put(this.getVarName(), VarName.anon());
+        return unifiers;
+    }
 
     @Override
     public Set<ValuePredicate> getValuePredicates(){

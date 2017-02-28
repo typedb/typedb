@@ -36,6 +36,7 @@ function buildLabel(resource) {
       label = `${resource[API.KEY_BASE_TYPE].substring(0, 3)}: ${resource[API.KEY_TYPE]}`;
       break;
     case API.RESOURCE_TYPE:
+    case API.RESOURCE:
       label = resource[API.KEY_VALUE];
       break;
     case API.GENERATED_RELATION_TYPE:
@@ -89,7 +90,7 @@ export function extractResources(resource) {
   return Object.keys(embeddedObject).reduce((newResourcesObject, key) => {
       // TODO: decide if we want to support multiple values as label of a visualiser node. For now we pick the first value.
     const currentResource = embeddedObject[key][0];
-    if (currentResource[API.KEY_BASE_TYPE] === API.RESOURCE_TYPE) {
+    if (currentResource[API.KEY_BASE_TYPE] === API.RESOURCE_TYPE || currentResource[API.KEY_BASE_TYPE] === API.RESOURCE) {
       return Object.assign({}, newResourcesObject, { [key]:
       {
         id: currentResource[API.KEY_ID],

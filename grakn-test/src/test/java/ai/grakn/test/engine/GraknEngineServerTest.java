@@ -21,19 +21,12 @@ package ai.grakn.test.engine;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.EngineGraknGraph;
-import ai.grakn.test.EngineContext;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
-import static ai.grakn.graql.Graql.var;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class GraknEngineServerTest {
 

@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
@@ -42,10 +43,12 @@ import static ai.grakn.test.migration.MigratorTestUtils.migrate;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class CSVMigratorTest {
 
+    private GraknGraphFactory factory;
     private GraknGraph graph;
 
     @ClassRule
@@ -53,7 +56,8 @@ public class CSVMigratorTest {
 
     @Before
     public void setup(){
-        graph = engine.graphWithNewKeyspace();
+        factory = engine.factoryWithNewKeyspace();
+        graph = factory.getGraph();
     }
 
     @Test
@@ -83,6 +87,7 @@ public class CSVMigratorTest {
         migrate(graph, new CSVMigrator(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv")));
         migrate(graph, new CSVMigrator(edgeTemplate, getFile("csv", "multi-file/data/edges.csv")));
 
+        graph = factory.getGraph();//Re Open Transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -91,6 +96,7 @@ public class CSVMigratorTest {
         load(graph, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
         migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.quotes")));
+        graph = factory.getGraph();//Re Open Transaction
         assertPetGraphCorrect(graph);
     }
 
@@ -99,8 +105,8 @@ public class CSVMigratorTest {
         load(graph, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
         migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.empty")).setNullString(""));
+        graph = factory.getGraph();//Re Open Transaction
 
-//        graph = factory.getGraph();
         Collection<Entity> pets = graph.getEntityType("pet").instances();
         assertEquals(1, pets.size());
 
@@ -112,6 +118,16 @@ public class CSVMigratorTest {
 
         Entity fluffy = name.getResource("Fluffy").ownerInstances().iterator().next().asEntity();
         assertEquals(1, fluffy.resources(death).size());
+    }
+
+    @Test
+    public void parsedLineIsEmpty_MigratorSkipsThatLine(){
+        load(graph, getFile("csv", "pets/schema.gql"));
+
+        // Only insert Puffball
+        String template = "if (<name> != \"Puffball\") do { insert $x isa pet; }";
+        migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.quotes")));
+        assertEquals(1, graph.getEntityType("pet").instances().size());
     }
 
     @Ignore //Ignored because this feature is not yet supported

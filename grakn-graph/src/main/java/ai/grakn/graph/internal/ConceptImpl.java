@@ -31,7 +31,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.InvalidConceptTypeException;
@@ -67,17 +66,25 @@ import java.util.function.Function;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
+    private final AbstractGraknGraph graknGraph;
+    private final ConceptId conceptId;
+    private final Vertex vertex;
+
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
     }
 
-    private final AbstractGraknGraph graknGraph;
-    private Vertex vertex;
-
     ConceptImpl(AbstractGraknGraph graknGraph, Vertex v){
-        this.vertex = v;
         this.graknGraph = graknGraph;
+        conceptId = ConceptId.of(v.id());
+        vertex = v;
+    }
+
+    ConceptImpl(ConceptImpl concept){
+        this.graknGraph = concept.getGraknGraph();
+        this.conceptId = concept.getId();
+        this.vertex = concept.getVertex();
     }
 
     /**
@@ -88,13 +95,13 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     private T setProperty(String key, Object value){
         if(value == null) {
-            vertex.property(key).remove();
+            getVertex().property(key).remove();
         } else {
-            VertexProperty<Object> foundProperty = vertex.property(key);
+            VertexProperty<Object> foundProperty = getVertex().property(key);
             if(foundProperty.isPresent() && foundProperty.value().equals(value)){
                return getThis();
             } else {
-                vertex.property(key, value);
+                getVertex().property(key, value);
             }
         }
         return getThis();
@@ -106,15 +113,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getGraknGraph().getElementFactory().buildConcept(vertex);
-        properType.innerDelete(); //This will execute the proper deletion method.
-    }
-
-    /**
-     * Helper method to call the appropriate deletion based on the type of the concept.
-     */
-    //TODO: Check if this is actually the right way of doing things. This is quite odd.
-    void innerDelete(){
         deleteNode();
     }
 
@@ -148,16 +146,15 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     void deleteNode(){
         // tracking
-        vertex.edges(Direction.BOTH).
+        getVertex().edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
-                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildConcept(e.outVertex()));}
+                            graknGraph.getConceptLog().trackConceptForValidation(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
+                            graknGraph.getConceptLog().trackConceptForValidation(getGraknGraph().getElementFactory().buildConcept(e.outVertex()));}
                 );
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
-        vertex.remove();
-        vertex = null;
+        getVertex().remove();
     }
 
     /**
@@ -395,7 +392,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one outgoing edge of a specific type
      */
-    protected <X extends Concept> X getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
+    <X extends Concept> X getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
         Set<X> concepts = getOutgoingNeighbours(edgeLabel);
         if(concepts.size() == 1){
             return concepts.iterator().next();
@@ -411,7 +408,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
-    protected <X extends Concept> Set<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
+    <X extends Concept> Set<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
         Set<X> outgoingNeighbours = new HashSet<>();
 
         getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
@@ -428,7 +425,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
-    protected <X extends Concept> Set<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
+    <X extends Concept> Set<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
         Set<X> incomingNeighbours = new HashSet<>();
         getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
             X found = edge.getSource();
@@ -455,13 +452,13 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The value stored in the property
      */
     public <X> X getProperty(Schema.ConceptProperty key){
-        VertexProperty<X> property = vertex.property(key.name());
+        VertexProperty<X> property = getVertex().property(key.name());
         if(property != null && property.isPresent()) {
             return property.value();
         }
         return null;
     }
-    public Boolean getPropertyBoolean(Schema.ConceptProperty key){
+    Boolean getPropertyBoolean(Schema.ConceptProperty key){
         Boolean value = getProperty(key);
         if(value == null) {
             return false;
@@ -479,27 +476,10 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @param type The type of this concept
-     * @return The concept itself casted to the correct interface
-     */
-    public T setType(String type){
-        return setProperty(Schema.ConceptProperty.TYPE, type);
-    }
-
-    /**
-     *
-     * @return The unique base identifier of this concept.
-     */
-    public Object getBaseIdentifier() {
-        return vertex.id();
-    }
-
-    /**
-     *
      * @return The base ttpe of this concept which helps us identify the concept
      */
-    public String getBaseType(){
-        return vertex.label();
+    String getBaseType(){
+        return getVertex().label();
     }
 
     /**
@@ -508,15 +488,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     @Override
     public ConceptId getId(){
-        return ConceptId.of(getProperty(Schema.ConceptProperty.ID));
-    }
-
-    /**
-     *
-     * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
-     */
-    public TypeName getType(){
-        return TypeName.of(getProperty(Schema.ConceptProperty.TYPE));
+        return conceptId;
     }
 
     /**
@@ -525,9 +497,9 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type The type of the edges to retrieve
      * @return A collection of edges from this concept in a particular direction of a specific type
      */
-    protected Set<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
+    Set<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
         Set<EdgeImpl> edges = new HashSet<>();
-        vertex.edges(direction, type.getLabel()).
+        getVertex().edges(direction, type.getLabel()).
                 forEachRemaining(e -> edges.add(new EdgeImpl(e, getGraknGraph())));
         return edges;
     }
@@ -538,7 +510,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return An edge from this concept in a particular direction of a specific type
      * @throws MoreThanOneEdgeException when more than one edge of s specific type
      */
-    public EdgeImpl getEdgeOutgoingOfType(Schema.EdgeLabel type) {
+    EdgeImpl getEdgeOutgoingOfType(Schema.EdgeLabel type) {
         Set<EdgeImpl> edges = getEdgesOfType(Direction.OUT, type);
         if(edges.size() == 1) {
             return edges.iterator().next();
@@ -562,7 +534,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      */
     EdgeImpl putEdge(Concept to, Schema.EdgeLabel type){
         ConceptImpl toConcept = (ConceptImpl) to;
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getRawValue()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
         if(!traversal.hasNext()) {
             return addEdge(toConcept, type);
         } else {
@@ -576,8 +548,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type the type of the edge to create
      * @return The edge created
      */
-    public EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), graknGraph);
+    EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
+        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()), graknGraph);
     }
 
     /**
@@ -586,7 +558,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param type The type of the edges to retrieve
      */
     void deleteEdges(Direction direction, Schema.EdgeLabel type){
-        vertex.edges(direction, type.getLabel()).forEachRemaining(Element::remove);
+        getVertex().edges(direction, type.getLabel()).forEachRemaining(Element::remove);
     }
 
     /**
@@ -595,15 +567,15 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param toConcept The target concept
      */
     void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
-        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
-                outE(type.getLabel()).as("edge").otherV().hasId(((ConceptImpl) toConcept).getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getId().getRawValue()).
+                outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getId().getRawValue()).select("edge");
         if(traversal.hasNext()) {
             traversal.next().remove();
         }
     }
 
     private Edge addEdgeFrom(Vertex fromVertex, String type) {
-        return fromVertex.addEdge(type, vertex);
+        return fromVertex.addEdge(type, getVertex());
     }
 
 
@@ -613,16 +585,28 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The hash code of the underlying vertex
      */
     public int hashCode() {
-        return vertex.hashCode();
+        return getId().hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
 
     @Override
     public boolean equals(Object object) {
-        return object instanceof ConceptImpl && ((ConceptImpl) object).getVertex().equals(vertex);
+        //Compare Concept
+        //based on id because vertex comparisons are equivalent
+        if (this == object) return true;
+        return object instanceof ConceptImpl && ((ConceptImpl) object).getId().equals(getId());
     }
 
     @Override
-    public String toString(){
+    public final String toString(){
+        if (getGraknGraph().validVertex(vertex)) {
+            return innerToString();
+        } else {
+            // Concept has been deleted, so handle differently
+            return "Id [" + getId() + "]";
+        }
+    }
+
+    protected String innerToString() {
         String message = "Base Type [" + getBaseType() + "] ";
         if(getId() != null) {
             message = message + "- Id [" + getId() + "] ";
@@ -630,24 +614,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
         return message;
     }
-
-    //---------- Null Vertex Handler ---------
-    /**
-     * Checks if the underlaying vertex has not been removed and if it is not a ghost
-     * @return true if the underlying vertex has not been removed.
-     */
-    boolean isAlive() {
-        if(vertex == null) {
-            return false;
-        }
-
-        try {
-            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
-        } catch (IllegalStateException e){
-            return false;
-        }
-    }
-
 
     <X> void setImmutableProperty(Schema.ConceptProperty conceptProperty, X newValue, X foundValue, Function<X, Object> converter){
         if(newValue == null){

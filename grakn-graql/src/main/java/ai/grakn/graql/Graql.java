@@ -137,7 +137,7 @@ public class Graql {
      * @param data data to use in template
      * @return a query, the type will depend on the type indicated in the template
      */
-    public static <T extends Query<?>> T parseTemplate(String template, Map<String, Object> data){
+    public static <T extends Query<?>> List<T> parseTemplate(String template, Map<String, Object> data){
         return withoutGraph().parseTemplate(template, data);
     }
 
@@ -263,6 +263,14 @@ public class Graql {
      */
     public static Aggregate<Map<VarName, Concept>, Optional<Number>> median(String name) {
         return Aggregates.median(VarName.of(name));
+    }
+
+    /**
+     * Create an aggregate that will find the unbiased sample standard deviation of a variable's values.
+     * @param name the variable to find the standard deviation of
+     */
+    public static Aggregate<Map<VarName, Concept>, Optional<Double>> std(String name) {
+        return Aggregates.std(VarName.of(name));
     }
 
     /**

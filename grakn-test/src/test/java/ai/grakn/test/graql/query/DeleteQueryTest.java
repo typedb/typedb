@@ -20,11 +20,11 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.ConceptException;
+import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Var;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
 import org.junit.After;
@@ -72,7 +72,7 @@ public class DeleteQueryTest {
     }
 
     @After
-    public void rollback(){
+    public void cleanUp(){
         movieGraph.rollback();
     }
 
@@ -101,7 +101,7 @@ public class DeleteQueryTest {
         assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
         assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
 
-        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name")).execute();
+        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name", var("y"))).execute();
 
         assertFalse(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
         assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
@@ -317,7 +317,7 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteValue() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("value")));
-        qb.match(var("x").isa("movie")).delete(var("x").value()).execute();
+        qb.match(var("x").isa("movie")).delete(var("x").value("hello")).execute();
     }
 
     @Test

@@ -19,18 +19,17 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.graql.Graql;
-import ai.grakn.graql.Var;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
 
-public class Vars extends AbstractGenerator<Var> {
+public class Relations extends AbstractInstanceGenerator<Relation, RelationType> {
 
-    public Vars() {
-        super(Var.class);
+    public Relations() {
+        super(Relation.class, RelationTypes.class);
     }
 
     @Override
-    public Var generate() {
-        // TODO: Add random properties to variable patterns
-        return Graql.var();
+    protected Relation newInstance(RelationType type) {
+        return type.addRelation();
     }
 }

@@ -20,13 +20,11 @@ package ai.grakn.example;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknValidationException;
 
 /**
  * <p>
@@ -81,13 +79,8 @@ public class PokemonGraphFactory{
         throw new UnsupportedOperationException();
     }
 
-    public static void loadGraph(GraknGraph graknGraph) {
-        buildGraph(graknGraph);
-        try {
-            graknGraph.commit();
-        } catch (GraknValidationException e) {
-            throw new RuntimeException(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage(), e);
-        }
+    public static void loadGraph(GraknGraph graph) {
+        buildGraph(graph);
     }
 
     private static void buildGraph(GraknGraph graph) {

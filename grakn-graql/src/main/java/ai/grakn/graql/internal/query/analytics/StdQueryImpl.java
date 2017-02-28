@@ -41,6 +41,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     @Override
     public Optional<Double> execute() {
         LOGGER.info("StdMapReduce is called");
+        long startTime = System.currentTimeMillis();
+
         initSubGraph();
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
@@ -54,7 +56,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
         double count = stdTuple.get(StdMapReduce.COUNT);
-        LOGGER.info("StdMapReduce is done");
+
+        LOGGER.info("StdMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(Math.sqrt(squareSum / count - (sum / count) * (sum / count)));
     }
 

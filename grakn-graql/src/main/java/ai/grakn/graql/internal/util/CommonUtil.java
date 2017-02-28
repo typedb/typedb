@@ -78,7 +78,7 @@ public class CommonUtil {
         return result.entrySet().stream().collect(toMap(entry -> entry.getKey().getValue(), Map.Entry::getValue));
     }
 
-    public static <T> Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>> toImmutableSet() {
+    public static <T> Collector<T, ?, ImmutableSet<T>> toImmutableSet() {
         return new Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>>() {
             @Override
             public Supplier<ImmutableSet.Builder<T>> supplier() {
@@ -107,7 +107,7 @@ public class CommonUtil {
         };
     }
 
-    public static <T> Collector<T, ImmutableList.Builder<T>, ImmutableList<T>> toImmutableList() {
+    public static <T> Collector<T, ?, ImmutableList<T>> toImmutableList() {
         return new Collector<T, ImmutableList.Builder<T>, ImmutableList<T>>() {
             @Override
             public Supplier<ImmutableList.Builder<T>> supplier() {
@@ -136,7 +136,7 @@ public class CommonUtil {
         };
     }
 
-    public static <T> Collector<T, ImmutableMultiset.Builder<T>, ImmutableMultiset<T>> toImmutableMultiset() {
+    public static <T> Collector<T, ?, ImmutableMultiset<T>> toImmutableMultiset() {
         return new Collector<T, ImmutableMultiset.Builder<T>, ImmutableMultiset<T>>() {
             @Override
             public Supplier<ImmutableMultiset.Builder<T>> supplier() {

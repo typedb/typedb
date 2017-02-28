@@ -27,7 +27,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -71,8 +70,6 @@ public class AtomicTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        Reasoner.linkConceptTypes(snbGraph.graph());
-        Reasoner.linkConceptTypes(cwGraph.graph());
     }
 
     @org.junit.Rule
