@@ -86,20 +86,23 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @param roleMap The roles and their corresponding role players
      * @return A unique hash identifying this relation
      */
-    static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
+    static String generateNewHash(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
         hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
 
         for(RoleType role: sortedRoleIds){
             hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
-            Instance instance = roleMap.get(role);
-            if(instance != null){
-                hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
-            }
+
+            roleMap.get(role).forEach(instance -> {
+                if(instance != null){
+                    hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
+                }
+            });
         }
         return hash.toString();
     }
+
 
     /**
      *
