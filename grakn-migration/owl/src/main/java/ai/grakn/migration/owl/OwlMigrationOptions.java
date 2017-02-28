@@ -18,7 +18,7 @@
 
 package ai.grakn.migration.owl;
 
-import ai.grakn.migration.base.io.MigrationOptions;
+import ai.grakn.migration.base.MigrationOptions;
 
 /**
  * Configure the default OWL migration options and access arguments passed by the user

@@ -18,8 +18,8 @@
 
 package ai.grakn.test.migration;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -29,7 +29,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.migration.base.Migrator;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
 
@@ -60,14 +59,8 @@ public class MigratorTestUtils {
         return new File(MigratorTestUtils.class.getResource(component + "/" + fileName).getPath());
     }
 
-    public static GraknGraph migrate(GraknGraph graph, Migrator migrator){
-        migrator.load(Grakn.DEFAULT_URI, graph.getKeyspace());
-        //Forcing the graph to reopen
-        return Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
-    }
-
-    public static void load(GraknGraph graph, File ontology) {
-        try {
+    public static void load(GraknGraphFactory factory, File ontology) {
+        try(GraknGraph graph = factory.getGraph()) {
             graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();

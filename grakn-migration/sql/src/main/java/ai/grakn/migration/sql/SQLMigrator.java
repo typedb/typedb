@@ -18,37 +18,65 @@
 
 package ai.grakn.migration.sql;
 
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.migration.base.AbstractMigrator;
+import ai.grakn.migration.base.MigrationCLI;
 import com.google.common.collect.Maps;
 import org.jooq.DSLContext;
 import org.jooq.Record;
 import org.jooq.impl.DSL;
 
+import java.io.File;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Stream;
+
+import static ai.grakn.migration.base.MigrationCLI.die;
+import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 
 /**
  * The SQL migrator will execute the given SQL query and then apply the given template to those results.
  * @author alexandraorth
  */
-public class SQLMigrator extends AbstractMigrator {
+public class SQLMigrator {
 
     private final Stream<Record> records;
-    private final String template;
+
+    public static void main(String[] args) {
+        MigrationCLI.init(args, SQLMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(SQLMigrator::runSQL);
+    }
+
+    public static void runSQL(SQLMigrationOptions options) {
+        File sqlTemplate = new File(options.getTemplate());
+
+        if(!sqlTemplate.exists()){
+            die("Cannot find file: " + options.getTemplate());
+        }
+
+        printInitMessage(options, options.getLocation() + " using " + options.getQuery());
+
+        try(Connection connection =
+                    DriverManager.getConnection(options.getLocation(), options.getUsername(), options.getPassword())) {
+
+            SQLMigrator sqlMigrator = new SQLMigrator(options.getQuery(), connection);
+
+            MigrationCLI.loadOrPrint(sqlTemplate, sqlMigrator.convert(), options);
+        } catch (Throwable throwable){
+            die(throwable);
+        }
+    }
 
     /**
      * Construct a SQL migrator to migrate data from the given DB
      * @param query SQL query to gather data from database
-     * @param template parametrized graql insert query
      * @param connection JDBC connection to the SQL database
      */
-    public SQLMigrator(String query, String template, Connection connection){
-        this.template = template;
-
+    public SQLMigrator(String query, Connection connection){
         DSLContext create = DSL.using(connection);
         records = create.fetchStream(query);
     }
@@ -57,18 +85,9 @@ public class SQLMigrator extends AbstractMigrator {
      * Migrate the results of the SQL statement with the provided template
      * @return stream of parsed insert queries
      */
-    @Override
-    public Stream<InsertQuery> migrate() {
-        return records.map(Record::intoMap)
-                .map(this::convertToValidValues)
-                .flatMap(r -> template(template, r).stream());
+    public Stream<Map<String, Object>> convert() {
+        return records.map(Record::intoMap).map(this::convertToValidValues);
     }
-
-    /**
-     * SQL Migrator has nothing to close
-     */
-    @Override
-    public void close() {}
 
     /**
      * Convert values to be valid - removing nulls and changing to supported types

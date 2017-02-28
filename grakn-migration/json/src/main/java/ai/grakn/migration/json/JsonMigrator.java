@@ -18,8 +18,7 @@
 
 package ai.grakn.migration.json;
 
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.migration.base.AbstractMigrator;
+import ai.grakn.migration.base.MigrationCLI;
 import com.google.common.collect.Sets;
 import com.google.common.io.CharStreams;
 import mjson.Json;
@@ -32,63 +31,89 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.migration.base.MigrationCLI.die;
+import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * Migrator for migrating JSON data into Grakn instances
  * @author alexandraorth
  */
-public class JsonMigrator extends AbstractMigrator {
+public class JsonMigrator implements AutoCloseable {
 
     private final Set<Reader> readers;
-    private final String template;
+
+    public static void main(String[] args) {
+        MigrationCLI.init(args, JsonMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(JsonMigrator::runJson);
+    }
+
+    public static void runJson(JsonMigrationOptions options){
+        File jsonDataFile = new File(options.getInput());
+        File jsonTemplateFile = new File(options.getTemplate());
+
+        if(!jsonDataFile.exists()){
+            die("Cannot find file: " + options.getInput());
+        }
+
+        if(!jsonTemplateFile.exists() || jsonTemplateFile.isDirectory()){
+            die("Cannot find file: " + options.getTemplate());
+        }
+
+        printInitMessage(options, jsonDataFile.getPath());
+
+        try(JsonMigrator jsonMigrator = new JsonMigrator(jsonDataFile)){
+            MigrationCLI.loadOrPrint(jsonTemplateFile, jsonMigrator.convert(), options);
+        } catch (Throwable throwable){
+            die(throwable);
+        }
+    }
 
     /**
      * Construct a JsonMigrator to migrate data in the given file or dir
-     * @param template parametrized graql insert query
      * @param jsonFileOrDir either a Json file or a directory containing Json files
      */
-    public JsonMigrator(String template, File jsonFileOrDir){
+    public JsonMigrator(File jsonFileOrDir){
         File[] files = {jsonFileOrDir};
         if(jsonFileOrDir.isDirectory()){
+
+            // Filter that will only accept JSON files with the .json extension
+            FilenameFilter jsonFiles = (dir, name) -> name.toLowerCase().endsWith(".json");
             files = jsonFileOrDir.listFiles(jsonFiles);
         }
 
         this.readers = Stream.of(files).map(this::asReader).collect(toSet());
-        this.template = template;
     }
 
     /**
      * Construct a JsonMigrator to migrate data in given reader
-     * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
      */
-    public JsonMigrator(String template, Reader reader){
+    public JsonMigrator(Reader reader){
         this.readers = Sets.newHashSet(reader);
-        this.template = template;
     }
 
     /**
      * Migrate each of the given json objects as an insert query
      * @return stream of parsed insert queries
      */
-    @Override
-    public Stream<InsertQuery> migrate(){
+    public Stream<Map<String, Object>> convert(){
         return readers.stream()
                 .map(this::asString)
-                .map(this::toJsonMap)
-                .flatMap(data -> template(template, data).stream());
+                .map(this::toJsonMap);
     }
 
     /**
      * Close the readers
-     * @throws Exception
      */
     @Override
-    public void close() throws Exception {
+    public void close() {
         readers.forEach((reader) -> {
             try {
                 reader.close();
@@ -133,9 +158,4 @@ public class JsonMigrator extends AbstractMigrator {
             throw new RuntimeException("Problem reading input");
         }
     }
-
-    /**
-     * Filter that will only accept JSON files with the .json extension
-     */
-    private final FilenameFilter jsonFiles = (dir, name) -> name.toLowerCase().endsWith(".json");
 }

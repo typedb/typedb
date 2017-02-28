@@ -19,13 +19,11 @@ package ai.grakn.migration.export;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.migration.base.io.MigrationCLI;
+import ai.grakn.migration.base.MigrationCLI;
 
 import java.util.Optional;
 
-import static ai.grakn.migration.base.io.MigrationCLI.die;
-import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
-import static ai.grakn.migration.base.io.MigrationCLI.writeToSout;
+import static ai.grakn.migration.base.MigrationCLI.die;
 
 /**
  * Export data from a Grakn graph to Graql statements - prints to System.out
@@ -42,24 +40,23 @@ public class Main {
 
     public static void runExport(GraphWriterOptions options) {
         if(!options.exportOntology() && !options.exportData()) {
-            writeToSout("Missing arguments -ontology and/or -data");
+            System.out.println("Missing arguments -ontology and/or -data");
             die("");
         }
 
-        writeToSout("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
+        System.out.println("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
                 options.getUri() + " to System.out");
 
         try(GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph()) {
             GraphWriter graphWriter = new GraphWriter(graph);
 
             if (options.exportOntology()) {
-                writeToSout(graphWriter.dumpOntology());
+                System.out.println(graphWriter.dumpOntology());
             }
 
             if (options.exportData()) {
-                writeToSout(graphWriter.dumpData());
+                System.out.println(graphWriter.dumpData());
             }
         }
-        initiateShutdown();
     }
 }

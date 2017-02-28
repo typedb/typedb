@@ -20,7 +20,7 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.migration.csv.Main;
+import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -50,7 +50,7 @@ public class CSVMigratorMainTest {
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
         graph = factory.getGraph();
-        load(graph, getFile("csv", "pets/schema.gql"));
+        load(factory, getFile("csv", "pets/schema.gql"));
     }
 
     @Test
@@ -99,8 +99,7 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainPropertiesTest(){
-        graph = factory.getGraph();
-        load(graph, getFile("csv", "multi-file/schema.gql"));
+        load(factory, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
         run("csv", "-config", configurationFile, "-keyspace", graph.getKeyspace());
         graph = factory.getGraph();
@@ -139,7 +138,7 @@ public class CSVMigratorMainTest {
     }
 
     private void run(String... args){
-        Main.main(args);
+        CSVMigrator.main(args);
     }
 
     private void runAndAssertDataCorrect(String... args){
