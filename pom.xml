@@ -221,6 +221,11 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>2.1.17</version>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
