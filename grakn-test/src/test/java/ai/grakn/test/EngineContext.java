@@ -19,7 +19,6 @@
 package ai.grakn.test;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
@@ -34,6 +33,7 @@ import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 
 /**
  * <p>
@@ -103,6 +103,8 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
+        clearCompletedTasks();
+
         try {
             if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
                 stopEngine();
