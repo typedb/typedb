@@ -86,7 +86,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @param roleMap The roles and their corresponding role players
      * @return A unique hash identifying this relation
      */
-    public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
+    static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
         hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
@@ -115,6 +115,25 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
         //Get roles based on availiable castings
         castings.forEach(casting -> roleMap.put(casting.getRole(), casting.getRolePlayer()));
+
+        return roleMap;
+    }
+
+    /**
+     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * @see RoleType
+     *
+     * @return A list of all the role types and the instances playing them in this relation.
+     */
+    public Map<RoleType, Set<Instance>> allRolePlayers(){
+        Set<CastingImpl> castings = getMappingCasting();
+        HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
+
+        //Gets roles based on all roles of the relation type
+        type().hasRoles().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
+
+        //Now iterate over castings
+        castings.forEach(casting -> roleMap.get(casting.getRole()).add(casting.getRolePlayer()));
 
         return roleMap;
     }

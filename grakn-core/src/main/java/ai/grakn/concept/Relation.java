@@ -24,6 +24,7 @@ import ai.grakn.exception.ConceptNotUniqueException;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>
@@ -69,6 +70,14 @@ public interface Relation extends Instance {
      */
     @Deprecated // TODO: Remove this method
     Map<RoleType, Instance> rolePlayers();
+
+    /**
+     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * @see RoleType
+     *
+     * @return A list of all the role types and the instances playing them in this relation.
+     */
+    Map<RoleType, Set<Instance>> allRolePlayers();
 
     /**
      * Retrieves a list of every {@link Instance} involved in the {@link Relation}, filtered by {@link RoleType} played.

@@ -573,8 +573,14 @@ public class RelationTest extends GraphTestBase{
                 addRolePlayer(role1, entity3).
                 addRolePlayer(role2, entity4);
 
+        relation.addRolePlayer(role1, entity1);
+
         assertThat(relation.newRolePlayers(role1), containsInAnyOrder(entity1, entity2, entity3));
         assertThat(relation.newRolePlayers(role2), containsInAnyOrder(entity4));
         assertThat(relation.newRolePlayers(), containsInAnyOrder(entity1, entity2, entity3, entity4));
+
+
+        assertThat(relation.allRolePlayers().get(role1), containsInAnyOrder(entity1, entity2, entity3));
+        assertThat(relation.allRolePlayers().get(role2), containsInAnyOrder(entity4));
     }
 }
