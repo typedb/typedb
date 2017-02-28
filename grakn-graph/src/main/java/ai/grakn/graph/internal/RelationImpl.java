@@ -77,7 +77,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Sets the internal hash in order to perform a faster lookup
      */
     public void setHash(){
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), rolePlayers()));
+        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
     }
 
     /**
@@ -136,7 +136,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         type().hasRoles().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
 
         //Now iterate over castings
-        castings.forEach(casting -> roleMap.get(casting.getRole()).add(casting.getRolePlayer()));
+        castings.forEach(c -> roleMap.computeIfAbsent(c.getRole(), (k) -> new HashSet<>()).add(c.getRolePlayer()));
 
         return roleMap;
     }
