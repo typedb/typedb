@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -36,6 +37,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.counting;
@@ -49,6 +51,10 @@ public class BackgroundTaskTestUtils {
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
 
+    private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
+    private static Consumer<TaskId> onTaskStart;
+    private static Consumer<TaskId> onTaskFinish;
+
     static void addCompletedTask(TaskId taskId) {
         COMPLETED_TASKS.add(taskId);
     }
@@ -57,8 +63,33 @@ public class BackgroundTaskTestUtils {
         return ImmutableMultiset.copyOf(COMPLETED_TASKS);
     }
 
-    public static void clearCompletedTasks() {
+    static void addCancelledTask(TaskId taskId) {
+        CANCELLED_TASKS.add(taskId);
+    }
+
+    public static ImmutableMultiset<TaskId> cancelledTasks() {
+        return ImmutableMultiset.copyOf(CANCELLED_TASKS);
+    }
+
+    public static void whenTaskStarts(Consumer<TaskId> beforeTaskStarts) {
+        BackgroundTaskTestUtils.onTaskStart = beforeTaskStarts;
+    }
+
+    static void onTaskStart(TaskId taskId) {
+        if (onTaskStart != null) onTaskStart.accept(taskId);
+    }
+
+    public static void whenTaskFinishes(Consumer<TaskId> onTaskFinish) {
+        BackgroundTaskTestUtils.onTaskFinish = onTaskFinish;
+    }
+
+    static void onTaskFinish(TaskId taskId) {
+        if (onTaskFinish != null) onTaskFinish.accept(taskId);
+    }
+
+    public static void clearTasks() {
         COMPLETED_TASKS.clear();
+        CANCELLED_TASKS.clear();
     }
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
@@ -68,13 +99,17 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration) {
-        TaskState taskState = TaskState.of(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
+        return createTask(ShortExecutionTestTask.class, status, schedule, configuration);
+    }
+
+    public static TaskState createTask(Class<? extends BackgroundTask> backgroundTask, TaskStatus status, TaskSchedule schedule, Json configuration) {
+        TaskState taskState = TaskState.of(backgroundTask, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
                 .status(status)
                 .statusChangedBy(BackgroundTaskTestUtils.class.getName());
         configuration.set("id", taskState.getId().getValue());
         return taskState;
     }
-    
+
     public static void waitForStatus(TaskStateStorage storage, Collection<TaskState> tasks, TaskStatus... status) {
         HashSet<TaskStatus> statusSet = Sets.newHashSet(status);
         tasks.forEach(t -> waitForStatus(storage, t, statusSet));

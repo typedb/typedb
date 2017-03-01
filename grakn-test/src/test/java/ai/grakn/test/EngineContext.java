@@ -33,7 +33,7 @@ import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
 
 /**
  * <p>
@@ -103,7 +103,7 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
-        clearCompletedTasks();
+        clearTasks();
 
         try {
             if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){

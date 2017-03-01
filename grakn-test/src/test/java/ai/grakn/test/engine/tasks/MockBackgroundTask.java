@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,35 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.test.engine.tasks;
 
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
+import mjson.Json;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCompletedTask;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.onTaskFinish;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.onTaskStart;
 
-public class ShortExecutionTestTask extends MockBackgroundTask {
-    public static final AtomicInteger startedCounter = new AtomicInteger(0);
-    public static final AtomicInteger resumedCounter = new AtomicInteger(0);
-
+public abstract class MockBackgroundTask implements BackgroundTask {
     @Override
-    protected boolean startInner(TaskId id) {
-        startedCounter.incrementAndGet();
-        addCompletedTask(id);
-        return true;
+    public final boolean start(Consumer<String> saveCheckpoint, Json configuration) {
+        TaskId id = TaskId.of(configuration.at("id").asString());
+        onTaskStart(id);
+        
+        boolean success = startInner(id);
+        
+        onTaskFinish(id);
+
+        return success;
     }
 
-    public boolean stop() {
-        return false;
-    }
-
-    public void pause() {}
-
-    public void resume(Consumer<String> c, String s) {
-        resumedCounter.incrementAndGet();
-    }
+    protected abstract boolean startInner(TaskId id);
 }

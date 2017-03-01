@@ -40,7 +40,6 @@ import java.util.List;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
@@ -71,7 +70,7 @@ public class SingleQueueTaskManagerTest {
 
     @Before
     public void clearTasks(){
-        clearCompletedTasks();
+        clearTasks();
     }
 
     @Property(trials=10)

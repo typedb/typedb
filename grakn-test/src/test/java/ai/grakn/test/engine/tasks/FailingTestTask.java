@@ -26,13 +26,13 @@ import java.util.function.Consumer;
 
 public class FailingTestTask implements BackgroundTask {
     @Override
-    public void start(Consumer<String> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<String> saveCheckpoint, Json configuration) {
         throw new RuntimeException("deliberate test failure");
     }
 
     @Override
-    public void stop() {
-
+    public boolean stop() {
+        return false;
     }
 
     @Override
