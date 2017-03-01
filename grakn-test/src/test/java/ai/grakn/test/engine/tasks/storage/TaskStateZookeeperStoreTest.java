@@ -28,7 +28,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -225,7 +225,12 @@ public class TaskStateZookeeperStoreTest {
 
     @Test
     public void testGetByRunningEngine(){
-        assertTrue(false);
+        TaskId id = stateStorage.newState(task().engineID("Engine5"));
+
+        Set<TaskState> res = stateStorage.getTasks(null, null, null, "Engine5", 1, 0);
+        TaskState resultant = res.iterator().next();
+        Assert.assertEquals(resultant.getId(), id);
+        Assert.assertEquals(resultant.engineID(), "Engine5");
     }
 
     @Test

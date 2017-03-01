@@ -137,7 +137,12 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testGetByRunningEngine(){
-        assertTrue(false);
+        TaskId id = stateStorage.newState(task().engineID("Engine1"));
+
+        Set<TaskState> res = stateStorage.getTasks(null, null, null, "Engine1", 1, 0);
+        TaskState resultant = res.iterator().next();
+        assertEquals(resultant.getId(), id);
+        assertEquals(resultant.engineID(), "Engine1");
     }
 
     @Test

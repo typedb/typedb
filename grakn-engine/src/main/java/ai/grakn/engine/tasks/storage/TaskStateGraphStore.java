@@ -104,6 +104,10 @@ public class TaskStateGraphStore implements TaskStateStorage {
             state.has(TASK_CONFIGURATION, var().value(task.configuration().toString()));
         }
 
+        if(task.engineID() != null){
+            state.has(ENGINE_ID, var().value(task.engineID()));
+        }
+
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             graph.graql().insert(state).execute();
             return true;

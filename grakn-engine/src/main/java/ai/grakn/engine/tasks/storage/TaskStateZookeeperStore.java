@@ -47,7 +47,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * a synchronized manner withing a cluster. This means that all updates must be performed
  * by acquiring a distributed mutex so that no concurrent writes are possible. 
  * </p>
- * 
+ *
+ * //TODO Re-do this class to make it readable
  * @author alexandraorth
  */
 public class TaskStateZookeeperStore implements TaskStateStorage {
@@ -66,9 +67,19 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public TaskId newState(TaskState task){
        return executeWithMutex(task.getId(), () -> {
-            zookeeper.connection().inTransaction()
-                    .create().forPath(taskPath(task), serialize(task))
-                    .and().commit();
+
+           CuratorTransactionBridge transaction =  zookeeper.connection().inTransaction()
+                   .create().forPath(taskPath(task), serialize(task));
+
+           if (task.engineID() != null &&
+                   zookeeper.connection().checkExists().forPath(enginePath(task.engineID())) == null) {
+               zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(task.engineID()));
+
+               transaction = transaction.and().create().forPath(engineTaskPath(task.engineID(), task));
+           }
+
+           transaction.and().commit();
+
            return task.getId();
         });
     }
