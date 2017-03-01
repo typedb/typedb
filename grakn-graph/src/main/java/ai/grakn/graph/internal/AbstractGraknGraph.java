@@ -681,24 +681,33 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private void putShortcutEdges(Relation relation, RelationType relationType, CastingImpl newCasting){
-        Map<RoleType, Instance> roleMap = relation.rolePlayers();
+        Map<RoleType, Set<Instance>> roleMap = relation.allRolePlayers();
 
         //This ensures the latest casting is taken into account when transferring relations
-        roleMap.put(newCasting.getRole(), newCasting.getRolePlayer());
+        roleMap.computeIfAbsent(newCasting.getRole(), (k) -> new HashSet<>()).add(newCasting.getRolePlayer());
+        
+        for (Map.Entry<RoleType, Set<Instance>> entry : roleMap.entrySet()) {
+            RoleType fromRole = entry.getKey();
 
-        if(roleMap.size() > 1) {
-            for(Map.Entry<RoleType, Instance> from : roleMap.entrySet()){
-                for(Map.Entry<RoleType, Instance> to :roleMap.entrySet()){
-                    if (from.getValue() != null && to.getValue() != null && from.getKey() != to.getKey()) {
-                        putShortcutEdge(
-                                relation,
-                                relationType.asRelationType(),
-                                from.getKey().asRoleType(),
-                                from.getValue().asInstance(),
-                                to.getKey().asRoleType(),
-                                to.getValue().asInstance());
-                    }
+            //Shortcuts between instances playing the same role
+            for (Instance from : entry.getValue()) {
+                putShortcutEdges(relationType, relation, fromRole, from, fromRole, entry.getValue());
+            }
+
+            //Shortcuts between instances playing different roles
+            for (Map.Entry<RoleType, Set<Instance>> innerEntry : roleMap.entrySet()) {
+                RoleType toRole = innerEntry.getKey();
+                for (Instance from : entry.getValue()) {
+                    putShortcutEdges(relationType, relation, fromRole, from, toRole, innerEntry.getValue());
                 }
+            }
+        }
+    }
+
+    private void putShortcutEdges(RelationType relationType, Relation relation, RoleType fromRole, Instance from, RoleType toRole, Set<Instance> toSet){
+        for (Instance to : toSet) {
+            if (from != null && to != null && !from.equals(to)) {
+                putShortcutEdge(relation, relationType, fromRole, from, toRole, to);
             }
         }
     }
@@ -978,7 +987,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             String relationID = relation.getId().getValue();
 
             //Kill Shortcut Edges
-            relation.rolePlayers().values().forEach(instance -> {
+            relation.newRolePlayers().forEach(instance -> {
                 if(instance != null) {
                     List<Edge> edges = getTinkerTraversal().
                             hasId(instance.getId().getValue()).

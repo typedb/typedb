@@ -51,13 +51,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.ROLE_IS_NULL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
-import static ai.grakn.util.Schema.EdgeProperty.FROM_ID;
-import static ai.grakn.util.Schema.EdgeProperty.FROM_TYPE_NAME;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_ID;
-import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
-import static ai.grakn.util.Schema.EdgeProperty.TO_ID;
-import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
-import static ai.grakn.util.Schema.EdgeProperty.TO_TYPE_NAME;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -112,46 +105,47 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void testShortcutEdges(){
-        EntityImpl a = (EntityImpl) type.addEntity();
-        EntityImpl b = (EntityImpl) type.addEntity();
-        EntityImpl c = (EntityImpl) type.addEntity();
+    public void checkShortcutEdgesAreCreatedBetweenAllRolePlayers(){
+        //Create the Ontology
+        RoleType role1 = graknGraph.putRoleType("Role 1");
+        RoleType role2 = graknGraph.putRoleType("Role 2");
+        RoleType role3 = graknGraph.putRoleType("Role 3");
+        RelationType relType = graknGraph.putRelationType("Rel Type").hasRole(role1).hasRole(role2).hasRole(role3);
+        EntityType entType = graknGraph.putEntityType("Entity Type").playsRole(role1).playsRole(role2).playsRole(role3);
 
-        assertEquals(0, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
+        //Data
+        EntityImpl entity1r1 = (EntityImpl) entType.addEntity();
+        EntityImpl entity2r1 = (EntityImpl) entType.addEntity();
+        EntityImpl entity3r2r3 = (EntityImpl) entType.addEntity();
+        EntityImpl entity4r3 = (EntityImpl) entType.addEntity();
+        EntityImpl entity5r1 = (EntityImpl) entType.addEntity();
+        EntityImpl entity6r1r2r3 = (EntityImpl) entType.addEntity();
 
+        //Relation
         Relation relation = relationType.addRelation();
+        relation.addRolePlayer(role1, entity1r1);
+        relation.addRolePlayer(role1, entity2r1);
+        relation.addRolePlayer(role1, entity5r1);
+        relation.addRolePlayer(role1, entity6r1r2r3);
+        relation.addRolePlayer(role2, entity3r2r3);
+        relation.addRolePlayer(role2, entity6r1r2r3);
+        relation.addRolePlayer(role3, entity3r2r3);
+        relation.addRolePlayer(role3, entity4r3);
+        relation.addRolePlayer(role3, entity6r1r2r3);
 
-        relation.addRolePlayer(role1, a);
-        assertEquals(0, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-
-        relation.addRolePlayer(role2, b);
-        assertEquals(1, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(1, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-
-        relation.addRolePlayer(role3, c);
-        assertEquals(2, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(2, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(2, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-
-        //Check Structure of Shortcut Edge
-        boolean foundEdge = false;
-        for (EdgeImpl edge : a.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT)) {
-            if(edge.getProperty(TO_ROLE_NAME).equals(role2.getName().getValue())) {
-                foundEdge = true;
-                assertEquals(edge.getProperty(RELATION_TYPE_NAME), relationType.getName().getValue());
-                assertEquals(edge.getProperty(RELATION_ID), relation.getId().getValue());
-                assertEquals(edge.getProperty(TO_ID), b.getId().getValue());
-                assertEquals(edge.getProperty(FROM_ID), a.getId().getValue());
-                assertEquals(edge.getProperty(FROM_TYPE_NAME), a.type().getName().getValue());
-                assertEquals(edge.getProperty(TO_TYPE_NAME), b.type().getName().getValue());
-            }
-        }
-        assertTrue(foundEdge);
+        //Check the structure of the shortcut edges
+        assertThat(entity1r1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
+                containsInAnyOrder(entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(entity2r1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
+                containsInAnyOrder(entity1r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(entity3r2r3.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
+                containsInAnyOrder(entity1r1, entity2r1, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(entity4r3.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity5r1, entity6r1r2r3));
+        assertThat(entity5r1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity6r1r2r3));
+        assertThat(entity6r1r2r3.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1));
     }
 
     @Test
