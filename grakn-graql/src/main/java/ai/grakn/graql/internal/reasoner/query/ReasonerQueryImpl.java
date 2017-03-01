@@ -216,7 +216,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
-    public Set<Atomic> getEquivalentAtoms(Atomic atom){
+    Set<Atomic> getEquivalentAtoms(Atomic atom){
         return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
     }
 

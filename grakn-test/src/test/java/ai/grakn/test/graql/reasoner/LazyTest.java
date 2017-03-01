@@ -148,7 +148,7 @@ public class LazyTest {
 
     @Test 
     public void testLazy()  {
-        final int N = 30;
+        final int N = 20;
 
         long startTime = System.currentTimeMillis();
         graphContext.load(MatrixGraphII.get(N, N));
@@ -161,7 +161,7 @@ public class LazyTest {
         MatchQuery query = iqb.parse(queryString);
 
         final int limit = 20;
-        final long maxTime = 600;
+        final long maxTime = 1000;
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
