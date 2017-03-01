@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
@@ -59,6 +61,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    private BackgroundTask runningTask = null;
 
     /**
      * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
@@ -141,6 +145,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         noThrow(consumer::close, "Error closing the task runner");
     }
 
+    public boolean stopTask(TaskId taskId) {
+        return runningTask != null && runningTask.stop();
+    }
+
     /**
      * Returns false if cannot handle record because the executor is full
      */
@@ -165,13 +173,19 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             // Execute task
             try {
-                task.taskClass().newInstance().start(null, task.configuration());
-                task.status(COMPLETED);
+                runningTask = task.taskClass().newInstance();
+                boolean completed = runningTask.start(null, task.configuration());
+                if (completed) {
+                    task.status(COMPLETED);
+                } else {
+                    task.status(STOPPED);
+                }
                 LOG.debug("{}\tmarked as completed", task);
             } catch (Throwable throwable) {
                 task.status(FAILED);
                 LOG.debug("{}\tmarked as failed", task);
             } finally {
+                runningTask = null;
                 storage.updateState(task);
             }
         }
