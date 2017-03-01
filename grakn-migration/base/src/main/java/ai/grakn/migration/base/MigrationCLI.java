@@ -16,12 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.migration.base.io;
+package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.client.Client;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
@@ -101,31 +100,16 @@ public class MigrationCLI {
         }
     }
 
-    public static void writeToSout(Stream<InsertQuery> queries){
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
+    public static void loadOrPrint(File templateFile, Stream<Map<String, Object>> data, MigrationOptions options){
+        String template = fileAsString(templateFile);
+        Migrator migrator = Migrator.to(options.getUri(), options.getKeyspace());
 
-        queries.map(InsertQuery::toString).forEach((str) -> {
-            try {
-                writer.write(str);
-                writer.write("\n");
-            }
-            catch (IOException e) { die("Problem writing"); }
-        });
-
-        try {
-            writer.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void writeToSout(String string){
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out, Charset.defaultCharset()));
-        try{
-            writer.write(string);
-            writer.flush();
-        } catch (IOException e){
-            die("Problem writing");
+        if(options.isNo()){
+            migrator.print(template, data);
+        } else {
+            migrator.load(template, data,
+                    options.getBatch(), options.getNumberActiveTasks(), options.getRetry());
+            printWholeCompletionMessage(options);
         }
     }
 
@@ -164,11 +148,7 @@ public class MigrationCLI {
         }
     }
 
-    public static void initiateShutdown(){
-        System.out.println("Initiating shutdown...");
-    }
-
-    public static String fileAsString(File file){
+    private static String fileAsString(File file){
         try {
             return Files.readLines(file, StandardCharsets.UTF_8).stream().collect(joining("\n"));
         } catch (IOException e) {
@@ -185,7 +165,7 @@ public class MigrationCLI {
         throw new RuntimeException(errorMsg);
     }
 
-    public static void printHelpMessage(MigrationOptions options){
+    private static void printHelpMessage(MigrationOptions options){
         HelpFormatter helpFormatter = new HelpFormatter();
         OutputStreamWriter outputStreamWriter = new OutputStreamWriter(System.out, Charset.defaultCharset());
         PrintWriter printWriter = new PrintWriter(new BufferedWriter(outputStreamWriter));

@@ -18,7 +18,7 @@
 
 package ai.grakn.test.migration.sql;
 
-import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -35,8 +35,8 @@ public class SQLMigratorTestUtils {
     public static final String DRIVER = "org.h2.Driver";
     public static final String URL = "jdbc:h2:~/test;";
 
-    public static Connection setupExample(GraknGraph graph, String example) throws SQLException {
-        load(graph, getFile("sql", example + "/schema.gql"));
+    public static Connection setupExample(GraknGraphFactory factory, String example) throws SQLException {
+        load(factory, getFile("sql", example + "/schema.gql"));
 
         // read schema and data from file
         String schema = getFileAsString("sql", example + "/create-db.sql");

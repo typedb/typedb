@@ -19,16 +19,15 @@ package ai.grakn.migration.owl;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.migration.base.io.MigrationCLI;
+import ai.grakn.migration.base.MigrationCLI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;
 import java.util.Optional;
 
-import static ai.grakn.migration.base.io.MigrationCLI.die;
-import static ai.grakn.migration.base.io.MigrationCLI.initiateShutdown;
-import static ai.grakn.migration.base.io.MigrationCLI.printInitMessage;
-import static ai.grakn.migration.base.io.MigrationCLI.printWholeCompletionMessage;
+import static ai.grakn.migration.base.MigrationCLI.die;
+import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
+import static ai.grakn.migration.base.MigrationCLI.printWholeCompletionMessage;
 
 /**
  * <p>
@@ -71,7 +70,5 @@ public class Main {
         catch (Throwable t) {
             die(t);
         }
-
-        initiateShutdown();
     }
 }
