@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.migration.base.io;
+package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
 import org.apache.commons.cli.CommandLine;
@@ -28,7 +28,8 @@ import org.apache.commons.cli.ParseException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static ai.grakn.migration.base.io.MigrationCLI.die;
+import static ai.grakn.migration.base.MigrationCLI.die;
+import static java.lang.Integer.parseInt;
 
 /**
  * Configure the default migration options and access arguments passed by the user
@@ -36,6 +37,8 @@ import static ai.grakn.migration.base.io.MigrationCLI.die;
  */
 public class MigrationOptions {
 
+    private static final String batch = Integer.toString(Migrator.BATCH_SIZE);
+    private static final String active = Integer.toString(Migrator.ACTIVE_TASKS);
     private static final String uri = Grakn.DEFAULT_URI;
     private int numberOptions;
 
@@ -106,6 +109,14 @@ public class MigrationOptions {
 
     public boolean getRetry(){
         return command.hasOption("r") && Boolean.getBoolean(command.getOptionValue("r"));
+    }
+
+    public int getBatch() {
+        return parseInt(command.getOptionValue("b", batch));
+    }
+
+    public int getNumberActiveTasks() {
+        return parseInt(command.getOptionValue("a", active));
     }
 
     protected <T extends MigrationOptions> T parse(String[] args){

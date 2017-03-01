@@ -53,8 +53,11 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
                 new SumMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
 
+        Number finalResult = sum.get(MapReduce.NullObject.instance());
+        LOGGER.info("Sum = " + finalResult);
+
         LOGGER.info("SumMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(sum.get(MapReduce.NullObject.instance()));
+        return Optional.of(finalResult);
     }
 
     @Override

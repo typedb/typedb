@@ -54,8 +54,11 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 
+        double finalResult = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
+        LOGGER.debug("Mean = " + finalResult);
+
         LOGGER.info("MeanMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
+        return Optional.of(finalResult);
     }
 
     @Override

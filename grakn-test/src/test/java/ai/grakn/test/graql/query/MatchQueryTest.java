@@ -856,4 +856,12 @@ public class MatchQueryTest {
     public void testMatchEmpty() {
         qb.match().execute();
     }
+
+    @Test
+    public void whenQueryDoesNotSpecifyRole_ResultIsTheSameAsSpecifyingMetaRole() {
+        Set<Map<String, Concept>> withoutRole = qb.match(var().rel("x").isa("has-cast")).stream().collect(toSet());
+        Set<Map<String, Concept>> withRole = qb.match(var().rel("role", "x").isa("has-cast")).stream().collect(toSet());
+
+        assertEquals(withoutRole, withRole);
+    }
 }

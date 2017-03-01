@@ -83,7 +83,7 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="ai.grakn.migration.base.AbstractMigrator" level="WARN">
+    <logger name="ai.grakn.migration.base.Migrator" level="WARN">
         <appender-ref ref="STDOUT"/>
     </logger>
 

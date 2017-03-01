@@ -53,6 +53,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
                 new MaxMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
 
+        LOGGER.debug("Max = " + max.get(MapReduce.NullObject.instance()));
         LOGGER.info("MaxMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
         return Optional.of(max.get(MapReduce.NullObject.instance()));
     }

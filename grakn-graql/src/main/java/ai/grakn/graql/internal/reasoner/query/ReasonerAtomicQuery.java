@@ -34,6 +34,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -42,7 +43,6 @@ import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -63,7 +63,6 @@ import org.slf4j.LoggerFactory;
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
@@ -280,68 +279,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return (Map<VarName, Concept>)result;
     }
 
-    private Stream<Map<VarName, Concept>> fullJoin(List<ReasonerAtomicQuery> queries,
-                                                   Set<ReasonerAtomicQuery> subGoals,
-                                                   Cache<ReasonerAtomicQuery, ?> cache,
-                                                   Cache<ReasonerAtomicQuery, ?> dCache,
-                                                   boolean materialise){
-        Iterator<ReasonerAtomicQuery> qit = queries.iterator();
-        ReasonerAtomicQuery childAtomicQuery = qit.next();
-        Stream<Map<VarName, Concept>> join = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
-        Set<VarName> joinedVars = childAtomicQuery.getVarNames();
-        while(qit.hasNext()){
-            childAtomicQuery = qit.next();
-            Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
-            Stream<Map<VarName, Concept>> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
-            join = joinWithInverse(
-                    join,
-                    localSubs,
-                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
-                    ImmutableSet.copyOf(joinVars));
-            joinedVars.addAll(childAtomicQuery.getVarNames());
-        }
-        return join;
-    }
-
-    private Stream<Map<VarName, Concept>> differentialJoin(List<ReasonerAtomicQuery> queries,
-                                                           Set<ReasonerAtomicQuery> subGoals,
-                                                           Cache<ReasonerAtomicQuery, ?> cache,
-                                                           Cache<ReasonerAtomicQuery, ?> dCache,
-                                                           boolean materialise){
-        Stream<Map<VarName, Concept>> join = Stream.empty();
-
-        for(ReasonerAtomicQuery qi : queries){
-            Stream<Map<VarName, Concept>> subs = qi.answerStream(subGoals, cache, dCache, materialise, true);
-            Set<VarName> joinedVars = qi.getVarNames();
-            for(ReasonerAtomicQuery qj : queries){
-                if ( qj != qi ){
-                    Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    subs = joinWithInverse(
-                            subs,
-                            cache.getAnswerStream(qj),
-                            cache.getInverseAnswerMap(qj, joinVars),
-                            ImmutableSet.copyOf(joinVars));
-                    joinedVars.addAll(qj.getVarNames());
-                }
-            }
-            join = Stream.concat(join, subs);
-        }
-        return join.distinct();
-    }
-
-    private Stream<Map<VarName, Concept>> computeJoin(List<ReasonerAtomicQuery> queries,
-                                                      Set<ReasonerAtomicQuery> subGoals,
-                                                      Cache<ReasonerAtomicQuery, ?> cache,
-                                                      Cache<ReasonerAtomicQuery, ?> dCache,
-                                                      boolean materialise,
-                                                      boolean differentialJoin) {
-        if (differentialJoin){
-            return differentialJoin(queries, subGoals, cache, dCache, materialise);
-        } else {
-            return fullJoin(queries, subGoals, cache, dCache, materialise);
-        }
-    }
-
     /**
      * attempt query resolution via application of a specific rule
      * @param rl rule through which to resolve the query
@@ -363,35 +300,42 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery ruleHead = rule.getHead();
 
         subGoals.add(this);
-        Stream<Map<VarName, Concept>> subs = computeJoin(
-                ruleBody.selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList()),
+        Stream<Map<VarName, Concept>> subs = ruleBody.computeJoin(
                 subGoals,
                 cache,
                 dCache,
                 materialise,
                 differentialJoin);
 
+        Set<NotEquals> filters = ruleBody.getFilters();
         Stream<Map<VarName, Concept>> answers = subs
-                .filter(a -> nonEqualsFilter(a, ruleBody.getFilters()))
-                .flatMap(a -> varFilterFunction.apply(a, ruleHead.getVarNames()));
+                .filter(a -> nonEqualsFilter(a, filters));
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()) {
+            Set<VarName> headVars = ruleHead.getVarNames();
             LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
             LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
-            Stream<Map<VarName, Concept>> newAnswers = answers.distinct()
+            Stream<Map<VarName, Concept>> newAnswers = answers
+                    .flatMap(a -> varFilterFunction.apply(a, headVars))
+                    .distinct()
                     .filter(a -> knownFilter(a, known.stream()))
                     .filter(a -> knownFilter(a, dknown.stream()))
                     .flatMap(ruleHead::materialise);
 
+            Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
             answers = dCache.record(ruleHead, newAnswers)
-                    .filter(a -> entityTypeFilter(a, atom.getMappedTypeConstraints()));
+                    .filter(a -> entityTypeFilter(a, mappedTypeConstraints));
         }
 
+        Set<VarName> vars = this.getVarNames();
+        Set<Map<VarName, VarName>> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
+        Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
+        Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
         answers = getIdPredicateAnswerStream(answers)
-                .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()))
-                .flatMap(a -> permuteFunction.apply(a, getPermutationUnifiers(ruleHead.getAtom())))
-                .filter(a -> subFilter(a, atom.getUnmappedIdPredicates()))
-                .filter(a -> entityTypeFilter(a, atom.getUnmappedTypeConstraints()));
+                .flatMap(a -> varFilterFunction.apply(a, vars))
+                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .filter(a -> subFilter(a, unmappedIdPredicates))
+                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
 
         return dCache.record(this, answers);
     }
