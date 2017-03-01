@@ -34,6 +34,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -304,27 +305,35 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 materialise,
                 differentialJoin);
 
+        Set<NotEquals> filters = ruleBody.getFilters();
         Stream<Map<VarName, Concept>> answers = subs
-                .filter(a -> nonEqualsFilter(a, ruleBody.getFilters()))
-                .flatMap(a -> varFilterFunction.apply(a, ruleHead.getVarNames()));
+                .filter(a -> nonEqualsFilter(a, filters));
 
         if (materialise || ruleHead.getAtom().requiresMaterialisation()) {
+            Set<VarName> headVars = ruleHead.getVarNames();
             LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
             LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
-            Stream<Map<VarName, Concept>> newAnswers = answers.distinct()
+            Stream<Map<VarName, Concept>> newAnswers = answers
+                    .flatMap(a -> varFilterFunction.apply(a, headVars))
+                    .distinct()
                     .filter(a -> knownFilter(a, known.stream()))
                     .filter(a -> knownFilter(a, dknown.stream()))
                     .flatMap(ruleHead::materialise);
 
+            Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
             answers = dCache.record(ruleHead, newAnswers)
-                    .filter(a -> entityTypeFilter(a, atom.getMappedTypeConstraints()));
+                    .filter(a -> entityTypeFilter(a, mappedTypeConstraints));
         }
 
+        Set<VarName> vars = this.getVarNames();
+        Set<Map<VarName, VarName>> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
+        Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
+        Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
         answers = getIdPredicateAnswerStream(answers)
-                .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()))
-                .flatMap(a -> permuteFunction.apply(a, getPermutationUnifiers(ruleHead.getAtom())))
-                .filter(a -> subFilter(a, atom.getUnmappedIdPredicates()))
-                .filter(a -> entityTypeFilter(a, atom.getUnmappedTypeConstraints()));
+                .flatMap(a -> varFilterFunction.apply(a, vars))
+                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .filter(a -> subFilter(a, unmappedIdPredicates))
+                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
 
         return dCache.record(this, answers);
     }

@@ -447,7 +447,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         return true;
     }
-
+    
     private Stream<Map<VarName, Concept>> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                                    Cache<ReasonerAtomicQuery, ?> cache,
                                                    Cache<ReasonerAtomicQuery, ?> dCache,
@@ -530,8 +530,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
             answerStream = join(answerStream, subAnswerStream);
         }
+
+        Set<NotEquals> filters = this.getFilters();
+        Set<VarName> vars = this.getVarNames();
         return answerStream
-                .filter(a -> nonEqualsFilter(a, this.getFilters()))
-                .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()));
+                .filter(a -> nonEqualsFilter(a, filters))
+                .flatMap(a -> varFilterFunction.apply(a, vars));
     }
 }
