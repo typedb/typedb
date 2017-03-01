@@ -122,6 +122,12 @@ public class TaskState implements Serializable {
     public TaskState status(TaskStatus status) {
         this.status = status;
         this.statusChangeTime = Instant.now();
+
+        if(status == TaskStatus.RUNNING){
+            this.engineID = EngineID.getInstance().id();
+        } else if(status == TaskStatus.COMPLETED || status == TaskStatus.FAILED){
+            this.engineID = null;
+        }
         return this;
     }
 

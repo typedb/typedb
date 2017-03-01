@@ -121,7 +121,7 @@ public class TaskStateGraphStoreTest {
         TaskId id = stateStorage.newState(task().status(SCHEDULED));
         assertNotNull(id);
 
-        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, null, 0, 0);
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
                 .filter(x -> x.equals(id))
@@ -134,7 +134,7 @@ public class TaskStateGraphStoreTest {
         TaskId id = stateStorage.newState(task(TaskSchedule.now(), Json.object(), "other"));
         assertNotNull(id);
 
-        Set<TaskState> res = stateStorage.getTasks(null, null, "other", 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, "other", null, 0, 0);
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
                         .filter(x -> x.equals(id))
@@ -147,7 +147,7 @@ public class TaskStateGraphStoreTest {
         TaskId id = stateStorage.newState(task());
         assertNotNull(id);
 
-        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, null, 0, 0);
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
                         .filter(x -> x.equals(id))
@@ -157,14 +157,14 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetAllTaskStates() {
-        int sizeBeforeAdding = stateStorage.getTasks(null, null, null, 0, 0).size();
+        int sizeBeforeAdding = stateStorage.getTasks(null, null, null, null, 0, 0).size();
 
         int numberTasks = 10;
         IntStream.range(0, numberTasks)
                 .mapToObj(i -> task())
                 .forEach(stateStorage::newState);
 
-        Set<TaskState> res = stateStorage.getTasks(null, null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, null,null, 0, 0);
         assertEquals(sizeBeforeAdding + numberTasks, res.size());
     }
 
@@ -174,10 +174,15 @@ public class TaskStateGraphStoreTest {
             stateStorage.newState(task());
         }
 
-        Set<TaskState> setA = stateStorage.getTasks(null, null, null, 5, 0);
-        Set<TaskState> setB = stateStorage.getTasks(null, null, null, 5, 5);
+        Set<TaskState> setA = stateStorage.getTasks(null, null, null, null, 5, 0);
+        Set<TaskState> setB = stateStorage.getTasks(null, null, null, null, 5, 5);
 
         setA.forEach(x -> assertFalse(setB.contains(x)));
+    }
+
+    @Test
+    public void testGetByRunningEngine(){
+        assertTrue(false);
     }
 
     public TaskState task(){

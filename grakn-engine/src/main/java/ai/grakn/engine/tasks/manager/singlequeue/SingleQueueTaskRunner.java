@@ -25,6 +25,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableList;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -43,7 +45,6 @@ import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -53,6 +54,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
+    private final static String ENGINE_ID = EngineID.getInstance().id();
 
     private final Consumer<TaskId, TaskState> consumer;
     private final TaskStateStorage storage;
@@ -121,7 +123,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                     LOG.trace("{} acknowledged", record.key().getValue());
                 }
             } catch (Throwable throwable){
-                LOG.error("error thrown", getFullStackTrace(throwable));
+                LOG.error("error thrown", throwable);
             }
         }
 
@@ -152,7 +154,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         if (shouldExecuteTask(task)) {
 
             // Mark as running
-            task.status(TaskStatus.RUNNING);
+            task.status(RUNNING);
 
             //TODO Make this a put within state storage
             if(storage.containsTask(task.getId())) {
@@ -172,6 +174,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 task.status(FAILED);
                 LOG.debug("{}\tmarked as failed", task);
             } finally {
+                // Remove this task from running on this engine
                 storage.updateState(task);
             }
         }

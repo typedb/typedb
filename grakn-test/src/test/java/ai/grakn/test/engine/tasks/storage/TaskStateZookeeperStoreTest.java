@@ -177,7 +177,7 @@ public class TaskStateZookeeperStoreTest {
     public void testGetTasksByStatus() {
         TaskId id = stateStorage.newState(task());
         stateStorage.newState(task().status(SCHEDULED));
-        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -190,7 +190,7 @@ public class TaskStateZookeeperStoreTest {
     public void testGetTasksByCreator() {
         TaskId id = stateStorage.newState(task());
         stateStorage.newState(task("another"));
-        Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -202,7 +202,7 @@ public class TaskStateZookeeperStoreTest {
     @Test
     public void testGetTasksByClassName() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -214,7 +214,7 @@ public class TaskStateZookeeperStoreTest {
     @Test
     public void testGetAllTasks() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -224,13 +224,18 @@ public class TaskStateZookeeperStoreTest {
     }
 
     @Test
+    public void testGetByRunningEngine(){
+        assertTrue(false);
+    }
+
+    @Test
     public void testTaskPagination() {
         for (int i = 0; i < 20; i++) {
             stateStorage.newState(task());
         }
 
-        Set<TaskState> setA = stateStorage.getTasks(null, null, null, 10, 0);
-        Set<TaskState> setB = stateStorage.getTasks(null, null, null, 10, 10);
+        Set<TaskState> setA = stateStorage.getTasks(null, null, null, null, 10, 0);
+        Set<TaskState> setB = stateStorage.getTasks(null, null, null, null, 10, 10);
 
         setA.forEach(x -> assertFalse(setB.contains(x)));
     }

@@ -76,7 +76,7 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
     }
 
     @Override
-    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, String engineRunningOn, int limit, int offset) {
         Set<TaskState> res = new HashSet<>();
 
         int count = 0;
@@ -94,6 +94,9 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
                 continue;
             }
             if(createdBy != null && !Objects.equals(state.creator(), createdBy)) {
+                continue;
+            }
+            if(engineRunningOn != null && !Objects.equals(state.engineID(), engineRunningOn)){
                 continue;
             }
 

@@ -78,6 +78,7 @@ public interface TaskStateStorage {
      * @param taskStatus See TaskStatus enum.
      * @param taskClassName String containing task class name. See TaskState.
      * @param createdBy String containing created by. See TaskState.
+     * @param runningOnEngine Engine that the task is running on.
      * @param limit Limit the returned result set to @limit amount of entries.
      * @param offset Use in conjunction with @limit for pagination.
      * @return Set<TaskState> of TaskStates corresponding to search
@@ -85,6 +86,7 @@ public interface TaskStateStorage {
     Set<TaskState> getTasks(TaskStatus taskStatus,
                                           String taskClassName,
                                           String createdBy,
+                                          String runningOnEngine,
                                           int limit,
                                           int offset);
 }

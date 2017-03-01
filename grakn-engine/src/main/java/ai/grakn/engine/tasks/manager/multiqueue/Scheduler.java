@@ -235,7 +235,7 @@ public class Scheduler implements Runnable, AutoCloseable {
     private void restartRecurringTasks() {
         LOG.debug("Restarting recurring tasks");
 
-        Set<TaskState> tasks = storage.getTasks(null, null, null, 0, 0);
+        Set<TaskState> tasks = storage.getTasks(null, null, null, null, 0, 0);
         tasks.stream()
                 .filter(state -> state.schedule().isRecurring())
                 .filter(p -> p.status() != STOPPED)

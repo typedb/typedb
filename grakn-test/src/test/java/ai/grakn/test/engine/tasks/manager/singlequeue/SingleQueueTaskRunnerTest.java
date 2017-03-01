@@ -52,12 +52,19 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTask
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.spy;
 
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
@@ -179,6 +186,26 @@ public class SingleQueueTaskRunnerTest {
         Multiset<TaskId> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks(tasks)));
 
         assertEquals(expectedCompletedTasks, completedTasks());
+    }
+
+    @Property(trials=10)
+    public void whenRunning_EngineIdIsNonNull(List<List<TaskState>> tasks) throws Exception {
+        storage = spy(storage);
+
+        assumeThat(tasks.size(), greaterThan(0));
+        assumeThat(tasks.get(0).size(), greaterThan(0));
+
+        doCallRealMethod().when(storage).updateState(argThat(argument -> {
+            if (argument.status() == FAILED || argument.status() == COMPLETED){
+                assertNull(argument.engineID());
+            } else if(argument.status() == RUNNING){
+                assertNotNull(argument.engineID());
+            }
+            return true;
+        }));
+
+        setUpTasks(tasks);
+        taskRunner.run();
     }
 
     @Test
