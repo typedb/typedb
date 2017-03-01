@@ -159,7 +159,7 @@ public class LazyTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
         MatchQuery query = iqb.parse(queryString);
-        
+
         final int limit = 20;
         final long maxTime = 1000;
         startTime = System.currentTimeMillis();
