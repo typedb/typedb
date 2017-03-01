@@ -70,7 +70,7 @@ public class QueryAnswerStream {
         return true;
     }
 
-    public static boolean nonEqualsFilter(Map<VarName, Concept> answer, Set<NotEquals> atoms) {
+    static boolean nonEqualsFilter(Map<VarName, Concept> answer, Set<NotEquals> atoms) {
         if(atoms.isEmpty()) return true;
         for (NotEquals atom : atoms) {
             if (!NotEquals.notEqualsOperator(answer, atom)) {
@@ -80,7 +80,7 @@ public class QueryAnswerStream {
         return true;
     }
 
-    public static boolean subFilter(Map<VarName, Concept> answer, Set<IdPredicate> subs){
+    static boolean subFilter(Map<VarName, Concept> answer, Set<IdPredicate> subs){
         if (subs.isEmpty()) return true;
         for (IdPredicate sub : subs) {
             if (!answer.get(sub.getVarName()).getId().equals(sub.getPredicate())) {
@@ -90,7 +90,7 @@ public class QueryAnswerStream {
         return true;
     }
 
-    public static boolean entityTypeFilter(Map<VarName, Concept> answer, Set<TypeAtom> types){
+    static boolean entityTypeFilter(Map<VarName, Concept> answer, Set<TypeAtom> types){
         if (types.isEmpty()) return true;
         for (TypeAtom type : types){
             VarName var = type.getVarName();
@@ -127,7 +127,7 @@ public class QueryAnswerStream {
         return filteredAnswer.isEmpty() ? Stream.empty() : Stream.of(filteredAnswer);
     };
 
-    public static final BiFunction<Map<VarName, Concept>, Set<Map<VarName, VarName>>, Stream<Map<VarName, Concept>>> permuteFunction = QueryAnswerStream::permuteOperator;
+    static final BiFunction<Map<VarName, Concept>, Set<Map<VarName, VarName>>, Stream<Map<VarName, Concept>>> permuteFunction = QueryAnswerStream::permuteOperator;
 
     private static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
         Map<VarName, Concept> merged = joinOperator(a1, a2);
