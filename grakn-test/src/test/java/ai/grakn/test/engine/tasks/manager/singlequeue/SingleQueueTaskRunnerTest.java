@@ -19,10 +19,15 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.test.engine.tasks.EndlessExecutionTestTask;
+import ai.grakn.test.engine.tasks.LongExecutionTestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -31,6 +36,7 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
@@ -47,11 +53,18 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskFinishes;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskStarts;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -70,7 +83,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Before
     public void setUp() {
-        clearCompletedTasks();
+        clearTasks();
 
         storage = new TaskStateInMemoryStore();
 
@@ -194,5 +207,130 @@ public class SingleQueueTaskRunnerTest {
         thread.join();
 
         assertFalse(thread.isAlive());
+    }
+
+    @Test
+    public void whenATaskIsStoppedBeforeExecution_TheTaskIsNotCancelled() throws Exception {
+        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        taskRunner.stopTask(task.getId());
+
+        taskRunner.run();
+
+        assertThat(cancelledTasks(), empty());
+        assertThat(completedTasks(), contains(task.getId()));
+    }
+
+    @Test
+    public void whenATaskIsStoppedBeforeExecution_TheTaskIsMarkedAsCompleted() throws Exception {
+        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        taskRunner.stopTask(task.getId());
+
+        taskRunner.run();
+
+        assertThat(storage.getState(task.getId()).status(), is(COMPLETED));
+    }
+
+    @Test
+    public void whenATaskIsStoppedBeforeExecution_ReturnFalse() throws Exception {
+        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        boolean stopped = taskRunner.stopTask(task.getId());
+
+        assertFalse(stopped);
+    }
+
+    @Test
+    public void whenATaskIsStoppedDuringExecution_TheTaskIsCancelled() throws Exception {
+        TaskState task = createTask(EndlessExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        whenTaskStarts(taskRunner::stopTask);
+
+        taskRunner.run();
+
+        assertThat(cancelledTasks(), contains(task.getId()));
+    }
+
+    @Test
+    public void whenATaskIsStoppedDuringExecution_TheTaskIsMarkedAsStopped() throws Exception {
+        TaskState task = createTask(EndlessExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        whenTaskStarts(taskRunner::stopTask);
+
+        taskRunner.run();
+
+        assertThat(storage.getState(task.getId()).status(), is(STOPPED));
+    }
+
+    @Test
+    public void whenATaskIsStoppedDuringExecution_ReturnTrue() throws Exception {
+        TaskState task = createTask(EndlessExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        final Boolean[] stopped = {null};
+
+        whenTaskStarts(taskId ->
+            stopped[0] = taskRunner.stopTask(taskId)
+        );
+
+        taskRunner.run();
+
+        assertTrue(stopped[0]);
+    }
+
+    @Test
+    public void whenATaskIsStoppedAfterExecution_TheTaskIsCompleted() throws Exception {
+        TaskState task = createTask(LongExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        whenTaskFinishes(taskRunner::stopTask);
+
+        taskRunner.run();
+
+        assertThat(cancelledTasks(), empty());
+        assertThat(completedTasks(), contains(task.getId()));
+    }
+
+    @Test
+    public void whenATaskIsStoppedAfterExecution_TheTaskIsMarkedAsCompleted() throws Exception {
+        TaskState task = createTask(LongExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        whenTaskFinishes(taskRunner::stopTask);
+
+        taskRunner.run();
+
+        assertThat(storage.getState(task.getId()).status(), is(COMPLETED));
+    }
+
+    @Test
+    public void whenATaskIsStoppedAfterExecution_ReturnFalse() throws Exception {
+        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        final Boolean[] stopped = {null};
+
+        whenTaskFinishes(taskId ->
+                stopped[0] = taskRunner.stopTask(taskId)
+        );
+
+        taskRunner.run();
+
+        assertFalse(stopped[0]);
     }
 }
