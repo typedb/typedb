@@ -270,10 +270,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private Map<VarName, Concept> getIdPredicateAnswer(){
-        return this.getTypeConstraints().stream()
+        Object result = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate).filter(Objects::nonNull)
                 .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
+        return (Map<VarName, Concept>)result;
     }
 
     /**
