@@ -18,8 +18,8 @@
 
 package ai.grakn.migration.xml;
 
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.migration.base.AbstractMigrator;
+import ai.grakn.migration.base.MigrationCLI;
+
 import com.google.common.collect.Sets;
 
 import java.io.File;
@@ -32,6 +32,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -46,31 +47,69 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import static ai.grakn.migration.base.MigrationCLI.die;
+import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * Migrator for migrating XML data into Grakn instances
- * @author alexandraorth
+ * @author boris
  */
-public class XmlMigrator extends AbstractMigrator {
+public class XmlMigrator implements AutoCloseable {
+    
+    public static void main(String[] args) {
+        MigrationCLI.init(args, XmlMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(XmlMigrator::runXml);
+    }
+    
+    public static void runXml(XmlMigrationOptions options){
+        File xmlDataFile = new File(options.getInput());
+        File xmlTemplateFile = new File(options.getTemplate());
+
+        if(!xmlDataFile.exists()){
+            die("Cannot find file: " + options.getInput());
+        }
+
+        if(!xmlTemplateFile.exists() || xmlTemplateFile.isDirectory()){
+            die("Cannot find file: " + options.getTemplate());
+        }
+
+        printInitMessage(options, xmlDataFile.getPath());
+
+        try(XmlMigrator xmlMigrator = new XmlMigrator(xmlDataFile)){
+            if (options.getElement() != null) {
+                xmlMigrator.element(options.getElement());
+            }
+            else {
+                die("Please specify XML element for the top-level data item.");
+            }
+            if (options.getSchemaFile() != null) {
+                xmlMigrator.schema(new XmlSchema().read(new File(options.getSchemaFile())));
+            }
+            MigrationCLI.loadOrPrint(xmlTemplateFile, xmlMigrator.convert(), options);
+        } catch (Throwable throwable){
+            die(throwable);
+        }
+    }
+    
     private XmlSchema schema;
     private final Set<Reader> readers;
-    private final String template;
     private String element;
+    
     
     /**
      * Construct a XmlMigrator to migrate data in the given file or dir
      * @param template parametrized graql insert query
      * @param xmlFileOrDir either a XML file or a directory containing XML files
      */
-    public XmlMigrator(String template, File xmlFileOrDir){
+    public XmlMigrator(File xmlFileOrDir){
         File[] files = {xmlFileOrDir};
         if(xmlFileOrDir.isDirectory()){
             files = xmlFileOrDir.listFiles(xmlFiles);
         }
-
         this.readers = Stream.of(files).map(this::asReader).collect(toSet());
-        this.template = template;
     }
 
     /**
@@ -78,9 +117,8 @@ public class XmlMigrator extends AbstractMigrator {
      * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
      */
-    public XmlMigrator(String template, Reader reader){
+    public XmlMigrator(Reader reader){
         this.readers = Sets.newHashSet(reader);
-        this.template = template;
     }
 
     public XmlMigrator element(String element) {
@@ -94,24 +132,19 @@ public class XmlMigrator extends AbstractMigrator {
     }
     
     /**
-     * Migrate each of the given XML objects as an insert query
-     * @return stream of parsed insert queries
+     * Migrate each of the given XML objects as a nested Map structure
      */
-    @Override
-    public Stream<InsertQuery> migrate(){
+    public Stream<Map<String, Object>> convert(){
         return readers.stream()
                 .flatMap(this::toXmlNodes)
                 .map(this::digest)
-                .map(data -> (Map<String, Object>)data)
-                .map(data -> { System.out.println("Processing : " + data); return data; } )
-                .flatMap(data -> template(template, data).stream());
+                .map(data -> (Map<String, Object>)data);
     }
 
     /**
      * Close the readers
      * @throws Exception
      */
-    @Override
     public void close() throws Exception {
         readers.forEach((reader) -> {
             try {
@@ -139,18 +172,24 @@ public class XmlMigrator extends AbstractMigrator {
                 case Node.ELEMENT_NODE:{
                     Element el = (Element)child;
                     String type = schema != null ? schema.typeOf(el.getNodeName()) : null;
-                    if (type == null || "xs:complexType".equals(type))
+                    if (type == null || "xs:complexType".equals(type)) {
                         result.put(el.getTagName(), digest(el));
-                    else if ("xs:boolean".equals(type))
+                    }
+                    else if ("xs:boolean".equals(type)) {
                         result.put(el.getTagName(), "true".equals(el.getTextContent().trim()));
-                    else if ("xs:int".equals(type))
+                    }
+                    else if ("xs:int".equals(type)) {
                         result.put(el.getTagName(), Integer.parseInt(el.getTextContent().trim()));
-                    else if ("xs:int".equals(type))
+                    }
+                    else if ("xs:int".equals(type)) {
                         result.put(el.getTagName(), Integer.parseInt(el.getTextContent().trim()));
-                    else if ("xs:double".equals(type))
+                    }
+                    else if ("xs:double".equals(type)) {
                         result.put(el.getTagName(), Double.parseDouble(el.getTextContent().trim()));
-                    else // default to string, but there are other that we could support, e.g. dates etc.
+                    }
+                    else { // default to string, but there are other that we could support, e.g. dates etc.
                         result.put(el.getTagName(), el.getTextContent());
+                    }
                     break;
                 }
                 case Node.ATTRIBUTE_NODE: {
@@ -163,8 +202,9 @@ public class XmlMigrator extends AbstractMigrator {
             }
         }
         result.putAll(attributes);
-        if (result.isEmpty())
+        if (result.isEmpty()) {
             result.put("textContent", textContent.toString());
+        }
         return result;
     }
 

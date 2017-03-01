@@ -18,8 +18,8 @@
 
 package ai.grakn.migration.xml;
 
-import ai.grakn.migration.base.AbstractMigrator;
-import ai.grakn.migration.base.io.MigrationOptions;
+import ai.grakn.migration.base.MigrationOptions;
+import ai.grakn.migration.base.Migrator;
 
 import static java.lang.Integer.parseInt;
 
@@ -29,8 +29,8 @@ import static java.lang.Integer.parseInt;
  */
 public class XmlMigrationOptions extends MigrationOptions {
 
-    private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
-    private final String active = Integer.toString(AbstractMigrator.ACTIVE_TASKS);
+    private final String batch = Integer.toString(Migrator.BATCH_SIZE);
+    private final String active = Integer.toString(Migrator.ACTIVE_TASKS);
 
     public XmlMigrationOptions(String[] args) {
         super();

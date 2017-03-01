@@ -103,7 +103,8 @@ public class Migrator {
      * @param converter
      */
     public void print(String template, Stream<Map<String, Object>> converter){
-
+        converter.flatMap(d -> template(template, d).stream())
+                 .forEach(System.out::println);
     }
 
     /**
