@@ -18,12 +18,14 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.controller.TasksController;
+import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.backgroundtasks.LongRunningTask;
-import ai.grakn.test.engine.backgroundtasks.TestTask;
+import ai.grakn.test.engine.tasks.LongExecutionTestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.http.ContentType;
@@ -38,7 +40,6 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.time.Instant;
 import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -53,10 +54,10 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 
 public class TasksControllerTest {
-    private String singleTask;
+    private TaskId singleTask;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @BeforeClass
     public static void startEngine() throws Exception{
@@ -65,13 +66,10 @@ public class TasksControllerTest {
 
     @Before
     public void setUp() throws Exception {
-        DistributedTaskManager manager = (DistributedTaskManager) engine.getTaskManager();
-        singleTask = manager.storage().newState(
-                new TaskState(TestTask.class.getName())
-                        .creator(this.getClass().getName())
-                        .runAt(Instant.now())
-                        .status(COMPLETED)
-                        .configuration(Json.object()));
+        MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
+        String creator = this.getClass().getName();
+        TaskState status = TaskState.of(ShortExecutionTestTask.class, creator, TaskSchedule.now(), Json.object()).status(COMPLETED);
+        singleTask = manager.storage().newState(status);
     }
 
     @Test
@@ -93,7 +91,7 @@ public class TasksControllerTest {
 
     @Test
     public void testTasksByClassName() {
-        Response response = given().queryParam("className", TestTask.class.getName())
+        Response response = given().queryParam("className", ShortExecutionTestTask.class.getName())
                                    .queryParam("limit", 10)
                                    .get("/tasks/all");
 
@@ -104,7 +102,7 @@ public class TasksControllerTest {
         JSONArray array = new JSONArray(response.body().asString());
         array.forEach(x -> {
             JSONObject o = (JSONObject)x;
-            assertEquals(TestTask.class.getName(), o.get("className"));
+            assertEquals(ShortExecutionTestTask.class.getName(), o.get("className"));
         });
     }
 
@@ -139,15 +137,15 @@ public class TasksControllerTest {
         get("/tasks/"+singleTask)
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
-                .and().body("id", equalTo(singleTask));
+                .and().body("id", equalTo(singleTask.getValue()));
 
-        // Stopping tasks is not currently supported by the DistributedTaskManager.
+        // Stopping tasks is not currently supported by the MultiQueueTaskManager.
 //                .and().body("status", equalTo(STOPPED.toString()));
     }
 
     @Test
     public void testScheduleWithoutOptional() {
-        given().queryParam("className", TestTask.class.getName())
+        given().queryParam("className", ShortExecutionTestTask.class.getName())
                .queryParam("creator", this.getClass().getName())
                .queryParam("runAt", new Date())
                .post(TASKS_SCHEDULE_URI)
@@ -156,12 +154,12 @@ public class TasksControllerTest {
                .and().body("id", notNullValue());
     }
 
-    // Stopping tasks is not currently implemented in DistributedTaskManager
+    // Stopping tasks is not currently implemented in MultiQueueTaskManager
     @Ignore
     @Test
     public void testScheduleStopTask() {
         Response response = given()
-                .queryParam("className", LongRunningTask.class.getName())
+                .queryParam("className", LongExecutionTestTask.class.getName())
                 .queryParam("creator", this.getClass().getName())
                 .queryParam("runAt", new Date())
                 .queryParam("interval", 5000)

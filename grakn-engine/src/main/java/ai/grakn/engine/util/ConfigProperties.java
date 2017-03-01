@@ -82,7 +82,7 @@ public class ConfigProperties {
 
 
     // Engine Config
-    public static final String DISTRIBUTED_TASK_MANAGER = "taskmanager.distributed";
+    public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
 
     public static final String KAFKA_BOOTSTRAP_SERVERS = "tasks.kafka.bootstrap-servers";
     public static final String KAFKA_SESSION_TIMEOUT = "tasks.kafka.consumer.session-timeout";

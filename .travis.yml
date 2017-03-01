@@ -11,8 +11,11 @@ cache:
    - grakn-engine/npm
 
 env:
-  - TESTS=**/*Test*
-  - TESTS=**/*IT*
+  global:
+    - MAVEN_OPTS=-Xmx3g
+  matrix:
+    - TESTS=**/*Test*
+    - TESTS=**/*IT*
 
 notifications:
   slack: grakn:RbxoPzX267spGT4cgmoGLMpT

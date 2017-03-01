@@ -27,7 +27,7 @@ import static org.junit.Assume.assumeFalse;
 public class GraphTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
