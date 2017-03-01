@@ -57,15 +57,11 @@ public class SingleQueueTaskManagerTest {
     @Rule
     public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @After
-    public void tearDown() {
-        clearCompletedTasks();
-    }
-
     @Before
     public void setup(){
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
+        clearCompletedTasks();
         taskManager = new SingleQueueTaskManager();
     }
 
