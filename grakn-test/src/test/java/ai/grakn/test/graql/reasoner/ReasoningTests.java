@@ -190,7 +190,7 @@ public class ReasoningTests {
         answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
     }
 
-    @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
+    @Test //Expected result: The query should return a single match
     public void roleUnificationWithRoleHierarchiesInvolved3() {
         QueryBuilder qb = testSet9.graph().graql().infer(true);
         String queryString = "match (role1:$x) isa relation2;";

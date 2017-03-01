@@ -25,6 +25,7 @@ import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -32,6 +33,8 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
+import com.google.common.collect.Sets;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -44,6 +47,7 @@ import java.util.stream.Collectors;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest {
@@ -180,6 +184,18 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         assertEquals(query.getAtom().isUserDefinedName(), false);
         assertEquals(query2.getAtom().isUserDefinedName(), true);
+    }
+
+    @Test
+    public void testTrivialUnification(){
+        String patternString = "{$x isa country;($x, $y) isa is-enemy-of;$y isa country;}";
+        GraknGraph graph = cwGraph.graph();
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern, graph);
+        Map<VarName, VarName> unifiers = childQuery.getUnifiers(parentQuery);
+        assertTrue(Sets.intersection(unifiers.keySet(), Sets.newHashSet(VarName.of("x"), VarName.of("y"))).isEmpty());
+
     }
 
     private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){

@@ -627,6 +627,7 @@ public class Relation extends TypeAtom {
             if (varsToAllocate.isEmpty()) {
                 //assign trivial mapping
                 unifiers.put(chVar, chVar);
+                roleMappings.put(entry.getKey(), null);
             }
             else{
                 //map to empty if no var matching
@@ -647,20 +648,20 @@ public class Relation extends TypeAtom {
             }
         });
 
+        varsToMap.removeAll(allocatedVars);
         //assign unallocated vars if parent or child unspecified
         if (parentMap.isEmpty() || childMap.isEmpty()) {
-            varsToMap.removeAll(allocatedVars);
             Map<VarName, RoleType> childInverseMap = childMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
             Map<VarName, RoleType> parentInverseMap = childMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
             Iterator<VarName> cit = varsToMap.iterator();
-            Iterator<VarName> pit = varsToAllocate.iterator();
-            while (pit.hasNext() && cit.hasNext()){
+            Iterator<VarName> pit = varsToMap.equals(varsToAllocate)? varsToMap.iterator() : varsToAllocate.iterator();
+            while (cit.hasNext()){
                 VarName chVar = cit.next();
                 VarName pVar = pit.next();
                 RoleType chRole = childInverseMap.get(chVar);
                 RoleType pRole = parentInverseMap.get(pVar);
                 unifiers.put(chVar, pVar);
-                if (chRole != null && pRole != null) roleMappings.put(chRole, pRole);
+                if (chRole != null) roleMappings.put(chRole, pRole);
                 allocatedVars.add(chVar);
             }
         }
