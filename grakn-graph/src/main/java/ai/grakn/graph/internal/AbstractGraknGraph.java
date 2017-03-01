@@ -685,7 +685,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //This ensures the latest casting is taken into account when transferring relations
         roleMap.computeIfAbsent(newCasting.getRole(), (k) -> new HashSet<>()).add(newCasting.getRolePlayer());
-        
+
         for (Map.Entry<RoleType, Set<Instance>> entry : roleMap.entrySet()) {
             RoleType fromRole = entry.getKey();
 
@@ -1048,7 +1048,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if the roleplayers of the relations are the same.
      */
     private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
-        return mainRelation.rolePlayers().equals(otherRelation.rolePlayers()) &&
+        return mainRelation.allRolePlayers().equals(otherRelation.allRolePlayers()) &&
                 mainRelation.type().equals(otherRelation.type());
     }
 

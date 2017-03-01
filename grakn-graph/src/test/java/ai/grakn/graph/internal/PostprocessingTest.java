@@ -201,7 +201,7 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(1, r1.relations().size());
         assertEquals(6, graknGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
 
-        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().values().contains(e1)));
+        r1.relations().forEach(rel -> assertTrue(rel.newRolePlayers().contains(e1)));
 
         //Now fix everything
         graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);

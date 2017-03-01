@@ -238,9 +238,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     /**
      * When a relation is deleted this cleans up any solitary casting and resources.
      */
-    public void cleanUp() {
+    void cleanUp() {
         boolean performDeletion = true;
-        Collection<Instance> rolePlayers = rolePlayers().values();
+        Collection<Instance> rolePlayers = newRolePlayers();
 
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null )){
@@ -279,11 +279,16 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public String innerToString(){
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(getId()).append("] Type [").append(type().getName()).append("] Roles and Role Players: \n");
-        for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
-            if(entry.getValue() == null){
+        for (Map.Entry<RoleType, Set<Instance>> entry : allRolePlayers().entrySet()) {
+            if(entry.getValue().isEmpty()){
                 description.append("    Role [").append(entry.getKey().getName()).append("] not played by any instance \n");
             } else {
-                description.append("    Role [").append(entry.getKey().getName()).append("] played by [").append(entry.getValue().getId()).append("] \n");
+                StringBuilder instancesString = new StringBuilder();
+                for (Instance instance : entry.getValue()) {
+                    instancesString.append(instance.getId()).append(",");
+                }
+                description.append("    Role [").append(entry.getKey().getName()).append("] played by [").
+                        append(instancesString.toString()).append("] \n");
             }
         }
         return description.toString();

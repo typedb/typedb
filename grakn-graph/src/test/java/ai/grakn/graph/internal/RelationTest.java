@@ -40,7 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -93,15 +92,15 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void testPutRolePlayer(){
+    public void checkAddingRolePlayerWithNewRoleUpdatesReturnedRoleMapAndInstances(){
         Relation relation = relationType.addRelation();
         RoleType roleType = graknGraph.putRoleType("A role");
         Instance instance = type.addEntity();
 
         relation.addRolePlayer(roleType, instance);
-        assertEquals(4, relation.rolePlayers().size());
-        assertTrue(relation.rolePlayers().keySet().contains(roleType));
-        assertTrue(relation.rolePlayers().values().contains(instance));
+        assertEquals(4, relation.allRolePlayers().size());
+        assertTrue(relation.allRolePlayers().keySet().contains(roleType));
+        assertTrue(relation.newRolePlayers().contains(instance));
     }
 
     @Test
@@ -173,15 +172,15 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void testGetRoleAndRolePlayers() throws Exception {
-        Map<RoleType, Instance> roleMap = relation.rolePlayers();
+    public void checkGettingRoleAndRolePlayersIsValidWhenRolePlayerIsMissing() throws Exception {
+        Map<RoleType, Set<Instance>> roleMap = relation.allRolePlayers();
         assertEquals(3, roleMap.size());
         assertTrue(roleMap.keySet().contains(role1));
         assertTrue(roleMap.keySet().contains(role2));
 
-        assertEquals(rolePlayer1, roleMap.get(role1));
-        assertEquals(rolePlayer2, roleMap.get(role2));
-        assertEquals(rolePlayer3, roleMap.get(role3));
+        assertThat(relation.newRolePlayers(role1), containsInAnyOrder(rolePlayer1));
+        assertThat(relation.newRolePlayers(role2), containsInAnyOrder(rolePlayer2));
+        assertTrue(relation.newRolePlayers(role3).isEmpty());
     }
 
     @Test
@@ -337,23 +336,6 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void testGetRoleMapWithMissingInstance() {
-        RoleType roleType1 = graknGraph.putRoleType("role type 1");
-        RoleType roleType2 = graknGraph.putRoleType("role type 2");
-        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
-        RelationType relationType1 = graknGraph.putRelationType("Another relation type").hasRole(roleType1).hasRole(roleType2);
-        Instance instance1 = type.addEntity();
-
-        Relation relation1 = relationType1.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, null);
-
-        Map<RoleType, Instance> roleTypeInstanceMap = new HashMap<>();
-        roleTypeInstanceMap.put(roleType1, instance1);
-        roleTypeInstanceMap.put(roleType2, null);
-
-        assertEquals(roleTypeInstanceMap, relation1.rolePlayers());
-    }
-
-    @Test
     public void testMakeSureCastingsNotRemoved(){
         RoleType entityRole = graknGraph.putRoleType("Entity Role");
         RoleType degreeRole = graknGraph.putRoleType("Degree Role");
@@ -388,8 +370,8 @@ public class RelationTest extends GraphTestBase{
         Relation relation = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
         String mainDescription = "ID [" + relation.getId() +  "] Type [" + relation.type().getName() + "] Roles and Role Players:";
-        String rolerp1 = "    Role [" + roleType1.getName() + "] played by [" + instance1.getId() + "]";
-        String rolerp2 = "    Role [" + roleType2.getName() + "] played by [" + instance2.getId() + "]";
+        String rolerp1 = "    Role [" + roleType1.getName() + "] played by [" + instance1.getId() + ",]";
+        String rolerp2 = "    Role [" + roleType2.getName() + "] played by [" + instance2.getId() + ",]";
 
         assertTrue("Relation toString missing main description", relation.toString().contains(mainDescription));
         assertTrue("Relation toString missing role and role player definition", relation.toString().contains(rolerp1));
@@ -432,8 +414,8 @@ public class RelationTest extends GraphTestBase{
                 addRolePlayer(feature, null).addRolePlayer(actor, pacino);
         relation.addRolePlayer(feature, godfather);
         assertEquals(2, relation.getMappingCasting().size());
-        assertTrue(relation.rolePlayers().values().contains(pacino));
-        assertTrue(relation.rolePlayers().values().contains(godfather));
+        assertTrue(relation.newRolePlayers().contains(pacino));
+        assertTrue(relation.newRolePlayers().contains(godfather));
     }
 
     @Test
