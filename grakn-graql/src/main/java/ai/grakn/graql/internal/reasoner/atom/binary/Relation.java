@@ -623,8 +623,12 @@ public class Relation extends TypeAtom {
         List<VarName> varsToAllocate = new ArrayList<>(parentVars);
 
         childMap.entrySet().forEach(entry -> {
-            if (!varsToAllocate.isEmpty()) {
-                VarName chVar = entry.getValue();
+            VarName chVar = entry.getValue();
+            if (varsToAllocate.isEmpty()) {
+                //assign trivial mapping
+                unifiers.put(chVar, chVar);
+            }
+            else{
                 //map to empty if no var matching
                 VarName pVar = VarName.of("");
                 RoleType parentRole = entry.getKey();
@@ -634,7 +638,7 @@ public class Relation extends TypeAtom {
                     pVar = parentMap.getOrDefault(parentRole, VarName.of(""));
                     if (pVar.getValue().isEmpty()) parentRole = parentRole.superType();
                 }
-                if (!pVar.getValue().isEmpty() ){
+                if (!pVar.getValue().isEmpty()){
                     unifiers.put(chVar, pVar);
                     roleMappings.put(entry.getKey(), parentRole);
                     allocatedVars.add(chVar);
@@ -700,7 +704,11 @@ public class Relation extends TypeAtom {
             //get role type unifiers
             unifiers.putAll(getRoleTypeUnifiers(parentAtom));
         }
-        return unifiers;
+
+        //remove trivial unifiers
+        return unifiers.entrySet().stream()
+                .filter(e -> e.getKey() != e.getValue())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override
