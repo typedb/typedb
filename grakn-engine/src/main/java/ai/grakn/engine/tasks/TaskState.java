@@ -25,8 +25,6 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Internal task state model used to keep track of scheduled tasks.
  *
@@ -78,23 +76,23 @@ public class TaskState implements Serializable {
     /**
      * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
      */
-    private @Nullable Json configuration;
+    private Json configuration;
 
-    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration) {
+    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration) {
         return new TaskState(taskClass, creator, schedule, configuration, TaskId.generate());
     }
 
     public static TaskState of(
-            Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
+            Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
         return new TaskState(taskClass, creator, schedule, configuration, id);
     }
 
-    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
+    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
         this.status = TaskStatus.CREATED;
         this.statusChangeTime = Instant.now();
-        this.taskClassName = taskClass.getName();
-        this.creator = requireNonNull(creator);
-        this.schedule = requireNonNull(schedule);
+        this.taskClassName = taskClass != null ? taskClass.getName() : null;
+        this.creator = creator;
+        this.schedule = schedule;
         this.configuration = configuration;
         this.taskId = id.getValue();
     }
