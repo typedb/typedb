@@ -23,8 +23,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
-import ai.grakn.generator.TaskStates.Status;
-import ai.grakn.generator.TaskStates.UniqueIds;
+import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -40,7 +39,6 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
@@ -87,7 +85,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
+    public void afterSubmitting_AllTasksAreCompleted(List<@NewTask TaskState> tasks){
         tasks.forEach(taskManager::addTask);
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 
@@ -95,7 +93,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(@UniqueIds @Status(CREATED) TaskState task, String requester) {
+    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(@NewTask TaskState task, String requester) {
         taskManager.stopTask(task.getId(), requester);
 
         taskManager.addTask(task);
@@ -106,7 +104,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(@UniqueIds @Status(CREATED) TaskState task, String requester) {
+    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(@NewTask TaskState task, String requester) {
         taskManager.stopTask(task.getId(), requester);
 
         taskManager.addTask(task);
@@ -117,7 +115,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(@UniqueIds @Status(CREATED) TaskState task, String requester) {
+    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(@NewTask TaskState task, String requester) {
         whenTaskStarts(id -> taskManager.stopTask(id, requester));
 
         taskManager.addTask(task);
@@ -129,7 +127,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(@UniqueIds @Status(CREATED) TaskState task, String requester) {
+    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(@NewTask TaskState task, String requester) {
         whenTaskStarts(id -> taskManager.stopTask(id, requester));
 
         taskManager.addTask(task);
@@ -140,7 +138,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(@UniqueIds @Status(CREATED) TaskState task, String requester) {
+    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(@NewTask TaskState task, String requester) {
         whenTaskFinishes(id -> taskManager.stopTask(id, requester));
 
         taskManager.addTask(task);
@@ -151,7 +149,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(@UniqueIds @Status(CREATED) TaskState task, String requester) {
+    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(@NewTask TaskState task, String requester) {
         whenTaskFinishes(id -> taskManager.stopTask(id, requester));
 
         taskManager.addTask(task);
