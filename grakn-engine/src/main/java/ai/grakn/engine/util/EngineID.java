@@ -21,6 +21,7 @@ package ai.grakn.engine.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
@@ -32,9 +33,9 @@ import static org.apache.commons.lang.StringEscapeUtils.escapeJava;
  *     Assigns a random ID to the current instance of Engine.
  * </p>
  *
- * @author Denis Lobanov
+ * @author Denis Lobanov, Felix Chapman
  */
-public class EngineID {
+public class EngineID implements Serializable {
     private final String value;
     private static final Logger LOG = LoggerFactory.getLogger(EngineID.class);
 

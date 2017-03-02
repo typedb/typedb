@@ -77,6 +77,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final ScheduledExecutorService schedulingService;
 
     public StandaloneTaskManager(EngineID engineId) {
+        LOG.debug("Starting StandaloneTaskManager from engine " + engineId);
         instantiatedTasks = new ConcurrentHashMap<>();
         stateStorage = new TaskStateInMemoryStore();
         stateUpdateLock = new ReentrantLock();

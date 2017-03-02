@@ -181,8 +181,8 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             }
 
             EngineID engineId = state.engineID();
-            if(engineId == null) { // TODO: Is this needed: || engineId.isEmpty()) {
-                throw new IllegalStateException("ZK Task SynchronizedState - " + id + " - has no engineID (" + engineId + ") - status " + state.status().toString());
+            if(engineId == null) {
+                throw new IllegalStateException("ZK Task SynchronizedState - " + id + " - has no engineID - status " + state.status().toString());
             }
 
             // Avoid further calls to ZK if we already know about this one.
