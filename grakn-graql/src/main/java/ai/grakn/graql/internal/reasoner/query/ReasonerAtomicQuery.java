@@ -157,8 +157,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         getAtom().getTypeConstraints().forEach(type -> {
             Set<Atomic> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
             Atomic equiv = toUnify.stream().findFirst().orElse(null);
-            if (equiv != null){
-                type.getUnifiers(equiv).forEach(unifiers::putIfAbsent);
+            //only apply if unambiguous
+            if (equiv != null && toUnify.size() == 1){
+                type.getUnifiers(equiv).forEach(unifiers::put);
                 unified.add(equiv);
             }
         });
