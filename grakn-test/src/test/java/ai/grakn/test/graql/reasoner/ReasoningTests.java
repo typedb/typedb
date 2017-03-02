@@ -240,6 +240,7 @@ public class ReasoningTests {
         QueryAnswers answers1 = queryAnswers(qb.parse(queryString1));
         String queryString2 = "match $x isa res1;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+
         assertEquals(answers1.size(), 2);
         assertEquals(answers2.size(), 1);
     }

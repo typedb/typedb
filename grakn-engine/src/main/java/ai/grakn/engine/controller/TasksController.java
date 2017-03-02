@@ -18,9 +18,12 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
@@ -39,7 +42,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Optional;
 
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
 import static ai.grakn.util.REST.Request.OFFSET_PARAM;
@@ -134,7 +141,7 @@ public class TasksController {
             response.status(200);
             response.type("application/json");
 
-            return serialiseStateFull(manager.storage().getState(id)).toString();
+            return serialiseStateFull(manager.storage().getState(TaskId.of(id))).toString();
         } catch (EngineStorageException e){
            throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
         } catch (Exception e) {
@@ -149,7 +156,7 @@ public class TasksController {
     private String stopTask(Request request, Response response) {
         try {
             String id = request.params(ID_PARAMETER);
-            manager.stopTask(id, this.getClass().getName());
+            manager.stopTask(TaskId.of(id), this.getClass().getName());
             return "";
         }
         catch (Exception e) {
@@ -173,45 +180,49 @@ public class TasksController {
         String createdBy = request.queryParams(TASK_CREATOR_PARAMETER);
         String runAt = request.queryParams(TASK_RUN_AT_PARAMETER);
 
-        Long interval = 0L;
-        Json configuration = Json.object();
+        String intervalParam = request.queryParams(TASK_RUN_INTERVAL_PARAMETER);
+        Optional<Duration> optionalInterval = Optional.ofNullable(intervalParam).map(Long::valueOf).map(Duration::ofMillis);
 
-        if(request.queryParams(TASK_RUN_INTERVAL_PARAMETER) != null) {
-            interval = Long.valueOf(request.queryParams(TASK_RUN_INTERVAL_PARAMETER));
-        }
         if(className == null || createdBy == null || runAt == null) {
             throw new GraknEngineServerException(400, "Missing mandatory parameters");
         }
 
         try {
-            if(request.body() != null && (!request.body().isEmpty())) {
-                configuration = Json.read(request.body());
-            }
+            Class<? extends BackgroundTask> clazz = (Class<? extends BackgroundTask>) Class.forName(className);
 
-            String id = manager.createTask(className, createdBy, ofEpochMilli(parseLong(runAt)), interval, configuration);
+            Instant time = ofEpochMilli(parseLong(runAt));
+
+            TaskSchedule schedule = optionalInterval
+                    .map(interval -> recurring(time, interval))
+                    .orElse(TaskSchedule.at(time));
+
+            Json configuration = request.body().isEmpty() ? Json.object() : Json.read(request.body());
+
+            TaskState taskState = TaskState.of(clazz, createdBy, schedule, configuration);
+
+            manager.addTask(taskState);
 
             response.type("application/json");
-
-            return Json.object("id", id).toString();
+            return Json.object("id", taskState.getId().getValue()).toString();
         } catch (Exception e) {
             LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
         }
     }
 
-
+    // TODO: Return 'schedule' object as its own object
     private JSONObject serialiseStateSubset(TaskState state) {
-        return new JSONObject().put("id", state.getId())
+        return new JSONObject().put("id", state.getId().getValue())
                 .put("status", state.status())
                 .put("creator", state.creator())
-                .put("className", state.taskClassName())
-                .put("runAt", state.runAt())
-                .put("recurring", state.isRecurring());
+                .put("className", state.taskClass().getName())
+                .put("runAt", state.schedule().runAt())
+                .put("recurring", state.schedule().isRecurring());
     }
 
     private JSONObject serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                .put("interval", state.interval())
+                .put("interval", state.schedule().interval().orElse(Duration.ZERO).toMillis())
                        .put("exception", state.exception())
                        .put("stackTrace", state.stackTrace())
                        .put("engineID", state.engineID())
