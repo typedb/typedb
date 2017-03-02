@@ -34,6 +34,7 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -80,6 +81,11 @@ public class SingleQueueTaskRunnerTest {
         consumer.assign(ImmutableSet.of(partition));
         consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
+    }
+
+    @After
+    public void cleanup() throws Exception{
+        taskRunner.close();
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
