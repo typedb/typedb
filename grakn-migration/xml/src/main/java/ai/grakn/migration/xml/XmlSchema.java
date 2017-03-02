@@ -35,10 +35,27 @@ import org.w3c.dom.NodeList;
  *
  */
 public class XmlSchema {
-    private Map<String, String> types = new HashMap<String, String>();
     
-    public String typeOf(String elementName) {
-        return types.get(elementName);
+    public static class TypeInfo {
+        private String name;
+        private long cardinality;
+        public TypeInfo(String name, long cardinality) {
+            this.name = name;
+            this.cardinality = cardinality;
+        }        
+        public String name() { return name; }
+        public long cardinality() { return cardinality; }
+    }
+    
+    private Map<String, TypeInfo> types = new HashMap<String, TypeInfo>();
+    
+    /**
+     * Return the type info of an element or <code>new TypeInfo("xs:complexType", Long.MAX_LONG)</code> as
+     * a default.
+     */
+    public TypeInfo typeOf(String elementName) {
+        TypeInfo ti = types.get(elementName);
+        return ti == null ? new TypeInfo("xs:complexType", 1) : ti;
     }
     
     public XmlSchema read(File schemaFile) {
@@ -49,11 +66,17 @@ public class XmlSchema {
             NodeList list = doc.getElementsByTagName("xs:element");
             for (int i = 0; i < list.getLength(); i++) {
                 Element el = (Element)list.item(i);
+                long cardinality = 1;
+                if (el.hasAttribute("maxOccurs")) {
+                    cardinality = ("unbounded".equals(el.getAttribute("maxOccurs"))) ? 
+                                  Long.MAX_VALUE :
+                                  Long.parseLong(el.getAttribute("maxOccurs"));
+                }
                 if (el.hasAttribute("type")) {
-                    types.put(el.getAttribute("name"), el.getAttribute("type"));
+                    types.put(el.getAttribute("name"), new TypeInfo(el.getAttribute("type"), cardinality));
                 }
                 else { 
-                    types.put(el.getAttribute("name"), "xs:complexType");
+                    types.put(el.getAttribute("name"), new TypeInfo("xs:complexType", cardinality));
                 }
             }
             return this;
