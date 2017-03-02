@@ -27,7 +27,9 @@ import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -52,14 +54,14 @@ public class TaskStateZookeeperStoreTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startKafkaServer();
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeClass
+    public static void setUp() throws Exception {
         connection = new ZookeeperConnection(client());
         stateStorage = new TaskStateZookeeperStore(connection);
     }
 
-    @After
-    public void closeZkConnection(){
+    @AfterClass
+    public static void closeZkConnection(){
        connection.close();
     }
 

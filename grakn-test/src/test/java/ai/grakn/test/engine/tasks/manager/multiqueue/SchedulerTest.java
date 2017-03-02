@@ -31,7 +31,9 @@ import mjson.Json;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -65,26 +67,25 @@ import static org.junit.Assert.assertThat;
  */
 public class SchedulerTest {
 
-    private TaskStateStorage storage;
-    private Scheduler scheduler;
-    private Producer<TaskId, TaskState> producer;
-
-    private ZookeeperConnection connection;
-    private Thread schedulerThread;
+    private static TaskStateStorage storage;
+    private static Scheduler scheduler;
+    private static Producer<TaskId, TaskState> producer;
+    private static ZookeeperConnection connection;
+    private static Thread schedulerThread;
 
     @ClassRule
     public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @Before
-    public void start() throws Exception {
+    @BeforeClass
+    public static void start() throws Exception {
         storage = new TaskStateInMemoryStore();
         connection = new ZookeeperConnection(client());
         startScheduler();
         producer = ConfigHelper.kafkaProducer();
     }
 
-    @After
-    public void stop() throws Exception {
+    @AfterClass
+    public static void stop() throws Exception {
         producer.close();
         connection.close();
         stopScheduler();
@@ -150,12 +151,12 @@ public class SchedulerTest {
         assertEquals(storage.getState(recurring.getId()).status(), SCHEDULED);
     }
 
-    private void stopScheduler() throws InterruptedException {
+    private static void stopScheduler() throws InterruptedException {
         scheduler.close();
         schedulerThread.join();
     }
 
-    private void startScheduler(){
+    private static void startScheduler(){
         // Restart the scheduler
         scheduler = new Scheduler(storage, connection);
 

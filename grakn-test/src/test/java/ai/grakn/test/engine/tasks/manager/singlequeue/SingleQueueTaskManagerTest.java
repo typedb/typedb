@@ -20,7 +20,6 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.ExternalStorageRebalancer;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.generator.TaskStates.Status;
@@ -30,9 +29,10 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.runner.RunWith;
 
 import java.util.List;
@@ -54,20 +54,24 @@ public class SingleQueueTaskManagerTest {
 
     private static TaskManager taskManager;
 
-    @Rule
-    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
+    @ClassRule
+    public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @Before
-    public void setup(){
+    @BeforeClass
+    public static void setup(){
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
-        clearCompletedTasks();
         taskManager = new SingleQueueTaskManager();
     }
 
-    @After
-    public void closeTaskManager() throws Exception {
+    @AfterClass
+    public static void closeTaskManager() throws Exception {
         taskManager.close();
+    }
+
+    @Before
+    public void clearTasks(){
+        clearCompletedTasks();
     }
 
     @Property(trials=10)
