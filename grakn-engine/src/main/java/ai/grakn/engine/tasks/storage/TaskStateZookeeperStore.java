@@ -71,9 +71,10 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
            CuratorTransactionBridge transaction =  zookeeper.connection().inTransaction()
                    .create().forPath(taskPath(task), serialize(task));
 
-           if (task.engineID() != null &&
-                   zookeeper.connection().checkExists().forPath(enginePath(task.engineID())) == null) {
-               zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(task.engineID()));
+           if (task.engineID() != null) {
+               if (zookeeper.connection().checkExists().forPath(enginePath(task.engineID())) == null) {
+                   zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(task.engineID()));
+               }
 
                transaction = transaction.and().create().forPath(engineTaskPath(task.engineID(), task));
            }
