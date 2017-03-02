@@ -90,11 +90,6 @@ public class SingleQueueTaskRunnerTest {
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
     }
 
-    @After
-    public void cleanup() throws Exception{
-        taskRunner.close();
-    }
-
     public void setUpTasks(List<List<TaskState>> tasks) {
         taskRunner = new SingleQueueTaskRunner(storage, consumer);
 
@@ -190,10 +185,10 @@ public class SingleQueueTaskRunnerTest {
 
     @Property(trials=10)
     public void whenRunning_EngineIdIsNonNull(List<List<TaskState>> tasks) throws Exception {
-        storage = spy(storage);
-
         assumeThat(tasks.size(), greaterThan(0));
         assumeThat(tasks.get(0).size(), greaterThan(0));
+
+        storage = spy(storage);
 
         doCallRealMethod().when(storage).updateState(argThat(argument -> {
             if (argument.status() == FAILED || argument.status() == COMPLETED){
