@@ -19,14 +19,15 @@
 
 package ai.grakn.engine.tasks.manager;
 
-import ai.grakn.exception.EngineStorageException;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.FAILOVER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
@@ -46,10 +47,13 @@ public class ZookeeperConnection {
     private static final int ZOOKEEPER_CONNECTION_TIMEOUT = ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT);
     private final CuratorFramework zookeeperConnection;
 
+    private static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger(0);
+
     /**
      * Start the connection to zookeeper. This method is blocking.
      */
     public ZookeeperConnection(CuratorFramework zookeeperConnection) {
+        CONNECTION_COUNTER.incrementAndGet();
         this.zookeeperConnection = zookeeperConnection;
 
         try {
@@ -68,11 +72,13 @@ public class ZookeeperConnection {
      * Close the connection to zookeeper. This method is blocking.
      */
     public void close(){
-        zookeeperConnection.close();
-        boolean notStopped = true;
-        while(notStopped){
-            if (zookeeperConnection.getState() == CuratorFrameworkState.STOPPED) {
-                notStopped = false;
+        if (CONNECTION_COUNTER.decrementAndGet() == 0) {
+            zookeeperConnection.close();
+            boolean notStopped = true;
+            while (notStopped) {
+                if (zookeeperConnection.getState() == CuratorFrameworkState.STOPPED) {
+                    notStopped = false;
+                }
             }
         }
     }

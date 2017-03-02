@@ -44,6 +44,8 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedT
  */
 public class EngineContext extends ExternalResource {
 
+    private GraknEngineServer server;
+
     private final boolean startKafka;
     private final boolean startMultiQueueEngine;
     private final boolean startSingleQueueEngine;
@@ -72,8 +74,12 @@ public class EngineContext extends ExternalResource {
         return new EngineContext(false, false, false, true);
     }
 
+    public GraknEngineServer server() {
+        return server;
+    }
+
     public TaskManager getTaskManager(){
-        return GraknEngineServer.getTaskManager();
+        return server.getTaskManager();
     }
 
     public GraknGraphFactory factoryWithNewKeyspace() {
@@ -89,15 +95,15 @@ public class EngineContext extends ExternalResource {
         }
 
         if(startSingleQueueEngine){
-            startEngine(SingleQueueTaskManager.class.getName());
+            server = startEngine(SingleQueueTaskManager.class.getName());
         }
 
         if (startMultiQueueEngine){
-            startEngine(MultiQueueTaskManager.class.getName());
+            server = startEngine(MultiQueueTaskManager.class.getName());
         }
 
         if (startStandaloneEngine){
-            startEngine(StandaloneTaskManager.class.getName());
+            server = startEngine(StandaloneTaskManager.class.getName());
         }
     }
 
@@ -107,7 +113,7 @@ public class EngineContext extends ExternalResource {
 
         try {
             if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
-                stopEngine();
+                stopEngine(server);
             }
 
             if(startKafka){

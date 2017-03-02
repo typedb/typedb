@@ -13,11 +13,14 @@ import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static ai.grakn.graql.Graql.var;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.graql.Graql.var;
 
 /**
  * <p>
@@ -36,7 +39,7 @@ public abstract class GraknTestEnv {
 
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
-    private static AtomicBoolean ENGINE_RUNNING = new AtomicBoolean(false);
+    private static AtomicInteger KAFKA_COUNTER = new AtomicInteger(0);
 
     private static KafkaUnit kafkaUnit = new KafkaUnit(2181, 9092);
 
@@ -50,7 +53,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static void startEngine(String taskManagerClass) throws Exception {
+    static GraknEngineServer startEngine(String taskManagerClass) throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -60,40 +63,42 @@ public abstract class GraknTestEnv {
     	// The reason is that the default configuration of Grakn uses the Titan factory while the default
     	// test profile is tinker: so when running a unit test within an IDE without any extra parameters,
     	// we end up wanting to use the TitanFactory but without starting Cassandra first.
+        LOG.info("STARTING ENGINE...");
 
-        if(ENGINE_RUNNING.compareAndSet(false, true)) {
-            LOG.info("STARTING ENGINE...");
+        ensureCassandraRunning();
 
-            ensureCassandraRunning();
+        // start engine
+        RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
+        int port = getEphemeralPort();
+        GraknEngineServer server = GraknEngineServer.start(taskManagerClass, port);
 
-            // start engine
-            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-            GraknEngineServer.start(taskManagerClass);
+        LOG.info("ENGINE STARTED.");
 
-            LOG.info("ENGINE STARTED.");
-        }
+        return server;
     }
 
     static void startKafka() throws Exception {
         // Clean-up ironically uses a lot of memory
-        kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
-        kafkaUnit.startup();
-        kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads());
+        if (KAFKA_COUNTER.getAndIncrement() == 0) {
+            kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
+            kafkaUnit.startup();
+            kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads() * 4);
+        }
     }
 
     static void stopKafka() throws Exception {
-        kafkaUnit.shutdown();
+        if (KAFKA_COUNTER.decrementAndGet() == 0) {
+            kafkaUnit.shutdown();
+        }
     }
 
-    static void stopEngine() throws Exception {
-        if(ENGINE_RUNNING.compareAndSet(true, false)) {
-            LOG.info("STOPPING ENGINE...");
+    static void stopEngine(GraknEngineServer server) throws Exception {
+        LOG.info("STOPPING ENGINE...");
 
-            GraknEngineServer.stop();
-            clearGraphs();
+        server.close();
+        clearGraphs();
 
-            LOG.info("ENGINE STOPPED.");
-        }
+        LOG.info("ENGINE STOPPED.");
 
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
@@ -137,7 +142,7 @@ public abstract class GraknTestEnv {
     }
 
     public static void hideLogs() {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).setLevel(Level.OFF);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).setLevel(Level.ERROR);
         ((Logger) org.slf4j.LoggerFactory.getLogger(GraknTestEnv.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(BackgroundTaskTestUtils.class)).setLevel(Level.DEBUG);
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
@@ -153,5 +158,13 @@ public abstract class GraknTestEnv {
 
     public static boolean usingOrientDB() {
         return "orientdb".equals(CONFIG);
+    }
+
+    private static int getEphemeralPort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
