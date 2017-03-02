@@ -107,9 +107,10 @@ public class ReasoningTests {
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
 
         assertNotEquals(answers1.size() * answers2.size(), 0);
+        answers1.forEach(x -> Assert.assertTrue(x.keySet().size() ==1));
         answers2.forEach(x -> answers1.forEach(y -> Assert.assertTrue(x.values().containsAll(y.values()))));
         answers2.forEach(x -> Assert.assertTrue(x.keySet().size() ==2));
-        answers1.forEach(x -> Assert.assertTrue(x.keySet().size() ==1));
+
     }
 
     @Test //Expected result: The query should return a unique match.
