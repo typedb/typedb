@@ -21,13 +21,13 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="panel-body">
         <div class="dd-header">Query builders</div>
         <div v-bind:class="[selectedNodes.length<2 ? 'dd-item' : 'dd-item active']" @click="emitCommonConcepts">
-                <span class="list-key">Common concepts</span>
+            <span class="list-key">Common concepts</span>
         </div>
         <div v-bind:class="[selectedNodes.length!==2 ? 'dd-item' : 'dd-item active']" @click="emitShortestPath">
-                <span class="list-key">Shortest path</span>
+            <span class="list-key">Shortest path</span>
         </div>
         <div v-bind:class="[selectedNodes.length!==2 ? 'dd-item' : 'dd-item active']" @click="emitExploreRelations">
-                <span class="list-key">Explore relations</span>
+            <span class="list-key">Explore relations</span>
         </div>
     </div>
 </div>
@@ -66,11 +66,11 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     align-items: center;
     opacity: 0.5;
     font-size: 98%;
-    margin-top:5px;
+    margin-top: 5px;
 }
 
 .dd-item.active:hover {
-  color: #00eca2;
+    color: #00eca2;
 }
 
 .dd-item.active {
@@ -92,7 +92,7 @@ import QueryBuilder from '../../js/QueryBuilder';
 
 export default {
     name: "ContextMenu",
-    props: ['showContextMenu', 'rightClickEvent', 'graphOffsetTop'],
+    props: ['showContextMenu', 'mouseEvent', 'graphOffsetTop'],
     data: function() {
         return {
             selectedNodes: [],
@@ -102,16 +102,9 @@ export default {
         showContextMenu(newValue) {
             if (newValue) {
                 let contextMenu = document.getElementById('context-menu');
-                let canvasOffset = document.getElementsByClassName('vis-network')[0];
-
-                contextMenu.style.left = (this.rightClickEvent.clientX) + 'px';
-                contextMenu.style.top = (this.rightClickEvent.clientY - this.graphOffsetTop) + "px";
+                contextMenu.style.left = (this.mouseEvent.clientX) + 'px';
+                contextMenu.style.top = (this.mouseEvent.clientY - this.graphOffsetTop) + "px";
                 this.selectedNodes = visualiser.network.getSelectedNodes();
-
-
-                $(".menu-open").addClass("checked");
-            } else {
-                $(".menu-open.checked").removeClass("checked");
             }
         }
     },
