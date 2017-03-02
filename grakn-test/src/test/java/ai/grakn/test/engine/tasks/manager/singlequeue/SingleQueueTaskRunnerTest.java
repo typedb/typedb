@@ -333,4 +333,17 @@ public class SingleQueueTaskRunnerTest {
 
         assertFalse(stopped[0]);
     }
+
+    @Test
+    public void whenATaskIsMarkedAsStoppedInStorage_ItIsNotExecuted() throws Exception {
+        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        storage.newState(TaskState.of(null, null, null, null, task.getId()).status(STOPPED));
+
+        taskRunner.run();
+
+        assertThat(completedTasks(), empty());
+    }
 }
