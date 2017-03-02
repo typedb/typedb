@@ -23,23 +23,46 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import mjson.Json;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCancelledTask;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCompletedTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.onTaskFinish;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.onTaskStart;
 
 public abstract class MockBackgroundTask implements BackgroundTask {
+
+    protected final AtomicBoolean cancelled = new AtomicBoolean(false);
+    protected final Object sync = new Object();
+
     @Override
     public final boolean start(Consumer<String> saveCheckpoint, Json configuration) {
         TaskId id = TaskId.of(configuration.at("id").asString());
         onTaskStart(id);
-        
-        boolean success = startInner(id);
-        
+
+        boolean wasCancelled = cancelled.get();
+
+        if (!wasCancelled) {
+            startInner(id);
+            addCompletedTask(id);
+        } else {
+            addCancelledTask(id);
+        }
+
         onTaskFinish(id);
 
-        return success;
+        return !wasCancelled;
     }
 
-    protected abstract boolean startInner(TaskId id);
+    @Override
+    public final boolean stop() {
+        cancelled.set(true);
+        synchronized (sync) {
+            sync.notify();
+        }
+        return true;
+    }
+
+    protected abstract void startInner(TaskId id);
 }

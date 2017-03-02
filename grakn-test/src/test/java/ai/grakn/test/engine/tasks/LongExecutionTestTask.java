@@ -23,14 +23,12 @@ import ai.grakn.engine.tasks.TaskId;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCompletedTask;
-
 public class LongExecutionTestTask extends MockBackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     @Override
-    protected boolean startInner(TaskId id) {
+    protected void startInner(TaskId id) {
         // A short sleep to allow tasks to step on each other's toes
         try {
             Thread.sleep(10);
@@ -39,12 +37,6 @@ public class LongExecutionTestTask extends MockBackgroundTask {
         }
 
         startedCounter.incrementAndGet();
-        addCompletedTask(id);
-        return true;
-    }
-
-    public boolean stop() {
-        return false;
     }
 
     public void pause() {}

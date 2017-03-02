@@ -21,18 +21,12 @@ package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.TaskId;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCancelledTask;
 
 public class EndlessExecutionTestTask extends MockBackgroundTask {
 
-    private final AtomicBoolean cancelled = new AtomicBoolean(false);
-    private final Object sync = new Object();
-
     @Override
-    protected boolean startInner(TaskId id) {
+    protected void startInner(TaskId id) {
         // Never return until stopped
         if (!cancelled.get()) {
             synchronized (sync) {
@@ -43,17 +37,6 @@ public class EndlessExecutionTestTask extends MockBackgroundTask {
                 }
             }
         }
-
-        addCancelledTask(id);
-        return false;
-    }
-
-    public boolean stop() {
-        cancelled.set(true);
-        synchronized (sync) {
-            sync.notify();
-        }
-        return true;
     }
 
     public void pause() {}

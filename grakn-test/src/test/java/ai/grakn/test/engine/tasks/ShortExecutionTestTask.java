@@ -23,21 +23,13 @@ import ai.grakn.engine.tasks.TaskId;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCompletedTask;
-
 public class ShortExecutionTestTask extends MockBackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     @Override
-    protected boolean startInner(TaskId id) {
+    protected void startInner(TaskId id) {
         startedCounter.incrementAndGet();
-        addCompletedTask(id);
-        return true;
-    }
-
-    public boolean stop() {
-        return false;
     }
 
     public void pause() {}

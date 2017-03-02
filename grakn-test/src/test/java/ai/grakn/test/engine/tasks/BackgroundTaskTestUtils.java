@@ -40,9 +40,13 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
+import static org.junit.Assert.fail;
 
 /**
  * Class holding useful methods for use throughout background task tests
@@ -90,6 +94,8 @@ public class BackgroundTaskTestUtils {
     public static void clearTasks() {
         COMPLETED_TASKS.clear();
         CANCELLED_TASKS.clear();
+        onTaskStart = null;
+        onTaskFinish = null;
     }
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
@@ -110,6 +116,10 @@ public class BackgroundTaskTestUtils {
         return taskState;
     }
 
+    public static void waitForDoneStatus(TaskStateStorage storage, Collection<TaskState> tasks) {
+        waitForStatus(storage, tasks, COMPLETED, FAILED, STOPPED);
+    }
+
     public static void waitForStatus(TaskStateStorage storage, Collection<TaskState> tasks, TaskStatus... status) {
         HashSet<TaskStatus> statusSet = Sets.newHashSet(status);
         tasks.forEach(t -> waitForStatus(storage, t, statusSet));
@@ -119,13 +129,23 @@ public class BackgroundTaskTestUtils {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
-            try {
+            if (storage.containsTask(task.getId())) {
                 TaskStatus currentStatus = storage.getState(task.getId()).status();
                 if (status.contains(currentStatus)) {
                     return;
                 }
-            } catch (Exception ignored){}
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+        TaskStatus finalStatus = storage.containsTask(task.getId()) ? storage.getState(task.getId()).status() : null;
+
+        fail("Timeout waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
     }
 
     public static Multiset<TaskId> completableTasks(List<TaskState> tasks) {
