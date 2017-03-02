@@ -244,9 +244,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Map<VarName, Concept>> materialise(Map<VarName, Concept> answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
-        Set<VarName> vars = getVarNames();
         answer.entrySet().stream()
-                //.filter(e -> vars.contains(e.getKey()))
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), queryToMaterialise))
                 .forEach(queryToMaterialise::addAtom);
         return queryToMaterialise.materialiseDirect();

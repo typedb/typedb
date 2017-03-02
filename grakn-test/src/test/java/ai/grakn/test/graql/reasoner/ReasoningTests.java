@@ -96,7 +96,6 @@ public class ReasoningTests {
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
-    @Ignore
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationWithVarDuplicates() {
         QueryBuilder qb = testSet1.graph().graql().infer(true);
