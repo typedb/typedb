@@ -70,6 +70,19 @@ public class InferenceRule {
         return Patterns.conjunction(vars);
     }
 
+    /**rule needs to be materialised if head atom requires materialisation or if it contains fresh variables
+     * @return true if the rule needs to be materialised
+     */
+    public boolean requiresMaterialisation(){
+        return getHead().getAtom().requiresMaterialisation()
+            || Sets.intersection(getHead().getVarNames(), getBody().getVarNames()).isEmpty();}
+
+    /**
+     * @return true if head and body do not share any variables
+     */
+    public boolean hasDisconnectedHead(){
+        return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
+    }
     /**
      * @return body of the rule of the form head :- body
      */
@@ -113,7 +126,7 @@ public class InferenceRule {
         if (newAtom != childAtom){
             head.removeAtom(childAtom);
             head.addAtom(newAtom);
-            unify(rewriteUnifiers);
+            body.unify(rewriteUnifiers);
 
             //resolve captures
             Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());

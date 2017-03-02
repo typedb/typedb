@@ -115,11 +115,9 @@ public class ReasoningTests {
         QueryBuilder qb = testSet2.graph().graql().infer(true);
         String query1String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
-
         assertEquals(answers1.size(), 1);
     }
 
-    @Ignore
     @Test //Expected result: The queries should return different matches, unique per query.
     public void generatingFreshEntity() {
         QueryBuilder qb = testSet3.graph().graql().infer(true);
@@ -127,7 +125,8 @@ public class ReasoningTests {
         String query2String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
-        Assert.assertTrue(!(answers1.containsAll(answers2)&&answers2.containsAll(answers1)));
+        Assert.assertEquals(answers1.size(), answers2.size());
+        Assert.assertNotEquals(answers1, answers2);
     }
 
     @Test //Expected result: The queries should return the same two matches.
@@ -137,10 +136,9 @@ public class ReasoningTests {
         String query2String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
-        Assert.assertTrue(answers1.containsAll(answers2)&&answers2.containsAll(answers1));
+        Assert.assertEquals(answers1, answers2);
     }
 
-    @Ignore
     @Test //Expected result: The query should return a unique match (or possibly nothing if we enforce range-restriction).
     public void generatingFreshEntity2() {
         QueryBuilder qb = testSet5.graph().graql().infer(false);
@@ -244,8 +242,6 @@ public class ReasoningTests {
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers1.size(), 2);
         assertEquals(answers2.size(), 1);
-
-
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -261,6 +257,7 @@ public class ReasoningTests {
         String queryString3 = "match $x isa res1; $y isa res2;";
         QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
         assertEquals(answers3.size(), 1);
+
         Assert.assertTrue(answers3.iterator().next().get(VarName.of("x")).isResource());
         Assert.assertTrue(answers3.iterator().next().get(VarName.of("y")).isResource());
     }
