@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -96,6 +97,7 @@ public class ReasoningTests {
     //The ignored tests reveal some bugs in the reasoning algorithm, as they don't return the expected results,
     //as specified in the respective comments below.
 
+    @Ignore
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
     public void unificationWithVarDuplicates() {
         QueryBuilder qb = testSet1.graph().graql().infer(true);
@@ -104,6 +106,7 @@ public class ReasoningTests {
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
 
+        assertNotEquals(answers1.size() * answers2.size(), 0);
         answers2.forEach(x -> answers1.forEach(y -> Assert.assertTrue(x.values().containsAll(y.values()))));
         answers2.forEach(x -> Assert.assertTrue(x.keySet().size() ==2));
         answers1.forEach(x -> Assert.assertTrue(x.keySet().size() ==1));
@@ -125,7 +128,7 @@ public class ReasoningTests {
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
         Assert.assertEquals(answers1.size(), answers2.size());
-        Assert.assertNotEquals(answers1, answers2);
+        assertNotEquals(answers1, answers2);
     }
 
     @Test //Expected result: The queries should return the same two matches.
