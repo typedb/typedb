@@ -17,9 +17,6 @@
  */
 package ai.grakn.engine;
 
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
-import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
@@ -30,6 +27,9 @@ import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
@@ -40,11 +40,12 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Spark;
 
-import java.time.Instant;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.awaitInitialization;
 import static spark.Spark.before;
@@ -56,8 +57,6 @@ import static spark.Spark.staticFiles;
 import static spark.Spark.webSocket;
 import static spark.Spark.webSocketIdleTimeoutMillis;
 
-import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
-
 /**
  * Main class in charge to start a web server and all the REST controllers.
  *
@@ -66,6 +65,7 @@ import static ai.grakn.engine.util.ConfigProperties.DISTRIBUTED_TASK_MANAGER;
 
 public class GraknEngineServer {
     private static final ConfigProperties prop = ConfigProperties.getInstance();
+
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -78,39 +78,34 @@ public class GraknEngineServer {
     private static TaskManager taskManager;
 
     public static void main(String[] args) {
-        boolean distributed = prop.getPropertyAsBool(DISTRIBUTED_TASK_MANAGER);
-
         // close GraknEngineServer on SIGTERM
         Thread closeThread = new Thread(GraknEngineServer::stop, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
 
         // Start Engine
-        start(distributed);
+        start(prop.getProperty(TASK_MANAGER_IMPLEMENTATION));
     }
 
-    public static void start(boolean taskManagerIsDistributed){
-        startTaskManager(taskManagerIsDistributed);
+    public static void start(String taskManagerClass){
+        startTaskManager(taskManagerClass);
         startHTTP();
         startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
     public static void stop() {
-        //TODO there is a bug where clear() on graphs still submits to the commit log (#12388). We
-        //TODO cannot stop http here until that is fixed, because in tests after stopping engine
-        //TODO we need to clear the graphs
-//        stopHTTP();
+        stopHTTP();
         stopTaskManager();
     }
 
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
-    private static void startTaskManager(boolean taskManagerIsDistributed) {
-        if(taskManagerIsDistributed){
-            taskManager = new DistributedTaskManager();
-        } else {
-            taskManager = new StandaloneTaskManager();
+    private static void startTaskManager(String taskManagerClass) {
+        try {
+            taskManager = (TaskManager) Class.forName(taskManagerClass).newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            throw new IllegalArgumentException("Invalid or unavailable TaskManager class");
         }
     }
 
@@ -152,12 +147,10 @@ public class GraknEngineServer {
 
     private static void startPostprocessing(){
         // Submit a recurring post processing task
-        taskManager.createTask(PostProcessingTask.class.getName(),
-                GraknEngineServer.class.getName(),
-                Instant.now(),
-                prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
-                Json.object());
-
+        Duration interval = Duration.ofMillis(prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE));
+        String creator = GraknEngineServer.class.getName();
+        TaskState postprocessing = TaskState.of(PostProcessingTask.class, creator, TaskSchedule.recurring(interval), Json.object());
+        taskManager.addTask(postprocessing);
     }
 
     public static void stopHTTP() {
