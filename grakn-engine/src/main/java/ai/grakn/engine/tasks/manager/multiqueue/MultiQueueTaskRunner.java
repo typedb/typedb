@@ -78,7 +78,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
-    private final static String ENGINE_ID = EngineID.getInstance().id();
+    private final EngineID engineId;
 
     private final Set<TaskId> runningTasks = new HashSet<>();
     private final TaskStateStorage storage;
@@ -90,7 +90,8 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final AtomicInteger acceptedTasks = new AtomicInteger(0);
     private final Consumer<TaskId, TaskState> consumer;
 
-    public MultiQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
+    public MultiQueueTaskRunner(EngineID engineId, TaskStateStorage storage, ZookeeperConnection connection) {
+        this.engineId = engineId;
         this.storage = storage;
         this.connection = connection;
 
@@ -200,7 +201,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
                 storage.updateState(state
                         .status(RUNNING)
                         .statusChangedBy(this.getClass().getName())
-                        .engineID(ENGINE_ID));
+                        .engineID(engineId));
 
                 acceptedTasks.incrementAndGet();
 
@@ -263,10 +264,10 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
 
     private void registerAsRunning() {
         try {
-            if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, ENGINE_ID)) == null) {
+            if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value())) == null) {
                 connection.connection().create()
                         .creatingParentContainersIfNeeded()
-                        .withMode(CreateMode.EPHEMERAL).forPath(format(SINGLE_ENGINE_WATCH_PATH, ENGINE_ID));
+                        .withMode(CreateMode.EPHEMERAL).forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
             }
         } catch (Exception exception){
             throw new RuntimeException("Could not create Zookeeper paths in TaskRunner");
