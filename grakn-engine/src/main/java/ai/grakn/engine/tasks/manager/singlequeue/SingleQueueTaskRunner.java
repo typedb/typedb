@@ -54,7 +54,6 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
-    private final static String ENGINE_ID = EngineID.getInstance().id();
 
     private final Consumer<TaskId, TaskState> consumer;
     private final TaskStateStorage storage;

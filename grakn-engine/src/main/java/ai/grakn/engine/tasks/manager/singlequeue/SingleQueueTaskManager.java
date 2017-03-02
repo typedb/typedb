@@ -24,6 +24,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
@@ -38,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static ai.grakn.engine.util.ConfigProperties.USE_ZOOKEEPER_STORAGE;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
@@ -55,6 +57,7 @@ import static java.util.stream.Stream.generate;
 public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
+    private final static ConfigProperties properties = ConfigProperties.getInstance();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = ConfigProperties.getInstance().getAvailableThreads();
 
@@ -77,7 +80,12 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     public SingleQueueTaskManager(EngineID engineId){
         this.zookeeper = new ZookeeperConnection(client());
-        this.storage = new TaskStateZookeeperStore(zookeeper);
+
+        if(properties.getPropertyAsBool(USE_ZOOKEEPER_STORAGE)){
+            this.storage = new TaskStateZookeeperStore(zookeeper);
+        } else {
+            this.storage = new TaskStateGraphStore();
+        }
 
         //TODO check that the number of partitions is at least the capacity
         //TODO Single queue task manager should have its own impl of failover
