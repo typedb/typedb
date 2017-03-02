@@ -35,7 +35,10 @@ import org.w3c.dom.NodeList;
  *
  */
 public class XmlSchema {
-    
+
+    /**
+     * Holds type information about an XML element: the XML Schema type name and max number of occurrences.
+     */
     public static class TypeInfo {
         private String name;
         private long cardinality;

@@ -97,7 +97,7 @@ export default class HALParser {
             // Add assertions from _embedded
       if (API.KEY_EMBEDDED in objResponse) {
         _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), (key) => {
-          this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet);
+          if (key !== 'isa') { this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet); }
         });
       }
     }

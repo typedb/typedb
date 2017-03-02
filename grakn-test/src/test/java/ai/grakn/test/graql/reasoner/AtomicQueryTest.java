@@ -25,13 +25,21 @@ import ai.grakn.graphs.CWGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -41,9 +49,13 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest {
@@ -89,7 +101,6 @@ public class AtomicQueryTest {
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
     }
 
-    /*
     @Test
     public void testMaterialize(){
         QueryBuilder qb = snbGraph.graph().graql().infer(false);
@@ -104,10 +115,10 @@ public class AtomicQueryTest {
                 VarName.of("x"), getConcept("Bob"),
                 VarName.of("y"), getConcept("Colour of Magic")));
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, snbGraph.graph());
-        atomicQuery.materialise(answers);
+
+        answers.stream().flatMap(atomicQuery::materialise).collect(Collectors.toList());
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
-    */
 
     @Test
     public void testResourceEquivalence(){
@@ -142,7 +153,7 @@ public class AtomicQueryTest {
         assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
-    /*
+
     @Test
     public void testVarPermutation(){
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -151,23 +162,32 @@ public class AtomicQueryTest {
         QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
-        QueryAnswers answers = queryAnswers(query);
-        QueryAnswers fullAnswers = queryAnswers(query2);
+        Set<Map<VarName, Concept>> answers = query.admin().streamWithVarNames().collect(toSet());
+        Set<Map<VarName, Concept>> fullAnswers = query2.admin().streamWithVarNames().collect(toSet());
         Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
         Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
 
-        QueryAnswers permutedAnswers = answers.permute(
-                mappedAtom.getPermutationUnifiers(mappedAtom),
-                mappedAtom.getUnmappedIdPredicates(),
-                mappedAtom.getUnmappedTypeConstraints());
-        QueryAnswers permutedAnswers2 = answers.permute(
-                unmappedAtom.getPermutationUnifiers(mappedAtom),
-                unmappedAtom.getUnmappedIdPredicates(),
-                unmappedAtom.getUnmappedTypeConstraints());
+        Set<Map<VarName, VarName>> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
+        Set<IdPredicate> unmappedIdPredicates = mappedAtom.getUnmappedIdPredicates();
+        Set<TypeAtom> unmappedTypeConstraints = mappedAtom.getUnmappedTypeConstraints();
+        Set<Map<VarName, Concept>> permutedAnswers = answers.stream()
+                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .filter(a -> subFilter(a, unmappedIdPredicates))
+                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints))
+                .collect(Collectors.toSet());
+
+        Set<Map<VarName, VarName>> permutationUnifiers2 = unmappedAtom.getPermutationUnifiers(mappedAtom);
+        Set<IdPredicate> unmappedIdPredicates2 = unmappedAtom.getUnmappedIdPredicates();
+        Set<TypeAtom> unmappedTypeConstraints2 = unmappedAtom.getUnmappedTypeConstraints();
+        Set<Map<VarName, Concept>> permutedAnswers2 = answers.stream()
+                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers2))
+                .filter(a -> subFilter(a, unmappedIdPredicates2))
+                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints2))
+                .collect(Collectors.toSet());
+
         assertEquals(fullAnswers, permutedAnswers2);
         assertEquals(answers, permutedAnswers);
     }
-    */
 
     @Test
     public void testReifiedRelation(){
@@ -180,6 +200,18 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
         assertEquals(query.getAtom().isUserDefinedName(), false);
         assertEquals(query2.getAtom().isUserDefinedName(), true);
+    }
+
+    @Test
+    public void testTrivialUnification(){
+        String patternString = "{$x isa country;($x, $y) isa is-enemy-of;$y isa country;}";
+        GraknGraph graph = cwGraph.graph();
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern, graph);
+        Map<VarName, VarName> unifiers = childQuery.getUnifiers(parentQuery);
+        assertTrue(Sets.intersection(unifiers.keySet(), Sets.newHashSet(VarName.of("x"), VarName.of("y"))).isEmpty());
+
     }
 
     private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){

@@ -157,8 +157,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         getAtom().getTypeConstraints().forEach(type -> {
             Set<Atomic> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
             Atomic equiv = toUnify.stream().findFirst().orElse(null);
-            if (equiv != null){
-                type.getUnifiers(equiv).forEach(unifiers::putIfAbsent);
+            //only apply if unambiguous
+            if (equiv != null && toUnify.size() == 1){
+                type.getUnifiers(equiv).forEach(unifiers::put);
                 unified.add(equiv);
             }
         });
@@ -389,16 +390,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     private class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
 
-        final private QueryAnswers answers = new QueryAnswers();
-
         private int iter = 0;
+        private long answers = 0;
         private final boolean materialise;
         private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         private final LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         private final LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
         private Iterator<Map<VarName, Concept>> answerIterator;
 
-        public QueryAnswerIterator(boolean materialise){
+        QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
             this.answerIterator = query().answerStream(subGoals, cache, dCache, materialise, iter != 0).iterator();
         }
@@ -410,7 +410,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
          */
         Stream<Map<VarName, Concept>> hasStream(){
             Iterable<Map<VarName, Concept>> iterable = () -> this;
-            return StreamSupport.stream(iterable.spliterator(), false).distinct();
+            return StreamSupport.stream(iterable.spliterator(), false).distinct().peek(ans -> answers++);
         }
 
         private void computeNext(){
@@ -431,7 +431,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 updateCache();
                 long dAns = differentialAnswerSize();
                 if (dAns != 0 || iter == 0) {
-                    LOG.debug("Atom: " + query().getAtom() + " iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+                    LOG.debug("Atom: " + query().getAtom() + " iter: " + iter + " answers: " + answers + " dAns = " + dAns);
                     computeNext();
                     return answerIterator.hasNext();
                 }
@@ -450,9 +450,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
          */
         @Override
         public Map<VarName, Concept> next() {
-            Map<VarName, Concept> answer = answerIterator.next();
-            answers.add(answer);
-            return answer;
+            return answerIterator.next();
         }
 
         private long differentialAnswerSize(){

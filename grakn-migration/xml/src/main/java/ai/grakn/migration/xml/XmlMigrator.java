@@ -142,8 +142,8 @@ public class XmlMigrator implements AutoCloseable {
         return readers.stream()
                 .flatMap(this::toXmlNodes)
                 .map(this::digest)
-                .map(data -> (Map<String, Object>)data)
-                .map(data -> { System.out.println(data); return data; } );
+                .map(data -> (Map<String, Object>)data);
+                //.map(data -> { System.out.println(data); return data; } );
     }
 
     /**
@@ -178,8 +178,6 @@ public class XmlMigrator implements AutoCloseable {
                     Element el = (Element)child;
                     Object value = null;
                     TypeInfo type = schema.typeOf(el.getNodeName());
-                    if ("ratings".equals(el.getTagName()))
-                        System.out.println("we're here");
                     if ("xs:complexType".equals(type.name())) {
                         value = digest(el);
                     }
@@ -207,8 +205,9 @@ public class XmlMigrator implements AutoCloseable {
                         }
                         allValues.add(value);
                     }
-                    else
+                    else {
                         result.put(el.getTagName(), value);
+                    }
                     break;
                 }
                 case Node.ATTRIBUTE_NODE: {
