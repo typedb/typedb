@@ -38,9 +38,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.stream.Collectors.toSet;
@@ -143,8 +144,15 @@ public class SingleQueueTaskManager implements TaskManager {
      * Stop a task from running.
      */
     @Override
-    public TaskManager stopTask(TaskId id, String requesterName) {
-        throw new UnsupportedOperationException("SingleQueueTaskManager does not support stopping tasks.");
+    public void stopTask(TaskId id, String requesterName) {
+        // TODO: Make only one call to storage if possible
+        if (!storage.containsTask(id)) {
+            // TODO: Figure out a nicer way than all these nulls...
+            TaskState task = TaskState.of(null, null, null, null, id).status(STOPPED);
+            storage.newState(task);
+        } else {
+            taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
+        }
     }
 
     /**
