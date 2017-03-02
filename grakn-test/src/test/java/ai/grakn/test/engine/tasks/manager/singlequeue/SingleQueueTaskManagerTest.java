@@ -44,6 +44,7 @@ import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
@@ -81,7 +82,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Before
-    public void clearTasks(){
+    public void clearAllTasks(){
         clearTasks();
     }
 
