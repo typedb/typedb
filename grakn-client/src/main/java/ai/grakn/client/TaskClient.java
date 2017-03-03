@@ -26,6 +26,11 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import static ai.grakn.util.REST.WebPath.TASKS_STOP_URI;
 import static java.lang.String.format;
 
+/**
+ * Client for interacting with tasks on engine
+ *
+ * @author Felix Chapman
+ */
 public class TaskClient extends Client {
 
     private final String uri;
@@ -37,7 +42,11 @@ public class TaskClient extends Client {
     public static TaskClient of(String uri) {
         return new TaskClient(uri);
     }
-    
+
+    /**
+     * Stop a task using the given ID.
+     * @param id the ID of the task to stop
+     */
     public void stopTask(TaskId id) {
         try {
             Unirest.put(format("http://%s/%s", uri, TASKS_STOP_URI))
