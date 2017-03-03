@@ -259,8 +259,8 @@ public class Relation extends TypeAtom {
                 getRelationPlayers().stream().map(rp -> rp.getRolePlayer().getVarName()).collect(Collectors.toList())
                );
 
-        //case when child atom non-unifiable
-        if (unificationMappings.getKey().size() != childAtom.getRelationPlayers().size()) return false;
+        //case when child atom non-unifiable - not all parent variables mapped
+        if (unificationMappings.getKey().size() < this.getRolePlayers().size()) return false;
 
         for (Map.Entry<RoleType, Pair<VarName, Type>> entry : childRoleMap.entrySet()) {
             RoleType childRole = entry.getKey();

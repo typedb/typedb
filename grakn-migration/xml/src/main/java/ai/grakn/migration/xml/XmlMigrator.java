@@ -19,6 +19,7 @@
 package ai.grakn.migration.xml;
 
 import ai.grakn.migration.base.MigrationCLI;
+import ai.grakn.migration.xml.XmlSchema.TypeInfo;
 
 import com.google.common.collect.Sets;
 
@@ -29,8 +30,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -110,6 +113,7 @@ public class XmlMigrator implements AutoCloseable {
             files = xmlFileOrDir.listFiles(xmlFiles);
         }
         this.readers = Stream.of(files).map(this::asReader).collect(toSet());
+        this.schema = new XmlSchema();
     }
 
     /**
@@ -139,6 +143,7 @@ public class XmlMigrator implements AutoCloseable {
                 .flatMap(this::toXmlNodes)
                 .map(this::digest)
                 .map(data -> (Map<String, Object>)data);
+                //.map(data -> { System.out.println(data); return data; } );
     }
 
     /**
@@ -171,24 +176,37 @@ public class XmlMigrator implements AutoCloseable {
             switch (child.getNodeType()) {
                 case Node.ELEMENT_NODE:{
                     Element el = (Element)child;
-                    String type = schema != null ? schema.typeOf(el.getNodeName()) : null;
-                    if (type == null || "xs:complexType".equals(type)) {
-                        result.put(el.getTagName(), digest(el));
+                    Object value = null;
+                    TypeInfo type = schema.typeOf(el.getNodeName());
+                    if ("xs:complexType".equals(type.name())) {
+                        value = digest(el);
                     }
-                    else if ("xs:boolean".equals(type)) {
-                        result.put(el.getTagName(), "true".equals(el.getTextContent().trim()));
+                    else if ("xs:boolean".equals(type.name())) {
+                        value = "true".equals(el.getTextContent().trim());
                     }
-                    else if ("xs:int".equals(type)) {
-                        result.put(el.getTagName(), Integer.parseInt(el.getTextContent().trim()));
+                    else if ("xs:int".equals(type.name())) {
+                       value = Integer.parseInt(el.getTextContent().trim());
                     }
-                    else if ("xs:int".equals(type)) {
-                        result.put(el.getTagName(), Integer.parseInt(el.getTextContent().trim()));
+                    else if ("xs:int".equals(type.name())) {
+                        value = Integer.parseInt(el.getTextContent().trim());
                     }
-                    else if ("xs:double".equals(type)) {
-                        result.put(el.getTagName(), Double.parseDouble(el.getTextContent().trim()));
+                    else if ("xs:double".equals(type.name())) {
+                        value = Double.parseDouble(el.getTextContent().trim());
                     }
                     else { // default to string, but there are other that we could support, e.g. dates etc.
-                        result.put(el.getTagName(), el.getTextContent());
+                        value = el.getTextContent();
+                    }
+                    if (type.cardinality() > 1) {
+                        @SuppressWarnings("unchecked")
+                        List<Object> allValues = (List<Object>)result.get(el.getTagName());    
+                        if (allValues == null) {
+                            allValues = new ArrayList<Object>();
+                            result.put(el.getTagName(),  allValues);
+                        }
+                        allValues.add(value);
+                    }
+                    else {
+                        result.put(el.getTagName(), value);
                     }
                     break;
                 }

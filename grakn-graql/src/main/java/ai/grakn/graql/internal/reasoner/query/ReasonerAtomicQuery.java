@@ -244,9 +244,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Map<VarName, Concept>> materialise(Map<VarName, Concept> answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
-        Set<IdPredicate> subs = new HashSet<>();
-        answer.forEach((var, con) -> subs.add(new IdPredicate(var, con, queryToMaterialise)));
-        subs.forEach(queryToMaterialise::addAtom);
+        answer.entrySet().stream()
+                .map(e -> new IdPredicate(e.getKey(), e.getValue(), queryToMaterialise))
+                .forEach(queryToMaterialise::addAtom);
         return queryToMaterialise.materialiseDirect();
     }
 
@@ -312,12 +312,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Map<VarName, Concept>> answers = subs
                 .filter(a -> nonEqualsFilter(a, filters));
 
-        if (materialise || ruleHead.getAtom().requiresMaterialisation()) {
-            Set<VarName> headVars = ruleHead.getVarNames();
+        if (materialise || rule.requiresMaterialisation()) {
+            Set<VarName> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
             LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
             LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
             Stream<Map<VarName, Concept>> newAnswers = answers
-                    .flatMap(a -> varFilterFunction.apply(a, headVars))
+                    .flatMap(a -> varFilterFunction.apply(a, varsToRetain))
                     .distinct()
                     .filter(a -> knownFilter(a, known.stream()))
                     .filter(a -> knownFilter(a, dknown.stream()))

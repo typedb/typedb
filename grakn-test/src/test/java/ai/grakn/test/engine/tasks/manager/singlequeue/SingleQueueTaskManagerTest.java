@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;

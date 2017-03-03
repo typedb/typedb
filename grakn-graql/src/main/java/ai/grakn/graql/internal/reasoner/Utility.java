@@ -298,23 +298,6 @@ public class Utility {
     }
 
     /**
-     * generate a fresh variable avoiding global variables and variables from the same query
-     * @param vars  vars to be avoided
-     * @param var variable to be generated a fresh replacement
-     * @return fresh variables
-     */
-    public static VarName createFreshVariable(Set<VarName> vars, VarName var) {
-        Set<String> names = vars.stream().map(VarName::getValue).collect(toSet());
-        String fresh = var.getValue();
-        while (names.contains(fresh)) {
-            String valFree = fresh.replaceAll("[^0-9]", "");
-            int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
-            fresh = fresh.replaceAll("\\d+", "") + (++value);
-        }
-        return VarName.of(fresh);
-    }
-
-    /**
      * create transitive rule R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
      * @param relType transitive relation type
      * @param fromRoleName  from directional role type type name
@@ -365,13 +348,11 @@ public class Utility {
         }
         Var parentVar = var().isa(name(parent.getName()));
         Var childVar = var().isa(name(child.getName()));
-        Set<VarName> vars = new HashSet<>();
 
         roleMappings.forEach( (parentRoleName, childRoleName) -> {
-            VarName varName = createFreshVariable(vars, VarName.of("x"));
+            VarName varName = VarName.anon();
             parentVar.rel(name(parentRoleName), var(varName));
             childVar.rel(name(childRoleName), var(varName));
-            vars.add(varName);
         });
         return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
     }
@@ -391,7 +372,7 @@ public class Utility {
         varNames.push(VarName.of("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
-            VarName varName = createFreshVariable(Sets.newHashSet(varNames), VarName.of("x"));
+            VarName varName = VarName.anon();
             VarAdmin var = var().isa(name(relType.getName()))
                     .rel(name(rolePair.getKey()), var(varNames.peek()))
                     .rel(name(rolePair.getValue()), var(varName)).admin();
