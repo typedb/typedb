@@ -105,5 +105,7 @@ public class GraknEngineServerTest {
 
         GraknEngineServer.main(new String[]{});
         assertThat(GraknEngineServer.getTaskManager().storage(), instanceOf(TaskStateGraphStore.class));
+
+        ConfigProperties.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
     }
 }
