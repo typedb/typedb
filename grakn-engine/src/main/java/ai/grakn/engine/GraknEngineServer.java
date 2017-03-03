@@ -58,6 +58,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 
 public class GraknEngineServer implements AutoCloseable {
     private static final ConfigProperties prop = ConfigProperties.getInstance();
+
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(

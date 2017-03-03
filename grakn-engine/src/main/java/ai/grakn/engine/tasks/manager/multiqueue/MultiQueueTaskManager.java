@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
+import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
@@ -54,10 +55,12 @@ public final class MultiQueueTaskManager implements TaskManager {
     private final TaskStateStorage stateStorage;
 
     private static final String TASKRUNNER_THREAD_NAME = "taskrunner-";
+    private final EngineID engineId;
     private MultiQueueTaskRunner multiQueueTaskRunner;
     private Thread taskRunnerThread;
 
-    public MultiQueueTaskManager() {
+    public MultiQueueTaskManager(EngineID engineId) {
+        this.engineId = engineId;
         connection = new ZookeeperConnection(client());
         stateStorage = new TaskStateZookeeperStore(connection);
 
@@ -114,7 +117,7 @@ public final class MultiQueueTaskManager implements TaskManager {
      *        handler that will restart the task runner if any unchecked exception is thrown.
      */
     private void startTaskRunner(){
-        multiQueueTaskRunner = new MultiQueueTaskRunner(stateStorage, connection);
+        multiQueueTaskRunner = new MultiQueueTaskRunner(engineId, stateStorage, connection);
         taskRunnerThread = new Thread(multiQueueTaskRunner, TASKRUNNER_THREAD_NAME + multiQueueTaskRunner.hashCode());
         taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
         taskRunnerThread.start();

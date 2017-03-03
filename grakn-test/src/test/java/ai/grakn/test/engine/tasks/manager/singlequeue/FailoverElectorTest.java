@@ -22,6 +22,7 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.manager.singlequeue.FailoverElector;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
 import org.junit.Before;
@@ -55,15 +56,15 @@ public class FailoverElectorTest {
 
     @Test
     public void whenFailoverElectorIsInstantiated_ThisEngineBecomesLeader(){
-        FailoverElector elector = new FailoverElector("Engine1", zookeeper, storage);
+        FailoverElector elector = new FailoverElector(EngineID.of("Engine1"), zookeeper, storage);
         assertEquals("Engine1", elector.awaitLeader());
         elector.renounce();
     }
 
     @Test
     public void whenFailoverElectorIsKilled_AnotherFailoverElectorBecomesLeader() throws Exception {
-        FailoverElector elector1 = new FailoverElector("Engine1", zookeeper, storage);
-        FailoverElector elector2 = new FailoverElector("Engine2", zookeeper, storage);
+        FailoverElector elector1 = new FailoverElector(EngineID.of("Engine1"), zookeeper, storage);
+        FailoverElector elector2 = new FailoverElector(EngineID.of("Engine2"), zookeeper, storage);
 
         assertEquals(elector1.awaitLeader(), elector2.awaitLeader());
 

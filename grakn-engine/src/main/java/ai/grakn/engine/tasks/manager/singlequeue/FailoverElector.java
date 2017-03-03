@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
+import ai.grakn.engine.util.EngineID;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
@@ -42,19 +43,19 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
 
     private final Logger LOG = LoggerFactory.getLogger(FailoverElector.class);
     private final LeaderSelector leaderSelector;
-    private final String identifier;
+    private final EngineID identifier;
     private final TaskStateStorage storage;
     private TaskFailover failover;
 
     /**
      * Instantiating a {@link FailoverElector} adds this engine to the leadership selection process
      */
-    public FailoverElector(String identifier, ZookeeperConnection zookeeper, TaskStateStorage storage){
+    public FailoverElector(EngineID identifier, ZookeeperConnection zookeeper, TaskStateStorage storage){
         this.identifier = identifier;
         this.storage = storage;
 
         leaderSelector = new LeaderSelector(zookeeper.connection(), FAILOVER, this);
-        leaderSelector.setId(identifier);
+        leaderSelector.setId(identifier.value());
         leaderSelector.autoRequeue();
 
         // the selection for this instance doesn't start until the leader selector is started

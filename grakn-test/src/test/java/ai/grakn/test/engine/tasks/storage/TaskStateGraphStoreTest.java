@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import ch.qos.logback.classic.Level;
@@ -101,7 +102,7 @@ public class TaskStateGraphStoreTest {
         stateStorage.updateState(midState
                 .status(SCHEDULED)
                 .statusChangedBy("bla")
-                .engineID(UUID.randomUUID().toString())
+                .engineID(EngineID.of(UUID.randomUUID().toString()))
                 .checkpoint("checkpoint")
                 .exception(stackTrace));
 
@@ -190,6 +191,6 @@ public class TaskStateGraphStoreTest {
     public TaskState task(TaskSchedule schedule, Json configuration, String creator){
         return TaskState.of(ShortExecutionTestTask.class, creator, schedule, configuration)
                 .statusChangedBy(this.getClass().getName())
-                .engineID(UUID.randomUUID().toString());
+                .engineID(EngineID.of(UUID.randomUUID().toString()));
     }
 }

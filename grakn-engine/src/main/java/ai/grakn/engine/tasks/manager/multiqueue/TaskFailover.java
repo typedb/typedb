@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager.multiqueue;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.util.EngineID;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -43,8 +44,8 @@ import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ALL_ENGINE_WATCH_PATH;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_PATH;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 
@@ -129,7 +130,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             // Dead MultiQueueTaskRunner
             if(!nodes.containsKey(engineId)) {
                 LOG.debug("Dead engine: "+engineId);
-                reQueue(client, engineId);
+                reQueue(client, EngineID.of(engineId));
             }
         }
     }
@@ -142,7 +143,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
      * @param engineID String unique ID of engine
      * @throws Exception
      */
-    private void reQueue(CuratorFramework client, String engineID) throws Exception {
+    private void reQueue(CuratorFramework client, EngineID engineID) throws Exception {
         // Get list of tasks that were being processed
         List<String> previouslyRunningTasks = client.getChildren().forPath(format(SINGLE_ENGINE_PATH, engineID));
 
@@ -170,7 +171,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
      * @param client CuratorFramework
      */
     private void scanStaleStates(CuratorFramework client) throws Exception {
-        Set<String> deadRunners = new HashSet<>();
+        Set<EngineID> deadRunners = new HashSet<>();
 
         for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
             TaskState state = stateStorage.getState(TaskId.of(id));
@@ -179,9 +180,9 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
                 break;
             }
 
-            String engineId = state.engineID();
-            if(engineId == null || engineId.isEmpty()) {
-                throw new IllegalStateException("ZK Task SynchronizedState - " + id + " - has no engineID (" + engineId + ") - status " + state.status().toString());
+            EngineID engineId = state.engineID();
+            if(engineId == null) {
+                throw new IllegalStateException("ZK Task SynchronizedState - " + id + " - has no engineID - status " + state.status().toString());
             }
 
             // Avoid further calls to ZK if we already know about this one.

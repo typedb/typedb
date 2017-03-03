@@ -22,6 +22,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.Status;
 import ai.grakn.generator.TaskStates.UniqueIds;
 import ai.grakn.test.EngineContext;
@@ -61,7 +62,7 @@ public class SingleQueueTaskManagerTest {
     public static void setup(){
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
-        taskManager = new SingleQueueTaskManager();
+        taskManager = new SingleQueueTaskManager(EngineID.of("me"));
     }
 
     @AfterClass
