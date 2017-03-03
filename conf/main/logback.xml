@@ -35,7 +35,7 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -51,7 +51,7 @@
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -79,12 +79,8 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="ai.grakn.migration.base.io.MigrationLoader" level="INFO">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-
-    <logger name="ai.grakn.migration.base.Migrator" level="WARN">
-        <appender-ref ref="STDOUT"/>
+    <logger name="ai.grakn.migration.base.Migrator" level="DEBUG">
+        <appender-ref ref="MAIN"/>
     </logger>
 
     <logger name="ai.grakn.client.LoaderClient" level="DEBUG">
