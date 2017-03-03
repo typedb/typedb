@@ -23,8 +23,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.generator.TaskStates.Status;
-import ai.grakn.generator.TaskStates.UniqueIds;
+import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -39,7 +38,6 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
@@ -76,7 +74,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
+    public void afterSubmitting_AllTasksAreCompleted(List<@NewTask TaskState> tasks){
         tasks.forEach(taskManager::addTask);
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 
