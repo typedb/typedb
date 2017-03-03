@@ -42,8 +42,8 @@ import java.util.Set;
 public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
-    static final String DEGREE = "medianVertexProgram.degree";
-    private static final String OF_TYPE_NAMES = "degreeAndPersistVertexProgram.ofTypeNames";
+    static final String DEGREE = "degreeVertexProgram.degree";
+    private static final String OF_TYPE_NAMES = "degreeVertexProgram.ofTypeNames";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
@@ -107,7 +107,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
             case 2:
                 TypeName type = Utility.getVertexType(vertex);
                 if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
-                    vertex.property(DEGREE, getEdgeCount(messenger));
+                    vertex.property(DEGREE, getMessageCount(messenger));
                 }
                 break;
             default:

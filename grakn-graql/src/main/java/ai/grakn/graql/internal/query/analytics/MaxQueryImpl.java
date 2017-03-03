@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.MaxQuery;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.MaxMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -49,7 +49,7 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
+                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new MaxMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
 
