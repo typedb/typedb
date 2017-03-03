@@ -103,7 +103,7 @@ public class REST {
         public static final String POST_METHOD = "POST";
         public static final String DELETE_METHOD = "DELETE";
         public static final String GET_METHOD = "GET";
-        public static final String APPLICATION_POST_TYPE = "application/POST";
+        public static final String APPLICATION_POST_TYPE = "application/POST"; // TODO: this is a dumb name for a content-type
     }
 
     /**
