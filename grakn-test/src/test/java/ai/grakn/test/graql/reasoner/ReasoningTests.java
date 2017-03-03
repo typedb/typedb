@@ -88,6 +88,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet16 = GraphContext.preLoad("testSet16.gql");
 
+    @ClassRule
+    public static final GraphContext testSet17 = GraphContext.preLoad("testSet17.gql");
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -288,6 +291,15 @@ public class ReasoningTests {
                     Assert.assertTrue(ans.get(VarName.of("y")).isResource());
                 }
         );
+    }
+
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void reusingResources4() {
+        QueryBuilder qb = testSet17.graph().graql().infer(true);
+        String queryString1 = "match $x isa general-entity has res2 $r;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString1));
+        assertEquals(answers.size(), 1);
+        System.out.println();
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
