@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.storage;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
@@ -40,6 +41,7 @@ import ai.grakn.util.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Optional;
@@ -186,7 +188,12 @@ public class TaskStateGraphStore implements TaskStateStorage {
     @Override
     public TaskState getState(TaskId id) throws EngineStorageException {
         Optional<TaskState> result = attemptCommitToSystemGraph((graph) -> {
-            Instance instance = graph.getResourcesByValue(id.getValue()).iterator().next().owner();
+            Collection<Resource<String>> resourceList = graph.getResourcesByValue(id.getValue());
+            if(resourceList.isEmpty()){
+                throw new EngineStorageException("Concept " + id + " not found in storage");
+            }
+
+            Instance instance = resourceList.iterator().next().owner();
             return instanceToState(graph, instance);
         }, false);
 
@@ -200,7 +207,12 @@ public class TaskStateGraphStore implements TaskStateStorage {
     @Override
     public boolean containsTask(TaskId id) {
         Optional<Boolean> result = attemptCommitToSystemGraph(graph -> {
-            Instance instance = graph.getResourcesByValue(id).iterator().next().owner();
+            Collection<Resource<String>> resourceList = graph.getResourcesByValue(id.getValue());
+            if(resourceList.isEmpty()){
+                return false;
+            }
+
+            Instance instance = resourceList.iterator().next().owner();
             return instance != null;
         }, false);
 
