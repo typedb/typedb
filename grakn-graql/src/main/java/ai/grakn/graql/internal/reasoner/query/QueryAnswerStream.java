@@ -63,6 +63,7 @@ public class QueryAnswerStream {
         Iterator<Map<VarName, Concept>> it = known.iterator();
         while (it.hasNext()) {
             Map<VarName, Concept> knownAnswer = it.next();
+            //if(answer.entrySet().containsAll(knownAnswer.entrySet())){
             if(knownAnswer.entrySet().containsAll(answer.entrySet())){
                 return false;
             }
