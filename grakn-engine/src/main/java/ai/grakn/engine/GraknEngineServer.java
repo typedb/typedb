@@ -31,6 +31,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
@@ -40,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Spark;
 
+import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -66,6 +68,7 @@ import static spark.Spark.webSocketIdleTimeoutMillis;
 public class GraknEngineServer {
     private static final ConfigProperties prop = ConfigProperties.getInstance();
 
+    private static final EngineID ENGINE_ID = EngineID.me();
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -101,11 +104,14 @@ public class GraknEngineServer {
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
-    private static void startTaskManager(String taskManagerClass) {
+    private static void startTaskManager(String taskManagerClassName) {
         try {
-            taskManager = (TaskManager) Class.forName(taskManagerClass).newInstance();
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-            throw new IllegalArgumentException("Invalid or unavailable TaskManager class");
+            Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
+            taskManager = taskManagerClass.getConstructor(EngineID.class).newInstance(ENGINE_ID);
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
+            throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
+        } catch (InvocationTargetException e) {
+            throw (RuntimeException) e.getCause();
         }
     }
 

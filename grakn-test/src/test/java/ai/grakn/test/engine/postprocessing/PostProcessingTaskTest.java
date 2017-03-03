@@ -22,6 +22,7 @@ import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.junit.Assert;
@@ -37,7 +38,7 @@ import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static java.time.Instant.now;
 
 public class PostProcessingTaskTest {
-    private StandaloneTaskManager taskManager = new StandaloneTaskManager();
+    private StandaloneTaskManager taskManager = new StandaloneTaskManager(EngineID.of("hello"));
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startMultiQueueServer();

@@ -21,42 +21,67 @@ package ai.grakn.engine.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.UUID;
+
+import static org.apache.commons.lang.StringEscapeUtils.escapeJava;
 
 /**
  * <p>
  *     Assigns a random ID to the current instance of Engine.
  * </p>
  *
- * @author Denis Lobanov
+ * @author Denis Lobanov, Felix Chapman
  */
-public class EngineID {
-    private String id;
-    private static EngineID instance = null;
-    private final Logger LOG = LoggerFactory.getLogger(EngineID.class);
+public class EngineID implements Serializable {
+    private final String value;
+    private static final Logger LOG = LoggerFactory.getLogger(EngineID.class);
 
-    private EngineID() {
+    private EngineID(String value) {
+        this.value = value;
+    }
+
+    public static EngineID of(String value) {
+        return new EngineID(value);
+    }
+
+    public static EngineID me() {
+        String hostName = "";
         try {
-            id = InetAddress.getLocalHost().getHostName();
+            hostName = InetAddress.getLocalHost().getHostName();
         }
         catch (UnknownHostException e) {
             LOG.error("Could not get system hostname: ", e);
         }
 
-        id += "-"+UUID.randomUUID().toString();
+        String value = hostName+"-"+UUID.randomUUID().toString();
+
+        return EngineID.of(value);
     }
 
-    public static synchronized EngineID getInstance() {
-        if(instance == null) {
-            instance = new EngineID();
-        }
-
-        return instance;
+    public String value() {
+        return value;
     }
 
-    public String id() {
-        return id;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        EngineID engineID = (EngineID) o;
+
+        return value.equals(engineID.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "EngineId.of(" + escapeJava(value) + ")";
     }
 }
