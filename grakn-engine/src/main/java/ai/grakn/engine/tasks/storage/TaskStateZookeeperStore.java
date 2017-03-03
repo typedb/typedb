@@ -23,6 +23,7 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -30,10 +31,10 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_ENGINE_TASK_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_TASK_PATH;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_PATH;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
@@ -94,8 +95,8 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
             CuratorTransactionBridge baseTransaction =
                     zookeeper.connection().inTransaction().setData().forPath(taskPath(currentTask), serialize(currentTask));
 
-            String currentEngineId = currentTask.engineID();
-            String previousEngineId = previousTask.engineID();
+            EngineID currentEngineId = currentTask.engineID();
+            EngineID previousEngineId = previousTask.engineID();
 
             // If previous engine is non null and this one is non null, delete previous
             if (previousEngineId != null && !previousEngineId.equals(currentEngineId)) {
@@ -219,8 +220,8 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * @param taskState Identifier of the task
      * @return Path representing conbination between engine and task
      */
-    private String engineTaskPath(String engineId, TaskState taskState){
-        return format(ZK_ENGINE_TASK_PATH, engineId, taskState.getId());
+    private String engineTaskPath(EngineID engineId, TaskState taskState){
+        return format(ZK_ENGINE_TASK_PATH, engineId.value(), taskState.getId());
     }
 
     /**
@@ -228,7 +229,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * @param engineId Identifier of the engine
      * @return Path to the engine
      */
-    private String enginePath(String engineId){
-        return format(SINGLE_ENGINE_PATH, engineId);
+    private String enginePath(EngineID engineId){
+        return format(SINGLE_ENGINE_PATH, engineId.value());
     }
 }

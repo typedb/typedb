@@ -41,9 +41,9 @@ public class GraknEngineServerTest {
         // Should start engine with in-memory server
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
-        GraknEngineServer.main(new String[]{});
-        assertTrue(GraknEngineServer.getTaskManager() instanceof StandaloneTaskManager);
-        GraknEngineServer.stop();
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+            assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
+        }
     }
 
     @Test

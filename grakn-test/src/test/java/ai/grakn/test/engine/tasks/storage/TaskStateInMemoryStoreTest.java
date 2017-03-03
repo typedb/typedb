@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.Before;
 import org.junit.Test;
@@ -74,7 +75,7 @@ public class TaskStateInMemoryStoreTest {
         // Change
         state.status(SCHEDULED)
                 .statusChangedBy("bla")
-                .engineID("newEngine")
+                .engineID(EngineID.of("newEngine"))
                 .exception(exception);
 
         stateStorage.updateState(state);
@@ -82,7 +83,7 @@ public class TaskStateInMemoryStoreTest {
         TaskState newState = stateStorage.getState(id);
         assertEquals(SCHEDULED, newState.status());
         assertEquals("bla", newState.statusChangedBy());
-        assertEquals("newEngine", newState.engineID());
+        assertEquals(EngineID.of("newEngine"), newState.engineID());
         assertEquals(exception, newState.exception());
     }
 

@@ -55,7 +55,6 @@ import static java.util.stream.Stream.generate;
 public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
-    private final static String ENGINE_IDENTIFIER = EngineID.getInstance().id();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = ConfigProperties.getInstance().getAvailableThreads();
 
@@ -76,13 +75,13 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(){
+    public SingleQueueTaskManager(EngineID engineId){
         this.zookeeper = new ZookeeperConnection(client());
         this.storage = new TaskStateZookeeperStore(zookeeper);
 
         //TODO check that the number of partitions is at least the capacity
         //TODO Single queue task manager should have its own impl of failover
-        this.failover = new FailoverElector(ENGINE_IDENTIFIER, zookeeper, storage);
+        this.failover = new FailoverElector(engineId, zookeeper, storage);
         this.producer = kafkaProducer();
 
         // Create thread pool for the task runners

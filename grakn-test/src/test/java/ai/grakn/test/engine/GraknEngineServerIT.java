@@ -14,71 +14,74 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.test.engine.tasks.manager.singlequeue;
+package ai.grakn.test.engine;
 
-import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.engine.util.EngineID;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.List;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
-/**
- *
- */
 @RunWith(JUnitQuickcheck.class)
-public class SingleQueueTaskManagerTest {
+public class GraknEngineServerIT {
 
-    private static TaskManager taskManager;
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
+    public static final EngineContext engine1 = EngineContext.startSingleQueueServer();
 
-    @BeforeClass
-    public static void setup(){
-        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
-        taskManager = new SingleQueueTaskManager(EngineID.of("me"));
-    }
+    @ClassRule
+    public static final EngineContext engine2 = EngineContext.startSingleQueueServer();
 
-    @AfterClass
-    public static void closeTaskManager() throws Exception {
-        taskManager.close();
-    }
+    private TaskStateStorage storage;
 
     @Before
-    public void clearTasks(){
+    public void setUp() {
         clearCompletedTasks();
+        storage = engine1.getTaskManager().storage();
+    }
+
+    @Test
+    public void whenCreatingTwoEngines_TheyHaveDifferentTaskManagers() {
+        assertNotEquals(engine1.getTaskManager(), engine2.getTaskManager());
     }
 
     @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@NewTask TaskState> tasks){
-        tasks.forEach(taskManager::addTask);
-        waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
+    public void whenSendingTasksToTwoEngines_TheyAllComplete(
+            List<@NewTask TaskState> tasks1, List<@NewTask TaskState> tasks2) {
 
-        assertEquals(completableTasks(tasks), completedTasks());
+        List<TaskState> allTasks = Lists.newArrayList(tasks1);
+        allTasks.addAll(tasks2);
+
+        tasks1.forEach(engine1.getTaskManager()::addTask);
+        tasks2.forEach(engine2.getTaskManager()::addTask);
+
+        waitForStatus(storage, allTasks, COMPLETED, STOPPED, FAILED);
+
+        assertEquals(completableTasks(allTasks), completedTasks());
     }
 }

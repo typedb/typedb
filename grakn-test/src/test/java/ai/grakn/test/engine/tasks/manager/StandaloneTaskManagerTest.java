@@ -25,6 +25,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import mjson.Json;
 import org.junit.Before;
@@ -57,7 +58,7 @@ public class StandaloneTaskManagerTest {
     @Before
     public void setUp() {
         hideLogs();
-        taskManager = new StandaloneTaskManager() ;
+        taskManager = new StandaloneTaskManager(EngineID.of("hello")) ;
     }
 
     @Test

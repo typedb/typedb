@@ -20,6 +20,7 @@ package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.util.EngineID;
 import mjson.Json;
 
 import javax.annotation.Nullable;
@@ -62,7 +63,7 @@ public class TaskState implements Serializable {
     /**
      * String identifying which engine instance is executing this task, set when task is scheduled.
      */
-    private String engineID;
+    private EngineID engineID;
     /**
      * Schedule for when this task should execute
      */
@@ -154,12 +155,12 @@ public class TaskState implements Serializable {
         return creator;
     }
 
-    public TaskState engineID(String engineID) {
+    public TaskState engineID(EngineID engineID) {
         this.engineID = engineID;
         return this;
     }
 
-    public String engineID() {
+    public EngineID engineID() {
         return engineID;
     }
 

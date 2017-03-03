@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -54,6 +55,7 @@ import static java.util.Collections.singleton;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TaskFailoverTest {
 
@@ -99,7 +101,7 @@ public class TaskFailoverTest {
 
     @Test
     public void runningTasksWhenEngineFail_AreAddedToWorkQueue() throws Exception {
-        String fakeEngineID = UUID.randomUUID().toString();
+        EngineID fakeEngineID = EngineID.of(UUID.randomUUID().toString());
         registerFakeEngine(fakeEngineID);
 
         // Add some tasks to a fake task runner watch and storage, marked as running
@@ -114,17 +116,17 @@ public class TaskFailoverTest {
         waitForStatus(storage, tasks, SCHEDULED);
 
         // Check they are all scheduled in storage
-        tasks.stream().map(TaskState::getId)
+        assertTrue(tasks.stream().map(TaskState::getId)
                 .map(storage::getState)
                 .map(TaskState::status)
-                .allMatch(t -> t.equals(SCHEDULED));
+                .allMatch(t -> t.equals(SCHEDULED)));
     }
 
     @Test
     public void nonRUNNINGTasksOnTaskRunnerPathNotAddedToWorkQueue() throws Exception {
         // When a task has been added to the task runner watch, but is not marked
         // as running at the time of failure, it should not be added to the work queue
-        String fakeEngineID = UUID.randomUUID().toString();
+        EngineID fakeEngineID = EngineID.of(UUID.randomUUID().toString());
         registerFakeEngine(fakeEngineID);
 
         // Add a task in each state (SCHEDULED, COMPLETED, STOPPED, FAILED, RUNNING) to fake task runner watch
@@ -159,7 +161,7 @@ public class TaskFailoverTest {
     @Test
     public void failoverTasksRestartedFromCorrectCheckpoints() throws Exception {
         // On failover, tasks should be restarted from where they left off execution
-        String fakeEngineID = UUID.randomUUID().toString();
+        EngineID fakeEngineID = EngineID.of(UUID.randomUUID().toString());
         registerFakeEngine(fakeEngineID);
 
         // Add some tasks to a storage with a specific checkpoint
@@ -183,28 +185,28 @@ public class TaskFailoverTest {
         assertEquals(checkpoint.toString(), storage.getState(running.getId()).checkpoint());
     }
 
-    private void registerFakeEngine(String id) throws Exception{
-        if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)) == null) {
+    private void registerFakeEngine(EngineID id) throws Exception{
+        if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value())) == null) {
             connection.connection().create()
                     .creatingParentContainersIfNeeded()
                     .withMode(CreateMode.EPHEMERAL)
-                    .forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
+                    .forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value()));
         }
-        assertNotNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)));
+        assertNotNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value())));
     }
 
-    private void registerTasksInZKLikeTaskRunnerWould(String id, Set<TaskState> tasks) throws Exception{
+    private void registerTasksInZKLikeTaskRunnerWould(EngineID id, Set<TaskState> tasks) throws Exception{
         tasks.forEach(t -> {
             try {
-                connection.connection().create().creatingParentContainersIfNeeded().forPath(format(ZK_ENGINE_TASK_PATH, id, t.getId().getValue()));
+                connection.connection().create().creatingParentContainersIfNeeded().forPath(format(ZK_ENGINE_TASK_PATH, id.value(), t.getId().getValue()));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
     }
 
-    private void killFakeEngine(String id) throws Exception {
-        connection.connection().delete().forPath(format(SINGLE_ENGINE_WATCH_PATH, id));
-        assertNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id)));
+    private void killFakeEngine(EngineID id) throws Exception {
+        connection.connection().delete().forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value()));
+        assertNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value())));
     }
 }

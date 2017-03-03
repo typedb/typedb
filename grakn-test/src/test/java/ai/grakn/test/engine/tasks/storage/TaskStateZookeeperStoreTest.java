@@ -24,6 +24,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.AfterClass;
@@ -80,7 +81,7 @@ public class TaskStateZookeeperStoreTest {
         TaskId id = stateStorage.newState(task());
 
         // Change
-        String engineID = UUID.randomUUID().toString();
+        EngineID engineID = EngineID.of(UUID.randomUUID().toString());
         String checkpoint = "test checkpoint";
         TaskState state = stateStorage.getState(id)
                 .status(SCHEDULED)
@@ -103,7 +104,7 @@ public class TaskStateZookeeperStoreTest {
         stateStorage.newState(task);
 
         // Update previous
-        stateStorage.updateState(task.engineID("Engine1"));
+        stateStorage.updateState(task.engineID(EngineID.of("Engine1")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
 
         // Check that getting engine-task path is not there
@@ -121,7 +122,7 @@ public class TaskStateZookeeperStoreTest {
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
 
         // Check that getting engine-task path is there
-        stateStorage.updateState(task.engineID("Engine1"));
+        stateStorage.updateState(task.engineID(EngineID.of("Engine1")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
     }
 
@@ -130,11 +131,11 @@ public class TaskStateZookeeperStoreTest {
         TaskState task = task();
         stateStorage.newState(task);
 
-        stateStorage.updateState(task.engineID("Engine1"));
+        stateStorage.updateState(task.engineID(EngineID.of("Engine1")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
 
         // Check that getting engine-task path is not there
-        stateStorage.updateState(task.engineID("Engine2"));
+        stateStorage.updateState(task.engineID(EngineID.of("Engine2")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
         assertThat(pathExists("/engine/Engine2/" + task.getId()), is(true));
     }
@@ -157,7 +158,7 @@ public class TaskStateZookeeperStoreTest {
         TaskId id = stateStorage.newState(task());
 
         // update
-        String engineID = UUID.randomUUID().toString();
+        EngineID engineID = EngineID.of(UUID.randomUUID().toString());
         String checkpoint = "test checkpoint";
 
         TaskState state = stateStorage.getState(id);

@@ -38,6 +38,7 @@ import mjson.Json;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -46,8 +47,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class TaskStates extends Generator<TaskState> {
 
-    private Status statusConfig = null;
-    private boolean uniqueIds = false;
+    private boolean newTask = false;
 
     public TaskStates() {
         super(TaskState.class);
@@ -59,17 +59,14 @@ public class TaskStates extends Generator<TaskState> {
         Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionTestTask.class, ShortExecutionTestTask.class, FailingTestTask.class));
 
         TaskId taskId;
-        if (uniqueIds) {
+        TaskStatus taskStatus;
+
+        if (newTask) {
             taskId = TaskId.generate();
+            taskStatus = CREATED;
         } else {
             taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
-        }
-
-        TaskStatus taskStatus;
-        if (statusConfig == null) {
             taskStatus = gen().type(TaskStatus.class).generate(random, status);
-        } else {
-            taskStatus = random.choose(statusConfig.value());
         }
 
         String creator = gen().type(String.class).generate(random, status);
@@ -82,24 +79,14 @@ public class TaskStates extends Generator<TaskState> {
         return taskState.status(taskStatus);
     }
 
-    public void configure(Status status) {
-        this.statusConfig = status;
-    }
-
-    public void configure(UniqueIds uniqueIds) {
-        this.uniqueIds = true;
+    public void configure(NewTask newTask) {
+        this.newTask = newTask.value();
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface Status {
-        TaskStatus[] value();
-    }
-
-    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
-    @Retention(RUNTIME)
-    @GeneratorConfiguration
-    public @interface UniqueIds {
+    public @interface NewTask {
+        boolean value() default true;
     }
 }
