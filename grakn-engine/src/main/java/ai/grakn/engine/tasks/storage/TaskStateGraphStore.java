@@ -140,7 +140,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         }
         if(task.engineID() != null) {
             resourcesToDettach.add(ENGINE_ID);
-            resources.has(ENGINE_ID, var().value(task.engineID()));
+            resources.has(ENGINE_ID, var().value(task.engineID().value()));
         }
         if(task.exception() != null) {
             resourcesToDettach.add(TASK_EXCEPTION);
