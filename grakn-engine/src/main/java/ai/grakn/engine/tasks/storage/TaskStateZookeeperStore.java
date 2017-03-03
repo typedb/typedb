@@ -165,7 +165,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
             Stream<TaskState> stream;
             if(engineRunningOn != null){
                 stream = zookeeper.connection().getChildren()
-                        .forPath(enginePath(engineRunningOn)).stream()
+                        .forPath(enginePath(EngineID.of(engineRunningOn))).stream()
                         .map(TaskId::of)
                         .map(this::getState);
             } else {
