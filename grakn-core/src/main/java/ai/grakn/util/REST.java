@@ -47,6 +47,7 @@ public class REST {
         public static final String ALL_TASKS_URI = "/tasks/all";
         public static final String TASKS_URI = "/tasks";
         public static final String TASKS_SCHEDULE_URI ="/tasks/schedule";
+        public static final String TASKS_STOP_URI = "/tasks/{id}/stop";
 
         public static final String NEW_SESSION_URI="/auth/session/";
         public static final String IS_PASSWORD_PROTECTED_URI="/auth/enabled/";
