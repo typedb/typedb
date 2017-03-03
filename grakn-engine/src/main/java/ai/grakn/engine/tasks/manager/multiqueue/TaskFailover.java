@@ -145,7 +145,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
      */
     private void reQueue(CuratorFramework client, EngineID engineID) throws Exception {
         // Get list of tasks that were being processed
-        List<String> previouslyRunningTasks = client.getChildren().forPath(format(SINGLE_ENGINE_PATH, engineID));
+        List<String> previouslyRunningTasks = client.getChildren().forPath(format(SINGLE_ENGINE_PATH, engineID.value()));
 
         // Re-queue all of the IDs.
         for(String task:previouslyRunningTasks){
@@ -191,7 +191,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             }
 
             // Check if assigned engine is still alive
-            if(client.checkExists().forPath(format(SINGLE_ENGINE_PATH, engineId)) == null) {
+            if(client.checkExists().forPath(format(SINGLE_ENGINE_PATH, engineId.value())) == null) {
                 reQueue(client, engineId);
                 deadRunners.add(engineId);
             }
