@@ -31,8 +31,8 @@ import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Set;
@@ -65,11 +65,11 @@ public class TaskFailoverTest {
 
     private static Thread failoverThread;
 
-    @ClassRule
-    public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
+    @Rule
+    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @BeforeClass
-    public static void setup() throws Exception {
+    @Before
+    public void setup() throws Exception {
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskFailover.class)).setLevel(Level.DEBUG);
 
         storage = new TaskStateInMemoryStore();
