@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.tasks.manager;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;

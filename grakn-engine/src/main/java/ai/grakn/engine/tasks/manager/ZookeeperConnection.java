@@ -20,7 +20,7 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.exception.EngineStorageException;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.util.ConfigProperties;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.imps.CuratorFrameworkState;

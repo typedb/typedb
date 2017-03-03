@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.tasks.storage;
 
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -26,9 +26,7 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;

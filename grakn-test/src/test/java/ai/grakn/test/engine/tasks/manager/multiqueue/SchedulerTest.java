@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
@@ -30,9 +30,7 @@ import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;

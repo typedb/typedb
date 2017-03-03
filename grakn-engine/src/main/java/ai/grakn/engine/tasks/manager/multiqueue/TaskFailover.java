@@ -19,7 +19,7 @@
 
 package ai.grakn.engine.tasks.manager.multiqueue;
 
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import org.apache.curator.framework.CuratorFramework;

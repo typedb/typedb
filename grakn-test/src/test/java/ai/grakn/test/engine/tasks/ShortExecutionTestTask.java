@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import mjson.Json;
 
 import java.util.concurrent.atomic.AtomicInteger;

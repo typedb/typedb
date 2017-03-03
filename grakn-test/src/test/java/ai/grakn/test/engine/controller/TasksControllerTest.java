@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;

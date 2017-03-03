@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.tasks;
 
+import ai.grakn.engine.TaskId;
+
 /**
  * <p>
  *     The base TaskManager interface.

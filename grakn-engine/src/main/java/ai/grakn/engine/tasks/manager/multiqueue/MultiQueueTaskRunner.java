@@ -20,7 +20,7 @@
 package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;

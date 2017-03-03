@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.tasks;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.exception.EngineStorageException;
 
