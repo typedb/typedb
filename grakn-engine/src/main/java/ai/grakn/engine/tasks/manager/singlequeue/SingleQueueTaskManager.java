@@ -99,7 +99,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        this.taskRunners = generate(this::newTaskRunner).limit(CAPACITY).collect(toSet());
+        this.taskRunners = generate(() -> newTaskRunner(engineId)).limit(CAPACITY).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         LOG.debug("TaskManager started");
@@ -168,7 +168,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * and {@link #zookeeper} connection.
      * @return New instance of a SingleQueueTaskRunner
      */
-    private SingleQueueTaskRunner newTaskRunner(){
-        return new SingleQueueTaskRunner(storage, zookeeper);
+    private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
+        return new SingleQueueTaskRunner(engineId, storage, zookeeper);
     }
 }

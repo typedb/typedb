@@ -75,9 +75,10 @@ public class StandaloneTaskManager implements TaskManager {
 
     private final ExecutorService executorService;
     private final ScheduledExecutorService schedulingService;
+    private final EngineID engineID;
 
     public StandaloneTaskManager(EngineID engineId) {
-        LOG.debug("Starting StandaloneTaskManager from engine " + engineId);
+        this.engineID = engineId;
         instantiatedTasks = new ConcurrentHashMap<>();
         stateStorage = new TaskStateInMemoryStore();
         stateUpdateLock = new ReentrantLock();
@@ -194,7 +195,7 @@ public class StandaloneTaskManager implements TaskManager {
 
             TaskState state = stateStorage.getState(id);
             if (state.status() == SCHEDULED || (recurring && state.status() == COMPLETED)) {
-                stateStorage.updateState(state.status(RUNNING));
+                stateStorage.updateState(state.setRunning(engineID));
                 executorService.submit(exceptionCatcher(state, task));
             }
 

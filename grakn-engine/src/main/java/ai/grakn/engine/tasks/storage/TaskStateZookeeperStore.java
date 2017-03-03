@@ -160,12 +160,12 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * within the storage itself.
      */
     @Override
-    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, String engineRunningOn, int limit, int offset){
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, EngineID engineRunningOn, int limit, int offset){
         try {
             Stream<TaskState> stream;
             if(engineRunningOn != null){
                 stream = zookeeper.connection().getChildren()
-                        .forPath(enginePath(EngineID.of(engineRunningOn))).stream()
+                        .forPath(enginePath(engineRunningOn)).stream()
                         .map(TaskId::of)
                         .map(this::getState);
             } else {

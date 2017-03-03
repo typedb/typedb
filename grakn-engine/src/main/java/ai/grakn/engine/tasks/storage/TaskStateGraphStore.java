@@ -31,6 +31,7 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.EngineGraknGraphFactory;
@@ -107,7 +108,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
         }
 
         if(task.engineID() != null){
-            state.has(ENGINE_ID, var().value(task.engineID()));
+            state.has(ENGINE_ID, var().value(task.engineID().value()));
         }
 
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
@@ -239,12 +240,12 @@ public class TaskStateGraphStore implements TaskStateStorage {
     }
 
     @Override
-    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, String engineRunningOn,
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, EngineID engineRunningOn,
                                                  int limit, int offset) {
         return getTasks(taskStatus, taskClassName, createdBy, engineRunningOn, limit, offset, false);
     }
 
-    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, String engineRunningOn,
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, EngineID engineRunningOn,
                                                  int limit, int offset, Boolean recurring) {
         Var matchVar = var(TASK_VAR).isa(name(SCHEDULED_TASK));
 
@@ -258,7 +259,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             matchVar.has(CREATED_BY, var().value(createdBy));
         }
         if(engineRunningOn != null){
-            matchVar.has(ENGINE_ID, var().value(engineRunningOn));
+            matchVar.has(ENGINE_ID, var().value(engineRunningOn.value()));
         }
         if(recurring != null) {
             matchVar.has(RECURRING, var().value(recurring));

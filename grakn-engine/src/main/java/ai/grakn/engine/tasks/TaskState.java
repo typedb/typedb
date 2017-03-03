@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
 
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -119,15 +120,17 @@ public class TaskState implements Serializable {
         return TaskId.of(taskId);
     }
 
+    public TaskState setRunning(EngineID engineID){
+        this.status = RUNNING;
+        this.engineID = engineID;
+        return this;
+    }
+
+    // TODO Split this up into more methods: do not set the engine ID to null
     public TaskState status(TaskStatus status) {
         this.status = status;
         this.statusChangeTime = Instant.now();
-
-        if(status == TaskStatus.RUNNING){
-            this.engineID = EngineID.getInstance().id();
-        } else if(status == TaskStatus.COMPLETED || status == TaskStatus.FAILED){
-            this.engineID = null;
-        }
+        this.engineID = null;
         return this;
     }
 
@@ -158,11 +161,6 @@ public class TaskState implements Serializable {
 
     public String creator() {
         return creator;
-    }
-
-    public TaskState engineID(EngineID engineID) {
-        this.engineID = engineID;
-        return this;
     }
 
     public EngineID engineID() {

@@ -18,6 +18,7 @@
 
 package ai.grakn.test.engine.tasks.storage;
 
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -90,7 +91,7 @@ public class TaskStateGraphStoreTest {
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task(at(runAt), configuration));
+        TaskId id = stateStorage.newState(task(at(runAt), configuration).status(CREATED));
         assertNotNull(id);
 
         // Get current values
@@ -99,19 +100,19 @@ public class TaskStateGraphStoreTest {
 
         String stackTrace = getFullStackTrace(new UnsupportedOperationException());
 
+        EngineID engineID = EngineID.me();
         // Change.
         stateStorage.updateState(midState
-                .status(SCHEDULED)
+                .setRunning(engineID)
                 .statusChangedBy("bla")
-                .engineID(EngineID.of(UUID.randomUUID().toString()))
                 .checkpoint("checkpoint")
                 .exception(stackTrace));
 
         TaskState newState = stateStorage.getState(id);
         assertNotEquals(state, newState);
-        assertNotEquals(state.status(), newState.status());
+        assertEquals(TaskStatus.RUNNING, newState.status());
         assertNotEquals(state.statusChangedBy(), newState.statusChangedBy());
-        assertNotEquals(state.engineID(), newState.engineID());
+        assertEquals(engineID, newState.engineID());
         assertEquals(stackTrace, newState.exception());
         assertEquals("checkpoint", newState.checkpoint());
         assertEquals(state.configuration().toString(), newState.configuration().toString());
@@ -183,17 +184,19 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetByRunningEngine(){
-        TaskId id = stateStorage.newState(task().engineID("Engine1"));
+        EngineID engine1 = EngineID.me();
+        TaskId id = stateStorage.newState(task().setRunning(engine1));
 
-        Set<TaskState> res = stateStorage.getTasks(null, null, null, "Engine1", 1, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, null, engine1, 1, 0);
         TaskState resultant = res.iterator().next();
         assertEquals(resultant.getId(), id);
-        assertEquals(resultant.engineID(), "Engine1");
+        assertEquals(resultant.engineID(), engine1);
 
-        stateStorage.updateState(resultant.engineID("Engine2"));
-        resultant = stateStorage.getTasks(null, null, null, "Engine2", 1, 0).iterator().next();
+        EngineID engine2 = EngineID.me();
+        stateStorage.updateState(resultant.setRunning(engine2));
+        resultant = stateStorage.getTasks(null, null, null, engine2, 1, 0).iterator().next();
         assertEquals(resultant.getId(), id);
-        assertEquals(resultant.engineID(), "Engine2");
+        assertEquals(resultant.engineID(), engine2);
     }
 
     public TaskState task(){
@@ -206,7 +209,6 @@ public class TaskStateGraphStoreTest {
 
     public TaskState task(TaskSchedule schedule, Json configuration, String creator){
         return TaskState.of(ShortExecutionTestTask.class, creator, schedule, configuration)
-                .statusChangedBy(this.getClass().getName())
-                .engineID(EngineID.of(UUID.randomUUID().toString()));
+                .statusChangedBy(this.getClass().getName());
     }
 }

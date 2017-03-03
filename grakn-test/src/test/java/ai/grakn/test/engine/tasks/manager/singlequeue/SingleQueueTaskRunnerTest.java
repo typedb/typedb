@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -91,7 +92,7 @@ public class SingleQueueTaskRunnerTest {
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(storage, consumer);
+        taskRunner = new SingleQueueTaskRunner(EngineID.me(), storage, consumer);
 
         createValidQueue(tasks);
 
@@ -117,6 +118,7 @@ public class SingleQueueTaskRunnerTest {
 
     private void createValidQueue(List<List<TaskState>> tasks) {
         Set<TaskId> appearedTasks = Sets.newHashSet();
+        EngineID engineId = EngineID.me();
 
         tasks(tasks).forEach(task -> {
             TaskId taskId = task.getId();
@@ -125,7 +127,7 @@ public class SingleQueueTaskRunnerTest {
                 task.status(CREATED);
             } else {
                 // The second time a task appears it must be in RUNNING state
-                task.status(RUNNING);
+                task.setRunning(engineId);
                 storage.updateState(task);
             }
 

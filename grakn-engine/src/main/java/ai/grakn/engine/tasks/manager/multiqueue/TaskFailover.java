@@ -141,7 +141,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
      */
     private void reQueue(EngineID engineID) throws Exception {
         // Get list of tasks that were being processed
-        Set<TaskState> previouslyRunningTasks = stateStorage.getTasks(null, null, null, engineID.value(), 100, 0);
+        Set<TaskState> previouslyRunningTasks = stateStorage.getTasks(null, null, null, engineID, 100, 0);
 
         // Re-queue all of the IDs.
         for(TaskState taskState:previouslyRunningTasks){

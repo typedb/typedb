@@ -47,7 +47,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
@@ -199,9 +198,8 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
 
                 // Mark as RUNNING and update task & runner states.
                 storage.updateState(state
-                        .status(RUNNING)
-                        .statusChangedBy(this.getClass().getName())
-                        .engineID(engineId));
+                        .setRunning(engineId)
+                        .statusChangedBy(this.getClass().getName()));
 
                 acceptedTasks.incrementAndGet();
 

@@ -75,7 +75,6 @@ public class TaskStateInMemoryStoreTest {
         // Change
         state.status(SCHEDULED)
                 .statusChangedBy("bla")
-                .engineID(EngineID.of("newEngine"))
                 .exception(exception);
 
         stateStorage.updateState(state);
@@ -83,7 +82,6 @@ public class TaskStateInMemoryStoreTest {
         TaskState newState = stateStorage.getState(id);
         assertEquals(SCHEDULED, newState.status());
         assertEquals("bla", newState.statusChangedBy());
-        assertEquals(EngineID.of("newEngine"), newState.engineID());
         assertEquals(exception, newState.exception());
     }
 
@@ -137,12 +135,12 @@ public class TaskStateInMemoryStoreTest {
 
     @Test
     public void testGetByRunningEngine(){
-        TaskId id = stateStorage.newState(task().engineID("Engine1"));
-
-        Set<TaskState> res = stateStorage.getTasks(null, null, null, "Engine1", 1, 0);
+        EngineID me = EngineID.me();
+        TaskId id = stateStorage.newState(task().setRunning(me));
+        Set<TaskState > res = stateStorage.getTasks(null, null, null, me, 1, 0);
         TaskState resultant = res.iterator().next();
         assertEquals(resultant.getId(), id);
-        assertEquals(resultant.engineID(), "Engine1");
+        assertEquals(resultant.engineID(), me);
     }
 
     @Test

@@ -104,8 +104,7 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add some tasks to a fake task runner watch and storage, marked as running
-        Set<TaskState> tasks = createTasks(5, RUNNING);
-        tasks.forEach(t -> t.engineID(fakeEngineID));
+        Set<TaskState> tasks = createTasks(5, RUNNING, fakeEngineID);
         tasks.forEach(storage::newState);
 
         // Mock killing that engine in ZK
@@ -129,14 +128,13 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add a task in each state (SCHEDULED, COMPLETED, STOPPED, FAILED, RUNNING) to fake task runner watch
-        TaskState scheduled = createTask(SCHEDULED, TaskSchedule.now(), Json.object());
-        TaskState running = createTask(RUNNING, TaskSchedule.now(), Json.object());
-        TaskState stopped = createTask(STOPPED, TaskSchedule.now(), Json.object());
-        TaskState failed = createTask(FAILED, TaskSchedule.now(), Json.object());
-        TaskState completed = createTask(COMPLETED, TaskSchedule.now(), Json.object());
+        TaskState scheduled = createTask(SCHEDULED, TaskSchedule.now(), Json.object(), fakeEngineID);
+        TaskState running = createTask(RUNNING, TaskSchedule.now(), Json.object(), fakeEngineID);
+        TaskState stopped = createTask(STOPPED, TaskSchedule.now(), Json.object(), fakeEngineID);
+        TaskState failed = createTask(FAILED, TaskSchedule.now(), Json.object(), fakeEngineID);
+        TaskState completed = createTask(COMPLETED, TaskSchedule.now(), Json.object(), fakeEngineID);
 
         Set<TaskState> tasks = Sets.newHashSet(scheduled, running, stopped, failed, completed);
-        tasks.forEach(t -> t.engineID(fakeEngineID));
         tasks.forEach(storage::newState);
 
         // Mock killing that engine
@@ -167,8 +165,7 @@ public class TaskFailoverTest {
         Json configuration = Json.object("configuration", true);
         Json checkpoint = Json.object("configuration", false);
 
-        TaskState running = createTask(RUNNING, TaskSchedule.now(), configuration);
-        running.engineID(fakeEngineID);
+        TaskState running = createTask(RUNNING, TaskSchedule.now(), configuration, fakeEngineID);
         running.checkpoint(checkpoint.toString());
         storage.newState(running);
 

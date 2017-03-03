@@ -19,6 +19,7 @@
 package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 
 import java.util.Set;
@@ -86,7 +87,7 @@ public interface TaskStateStorage {
     Set<TaskState> getTasks(TaskStatus taskStatus,
                                           String taskClassName,
                                           String createdBy,
-                                          String runningOnEngine,
+                                          EngineID runningOnEngine,
                                           int limit,
                                           int offset);
 }
