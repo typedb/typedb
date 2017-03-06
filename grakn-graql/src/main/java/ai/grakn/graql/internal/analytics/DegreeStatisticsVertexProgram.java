@@ -124,7 +124,6 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
     static void degreeStatisticsStepCastingOut(Vertex vertex, Messenger<Long> messenger) {
         if (vertex.label().equals(Schema.BaseType.CASTING.name()) && !vertex.property(VISITED).isPresent()
                 && messenger.receiveMessages().hasNext()) {
-            vertex.property(VISITED, true);
             messenger.sendMessage(messageScopeOutRolePlayer, getMessageCount(messenger));
         }
     }
