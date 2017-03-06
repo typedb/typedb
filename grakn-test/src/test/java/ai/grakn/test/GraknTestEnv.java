@@ -13,8 +13,6 @@ import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.ServerSocket;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,7 +51,7 @@ public abstract class GraknTestEnv {
     /**
      * To run engine we must ensure Cassandra, the Grakn HTTP endpoint, Kafka & Zookeeper are running
      */
-    static GraknEngineServer startEngine(String taskManagerClass) throws Exception {
+    static GraknEngineServer startEngine(String taskManagerClass, int port) throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
     	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
@@ -69,7 +67,6 @@ public abstract class GraknTestEnv {
 
         // start engine
         RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-        int port = getEphemeralPort();
         GraknEngineServer server = GraknEngineServer.start(taskManagerClass, port);
 
         LOG.info("ENGINE STARTED.");
@@ -158,13 +155,5 @@ public abstract class GraknTestEnv {
 
     public static boolean usingOrientDB() {
         return "orientdb".equals(CONFIG);
-    }
-
-    private static int getEphemeralPort() {
-        try (ServerSocket socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 }

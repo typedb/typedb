@@ -52,10 +52,10 @@ public class GraknEngineServerIT {
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.startSingleQueueServer();
+    public static final EngineContext engine1 = EngineContext.startSingleQueueServer().port(4567);
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.startSingleQueueServer();
+    public static final EngineContext engine2 = EngineContext.startSingleQueueServer().port(5678);
 
     private TaskStateStorage storage;
 
