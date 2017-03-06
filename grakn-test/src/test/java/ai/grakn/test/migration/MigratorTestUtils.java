@@ -91,7 +91,7 @@ public class MigratorTestUtils {
         RelationType relationType = graph.getType(relation);
 
         RoleType role1 = instance1.playsRoles().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
-        assertTrue(instance1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().values().contains(instance2)));
+        assertTrue(instance1.relations(role1).stream().anyMatch(rel -> rel.newRolePlayers().contains(instance2)));
     }
 
 
@@ -106,8 +106,8 @@ public class MigratorTestUtils {
         Set<Instance> instances = new HashSet<>();
 
         relation.instances().stream()
-                .filter(i -> i.rolePlayers().values().contains(instance))
-                .forEach(i -> instances.addAll(i.rolePlayers().values()));
+                .filter(i -> i.newRolePlayers().contains(instance))
+                .forEach(i -> instances.addAll(i.newRolePlayers()));
 
         instances.remove(instance);
         return instances;
@@ -123,7 +123,8 @@ public class MigratorTestUtils {
         RoleType roleOther = graph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         Collection<Relation> relations = instance.relations(roleOwner);
-        return relations.stream().map(r -> r.rolePlayers().get(roleOther).asResource());
+        //TODO: Cleanup use of iterator here
+        return relations.stream().map(r -> r.newRolePlayers(roleOther).iterator().next().asResource());
     }
 
     /**

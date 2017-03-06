@@ -32,6 +32,8 @@ import ai.grakn.graql.Graql;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -96,19 +98,21 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertRelationCopied(Relation relation1, GraknGraph two){
-        if(relation1.rolePlayers().values().stream().anyMatch(Concept::isResource)){
+        if(relation1.newRolePlayers().stream().anyMatch(Concept::isResource)){
             return;
         }
 
         RelationType relationType = two.getRelationType(relation1.type().getName().getValue());
-        Map<RoleType, Instance> rolemap = relation1.rolePlayers().entrySet().stream().collect(toMap(
+        Map<RoleType, Set<Instance>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
                 e -> two.getRoleType(e.getKey().asType().getName().getValue()),
-                e -> getInstanceUniqueByResourcesFromGraph(two, e.getValue())
+                e -> e.getValue().stream().
+                        map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).
+                        collect(Collectors.toSet())
         ));
 
         boolean relationFound = false;
         for (Relation relation : relationType.instances()) {
-            if(relation.rolePlayers().equals(rolemap)){
+            if(relation.allRolePlayers().equals(rolemap)){
                 relationFound = true;
             }
         }
