@@ -37,7 +37,6 @@ import org.junit.Test;
 
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -62,8 +61,6 @@ public class TaskFailoverTest {
     private static TaskFailover taskFailover;
     private static TaskStateInMemoryStore storage;
 
-    private static Thread failoverThread;
-
     @Rule
     public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
@@ -75,27 +72,13 @@ public class TaskFailoverTest {
 
         connection = new ZookeeperConnection();
 
-        CountDownLatch failoverStartup = new CountDownLatch(1);
-        failoverThread = new Thread(() -> {
-            try {
-                taskFailover = new TaskFailover(connection.connection(), storage);
-                failoverStartup.countDown();
-            } catch (Exception e){
-                throw new RuntimeException(e);
-            }
-        });
-
-        failoverThread.start();
-        failoverStartup.await();
+        taskFailover = new TaskFailover(connection.connection(), storage);
     }
 
     @AfterClass
     public static void teardown() throws Exception {
         taskFailover.close();
         connection.close();
-
-        failoverThread.interrupt();
-        failoverThread.join();
     }
 
     @Test
