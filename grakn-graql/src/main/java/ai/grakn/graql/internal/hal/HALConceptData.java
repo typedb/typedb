@@ -212,24 +212,17 @@ class HALConceptData {
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
 
         entity.relations().forEach(rel -> {
-
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
-            TypeName rolePlayedByCurrentConcept = null;
-            boolean isResource = false;
-            for (Map.Entry<RoleType, Instance> entry : rel.rolePlayers().entrySet()) {
+            for (Map.Entry<RoleType, Set<Instance>> entry : rel.allRolePlayers().entrySet()) {
                 //Some role players can be null
-                if (entry.getValue() != null) {
-                    if (entry.getValue().isResource()) {
-                        isResource = true;
-                    } else if (entry.getValue().getId().equals(entity.getId())) {
-                        rolePlayedByCurrentConcept = entry.getKey().getName();
+                for (Instance instance : entry.getValue()) {
+                    if(instance != null){
+                        if (!instance.isResource() && instance.getId().equals(entity.getId())) {
+                            attachRelation(halResource, rel, entry.getKey().getName(), separationDegree);
+                        }
                     }
                 }
             }
-            if (!isResource) {
-                attachRelation(halResource, rel, rolePlayedByCurrentConcept, separationDegree);
-            }
-
         });
     }
 
