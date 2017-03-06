@@ -96,15 +96,6 @@ public interface Relation extends Instance {
      */
     Relation addRolePlayer(RoleType roleType, Instance instance);
 
-    /**
-     * Removes the provided role players from this relation.
-     * If no instance is provided then all instances playing the role are removed.
-     *
-     * @param roleType The role type of the roleplayer(s) to remove
-     * @param instances The instances to remove
-     */
-    void removeRolePlayer(RoleType roleType, Instance ... instances);
-
     //------------------------------------- Other ----------------------------------
 
     /**

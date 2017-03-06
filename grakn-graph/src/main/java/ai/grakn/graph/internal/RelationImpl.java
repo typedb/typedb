@@ -188,11 +188,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         return addNewRolePlayer(roleType, instance);
     }
 
-    @Override
-    public void removeRolePlayer(RoleType roleType, Instance... instances) {
-        //TODO: Implement this thing
-    }
-
     /**
      * Adds a new role player to this relation
      * @param roleType The role of the new role player.
