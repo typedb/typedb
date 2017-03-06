@@ -42,8 +42,8 @@ const checkIfAuthNeeded = function contactEngine(next) {
   EngineClient.request({
     url: '/auth/enabled/',
   }).then((result) => {
-    authNeeded = result;
-    if (authNeeded === 'false') {
+    authNeeded = (result === 'true');
+    if (authNeeded === false) {
       next();
     } else {
       next('/login');
@@ -55,12 +55,11 @@ const checkIfAuthNeeded = function contactEngine(next) {
 router.beforeEach((to, from, next) => {
   if (authNeeded === undefined) {
     checkIfAuthNeeded(next);
-  }
-  // else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
+  } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
     next();
-  // } else {
-  //   next('/login');
-  // }
+  } else {
+    next('/login');
+  }
 });
 
 new Vue({
