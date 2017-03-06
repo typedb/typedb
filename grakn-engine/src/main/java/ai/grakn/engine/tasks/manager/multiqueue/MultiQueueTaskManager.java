@@ -25,8 +25,6 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
-import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.producer.Producer;
@@ -36,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.util.ConfigProperties.USE_ZOOKEEPER_STORAGE;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -65,12 +62,7 @@ public final class MultiQueueTaskManager implements TaskManager {
     public MultiQueueTaskManager(EngineID engineId) {
         this.engineId = engineId;
         this.zookeeper = new ZookeeperConnection(client());
-
-        if(properties.getPropertyAsBool(USE_ZOOKEEPER_STORAGE)){
-            this.storage = new TaskStateZookeeperStore(zookeeper);
-        } else {
-            this.storage = new TaskStateGraphStore();
-        }
+        this.storage = chooseStorage(properties, zookeeper);
 
         // run the TaskRunner in a thread
         startTaskRunner();
