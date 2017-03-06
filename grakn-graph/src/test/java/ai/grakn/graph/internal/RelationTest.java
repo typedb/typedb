@@ -138,13 +138,13 @@ public class RelationTest extends GraphTestBase{
         assertThat(entity2r1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
                 containsInAnyOrder(entity1r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
         assertThat(entity3r2r3.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
-                containsInAnyOrder(entity1r1, entity2r1, entity4r3, entity5r1, entity6r1r2r3));
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
         assertThat(entity4r3.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity5r1, entity6r1r2r3));
         assertThat(entity5r1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity6r1r2r3));
         assertThat(entity6r1r2r3.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
-                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1));
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
 
     @Test
