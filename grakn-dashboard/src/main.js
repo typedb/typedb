@@ -41,26 +41,26 @@ let authNeeded;
 const checkIfAuthNeeded = function contactEngine(next) {
   EngineClient.request({
     url: '/auth/enabled/',
-    callback: (resp, error) => {
-      authNeeded = resp;
-      if (authNeeded) {
-        next('/login');
-      } else {
-        next();
-      }
-    },
-  });
+  }).then((result) => {
+    authNeeded = result;
+    if (authNeeded === 'false') {
+      next();
+    } else {
+      next('/login');
+    }
+  }, () => {});
 };
 
 // Middleware to ensure the user is authenticated when needed.
 router.beforeEach((to, from, next) => {
   if (authNeeded === undefined) {
     checkIfAuthNeeded(next);
-  } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
-    next();
-  } else {
-    next('/login');
   }
+  // else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
+    next();
+  // } else {
+  //   next('/login');
+  // }
 });
 
 new Vue({

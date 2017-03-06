@@ -67,7 +67,8 @@ export default {
 
                 this.toolTipElement.style.left = (nodeDOMCoordinates.x - offsetX) + 'px';
                 this.toolTipElement.style.top = (nodeBoundingBox.y - offsetY)+ "px";
-                this.nodeType = visualiser.getNodeType(nodeId);
+                const nodeObj = visualiser.getNode(nodeId);
+                this.nodeType = (nodeObj.type != "") ? nodeObj.type : nodeObj.baseType;
             }
         }
     },
