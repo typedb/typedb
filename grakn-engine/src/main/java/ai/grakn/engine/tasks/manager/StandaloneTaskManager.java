@@ -126,9 +126,9 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     public TaskManager stopTask(TaskId id, String requesterName) {
+        stateUpdateLock.lock();
+        
         try {
-            stateUpdateLock.lock();
-
             TaskState state = stateStorage.getState(id);
             if (state == null) {
                 return this;
@@ -179,9 +179,10 @@ public class StandaloneTaskManager implements TaskManager {
             catch (Throwable throwable) {
                 LOG.error(getFullStackTrace(throwable));
                 state.markFailed(throwable);
+            } finally {
+                stateStorage.updateState(state);
+                stateUpdateLock.unlock();
             }
-            stateStorage.updateState(state);
-            stateUpdateLock.unlock();
         };
     }
 
@@ -189,13 +190,15 @@ public class StandaloneTaskManager implements TaskManager {
         return () -> {
             stateUpdateLock.lock();
 
-            TaskState state = stateStorage.getState(id);
-            if (state.status() == SCHEDULED || (recurring && state.status() == COMPLETED)) {
-                stateStorage.updateState(state.markRunning(engineID));
-                executorService.submit(exceptionCatcher(state, task));
+            try {
+                TaskState state = stateStorage.getState(id);
+                if (state.status() == SCHEDULED || (recurring && state.status() == COMPLETED)) {
+                    stateStorage.updateState(state.markRunning(engineID));
+                    executorService.submit(exceptionCatcher(state, task));
+                }
+            } finally {
+                stateUpdateLock.unlock();
             }
-
-            stateUpdateLock.unlock();
         };
     }
 
