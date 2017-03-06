@@ -21,18 +21,13 @@ package ai.grakn.graql.internal.analytics;
 import ai.grakn.concept.TypeName;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
-
-import static ai.grakn.graql.internal.analytics.DegreeVertexProgram.DEGREE;
 
 /**
  * The vertex program for computing the degree in statistics.
@@ -41,37 +36,18 @@ import static ai.grakn.graql.internal.analytics.DegreeVertexProgram.DEGREE;
  * @author Jason Liu
  */
 
-public class DegreeStatisticsVertexProgram extends GraknVertexProgram<Long> {
+public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
 
     // element key
     static final String VISITED = "degreeStatisticsVertexProgram.visited";
-
-    private static final String OF_TYPE_NAMES = "degreeVertexProgram.ofTypeNames";
-
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Sets.newHashSet(VISITED, DEGREE);
-
-    private Set<TypeName> ofTypeNames = new HashSet<>();
 
     // Needed internally for OLAP tasks
     public DegreeStatisticsVertexProgram() {
     }
 
     public DegreeStatisticsVertexProgram(Set<TypeName> types, Set<TypeName> ofTypeNames) {
-        selectedTypes = types;
-        this.ofTypeNames = ofTypeNames;
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        ofTypeNames.forEach(type -> configuration.addProperty(OF_TYPE_NAMES + "." + type, type));
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeNames.add(TypeName.of(configuration.getProperty(OF_TYPE_NAMES + "." + key).toString())));
+        super(types, ofTypeNames);
     }
 
     @Override

@@ -44,10 +44,9 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     // element key
     static final String DEGREE = "degreeVertexProgram.degree";
     private static final String OF_TYPE_NAMES = "degreeVertexProgram.ofTypeNames";
-
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
-    private Set<TypeName> ofTypeNames = new HashSet<>();
+    Set<TypeName> ofTypeNames = new HashSet<>();
 
     // Needed internally for OLAP tasks
     public DegreeVertexProgram() {
@@ -110,6 +109,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                     vertex.property(DEGREE, getMessageCount(messenger));
                 }
                 break;
+
             default:
                 throw new RuntimeException("unreachable");
         }
