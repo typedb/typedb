@@ -216,10 +216,8 @@ class HALConceptData {
             for (Map.Entry<RoleType, Set<Instance>> entry : rel.allRolePlayers().entrySet()) {
                 //Some role players can be null
                 for (Instance instance : entry.getValue()) {
-                    if(instance != null){
-                        if (!instance.isResource() && instance.getId().equals(entity.getId())) {
-                            attachRelation(halResource, rel, entry.getKey().getName(), separationDegree);
-                        }
+                    if (instance != null && !instance.isResource() && instance.getId().equals(entity.getId())) {
+                        attachRelation(halResource, rel, entry.getKey().getName(), separationDegree);
                     }
                 }
             }
