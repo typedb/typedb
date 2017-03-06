@@ -57,6 +57,14 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     padding: 10px;
     max-height: 95%;
     overflow: scroll;
+
+    -moz-user-select: none;
+    -ms-overflow-style: none;
+    overflow: -moz-scrollbars-none;
+}
+
+.node-panel::-webkit-scrollbar {
+    display: none;
 }
 
 .panel-heading {

@@ -58,7 +58,7 @@ public class PostProcessingTestIT {
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @Before
     public void setUp() throws Exception {

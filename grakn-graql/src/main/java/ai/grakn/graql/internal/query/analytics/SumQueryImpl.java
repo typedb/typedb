@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -49,12 +49,15 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
+                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new SumMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
 
+        Number finalResult = sum.get(MapReduce.NullObject.instance());
+        LOGGER.info("Sum = " + finalResult);
+
         LOGGER.info("SumMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(sum.get(MapReduce.NullObject.instance()));
+        return Optional.of(finalResult);
     }
 
     @Override

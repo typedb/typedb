@@ -18,7 +18,7 @@
 
 package ai.grakn.migration.export;
 
-import ai.grakn.migration.base.io.MigrationOptions;
+import ai.grakn.migration.base.MigrationOptions;
 
 /**
  * Configure the default export options and access arguments passed by the user

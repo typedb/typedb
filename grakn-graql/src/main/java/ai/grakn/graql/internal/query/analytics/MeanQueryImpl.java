@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.analytics.MeanQuery;
-import ai.grakn.graql.internal.analytics.DegreeVertexProgram;
+import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.MeanMapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -49,13 +49,16 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         Set<TypeName> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeVertexProgram(allSubTypes, statisticsResourceTypeNames),
+                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeNames),
                 new MeanMapReduce(statisticsResourceTypeNames, dataType));
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 
+        double finalResult = meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT);
+        LOGGER.debug("Mean = " + finalResult);
+
         LOGGER.info("MeanMapReduce is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
+        return Optional.of(finalResult);
     }
 
     @Override

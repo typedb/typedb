@@ -18,10 +18,10 @@
 
 package ai.grakn.migration.sql;
 
-import ai.grakn.migration.base.AbstractMigrator;
-import ai.grakn.migration.base.io.MigrationOptions;
+import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.base.MigrationOptions;
 
-import static ai.grakn.migration.base.io.MigrationCLI.die;
+import static ai.grakn.migration.base.MigrationCLI.die;
 import static java.lang.Integer.parseInt;
 
 /**
@@ -30,8 +30,8 @@ import static java.lang.Integer.parseInt;
  */
 public class SQLMigrationOptions extends MigrationOptions {
 
-    private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
-    private final String active = Integer.toString(AbstractMigrator.ACTIVE_TASKS);
+    private final String batch = Integer.toString(Migrator.BATCH_SIZE);
+    private final String active = Integer.toString(Migrator.ACTIVE_TASKS);
 
     public SQLMigrationOptions(String[] args){
         super();
