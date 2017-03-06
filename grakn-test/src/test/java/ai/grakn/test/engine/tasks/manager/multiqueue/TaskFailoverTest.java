@@ -25,8 +25,6 @@ import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.zookeeper.CreateMode;
@@ -66,8 +64,6 @@ public class TaskFailoverTest {
 
     @Before
     public void setup() throws Exception {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskFailover.class)).setLevel(Level.DEBUG);
-
         storage = new TaskStateInMemoryStore();
 
         connection = new ZookeeperConnection();
