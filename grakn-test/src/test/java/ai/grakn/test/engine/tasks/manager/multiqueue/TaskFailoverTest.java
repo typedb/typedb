@@ -30,7 +30,7 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.zookeeper.CreateMode;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,8 +75,8 @@ public class TaskFailoverTest {
         taskFailover = new TaskFailover(connection.connection(), storage);
     }
 
-    @AfterClass
-    public static void teardown() throws Exception {
+    @After
+    public void teardown() throws Exception {
         taskFailover.close();
         connection.close();
     }
