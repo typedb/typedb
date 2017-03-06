@@ -75,7 +75,7 @@ public class ShortestPathTest {
 
     @After
     public void close() {
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -340,7 +340,7 @@ public class ShortestPathTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     private void addOntologyAndEntities2() throws GraknValidationException {
@@ -379,6 +379,6 @@ public class ShortestPathTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 }

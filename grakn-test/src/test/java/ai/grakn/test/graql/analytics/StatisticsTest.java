@@ -53,6 +53,7 @@ import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -98,7 +99,7 @@ public class StatisticsTest {
 
     @After
     public void close() {
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     @Test
@@ -250,6 +251,8 @@ public class StatisticsTest {
             assertEquals(-7L, result.get());
             result = graph.graql().compute().min().in(thing, thing, thing).of(resourceType2, resourceType5).execute();
             assertEquals(-7L, result.get());
+            result = graph.graql().compute().min().in(anotherThing).of(resourceType2).execute();
+            assertEquals(0L, result.get());
 
             result = Graql.compute().max().in().withGraph(graph).of(resourceType1).execute();
             assertEquals(1.8, result.get().doubleValue(), delta);
@@ -257,11 +260,8 @@ public class StatisticsTest {
             assertEquals(7.5, result.get().doubleValue(), delta);
             result = graph.graql().compute().max().of(resourceType1, resourceType6).execute();
             assertEquals(7.5, result.get().doubleValue(), delta);
-
-
-            // TODO: fix this test: we need to check the type of the resource owner, not just the type or relation
             result = graph.graql().compute().max().in(anotherThing).of(resourceType2).execute();
-            assertEquals(4L, result.get());
+            assertEquals(0L, result.get());
         }
     }
 
@@ -320,6 +320,8 @@ public class StatisticsTest {
             assertEquals(27.0, result.get().doubleValue(), delta);
             result = graph.graql().compute().sum().of(resourceType2, resourceType5).in(thing, anotherThing).execute();
             assertEquals(-18L, result.get());
+            result = graph.graql().compute().sum().of(resourceType2, resourceType5).in(thing).execute();
+            assertEquals(-11L, result.get());
         }
     }
 
@@ -371,12 +373,14 @@ public class StatisticsTest {
         try (GraknGraph graph = factory.getGraph()) {
             result = Graql.compute().withGraph(graph).mean().of(resourceType1).execute();
             assertEquals(1.5, result.get(), delta);
-            result = Graql.compute().mean().in(thing).of(resourceType2).withGraph(graph).execute();
+            result = Graql.compute().mean().of(resourceType2).withGraph(graph).execute();
             assertEquals(1D, result.get(), delta);
             result = graph.graql().compute().mean().of(resourceType1, resourceType6).execute();
             assertEquals(4.5, result.get(), delta);
-            result = graph.graql().compute().mean().in(anotherThing).of(resourceType2, resourceType5).execute();
+            result = graph.graql().compute().mean().in(thing, anotherThing).of(resourceType2, resourceType5).execute();
             assertEquals(-3D, result.get(), delta);
+            result = graph.graql().compute().mean().in(thing).of(resourceType1, resourceType6).execute();
+            assertEquals(3.9, result.get(), delta);
         }
     }
 
@@ -429,12 +433,14 @@ public class StatisticsTest {
         try (GraknGraph graph = factory.getGraph()) {
             result = Graql.compute().std().of(resourceType1).withGraph(graph).execute();
             assertEquals(Math.sqrt(0.18 / 3), result.get(), delta);
-            result = Graql.compute().std().of(resourceType2).withGraph(graph).in(thing).execute();
-            assertEquals(Math.sqrt(14.0 / 3), result.get(), delta);
+            result = Graql.compute().std().of(resourceType2).withGraph(graph).in(anotherThing).execute();
+            assertEquals(Math.sqrt(0D), result.get(), delta);
             result = graph.graql().compute().std().of(resourceType1, resourceType6).execute();
             assertEquals(Math.sqrt(54.18 / 6), result.get(), delta);
             result = graph.graql().compute().std().of(resourceType2, resourceType5).in(thing, anotherThing).execute();
             assertEquals(Math.sqrt(110.0 / 6), result.get(), delta);
+            result = graph.graql().compute().std().of(resourceType2).in(thing).execute();
+            assertEquals(2.5, result.get(), delta);
         }
     }
 
@@ -497,6 +503,8 @@ public class StatisticsTest {
             assertEquals(-7L, result.get().longValue());
             result = graph.graql().compute().median().in(thing, anotherThing).of(resourceType2, resourceType5).execute();
             assertEquals(-7L, result.get().longValue());
+            result = Graql.compute().withGraph(graph).median().in(thing).of(resourceType2).execute();
+            assertNotEquals(0L, result.get().longValue());
         }
     }
 
@@ -596,7 +604,7 @@ public class StatisticsTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     private void addResourcesInstances() throws GraknValidationException {
@@ -623,7 +631,7 @@ public class StatisticsTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     private void addResourceRelations() throws GraknValidationException {
@@ -701,6 +709,6 @@ public class StatisticsTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 }

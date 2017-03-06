@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
@@ -226,23 +225,6 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
             if (type == null || !type.isRelationType()) {
                 throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(name));
-            }
-
-            RelationType relationType = type.asRelationType();
-
-            Collection<RelationType> relationTypes = relationType.subTypes();
-
-            Set<TypeName> validRoles = relationTypes.stream()
-                    .flatMap(r -> r.hasRoles().stream())
-                    .map(Type::getName)
-                    .collect(toSet());
-
-            String errors = roleTypes.stream().filter(roleType -> !validRoles.contains(roleType)).map(roleType ->
-                    ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleType, name, validRoles)
-            ).collect(joining("\n"));
-
-            if (!errors.equals("")) {
-                throw new IllegalStateException(errors);
             }
         });
 

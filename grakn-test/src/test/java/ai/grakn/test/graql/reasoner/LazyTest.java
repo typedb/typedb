@@ -16,7 +16,6 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
@@ -46,6 +45,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -146,12 +146,12 @@ public class LazyTest {
         assertEquals(count, 0);
     }
 
-    @Test //(timeout = 30000)
+    @Test 
     public void testLazy()  {
-        final int N = 30;
+        final int N = 20;
 
         long startTime = System.currentTimeMillis();
-        MatrixGraphII.get(N, N).accept(graphContext.graph());
+        graphContext.load(MatrixGraphII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);
         GraknGraph graph = graphContext.graph();
@@ -160,11 +160,14 @@ public class LazyTest {
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
         MatchQuery query = iqb.parse(queryString);
 
-        int limit = 100;
+        final int limit = 20;
+        final long maxTime = 1000;
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
+        assertEquals(results.size(), limit);
+        assertTrue(answerTime < maxTime);
     }
 
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){

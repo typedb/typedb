@@ -47,8 +47,11 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         ComputerResult result = getGraphComputer().compute(
                 new MedianVertexProgram(allSubTypes, statisticsResourceTypeNames, dataType));
 
+        Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
+        LOGGER.debug("Median = " + finalResult);
+
         LOGGER.info("MedianVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
-        return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
+        return Optional.of(finalResult);
     }
 
     @Override

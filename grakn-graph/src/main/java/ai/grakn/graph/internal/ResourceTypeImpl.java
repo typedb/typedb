@@ -87,7 +87,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                 String value = (String) resource.getValue();
                 matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.toString()));
+                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, getName()));
                 }
             }
         }

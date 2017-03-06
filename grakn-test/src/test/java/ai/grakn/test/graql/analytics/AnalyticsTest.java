@@ -71,7 +71,7 @@ public class AnalyticsTest {
 
     @After
     public void close() {
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     @Test

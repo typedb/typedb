@@ -18,12 +18,12 @@
 
 package ai.grakn.test.migration.json;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.migration.base.AbstractMigrator;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -35,7 +35,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.Collection;
 
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
@@ -44,27 +43,27 @@ import static ai.grakn.test.migration.MigratorTestUtils.getProperty;
 import static ai.grakn.test.migration.MigratorTestUtils.getResource;
 import static ai.grakn.test.migration.MigratorTestUtils.getResources;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
-import static ai.grakn.test.migration.MigratorTestUtils.migrate;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class JsonMigratorTest {
 
-    private GraknGraph graph;
+    private Migrator migrator;
+    private GraknGraphFactory factory;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup(){
-        ((Logger) org.slf4j.LoggerFactory.getLogger(AbstractMigrator.class)).setLevel(Level.DEBUG);
-        graph = engine.factoryWithNewKeyspace().getGraph();
+        factory = engine.factoryWithNewKeyspace();
+        migrator = Migrator.to(Grakn.DEFAULT_URI, factory.getGraph().getKeyspace());
     }
 
     @Test
     public void testMigrateSimpleSchemaData() {
-        load(graph, getFile("json", "simple-schema/schema.gql"));
+        load(factory, getFile("json", "simple-schema/schema.gql"));
 
         String template = "  \n" +
                 "insert " +
@@ -90,8 +89,9 @@ public class JsonMigratorTest {
                 "  \n" +
                 "} ";
 
-        graph = migrate(graph, new JsonMigrator(template, getFile("json", "simple-schema/data.json")));
+        declareAndLoad(template, "simple-schema/data.json");
 
+        GraknGraph graph = factory.getGraph();
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
@@ -124,7 +124,7 @@ public class JsonMigratorTest {
 
     @Test
     public void testMigrateAllTypesData() throws FileNotFoundException {
-        load(graph, getFile("json", "all-types/schema.gql"));
+        load(factory, getFile("json", "all-types/schema.gql"));
 
         String template = "" +
                 "insert $x isa thing\n" +
@@ -136,8 +136,9 @@ public class JsonMigratorTest {
                 "  has a-string <a-string>\n" +
                 "  if (<a-null> != null) do {has a-null <a-null>};";
 
-        graph = migrate(graph, new JsonMigrator(template, new FileReader(getFile("json", "all-types/data.json"))));
+        declareAndLoad(template, "all-types/data.json");
 
+        GraknGraph graph = factory.getGraph();
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
         assertEquals(1, things.size());
@@ -161,15 +162,16 @@ public class JsonMigratorTest {
 
     @Test
     public void testMigrateDirectory(){
-        load(graph, getFile("json", "string-or-object/schema.gql"));
+        load(factory, getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
                 "        has a-string if (<the-thing.a-string> != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        graph = migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
+        declareAndLoad(template, "string-or-object/data");
 
+        GraknGraph graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
 
@@ -184,26 +186,34 @@ public class JsonMigratorTest {
 
     @Test
     public void testStringOrObject(){
-        load(graph, getFile("json", "string-or-object/schema.gql"));
+        load(factory, getFile("json", "string-or-object/schema.gql"));
 
         String template = "\n" +
                 "insert $thing isa the-thing\n" +
                 "        has a-string if (<the-thing.a-string> != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
-        graph = migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
+        declareAndLoad(template, "string-or-object/data");
 
+        GraknGraph graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
     }
 
     @Test
     public void testMissingDataDoesNotThrowError(){
-        load(graph, getFile("json", "string-or-object/schema.gql"));
+        load(factory, getFile("json", "string-or-object/schema.gql"));
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
-        graph = migrate(graph, new JsonMigrator(template, getFile("json", "string-or-object/data")));
+        declareAndLoad(template, "string-or-object/data");
 
+        GraknGraph graph = factory.getGraph();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(1, theThing.instances().size());
+    }
+
+    private void declareAndLoad(String template, String file){
+        try(JsonMigrator m = new JsonMigrator(getFile("json", file))){
+            migrator.load(template, m.convert());
+        }
     }
 }
