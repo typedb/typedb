@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -160,6 +161,11 @@ public class LoaderClient {
      */
     public void add(InsertQuery query){
         queries.add(query);
+
+        if(canRunPostProcessing()){
+            submitAndRunPostProcessing();
+        }
+
         if(queries.size() >= batchSize){
             sendQueriesToLoader(new HashSet<>(queries));
             queries.clear();
@@ -201,6 +207,8 @@ public class LoaderClient {
      * @param queries Queries to be inserted
      */
     private void sendQueriesToLoader(Collection<InsertQuery> queries){
+        LOG.debug("Batch {}", batchNumber);
+
         try {
             blocker.acquire();
         } catch (InterruptedException e) {
@@ -208,7 +216,9 @@ public class LoaderClient {
         }
 
         try {
-            String taskId = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
+            // get response
+            Json response = executePost(loadingConfiguration(queries, batchNumber.incrementAndGet()), loadingParams());
+            String taskId = response.at("id").asString();
 
             CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
 
@@ -231,6 +241,32 @@ public class LoaderClient {
         }
     }
 
+    private boolean canRunPostProcessing(){
+        return batchNumber.get() % 1000 == 0;
+    }
+
+    private void submitAndRunPostProcessing(){
+        try {
+            waitToFinish();
+
+            Json response = executePost(postProcessingConfiguration(), postProcessingParams());
+            String taskId = response.at("id").asString();
+
+            LOG.info("Post processing task ID {}", taskId);
+            LOG.info("Waiting for postprocessing to finish");
+
+            CompletableFuture<Json> future = makeTaskCompletionFuture(taskId);
+            future.get();
+
+            LOG.debug("Post processing finished");
+        } catch (HttpRetryException exception){
+            LOG.debug("Retry submitting post processing", exception);
+            submitAndRunPostProcessing();
+        } catch (InterruptedException|ExecutionException e){
+            LOG.error("Error getting post processing future", e);
+        }
+    }
+
     private void unblock(CompletableFuture<Json> status){
         blocker.release();
         futures.remove(status.hashCode());
@@ -242,10 +278,10 @@ public class LoaderClient {
      *
      * @return A Completable future that terminates when the task is finished
      */
-    private String executePost(String body) throws HttpRetryException {
+    private Json executePost(String body, String params) throws HttpRetryException {
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(format(POST, uri) + "?" + getPostParams());
+            URL url = new URL(format(POST, uri) + "?" + params);
 
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(true);
@@ -259,14 +295,11 @@ public class LoaderClient {
             connection.getOutputStream().write(body.getBytes(REST.HttpConn.UTF8));
             connection.getOutputStream().flush();
 
-            // get response
-            Json response = Json.read(readResponse(connection.getInputStream()));
-
-            return response.at("id").asString();
+            return Json.read(readResponse(connection.getInputStream()));
         }
         catch (IOException e){
             if(retry){
-                return executePost(body);
+                return executePost(body, params);
             } else {
                 throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
             }
@@ -348,7 +381,27 @@ public class LoaderClient {
         });
     }
 
-    private String getPostParams(){
+    /**
+     * Post processing configuration
+     */
+    private String postProcessingParams(){
+        return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.postprocessing.PostProcessingTask&" +
+                TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
+                LIMIT_PARAM + "=" + 10000 + "&" +
+                TASK_CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
+    }
+
+    /**
+     * URL params for a post processing task
+     */
+    private String postProcessingConfiguration(){
+        return Json.object().toString();
+    }
+
+    /**
+     * URL params for al oading task
+     */
+    private String loadingParams(){
         return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.LoaderTask&" +
                 TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
                 LIMIT_PARAM + "=" + 10000 + "&" +
@@ -361,7 +414,7 @@ public class LoaderClient {
      * @param batchNumber number of the current batch being sent
      * @return configuration for the loader task
      */
-    private String getConfiguration(Collection<InsertQuery> queries, int batchNumber){
+    private String loadingConfiguration(Collection<InsertQuery> queries, int batchNumber){
         return Json.object()
                 .set(KEYSPACE_PARAM, keyspace)
                 .set("batchNumber", batchNumber)
