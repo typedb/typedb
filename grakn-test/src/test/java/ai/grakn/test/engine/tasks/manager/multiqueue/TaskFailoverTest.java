@@ -44,7 +44,6 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_ENGINE_TASK_PATH;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
@@ -74,7 +73,7 @@ public class TaskFailoverTest {
 
         storage = new TaskStateInMemoryStore();
 
-        connection = new ZookeeperConnection(client());
+        connection = new ZookeeperConnection();
 
         CountDownLatch failoverStartup = new CountDownLatch(1);
         failoverThread = new Thread(() -> {

@@ -20,11 +20,14 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +36,11 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.FAILOVER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
+import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_BASE_SLEEP_TIME;
+import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_MAX_RETRIES;
 import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
+import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
+import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 
 /**
  * <p>
@@ -52,9 +59,10 @@ public class ZookeeperConnection {
     /**
      * Start the connection to zookeeper. This method is blocking.
      */
-    public ZookeeperConnection(CuratorFramework zookeeperConnection) {
+    public ZookeeperConnection() {
+        zookeeperConnection = client();
+
         CONNECTION_COUNTER.incrementAndGet();
-        this.zookeeperConnection = zookeeperConnection;
 
         try {
             zookeeperConnection.start();
@@ -122,5 +130,18 @@ public class ZookeeperConnection {
         if(zookeeperConnection.checkExists().forPath(TASKS_PATH_PREFIX) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(TASKS_PATH_PREFIX);
         }
+    }
+
+    private static CuratorFramework client() {
+        int sleep = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
+        int retries = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
+
+        return CuratorFrameworkFactory.builder()
+                .connectString(ConfigProperties.getInstance().getProperty(ZK_SERVERS))
+                .namespace(ZookeeperPaths.TASKS_NAMESPACE)
+                .sessionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_SESSION_TIMEOUT))
+                .connectionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
+                .retryPolicy(new ExponentialBackoffRetry(sleep, retries))
+                .build();
     }
 }

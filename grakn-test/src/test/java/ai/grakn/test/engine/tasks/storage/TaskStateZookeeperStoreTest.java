@@ -28,7 +28,6 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -39,7 +38,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -56,7 +54,7 @@ public class TaskStateZookeeperStoreTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        connection = new ZookeeperConnection(client());
+        connection = new ZookeeperConnection();
         stateStorage = new TaskStateZookeeperStore(connection);
     }
 
