@@ -492,7 +492,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
             join = Stream.concat(join, subs);
         }
-        return join.distinct();
+        return join;
     }
 
     Stream<Map<VarName, Concept>> computeJoin(Set<ReasonerAtomicQuery> subGoals,
@@ -500,11 +500,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                                               Cache<ReasonerAtomicQuery, ?> dCache,
                                               boolean materialise,
                                               boolean differentialJoin) {
-        if (differentialJoin){
-            return differentialJoin(subGoals, cache, dCache, materialise);
-        } else {
-            return fullJoin(subGoals, cache, dCache, materialise);
-        }
+
+        Stream<Map<VarName, Concept>> join = differentialJoin?
+                differentialJoin(subGoals, cache, dCache, materialise)  : fullJoin(subGoals, cache, dCache, materialise);
+
+        Set<NotEquals> filters = getFilters();
+        return join
+                .filter(a -> nonEqualsFilter(a, filters));
     }
 
     /**

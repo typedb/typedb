@@ -90,8 +90,6 @@ rhs
 #                                                                           #
 #############################################################################
 
-# TODO: This requires $s1 and $s2 to be distinct!
-
 $materializeMarriagesFromWeddings isa inference-rule
 lhs
 {$w isa wedding has confidence "high";
@@ -183,7 +181,6 @@ $y has gender "male";}
 rhs
 {(wife: $x, husband: $y) isa marriage;};
 
-# TODO: Genderize in-laws
 isa inference-rule
 lhs
 {(parent-in-law: $x, child-in-law: $y) isa in-laws;
@@ -230,8 +227,6 @@ lhs
 rhs
 {(grandparent: $gp, grandchild: $gc) isa grandparentship;};
 
-#TODO: This requires the childrent to be different! (Possibly the parents, too if gender is not available)
-
 $peopleWithSameParentsAreSiblings isa inference-rule
 lhs
 {(parent: $m, child: $x) isa parentship;
@@ -244,8 +239,6 @@ $x != $y;
 }
 rhs
 {(sibling1: $x, sibling2: $y) isa siblings;};
-
-#TODO: Avoiding explicitly the cousins to be the same would be nice (siblings should take care of this, though)
 
 $peopleWithSiblingsParentsAreCousins isa inference-rule
 lhs
