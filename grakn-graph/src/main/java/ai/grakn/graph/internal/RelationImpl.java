@@ -101,25 +101,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         return hash.toString();
     }
 
-
-    /**
-     *
-     * @return A list of all the Instances involved in the relationships and the Role Types which they play.
-     */
-    @Override
-    public Map<RoleType, Instance> rolePlayers() {
-        Set<CastingImpl> castings = getMappingCasting();
-        HashMap<RoleType, Instance> roleMap = new HashMap<>();
-
-        //Gets roles based on all roles of the relation type
-        type().hasRoles().forEach(roleType -> roleMap.put(roleType, null));
-
-        //Get roles based on availiable castings
-        castings.forEach(casting -> roleMap.put(casting.getRole(), casting.getRolePlayer()));
-
-        return roleMap;
-    }
-
     /**
      * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
      * @see RoleType

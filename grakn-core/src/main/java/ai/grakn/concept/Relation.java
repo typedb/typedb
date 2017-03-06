@@ -66,15 +66,6 @@ public interface Relation extends Instance {
      * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
      * @see RoleType
      *
-     * @return A list of all the Instances and their Role Types.
-     */
-    @Deprecated // TODO: Remove this method
-    Map<RoleType, Instance> rolePlayers();
-
-    /**
-     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
-     * @see RoleType
-     *
      * @return A list of all the role types and the instances playing them in this relation.
      */
     Map<RoleType, Set<Instance>> allRolePlayers();
