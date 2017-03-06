@@ -236,13 +236,15 @@ class HALConceptData {
 
     private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
 
-        rel.rolePlayers().forEach((roleType, instance) -> {
-            if (instance != null) {
-                Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
-                        .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                handleConcept(roleResource, instance, separationDegree - 1);
-                halResource.withRepresentation(roleType.getName().getValue(), roleResource);
-            }
+        rel.allRolePlayers().forEach((roleType, instanceSet) -> {
+            instanceSet.forEach(instance -> {
+                if (instance != null) {
+                    Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
+                            .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+                    handleConcept(roleResource, instance, separationDegree - 1);
+                    halResource.withRepresentation(roleType.getName().getValue(), roleResource);
+                }
+            });
         });
     }
 
