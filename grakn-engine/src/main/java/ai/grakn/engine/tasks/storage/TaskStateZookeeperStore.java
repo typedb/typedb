@@ -28,6 +28,8 @@ import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.api.transaction.CuratorTransactionBridge;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
+import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -66,7 +68,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      */
     @Override
     public TaskId newState(TaskState task){
-       return executeWithMutex(task.getId(), () -> {
+       return executeWithMutex(() -> {
            // Start a transaction to write the current serialized task
            CuratorTransactionBridge transaction = zookeeper.connection().inTransaction()
                    .create().forPath(taskPath(task), serialize(task));
@@ -78,7 +80,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
            transaction.and().commit();
 
            return task.getId();
-        });
+        }, task.getId(), task.engineID());
     }
 
     /**
@@ -94,25 +96,29 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      */
     @Override
     public Boolean updateState(TaskState task){
-        return executeWithMutex(task.getId(), () -> {
-
+        try {
             // Get the previously stored task
             TaskState previousTask = (TaskState) deserialize(zookeeper.connection().getData().forPath(taskPath(task)));
 
-            // Start a transaction to write the current serialized task
-            CuratorTransactionBridge transaction = zookeeper.connection().inTransaction()
-                    .setData().forPath(taskPath(task), serialize(task));
+            return executeWithMutex(() -> {
 
-            EngineID currentEngineId = task.engineID();
-            EngineID previousEngineId = previousTask.engineID();
+                // Start a transaction to write the current serialized task
+                CuratorTransactionBridge transaction = zookeeper.connection().inTransaction()
+                        .setData().forPath(taskPath(task), serialize(task));
 
-            registerTaskIsExecutingOnEngine(transaction, previousEngineId, currentEngineId, task);
+                EngineID currentEngineId = task.engineID();
+                EngineID previousEngineId = previousTask.engineID();
 
-            // Execute transaction
-            transaction.and().commit();
+                registerTaskIsExecutingOnEngine(transaction, previousEngineId, currentEngineId, task);
 
-            return true;
-        });
+                // Execute transaction
+                transaction.and().commit();
+
+                return true;
+            }, task.getId(), task.engineID(), previousTask.engineID());
+        } catch (Exception e){
+            throw new EngineStorageException(e);
+        }
     }
 
     /**
@@ -124,15 +130,15 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      */
     @Override
     public TaskState getState(TaskId id) {
-        return executeWithMutex(id, () -> {
+        return executeWithMutex(() -> {
             byte[] stateInZk = zookeeper.connection().getData().forPath(taskPath(id));
             return (TaskState) deserialize(stateInZk);
-        });
+        }, id);
     }
 
     @Override
     public boolean containsTask(TaskId id) {
-        return executeWithMutex(id, () -> zookeeper.connection().checkExists().forPath(taskPath(id)) != null);
+        return executeWithMutex(() -> zookeeper.connection().checkExists().forPath(taskPath(id)) != null, id);
     }
 
     /**
@@ -182,16 +188,18 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
         }
     }
 
-    private <T> T executeWithMutex(TaskId id, SupplierWithException<T> function){
-        InterProcessMutex mutex = zookeeper.mutex(id);
+    private <T> T executeWithMutex(SupplierWithException<T> function, TaskId task, EngineID... engines){
+        // Get mutexes for all the Ids
+        Collection<InterProcessMutex> mutex = Stream.of(task).map(TaskId::getValue).map(zookeeper::mutex).collect(toSet());
+        Stream.of(engines).filter(Objects::nonNull).map(EngineID::value).map(zookeeper::mutex).forEach(mutex::add);
 
-        zookeeper.acquire(mutex);
+        mutex.forEach(zookeeper::acquire);
         try {
             return function.get();
         } catch (Exception e) {
             throw new EngineStorageException("Could not get state from storage " + getFullStackTrace(e));
         } finally {
-            zookeeper.release(mutex);
+            mutex.forEach(zookeeper::release);
         }
     }
 
