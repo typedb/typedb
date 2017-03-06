@@ -19,7 +19,6 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
@@ -47,7 +46,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class TaskStates extends Generator<TaskState> {
 
-    private Status statusConfig = null;
     private boolean uniqueIds = false;
 
     public TaskStates() {
@@ -66,12 +64,7 @@ public class TaskStates extends Generator<TaskState> {
             taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
         }
 
-        TaskStatus taskStatus;
-        if (statusConfig == null) {
-            taskStatus = gen().type(TaskStatus.class).generate(random, status);
-        } else {
-            taskStatus = random.choose(statusConfig.value());
-        }
+        // TODO: Make this generate random task statuses
 
         String creator = gen().type(String.class).generate(random, status);
 
@@ -80,27 +73,11 @@ public class TaskStates extends Generator<TaskState> {
         Json configuration = Json.object();
         TaskState taskState = TaskState.of(taskClass, creator, TaskSchedule.now(), configuration, taskId);
         configuration.set("id", taskState.getId().getValue());
-        if(taskStatus == TaskStatus.RUNNING){
-            taskState.setRunning(EngineID.me());
-        } else {
-            taskState.status(taskStatus);
-        }
         return taskState;
-    }
-
-    public void configure(Status status) {
-        this.statusConfig = status;
     }
 
     public void configure(UniqueIds uniqueIds) {
         this.uniqueIds = true;
-    }
-
-    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
-    @Retention(RUNTIME)
-    @GeneratorConfiguration
-    public @interface Status {
-        TaskStatus[] value();
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

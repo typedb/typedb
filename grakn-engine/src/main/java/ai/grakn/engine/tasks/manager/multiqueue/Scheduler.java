@@ -50,7 +50,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
@@ -216,7 +215,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      */
     private void markAsScheduled(TaskState state) {
         LOG.debug("Marking " + state.getId() + " as scheduled");
-        storage.updateState(state.status(SCHEDULED));
+        storage.updateState(state.markScheduled());
     }
 
     /**

@@ -31,17 +31,20 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import mjson.Json;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.IntStream;
 
+import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.generate;
+import static mjson.Json.object;
 
 /**
  * Class holding useful methods for use throughout background task tests
@@ -67,9 +70,7 @@ public class BackgroundTaskTestUtils {
     }
 
     public static Set<TaskState> createTasks(int n, TaskStatus status, EngineID engineID) {
-        return IntStream.range(0, n)
-                .mapToObj(i -> createTask(status, TaskSchedule.now(), Json.object(), engineID))
-                .collect(toSet());
+        return generate(() -> createTask(status, now(), object(), engineID)).limit(n).collect(toSet());
     }
 
     public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration) {
@@ -77,14 +78,24 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration, EngineID engineID) {
-        TaskState taskState =
-                TaskState.of(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
-                .statusChangedBy(BackgroundTaskTestUtils.class.getName());
+        TaskState taskState = TaskState.of(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration);
 
-        if(status == TaskStatus.RUNNING){
-            taskState.setRunning(engineID);
-        } else {
-            taskState.status(status);
+        switch (status) {
+            case RUNNING:
+                taskState.markRunning(engineID);
+                break;
+            case COMPLETED:
+                taskState.markCompleted();
+                break;
+            case FAILED:
+                taskState.markFailed(new IOException());
+                break;
+            case STOPPED:
+                taskState.markStopped();
+                break;
+            case SCHEDULED:
+                taskState.markScheduled();
+                break;
         }
 
         configuration.set("id", taskState.getId().getValue());

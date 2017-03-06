@@ -22,7 +22,6 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.generator.TaskStates.Status;
 import ai.grakn.generator.TaskStates.UniqueIds;
 import ai.grakn.test.EngineContext;
 import com.pholser.junit.quickcheck.Property;
@@ -36,7 +35,6 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
@@ -57,7 +55,7 @@ public class SingleQueueTaskManagerTest {
 
     @BeforeClass
     public static void setup(){
-        taskManager = new SingleQueueTaskManager(EngineID.of("me"));
+        taskManager = new SingleQueueTaskManager(EngineID.me());
     }
 
     @AfterClass
@@ -71,7 +69,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
+    public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds TaskState> tasks){
         tasks.forEach(taskManager::addTask);
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 

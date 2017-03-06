@@ -45,8 +45,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
@@ -197,10 +195,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
             if (state.status() == SCHEDULED) {
 
                 // Mark as RUNNING and update task & runner states.
-                storage.updateState(state
-                        .setRunning(engineId)
-                        .statusChangedBy(this.getClass().getName()));
-
+                storage.updateState(state.markRunning(engineId));
                 acceptedTasks.incrementAndGet();
 
                 // Submit to executor
@@ -239,12 +234,12 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
 
             // remove the configuration and mark as COMPLETED
             state.clearConfiguration();
-            storage.updateState(state.status(COMPLETED));
-
-        } catch(Throwable t) {
-            storage.updateState(state.status(FAILED));
-            LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(t));
+            state.markCompleted();
+        } catch(Throwable throwable) {
+            state.markFailed(throwable);
+            LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(throwable));
         } finally {
+            storage.updateState(state);
             removeRunningTask(state.getId());
             acceptedTasks.decrementAndGet();
             LOG.debug("Finished executing task - " + state.getId());

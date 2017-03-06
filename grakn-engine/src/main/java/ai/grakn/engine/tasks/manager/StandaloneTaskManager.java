@@ -44,10 +44,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -64,7 +62,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov, alexandraorth
  */
 public class StandaloneTaskManager implements TaskManager {
-    private static final String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
     private static final String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
 
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
@@ -108,7 +105,7 @@ public class StandaloneTaskManager implements TaskManager {
         TaskSchedule schedule = taskState.schedule();
         long delay = Duration.between(now, schedule.runAt()).toMillis();
         try {
-            stateStorage.updateState(taskState.status(SCHEDULED).statusChangedBy(this.getClass().getName()));
+            stateStorage.updateState(taskState.markScheduled());
 
             // Instantiate task.
             BackgroundTask task = taskState.taskClass().newInstance();
@@ -120,11 +117,10 @@ public class StandaloneTaskManager implements TaskManager {
             );
 
             instantiatedTasks.put(taskState.getId(), new Pair<>(future, task));
-
         }
-        catch (Throwable t) {
-            LOG.error(getFullStackTrace(t));
-            stateStorage.updateState(taskState.status(FAILED).exception(getFullStackTrace(t)));
+        catch (Throwable throwable) {
+            LOG.error(getFullStackTrace(throwable));
+            stateStorage.updateState(taskState.markFailed(throwable));
             instantiatedTasks.remove(taskState.getId());
         }
     }
@@ -143,7 +139,7 @@ public class StandaloneTaskManager implements TaskManager {
                 if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.schedule().isRecurring())) {
                     LOG.info("Stopping a currently scheduled task " + id);
                     pair.getKey().cancel(true);
-                    stateStorage.updateState(state.status(STOPPED));
+                    state.markStopped();
                 } else if (state.status() == RUNNING) {
                     LOG.info("Stopping running task " + id);
 
@@ -152,10 +148,12 @@ public class StandaloneTaskManager implements TaskManager {
                         task.stop();
                     }
 
-                    stateStorage.updateState(state.status(STOPPED));
+                    state.markStopped();
                 } else {
                     LOG.warn("Task not running - " + id);
                 }
+
+                stateStorage.updateState(state);
             }
         } finally {
             stateUpdateLock.unlock();
@@ -170,22 +168,20 @@ public class StandaloneTaskManager implements TaskManager {
 
     private Runnable exceptionCatcher(TaskState state, BackgroundTask task) {
         return () -> {
+            stateUpdateLock.lock();
             try {
                 task.start(saveCheckpoint(state), state.configuration());
 
-                stateUpdateLock.lock();
                 if(state.status() == RUNNING) {
-                    stateStorage.updateState(state.status(COMPLETED).statusChangedBy(EXCEPTION_CATCHER_NAME));
+                    state.markCompleted();
                 }
-                stateUpdateLock.unlock();
             }
-            catch (Throwable t) {
-                LOG.error(getFullStackTrace(t));
-                stateStorage.updateState(state
-                        .status(FAILED)
-                        .statusChangedBy(EXCEPTION_CATCHER_NAME)
-                        .exception(getFullStackTrace(t)));
+            catch (Throwable throwable) {
+                LOG.error(getFullStackTrace(throwable));
+                state.markFailed(throwable);
             }
+            stateStorage.updateState(state);
+            stateUpdateLock.unlock();
         };
     }
 
@@ -195,7 +191,7 @@ public class StandaloneTaskManager implements TaskManager {
 
             TaskState state = stateStorage.getState(id);
             if (state.status() == SCHEDULED || (recurring && state.status() == COMPLETED)) {
-                stateStorage.updateState(state.setRunning(engineID));
+                stateStorage.updateState(state.markRunning(engineID));
                 executorService.submit(exceptionCatcher(state, task));
             }
 

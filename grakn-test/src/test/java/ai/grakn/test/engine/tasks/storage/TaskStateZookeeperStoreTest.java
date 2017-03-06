@@ -81,11 +81,12 @@ public class TaskStateZookeeperStoreTest {
     @Test
     public void whenUpdatingTask_StateChanges() throws Exception {
         TaskId id = stateStorage.newState(task());
+        EngineID me = EngineID.me();
 
         // Change
         String checkpoint = "test checkpoint";
         TaskState state = stateStorage.getState(id)
-                .status(SCHEDULED)
+                .markRunning(me)
                 .checkpoint(checkpoint);
 
         // Update
@@ -93,7 +94,8 @@ public class TaskStateZookeeperStoreTest {
 
         // Retrieve the task and check properties correct
         state = stateStorage.getState(id);
-        assertEquals(SCHEDULED, state.status());
+        assertEquals(RUNNING, state.status());
+        assertEquals(me, state.engineID());
         assertEquals(checkpoint, state.checkpoint());
     }
 
@@ -103,11 +105,11 @@ public class TaskStateZookeeperStoreTest {
         stateStorage.newState(task);
 
         // Update previous
-        stateStorage.updateState(task.setRunning(EngineID.of("Engine1")));
+        stateStorage.updateState(task.markRunning(EngineID.of("Engine1")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
 
         // Check that getting engine-task path is not there
-        stateStorage.updateState(task.setRunning(null));
+        stateStorage.updateState(task.markRunning(null));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
     }
 
@@ -117,11 +119,11 @@ public class TaskStateZookeeperStoreTest {
         stateStorage.newState(task);
 
         // Set engine id to null
-        stateStorage.updateState(task.setRunning(null));
+        stateStorage.updateState(task.markRunning(null));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
 
         // Check that getting engine-task path is there
-        stateStorage.updateState(task.setRunning(EngineID.of("Engine1")));
+        stateStorage.updateState(task.markRunning(EngineID.of("Engine1")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
     }
 
@@ -130,11 +132,11 @@ public class TaskStateZookeeperStoreTest {
         TaskState task = task();
         stateStorage.newState(task);
 
-        stateStorage.updateState(task.setRunning(EngineID.of("Engine1")));
+        stateStorage.updateState(task.markRunning(EngineID.of("Engine1")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(true));
 
         // Check that getting engine-task path is not there
-        stateStorage.updateState(task.setRunning(EngineID.of("Engine2")));
+        stateStorage.updateState(task.markRunning(EngineID.of("Engine2")));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
         assertThat(pathExists("/engine/Engine2/" + task.getId()), is(true));
     }
@@ -144,11 +146,11 @@ public class TaskStateZookeeperStoreTest {
         TaskState task = task();
         stateStorage.newState(task);
 
-        stateStorage.updateState(task.setRunning(null));
+        stateStorage.updateState(task.markRunning(null));
         assertThat(pathExists("/engine/Engine1/" + task.getId()), is(false));
 
         // Check that getting engine-task path is not there
-        stateStorage.updateState(task.setRunning(null));
+        stateStorage.updateState(task.markRunning(null));
         assertThat(pathExists("/engine/Engine2/" + task.getId()), is(false));
     }
 
@@ -161,7 +163,7 @@ public class TaskStateZookeeperStoreTest {
         String checkpoint = "test checkpoint";
 
         TaskState state = stateStorage.getState(id);
-        stateStorage.updateState(state.setRunning(engineID).checkpoint(checkpoint));
+        stateStorage.updateState(state.markRunning(engineID).checkpoint(checkpoint));
 
         // get again
         state = stateStorage.getState(id);
@@ -174,7 +176,7 @@ public class TaskStateZookeeperStoreTest {
     @Test
     public void testGetTasksByStatus() {
         TaskId id = stateStorage.newState(task());
-        stateStorage.newState(task().status(SCHEDULED));
+        stateStorage.newState(task().markScheduled());
         Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
@@ -224,7 +226,7 @@ public class TaskStateZookeeperStoreTest {
     @Test
     public void testGetByRunningEngine(){
         EngineID me = EngineID.me();
-        TaskId id = stateStorage.newState(task().setRunning(me));
+        TaskId id = stateStorage.newState(task().markRunning(me));
 
         Set<TaskState> res = stateStorage.getTasks(null, null, null, me, 1, 0);
         TaskState resultant = res.iterator().next();
@@ -249,8 +251,7 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(String creator){
-        return TaskState.of(ShortExecutionTestTask.class, creator, TaskSchedule.now(), null)
-                .statusChangedBy(this.getClass().getName());
+        return TaskState.of(ShortExecutionTestTask.class, creator, TaskSchedule.now(), null);
     }
 
     /**
