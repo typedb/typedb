@@ -346,7 +346,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor {
         if(value == ObjectUtils.NULL){
             throw new GraqlTemplateParsingException("Key [" + ctx.getText() + "] not present in data: " + originalContext);
         }
-        ;
+
         Function<Object, String> formatToApply = ctx.DOLLAR() != null ? this::formatVar : this::format;
         String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";
 
