@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static junit.framework.TestCase.assertEquals;
@@ -164,7 +165,7 @@ public class TaskStateZookeeperStoreTest {
 
         // get again
         state = stateStorage.getState(id);
-        assertEquals(CREATED, state.status());
+        assertEquals(RUNNING, state.status());
         assertEquals(engineID, state.engineID());
         assertEquals(checkpoint, state.checkpoint());
     }

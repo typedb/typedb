@@ -101,7 +101,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
                 .has(RECURRING, var().value(schedule.isRecurring()))
                 .has(SERIALISED_TASK, var().value(serializeToString(task)));
 
-        schedule.interval().ifPresent(interval -> state.has(RECUR_INTERVAL, var().value(interval)));
+        schedule.interval().ifPresent(interval -> state.has(RECUR_INTERVAL, var().value(interval.getSeconds())));
 
         if(task.configuration() != null) {
             state.has(TASK_CONFIGURATION, var().value(task.configuration().toString()));
