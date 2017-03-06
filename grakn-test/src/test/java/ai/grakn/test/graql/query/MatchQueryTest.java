@@ -860,7 +860,7 @@ public class MatchQueryTest {
     @Test
     public void whenQueryingForSameRoleTwice_ReturnResultsWithMultipleRolePlayers() {
         MatchQuery query = qb.match(
-                var().rel("cluster-of-production", "x").rel("cluster-of-production", "y").rel("z"),
+                var().rel("production-with-cluster", "x").rel("production-with-cluster", "y").rel("z"),
                 var("z").has("name", "1")
         );
 
