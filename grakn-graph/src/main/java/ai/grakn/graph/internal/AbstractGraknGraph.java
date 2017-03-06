@@ -706,7 +706,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void putShortcutEdges(RelationType relationType, Relation relation, RoleType fromRole, Instance from, RoleType toRole, Set<Instance> toSet){
         for (Instance to : toSet) {
-            if (from != null && to != null && !from.equals(to)) {
+            if (from != null && to != null &&  (!fromRole.equals(toRole) || !from.equals(to)) ) {
                 putShortcutEdge(relation, relationType, fromRole, from, toRole, to);
             }
         }
