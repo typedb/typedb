@@ -64,7 +64,6 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final CountDownLatch blocker;
     private final TreeCache cache;
 
-    private Map<String, ChildData> current;
     private Producer<TaskId, TaskState> producer;
 
     public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
@@ -76,7 +75,6 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         this.cache.getUnhandledErrorListenable().addListener((message, e) -> blocker.countDown());
         this.cache.start();
 
-        current = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
         producer = kafkaProducer();
         scanStaleStates(client);
     }
@@ -99,39 +97,22 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         }
     }
 
+    @Override
     public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
         Map<String, ChildData> nodes = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
 
         switch (event.getType()) {
             case NODE_ADDED:
                 LOG.debug("New engine joined pool. Current engines: " + nodes.keySet());
-                current = nodes;
                 break;
             case NODE_REMOVED:
                 LOG.debug("Engine failure detected. Current engines " + nodes.keySet());
-                failover(client, nodes);
-                current = nodes;
+                String path = event.getData().getPath();
+                EngineID engineId = EngineID.of(path.substring(path.lastIndexOf("/") + 1));
+                reQueue(client, engineId);
                 break;
             default:
                 break;
-        }
-    }
-
-    /**
-     * Find diff between current and @nodes to figure out which engines died. Calls reQueue to resubmit all tasks they were
-     * assigned to to Kafka work queue.
-     * @param client CuratorFramework
-     * @param nodes Map<String, ChildData> of all currently alive ZNodes, a diff between this and cached @current is
-     *              used to figure out which Engines died.
-     * @throws Exception
-     */
-    private void failover(CuratorFramework client, Map<String, ChildData> nodes) throws Exception {
-        for(String engineId: current.keySet()) {
-            // Dead MultiQueueTaskRunner
-            if(!nodes.containsKey(engineId)) {
-                LOG.debug("Dead engine: "+engineId);
-                reQueue(client, EngineID.of(engineId));
-            }
         }
     }
 

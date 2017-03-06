@@ -25,26 +25,22 @@ import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.zookeeper.CreateMode;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_ENGINE_TASK_PATH;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
@@ -63,40 +59,22 @@ public class TaskFailoverTest {
     private static TaskFailover taskFailover;
     private static TaskStateInMemoryStore storage;
 
-    private static Thread failoverThread;
+    @Rule
+    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
-    @ClassRule
-    public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
-
-    @BeforeClass
-    public static void setup() throws Exception {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskFailover.class)).setLevel(Level.DEBUG);
-
+    @Before
+    public void setup() throws Exception {
         storage = new TaskStateInMemoryStore();
 
-        connection = new ZookeeperConnection(client());
+        connection = new ZookeeperConnection();
 
-        CountDownLatch failoverStartup = new CountDownLatch(1);
-        failoverThread = new Thread(() -> {
-            try {
-                taskFailover = new TaskFailover(connection.connection(), storage);
-                failoverStartup.countDown();
-            } catch (Exception e){
-                throw new RuntimeException(e);
-            }
-        });
-
-        failoverThread.start();
-        failoverStartup.await();
+        taskFailover = new TaskFailover(connection.connection(), storage);
     }
 
-    @AfterClass
-    public static void teardown() throws Exception {
+    @After
+    public void teardown() throws Exception {
         taskFailover.close();
         connection.close();
-
-        failoverThread.interrupt();
-        failoverThread.join();
     }
 
     @Test

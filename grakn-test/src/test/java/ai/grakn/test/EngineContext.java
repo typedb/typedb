@@ -50,6 +50,7 @@ public class EngineContext extends ExternalResource {
     private final boolean startMultiQueueEngine;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
+    private int port = 4567;
 
     private EngineContext(boolean startKafka, boolean startMultiQueueEngine, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startMultiQueueEngine = startMultiQueueEngine;
@@ -74,6 +75,11 @@ public class EngineContext extends ExternalResource {
         return new EngineContext(false, false, false, true);
     }
 
+    public EngineContext port(int port) {
+        this.port = port;
+        return this;
+    }
+
     public GraknEngineServer server() {
         return server;
     }
@@ -83,7 +89,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public GraknGraphFactory factoryWithNewKeyspace() {
-        return Grakn.factory(Grakn.DEFAULT_URI, randomKeyspace());
+        return Grakn.factory("localhost:" + port, randomKeyspace());
     }
 
     @Override
@@ -95,15 +101,15 @@ public class EngineContext extends ExternalResource {
         }
 
         if(startSingleQueueEngine){
-            server = startEngine(SingleQueueTaskManager.class.getName());
+            server = startEngine(SingleQueueTaskManager.class.getName(), port);
         }
 
         if (startMultiQueueEngine){
-            server = startEngine(MultiQueueTaskManager.class.getName());
+            server = startEngine(MultiQueueTaskManager.class.getName(), port);
         }
 
         if (startStandaloneEngine){
-            server = startEngine(StandaloneTaskManager.class.getName());
+            server = startEngine(StandaloneTaskManager.class.getName(), port);
         }
     }
 
