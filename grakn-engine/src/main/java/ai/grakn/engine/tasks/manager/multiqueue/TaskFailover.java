@@ -110,6 +110,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
                 String path = event.getData().getPath();
                 EngineID engineId = EngineID.of(path.substring(path.lastIndexOf("/") + 1));
                 reQueue(client, engineId);
+                break;
             default:
                 break;
         }
