@@ -756,11 +756,11 @@ public class InsertQueryTest {
     @Test
     public void whenInsertingMultipleRolePlayers_BothRolePlayersAreAdded() {
         List<Map<String, Concept>> results = qb.match(
-                var("g").has("title", "The Godfather"),
+                var("g").has("title", "Godfather"),
                 var("m").has("title", "The Muppets")
         ).insert(
                 var("c").isa("cluster").has("name", "2"),
-                var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m")
+                var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m").isa("has-cluster")
         ).execute();
 
         Instance cluster = results.get(0).get("c").asInstance();
