@@ -98,7 +98,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static void assertRelationCopied(Relation relation1, GraknGraph two){
-        if(relation1.newRolePlayers().stream().anyMatch(Concept::isResource)){
+        if(relation1.rolePlayers().stream().anyMatch(Concept::isResource)){
             return;
         }
 

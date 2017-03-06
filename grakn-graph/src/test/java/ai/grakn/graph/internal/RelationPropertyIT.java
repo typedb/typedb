@@ -55,7 +55,7 @@ public class RelationPropertyIT {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
-        assertThat(relation.newRolePlayers(), hasItem(rolePlayer));
+        assertThat(relation.rolePlayers(), hasItem(rolePlayer));
     }
 
     @Property
@@ -66,7 +66,7 @@ public class RelationPropertyIT {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
-        assertThat(relation.newRolePlayers(roleType), hasItem(rolePlayer));
+        assertThat(relation.rolePlayers(roleType), hasItem(rolePlayer));
     }
 
     @Property
@@ -75,16 +75,16 @@ public class RelationPropertyIT {
 
         assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
 
-        Instance[] rolePlayers = relation.newRolePlayers().toArray(new Instance[0]);
+        Instance[] rolePlayers = relation.rolePlayers().toArray(new Instance[0]);
 
         relation.addRolePlayer(roleType, rolePlayer);
 
-        assertThat(relation.newRolePlayers(roleType), hasItems(rolePlayers));
+        assertThat(relation.rolePlayers(roleType), hasItems(rolePlayers));
     }
 
     @Property
     public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph RoleType[] roles) {
-        Collection<Instance> rolePlayers = relation.newRolePlayers(roles);
+        Collection<Instance> rolePlayers = relation.rolePlayers(roles);
         Set<Instance> rolePlayersSet = newHashSet(rolePlayers);
         assertEquals(rolePlayers.size(), rolePlayersSet.size());
     }
@@ -96,7 +96,7 @@ public class RelationPropertyIT {
         RoleType[] allRoleTypes = new RoleType[hasRoles.size()];
         hasRoles.toArray(allRoleTypes);
 
-        assertEquals(relation.newRolePlayers(), relation.newRolePlayers(allRoleTypes));
+        assertEquals(relation.rolePlayers(), relation.rolePlayers(allRoleTypes));
     }
 
     @Property
@@ -106,8 +106,8 @@ public class RelationPropertyIT {
         RoleType[] rolesXY = (RoleType[]) addAll(rolesX, rolesY);
 
         Set<Instance> expected =
-                union(newHashSet(relation.newRolePlayers(rolesX)), newHashSet(relation.newRolePlayers(rolesY)));
+                union(newHashSet(relation.rolePlayers(rolesX)), newHashSet(relation.rolePlayers(rolesY)));
 
-        assertEquals(expected, newHashSet(relation.newRolePlayers(rolesXY)));
+        assertEquals(expected, newHashSet(relation.rolePlayers(rolesXY)));
     }
 }

@@ -987,7 +987,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             String relationID = relation.getId().getValue();
 
             //Kill Shortcut Edges
-            relation.newRolePlayers().forEach(instance -> {
+            relation.rolePlayers().forEach(instance -> {
                 if(instance != null) {
                     List<Edge> edges = getTinkerTraversal().
                             hasId(instance.getId().getValue()).

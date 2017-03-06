@@ -76,8 +76,7 @@ public interface Relation extends Instance {
      *                  If blank, returns all role players.
      * @return a list of every {@link Instance} involved in the {@link Relation}.
      */
-    // TODO: Rename this method to `rolePlayers`
-    Collection<Instance> newRolePlayers(RoleType... roleTypes);
+    Collection<Instance> rolePlayers(RoleType... roleTypes);
 
     /**
      * Retrieve a list of the Instances that scope this Relation.

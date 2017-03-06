@@ -567,7 +567,7 @@ public class ValidatorTest extends GraphTestBase{
         relation.addRolePlayer(role1, instance1);
         relation.addRolePlayer(role1, instance2);
 
-        assertThat(relation.newRolePlayers(role1), hasItems(instance1, instance2));
+        assertThat(relation.rolePlayers(role1), hasItems(instance1, instance2));
 
         graknGraph.commit();
     }
@@ -591,7 +591,7 @@ public class ValidatorTest extends GraphTestBase{
             relation.addRolePlayer(role1, instance);
         }
 
-        assertEquals(instances, relation.newRolePlayers(role1));
+        assertEquals(instances, relation.rolePlayers(role1));
 
         graknGraph.commit();
     }

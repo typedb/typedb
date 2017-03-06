@@ -100,7 +100,7 @@ public class RelationTest extends GraphTestBase{
         relation.addRolePlayer(roleType, instance);
         assertEquals(4, relation.allRolePlayers().size());
         assertTrue(relation.allRolePlayers().keySet().contains(roleType));
-        assertTrue(relation.newRolePlayers().contains(instance));
+        assertTrue(relation.rolePlayers().contains(instance));
     }
 
     @Test
@@ -178,9 +178,9 @@ public class RelationTest extends GraphTestBase{
         assertTrue(roleMap.keySet().contains(role1));
         assertTrue(roleMap.keySet().contains(role2));
 
-        assertThat(relation.newRolePlayers(role1), containsInAnyOrder(rolePlayer1));
-        assertThat(relation.newRolePlayers(role2), containsInAnyOrder(rolePlayer2));
-        assertTrue(relation.newRolePlayers(role3).isEmpty());
+        assertThat(relation.rolePlayers(role1), containsInAnyOrder(rolePlayer1));
+        assertThat(relation.rolePlayers(role2), containsInAnyOrder(rolePlayer2));
+        assertTrue(relation.rolePlayers(role3).isEmpty());
     }
 
     @Test
@@ -414,8 +414,8 @@ public class RelationTest extends GraphTestBase{
                 addRolePlayer(feature, null).addRolePlayer(actor, pacino);
         relation.addRolePlayer(feature, godfather);
         assertEquals(2, relation.getMappingCasting().size());
-        assertTrue(relation.newRolePlayers().contains(pacino));
-        assertTrue(relation.newRolePlayers().contains(godfather));
+        assertTrue(relation.rolePlayers().contains(pacino));
+        assertTrue(relation.rolePlayers().contains(godfather));
     }
 
     @Test
@@ -551,9 +551,9 @@ public class RelationTest extends GraphTestBase{
 
         relation.addRolePlayer(role1, entity1);
 
-        assertThat(relation.newRolePlayers(role1), containsInAnyOrder(entity1, entity2, entity3));
-        assertThat(relation.newRolePlayers(role2), containsInAnyOrder(entity4));
-        assertThat(relation.newRolePlayers(), containsInAnyOrder(entity1, entity2, entity3, entity4));
+        assertThat(relation.rolePlayers(role1), containsInAnyOrder(entity1, entity2, entity3));
+        assertThat(relation.rolePlayers(role2), containsInAnyOrder(entity4));
+        assertThat(relation.rolePlayers(), containsInAnyOrder(entity1, entity2, entity3, entity4));
 
 
         assertThat(relation.allRolePlayers().get(role1), containsInAnyOrder(entity1, entity2, entity3));

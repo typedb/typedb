@@ -771,9 +771,9 @@ public class InsertQueryTest {
         RoleType clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");
         RoleType productionWithCluster = movieGraph.graph().getRoleType("production-with-cluster");
 
-        assertEquals(relation.newRolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
-        assertEquals(relation.newRolePlayers(clusterOfProduction), ImmutableSet.of(cluster));
-        assertEquals(relation.newRolePlayers(productionWithCluster), ImmutableSet.of(godfather, muppets));
+        assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));
+        assertEquals(relation.rolePlayers(productionWithCluster), ImmutableSet.of(godfather, muppets));
     }
 
     private void assertInsert(Var... vars) {

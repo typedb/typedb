@@ -121,7 +121,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     }
 
     @Override
-    public Collection<Instance> newRolePlayers(RoleType... roleTypes) {
+    public Collection<Instance> rolePlayers(RoleType... roleTypes) {
         Set<Instance> rolePlayers = new HashSet<>();
         Set<RoleType> validRoleTypes = new HashSet<>(Arrays.asList(roleTypes));
 
@@ -221,7 +221,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     void cleanUp() {
         boolean performDeletion = true;
-        Collection<Instance> rolePlayers = newRolePlayers();
+        Collection<Instance> rolePlayers = rolePlayers();
 
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null )){

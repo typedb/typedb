@@ -181,7 +181,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             RoleType subjectRole = graph.getType(migrator.namer().subjectRole(TypeName.of("op-related")));
             RoleType objectRole = graph.getType(migrator.namer().objectRole(TypeName.of("op-related")));
             assertTrue(item2.relations(subjectRole).stream().anyMatch(
-                    relation -> item1.equals(relation.newRolePlayers(objectRole).iterator().next())));
+                    relation -> item1.equals(relation.rolePlayers(objectRole).iterator().next())));
             RoleType catsubjectRole = graph.getType(migrator.namer().subjectRole(TypeName.of("op-hasCategory")));
             RoleType catobjectRole = graph.getType(migrator.namer().objectRole(TypeName.of("op-hasCategory")));
             assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
@@ -190,7 +190,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
 
             Entity category2 = getEntity("eCategory2");
             assertTrue(category2.relations(catobjectRole).stream().anyMatch(
-                    relation -> item1.equals(relation.newRolePlayers(catsubjectRole).iterator().next())));
+                    relation -> item1.equals(relation.rolePlayers(catsubjectRole).iterator().next())));
             Entity category1 = getEntity("eCategory1");
             category1.resources().forEach(System.out::println);
             // annotation assertion axioms don't seem to be visited for some reason...need to troubleshoot seems like 
