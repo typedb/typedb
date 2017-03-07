@@ -19,11 +19,22 @@
 package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.util.EngineID;
 import mjson.Json;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
+
+import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static java.time.Instant.now;
+import static java.util.Objects.requireNonNull;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
@@ -45,10 +56,6 @@ public class TaskState implements Serializable {
      */
     private Instant statusChangeTime;
     /**
-     * String identifying who last updated task status.
-     */
-    private String statusChangedBy;
-    /**
      * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
      */
     private final String taskClassName;
@@ -59,7 +66,7 @@ public class TaskState implements Serializable {
     /**
      * String identifying which engine instance is executing this task, set when task is scheduled.
      */
-    private String engineID;
+    private EngineID engineID;
     /**
      * Schedule for when this task should execute
      */
@@ -88,8 +95,8 @@ public class TaskState implements Serializable {
     }
 
     private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
-        this.status = TaskStatus.CREATED;
-        this.statusChangeTime = Instant.now();
+        this.status = CREATED;
+        this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.schedule = schedule;
@@ -101,7 +108,6 @@ public class TaskState implements Serializable {
         this.taskId = taskState.taskId;
         this.status = taskState.status;
         this.statusChangeTime = taskState.statusChangeTime;
-        this.statusChangedBy = taskState.statusChangedBy;
         this.taskClassName = taskState.taskClassName;
         this.creator = taskState.creator;
         this.engineID = taskState.engineID;
@@ -116,9 +122,39 @@ public class TaskState implements Serializable {
         return TaskId.of(taskId);
     }
 
-    public TaskState status(TaskStatus status) {
-        this.status = status;
-        this.statusChangeTime = Instant.now();
+    public TaskState markRunning(EngineID engineID){
+        this.status = RUNNING;
+        this.engineID = engineID;
+        this.statusChangeTime = now();
+        return this;
+    }
+
+    public TaskState markCompleted(){
+        this.status = COMPLETED;
+        this.engineID = null;
+        this.statusChangeTime = now();
+        return this;
+    }
+
+    public TaskState markScheduled(){
+        this.status = SCHEDULED;
+        this.statusChangeTime = now();
+        return this;
+    }
+
+    public TaskState markStopped(){
+        this.status = STOPPED;
+        this.engineID = null;
+        this.statusChangeTime = now();
+        return this;
+    }
+
+    public TaskState markFailed(Throwable exception){
+        this.status = FAILED;
+        this.engineID = null;
+        this.exception = exception.getClass().getName();
+        this.stackTrace = getFullStackTrace(exception);
+        this.statusChangeTime = now();
         return this;
     }
 
@@ -128,15 +164,6 @@ public class TaskState implements Serializable {
 
     public Instant statusChangeTime() {
         return statusChangeTime;
-    }
-
-    public TaskState statusChangedBy(String statusChangedBy) {
-        this.statusChangedBy = statusChangedBy;
-        return this;
-    }
-
-    public String statusChangedBy() {
-        return statusChangedBy;
     }
 
     public Class<? extends BackgroundTask> taskClass() {
@@ -151,12 +178,7 @@ public class TaskState implements Serializable {
         return creator;
     }
 
-    public TaskState engineID(String engineID) {
-        this.engineID = engineID;
-        return this;
-    }
-
-    public String engineID() {
+    public EngineID engineID() {
         return engineID;
     }
 
@@ -164,18 +186,8 @@ public class TaskState implements Serializable {
         return schedule;
     }
 
-    public TaskState stackTrace(String stackTrace) {
-        this.stackTrace = stackTrace;
-        return this;
-    }
-
     public String stackTrace() {
         return stackTrace;
-    }
-
-    public TaskState exception(String exceptionMessage) {
-        this.exception = exceptionMessage;
-        return this;
     }
 
     public String exception() {

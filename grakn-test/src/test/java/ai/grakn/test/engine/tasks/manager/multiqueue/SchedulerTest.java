@@ -27,12 +27,11 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.manager.multiqueue.Scheduler;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import mjson.Json;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -133,7 +132,7 @@ public class SchedulerTest {
         stopScheduler();
 
         // persist a recurring task
-        TaskState recurring = createTask(CREATED, recurring(Duration.ofSeconds(10)), Json.object());
+        TaskState recurring = createTask(ShortExecutionTestTask.class, CREATED, recurring(Duration.ofSeconds(10)), Json.object());
         System.out.println("recurring task " + recurring.getId());
         storage.newState(recurring);
 

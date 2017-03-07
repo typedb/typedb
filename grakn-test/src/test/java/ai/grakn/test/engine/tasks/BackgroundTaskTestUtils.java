@@ -24,6 +24,7 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
@@ -31,6 +32,7 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import mjson.Json;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -38,14 +40,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.generate;
+import static mjson.Json.object;
 import static org.junit.Assert.fail;
 
 /**
@@ -99,19 +103,38 @@ public class BackgroundTaskTestUtils {
     }
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
-        return IntStream.range(0, n)
-                .mapToObj(i -> createTask(status, TaskSchedule.now(), Json.object()))
-                .collect(toSet());
+        return createTasks(n, status, EngineID.me());
     }
 
-    public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration) {
-        return createTask(ShortExecutionTestTask.class, status, schedule, configuration);
+    public static Set<TaskState> createTasks(int n, TaskStatus status, EngineID engineID) {
+        return generate(() -> createTask(ShortExecutionTestTask.class, status, now(), object(), engineID)).limit(n).collect(toSet());
     }
 
-    public static TaskState createTask(Class<? extends BackgroundTask> backgroundTask, TaskStatus status, TaskSchedule schedule, Json configuration) {
-        TaskState taskState = TaskState.of(backgroundTask, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
-                .status(status)
-                .statusChangedBy(BackgroundTaskTestUtils.class.getName());
+    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskStatus status, TaskSchedule schedule, Json configuration) {
+        return createTask(clazz, status, schedule, configuration, EngineID.me());
+    }
+
+    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskStatus status, TaskSchedule schedule, Json configuration, EngineID engineID) {
+        TaskState taskState = TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule, configuration);
+
+        switch (status) {
+            case RUNNING:
+                taskState.markRunning(engineID);
+                break;
+            case COMPLETED:
+                taskState.markCompleted();
+                break;
+            case FAILED:
+                taskState.markFailed(new IOException());
+                break;
+            case STOPPED:
+                taskState.markStopped();
+                break;
+            case SCHEDULED:
+                taskState.markScheduled();
+                break;
+        }
+
         configuration.set("id", taskState.getId().getValue());
         return taskState;
     }

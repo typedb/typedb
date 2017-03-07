@@ -63,6 +63,7 @@ public class QueryAnswerStream {
         Iterator<Map<VarName, Concept>> it = known.iterator();
         while (it.hasNext()) {
             Map<VarName, Concept> knownAnswer = it.next();
+            //if(answer.entrySet().containsAll(knownAnswer.entrySet())){
             if(knownAnswer.entrySet().containsAll(answer.entrySet())){
                 return false;
             }
@@ -95,7 +96,7 @@ public class QueryAnswerStream {
         for (TypeAtom type : types){
             VarName var = type.getVarName();
             Type t = type.getType();
-            if(!answer.get(var).asInstance().type().equals(t)){
+            if(!t.subTypes().contains(answer.get(var).asInstance().type())){
                 return false;
             }
         }
@@ -186,9 +187,11 @@ public class QueryAnswerStream {
                 }
                 return true;
             });
-            return answerStream.map(a2 ->
-                    Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a)));
+            return answerStream.map(a2 -> {
+                Map<VarName, Concept> merged = new HashMap<>(a2);
+                merged.putAll(a1);
+                return merged;
+            });
             });
     }
 
@@ -221,9 +224,12 @@ public class QueryAnswerStream {
             while(vit.hasNext()){
                 matchAnswers = Sets.intersection(matchAnswers, findMatchingAnswers(a1, stream2InverseMap, vit.next()));
             }
-            return matchAnswers.stream().map(a2 ->
-                    Stream.of(a1, a2).flatMap(m -> m.entrySet().stream())
-                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a)));
+
+            return matchAnswers.stream().map(a2 -> {
+                  Map<VarName, Concept> merged = new HashMap<>(a2);
+                  merged.putAll(a1);
+                return merged;
+            });
         });
     }
 }

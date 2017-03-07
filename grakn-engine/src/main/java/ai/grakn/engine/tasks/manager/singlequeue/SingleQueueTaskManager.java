@@ -24,7 +24,6 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -38,7 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
@@ -56,7 +54,7 @@ import static java.util.stream.Stream.generate;
 public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
-    private final static String ENGINE_IDENTIFIER = EngineID.getInstance().id();
+    private final static ConfigProperties properties = ConfigProperties.getInstance();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = ConfigProperties.getInstance().getAvailableThreads();
 
@@ -77,13 +75,13 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(){
+    public SingleQueueTaskManager(EngineID engineId){
         this.zookeeper = new ZookeeperConnection(client());
-        this.storage = new TaskStateZookeeperStore(zookeeper);
+        this.storage = chooseStorage(properties, zookeeper);
 
         //TODO check that the number of partitions is at least the capacity
         //TODO Single queue task manager should have its own impl of failover
-        this.failover = new FailoverElector(ENGINE_IDENTIFIER, zookeeper, storage);
+        this.failover = new FailoverElector(engineId, zookeeper, storage);
         this.producer = kafkaProducer();
 
         // Create thread pool for the task runners
@@ -93,7 +91,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        this.taskRunners = generate(this::newTaskRunner).limit(CAPACITY).collect(toSet());
+        this.taskRunners = generate(() -> newTaskRunner(engineId)).limit(CAPACITY).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         LOG.debug("TaskManager started");
@@ -148,7 +146,7 @@ public class SingleQueueTaskManager implements TaskManager {
         // TODO: Make only one call to storage if possible
         if (!storage.containsTask(id)) {
             // TODO: Figure out a nicer way than all these nulls...
-            TaskState task = TaskState.of(null, null, null, null, id).status(STOPPED);
+            TaskState task = TaskState.of(null, null, null, null, id).markStopped();
             storage.newState(task);
         } else {
             taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
@@ -167,9 +165,10 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Create a new instance of {@link SingleQueueTaskRunner} with the configured {@link #storage}}
      * and {@link #zookeeper} connection.
+     * @param engineId Identifier of the engine on which this taskrunner is running
      * @return New instance of a SingleQueueTaskRunner
      */
-    private SingleQueueTaskRunner newTaskRunner(){
-        return new SingleQueueTaskRunner(storage, zookeeper);
+    private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
+        return new SingleQueueTaskRunner(engineId, storage, zookeeper);
     }
 }

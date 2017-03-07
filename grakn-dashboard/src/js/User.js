@@ -10,7 +10,7 @@ export default {
 
     // --------- User Login and Authentication ----------- //
   newSession(creds, fn) {
-    EngineClient.newSession(creds, fn);
+    return EngineClient.newSession(creds);
   },
 
   setAuthToken(token) {

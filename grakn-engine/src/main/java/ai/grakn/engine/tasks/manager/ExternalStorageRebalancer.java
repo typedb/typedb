@@ -84,7 +84,13 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
     public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
         LOG.debug("Consumer partitions revoked {}", partitions);
 
-        partitions.forEach(this::saveOffsetInZookeeper);
+        for (TopicPartition partition : partitions) {
+            try {
+                saveOffsetInZookeeper(partition);
+            } catch (EngineStorageException e) {
+                LOG.error("Error saving offset in Zookeeper", e);
+            }
+        }
     }
 
     /**

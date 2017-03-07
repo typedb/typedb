@@ -45,9 +45,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
@@ -78,7 +75,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
-    private final static String ENGINE_ID = EngineID.getInstance().id();
+    private final EngineID engineId;
 
     private final Set<TaskId> runningTasks = new HashSet<>();
     private final TaskStateStorage storage;
@@ -90,7 +87,8 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final AtomicInteger acceptedTasks = new AtomicInteger(0);
     private final Consumer<TaskId, TaskState> consumer;
 
-    public MultiQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection connection) {
+    public MultiQueueTaskRunner(EngineID engineId, TaskStateStorage storage, ZookeeperConnection connection) {
+        this.engineId = engineId;
         this.storage = storage;
         this.connection = connection;
 
@@ -197,11 +195,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
             if (state.status() == SCHEDULED) {
 
                 // Mark as RUNNING and update task & runner states.
-                storage.updateState(state
-                        .status(RUNNING)
-                        .statusChangedBy(this.getClass().getName())
-                        .engineID(ENGINE_ID));
-
+                storage.updateState(state.markRunning(engineId));
                 acceptedTasks.incrementAndGet();
 
                 // Submit to executor
@@ -240,12 +234,12 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
 
             // remove the configuration and mark as COMPLETED
             state.clearConfiguration();
-            storage.updateState(state.status(COMPLETED));
-
-        } catch(Throwable t) {
-            storage.updateState(state.status(FAILED));
-            LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(t));
+            state.markCompleted();
+        } catch(Throwable throwable) {
+            state.markFailed(throwable);
+            LOG.error("Failed task - "+state.getId()+": "+getFullStackTrace(throwable));
         } finally {
+            storage.updateState(state);
             removeRunningTask(state.getId());
             acceptedTasks.decrementAndGet();
             LOG.debug("Finished executing task - " + state.getId());
@@ -263,10 +257,10 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
 
     private void registerAsRunning() {
         try {
-            if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, ENGINE_ID)) == null) {
+            if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value())) == null) {
                 connection.connection().create()
                         .creatingParentContainersIfNeeded()
-                        .withMode(CreateMode.EPHEMERAL).forPath(format(SINGLE_ENGINE_WATCH_PATH, ENGINE_ID));
+                        .withMode(CreateMode.EPHEMERAL).forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
             }
         } catch (Exception exception){
             throw new RuntimeException("Could not create Zookeeper paths in TaskRunner");

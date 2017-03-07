@@ -56,7 +56,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.Utility.isCaptured;
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
@@ -228,8 +227,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Map<VarName, VarName> getUnifiers(ReasonerQuery parent) {
-        //TODO
-        return new HashMap<>();
+        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
     }
 
     /**
@@ -287,6 +285,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(atom -> atom.unify(mappings));
         toAdd.forEach(this::addAtom);
 
+        //NB:captures not resolved in place as resolution in-place alters respective atom hash
         mappings.putAll(resolveCaptures());
     }
 
@@ -296,18 +295,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     private Map<VarName, VarName> resolveCaptures() {
         Map<VarName, VarName> newMappings = new HashMap<>();
-        //find captures
-        Set<VarName> captures = new HashSet<>();
-        getVarNames().forEach(v -> {
-            // TODO: This could cause bugs if a user has a variable including the word "capture"
-            if (isCaptured(v)) captures.add(v);
-        });
-
-        captures.forEach(cap -> {
-            VarName old = uncapture(cap);
-            VarName fresh = Utility.createFreshVariable(getVarNames(), old);
-            unify(cap, fresh);
-            newMappings.put(old, fresh);
+        //find and resolve captures
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        getVarNames().stream().filter(Utility::isCaptured)
+                .forEach(cap -> {
+                VarName old = uncapture(cap);
+                VarName fresh = VarName.anon();
+                unify(cap, fresh);
+                newMappings.put(old, fresh);
         });
         return newMappings;
     }
@@ -497,7 +492,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
             join = Stream.concat(join, subs);
         }
-        return join.distinct();
+        return join;
     }
 
     Stream<Map<VarName, Concept>> computeJoin(Set<ReasonerAtomicQuery> subGoals,
@@ -505,11 +500,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                                               Cache<ReasonerAtomicQuery, ?> dCache,
                                               boolean materialise,
                                               boolean differentialJoin) {
-        if (differentialJoin){
-            return differentialJoin(subGoals, cache, dCache, materialise);
-        } else {
-            return fullJoin(subGoals, cache, dCache, materialise);
-        }
+
+        Stream<Map<VarName, Concept>> join = differentialJoin?
+                differentialJoin(subGoals, cache, dCache, materialise)  : fullJoin(subGoals, cache, dCache, materialise);
+
+        Set<NotEquals> filters = getFilters();
+        return join
+                .filter(a -> nonEqualsFilter(a, filters));
     }
 
     /**

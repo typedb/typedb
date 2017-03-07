@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableList;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -40,12 +41,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -61,6 +60,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
+    private final EngineID engineID;
 
     private BackgroundTask runningTask = null;
 
@@ -68,12 +68,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
      * to retrieve tasks and uses the given {@param storage} to store and retrieve information about tasks.
      *
+     * @param engineID identifier of the engine this task runner is on
      * @param storage a place to store and retrieve information about tasks.
      * @param zookeeper a connection to the running zookeeper instance.
      */
 
-    public SingleQueueTaskRunner(TaskStateStorage storage, ZookeeperConnection zookeeper){
+    public SingleQueueTaskRunner(EngineID engineID, TaskStateStorage storage, ZookeeperConnection zookeeper){
         this.storage = storage;
+        this.engineID = engineID;
 
         consumer = ConfigHelper.kafkaConsumer(TASK_RUNNER_GROUP);
         consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
@@ -83,11 +85,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
      *
+     * @param engineID identifier of the engine this task runner is on
      * @param storage a place to store and retrieve information about tasks.
      * @param consumer a Kafka consumer from which to poll for tasks
      */
-    public SingleQueueTaskRunner(
+    public SingleQueueTaskRunner(EngineID engineID,
             TaskStateStorage storage, Consumer<TaskId, TaskState> consumer) {
+        this.engineID = engineID;
         this.storage = storage;
         this.consumer = consumer;
     }
@@ -125,7 +129,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                     LOG.trace("{} acknowledged", record.key().getValue());
                 }
             } catch (Throwable throwable){
-                LOG.error("error thrown", getFullStackTrace(throwable));
+                LOG.error("error thrown", throwable);
             }
         }
 
@@ -160,7 +164,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         if (shouldExecuteTask(task)) {
 
             // Mark as running
-            task.status(TaskStatus.RUNNING);
+            task.markRunning(engineID);
 
             //TODO Make this a put within state storage
             if(storage.containsTask(task.getId())) {
@@ -176,13 +180,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 runningTask = task.taskClass().newInstance();
                 boolean completed = runningTask.start(null, task.configuration());
                 if (completed) {
-                    task.status(COMPLETED);
+                    task.markCompleted();
                 } else {
-                    task.status(STOPPED);
+                    task.markStopped();
                 }
                 LOG.debug("{}\tmarked as completed", task);
             } catch (Throwable throwable) {
-                task.status(FAILED);
+                task.markFailed(throwable);
                 LOG.debug("{}\tmarked as failed", task);
             } finally {
                 runningTask = null;

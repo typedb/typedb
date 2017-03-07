@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -87,6 +88,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet16 = GraphContext.preLoad("testSet16.gql");
 
+    @ClassRule
+    public static final GraphContext testSet17 = GraphContext.preLoad("testSet17.gql");
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -105,9 +109,11 @@ public class ReasoningTests {
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
 
+        assertNotEquals(answers1.size() * answers2.size(), 0);
+        answers1.forEach(x -> Assert.assertTrue(x.keySet().size() ==1));
         answers2.forEach(x -> answers1.forEach(y -> Assert.assertTrue(x.values().containsAll(y.values()))));
         answers2.forEach(x -> Assert.assertTrue(x.keySet().size() ==2));
-        answers1.forEach(x -> Assert.assertTrue(x.keySet().size() ==1));
+
     }
 
     @Test //Expected result: The query should return a unique match.
@@ -115,11 +121,9 @@ public class ReasoningTests {
         QueryBuilder qb = testSet2.graph().graql().infer(true);
         String query1String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
-
         assertEquals(answers1.size(), 1);
     }
 
-    @Ignore
     @Test //Expected result: The queries should return different matches, unique per query.
     public void generatingFreshEntity() {
         QueryBuilder qb = testSet3.graph().graql().infer(true);
@@ -127,7 +131,8 @@ public class ReasoningTests {
         String query2String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
-        Assert.assertTrue(!(answers1.containsAll(answers2)&&answers2.containsAll(answers1)));
+        Assert.assertEquals(answers1.size(), answers2.size());
+        assertNotEquals(answers1, answers2);
     }
 
     @Test //Expected result: The queries should return the same two matches.
@@ -137,10 +142,9 @@ public class ReasoningTests {
         String query2String = "match $x isa entity2;";
         QueryAnswers answers1 = queryAnswers(qb.parse(query1String));
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
-        Assert.assertTrue(answers1.containsAll(answers2)&&answers2.containsAll(answers1));
+        Assert.assertEquals(answers1, answers2);
     }
 
-    @Ignore
     @Test //Expected result: The query should return a unique match (or possibly nothing if we enforce range-restriction).
     public void generatingFreshEntity2() {
         QueryBuilder qb = testSet5.graph().graql().infer(false);
@@ -242,10 +246,9 @@ public class ReasoningTests {
         QueryAnswers answers1 = queryAnswers(qb.parse(queryString1));
         String queryString2 = "match $x isa res1;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+
         assertEquals(answers1.size(), 2);
         assertEquals(answers2.size(), 1);
-
-
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -261,6 +264,7 @@ public class ReasoningTests {
         String queryString3 = "match $x isa res1; $y isa res2;";
         QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
         assertEquals(answers3.size(), 1);
+
         Assert.assertTrue(answers3.iterator().next().get(VarName.of("x")).isResource());
         Assert.assertTrue(answers3.iterator().next().get(VarName.of("y")).isResource());
     }
@@ -287,6 +291,15 @@ public class ReasoningTests {
                     Assert.assertTrue(ans.get(VarName.of("y")).isResource());
                 }
         );
+    }
+
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void reusingResources4() {
+        QueryBuilder qb = testSet17.graph().graql().infer(true);
+        String queryString1 = "match $x isa general-entity has res2 $r;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString1));
+        assertEquals(answers.size(), 1);
+        System.out.println();
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
