@@ -31,6 +31,7 @@ import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
@@ -52,6 +53,7 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class TaskFailoverTest {
 
     private static ZookeeperConnection connection;
