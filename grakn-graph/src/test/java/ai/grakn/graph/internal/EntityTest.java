@@ -332,8 +332,10 @@ public class EntityTest extends GraphTestBase{
     }
 
     private void checkResourceStructure(ResourceType<?> resourceType, Relation relation, Entity entity){
+        assertEquals(2, relation.allRolePlayers().size());
         relation.allRolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
+            assertEquals(1, entry.getValue().size());
             entry.getValue().forEach(instance -> {
                 if(instance.equals(entity)){
                     assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName()), roleType.getName());
