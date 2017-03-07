@@ -262,7 +262,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
-    public Stream<Map<VarName, Concept>> getIdPredicateAnswerStream(Stream<Map<VarName, Concept>> stream){
+    @SuppressWarnings("unchecked")
+    private Map<VarName, Concept> getIdPredicateAnswer(){
+        Object result = this.getTypeConstraints().stream()
+                .map(TypeAtom::getPredicate).filter(Objects::nonNull)
+                .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
+        return (Map<VarName, Concept>)result;
+    }
+
+    private Stream<Map<VarName, Concept>> getIdPredicateAnswerStream(Stream<Map<VarName, Concept>> stream){
         Map<VarName, Concept> idPredicateAnswer = getIdPredicateAnswer();
         return stream.map(answer -> {
             answer.putAll(idPredicateAnswer);
@@ -270,12 +278,18 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         });
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<VarName, Concept> getIdPredicateAnswer(){
-        Object result = this.getTypeConstraints().stream()
-                .map(TypeAtom::getPredicate).filter(Objects::nonNull)
-                .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
-        return (Map<VarName, Concept>)result;
+    private Stream<Map<VarName, Concept>> getFilteredAnswerStream(Stream<Map<VarName, Concept>> answers, ReasonerAtomicQuery ruleHead){
+        Set<VarName> vars = getVarNames();
+        Set<Map<VarName, VarName>> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
+        Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
+        Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
+        Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
+        return getIdPredicateAnswerStream(answers)
+                .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
+                .flatMap(a -> varFilterFunction.apply(a, vars))
+                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .filter(a -> subFilter(a, unmappedIdPredicates))
+                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
     }
 
     /**
@@ -308,29 +322,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         if (materialise || rule.requiresMaterialisation()) {
             LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
             LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
-            Stream<Map<VarName, Concept>> newAnswers = answers
+            answers = answers
                     .filter(a -> knownFilter(a, known.stream()))
                     .filter(a -> knownFilter(a, dknown.stream()))
                     .flatMap(ruleHead::materialise);
-            answers = dCache.record(ruleHead, newAnswers);
+            answers = dCache.record(ruleHead, answers);
         }
-
         //if query not exactly equal to the rule head, do some conversion
-        if (!this.equals(ruleHead)) {
-            Set<VarName> vars = this.getVarNames();
-            Set<Map<VarName, VarName>> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
-            Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
-            Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
-            Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
-            answers = this.getIdPredicateAnswerStream(answers)
-                    .filter(a -> entityTypeFilter(a, mappedTypeConstraints))
-                    .flatMap(a -> varFilterFunction.apply(a, vars))
-                    .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
-                    .filter(a -> subFilter(a, unmappedIdPredicates))
-                    .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
-        }
-
-        return dCache.record(this, answers);
+        return this.equals(ruleHead)? dCache.record(ruleHead, answers) : dCache.record(this, getFilteredAnswerStream(answers, ruleHead));
     }
 
     /**
