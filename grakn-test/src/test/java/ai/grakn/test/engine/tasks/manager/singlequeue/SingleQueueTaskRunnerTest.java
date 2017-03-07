@@ -339,15 +339,11 @@ public class SingleQueueTaskRunnerTest {
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
-        final Boolean[] stopped = {null};
-
-        whenTaskFinishes(taskId ->
-                stopped[0] = taskRunner.stopTask(taskId)
-        );
-
         taskRunner.run();
 
-        assertFalse(stopped[0]);
+        boolean stopped = taskRunner.stopTask(task.getId());
+
+        assertFalse(stopped);
     }
 
     @Test
