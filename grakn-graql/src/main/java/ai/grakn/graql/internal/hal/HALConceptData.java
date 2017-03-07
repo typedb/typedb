@@ -212,24 +212,19 @@ class HALConceptData {
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
 
         entity.relations().forEach(rel -> {
-
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
-            TypeName rolePlayedByCurrentConcept = null;
-            boolean isResource = false;
-            for (Map.Entry<RoleType, Instance> entry : rel.rolePlayers().entrySet()) {
+            for (Map.Entry<RoleType, Set<Instance>> entry : rel.allRolePlayers().entrySet()) {
                 //Some role players can be null
-                if (entry.getValue() != null) {
-                    if (entry.getValue().isResource()) {
-                        isResource = true;
-                    } else if (entry.getValue().getId().equals(entity.getId())) {
-                        rolePlayedByCurrentConcept = entry.getKey().getName();
+                boolean relationAttached = false;
+                for (Instance instance : entry.getValue()) {
+                    if (instance != null && !instance.isResource() && instance.getId().equals(entity.getId())) {
+                        attachRelation(halResource, rel, entry.getKey().getName(), separationDegree);
+                        relationAttached = true;
+                        break;
                     }
                 }
+                if(relationAttached) break;
             }
-            if (!isResource) {
-                attachRelation(halResource, rel, rolePlayedByCurrentConcept, separationDegree);
-            }
-
         });
     }
 
@@ -243,13 +238,15 @@ class HALConceptData {
 
     private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
 
-        rel.rolePlayers().forEach((roleType, instance) -> {
-            if (instance != null) {
-                Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
-                        .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                handleConcept(roleResource, instance, separationDegree - 1);
-                halResource.withRepresentation(roleType.getName().getValue(), roleResource);
-            }
+        rel.allRolePlayers().forEach((roleType, instanceSet) -> {
+            instanceSet.forEach(instance -> {
+                if (instance != null) {
+                    Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
+                            .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+                    handleConcept(roleResource, instance, separationDegree - 1);
+                    halResource.withRepresentation(roleType.getName().getValue(), roleResource);
+                }
+            });
         });
     }
 

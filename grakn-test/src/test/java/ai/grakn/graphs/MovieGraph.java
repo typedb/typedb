@@ -21,6 +21,7 @@ package ai.grakn.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
@@ -241,8 +242,8 @@ public class MovieGraph extends TestGraph {
     @Override
     protected void buildRelations(GraknGraph graph) {
         directedBy.addRelation()
-                .putRolePlayer(productionBeingDirected, chineseCoffee)
-                .putRolePlayer(director, alPacino);
+                .addRolePlayer(productionBeingDirected, chineseCoffee)
+                .addRolePlayer(director, alPacino);
 
         hasCast(godfather, marlonBrando, donVitoCorleone);
         hasCast(godfather, alPacino, michaelCorleone);
@@ -276,11 +277,8 @@ public class MovieGraph extends TestGraph {
         hasGenre(spy, musical);
         hasGenre(chineseCoffee, drama);
 
-        hasCluster(godfather, cluster0);
-        hasCluster(apocalypseNow, cluster0);
-        hasCluster(heat, cluster0);
-        hasCluster(theMuppets, cluster1);
-        hasCluster(hocusPocus, cluster1);
+        hasCluster(cluster0, godfather, apocalypseNow, heat);
+        hasCluster(cluster1, theMuppets, hocusPocus);
     }
 
     @Override
@@ -307,20 +305,21 @@ public class MovieGraph extends TestGraph {
 
     private static void hasCast(Instance movie, Instance person, Instance character) {
         hasCast.addRelation()
-                .putRolePlayer(productionWithCast, movie)
-                .putRolePlayer(actor, person)
-                .putRolePlayer(characterBeingPlayed, character);
+                .addRolePlayer(productionWithCast, movie)
+                .addRolePlayer(actor, person)
+                .addRolePlayer(characterBeingPlayed, character);
     }
 
     private static void hasGenre(Instance movie, Instance genre) {
         hasGenre.addRelation()
-                .putRolePlayer(productionWithGenre, movie)
-                .putRolePlayer(genreOfProduction, genre);
+                .addRolePlayer(productionWithGenre, movie)
+                .addRolePlayer(genreOfProduction, genre);
     }
 
-    private static void hasCluster(Instance movie, Instance cluster) {
-        hasCluster.addRelation()
-                .putRolePlayer(productionWithCluster, movie)
-                .putRolePlayer(clusterOfProduction, cluster);
+    private static void hasCluster(Instance cluster, Instance... movies) {
+        Relation relation = hasCluster.addRelation().addRolePlayer(clusterOfProduction, cluster);
+        for (Instance movie : movies) {
+            relation.addRolePlayer(productionWithCluster, movie);
+        }
     }
 }

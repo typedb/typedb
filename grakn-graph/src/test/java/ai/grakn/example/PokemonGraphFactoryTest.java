@@ -96,7 +96,7 @@ public class PokemonGraphFactoryTest {
         Entity grass = graknGraph.getResourcesByValue("grass").iterator().next().ownerInstances().iterator().next().asEntity();
         Stream<Relation> relations = poison.relations().stream();
         assertTrue(relations.anyMatch(r -> r.type().equals(relationType)
-                && r.rolePlayers().get(role).equals(grass)));
+                && r.rolePlayers(role).contains(grass)));
     }
 
 }

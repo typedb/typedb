@@ -643,7 +643,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
         return casting;
     }
-    CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
+    CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
         CastingImpl foundCasting  = null;
         if(rolePlayer != null) {
             foundCasting = getCasting(role, rolePlayer);
@@ -677,24 +677,24 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void putShortcutEdges(Relation relation, RelationType relationType, CastingImpl newCasting){
-        Map<RoleType, Instance> roleMap = relation.rolePlayers();
+    private void putShortcutEdges(RelationImpl relation, RelationType relationType, CastingImpl newCasting){
+        Map<RoleType, Set<Instance>> roleMap = relation.allRolePlayers();
 
         //This ensures the latest casting is taken into account when transferring relations
-        roleMap.put(newCasting.getRole(), newCasting.getRolePlayer());
+        roleMap.computeIfAbsent(newCasting.getRole(), (k) -> new HashSet<>()).add(newCasting.getRolePlayer());
 
-        if(roleMap.size() > 1) {
-            for(Map.Entry<RoleType, Instance> from : roleMap.entrySet()){
-                for(Map.Entry<RoleType, Instance> to :roleMap.entrySet()){
-                    if (from.getValue() != null && to.getValue() != null && from.getKey() != to.getKey()) {
-                        putShortcutEdge(
-                                relation,
-                                relationType.asRelationType(),
-                                from.getKey().asRoleType(),
-                                from.getValue().asInstance(),
-                                to.getKey().asRoleType(),
-                                to.getValue().asInstance());
-                    }
+        Set<CastingImpl> castings = relation.getMappingCasting();
+
+        for (CastingImpl fromCasting : castings) {
+            RoleType fromRole = fromCasting.getRole();
+            Instance from = fromCasting.getRolePlayer();
+
+            for (CastingImpl toCasting : castings) {
+                RoleType toRole = toCasting.getRole();
+                Instance to = toCasting.getRolePlayer();
+
+                if (from != null && to != null &&  (!fromRole.equals(toRole) || !from.equals(to)) ) {
+                    putShortcutEdge(relation, relationType, fromRole, from, toRole, to);
                 }
             }
         }
@@ -749,7 +749,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return hash;
     }
 
-    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
+    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
         String hash = generateNewHash(relationType, roleMap);
         RelationImpl concept = getConceptLog().getCachedRelation(hash);
 
@@ -975,7 +975,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             String relationID = relation.getId().getValue();
 
             //Kill Shortcut Edges
-            relation.rolePlayers().values().forEach(instance -> {
+            relation.rolePlayers().forEach(instance -> {
                 if(instance != null) {
                     List<Edge> edges = getTinkerTraversal().
                             hasId(instance.getId().getValue()).
@@ -1036,7 +1036,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if the roleplayers of the relations are the same.
      */
     private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
-        return mainRelation.rolePlayers().equals(otherRelation.rolePlayers()) &&
+        return mainRelation.allRolePlayers().equals(otherRelation.allRolePlayers()) &&
                 mainRelation.type().equals(otherRelation.type());
     }
 
@@ -1086,29 +1086,35 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
         RelationType relationType = otherRelation.type();
-        RoleTypeImpl roleTypeOfResource = null;
-        Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
+        Set<RoleTypeImpl> roleTypesOfResource = new HashSet<>(); //All the role types which the resource must play by the end
+        Map<RoleType, Set<Instance>> allRolePlayers = otherRelation.allRolePlayers();
 
         //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
-        for (Map.Entry<RoleType, Instance> rolePlayer : rolePlayers.entrySet()) {
-            if(rolePlayer.getValue().equals(other)){
-                rolePlayers.put(rolePlayer.getKey(), main);
-                roleTypeOfResource = (RoleTypeImpl) rolePlayer.getKey();
+        for (Map.Entry<RoleType, Set<Instance>> allRolePlayerEntries : allRolePlayers.entrySet()) {
+
+            Iterator<Instance> it = allRolePlayerEntries.getValue().iterator();
+            while (it.hasNext()){
+                Instance instance = it.next();
+                if(instance.isResource() && instance.asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
+                    it.remove();
+                    allRolePlayerEntries.getValue().add(main);
+                    roleTypesOfResource.add((RoleTypeImpl) allRolePlayerEntries.getKey());
+                }
             }
         }
 
         //See if a duplicate relation already exists
-        RelationImpl foundRelation = getRelation(relationType, rolePlayers);
+        RelationImpl foundRelation = getRelation(relationType, allRolePlayers);
 
         if(foundRelation != null){//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            putCasting(roleTypeOfResource, main, otherRelation);
+            roleTypesOfResource.forEach(roleType -> addCasting(roleType, main, otherRelation));
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        String newHash = generateNewHash(relationType, rolePlayers);
+        String newHash = generateNewHash(relationType, allRolePlayers);
         getConceptLog().getModifiedRelations().put(newHash, foundRelation);
     }
 }

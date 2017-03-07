@@ -62,7 +62,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
         alice = woman.addEntity();
         bob = man.addEntity();
-        relation = marriage.addRelation().putRolePlayer(wife, alice).putRolePlayer(husband, bob);
+        relation = marriage.addRelation().addRolePlayer(wife, alice).addRolePlayer(husband, bob);
         graknGraph.commit();
     }
 

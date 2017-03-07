@@ -22,7 +22,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graphs.MovieGraph;
@@ -748,6 +751,29 @@ public class InsertQueryTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(ErrorMessage.INSERT_METATYPE.getMessage("my-metatype", "concept"));
         qb.insert(name("my-metatype").sub("concept")).execute();
+    }
+
+    @Test
+    public void whenInsertingMultipleRolePlayers_BothRolePlayersAreAdded() {
+        List<Map<String, Concept>> results = qb.match(
+                var("g").has("title", "Godfather"),
+                var("m").has("title", "The Muppets")
+        ).insert(
+                var("c").isa("cluster").has("name", "2"),
+                var("r").rel("cluster-of-production", "c").rel("production-with-cluster", "g").rel("production-with-cluster", "m").isa("has-cluster")
+        ).execute();
+
+        Instance cluster = results.get(0).get("c").asInstance();
+        Instance godfather = results.get(0).get("g").asInstance();
+        Instance muppets = results.get(0).get("m").asInstance();
+        Relation relation = results.get(0).get("r").asRelation();
+
+        RoleType clusterOfProduction = movieGraph.graph().getRoleType("cluster-of-production");
+        RoleType productionWithCluster = movieGraph.graph().getRoleType("production-with-cluster");
+
+        assertEquals(relation.rolePlayers(), ImmutableSet.of(cluster, godfather, muppets));
+        assertEquals(relation.rolePlayers(clusterOfProduction), ImmutableSet.of(cluster));
+        assertEquals(relation.rolePlayers(productionWithCluster), ImmutableSet.of(godfather, muppets));
     }
 
     private void assertInsert(Var... vars) {

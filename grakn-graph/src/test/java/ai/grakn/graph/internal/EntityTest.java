@@ -67,8 +67,8 @@ public class EntityTest extends GraphTestBase{
         RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
         Relation relation = relationType.addRelation();
         Relation relation2 = relationType.addRelation();
-        CastingImpl casting1 = graknGraph.putCasting(role, rolePlayer1, (RelationImpl) relation);
-        CastingImpl casting2 = graknGraph.putCasting(role2, rolePlayer1, (RelationImpl) relation2);
+        CastingImpl casting1 = graknGraph.addCasting(role, rolePlayer1, (RelationImpl) relation);
+        CastingImpl casting2 = graknGraph.addCasting(role2, rolePlayer1, (RelationImpl) relation2);
 
         Set<ConceptImpl> castings = rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER);
 
@@ -94,9 +94,9 @@ public class EntityTest extends GraphTestBase{
         relationType.hasRole(role2);
         relationType.hasRole(role3);
         relationType.addRelation().
-                putRolePlayer(role1, rolePlayer1).
-                putRolePlayer(role2, rolePlayer2).
-                putRolePlayer(role3, rolePlayer3);
+                addRolePlayer(role1, rolePlayer1).
+                addRolePlayer(role2, rolePlayer2).
+                addRolePlayer(role3, rolePlayer3);
 
         assertEquals(20, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
         assertEquals(34, graknGraph.getTinkerPopGraph().traversal().E().toList().size());
@@ -122,9 +122,9 @@ public class EntityTest extends GraphTestBase{
         relationType.hasRole(role2);
         relationType.hasRole(role3);
         relationType.addRelation().
-                putRolePlayer(role1, rolePlayer1).
-                putRolePlayer(role2, null).
-                putRolePlayer(role3, null);
+                addRolePlayer(role1, rolePlayer1).
+                addRolePlayer(role2, null).
+                addRolePlayer(role3, null);
 
         long value = graknGraph.getTinkerPopGraph().traversal().V().count().next();
         assertEquals(16, value);
@@ -157,10 +157,10 @@ public class EntityTest extends GraphTestBase{
         castActing.hasRole(actor).hasRole(feature);
         castSinging.hasRole(singer).hasRole(musical);
 
-        Relation relation1 = castActing.addRelation().putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
-        Relation relation2 = castActing.addRelation().putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
-        Relation relation3 = castActing.addRelation().putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
-        Relation relation4 = castActing.addRelation().putRolePlayer(feature, godfather4).putRolePlayer(singer, pacino);
+        Relation relation1 = castActing.addRelation().addRolePlayer(feature, godfather).addRolePlayer(actor, pacino);
+        Relation relation2 = castActing.addRelation().addRolePlayer(feature, godfather2).addRolePlayer(actor, pacino);
+        Relation relation3 = castActing.addRelation().addRolePlayer(feature, godfather3).addRolePlayer(actor, pacino);
+        Relation relation4 = castActing.addRelation().addRolePlayer(feature, godfather4).addRolePlayer(singer, pacino);
 
         assertEquals(4, pacino.relations().size());
         assertEquals(1, godfather.relations().size());
@@ -209,13 +209,13 @@ public class EntityTest extends GraphTestBase{
         Resource randomResource2 = resourceType2.putResource("Random 2");
 
         assertEquals(0, birthDate.ownerInstances().size());
-        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthDate);
-        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthplace);
-        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, age);
-        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, family);
+        hasResource.addRelation().addRolePlayer(actorRole, pacino).addRolePlayer(resourceRole, birthDate);
+        hasResource.addRelation().addRolePlayer(actorRole, pacino).addRolePlayer(resourceRole, birthplace);
+        hasResource.addRelation().addRolePlayer(actorRole, pacino).addRolePlayer(resourceRole, age);
+        hasResource.addRelation().addRolePlayer(actorRole, pacino).addRolePlayer(resourceRole, family);
 
-        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource);
-        hasResource.addRelation().putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource2);
+        hasResource.addRelation().addRolePlayer(actorRole, pacino).addRolePlayer(resourceRole, randomResource);
+        hasResource.addRelation().addRolePlayer(actorRole, pacino).addRolePlayer(resourceRole, randomResource2);
 
         assertEquals(1, birthDate.ownerInstances().size());
         assertEquals(6, pacino.resources().size());
@@ -232,7 +232,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void testHasResource(){
+    public void checkHasResourceCreatesCorrectResourceStructure(){
         TypeName resourceTypeName = TypeName.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeName, ResourceType.DataType.STRING);
@@ -244,16 +244,7 @@ public class EntityTest extends GraphTestBase{
         Relation relation = entity.hasResource(resource);
         assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
-        relation.rolePlayers().entrySet().forEach(entry -> {
-            RoleType roleType = entry.getKey();
-            Instance instance = entry.getValue();
-
-            if(instance.equals(entity)){
-                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName), roleType.getName());
-            } else {
-                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName), roleType.getName());
-            }
-        });
+        checkResourceStructure(resourceType, relation, entity);
     }
 
     @Test
@@ -273,7 +264,7 @@ public class EntityTest extends GraphTestBase{
     }
 
     @Test
-    public void testKey(){
+    public void checkKeyCreatesCorrectResourceStructure(){
         TypeName resourceTypeName = TypeName.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeName, ResourceType.DataType.STRING);
@@ -285,16 +276,7 @@ public class EntityTest extends GraphTestBase{
         Relation relation = entity.hasResource(resource);
         assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
-        relation.rolePlayers().entrySet().forEach(entry -> {
-            RoleType roleType = entry.getKey();
-            Instance instance = entry.getValue();
-
-            if(instance.equals(entity)){
-                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName), roleType.getName());
-            } else {
-                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName), roleType.getName());
-            }
-        });
+        checkResourceStructure(resourceType, relation, entity);
     }
 
     @Test
@@ -348,4 +330,20 @@ public class EntityTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         graknGraph.validateGraph();
     }
+
+    private void checkResourceStructure(ResourceType<?> resourceType, Relation relation, Entity entity){
+        assertEquals(2, relation.allRolePlayers().size());
+        relation.allRolePlayers().entrySet().forEach(entry -> {
+            RoleType roleType = entry.getKey();
+            assertEquals(1, entry.getValue().size());
+            entry.getValue().forEach(instance -> {
+                if(instance.equals(entity)){
+                    assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName()), roleType.getName());
+                } else {
+                    assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType.getName()), roleType.getName());
+                }
+            });
+        });
+    }
+
 }
