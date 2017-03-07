@@ -21,13 +21,9 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
-import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.AfterClass;
@@ -59,9 +55,7 @@ public class SingleQueueTaskManagerTest {
 
     @BeforeClass
     public static void setup(){
-        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
-        taskManager = new SingleQueueTaskManager(EngineID.of("me"));
+        taskManager = new SingleQueueTaskManager(EngineID.me());
     }
 
     @AfterClass

@@ -85,8 +85,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </style>
 
 <script>
-import EngineClient from '../../js/EngineClient';
-import User from '../../js/User';
 import QueryBuilder from '../../js/QueryBuilder';
 
 

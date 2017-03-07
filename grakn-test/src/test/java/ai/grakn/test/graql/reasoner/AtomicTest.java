@@ -359,6 +359,14 @@ public class AtomicTest {
         assertTrue(!query.getAtom().isEquivalent(query2.getAtom()));
     }
 
+    @Test
+    public void testNonexistentType(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{$x isa someType;}";
+        exception.expect(IllegalArgumentException.class);
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
+    }
+
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
         Set<VarAdmin> vars = graph.graql().parsePattern(patternString).admin()
                 .getDisjunctiveNormalForm().getPatterns()

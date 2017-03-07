@@ -87,13 +87,13 @@ export default {
     created() {
         window.visualiser = new Visualiser();
 
-        visualiser.setCallbackOnEvent('click',this.singleClick);
-        visualiser.setCallbackOnEvent('doubleClick',this.doubleClick);
-        visualiser.setCallbackOnEvent('oncontext',this.rightClick);
-        visualiser.setCallbackOnEvent('hold',this.holdOnNode);
-        visualiser.setCallbackOnEvent('hoverNode',this.hoverNode);
-        visualiser.setCallbackOnEvent('blurNode',this.blurNode);
-        visualiser.setCallbackOnEvent('dragStart',this.onDragStart);
+        visualiser.setCallbackOnEvent('click', this.singleClick);
+        visualiser.setCallbackOnEvent('doubleClick', this.doubleClick);
+        visualiser.setCallbackOnEvent('oncontext', this.rightClick);
+        visualiser.setCallbackOnEvent('hold', this.holdOnNode);
+        visualiser.setCallbackOnEvent('hoverNode', this.hoverNode);
+        visualiser.setCallbackOnEvent('blurNode', this.blurNode);
+        visualiser.setCallbackOnEvent('dragStart', this.onDragStart);
 
         this.halParser = new HALParser();
 
@@ -133,7 +133,9 @@ export default {
 
         onLoadOntology() {
             const querySub = `match $x sub ${API.ROOT_CONCEPT};`;
-            EngineClient.graqlHAL(querySub, this.onGraphResponse);
+            EngineClient.graqlHAL(querySub).then(this.onGraphResponse, (err) => {
+                this.state.eventHub.$emit('error-message', err.message);
+            });
         },
         onClickSubmit(query) {
             if (query.includes('aggregate')) {
@@ -143,7 +145,9 @@ export default {
             }
 
             if (query.trim().startsWith('compute')) {
-                EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
+                EngineClient.graqlAnalytics(query).then(this.onGraphResponseAnalytics, (err) => {
+                    this.state.eventHub.$emit('error-message', err.message);
+                });
             } else {
                 let queryToExecute = query.trim();
 
@@ -152,7 +156,9 @@ export default {
                 if (!(query.includes('limit')) && !(query.includes('delete')))
                     queryToExecute = queryToExecute + ' limit 100;';
                 this.emitInjectQuery(queryToExecute);
-                EngineClient.graqlHAL(queryToExecute, this.onGraphResponse);
+                EngineClient.graqlHAL(queryToExecute).then(this.onGraphResponse, (err) => {
+                    this.state.eventHub.$emit('error-message', err.message);
+                });
             }
         },
         emitInjectQuery(query) {
@@ -201,27 +207,26 @@ export default {
         },
 
         onGraphResponseAnalytics(resp, err) {
-            if (resp != null) {
-                if (resp.type === 'string') {
-                    this.state.eventHub.$emit('analytics-string-response', resp.response);
-                } else {
-                    this.halParser.parseResponse(resp.response);
-                    visualiser.fitGraphToWindow();
-                }
+            if (resp.type === 'string') {
+                this.state.eventHub.$emit('analytics-string-response', resp.response);
             } else {
-                this.state.eventHub.$emit('error-message', err);
+                this.halParser.parseResponse(resp.response,false);
+                visualiser.fitGraphToWindow();
             }
         },
 
         onGraphResponse(resp, err) {
-            if (resp != null) {
-                if (!this.halParser.parseResponse(resp)) {
-                    this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
-                }
-                visualiser.fitGraphToWindow();
-            } else {
-                this.state.eventHub.$emit('error-message', err);
+            if (!this.halParser.parseResponse(JSON.parse(resp,false))) {
+                this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
             }
+            visualiser.fitGraphToWindow();
+        },
+
+        onGraphResponseOntology(resp, err) {
+            if (!this.halParser.parseResponse(JSON.parse(resp),true)) {
+                this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+            }
+            visualiser.fitGraphToWindow();
         },
 
         onClear() {
@@ -255,7 +260,8 @@ export default {
                 if (visualiser.nodes._data[node].ontology) {
                     EngineClient.request({
                         url: visualiser.nodes._data[node].ontology,
-                        callback: this.onGraphResponse,
+                    }).then(this.onGraphResponseOntology, (err) => {
+                        this.state.eventHub.$emit('error-message', err.message);
                     });
                 }
             } else {
@@ -268,9 +274,9 @@ export default {
                 EngineClient.request({
                     url: visualiser.getNode(node).href,
                     appendReasonerParams: generatedNode,
-                    callback: this.onGraphResponse,
+                }).then(this.onGraphResponse, (err) => {
+                    this.state.eventHub.$emit('error-message', err.message);
                 });
-
                 if (generatedNode) {
                     visualiser.deleteNode(node);
                 }
@@ -299,12 +305,12 @@ export default {
         },
         leftClick(param) {
 
-            // As multiselect is disabled, there will only ever be one node.
+            // TODO: handle multiselect properly now that is enabled.
             const node = param.nodes[0];
             const eventKeys = param.event.srcEvent;
             const clickType = param.event.type;
 
-            // If it is a long press on node: return
+            // If it is a long press on node: return and onHold() method will handle the event.
             if (clickType !== 'tap') {
                 return;
             }
@@ -316,23 +322,27 @@ export default {
                 return;
             }
 
+            const nodeObj = visualiser.getNode(node);
 
             if (eventKeys.altKey) {
-                if (visualiser.nodes._data[node].ontology) {
+                // If alt key is pressed we load ontology related to the current node
+                if (nodeObj.ontology) {
                     EngineClient.request({
                         url: visualiser.nodes._data[node].ontology,
-                        callback: this.onGraphResponse,
+                    }).then(this.onGraphResponseOntology, (err) => {
+                        this.state.eventHub.$emit('error-message', err.message);
                     });
                 }
             } else {
-                const props = visualiser.getNode(node);
+
+                // Show node properties on node panel.
                 this.allNodeOntologyProps = {
-                    id: props.id,
-                    type: props.type,
-                    baseType: props.baseType,
+                    id: nodeObj.id,
+                    type: nodeObj.type,
+                    baseType: nodeObj.baseType,
                 };
 
-                this.allNodeResources = this.prepareResources(props.properties);
+                this.allNodeResources = this.prepareResources(nodeObj.properties);
                 this.selectedNodeLabel = visualiser.getNodeLabel(node);
 
                 this.showNodePanel = true;
@@ -365,10 +375,10 @@ export default {
             }
         },
 
-        onDragStart(params){
-          visualiser.draggingNode = true;
-          this.showToolTip = false;
-          visualiser.releaseNodes(params.nodes);
+        onDragStart(params) {
+            visualiser.draggingNode = true;
+            this.showToolTip = false;
+            visualiser.releaseNodes(params.nodes);
         },
 
         // ----- End of graph interactions ------- //

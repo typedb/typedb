@@ -98,7 +98,7 @@ public class ZookeeperConnection {
         return zookeeperConnection;
     }
 
-    public InterProcessMutex mutex(TaskId id){
+    public InterProcessMutex mutex(String id){
         return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
     }
 

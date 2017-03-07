@@ -50,7 +50,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
@@ -216,7 +215,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      */
     private void markAsScheduled(TaskState state) {
         LOG.debug("Marking " + state.getId() + " as scheduled");
-        storage.updateState(state.status(SCHEDULED));
+        storage.updateState(state.markScheduled());
     }
 
     /**
@@ -235,7 +234,7 @@ public class Scheduler implements Runnable, AutoCloseable {
     private void restartRecurringTasks() {
         LOG.debug("Restarting recurring tasks");
 
-        Set<TaskState> tasks = storage.getTasks(null, null, null, 0, 0);
+        Set<TaskState> tasks = storage.getTasks(null, null, null, null, 0, 0);
         tasks.stream()
                 .filter(state -> state.schedule().isRecurring())
                 .filter(p -> p.status() != STOPPED)
