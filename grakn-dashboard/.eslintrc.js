@@ -9,6 +9,7 @@ module.exports = {
         "$": true,
         "visualiser": true,
         "vis":true,
+        "XMLHttpRequest":true,
     },
     "rules": {
         "no-plusplus": [

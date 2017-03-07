@@ -129,7 +129,6 @@ export default {
     data: function() {
         return {
             graqlResponse: undefined,
-            engineClient: {},
             typeInstances: false,
             codeMirror: {},
             currentQuery: undefined,
@@ -215,9 +214,9 @@ export default {
             this.$refs.savedQueries.refreshList();
         },
         loadMetaTypeInstances() {
-            EngineClient.getMetaTypes(x => {
+            EngineClient.getMetaTypes().then(x => {
                 if (x != null) {
-                    this.typeInstances = x;
+                    this.typeInstances = JSON.parse(x);
                 }
             });
         },
