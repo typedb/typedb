@@ -75,7 +75,7 @@ public class RelationPropertyIT {
 
         assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
 
-        Instance[] rolePlayers = relation.rolePlayers().toArray(new Instance[0]);
+        Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
 
         relation.addRolePlayer(roleType, rolePlayer);
 
