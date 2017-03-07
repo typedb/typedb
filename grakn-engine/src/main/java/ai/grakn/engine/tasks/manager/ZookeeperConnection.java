@@ -19,7 +19,6 @@
 
 package ai.grakn.engine.tasks.manager;
 
-import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
@@ -98,7 +97,7 @@ public class ZookeeperConnection {
         return zookeeperConnection;
     }
 
-    public InterProcessMutex mutex(TaskId id){
+    public InterProcessMutex mutex(String id){
         return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
     }
 

@@ -120,12 +120,12 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         try {
             return (GraknVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
+            throw new IllegalStateException(
+                    ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
         }
     }
 
     void degreeStepInstance(Vertex vertex, Messenger<Long> messenger) {
-        // check if vertex is in the subgraph
         String type = vertex.label();
         if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
             // each role-player sends 1 to castings following incoming edges
@@ -156,7 +156,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         }
     }
 
-    long getEdgeCount(Messenger<Long> messenger) {
+    static long getMessageCount(Messenger<Long> messenger) {
         return IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
     }
 }

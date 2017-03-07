@@ -96,7 +96,7 @@ public class QueryAnswerStream {
         for (TypeAtom type : types){
             VarName var = type.getVarName();
             Type t = type.getType();
-            if(!answer.get(var).asInstance().type().equals(t)){
+            if(!t.subTypes().contains(answer.get(var).asInstance().type())){
                 return false;
             }
         }

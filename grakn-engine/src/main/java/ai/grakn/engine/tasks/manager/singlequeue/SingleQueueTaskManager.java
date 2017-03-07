@@ -24,7 +24,6 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -54,6 +53,7 @@ import static java.util.stream.Stream.generate;
 public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
+    private final static ConfigProperties properties = ConfigProperties.getInstance();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = ConfigProperties.getInstance().getAvailableThreads();
 
@@ -76,7 +76,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     public SingleQueueTaskManager(EngineID engineId){
         this.zookeeper = new ZookeeperConnection();
-        this.storage = new TaskStateZookeeperStore(zookeeper);
+        this.storage = chooseStorage(properties, zookeeper);
 
         //TODO check that the number of partitions is at least the capacity
         //TODO Single queue task manager should have its own impl of failover
@@ -90,7 +90,7 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        this.taskRunners = generate(this::newTaskRunner).limit(CAPACITY).collect(toSet());
+        this.taskRunners = generate(() -> newTaskRunner(engineId)).limit(CAPACITY).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         LOG.debug("TaskManager started");
@@ -157,9 +157,10 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Create a new instance of {@link SingleQueueTaskRunner} with the configured {@link #storage}}
      * and {@link #zookeeper} connection.
+     * @param engineId Identifier of the engine on which this taskrunner is running
      * @return New instance of a SingleQueueTaskRunner
      */
-    private SingleQueueTaskRunner newTaskRunner(){
-        return new SingleQueueTaskRunner(storage, zookeeper);
+    private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
+        return new SingleQueueTaskRunner(engineId, storage, zookeeper);
     }
 }
