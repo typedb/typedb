@@ -677,34 +677,25 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void putShortcutEdges(Relation relation, RelationType relationType, CastingImpl newCasting){
+    private void putShortcutEdges(RelationImpl relation, RelationType relationType, CastingImpl newCasting){
         Map<RoleType, Set<Instance>> roleMap = relation.allRolePlayers();
 
         //This ensures the latest casting is taken into account when transferring relations
         roleMap.computeIfAbsent(newCasting.getRole(), (k) -> new HashSet<>()).add(newCasting.getRolePlayer());
 
-        for (Map.Entry<RoleType, Set<Instance>> entry : roleMap.entrySet()) {
-            RoleType fromRole = entry.getKey();
+        Set<CastingImpl> castings = relation.getMappingCasting();
 
-            //Shortcuts between instances playing the same role
-            for (Instance from : entry.getValue()) {
-                putShortcutEdges(relationType, relation, fromRole, from, fromRole, entry.getValue());
-            }
+        for (CastingImpl fromCasting : castings) {
+            RoleType fromRole = fromCasting.getRole();
+            Instance from = fromCasting.getRolePlayer();
 
-            //Shortcuts between instances playing different roles
-            for (Map.Entry<RoleType, Set<Instance>> innerEntry : roleMap.entrySet()) {
-                RoleType toRole = innerEntry.getKey();
-                for (Instance from : entry.getValue()) {
-                    putShortcutEdges(relationType, relation, fromRole, from, toRole, innerEntry.getValue());
+            for (CastingImpl toCasting : castings) {
+                RoleType toRole = toCasting.getRole();
+                Instance to = toCasting.getRolePlayer();
+
+                if (from != null && to != null &&  (!fromRole.equals(toRole) || !from.equals(to)) ) {
+                    putShortcutEdge(relation, relationType, fromRole, from, toRole, to);
                 }
-            }
-        }
-    }
-
-    private void putShortcutEdges(RelationType relationType, Relation relation, RoleType fromRole, Instance from, RoleType toRole, Set<Instance> toSet){
-        for (Instance to : toSet) {
-            if (from != null && to != null &&  (!fromRole.equals(toRole) || !from.equals(to)) ) {
-                putShortcutEdge(relation, relationType, fromRole, from, toRole, to);
             }
         }
     }
