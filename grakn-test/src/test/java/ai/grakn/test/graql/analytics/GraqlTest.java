@@ -163,14 +163,14 @@ public class GraqlTest {
             Entity theResourceOwner = thing.addEntity();
 
             relationType.addRelation()
-                    .putRolePlayer(resourceOwner, theResourceOwner)
-                    .putRolePlayer(resourceValue, resource.putResource(1L));
+                    .addRolePlayer(resourceOwner, theResourceOwner)
+                    .addRolePlayer(resourceValue, resource.putResource(1L));
             relationType.addRelation()
-                    .putRolePlayer(resourceOwner, theResourceOwner)
-                    .putRolePlayer(resourceValue, resource.putResource(2L));
+                    .addRolePlayer(resourceOwner, theResourceOwner)
+                    .addRolePlayer(resourceValue, resource.putResource(2L));
             relationType.addRelation()
-                    .putRolePlayer(resourceOwner, theResourceOwner)
-                    .putRolePlayer(resourceValue, resource.putResource(3L));
+                    .addRolePlayer(resourceOwner, theResourceOwner)
+                    .addRolePlayer(resourceValue, resource.putResource(3L));
 
             graph.commitOnClose();
         }
@@ -299,11 +299,11 @@ public class GraqlTest {
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId().getValue();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId().getValue();
             relationId24 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity4).getId().getValue();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity4).getId().getValue();
 
             graph.commitOnClose();
         }

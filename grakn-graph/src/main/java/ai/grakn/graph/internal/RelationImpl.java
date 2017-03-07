@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -74,7 +75,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * Sets the internal hash in order to perform a faster lookup
      */
     public void setHash(){
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), rolePlayers()));
+        setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), allRolePlayers()));
     }
 
     /**
@@ -83,37 +84,54 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @param roleMap The roles and their corresponding role players
      * @return A unique hash identifying this relation
      */
-    public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
+    static String generateNewHash(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         StringBuilder hash = new StringBuilder();
         hash.append("RelationType_").append(relationType.getId().getValue().replace("_", "\\_")).append("_Relation");
 
         for(RoleType role: sortedRoleIds){
             hash.append("_").append(role.getId().getValue().replace("_", "\\_"));
-            Instance instance = roleMap.get(role);
-            if(instance != null){
-                hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
-            }
+
+            roleMap.get(role).forEach(instance -> {
+                if(instance != null){
+                    hash.append("_").append(instance.getId().getValue().replace("_", "\\_"));
+                }
+            });
         }
         return hash.toString();
     }
 
     /**
+     * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
+     * @see RoleType
      *
-     * @return A list of all the Instances involved in the relationships and the Role Types which they play.
+     * @return A list of all the role types and the instances playing them in this relation.
      */
-    @Override
-    public Map<RoleType, Instance> rolePlayers() {
+    public Map<RoleType, Set<Instance>> allRolePlayers(){
         Set<CastingImpl> castings = getMappingCasting();
-        HashMap<RoleType, Instance> roleMap = new HashMap<>();
+        HashMap<RoleType, Set<Instance>> roleMap = new HashMap<>();
 
         //Gets roles based on all roles of the relation type
-        type().hasRoles().forEach(roleType -> roleMap.put(roleType, null));
+        type().hasRoles().forEach(roleType -> roleMap.put(roleType, new HashSet<>()));
 
-        //Get roles based on availiable castings
-        castings.forEach(casting -> roleMap.put(casting.getRole(), casting.getRolePlayer()));
+        //Now iterate over castings
+        castings.forEach(c -> roleMap.computeIfAbsent(c.getRole(), (k) -> new HashSet<>()).add(c.getRolePlayer()));
 
         return roleMap;
+    }
+
+    @Override
+    public Collection<Instance> rolePlayers(RoleType... roleTypes) {
+        Set<Instance> rolePlayers = new HashSet<>();
+        Set<RoleType> validRoleTypes = new HashSet<>(Arrays.asList(roleTypes));
+
+        getMappingCasting().forEach(casting -> {
+            if(validRoleTypes.isEmpty() || validRoleTypes.contains(casting.getRole())){
+                rolePlayers.add(casting.getRolePlayer());
+            }
+        });
+
+        return rolePlayers;
     }
 
     /**
@@ -145,7 +163,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      * @return The Relation itself
      */
     @Override
-    public Relation putRolePlayer(RoleType roleType, Instance instance) {
+    public Relation addRolePlayer(RoleType roleType, Instance instance) {
         if(roleType == null){
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
         }
@@ -160,8 +178,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
                         out(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
-                    ConceptImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
-                    throw new ConceptNotUniqueException(resource, foundNeighbour.asInstance());
+                    InstanceImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
+                    throw new ConceptNotUniqueException(resource, foundNeighbour);
                 }
             }
         }
@@ -178,7 +196,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     private Relation addNewRolePlayer(RoleType roleType, Instance instance){
         if(instance != null) {
-            getGraknGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
+            getGraknGraph().addCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
         }
         return this;
     }
@@ -196,9 +214,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     /**
      * When a relation is deleted this cleans up any solitary casting and resources.
      */
-    public void cleanUp() {
+    void cleanUp() {
         boolean performDeletion = true;
-        Collection<Instance> rolePlayers = rolePlayers().values();
+        Collection<Instance> rolePlayers = rolePlayers();
 
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null )){
@@ -237,11 +255,16 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public String innerToString(){
         StringBuilder description = new StringBuilder();
         description.append("ID [").append(getId()).append("] Type [").append(type().getName()).append("] Roles and Role Players: \n");
-        for (Map.Entry<RoleType, Instance> entry : rolePlayers().entrySet()) {
-            if(entry.getValue() == null){
+        for (Map.Entry<RoleType, Set<Instance>> entry : allRolePlayers().entrySet()) {
+            if(entry.getValue().isEmpty()){
                 description.append("    Role [").append(entry.getKey().getName()).append("] not played by any instance \n");
             } else {
-                description.append("    Role [").append(entry.getKey().getName()).append("] played by [").append(entry.getValue().getId()).append("] \n");
+                StringBuilder instancesString = new StringBuilder();
+                for (Instance instance : entry.getValue()) {
+                    instancesString.append(instance.getId()).append(",");
+                }
+                description.append("    Role [").append(entry.getKey().getName()).append("] played by [").
+                        append(instancesString.toString()).append("] \n");
             }
         }
         return description.toString();

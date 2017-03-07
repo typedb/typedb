@@ -55,9 +55,11 @@ import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
@@ -371,9 +373,9 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<VarAdmin> getInnerVars() {
+    public Collection<VarAdmin> getInnerVars() {
         Stack<VarAdmin> newVars = new Stack<>();
-        Set<VarAdmin> vars = new HashSet<>();
+        List<VarAdmin> vars = new ArrayList<>();
 
         newVars.add(this);
 
@@ -387,9 +389,9 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<VarAdmin> getImplicitInnerVars() {
+    public Collection<VarAdmin> getImplicitInnerVars() {
         Stack<VarAdmin> newVars = new Stack<>();
-        Set<VarAdmin> vars = new HashSet<>();
+        List<VarAdmin> vars = new ArrayList<>();
 
         newVars.add(this);
 
@@ -412,7 +414,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public String toString() {
-        Set<VarAdmin> innerVars = getInnerVars();
+        Collection<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
         getProperties(HasResourceProperty.class)
                 .map(HasResourceProperty::getResource)

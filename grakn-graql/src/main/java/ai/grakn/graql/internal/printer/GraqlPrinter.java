@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -90,15 +91,17 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             }
 
             if (concept.isRelation()) {
-                String relationString = concept.asRelation().rolePlayers().entrySet().stream().map(entry -> {
+                String relationString = concept.asRelation().allRolePlayers().entrySet().stream().map(entry -> {
                     RoleType roleType = entry.getKey();
-                    Instance rolePlayer = entry.getValue();
+                    Set<Instance> instances = entry.getValue();
 
-                    if (rolePlayer != null) {
-                        String s = colorType(roleType) + ": id " + idToString(rolePlayer.getId());
-                        return Optional.of(s);
-                    } else {
+                    if(instances.isEmpty()){
                         return Optional.<String>empty();
+                    } else {
+                        StringBuilder innerSb = new StringBuilder();
+                        instances.forEach(rolePlayer ->
+                                innerSb.append(colorType(roleType)).append(": id ").append(idToString(rolePlayer.getId())).append(","));
+                        return Optional.of(innerSb.toString());
                     }
                 }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));
 

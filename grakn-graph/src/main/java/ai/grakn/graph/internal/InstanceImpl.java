@@ -184,8 +184,8 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         }
 
         Relation relation = hasResource.addRelation();
-        relation.putRolePlayer(hasResourceTarget, this);
-        relation.putRolePlayer(hasResourceValue, resource);
+        relation.addRolePlayer(hasResourceTarget, this);
+        relation.addRolePlayer(hasResourceValue, resource);
 
         return relation;
     }

@@ -104,16 +104,16 @@ public class DegreeTest {
 
         // relate them
         ConceptId id1 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity1))
-                .putRolePlayer(role2, graph.getConcept(entity2))
+                .addRolePlayer(role1, graph.getConcept(entity1))
+                .addRolePlayer(role2, graph.getConcept(entity2))
                 .getId();
         ConceptId id2 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity2))
-                .putRolePlayer(role2, graph.getConcept(entity3))
+                .addRolePlayer(role1, graph.getConcept(entity2))
+                .addRolePlayer(role2, graph.getConcept(entity3))
                 .getId();
         ConceptId id3 = related.addRelation()
-                .putRolePlayer(role1, graph.getConcept(entity2))
-                .putRolePlayer(role2, graph.getConcept(entity4))
+                .addRolePlayer(role1, graph.getConcept(entity2))
+                .addRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
         graph.commitOnClose();
         graph.close();
@@ -247,9 +247,9 @@ public class DegreeTest {
         Entity dave = person.addEntity();
         Resource coconut = name.putResource("coconut");
         Resource stinky = altName.putResource("stinky");
-        Relation daveOwnsCoco = mansBestFriend.addRelation().putRolePlayer(owner, dave).putRolePlayer(pet, coco);
-        Relation cocoName = hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, coconut);
-        Relation cocoAltName = hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, stinky);
+        Relation daveOwnsCoco = mansBestFriend.addRelation().addRolePlayer(owner, dave).addRolePlayer(pet, coco);
+        Relation cocoName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
+        Relation cocoAltName = hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
 
         // manually compute the degree for small graph
         Map<ConceptId, Long> subGraphReferenceDegrees = new HashMap<>();
@@ -331,7 +331,7 @@ public class DegreeTest {
         Entity coco = animal.addEntity();
         Entity dave = person.addEntity();
         Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
-                .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
+                .addRolePlayer(pet, coco).addRolePlayer(owner, dave);
 
         // manual degrees
         Map<ConceptId, Long> referenceDegrees = new HashMap<>();
@@ -385,12 +385,12 @@ public class DegreeTest {
         Resource coconut = name.putResource("coconut");
         Resource stinky = altName.putResource("stinky");
         Relation daveOwnsCoco = mansBestFriend.addRelation()
-                .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
-        hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, coconut);
-        hasName.addRelation().putRolePlayer(target, coco).putRolePlayer(value, stinky);
+                .addRolePlayer(owner, dave).addRolePlayer(pet, coco);
+        hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, coconut);
+        hasName.addRelation().addRolePlayer(target, coco).addRolePlayer(value, stinky);
         Resource sd = startDate.putResource("01/01/01");
         Relation ownsFrom = hasOwnershipResource.addRelation()
-                .putRolePlayer(ownershipResource, sd).putRolePlayer(ownership, daveOwnsCoco);
+                .addRolePlayer(ownershipResource, sd).addRolePlayer(ownership, daveOwnsCoco);
 
         // manually compute the degree
         Map<ConceptId, Long> referenceDegrees1 = new HashMap<>();
@@ -462,9 +462,9 @@ public class DegreeTest {
         Entity donVitoCorleone = character.addEntity();
 
         Relation relation = hasCast.addRelation()
-                .putRolePlayer(productionWithCast, godfather)
-                .putRolePlayer(actor, marlonBrando)
-                .putRolePlayer(characterBeingPlayed, donVitoCorleone);
+                .addRolePlayer(productionWithCast, godfather)
+                .addRolePlayer(actor, marlonBrando)
+                .addRolePlayer(characterBeingPlayed, donVitoCorleone);
         ConceptId relationId = relation.getId();
 
         graph.commitOnClose();
@@ -496,9 +496,9 @@ public class DegreeTest {
         Entity dave = person.addEntity();
 
         Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
-                .putRolePlayer(pet, coco)
-                .putRolePlayer(owner, dave)
-                .putRolePlayer(breeder, dave);
+                .addRolePlayer(pet, coco)
+                .addRolePlayer(owner, dave)
+                .addRolePlayer(breeder, dave);
 
         // manual degrees
         Map<ConceptId, Long> referenceDegrees = new HashMap<>();
@@ -541,9 +541,9 @@ public class DegreeTest {
         Entity coco = cat.addEntity();
         Entity dave = person.addEntity();
         Relation daveBreedsAndOwnsCoco = mansBestFriend.addRelation()
-                .putRolePlayer(owner, dave).putRolePlayer(breeder, dave).putRolePlayer(pet, coco);
+                .addRolePlayer(owner, dave).addRolePlayer(breeder, dave).addRolePlayer(pet, coco);
         Relation daveBreedsAndOwnsBeast = mansBestFriend.addRelation()
-                .putRolePlayer(owner, dave).putRolePlayer(breeder, dave).putRolePlayer(pet, beast);
+                .addRolePlayer(owner, dave).addRolePlayer(breeder, dave).addRolePlayer(pet, beast);
 
         // manual degrees
         Map<ConceptId, Long> referenceDegrees = new HashMap<>();
