@@ -20,6 +20,7 @@ package ai.grakn.test.migration;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -116,8 +117,7 @@ public class MigratorTestUtils {
         RoleType roleOther = graph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
 
         Collection<Relation> relations = instance.relations(roleOwner);
-        //TODO: Cleanup use of iterator here
-        return relations.stream().map(r -> r.rolePlayers(roleOther).iterator().next().asResource());
+        return relations.stream().flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);
     }
 
     /**
