@@ -215,11 +215,15 @@ class HALConceptData {
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
             for (Map.Entry<RoleType, Set<Instance>> entry : rel.allRolePlayers().entrySet()) {
                 //Some role players can be null
+                boolean relationAttached = false;
                 for (Instance instance : entry.getValue()) {
                     if (instance != null && !instance.isResource() && instance.getId().equals(entity.getId())) {
                         attachRelation(halResource, rel, entry.getKey().getName(), separationDegree);
+                        relationAttached = true;
+                        break;
                     }
                 }
+                if(relationAttached) break;
             }
         });
     }
