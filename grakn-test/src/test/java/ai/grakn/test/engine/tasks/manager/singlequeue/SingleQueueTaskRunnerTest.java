@@ -358,4 +358,18 @@ public class SingleQueueTaskRunnerTest {
 
         assertThat(completedTasks(), empty());
     }
+
+    @Test
+    public void whenATaskIsStoppedDifferentToTheOneRunning_DoNotStopTheRunningTask() {
+        TaskState task1 = createTask();
+        TaskState task2 = createTask();
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task1)));
+
+        whenTaskStarts(taskId -> taskRunner.stopTask(task2.getId()));
+
+        taskRunner.run();
+
+        assertThat(storage.getState(task1.getId()).status(), is(COMPLETED));
+    }
 }

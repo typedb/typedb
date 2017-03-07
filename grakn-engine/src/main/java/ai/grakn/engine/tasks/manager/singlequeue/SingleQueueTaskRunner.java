@@ -62,6 +62,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private final EngineID engineID;
 
+    private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
 
     /**
@@ -150,7 +151,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     }
 
     public boolean stopTask(TaskId taskId) {
-        return runningTask != null && runningTask.stop();
+        return taskId.equals(runningTaskId) && runningTask.stop();
     }
 
     /**
@@ -177,6 +178,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             // Execute task
             try {
+                runningTaskId = task.getId();
                 runningTask = task.taskClass().newInstance();
                 boolean completed = runningTask.start(null, task.configuration());
                 if (completed) {
@@ -190,6 +192,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 LOG.debug("{}\tmarked as failed", task);
             } finally {
                 runningTask = null;
+                runningTaskId = null;
                 storage.updateState(task);
             }
         }
