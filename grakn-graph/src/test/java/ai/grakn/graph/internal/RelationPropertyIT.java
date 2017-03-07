@@ -91,10 +91,8 @@ public class RelationPropertyIT {
 
     @Property
     public void whenCallingRolePlayersWithoutArgs_ReturnRolePlayersOfAllRoleTypes(Relation relation) {
-        Collection<RoleType> hasRoles = relation.type().hasRoles();
-
-        RoleType[] allRoleTypes = new RoleType[hasRoles.size()];
-        hasRoles.toArray(allRoleTypes);
+        RoleType[] allRoleTypes = new RoleType[relation.allRolePlayers().size()];
+        relation.allRolePlayers().keySet().toArray(allRoleTypes);
 
         assertEquals(relation.rolePlayers(), relation.rolePlayers(allRoleTypes));
     }
