@@ -26,8 +26,6 @@ import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.test.EngineContext;
-import org.junit.After;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -47,11 +45,6 @@ public class GraknEngineServerTest {
     @Rule
     public final EngineContext kafka = EngineContext.startKafkaServer();
 
-    @After
-    public void stopEngine(){
-        GraknEngineServer.stop();
-    }
-
     @Test
     public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
         // Should start engine with in-memory server
@@ -69,8 +62,9 @@ public class GraknEngineServerTest {
         ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, MultiQueueTaskManager.class.getName());
 
-        GraknEngineServer.main(new String[]{});
-        assertThat(GraknEngineServer.getTaskManager(), instanceOf(MultiQueueTaskManager.class));
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+            assertThat(server.getTaskManager(), instanceOf(MultiQueueTaskManager.class));
+        }
     }
 
     @Test
@@ -80,8 +74,9 @@ public class GraknEngineServerTest {
         ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
-        GraknEngineServer.main(new String[]{});
-        assertThat(GraknEngineServer.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+            assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
+        }
     }
 
     @Test
@@ -92,8 +87,9 @@ public class GraknEngineServerTest {
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
         ConfigProperties.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
 
-        GraknEngineServer.main(new String[]{});
-        assertThat(GraknEngineServer.getTaskManager().storage(), instanceOf(TaskStateZookeeperStore.class));
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+            assertThat(server.getTaskManager().storage(), instanceOf(TaskStateZookeeperStore.class));
+        }
     }
 
     @Test
@@ -104,8 +100,9 @@ public class GraknEngineServerTest {
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
         ConfigProperties.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "false");
 
-        GraknEngineServer.main(new String[]{});
-        assertThat(GraknEngineServer.getTaskManager().storage(), instanceOf(TaskStateGraphStore.class));
+        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
+            assertThat(server.getTaskManager().storage(), instanceOf(TaskStateGraphStore.class));
+        }
 
         ConfigProperties.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
     }
