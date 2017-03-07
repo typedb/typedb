@@ -75,7 +75,6 @@ public class TaskStateInMemoryStoreTest {
         // Change
         state.status(SCHEDULED)
                 .statusChangedBy("bla")
-                .engineID(EngineID.of("newEngine"))
                 .exception(exception);
 
         stateStorage.updateState(state);
@@ -83,14 +82,13 @@ public class TaskStateInMemoryStoreTest {
         TaskState newState = stateStorage.getState(id);
         assertEquals(SCHEDULED, newState.status());
         assertEquals("bla", newState.statusChangedBy());
-        assertEquals(EngineID.of("newEngine"), newState.engineID());
         assertEquals(exception, newState.exception());
     }
 
     @Test
     public void testGetTasksByStatus() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(CREATED, null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
                         .map(TaskState::getId)
@@ -102,7 +100,7 @@ public class TaskStateInMemoryStoreTest {
     @Test
     public void testGetTasksByCreator() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, this.getClass().getName(), null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -114,7 +112,7 @@ public class TaskStateInMemoryStoreTest {
     @Test
     public void testGetTasksByClassName() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -126,7 +124,7 @@ public class TaskStateInMemoryStoreTest {
     @Test
     public void testGetAllTasks() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, null, null, null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -136,13 +134,23 @@ public class TaskStateInMemoryStoreTest {
     }
 
     @Test
+    public void testGetByRunningEngine(){
+        EngineID me = EngineID.me();
+        TaskId id = stateStorage.newState(task().setRunning(me));
+        Set<TaskState > res = stateStorage.getTasks(null, null, null, me, 1, 0);
+        TaskState resultant = res.iterator().next();
+        assertEquals(resultant.getId(), id);
+        assertEquals(resultant.engineID(), me);
+    }
+
+    @Test
     public void testTaskPagination() {
         for (int i = 0; i < 20; i++) {
             stateStorage.newState(task());
         }
 
-        Set<TaskState> setA = stateStorage.getTasks(null, null, null, 10, 0);
-        Set<TaskState> setB = stateStorage.getTasks(null, null, null, 10, 10);
+        Set<TaskState> setA = stateStorage.getTasks(null, null, null, null, 10, 0);
+        Set<TaskState> setB = stateStorage.getTasks(null, null, null, null, 10, 10);
 
         setA.forEach(x -> assertFalse(setB.contains(x)));
     }

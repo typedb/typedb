@@ -122,7 +122,7 @@ public class TasksController {
         }
 
         JSONArray result = new JSONArray();
-        for (TaskState state : manager.storage().getTasks(status, className, creator, limit, offset)) {
+        for (TaskState state : manager.storage().getTasks(status, className, creator, null, limit, offset)) {
             result.put(serialiseStateSubset(state));
         }
 

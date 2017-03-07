@@ -47,7 +47,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * a synchronized manner withing a cluster. This means that all updates must be performed
  * by acquiring a distributed mutex so that no concurrent writes are possible. 
  * </p>
- * 
+ *
+ * //TODO Re-do this class to make it readable
  * @author alexandraorth
  */
 public class TaskStateZookeeperStore implements TaskStateStorage {
@@ -66,9 +67,20 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public TaskId newState(TaskState task){
        return executeWithMutex(task.getId(), () -> {
-            zookeeper.connection().inTransaction()
-                    .create().forPath(taskPath(task), serialize(task))
-                    .and().commit();
+
+           CuratorTransactionBridge transaction =  zookeeper.connection().inTransaction()
+                   .create().forPath(taskPath(task), serialize(task));
+
+           if (task.engineID() != null) {
+               if (zookeeper.connection().checkExists().forPath(enginePath(task.engineID())) == null) {
+                   zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(task.engineID()));
+               }
+
+               transaction = transaction.and().create().forPath(engineTaskPath(task.engineID(), task));
+           }
+
+           transaction.and().commit();
+
            return task.getId();
         });
     }
@@ -148,13 +160,20 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
      * within the storage itself.
      */
     @Override
-    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset){
+    public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, EngineID engineRunningOn, int limit, int offset){
         try {
-
-            Stream<TaskState> stream = zookeeper.connection().getChildren()
-                    .forPath(TASKS_PATH_PREFIX).stream()
-                    .map(TaskId::of)
-                    .map(this::getState);
+            Stream<TaskState> stream;
+            if(engineRunningOn != null){
+                stream = zookeeper.connection().getChildren()
+                        .forPath(enginePath(engineRunningOn)).stream()
+                        .map(TaskId::of)
+                        .map(this::getState);
+            } else {
+                stream = zookeeper.connection().getChildren()
+                        .forPath(TASKS_PATH_PREFIX).stream()
+                        .map(TaskId::of)
+                        .map(this::getState);
+            }
 
             if (taskStatus != null) {
                 stream = stream.filter(t -> t.status().equals(taskStatus));

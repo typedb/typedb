@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -52,12 +53,19 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTask
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static java.util.stream.Collectors.toList;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.spy;
 
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
@@ -83,13 +91,8 @@ public class SingleQueueTaskRunnerTest {
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
     }
 
-    @After
-    public void cleanup() throws Exception{
-        taskRunner.close();
-    }
-
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(storage, consumer);
+        taskRunner = new SingleQueueTaskRunner(EngineID.me(), storage, consumer);
 
         createValidQueue(tasks);
 
@@ -115,6 +118,7 @@ public class SingleQueueTaskRunnerTest {
 
     private void createValidQueue(List<List<TaskState>> tasks) {
         Set<TaskId> appearedTasks = Sets.newHashSet();
+        EngineID engineId = EngineID.me();
 
         tasks(tasks).forEach(task -> {
             TaskId taskId = task.getId();
@@ -123,7 +127,7 @@ public class SingleQueueTaskRunnerTest {
                 task.status(CREATED);
             } else {
                 // The second time a task appears it must be in RUNNING state
-                task.status(RUNNING);
+                task.setRunning(engineId);
                 storage.updateState(task);
             }
 
@@ -179,6 +183,26 @@ public class SingleQueueTaskRunnerTest {
         Multiset<TaskId> expectedCompletedTasks = ImmutableMultiset.copyOf(completableTasks(tasks(tasks)));
 
         assertEquals(expectedCompletedTasks, completedTasks());
+    }
+
+    @Property(trials=10)
+    public void whenRunning_EngineIdIsNonNull(List<List<TaskState>> tasks) throws Exception {
+        assumeThat(tasks.size(), greaterThan(0));
+        assumeThat(tasks.get(0).size(), greaterThan(0));
+
+        storage = spy(storage);
+
+        doCallRealMethod().when(storage).updateState(argThat(argument -> {
+            if (argument.status() == FAILED || argument.status() == COMPLETED){
+                assertNull(argument.engineID());
+            } else if(argument.status() == RUNNING){
+                assertNotNull(argument.engineID());
+            }
+            return true;
+        }));
+
+        setUpTasks(tasks);
+        taskRunner.run();
     }
 
     @Test

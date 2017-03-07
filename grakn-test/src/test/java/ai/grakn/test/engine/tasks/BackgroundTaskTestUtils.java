@@ -23,6 +23,7 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
@@ -62,15 +63,30 @@ public class BackgroundTaskTestUtils {
     }
 
     public static Set<TaskState> createTasks(int n, TaskStatus status) {
+        return createTasks(n, status, EngineID.me());
+    }
+
+    public static Set<TaskState> createTasks(int n, TaskStatus status, EngineID engineID) {
         return IntStream.range(0, n)
-                .mapToObj(i -> createTask(status, TaskSchedule.now(), Json.object()))
+                .mapToObj(i -> createTask(status, TaskSchedule.now(), Json.object(), engineID))
                 .collect(toSet());
     }
 
     public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration) {
-        TaskState taskState = TaskState.of(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
-                .status(status)
+        return createTask(status, schedule, configuration, EngineID.me());
+    }
+
+    public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration, EngineID engineID) {
+        TaskState taskState =
+                TaskState.of(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
                 .statusChangedBy(BackgroundTaskTestUtils.class.getName());
+
+        if(status == TaskStatus.RUNNING){
+            taskState.setRunning(engineID);
+        } else {
+            taskState.status(status);
+        }
+
         configuration.set("id", taskState.getId().getValue());
         return taskState;
     }

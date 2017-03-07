@@ -24,6 +24,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.FailingTestTask;
 import ai.grakn.test.engine.tasks.LongExecutionTestTask;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
@@ -79,7 +80,12 @@ public class TaskStates extends Generator<TaskState> {
         Json configuration = Json.object();
         TaskState taskState = TaskState.of(taskClass, creator, TaskSchedule.now(), configuration, taskId);
         configuration.set("id", taskState.getId().getValue());
-        return taskState.status(taskStatus);
+        if(taskStatus == TaskStatus.RUNNING){
+            taskState.setRunning(EngineID.me());
+        } else {
+            taskState.status(taskStatus);
+        }
+        return taskState;
     }
 
     public void configure(Status status) {
