@@ -79,7 +79,7 @@ public class DegreeTest {
 
     @After
     public void close() {
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     @Test

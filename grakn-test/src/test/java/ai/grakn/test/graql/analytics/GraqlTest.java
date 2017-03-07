@@ -97,7 +97,7 @@ public class GraqlTest {
 
     @After
     public void close() {
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     @Test
@@ -307,6 +307,6 @@ public class GraqlTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 }

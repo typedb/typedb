@@ -266,7 +266,7 @@ class ValidateGlobalRules {
                     RoleType roleType = playsRoleEntry.getKey();
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
-                        return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId()));
+                        return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId(), instance.type().getName(), roleType.getName()));
                     }
                 }
             }

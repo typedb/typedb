@@ -18,12 +18,14 @@
 
 package ai.grakn.test.migration.csv;
 
+import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.graql.InsertQuery;
+import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
@@ -39,31 +41,26 @@ import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrec
 import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.MigratorTestUtils.migrate;
-import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class CSVMigratorTest {
 
     private GraknGraphFactory factory;
-    private GraknGraph graph;
+    private Migrator migrator;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
-    public void setup(){
+    public void setup() {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        migrator = Migrator.to(Grakn.DEFAULT_URI, factory.getGraph().getKeyspace());
     }
 
     @Test
     public void multiFileMigrateGraphPersistenceTest(){
-        load(graph, getFile("csv", "multi-file/schema.gql"));
-        assertNotNull(graph.getEntityType("pokemon"));
+        load(factory, getFile("csv", "multi-file/schema.gql"));
 
         String pokemonTemplate = "" +
                 "insert $x isa pokemon                      " +
@@ -83,29 +80,35 @@ public class CSVMigratorTest {
                 "   $type has type-id <type_id>                 ; " +
                 "insert (pokemon-with-type: $pokemon, type-of-pokemon: $type) isa has-type;";
 
-        migrate(graph, new CSVMigrator(pokemonTemplate, getFile("csv", "multi-file/data/pokemon.csv")));
-        migrate(graph, new CSVMigrator(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv")));
-        migrate(graph, new CSVMigrator(edgeTemplate, getFile("csv", "multi-file/data/edges.csv")));
+        declareAndLoad(pokemonTemplate,  "multi-file/data/pokemon.csv");
+        declareAndLoad(pokemonTypeTemplate,  "multi-file/data/types.csv");
+        declareAndLoad(edgeTemplate,  "multi-file/data/edges.csv");
 
-        graph = factory.getGraph();//Re Open Transaction
+        GraknGraph graph = factory.getGraph();//Re Open Transaction
         assertPokemonGraphCorrect(graph);
     }
 
     @Test
     public void quotesWithoutContentTest() throws IOException {
-        load(graph, getFile("csv", "pets/schema.gql"));
+        load(factory, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
-        migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.quotes")));
-        graph = factory.getGraph();//Re Open Transaction
+
+        declareAndLoad(template,  "pets/data/pets.quotes");
+
+        GraknGraph graph = factory.getGraph();//Re Open Transaction
         assertPetGraphCorrect(graph);
     }
 
     @Test
     public void testMissingDataDoesNotThrowError() {
-        load(graph, getFile("csv", "pets/schema.gql"));
+        load(factory, getFile("csv", "pets/schema.gql"));
         String template = getFileAsString("csv", "pets/template.gql");
-        migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.empty")).setNullString(""));
-        graph = factory.getGraph();//Re Open Transaction
+
+        try(CSVMigrator m = new CSVMigrator(getFile("csv", "pets/data/pets.empty"))) {
+            migrator.load(template, m.setNullString("").convert());
+        }
+
+        GraknGraph graph = factory.getGraph();//Re Open Transaction
 
         Collection<Entity> pets = graph.getEntityType("pet").instances();
         assertEquals(1, pets.size());
@@ -122,22 +125,26 @@ public class CSVMigratorTest {
 
     @Test
     public void parsedLineIsEmpty_MigratorSkipsThatLine(){
-        load(graph, getFile("csv", "pets/schema.gql"));
+        load(factory, getFile("csv", "pets/schema.gql"));
 
         // Only insert Puffball
         String template = "if (<name> != \"Puffball\") do { insert $x isa pet; }";
-        migrate(graph, new CSVMigrator(template, getFile("csv", "pets/data/pets.quotes")));
+        declareAndLoad(template, "pets/data/pets.quotes");
+
+        GraknGraph graph = factory.getGraph();//Re Open Transaction
         assertEquals(1, graph.getEntityType("pet").instances().size());
     }
 
     @Ignore //Ignored because this feature is not yet supported
     @Test
     public void multipleEntitiesInOneFileTest() throws IOException {
-        load(graph, getFile("csv", "single-file/schema.gql"));
+        load(factory, getFile("csv", "single-file/schema.gql"));
+
+        GraknGraph graph = factory.getGraph();//Re Open Transaction
         assertNotNull(graph.getEntityType("make"));
 
         String template = getFileAsString("csv", "single-file/template.gql");
-        migrate(graph, new CSVMigrator(template, getFile("csv", "single-file/data/cars.csv")));
+        declareAndLoad(template, "single-file/data/cars.csv");
 
         // test
         Collection<Entity> makes = graph.getEntityType("make").instances();
@@ -156,18 +163,9 @@ public class CSVMigratorTest {
         assertEquals(0, ventureLarge.resources(description).size());
     }
 
-    @Test
-    public void testMigrateAsStringMethod(){
-        load(graph, getFile("csv", "multi-file/schema.gql"));
-        assertNotNull(graph.getEntityType("pokemon"));
-
-        String pokemonTypeTemplate = "insert $x isa pokemon-type has type-id @concat(@noescp(<id>), \"-type\") has description <identifier>;";
-        String templated = new CSVMigrator(pokemonTypeTemplate, getFile("csv", "multi-file/data/types.csv")).migrate()
-                .map(InsertQuery::toString)
-                .collect(joining("\n"));
-
-        System.out.println(templated);
-        String expected = "id \"17-type\"";
-        assertTrue(templated.contains(expected));
+    private void declareAndLoad(String template, String file){
+        try(CSVMigrator m = new CSVMigrator(getFile("csv", file))) {
+            migrator.load(template, m.convert());
+        }
     }
 }

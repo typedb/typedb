@@ -33,14 +33,7 @@ export default class Visualiser {
     this.nodes = new vis.DataSet([]);
     this.edges = new vis.DataSet([]);
 
-    this.callbacks = {
-      click: () => {},
-      doubleClick: () => {},
-      rightClick: () => {},
-      hover: () => {},
-      dragEnd: () => {},
-      hold: () => {},
-    };
+    this.callbacks = {};
     this.style = new Style();
 
         // vis.js network, instantiated on render.
@@ -61,6 +54,12 @@ export default class Visualiser {
           y: 2,
         },
       },
+      physics: {
+        barnesHut: {
+          springLength: 140,
+        },
+        minVelocity: 0.75,
+      },
       edges: {
         hoverWidth: 2,
         selectionWidth: 2,
@@ -69,69 +68,34 @@ export default class Visualiser {
           to: true,
         },
         smooth: {
+          enabled: false,
           forceDirection: 'none',
         },
       },
       interaction: {
         hover: true,
-        multiselect: false,
+        multiselect: true,
       },
       layout: {
         improvedLayout: false,
       },
     };
 
-        // Additional properties to show in node label by type.
+    // Additional properties to show in node label by type.
     this.displayProperties = {};
     this.alreadyFittedToWindow = false;
-    this.clusters = [];
+
+        // working on stopping nodes from moving
+    this.lastFixTime = 0; // this is needed to stop a redraw loop due to the update of the vis dataset
+    this.draggingNode = false;
+
+    this.draggingRect = false;
+    this.rectangleCleared = false;
   }
 
-    /**
-     * Register callback for mouse click on nodes or edges.
-     */
-  setOnClick(fn) {
-    this.callbacks.click = fn;
-    return this;
+  setCallbackOnEvent(eventName, callback) {
+    this.callbacks[eventName] = callback;
   }
-
-    /**
-     * Register callback for double click on nodes or edges.
-     */
-  setOnDoubleClick(fn) {
-    this.callbacks.doubleClick = fn;
-    return this;
-  }
-
-    /**
-     * Register callback for right click on node or edges.
-     */
-  setOnRightClick(fn) {
-    this.callbacks.rightClick = fn;
-    return this;
-  }
-
-    /**
-     * Register callback for mouse hover on nodes.
-     */
-  setOnHover(fn) {
-    this.callbacks.hover = fn;
-    return this;
-  }
-
-    /**
-     * Register callback for when a node dragging is finished.
-     */
-  setOnDragEnd(fn) {
-    this.callbacks.dragEnd = fn;
-    return this;
-  }
-
-  setOnHoldOnNode(fn) {
-    this.callbacks.hold = fn;
-    return this;
-  }
-
     /**
      * Start visualisation and render graph.
      * This needs to be called only once, but all callbacks should be configured
@@ -145,44 +109,177 @@ export default class Visualiser {
             },
             this.networkConfig);
 
-    this.network.on('click', this.callbacks.click);
-    this.network.on('doubleClick', this.callbacks.doubleClick);
-    this.network.on('oncontext', this.callbacks.rightClick);
-    this.network.on('hoverNode', this.callbacks.hover);
-    this.network.on('dragEnd', this.callbacks.dragEnd);
-    this.network.on('hold', this.callbacks.hold);
+    for(const eventName in this.callbacks) {
+      this.network.on(eventName, this.callbacks[eventName]);
+    }
 
-    this.network.on('stabilized', () => {
-      this.setSimulation(false);
+    this.network.on('stabilized', (params) => {
+      if (this.draggingNode === false) {
+        this.fixNodes();
+      }
     });
+
+    this.network.on('dragEnd', (params) => {
+      this.draggingNode = false;
+      this.fixNodes(params.nodes);
+    });
+
+
+    this.network.on('afterDrawing', (params) => {
+      if (this.draggingRect) {
+        this.drawRectangle();
+      }
+    });
+
+        // Variables used to draw selection rectangle.
+    this.canvas = this.network.canvas.frame.canvas;
+    this.ctx = this.canvas.getContext('2d');
+    this.rect = {};
+
 
     return this;
   }
 
-  // Fit the graph to the window size only on the first ajax call,
-  // then leave zoom control to the user
+    // Methods used to draw a selection rectangle on the canvas and select multiple nodes
+  resetRectangle() {
+    this.draggingRect = false;
+    this.selectNodesFromHighlight();
+    this.rect.w = 0;
+    this.rect.h = 0;
+  }
+
+  startRectangle(x, y) {
+    this.rect.startX = x;
+    this.rect.startY = y;
+  }
+
+  updateRectangle(x, y) {
+    if (this.draggingRect) {
+      const canvasPosition = this.network.DOMtoCanvas({
+        x,
+        y,
+      });
+      this.rect.w = canvasPosition.x - this.rect.startX;
+      this.rect.h = canvasPosition.y - this.rect.startY;
+            // Force redraw the canvas which will also draw the rectangle with new size.
+      this.network.redraw();
+    }
+  }
+
+  drawRectangle() {
+    this.ctx.setLineDash([5]);
+    this.ctx.strokeStyle = 'rgb(0, 102, 0)';
+    this.ctx.strokeRect(this.rect.startX, this.rect.startY, this.rect.w, this.rect.h);
+    this.ctx.setLineDash([]);
+    this.ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+    this.ctx.fillRect(this.rect.startX, this.rect.startY, this.rect.w, this.rect.h);
+  }
+
+  selectNodesFromHighlight() {
+    const nodesIdInDrawing = [];
+    const xRange = Visualiser.getStartToEnd(this.rect.startX, this.rect.w);
+    const yRange = Visualiser.getStartToEnd(this.rect.startY, this.rect.h);
+
+    const allNodes = this.nodes.get();
+    const arrayLength = allNodes.length;
+    for (let i = 0; i < arrayLength; i++) {
+      const curNode = allNodes[i];
+      const nodePosition = this.network.getPositions([curNode.id]);
+      const nodeXY = nodePosition[curNode.id];
+      if (xRange.start <= nodeXY.x && nodeXY.x <= xRange.end && yRange.start <= nodeXY.y && nodeXY.y <= yRange.end) {
+        nodesIdInDrawing.push(curNode.id);
+      }
+    }
+    this.network.selectNodes(nodesIdInDrawing);
+  }
+
+  static getStartToEnd(start, theLen) {
+    return theLen > 0 ? {
+      start,
+      end: start + theLen,
+    } : {
+      start: start + theLen,
+      end: start,
+    };
+  }
+
+    //  ----------------------------------------------  //
+
+
+    // Methods used to fix and release nodes when one or more are dragged //
+
+  fixNodes(nodeIds) {
+    if (new Date() - this.lastFixTime > 100) {
+            // this.network.storePositions();
+      this.lastFixTime = new Date();
+      if (nodeIds !== undefined) {
+        nodeIds.forEach(nodeId => this.fixSingleNode(nodeId));
+      } else {
+        this.nodes.forEach((node) => {
+          this.fixSingleNode(node.id);
+        });
+      }
+    }
+  }
+
+  fixSingleNode(nodeId) {
+    if (nodeId === undefined) return;
+    this.nodes.update({
+      id: nodeId,
+      fixed: {
+        x: true,
+        y: true,
+      },
+    });
+  }
+
+  releaseNodes(nodeIds) {
+    if (nodeIds === undefined) return;
+    nodeIds.forEach(nodeId => this.nodes.update({
+      id: nodeId,
+      fixed: {
+        x: false,
+        y: false,
+      },
+    }));
+  }
+
+    // --------------------------  //
+
+
+    // Fit the graph to the window size only on the first ajax call,
+    // then leave zoom control to the user
   fitGraphToWindow() {
     if (!this.alreadyFittedToWindow) {
       this.network.fit();
       this.alreadyFittedToWindow = true;
     }
   }
-        /**
-         * Add a node to the graph. This can be called at any time *after* render().
-         */
+    /**
+     * Add a node to the graph. This can be called at any time *after* render().
+     */
   addNode(href, bp, ap, ls) {
     if (!this.nodeExists(bp.id)) {
       const colorObj = this.style.getNodeColour(bp.type, bp.baseType);
-      const highlightObj = { highlight: Object.assign(colorObj.highlight, { border: colorObj.highlight.background }) };
-      const hoverObj = { hover: highlightObj.highlight };
+      const highlightObj = {
+        highlight: Object.assign(colorObj.highlight, {
+          border: colorObj.highlight.background,
+        }),
+      };
+      const hoverObj = {
+        hover: highlightObj.highlight,
+      };
       this.nodes.add({
         id: bp.id,
         href,
         label: this.generateLabel(bp.type, ap, bp.label),
         baseLabel: bp.label,
         type: bp.type,
+        title: bp.type,
         baseType: bp.baseType,
-        color: Object.assign(colorObj, { border: colorObj.background }, highlightObj, hoverObj),
+        color: Object.assign(colorObj, {
+          border: colorObj.background,
+        }, highlightObj, hoverObj),
         font: this.style.getNodeFont(bp.type, bp.baseType),
         shape: this.style.getNodeShape(bp.baseType),
         selected: false,
@@ -245,15 +342,6 @@ export default class Visualiser {
     return this;
   }
 
-    /**
-     * Stop/start physics simulation and all animation in displayed graph.
-     */
-  setSimulation(state) {
-    if (state) { this.network.startSimulation(); } else {
-      this.network.stopSimulation();
-    }
-    return this;
-  }
 
   getNodeType(id) {
     if (id in this.nodes._data) {
@@ -280,41 +368,12 @@ export default class Visualiser {
   setDisplayProperties(type, properties) {
     if (type in this.displayProperties && properties.length === 0) {
       delete this.displayProperties[type];
-    } else { this.displayProperties[type] = properties; }
+    } else {
+      this.displayProperties[type] = properties;
+    }
 
     this.updateNodeLabels(type);
     return this;
-  }
-
-  cluster() {
-    this.clusters.forEach((c) => {
-      this.network.cluster({
-        joinCondition: x => ((x.baseType !== 'resource-type') && (x.type !== 'resource-type') && (x.type === c)),
-        clusterNodeProperties: {
-          id: `cluster-${c}`,
-          label: `cluster of: ${c}`,
-          color: this.style.clusterColour(),
-          font: this.style.clusterFont(),
-        },
-        processProperties: (o, n, e) => {
-          if (!this.nodeExists(o.id)) this.nodes.add(o);
-          return o;
-        },
-      });
-    });
-
-        //     this.predefinedClusters();
-    return this;
-  }
-
-  expandCluster(id) {
-    if (this.network.isCluster(id)) {
-      this.network.openCluster(id);
-      this.deleteNode(id);
-      return true;
-    }
-
-    return false;
   }
 
     /*
@@ -378,25 +437,6 @@ export default class Visualiser {
       }
       return v;
     });
-
-        //   this.cluster();
   }
 
-  addCluster(clusterBy) {
-    if (!_.contains(this.clusters, clusterBy)) {
-      this.clusters.push(clusterBy);
-    }
-  }
-
-  predefinedClusters() {
-    this.network.cluster({
-      joinCondition: x => (x.baseType === 'resource-type'),
-      clusterNodeProperties: {
-        id: 'cluster-resource-type',
-        label: 'cluster of: resource-type',
-        color: this.style.clusterColour(),
-        font: this.style.clusterFont(),
-      },
-    });
-  }
 }

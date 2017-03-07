@@ -54,6 +54,11 @@
         </dependency>
         <dependency>
             <groupId>ai.grakn</groupId>
+            <artifactId>migration-xml</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ai.grakn</groupId>
             <artifactId>migration-csv</artifactId>
             <version>${project.version}</version>
         </dependency>

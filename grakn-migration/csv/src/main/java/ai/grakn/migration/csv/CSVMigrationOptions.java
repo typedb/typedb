@@ -18,19 +18,16 @@
 
 package ai.grakn.migration.csv;
 
-import ai.grakn.migration.base.AbstractMigrator;
-import ai.grakn.migration.base.io.MigrationOptions;
+import ai.grakn.migration.base.MigrationOptions;
 
-import static ai.grakn.migration.base.io.MigrationCLI.die;
-import static java.lang.Integer.parseInt;
+import static ai.grakn.migration.base.MigrationCLI.die;
 
 /**
  * Configure the default CSV migration options and access arguments passed by the user
  * @author alexandraorth
  */
 public class CSVMigrationOptions extends MigrationOptions {
-    private final String batch = Integer.toString(AbstractMigrator.BATCH_SIZE);
-    private final String active = Integer.toString(AbstractMigrator.ACTIVE_TASKS);
+
     private final String separator = Character.toString(CSVMigrator.SEPARATOR);
     private final String quote = Character.toString(CSVMigrator.QUOTE);
     private final String nullString = CSVMigrator.NULL_STRING;
@@ -69,13 +66,5 @@ public class CSVMigrationOptions extends MigrationOptions {
 
     public String getNullString() {
         return command.getOptionValue("l", nullString);
-    }
-
-    public int getBatch() {
-        return parseInt(command.getOptionValue("b", batch));
-    }
-
-    public int getNumberActiveTasks() {
-        return parseInt(command.getOptionValue("a", active));
     }
 }

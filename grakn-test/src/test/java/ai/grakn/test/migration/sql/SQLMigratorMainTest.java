@@ -20,7 +20,7 @@ package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.migration.sql.Main;
+import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class SQLMigratorMainTest {
     public void setup() throws SQLException {
         factory = engine.factoryWithNewKeyspace();
         graph = factory.getGraph();
-        connection = setupExample(graph, "pets");
+        connection = setupExample(factory, "pets");
     }
 
     @After
@@ -128,8 +128,7 @@ public class SQLMigratorMainTest {
     @Test
     public void sqlMainPropertiesTest() throws SQLException {
         connection.close();
-        graph = factory.getGraph(); //Reopen transaction
-        connection = setupExample(graph, "pokemon");
+        connection = setupExample(factory, "pokemon");
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
 
@@ -142,7 +141,7 @@ public class SQLMigratorMainTest {
     }
 
     private void run(String... args){
-        Main.main(args);
+        SQLMigrator.main(args);
     }
 
     private void runAndAssertDataCorrect(String... args){

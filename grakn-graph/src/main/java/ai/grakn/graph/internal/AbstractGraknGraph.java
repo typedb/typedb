@@ -56,7 +56,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.javatuples.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -123,9 +122,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         localIsOpen.set(true);
 
-        if(initialiseMetaConcepts() && !(graph instanceof TinkerGraph)) {
-            commitTransaction();
-        }
+        if(initialiseMetaConcepts()) commitTransaction();
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         localShowImplicitStructures.set(false);
@@ -892,7 +889,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         try {
             getTinkerPopGraph().tx().commit();
         } catch (UnsupportedOperationException e){
-            LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
+            //IGNORED
         }
     }
 

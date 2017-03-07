@@ -96,7 +96,7 @@ public class ClusteringTest {
 
     @After
     public void close() {
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     @Test
@@ -353,7 +353,7 @@ public class ClusteringTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 
     private void addResourceRelations() throws GraknValidationException {
@@ -431,6 +431,6 @@ public class ClusteringTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.close();
+        GraknSparkComputer.clear();
     }
 }

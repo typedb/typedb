@@ -858,6 +858,14 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void whenQueryDoesNotSpecifyRole_ResultIsTheSameAsSpecifyingMetaRole() {
+        Set<Map<String, Concept>> withoutRole = qb.match(var().rel("x").isa("has-cast")).stream().collect(toSet());
+        Set<Map<String, Concept>> withRole = qb.match(var().rel("role", "x").isa("has-cast")).stream().collect(toSet());
+
+        assertEquals(withoutRole, withRole);
+    }
+
+    @Test
     public void whenQueryingForSameRoleTwice_ReturnResultsWithMultipleRolePlayers() {
         MatchQuery query = qb.match(
                 var().rel("production-with-cluster", "x").rel("production-with-cluster", "y").rel("z"),

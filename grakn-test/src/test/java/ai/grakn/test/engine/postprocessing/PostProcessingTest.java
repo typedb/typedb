@@ -52,7 +52,7 @@ public class PostProcessingTest {
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startDistributedServer();
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @BeforeClass
     public static void onlyRunOnTinker(){
