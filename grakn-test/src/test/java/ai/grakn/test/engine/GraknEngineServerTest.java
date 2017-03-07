@@ -27,7 +27,6 @@ import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -35,6 +34,7 @@ import org.junit.rules.ExpectedException;
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.engine.util.ConfigProperties.USE_ZOOKEEPER_STORAGE;
 import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
+import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -96,7 +96,9 @@ public class GraknEngineServerTest {
     }
 
     @Test
-    public void whenEnginePropertiesDoesNotIndicateZookeeperStorage_GraphStorageIsUsed() {
+    public void whenEnginePropertiesDoesNotIndicateZookeeperStorage_GraphStorageIsUsed() throws Exception {
+        ensureCassandraRunning();
+
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
         ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
