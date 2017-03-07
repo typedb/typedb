@@ -27,7 +27,6 @@ import ai.grakn.test.engine.tasks.LongExecutionTestTask;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
-import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -39,9 +38,7 @@ import org.junit.Test;
 import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static com.jayway.restassured.RestAssured.get;
@@ -61,7 +58,7 @@ public class TasksControllerTest {
     @Before
     public void setUp() throws Exception {
         MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
-        TaskState status = createTask(ShortExecutionTestTask.class, CREATED, now(), Json.object());
+        TaskState status = createTask();
         singleTask = manager.storage().newState(status);
     }
 

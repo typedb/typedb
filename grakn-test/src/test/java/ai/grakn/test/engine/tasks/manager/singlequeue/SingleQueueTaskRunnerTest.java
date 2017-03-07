@@ -19,16 +19,13 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
-import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.EndlessExecutionTestTask;
 import ai.grakn.test.engine.tasks.LongExecutionTestTask;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -37,7 +34,6 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
@@ -231,7 +227,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedBeforeExecution_TheTaskIsNotCancelled() throws Exception {
-        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask();
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -245,7 +241,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedBeforeExecution_TheTaskIsMarkedAsCompleted() throws Exception {
-        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask();
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -258,7 +254,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedBeforeExecution_ReturnFalse() throws Exception {
-        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask();
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -269,7 +265,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_TheTaskIsCancelled() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask(EndlessExecutionTestTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -282,7 +278,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_TheTaskIsMarkedAsStopped() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask(EndlessExecutionTestTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -295,7 +291,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_ReturnTrue() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask(EndlessExecutionTestTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -312,7 +308,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedAfterExecution_TheTaskIsCompleted() throws Exception {
-        TaskState task = createTask(LongExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask(LongExecutionTestTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -326,7 +322,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedAfterExecution_TheTaskIsMarkedAsCompleted() throws Exception {
-        TaskState task = createTask(LongExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask(LongExecutionTestTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -339,7 +335,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedAfterExecution_ReturnFalse() throws Exception {
-        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask();
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -356,7 +352,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsMarkedAsStoppedInStorage_ItIsNotExecuted() throws Exception {
-        TaskState task = createTask(ShortExecutionTestTask.class, TaskStatus.CREATED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask();
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 

@@ -37,19 +37,19 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.lang.String.format;
 import static java.util.Collections.singleton;
@@ -107,7 +107,7 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add some tasks to a fake task runner watch and storage, marked as running
-        Set<TaskState> tasks = createTasks(5, RUNNING, fakeEngineID);
+        Set<TaskState> tasks = createRunningTasks(5, fakeEngineID);
         tasks.forEach(storage::newState);
 
         // Mock killing that engine in ZK
@@ -131,11 +131,11 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add a task in each state (SCHEDULED, COMPLETED, STOPPED, FAILED, RUNNING) to fake task runner watch
-        TaskState scheduled = createTask(ShortExecutionTestTask.class, SCHEDULED, TaskSchedule.now(), Json.object(), fakeEngineID);
-        TaskState running = createTask(ShortExecutionTestTask.class, RUNNING, TaskSchedule.now(), Json.object(), fakeEngineID);
-        TaskState stopped = createTask(ShortExecutionTestTask.class, STOPPED, TaskSchedule.now(), Json.object(), fakeEngineID);
-        TaskState failed = createTask(ShortExecutionTestTask.class, FAILED, TaskSchedule.now(), Json.object(), fakeEngineID);
-        TaskState completed = createTask(ShortExecutionTestTask.class, COMPLETED, TaskSchedule.now(), Json.object(), fakeEngineID);
+        TaskState scheduled = createTask().markScheduled();
+        TaskState running = createTask().markRunning(fakeEngineID);
+        TaskState stopped = createTask().markStopped();
+        TaskState failed = createTask().markFailed(new IOException());
+        TaskState completed = createTask().markCompleted();
 
         Set<TaskState> tasks = Sets.newHashSet(scheduled, running, stopped, failed, completed);
         tasks.forEach(storage::newState);
@@ -168,7 +168,7 @@ public class TaskFailoverTest {
         Json configuration = Json.object("configuration", true);
         Json checkpoint = Json.object("configuration", false);
 
-        TaskState running = createTask(ShortExecutionTestTask.class, RUNNING, TaskSchedule.now(), configuration, fakeEngineID);
+        TaskState running = createTask(ShortExecutionTestTask.class, TaskSchedule.now(), configuration).markRunning(fakeEngineID);
         running.checkpoint(checkpoint.toString());
         storage.newState(running);
 
