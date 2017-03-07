@@ -262,7 +262,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return getUnifiersFromPermutations(permuteVars, varPermutations);
     }
 
-    public Stream<Map<VarName, Concept>> getIdPredicateAnswerStream(Stream<Map<VarName, Concept>> stream){
+    @SuppressWarnings("unchecked")
+    private Map<VarName, Concept> getIdPredicateAnswer(){
+        Object result = this.getTypeConstraints().stream()
+                .map(TypeAtom::getPredicate).filter(Objects::nonNull)
+                .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
+        return (Map<VarName, Concept>)result;
+    }
+
+    private Stream<Map<VarName, Concept>> getIdPredicateAnswerStream(Stream<Map<VarName, Concept>> stream){
         Map<VarName, Concept> idPredicateAnswer = getIdPredicateAnswer();
         return stream.map(answer -> {
             answer.putAll(idPredicateAnswer);
@@ -270,7 +278,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         });
     }
 
-    public Stream<Map<VarName, Concept>> getFilteredAnswerStream(Stream<Map<VarName, Concept>> answers, ReasonerAtomicQuery ruleHead){
+    private Stream<Map<VarName, Concept>> getFilteredAnswerStream(Stream<Map<VarName, Concept>> answers, ReasonerAtomicQuery ruleHead){
         Set<VarName> vars = getVarNames();
         Set<Map<VarName, VarName>> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
         Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
@@ -282,14 +290,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
                 .filter(a -> subFilter(a, unmappedIdPredicates))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<VarName, Concept> getIdPredicateAnswer(){
-        Object result = this.getTypeConstraints().stream()
-                .map(TypeAtom::getPredicate).filter(Objects::nonNull)
-                .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
-        return (Map<VarName, Concept>)result;
     }
 
     /**
