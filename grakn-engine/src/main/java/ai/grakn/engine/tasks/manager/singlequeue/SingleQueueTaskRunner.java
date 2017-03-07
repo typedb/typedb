@@ -65,6 +65,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
      * to retrieve tasks and uses the given {@param storage} to store and retrieve information about tasks.
      *
+     * @param engineID identifier of the engine this task runner is on
      * @param storage a place to store and retrieve information about tasks.
      * @param zookeeper a connection to the running zookeeper instance.
      */
@@ -81,10 +82,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
      *
+     * @param engineID identifier of the engine this task runner is on
      * @param storage a place to store and retrieve information about tasks.
      * @param consumer a Kafka consumer from which to poll for tasks
      */
-    public SingleQueueTaskRunner( EngineID engineID,
+    public SingleQueueTaskRunner(EngineID engineID,
             TaskStateStorage storage, Consumer<TaskId, TaskState> consumer) {
         this.engineID = engineID;
         this.storage = storage;
@@ -155,7 +157,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         if (shouldExecuteTask(task)) {
 
             // Mark as running
-            task.setRunning(engineID);
+            task.markRunning(engineID);
 
             //TODO Make this a put within state storage
             if(storage.containsTask(task.getId())) {
@@ -169,10 +171,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             // Execute task
             try {
                 task.taskClass().newInstance().start(null, task.configuration());
-                task.status(COMPLETED);
+                task.markCompleted();
                 LOG.debug("{}\tmarked as completed", task);
             } catch (Throwable throwable) {
-                task.status(FAILED);
+                task.markFailed(throwable);
                 LOG.debug("{}\tmarked as failed", task);
             } finally {
                 // Remove this task from running on this engine

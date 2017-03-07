@@ -61,7 +61,6 @@ import static ai.grakn.engine.util.SystemOntologyElements.SCHEDULED_TASK;
 import static ai.grakn.engine.util.SystemOntologyElements.SERIALISED_TASK;
 import static ai.grakn.engine.util.SystemOntologyElements.STACK_TRACE;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
-import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_BY;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_TIME;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
@@ -86,8 +85,6 @@ public class TaskStateGraphStore implements TaskStateStorage {
     private final static int retries = 10;
 
     private final Logger LOG = LoggerFactory.getLogger(TaskStateGraphStore.class);
-
-    public TaskStateGraphStore() {}
 
     @Override
     public TaskId newState(TaskState task) throws EngineStorageException {
@@ -140,10 +137,6 @@ public class TaskStateGraphStore implements TaskStateStorage {
             resourcesToDettach.add(STATUS_CHANGE_TIME);
             resources.has(STATUS, var().value(task.status().toString()))
                      .has(STATUS_CHANGE_TIME, var().value(new Date().getTime()));
-        }
-        if(task.statusChangedBy() != null) {
-            resourcesToDettach.add(STATUS_CHANGE_BY);            
-            resources.has(STATUS_CHANGE_BY, var().value(task.statusChangedBy()));
         }
         if(task.engineID() != null) {
             resourcesToDettach.add(ENGINE_ID);

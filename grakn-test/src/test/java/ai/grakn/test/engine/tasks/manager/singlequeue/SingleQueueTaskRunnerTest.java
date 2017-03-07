@@ -70,6 +70,7 @@ import static org.mockito.Mockito.spy;
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
 
+    private static final EngineID engineID = EngineID.me();
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
 
@@ -92,7 +93,7 @@ public class SingleQueueTaskRunnerTest {
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(EngineID.me(), storage, consumer);
+        taskRunner = new SingleQueueTaskRunner(engineID, storage, consumer);
 
         createValidQueue(tasks);
 
@@ -123,11 +124,9 @@ public class SingleQueueTaskRunnerTest {
         tasks(tasks).forEach(task -> {
             TaskId taskId = task.getId();
 
-            if (!appearedTasks.contains(taskId)) {
-                task.status(CREATED);
-            } else {
+            if (appearedTasks.contains(taskId)) {
                 // The second time a task appears it must be in RUNNING state
-                task.setRunning(engineId);
+                task.markRunning(engineID);
                 storage.updateState(task);
             }
 

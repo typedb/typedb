@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ALL_ENGINE_WATCH_PATH;
@@ -149,7 +148,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             // Send the task to the appropriate queue
             if(taskState.status() == RUNNING) {
                 LOG.debug("Engine {} stopped, task {} requeued", engineID, taskState.getId());
-                stateStorage.updateState(taskState.status(SCHEDULED));
+                stateStorage.updateState(taskState.markScheduled());
                 producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, taskState.getId(), taskState));
             } else {
                 LOG.debug("Engine {} stopped, task {} not restarted because state {}"
