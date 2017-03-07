@@ -75,6 +75,24 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
     public abstract Stream<Map<VarName, Concept>> getAnswerStream(Q query);
     public abstract LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query);
 
+    public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query){
+        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
+        Set<Map<VarName, Concept>> answers = getAnswerStream(query).collect(Collectors.toSet());
+        answers.forEach(answer -> answer.entrySet()
+                .forEach(entry -> {
+                    Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
+                    Set<Map<VarName, Concept>> match = inverseAnswerMap.get(key);
+                    if (match != null){
+                        match.add(answer);
+                    } else {
+                        Set<Map<VarName, Concept>> ans = new HashSet<>();
+                        ans.add(answer);
+                        inverseAnswerMap.put(key, ans);
+                    }
+                }));
+        return inverseAnswerMap;
+    }
+
     public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars){
         Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
         Set<Map<VarName, Concept>> answers = getAnswerStream(query).collect(Collectors.toSet());

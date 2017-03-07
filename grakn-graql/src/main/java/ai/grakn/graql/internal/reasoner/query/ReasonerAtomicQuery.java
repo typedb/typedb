@@ -56,6 +56,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,7 @@ import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilter;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
@@ -203,6 +205,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private Stream<Map<VarName, Concept>> insert() {
+        inserts++;
         InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
         return insert.stream()
                 .map(m ->
@@ -240,12 +243,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
+    public static long inserts = 0;
+
     public Stream<Map<VarName, Concept>> materialise(Map<VarName, Concept> answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         answer.entrySet().stream()
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), queryToMaterialise))
                 .forEach(queryToMaterialise::addAtom);
+
         return queryToMaterialise.materialiseDirect();
+        //return !queryToMaterialise.getMatchQuery().execute().isEmpty()? Stream.empty() : queryToMaterialise.materialiseDirect();
     }
 
     private Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom) {
@@ -320,11 +327,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .distinct();
 
         if (materialise || rule.requiresMaterialisation()) {
-            LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
-            LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
+            //cache.contains(ruleHead)? ruleHead.lazyLookup(cache);
+            ruleHead.lookup(cache);
+            //ruleHead.lookup(dCache);
+            Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> known = cache.getInverseAnswerMap(ruleHead);
+            Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> dknown = dCache.getInverseAnswerMap(ruleHead);
+
             answers = answers
-                    .filter(a -> knownFilter(a, known.stream()))
-                    .filter(a -> knownFilter(a, dknown.stream()))
+                    .filter(a -> knownFilterWithInverse(a, known))
+                    .filter(a -> knownFilterWithInverse(a, dknown))
                     .flatMap(ruleHead::materialise);
             answers = dCache.record(ruleHead, answers);
         }
