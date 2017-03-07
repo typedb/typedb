@@ -33,7 +33,6 @@ import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.time.Instant.now;
-import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
