@@ -36,6 +36,7 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.generateConceptState;
 
@@ -70,20 +71,36 @@ class HALConceptData {
     private final boolean embedType;
     private final Set<TypeName> typesInQuery;
 
-    HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<TypeName> typesInQuery, String keyspace) {
+    private final int offset;
+    private final int limit;
+
+    HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<TypeName> typesInQuery, String keyspace, int offset, int limit) {
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
-        this.keyspace = "?keyspace=" + keyspace;
+        this.offset = offset;
+        this.limit = limit;
+        this.keyspace = keyspace;
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
         resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
 
         factory = new StandardRepresentationFactory();
-        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId() + this.keyspace);
+
+        //If we will include embedded nodes and limit is >=0 we increase the offset to prepare URI for next request
+        int uriOffset = (separationDegree > 0 && limit >= 0) ? (offset + limit) : offset;
+
+        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId() + getURIParams(uriOffset));
 
         handleConcept(halResource, concept, separationDegree);
 
+    }
+
+    private String getURIParams(int offset) {
+        // If limit -1, we don't append the limit parameter to the URI string
+        String limitParam = (this.limit >= 0) ? "&limit=" + this.limit : "";
+
+        return "?keyspace=" + this.keyspace + "&offset=" + offset + limitParam;
     }
 
 
@@ -119,10 +136,11 @@ class HALConceptData {
         if (concept.isEntity()) {
             generateEntityEmbedded(halResource, concept.asEntity(), separationDegree);
         }
+
         if (concept.isRelation()) {
             generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
             //Only when double clicking on a specific relation we want to fetch also the other relations the current one plays a role into.
-            embedRelationsPlaysRole(halResource,concept.asRelation());
+            embedRelationsPlaysRole(halResource, concept.asRelation());
         }
         if (concept.isResource()) {
             generateOwnerInstances(halResource, concept.asResource(), separationDegree);
@@ -135,7 +153,7 @@ class HALConceptData {
     }
 
     private void generateRuleRHS(Representation halResource, Rule rule) {
-        Representation RHS = factory.newRepresentation(resourceLinkPrefix + "RHS-" + rule.getId() + this.keyspace)
+        Representation RHS = factory.newRepresentation(resourceLinkPrefix + "RHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "RHS-" + rule.getId().getValue())
@@ -146,7 +164,7 @@ class HALConceptData {
     }
 
     private void generateRuleLHS(Representation halResource, Rule rule) {
-        Representation LHS = factory.newRepresentation(resourceLinkPrefix + "LHS-" + rule.getId() + this.keyspace)
+        Representation LHS = factory.newRepresentation(resourceLinkPrefix + "LHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
                 .withProperty(ID_PROPERTY, "LHS-" + rule.getId().getValue())
@@ -159,7 +177,7 @@ class HALConceptData {
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
         final TypeName roleType = conceptResource.type().getName();
         conceptResource.ownerInstances().forEach(instance -> {
-            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
+            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(instanceResource, instance, separationDegree - 1);
             halResource.withRepresentation(roleType.getValue(), instanceResource);
@@ -167,7 +185,7 @@ class HALConceptData {
     }
 
     private void embedSuperType(Representation halResource, Type type) {
-        Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.superType().getId() + this.keyspace)
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + type.superType().getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
         generateStateAndLinks(HALType, type.superType());
         halResource.withRepresentation(SUB_EDGE, HALType);
@@ -176,7 +194,7 @@ class HALConceptData {
     private void embedType(Representation halResource, Instance instance) {
 
         // temp fix until a new behaviour is defined
-        Representation HALType = factory.newRepresentation(resourceLinkPrefix + instance.type().getId() + this.keyspace)
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + instance.type().getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
 
         generateStateAndLinks(HALType, instance.type());
@@ -185,9 +203,9 @@ class HALConceptData {
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
-        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + this.keyspace);
+        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + getURIParams(0));
 
-       generateConceptState(resource,concept);
+        generateConceptState(resource, concept);
 
         //Resources and links
         if (concept.isInstance()) {
@@ -199,7 +217,7 @@ class HALConceptData {
 
     private void generateResources(Representation resource, Collection<Resource<?>> resourcesCollection) {
         resourcesCollection.forEach(currentResource -> {
-            Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId() + this.keyspace)
+            Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(embeddedResource, currentResource);
             resource.withRepresentation(currentResource.type().getName().getValue(), embeddedResource);
@@ -211,7 +229,9 @@ class HALConceptData {
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
 
-        entity.relations().forEach(rel -> {
+        Stream<Relation> relationStream = entity.relations().stream().skip(offset);
+        if (limit >= 0) relationStream = relationStream.limit(limit);
+        relationStream.forEach(rel -> {
 
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
             TypeName rolePlayedByCurrentConcept = null;
@@ -229,12 +249,11 @@ class HALConceptData {
             if (!isResource) {
                 attachRelation(halResource, rel, rolePlayedByCurrentConcept, separationDegree);
             }
-
         });
     }
 
     private void attachRelation(Representation halResource, Concept rel, TypeName role, int separationDegree) {
-        Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId() + this.keyspace)
+        Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
         handleConcept(relationResource, rel, separationDegree - 1);
         halResource.withRepresentation(role.getValue(), relationResource);
@@ -245,7 +264,7 @@ class HALConceptData {
 
         rel.rolePlayers().forEach((roleType, instance) -> {
             if (instance != null) {
-                Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
+                Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                         .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
                 handleConcept(roleResource, instance, separationDegree - 1);
                 halResource.withRepresentation(roleType.getName().getValue(), roleResource);
@@ -253,37 +272,34 @@ class HALConceptData {
         });
     }
 
-    private void embedRelationsPlaysRole(Representation halResource,Relation rel){
+    private void embedRelationsPlaysRole(Representation halResource, Relation rel) {
         rel.playsRoles().forEach(roleTypeRel -> {
             rel.relations(roleTypeRel).forEach(relation -> {
-                Representation relationRepresentation = factory.newRepresentation(resourceLinkPrefix+relation.getId()+this.keyspace)
-                        .withProperty(DIRECTION_PROPERTY,INBOUND_EDGE);
-                handleConcept(relationRepresentation,relation,0);
-                halResource.withRepresentation(roleTypeRel.getName().getValue(),relationRepresentation);
+                Representation relationRepresentation = factory.newRepresentation(resourceLinkPrefix + relation.getId() + getURIParams(0))
+                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+                handleConcept(relationRepresentation, relation, 0);
+                halResource.withRepresentation(roleTypeRel.getName().getValue(), relationRepresentation);
             });
         });
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
         if (!type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
-            type.instances().forEach(instance -> {
-
-                if (instance.isType() && instance.asType().isImplicit()) return;
-
-                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
+            Stream<? extends Instance> instancesStream = type.instances().stream().filter(instance -> (!instance.isType() || !instance.asType().isImplicit())).skip(offset);
+            if (limit >= 0) instancesStream = instancesStream.limit(limit);
+            instancesStream.forEach(instance -> {
+                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 handleConcept(instanceResource, instance, separationDegree - 1);
                 halResource.withRepresentation(ISA_EDGE, instanceResource);
             });
         }
-        type.subTypes().forEach(instance -> {
-            // let's not put the current type in its own embedded
-            if (!instance.getName().equals(type.getName())) {
-                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
-                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-                handleConcept(instanceResource, instance, separationDegree - 1);
-                halResource.withRepresentation(SUB_EDGE, instanceResource);
-            }
+        // We only limit the number of instances and not subtypes.
+        type.subTypes().stream().filter(instance -> (!instance.getName().equals(type.getName()))).forEach(instance -> {
+            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
+                    .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+            handleConcept(instanceResource, instance, separationDegree - 1);
+            halResource.withRepresentation(SUB_EDGE, instanceResource);
         });
     }
 

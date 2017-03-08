@@ -76,7 +76,7 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * <p>
- *     Endpoints used to query the graph by ID or Graql match query and build a HAL or Graql response.
+ * Endpoints used to query the graph by ID or Graql match query and build a HAL or Graql response.
  * </p>
  *
  * @author Marco Scoppetta, alexandraorth
@@ -92,8 +92,6 @@ public class VisualiserController {
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
 
-
-    //TODO: implement a pagination system.
     public VisualiserController(Service spark) {
         spark.get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::conceptById);
         spark.get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + ID_PARAMETER, this::conceptByIdOntology);
@@ -115,14 +113,17 @@ public class VisualiserController {
         String keyspace = getKeyspace(req);
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+
+            int offset = (req.queryParams().contains("offset")) ? Integer.parseInt(req.queryParams("offset")) : 0;
+            int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
+
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
-            if(concept==null) {
+            if (concept == null) {
                 throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
             }
 
-
-            return renderHALConceptData(concept, separationDegree, keyspace);
+            return renderHALConceptData(concept, separationDegree, keyspace, offset, limit);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
@@ -187,14 +188,16 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
+            int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
+
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
                 switch (getAcceptType(req)) {
                     case HAL_CONTENTTYPE:
-                        return formatAsHAL((MatchQuery) parsedQuery, keyspace);
+                        return formatAsHAL((MatchQuery) parsedQuery, keyspace, limit);
                     case GRAQL_CONTENTTYPE:
                         return formatAsGraql(parsedQuery);
                     default:
-                        return formatAsHAL((MatchQuery)parsedQuery, keyspace);
+                        return formatAsHAL((MatchQuery) parsedQuery, keyspace, limit);
                 }
             } else {
                 throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
@@ -226,7 +229,7 @@ public class VisualiserController {
                     response.put(COMPUTE_RESPONSE_TYPE, "HAL");
                     JSONArray array = new JSONArray();
                     result.get().forEach(concept ->
-                            array.put(renderHALConceptData(concept, 0, getKeyspace(req)))
+                            array.put(renderHALConceptData(concept, 0, getKeyspace(req), 0, 100))
                     );
                     response.put(COMPUTE_RESPONSE_FIELD, array);
                 } else {
@@ -263,9 +266,9 @@ public class VisualiserController {
      * @param query query to format
      * @return HAL representation
      */
-    private String formatAsHAL(MatchQuery query, String keyspace) {
+    private String formatAsHAL(MatchQuery query, String keyspace, int limit) {
         Collection<Map<VarName, Concept>> results = query.admin().streamWithVarNames().collect(toList());
-        Json resultobj = renderHALArrayData(query, results, keyspace);
+        Json resultobj = renderHALArrayData(query, results, keyspace, 0, limit);
         return resultobj.toString();
     }
 

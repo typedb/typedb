@@ -42,6 +42,14 @@ export default class HALParser {
     this.newResource = () => {};
     this.newRelationship = () => {};
     this.nodeAlreadyInGraph = () => {};
+
+    this.metaTypesSet = {
+      ENTITY_TYPE: true,
+      RESOURCE_TYPE: true,
+      ROLE_TYPE: true,
+      RELATION_TYPE: true,
+      RULE_TYPE: true,
+    };
   }
 
     /**
@@ -97,7 +105,7 @@ export default class HALParser {
             // Add assertions from _embedded
       if (API.KEY_EMBEDDED in objResponse) {
         _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), (key) => {
-          if ((key !== 'isa') || showIsa === true) {
+          if ((key !== 'isa') || showIsa === true || objResponse._baseType in this.metaTypesSet) {
             this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet);
           }
         });
