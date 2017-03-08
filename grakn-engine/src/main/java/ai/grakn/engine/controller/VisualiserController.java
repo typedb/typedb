@@ -45,6 +45,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
+import spark.Service;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -72,7 +73,6 @@ import static ai.grakn.util.REST.Response.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.ROLES_JSON_FIELD;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.toList;
-import static spark.Spark.get;
 
 /**
  * <p>
@@ -94,13 +94,13 @@ public class VisualiserController {
 
 
     //TODO: implement a pagination system.
-    public VisualiserController() {
-        get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::conceptById);
-        get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + ID_PARAMETER, this::conceptByIdOntology);
-        get(REST.WebPath.GRAPH_ONTOLOGY_URI, this::ontology);
-        get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::match);
-        get(REST.WebPath.GRAPH_ANALYTICS_QUERY_URI, this::compute);
-        get(REST.WebPath.GRAPH_PRE_MATERIALISE_QUERY_URI, this::preMaterialiseAll);
+    public VisualiserController(Service spark) {
+        spark.get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::conceptById);
+        spark.get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + ID_PARAMETER, this::conceptByIdOntology);
+        spark.get(REST.WebPath.GRAPH_ONTOLOGY_URI, this::ontology);
+        spark.get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::match);
+        spark.get(REST.WebPath.GRAPH_ANALYTICS_QUERY_URI, this::compute);
+        spark.get(REST.WebPath.GRAPH_PRE_MATERIALISE_QUERY_URI, this::preMaterialiseAll);
     }
 
     @GET

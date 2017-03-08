@@ -37,6 +37,7 @@ import mjson.Json;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -76,13 +77,14 @@ public class TaskStates extends Generator<TaskState> {
         return taskState;
     }
 
-    public void configure(NewTask uniqueIds) {
-        this.newTask = true;
+    public void configure(NewTask newTask) {
+        this.newTask = newTask.value();
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface NewTask {
+        boolean value() default true;
     }
 }

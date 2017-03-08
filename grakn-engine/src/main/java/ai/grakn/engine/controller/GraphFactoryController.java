@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
+import spark.Service;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -45,8 +46,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
-
-import static spark.Spark.get;
 
 /**
  * <p>
@@ -65,9 +64,9 @@ import static spark.Spark.get;
 public class GraphFactoryController {
     private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
 
-    public GraphFactoryController() {
-        get(REST.WebPath.GRAPH_FACTORY_URI, this::getGraphConfig);
-        get(REST.WebPath.KEYSPACE_LIST, this::getKeySpaces);
+    public GraphFactoryController(Service spark) {
+        spark.get(REST.WebPath.GRAPH_FACTORY_URI, this::getGraphConfig);
+        spark.get(REST.WebPath.KEYSPACE_LIST, this::getKeySpaces);
     }
 
     @GET

@@ -32,7 +32,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
@@ -61,7 +60,7 @@ public final class MultiQueueTaskManager implements TaskManager {
 
     public MultiQueueTaskManager(EngineID engineId) {
         this.engineId = engineId;
-        this.zookeeper = new ZookeeperConnection(client());
+        this.zookeeper = new ZookeeperConnection();
         this.storage = chooseStorage(properties, zookeeper);
 
         // run the TaskRunner in a thread
