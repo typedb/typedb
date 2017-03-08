@@ -140,9 +140,6 @@ final class ElementFactory {
         } catch (IllegalStateException | IllegalArgumentException e){
             LOG.warn(e.getMessage(), e);
             return null;
-        } catch (IllegalStateException e){
-            LOG.warn(e.getMessage(), e);
-            return null;
         }
 
         ConceptId conceptId = ConceptId.of(v.id());

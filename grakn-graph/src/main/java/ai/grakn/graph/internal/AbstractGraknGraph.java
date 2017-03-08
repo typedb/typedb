@@ -831,7 +831,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit(ConceptCache conceptCache) throws GraknValidationException{
         commit((castings, resources) -> {
-            if(cache != null) {
+            if(conceptCache != null) {
                 castings.forEach(pair -> conceptCache.addJobCasting(getKeyspace(), pair.getValue0(), pair.getValue1()));
                 resources.forEach(pair -> conceptCache.addJobResource(getKeyspace(), pair.getValue0(), pair.getValue1()));
             }
