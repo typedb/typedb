@@ -51,7 +51,7 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 public class ZookeeperConnection {
 
     private static final int ZOOKEEPER_CONNECTION_TIMEOUT = ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT);
-    private final CuratorFramework zookeeperConnection;
+    private static CuratorFramework zookeeperConnection;
 
     private static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger(0);
 
@@ -59,16 +59,9 @@ public class ZookeeperConnection {
      * Start the connection to zookeeper. This method is blocking.
      */
     public ZookeeperConnection() {
-        zookeeperConnection = client();
-
-        CONNECTION_COUNTER.incrementAndGet();
+        openClient();
 
         try {
-            zookeeperConnection.start();
-            if(!zookeeperConnection.blockUntilConnected(ZOOKEEPER_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)){
-                throw new RuntimeException("Could not connect to zookeeper");
-            }
-
             createZKPaths();
         } catch (Exception exception) {
             throw new RuntimeException("Could not connect to zookeeper");
@@ -79,15 +72,7 @@ public class ZookeeperConnection {
      * Close the connection to zookeeper. This method is blocking.
      */
     public void close(){
-        if (CONNECTION_COUNTER.decrementAndGet() == 0) {
-            zookeeperConnection.close();
-            boolean notStopped = true;
-            while (notStopped) {
-                if (zookeeperConnection.getState() == CuratorFrameworkState.STOPPED) {
-                    notStopped = false;
-                }
-            }
-        }
+        closeClient();
     }
 
     /**
@@ -131,16 +116,40 @@ public class ZookeeperConnection {
         }
     }
 
-    private static CuratorFramework client() {
-        int sleep = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
-        int retries = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
+    private static void openClient() {
+        if (CONNECTION_COUNTER.getAndIncrement() == 0) {
+            int sleep = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
+            int retries = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
 
-        return CuratorFrameworkFactory.builder()
-                .connectString(ConfigProperties.getInstance().getProperty(ZK_SERVERS))
-                .namespace(ZookeeperPaths.TASKS_NAMESPACE)
-                .sessionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_SESSION_TIMEOUT))
-                .connectionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
-                .retryPolicy(new ExponentialBackoffRetry(sleep, retries))
-                .build();
+            zookeeperConnection = CuratorFrameworkFactory.builder()
+                    .connectString(ConfigProperties.getInstance().getProperty(ZK_SERVERS))
+                    .namespace(ZookeeperPaths.TASKS_NAMESPACE)
+                    .sessionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_SESSION_TIMEOUT))
+                    .connectionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
+                    .retryPolicy(new ExponentialBackoffRetry(sleep, retries))
+                    .build();
+
+            zookeeperConnection.start();
+
+            try {
+                if(!zookeeperConnection.blockUntilConnected(ZOOKEEPER_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)){
+                    throw new RuntimeException("Could not connect to zookeeper");
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Could not connect to zookeeper");
+            }
+        }
+    }
+
+    private static void closeClient() {
+        if (CONNECTION_COUNTER.decrementAndGet() == 0) {
+            zookeeperConnection.close();
+            boolean notStopped = true;
+            while (notStopped) {
+                if (zookeeperConnection.getState() == CuratorFrameworkState.STOPPED) {
+                    notStopped = false;
+                }
+            }
+        }
     }
 }
