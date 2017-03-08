@@ -23,7 +23,6 @@ import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -135,28 +134,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     }
 
     /**
-     *
-     * @return A list of the Instances which scope this Relation
-     */
-    @Override
-    public Set<Instance> scopes() {
-        HashSet<Instance> scopes = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
-        return scopes;
-    }
-
-    /**
-     *
-     * @param instance A new instance which can scope this Relation
-     * @return The Relation itself
-     */
-    @Override
-    public Relation scope(Instance instance) {
-        putEdge(instance, Schema.EdgeLabel.HAS_SCOPE);
-        return this;
-    }
-
-    /**
      * Expands this Relation to include a new role player which is playing a specific role.
      * @param roleType The role of the new role player.
      * @param instance The new role player.
@@ -198,16 +175,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         if(instance != null) {
             getGraknGraph().addCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
         }
-        return this;
-    }
-
-    /**
-     * @param scope A concept which is currently scoping this concept.
-     * @return The Relation itself
-     */
-    @Override
-    public Relation deleteScope(Instance scope) throws ConceptException {
-        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, scope);
         return this;
     }
 

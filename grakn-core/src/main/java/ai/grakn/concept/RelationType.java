@@ -43,6 +43,22 @@ public interface RelationType extends Type {
      */
     Relation addRelation();
 
+    /**
+     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     *
+     * @param scope The category of this Type
+     * @return The Type itself.
+     */
+    RelationType scope(Instance scope);
+
+    /**
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Type.
+     * @return The Type itself
+     */
+    RelationType deleteScope(Instance scope);
+
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves a list of the RoleTypes that make up this RelationType.

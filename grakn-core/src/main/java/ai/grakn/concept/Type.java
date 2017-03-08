@@ -72,6 +72,22 @@ public interface Type extends Concept {
      */
     RelationType hasResource(ResourceType resourceType);
 
+    /**
+     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     *
+     * @param scope The category of this Type
+     * @return The Type itself.
+     */
+    Type scope(Instance scope);
+
+    /**
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Type.
+     * @return The Type itself
+     */
+    Type deleteScope(Instance scope);
+
     //------------------------------------- Accessors ---------------------------------
 
     /**
@@ -144,6 +160,13 @@ public interface Type extends Concept {
      * @return A collection of Rules for which this Type serves as a conclusion
      */
     Collection<Rule> getRulesOfConclusion();
+
+    /**
+     * Retrieve a list of the Instances that scope this Type.
+     *
+     * @return A list of the Instances that scope this Type.
+     */
+    Collection<Instance> scopes();
 
     //------------------------------------- Other ----------------------------------
     /**

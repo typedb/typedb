@@ -578,6 +578,37 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return fromVertex.addEdge(type, getVertex());
     }
 
+    /**
+     *
+     * @return A list of the Instances which scope this Relation
+     */
+    //TODO: Move this to TypeImpl and change return type
+    public Set<Instance> scopes() {
+        HashSet<Instance> scopes = new HashSet<>();
+        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
+        return scopes;
+    }
+
+    /**
+     *
+     * @param instance A new instance which can scope this concept
+     * @return The concept itself
+     */
+    //TODO: Move this to TypeImpl and change return type
+    public T scope(Instance instance) {
+        putEdge(instance, Schema.EdgeLabel.HAS_SCOPE);
+        return getThis();
+    }
+
+    /**
+     * @param scope A concept which is currently scoping this concept.
+     * @return The Relation itself
+     */
+    //TODO: Move this to TypeImpl and change return type
+    public T deleteScope(Instance scope) {
+        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, scope);
+        return getThis();
+    }
 
     //------------ Base Equality ------------
     /**

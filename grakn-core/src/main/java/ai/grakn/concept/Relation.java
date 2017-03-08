@@ -104,5 +104,5 @@ public interface Relation extends Instance {
      * @param scope The Instances that is currently scoping this Relation.
      * @return The Relation itself
      */
-    Relation deleteScope(Instance scope) throws ConceptException;
+    Relation deleteScope(Instance scope);
 }
