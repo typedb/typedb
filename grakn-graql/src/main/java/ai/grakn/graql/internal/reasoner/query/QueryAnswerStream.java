@@ -179,12 +179,6 @@ public class QueryAnswerStream {
             return answerStream.map(a1::merge);
         });
     }
-
-    private static Set<Answer> findMatchingAnswers(VarName var, Concept con, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap){
-        Pair<VarName, Concept> key = new Pair<>(var, con);
-        return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
-    }
-
     private static Set<Answer> findMatchingAnswers(Answer answer, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap, VarName joinVar){
         Pair<VarName, Concept> key = new Pair<>(joinVar, answer.get(joinVar));
         return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
