@@ -137,8 +137,8 @@ final class ElementFactory {
         try {
             graknGraph.validVertex(v);
             type = Schema.BaseType.valueOf(v.label());
-        } catch (IllegalArgumentException e){
-            LOG.warn("Found vertex [" + v + "] which has an invalid base type [" + v.label() + "] ignoring . . . ");
+        } catch (IllegalStateException | IllegalArgumentException e){
+            LOG.warn(e.getMessage(), e);
             return null;
         } catch (IllegalStateException e){
             LOG.warn(e.getMessage(), e);
