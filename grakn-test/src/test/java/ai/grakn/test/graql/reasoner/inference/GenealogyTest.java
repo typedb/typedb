@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GenealogyGraph;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -109,14 +111,14 @@ public class GenealogyTest {
         String queryString = "match $x isa person has identifier $id has gender 'female';";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers.size(), 32);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
     public void testGender() {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertEquals(answers.size(), qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }
 
@@ -162,7 +164,7 @@ public class GenealogyTest {
         QueryAnswers answers2 = queryAnswers(iqb.parse(queryString2));
         answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
@@ -488,7 +490,7 @@ public class GenealogyTest {
 
     private boolean checkResource(QueryAnswers answers, String var, String value){
         boolean isOk = true;
-        Iterator<Map<VarName, Concept>> it =  answers.iterator();
+        Iterator<Answer> it =  answers.iterator();
         while (it.hasNext() && isOk){
             Concept c = it.next().get(VarName.of(var));
             isOk = c.asResource().getValue().equals(value);
@@ -498,9 +500,9 @@ public class GenealogyTest {
 
     private boolean hasDuplicates(QueryAnswers answers){
         boolean hasDuplicates = false;
-        Iterator<Map<VarName, Concept>> it = answers.iterator();
+        Iterator<Answer> it = answers.iterator();
         while(it.hasNext() && !hasDuplicates){
-            Map<VarName, Concept> answer = it.next();
+            Answer answer = it.next();
             Set<Concept> existing = new HashSet<>();
             hasDuplicates = answer.entrySet()
                     .stream()
@@ -512,6 +514,6 @@ public class GenealogyTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().results());
+        return new QueryAnswers(query.admin().streamWithVarNames().map(Answer::new).collect(toSet()));
     }
 }

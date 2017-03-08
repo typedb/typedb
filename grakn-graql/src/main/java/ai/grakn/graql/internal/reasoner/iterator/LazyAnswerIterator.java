@@ -18,9 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.iterator;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.admin.Answer;
 import com.google.common.collect.Iterators;
 import java.util.Iterator;
 import java.util.Map;
@@ -35,18 +34,21 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public class LazyAnswerIterator extends LazyIterator<Map<VarName, Concept>> {
+public class LazyAnswerIterator extends LazyIterator<Answer> {
 
-    public LazyAnswerIterator(Stream<Map<VarName, Concept>> stream){ super(stream);}
-    private LazyAnswerIterator(Iterator<Map<VarName, Concept>> iterator){ super(iterator);}
+    public LazyAnswerIterator(Stream<Answer> stream){ super(stream);}
+    private LazyAnswerIterator(Iterator<Answer> iterator){ super(iterator);}
 
     public LazyAnswerIterator unify(Map<VarName, VarName> unifiers){
         if (unifiers.isEmpty()) return this;
-        Iterator<Map<VarName, Concept>> transform = Iterators.transform(iterator(), input -> QueryAnswers.unify(input, unifiers));
+        Iterator<Answer> transform = Iterators.transform(iterator(), input -> {
+            if (input == null) return null;
+            return input.unify(unifiers);
+        });
         return new LazyAnswerIterator(transform);
     }
 
-    public LazyAnswerIterator merge (Stream<Map<VarName, Concept>> stream){
+    public LazyAnswerIterator merge (Stream<Answer> stream){
         return new LazyAnswerIterator(Stream.concat(this.stream(), stream));
     }
     public LazyAnswerIterator merge (LazyAnswerIterator iter) {

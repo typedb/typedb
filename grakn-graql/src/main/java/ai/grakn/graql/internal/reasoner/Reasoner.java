@@ -19,25 +19,33 @@
 package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import java.util.Iterator;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.util.CommonUtil.optionalOr;
 
 /**
  *
@@ -85,9 +93,33 @@ public class Reasoner {
     }
 
     /**
+     * resolve query and provide each answer with a corresponding explicit path
+     * @param query to resolve
+     * @param materialise whether to materialise inferences
+     * @return stream of answers
+     */
+    public static Stream<Answer> resolveWithPath(MatchQuery query, boolean materialise) {
+        GraknGraph graph = optionalOr(query.admin().getGraph()).orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
+        );
+
+        if (!Reasoner.hasRules(graph)) return query.admin().streamWithVarNames().map(Answer::new);
+
+        Iterator<Conjunction<VarAdmin>> conjIt = query.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
+        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
+        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise);
+        while(conjIt.hasNext()) {
+            conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
+            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise);
+            answerStream = Stream.concat(answerStream, localStream);
+        }
+        Set<VarName> selectVars = query.admin().getSelectedNames();
+        return answerStream.map(result -> result.filterVars(selectVars));
+    }
+
+    /**
      * materialise all possible inferences
      */
-
     public static void precomputeInferences(GraknGraph graph){
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
@@ -100,7 +132,7 @@ public class Reasoner {
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                Set<Map<VarName, Concept>> answers = atomicQuery.answerStream(SG, cache, dCache, true, iter != 0).collect(Collectors.toSet());
+                Set<Answer> answers = atomicQuery.answerStream(SG, cache, dCache, true, iter != 0).collect(Collectors.toSet());
                 LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + answers.size() + " dAns: " + dAns);
                 dAns = cache.answerSize(SG) - dAns;
                 Reasoner.commitGraph(graph);

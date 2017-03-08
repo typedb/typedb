@@ -19,7 +19,6 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import java.util.Map;
@@ -84,7 +83,7 @@ public interface ReasonerQuery{
      * @param materialise materialisation flag
      * @return stream of answers
      */
-    Stream<Map<VarName, Concept>> resolve(boolean materialise);
+    Stream<Answer> resolve(boolean materialise);
 
     /**
      * @return map of variable name - corresponding type pairs

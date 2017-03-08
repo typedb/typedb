@@ -27,6 +27,7 @@ import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -62,7 +63,7 @@ public class AtomicQueryTest {
 
     @ClassRule
     public static final GraphContext snbGraph = GraphContext.preLoad(SNBGraph.get());
-    
+
     @ClassRule
     public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
 
@@ -111,9 +112,11 @@ public class AtomicQueryTest {
         Conjunction<VarAdmin> pattern = conjunction(patternString, snbGraph.graph());
         QueryAnswers answers = new QueryAnswers();
 
-        answers.add(ImmutableMap.of(
-                VarName.of("x"), getConcept("Bob"),
-                VarName.of("y"), getConcept("Colour of Magic")));
+        answers.add(new Answer(
+                ImmutableMap.of(
+                        VarName.of("x"), getConcept("Bob"),
+                        VarName.of("y"), getConcept("Colour of Magic")))
+        );
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, snbGraph.graph());
 
         answers.stream().flatMap(atomicQuery::materialise).collect(Collectors.toList());
@@ -162,15 +165,15 @@ public class AtomicQueryTest {
         QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
-        Set<Map<VarName, Concept>> answers = query.admin().streamWithVarNames().collect(toSet());
-        Set<Map<VarName, Concept>> fullAnswers = query2.admin().streamWithVarNames().collect(toSet());
+        Set<Answer> answers = query.admin().streamWithVarNames().map(Answer::new).collect(toSet());
+        Set<Answer> fullAnswers = query2.admin().streamWithVarNames().map(Answer::new).collect(toSet());
         Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
         Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
 
         Set<Map<VarName, VarName>> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
         Set<IdPredicate> unmappedIdPredicates = mappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints = mappedAtom.getUnmappedTypeConstraints();
-        Set<Map<VarName, Concept>> permutedAnswers = answers.stream()
+        Set<Answer> permutedAnswers = answers.stream()
                 .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
                 .filter(a -> subFilter(a, unmappedIdPredicates))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints))
@@ -179,7 +182,7 @@ public class AtomicQueryTest {
         Set<Map<VarName, VarName>> permutationUnifiers2 = unmappedAtom.getPermutationUnifiers(mappedAtom);
         Set<IdPredicate> unmappedIdPredicates2 = unmappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints2 = unmappedAtom.getUnmappedTypeConstraints();
-        Set<Map<VarName, Concept>> permutedAnswers2 = answers.stream()
+        Set<Answer> permutedAnswers2 = answers.stream()
                 .flatMap(a -> permuteFunction.apply(a, permutationUnifiers2))
                 .filter(a -> subFilter(a, unmappedIdPredicates2))
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints2))
@@ -229,7 +232,7 @@ public class AtomicQueryTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().results());
+        return new QueryAnswers(query.admin().streamWithVarNames().map(Answer::new).collect(toSet()));
     }
     private Concept getConcept(String id){
         Set<Concept> instances = snbGraph.graph().getResourcesByValue(id)
