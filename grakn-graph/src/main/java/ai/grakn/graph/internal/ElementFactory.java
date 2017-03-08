@@ -133,16 +133,15 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     <X extends Concept> X buildConcept(Vertex v){
-        if(!graknGraph.validVertex(v)){
-            LOG.warn("Found vertex [" + v + "] which is no longer valid ignoring . . . ");
-            return null;
-        }
-
         Schema.BaseType type;
         try {
+            graknGraph.validVertex(v);
             type = Schema.BaseType.valueOf(v.label());
         } catch (IllegalArgumentException e){
             LOG.warn("Found vertex [" + v + "] which has an invalid base type [" + v.label() + "] ignoring . . . ");
+            return null;
+        } catch (IllegalStateException e){
+            LOG.warn(e.getMessage(), e);
             return null;
         }
 
