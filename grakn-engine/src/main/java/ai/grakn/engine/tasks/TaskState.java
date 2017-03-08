@@ -34,7 +34,6 @@ import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.time.Instant.now;
-import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -84,23 +83,29 @@ public class TaskState implements Serializable {
     /**
      * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
      */
-    private @Nullable Json configuration;
+    private Json configuration;
 
-    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration) {
-        return new TaskState(taskClass, creator, schedule, configuration, TaskId.generate());
+    public static TaskState of(TaskId id) {
+        // TODO: Figure out a nicer way than all these nulls...
+        // This method is necessary in order to stop tasks that haven't been added to storage yet
+        return new TaskState(null, null, null, null, id);
+    }
+
+    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration) {
+        return of(taskClass, creator, schedule, configuration, TaskId.generate());
     }
 
     public static TaskState of(
-            Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
+            Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
         return new TaskState(taskClass, creator, schedule, configuration, id);
     }
 
-    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
+    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
         this.status = CREATED;
         this.statusChangeTime = now();
-        this.taskClassName = taskClass.getName();
-        this.creator = requireNonNull(creator);
-        this.schedule = requireNonNull(schedule);
+        this.taskClassName = taskClass != null ? taskClass.getName() : null;
+        this.creator = creator;
+        this.schedule = schedule;
         this.configuration = configuration;
         this.taskId = id.getValue();
     }

@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -60,6 +61,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
     private final EngineID engineID;
+
+    private TaskId runningTaskId = null;
+    private BackgroundTask runningTask = null;
 
     /**
      * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
@@ -146,6 +150,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         noThrow(consumer::close, "Error closing the task runner");
     }
 
+    public boolean stopTask(TaskId taskId) {
+        return taskId.equals(runningTaskId) && runningTask.stop();
+    }
+
     /**
      * Returns false if cannot handle record because the executor is full
      */
@@ -170,14 +178,21 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             // Execute task
             try {
-                task.taskClass().newInstance().start(null, task.configuration());
-                task.markCompleted();
+                runningTaskId = task.getId();
+                runningTask = task.taskClass().newInstance();
+                boolean completed = runningTask.start(null, task.configuration());
+                if (completed) {
+                    task.markCompleted();
+                } else {
+                    task.markStopped();
+                }
                 LOG.debug("{}\tmarked as completed", task);
             } catch (Throwable throwable) {
                 task.markFailed(throwable);
                 LOG.debug("{}\tmarked as failed", task);
             } finally {
-                // Remove this task from running on this engine
+                runningTask = null;
+                runningTaskId = null;
                 storage.updateState(task);
             }
         }
