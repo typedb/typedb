@@ -130,6 +130,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> type().hasResource(resourceType()),
             () -> type().key(resourceType()),
             () -> type().setAbstract(true),
+            () -> type().scope(instance()),
             () -> entityType().superType(entityType()),
             () -> entityType().addEntity(),
             () -> roleType().superType(roleType()),
