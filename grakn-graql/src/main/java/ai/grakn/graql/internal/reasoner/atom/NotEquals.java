@@ -19,10 +19,10 @@
 package ai.grakn.graql.internal.reasoner.atom;
 
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
 import java.util.Map;

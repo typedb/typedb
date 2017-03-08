@@ -27,9 +27,9 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -243,7 +243,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         answer.entrySet().stream()
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), queryToMaterialise))
                 .forEach(queryToMaterialise::addAtom);
-        return queryToMaterialise.materialiseDirect();
+        return queryToMaterialise.materialiseDirect()
+                .map(ans -> {
+                        ans.getExplanation().addAll(answer.getExplanation());
+                        return ans;
+                });
     }
 
     private Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom) {
@@ -299,11 +303,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return answers from rule resolution
      */
     private Stream<Answer> resolveViaRule(Rule rl,
-                                                         Set<ReasonerAtomicQuery> subGoals,
-                                                         Cache<ReasonerAtomicQuery, ?> cache,
-                                                         Cache<ReasonerAtomicQuery, ?> dCache,
-                                                         boolean materialise,
-                                                         boolean differentialJoin){
+                                          Set<ReasonerAtomicQuery> subGoals,
+                                          Cache<ReasonerAtomicQuery, ?> cache,
+                                          Cache<ReasonerAtomicQuery, ?> dCache,
+                                          boolean materialise,
+                                          boolean differentialJoin){
         Atom atom = this.getAtom();
         InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
@@ -339,10 +343,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @return stream of differential answers
      */
     public Stream<Answer> answerStream(Set<ReasonerAtomicQuery> subGoals,
-                                                      Cache<ReasonerAtomicQuery, ?> cache,
-                                                      Cache<ReasonerAtomicQuery, ?> dCache,
-                                                      boolean materialise,
-                                                      boolean differentialJoin){
+                                       Cache<ReasonerAtomicQuery, ?> cache,
+                                       Cache<ReasonerAtomicQuery, ?> dCache,
+                                       boolean materialise,
+                                       boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
         Stream<Answer> answerStream = cache.contains(this)? Stream.empty() : dCache.record(this, lookup(cache));

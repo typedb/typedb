@@ -22,10 +22,10 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -466,9 +466,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     private Stream<Answer> differentialJoin(Set<ReasonerAtomicQuery> subGoals,
-                                                           Cache<ReasonerAtomicQuery, ?> cache,
-                                                           Cache<ReasonerAtomicQuery, ?> dCache,
-                                                           boolean materialise){
+                                            Cache<ReasonerAtomicQuery, ?> cache,
+                                            Cache<ReasonerAtomicQuery, ?> dCache,
+                                            boolean materialise){
         Stream<Answer> join = Stream.empty();
         List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
         Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
@@ -495,10 +495,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     Stream<Answer> computeJoin(Set<ReasonerAtomicQuery> subGoals,
-                                              Cache<ReasonerAtomicQuery, ?> cache,
-                                              Cache<ReasonerAtomicQuery, ?> dCache,
-                                              boolean materialise,
-                                              boolean differentialJoin) {
+                                                                      Cache<ReasonerAtomicQuery, ?> cache,
+                                                                      Cache<ReasonerAtomicQuery, ?> dCache,
+                                                                      boolean materialise,
+                                                                      boolean differentialJoin) {
         Stream<Answer> join = differentialJoin?
                 differentialJoin(subGoals, cache, dCache, materialise) : fullJoin(subGoals, cache, dCache, materialise);
 

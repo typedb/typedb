@@ -19,9 +19,9 @@
 package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import java.util.HashMap;
 import java.util.Map;
