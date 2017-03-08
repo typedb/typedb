@@ -30,9 +30,7 @@ import ai.grakn.test.EngineContext;
 import mjson.Json;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -44,7 +42,6 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
@@ -79,7 +76,7 @@ public class SchedulerTest {
     @BeforeClass
     public static void start() throws Exception {
         storage = new TaskStateInMemoryStore();
-        connection = new ZookeeperConnection(client());
+        connection = new ZookeeperConnection();
         startScheduler();
         producer = ConfigHelper.kafkaProducer();
     }

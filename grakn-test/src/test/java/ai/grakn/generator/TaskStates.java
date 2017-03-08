@@ -23,7 +23,6 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.FailingTestTask;
 import ai.grakn.test.engine.tasks.LongExecutionTestTask;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
@@ -38,6 +37,7 @@ import mjson.Json;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -46,7 +46,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class TaskStates extends Generator<TaskState> {
 
-    private boolean uniqueIds = false;
+    private boolean newTask = false;
 
     public TaskStates() {
         super(TaskState.class);
@@ -58,7 +58,8 @@ public class TaskStates extends Generator<TaskState> {
         Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionTestTask.class, ShortExecutionTestTask.class, FailingTestTask.class));
 
         TaskId taskId;
-        if (uniqueIds) {
+
+        if (newTask) {
             taskId = TaskId.generate();
         } else {
             taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
@@ -76,13 +77,14 @@ public class TaskStates extends Generator<TaskState> {
         return taskState;
     }
 
-    public void configure(UniqueIds uniqueIds) {
-        this.uniqueIds = true;
+    public void configure(NewTask newTask) {
+        this.newTask = newTask.value();
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public @interface UniqueIds {
+    public @interface NewTask {
+        boolean value() default true;
     }
 }

@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.stream.Collectors.toSet;
@@ -76,7 +75,7 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
     public SingleQueueTaskManager(EngineID engineId){
-        this.zookeeper = new ZookeeperConnection(client());
+        this.zookeeper = new ZookeeperConnection();
         this.storage = chooseStorage(properties, zookeeper);
 
         //TODO check that the number of partitions is at least the capacity

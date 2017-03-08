@@ -44,10 +44,13 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedT
  */
 public class EngineContext extends ExternalResource {
 
+    private GraknEngineServer server;
+
     private final boolean startKafka;
     private final boolean startMultiQueueEngine;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
+    private int port = 4567;
 
     private EngineContext(boolean startKafka, boolean startMultiQueueEngine, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startMultiQueueEngine = startMultiQueueEngine;
@@ -72,12 +75,21 @@ public class EngineContext extends ExternalResource {
         return new EngineContext(false, false, false, true);
     }
 
+    public EngineContext port(int port) {
+        this.port = port;
+        return this;
+    }
+
+    public GraknEngineServer server() {
+        return server;
+    }
+
     public TaskManager getTaskManager(){
-        return GraknEngineServer.getTaskManager();
+        return server.getTaskManager();
     }
 
     public GraknGraphFactory factoryWithNewKeyspace() {
-        return Grakn.factory(Grakn.DEFAULT_URI, randomKeyspace());
+        return Grakn.factory("localhost:" + port, randomKeyspace());
     }
 
     @Override
@@ -89,15 +101,15 @@ public class EngineContext extends ExternalResource {
         }
 
         if(startSingleQueueEngine){
-            startEngine(SingleQueueTaskManager.class.getName());
+            server = startEngine(SingleQueueTaskManager.class.getName(), port);
         }
 
         if (startMultiQueueEngine){
-            startEngine(MultiQueueTaskManager.class.getName());
+            server = startEngine(MultiQueueTaskManager.class.getName(), port);
         }
 
         if (startStandaloneEngine){
-            startEngine(StandaloneTaskManager.class.getName());
+            server = startEngine(StandaloneTaskManager.class.getName(), port);
         }
     }
 
@@ -107,7 +119,7 @@ public class EngineContext extends ExternalResource {
 
         try {
             if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
-                stopEngine();
+                stopEngine(server);
             }
 
             if(startKafka){
