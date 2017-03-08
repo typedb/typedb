@@ -201,7 +201,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     @Override
     public void delete() {
-        scopes().forEach(this::deleteScope);
         Set<CastingImpl> castings = getMappingCasting();
 
         for (CastingImpl casting: castings) {
