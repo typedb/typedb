@@ -30,6 +30,7 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -54,8 +55,8 @@ public class LoaderClientTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public final EngineContext engine = EngineContext.startMultiQueueServer();
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
     @Before
     public void setup() {

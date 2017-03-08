@@ -18,6 +18,7 @@
 
 package ai.grakn.client;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
@@ -32,7 +33,7 @@ import java.net.HttpRetryException;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -73,7 +74,7 @@ public class LoaderClient extends Client {
     private static final String POST = "http://%s" + TASKS_SCHEDULE_URI;
     private static final String GET = "http://%s" + TASKS_URI + "/{id}";
 
-    private final Map<Integer,CompletableFuture> futures;
+    private final Set<TaskId> submittedTasks;
     private final Collection<InsertQuery> queries;
     private final String keyspace;
     private final String uri;
@@ -93,7 +94,7 @@ public class LoaderClient extends Client {
         this.uri = uri;
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
-        this.futures = new ConcurrentHashMap<>();
+        this.submittedTasks = ConcurrentHashMap.newKeySet();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
 
@@ -176,8 +177,7 @@ public class LoaderClient extends Client {
      */
     public void waitToFinish(){
         flush();
-        while(!futures.values().stream().allMatch(CompletableFuture::isDone)
-                && blocker.availablePermits() != blockerSize){
+        while(!submittedTasks.isEmpty() && blocker.availablePermits() != blockerSize) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -196,39 +196,37 @@ public class LoaderClient extends Client {
      * @param queries Queries to be inserted
      */
     private void sendQueriesToLoader(Collection<InsertQuery> queries){
+        TaskId taskId;
+        CompletableFuture<Json> status;
+
         try {
             blocker.acquire();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
 
-        try {
-            String taskId = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
+            taskId = TaskId.of(executePost(getConfiguration(queries, batchNumber.incrementAndGet())));
 
-            CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
+            // Add this task to the set of submitted tasks
+            submittedTasks.add(taskId);
+            status = makeTaskCompletionFuture(taskId);
 
-            // Add this status to the set of completable futures
-            futures.put(status.hashCode(), status);
-
-            // Function to execute when the task completes
-            status.whenComplete((result, error) -> {
-                unblock(status);
-
-                if(error != null){
-                    LOG.error(getFullStackTrace(error));
-                }
-
-                onCompletionOfTask.accept(result);
-            });
         } catch (Throwable throwable){
+            onCompletionOfTask.accept(null);
             LOG.error(getFullStackTrace(throwable));
             blocker.release();
+            return;
         }
-    }
 
-    private void unblock(CompletableFuture<Json> status){
-        blocker.release();
-        futures.remove(status.hashCode());
+        // Function to execute when the task completes
+        status.whenComplete((result, error) -> {
+            blocker.release();
+
+            if (error != null) {
+                LOG.error(getFullStackTrace(error));
+            }
+
+            onCompletionOfTask.accept(result);
+        }).whenComplete((result, error) ->
+            submittedTasks.remove(taskId)
+        );
     }
 
     /**
@@ -263,10 +261,10 @@ public class LoaderClient extends Client {
      * @param id ID of the task to be fetched
      * @return Json object containing status of the task
      */
-    private Json getStatus(String id) throws HttpRetryException {
+    private Json getStatus(TaskId id) throws HttpRetryException {
         try {
             HttpResponse<Json> response = Unirest.get(format(GET, uri))
-                    .routeParam("id", id)
+                    .routeParam("id", id.getValue())
                     .asObject(Json.class);
 
             if(response.getStatus() == 404){
@@ -287,7 +285,7 @@ public class LoaderClient extends Client {
      * @param id ID of the task to wait on completion
      * @return Completable future that will await completion of the given task
      */
-    private CompletableFuture<Json> makeTaskCompletionFuture(String id){
+    private CompletableFuture<Json> makeTaskCompletionFuture(TaskId id){
         return CompletableFuture.supplyAsync(() -> {
             while (true) {
                 try {
