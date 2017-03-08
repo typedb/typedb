@@ -235,11 +235,11 @@ export default {
             //set the panel class to be an error class
         },
         runQuery(ev) {
-            let query = this.codeMirror.getValue();
+            let query = this.codeMirror.getValue().trim();
             this.showMessagePanel = false;
 
             // Empty query.
-            if (query == undefined || query.trim().length === 0)
+            if (query == undefined || query.length === 0)
                 return;
 
             // Add trailing semi-colon

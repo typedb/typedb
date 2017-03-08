@@ -121,8 +121,9 @@ export default {
              * Send graql query to Engine, returns an array of HAL objects.
              */
   graqlHAL(query) {
+      // In match queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
-      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limit=${User.getQueryLimit()}`,
     });
   },
             /**
