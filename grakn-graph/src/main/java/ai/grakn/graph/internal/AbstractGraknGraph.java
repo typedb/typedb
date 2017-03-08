@@ -925,17 +925,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
-    public boolean validVertex(Vertex vertex){
+    public void validVertex(Vertex vertex){
         if(vertex == null) {
-            return false;
+            throw new IllegalStateException("The provided vertex is null");
         }
 
-        try {
-            //Sample read
-            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
-        } catch (IllegalStateException e){
-            return false;
-        }
+        //Sample read
+        vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
