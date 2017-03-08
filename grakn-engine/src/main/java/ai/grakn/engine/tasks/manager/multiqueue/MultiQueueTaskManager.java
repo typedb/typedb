@@ -99,7 +99,7 @@ public final class MultiQueueTaskManager implements TaskManager {
     }
 
     @Override
-    public TaskManager stopTask(TaskId id, String requesterName) {
+    public void stopTask(TaskId id, String requesterName) {
         throw new UnsupportedOperationException(this.getClass().getName() + " currently doesn't support stopping tasks");
     }
 

@@ -125,13 +125,13 @@ public class StandaloneTaskManager implements TaskManager {
         }
     }
 
-    public TaskManager stopTask(TaskId id, String requesterName) {
+    public void stopTask(TaskId id, String requesterName) {
         stateUpdateLock.lock();
-        
+
         try {
             TaskState state = stateStorage.getState(id);
             if (state == null) {
-                return this;
+                return;
             }
 
             Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
@@ -158,8 +158,6 @@ public class StandaloneTaskManager implements TaskManager {
         } finally {
             stateUpdateLock.unlock();
         }
-
-        return this;
     }
 
     public TaskStateStorage storage() {

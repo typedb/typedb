@@ -141,8 +141,14 @@ public class SingleQueueTaskManager implements TaskManager {
      * Stop a task from running.
      */
     @Override
-    public TaskManager stopTask(TaskId id, String requesterName) {
-        throw new UnsupportedOperationException("SingleQueueTaskManager does not support stopping tasks.");
+    public void stopTask(TaskId id, String requesterName) {
+        // TODO: Make only one call to storage if possible
+        if (!storage.containsTask(id)) {
+            TaskState task = TaskState.of(id).markStopped();
+            storage.newState(task);
+        } else {
+            taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
+        }
     }
 
     /**
