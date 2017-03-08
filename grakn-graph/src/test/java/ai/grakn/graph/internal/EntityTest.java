@@ -37,37 +37,13 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class EntityTest extends GraphTestBase{
-
-    @Test
-    public void creatingAccessingDeletingScopes_Works() throws ConceptException {
-        EntityType entityType = graknGraph.putEntityType("entity type");
-        Instance scope1 = entityType.addEntity();
-        Instance scope2 = entityType.addEntity();
-        Instance scope3 = entityType.addEntity();
-        assertThat(entityType.scopes(), is(empty()));
-
-        entityType.scope(scope1);
-        entityType.scope(scope2);
-        entityType.scope(scope3);
-        assertThat(entityType.scopes(), containsInAnyOrder(scope1, scope2, scope3));
-
-        scope1.delete();
-        assertThat(entityType.scopes(), containsInAnyOrder(scope2, scope3));
-
-        entityType.deleteScope(scope2);
-        assertThat(entityType.scopes(), containsInAnyOrder(scope3));
-    }
 
     @Test
     public void testGetCastings(){

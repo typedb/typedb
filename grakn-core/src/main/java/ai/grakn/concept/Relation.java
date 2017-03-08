@@ -19,7 +19,6 @@
 package ai.grakn.concept;
 
 
-import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 
 import java.util.Collection;
@@ -41,17 +40,6 @@ import java.util.Set;
  *
  */
 public interface Relation extends Instance {
-    //------------------------------------- Modifiers ----------------------------------
-    /**
-     * Sets the Instance that can scope this Relation to a specific domain.
-     * For example, if a relation is only valid for a particular language you can scope
-     * the relation to an Instance representing that language.
-     *
-     * @param instance A new instance which scopes this Relation
-     * @return The Relation itself
-     */
-    Relation scope(Instance instance);
-
     //------------------------------------- Accessors ----------------------------------
 
     /**
@@ -79,13 +67,6 @@ public interface Relation extends Instance {
     Collection<Instance> rolePlayers(RoleType... roleTypes);
 
     /**
-     * Retrieve a list of the Instances that scope this Relation.
-     *
-     * @return A list of the Instances that scope this Relation.
-     */
-    Collection<Instance> scopes();
-
-    /**
      * Expands this Relation to include a new role player which is playing a specific role.
      *
      * @param roleType The Role Type of the new role player.
@@ -95,14 +76,4 @@ public interface Relation extends Instance {
      * @throws ConceptNotUniqueException if the concept is only allowed to play this role once.
      */
     Relation addRolePlayer(RoleType roleType, Instance instance);
-
-    //------------------------------------- Other ----------------------------------
-
-    /**
-     * Delete the scope specified.
-     *
-     * @param scope The Instances that is currently scoping this Relation.
-     * @return The Relation itself
-     */
-    Relation deleteScope(Instance scope);
 }

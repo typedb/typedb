@@ -43,8 +43,10 @@ import java.util.Set;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -67,6 +69,26 @@ public class EntityTypeTest extends GraphTestBase{
         middle1.superType(top);
         middle2.superType(top);
         middle3.superType(top);
+    }
+
+    @Test
+    public void creatingAccessingDeletingScopes_Works() throws ConceptException {
+        EntityType entityType = graknGraph.putEntityType("entity type");
+        Instance scope1 = entityType.addEntity();
+        Instance scope2 = entityType.addEntity();
+        Instance scope3 = entityType.addEntity();
+        assertThat(entityType.scopes(), is(empty()));
+
+        entityType.scope(scope1);
+        entityType.scope(scope2);
+        entityType.scope(scope3);
+        assertThat(entityType.scopes(), containsInAnyOrder(scope1, scope2, scope3));
+
+        scope1.delete();
+        assertThat(entityType.scopes(), containsInAnyOrder(scope2, scope3));
+
+        entityType.deleteScope(scope2);
+        assertThat(entityType.scopes(), containsInAnyOrder(scope3));
     }
 
     @Test

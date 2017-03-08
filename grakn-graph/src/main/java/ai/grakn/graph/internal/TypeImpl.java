@@ -313,6 +313,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
             if(!concept.isCasting()){
                 instances.add((V) concept);
+                instances.add((V) concept);
             }
         });
 
