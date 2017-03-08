@@ -328,7 +328,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         if (materialise || rule.requiresMaterialisation()) {
             //cache.contains(ruleHead)? ruleHead.lazyLookup(cache);
-            ruleHead.lookup(cache);
+            if (!cache.contains(ruleHead)) ruleHead.lookup(cache);
             //ruleHead.lookup(dCache);
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> known = cache.getInverseAnswerMap(ruleHead);
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> dknown = dCache.getInverseAnswerMap(ruleHead);
