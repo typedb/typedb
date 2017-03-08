@@ -70,7 +70,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param zookeeper a connection to the running zookeeper instance.
      */
 
-    public SingleQueueTaskRunner(EngineID engineID, TaskStateStorage storage, ZookeeperConnection zookeeper){
+    SingleQueueTaskRunner(EngineID engineID, TaskStateStorage storage, ZookeeperConnection zookeeper){
         this.storage = storage;
         this.engineID = engineID;
 
