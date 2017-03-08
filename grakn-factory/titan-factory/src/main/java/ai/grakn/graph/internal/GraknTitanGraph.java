@@ -79,7 +79,11 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public boolean validVertex(Vertex vertex) {
-        return !((TitanVertex) vertex).isRemoved() && super.validVertex(vertex);
+    public void validVertex(Vertex vertex) {
+        super.validVertex(vertex);
+
+        if(((TitanVertex) vertex).isRemoved()){
+            throw new IllegalStateException("The vertex [" + vertex + "] has been removed and is no longer valid");
+        }
     }
 }
