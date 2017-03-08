@@ -38,8 +38,6 @@ import org.junit.Test;
 import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createScheduledTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
