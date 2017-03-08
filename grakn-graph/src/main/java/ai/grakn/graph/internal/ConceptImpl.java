@@ -578,7 +578,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return fromVertex.addEdge(type, getVertex());
     }
 
-
     //------------ Base Equality ------------
     /**
      *

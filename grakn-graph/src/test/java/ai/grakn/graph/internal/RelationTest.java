@@ -34,14 +34,11 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -52,7 +49,6 @@ import static ai.grakn.util.ErrorMessage.ROLE_IS_NULL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -148,22 +144,6 @@ public class RelationTest extends GraphTestBase{
     }
 
     @Test
-    public void testScope(){
-        RelationType relationType = graknGraph.putRelationType("rel type");
-        RelationImpl relation = (RelationImpl) relationType.addRelation();
-        RelationImpl relationValue = (RelationImpl) relationType.addRelation();
-        InstanceImpl scope = (InstanceImpl) type.addEntity();
-        relation.scope(scope);
-        relationValue.scope(scope);
-
-        Vertex vertex = graknGraph.getTinkerPopGraph().traversal().V(relation.getId().getRawValue()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
-        assertEquals(scope.getId().getRawValue(), vertex.id());
-
-        vertex = graknGraph.getTinkerPopGraph().traversal().V(relationValue.getId().getRawValue()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
-        assertEquals(scope.getId().getRawValue(), vertex.id());
-    }
-
-    @Test
     public void testGetCasting() throws Exception {
         Set<CastingImpl> castings = relation.getMappingCasting();
         assertEquals(2, castings.size());
@@ -181,64 +161,6 @@ public class RelationTest extends GraphTestBase{
         assertThat(relation.rolePlayers(role1), containsInAnyOrder(rolePlayer1));
         assertThat(relation.rolePlayers(role2), containsInAnyOrder(rolePlayer2));
         assertTrue(relation.rolePlayers(role3).isEmpty());
-    }
-
-    @Test
-    public void testGetScope(){
-        assertEquals(0, relation.scopes().size());
-        Instance scope1 = type.addEntity();
-        Instance scope2 = type.addEntity();
-        relation.scope(scope1);
-        relation.scope(scope2);
-        Collection<Instance> scopes = relation.scopes();
-        assertEquals(2, scopes.size());
-        assertTrue(scopes.contains(scope1));
-        assertTrue(scopes.contains(scope2));
-    }
-
-    @Test
-    public void testDeleteScope() throws ConceptException {
-        RelationType relationType = graknGraph.putRelationType("Relation type");
-        RelationImpl relation2 = (RelationImpl) relationType.addRelation();
-        InstanceImpl scope1 = (InstanceImpl) type.addEntity();
-        Instance scope2 = type.addEntity();
-        InstanceImpl scope3 = (InstanceImpl) type.addEntity();
-        relation2.scope(scope3);
-        relation.scope(scope3);
-        relation.scope(scope1);
-        relation2.scope(scope1);
-        relation2.scope(scope2);
-
-        relation2.deleteScope(scope2);
-        Vertex assertion2_vertex = graknGraph.getTinkerPopGraph().traversal().V(relation2.getId().getRawValue()).next();
-
-        int count = 0;
-        Iterator<Edge> edges =  assertion2_vertex.edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel());
-        while(edges.hasNext()){
-            edges.next();
-            count ++;
-        }
-        assertEquals(2, count);
-
-        relation2.deleteScope(scope3);
-        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope3.getId().getRawValue()).hasNext());
-
-        relation.deleteScope(scope1);
-        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope1.getId().getRawValue()).hasNext());
-        relation2.deleteScope(scope1);
-        relation.deleteScope(scope3);
-        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getId().getRawValue()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
-    }
-
-    @Test
-    public void testDeleteAllScopes() throws ConceptException {
-        Instance scope2 = type.addEntity();
-        Instance scope1 = type.addEntity();
-        relation.scope(scope1);
-        relation.scope(scope2);
-
-        relation.scopes().forEach(relation::deleteScope);
-        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getId().getRawValue()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test

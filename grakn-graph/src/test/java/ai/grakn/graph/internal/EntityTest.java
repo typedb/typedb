@@ -46,17 +46,6 @@ import static org.junit.Assert.assertTrue;
 public class EntityTest extends GraphTestBase{
 
     @Test
-    public void testDeleteScope() throws ConceptException {
-        EntityType entityType = graknGraph.putEntityType("entity type");
-        RelationType relationType = graknGraph.putRelationType("RelationType");
-        Instance scope = entityType.addEntity();
-        Relation relation = relationType.addRelation();
-        relation.scope(scope);
-        scope.delete();
-        assertNull(graknGraph.getConceptByBaseIdentifier(scope.getId().getRawValue()));
-    }
-
-    @Test
     public void testGetCastings(){
         RelationType relationType = graknGraph.putRelationType("rel type");
         EntityType entityType = graknGraph.putEntityType("entity type");
