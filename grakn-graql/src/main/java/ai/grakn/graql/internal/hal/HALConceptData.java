@@ -262,7 +262,7 @@ class HALConceptData {
         rel.allRolePlayers().forEach((roleType, instanceSet) -> {
             instanceSet.forEach(instance -> {
                 if (instance != null) {
-                    Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + this.keyspace)
+                    Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                             .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
                     handleConcept(roleResource, instance, separationDegree - 1);
                     halResource.withRepresentation(roleType.getName().getValue(), roleResource);
