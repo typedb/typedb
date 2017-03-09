@@ -57,6 +57,7 @@ export default class Visualiser {
       physics: {
         barnesHut: {
           springLength: 140,
+          avoidOverlap: 0.9,
         },
         minVelocity: 0.75,
       },
@@ -64,9 +65,6 @@ export default class Visualiser {
         hoverWidth: 2,
         selectionWidth: 2,
         arrowStrikethrough: false,
-        arrows: {
-          to: true,
-        },
         smooth: {
           enabled: false,
           forceDirection: 'none',
@@ -78,6 +76,7 @@ export default class Visualiser {
       },
       layout: {
         improvedLayout: false,
+        randomSeed: 10,
       },
     };
 
@@ -282,6 +281,7 @@ export default class Visualiser {
         }, highlightObj, hoverObj),
         font: this.style.getNodeFont(bp.type, bp.baseType),
         shape: this.style.getNodeShape(bp.baseType),
+        size: this.style.getNodeSize(bp.baseType),
         selected: false,
         ontology: bp.ontology,
         properties: ap,
@@ -311,8 +311,11 @@ export default class Visualiser {
         from: fromNode,
         to: toNode,
         label,
-        color: this.style.getEdgeColour(),
-        font: this.style.getEdgeFont(),
+        color: this.style.getEdgeColour(label),
+        font: this.style.getEdgeFont(label),
+        arrows: {
+          to: (label != 'has-role'),
+        },
       });
     }
     return this;
