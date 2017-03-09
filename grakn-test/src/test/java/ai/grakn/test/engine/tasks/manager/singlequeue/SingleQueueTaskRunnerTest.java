@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.EndlessExecutionTestTask;
 import ai.grakn.test.engine.tasks.LongExecutionTestTask;
+import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -42,14 +43,20 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.at;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
@@ -58,9 +65,11 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskFinishes;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskStarts;
+import static java.time.Instant.now;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -87,9 +96,10 @@ public class SingleQueueTaskRunnerTest {
     @Before
     public void setUp() {
         clearTasks();
+        hideLogs();
 
         storage = new TaskStateInMemoryStore();
-
+        
         consumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
         partition = new TopicPartition("hi", 0);
@@ -101,6 +111,10 @@ public class SingleQueueTaskRunnerTest {
         mockedTM = mock(SingleQueueTaskManager.class);
         when(mockedTM.storage()).thenReturn(storage);
         when(mockedTM.newConsumer()).thenReturn(consumer);
+        doAnswer(invocation -> {
+            addTask(invocation.getArgument(0));
+            return null;
+        }).when(mockedTM).addTask(any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
@@ -375,5 +389,51 @@ public class SingleQueueTaskRunnerTest {
         taskRunner.run();
 
         assertThat(storage.getState(task1.getId()).status(), is(COMPLETED));
+    }
+
+    @Test
+    public void whenDelayedTaskIsExecuted_ItIsOnlyExecutedAfterDelay() {
+        final Duration delay = Duration.ofMillis(1000);
+        final Instant submittedTime = now();
+        final Instant[] startedTime = {null};
+        whenTaskStarts(taskId -> {
+            // Sleep so that the delay is not equal to duration in fast environments
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            startedTime[0] = now();
+        });
+
+        TaskState delayedTask = createTask(ShortExecutionTestTask.class, at(submittedTime.plus(delay)));
+        setUpTasks(ImmutableList.of(ImmutableList.of(delayedTask)));
+
+        taskRunner.run();
+
+        Duration duration = Duration.between(submittedTime, startedTime[0]);
+        assertThat(storage.getState(delayedTask.getId()).status(), is(COMPLETED));
+        assertThat(duration, greaterThan(delay));
+    }
+
+    @Test
+    public void whenNonDelayedTaskIsExecuted_ItIsExecutedImmediately(){
+        final Duration delay = Duration.ofMillis(1000);
+        final Instant submittedTime = now();
+        final Map<TaskId, Instant> startedTime = new HashMap<>();
+        whenTaskStarts(taskId ->
+                startedTime.put(taskId, now())
+        );
+
+        TaskState delayedTask = createTask(ShortExecutionTestTask.class, at(submittedTime.plus(delay)));
+        TaskState instantTask = createTask(ShortExecutionTestTask.class, at(submittedTime));
+        setUpTasks(ImmutableList.of(ImmutableList.of(delayedTask, instantTask)));
+
+        taskRunner.run();
+
+        assertThat(storage.getState(delayedTask.getId()).status(), is(COMPLETED));
+        assertThat(storage.getState(instantTask.getId()).status(), is(COMPLETED));
+
+        assertThat(startedTime.get(instantTask.getId()), lessThan(startedTime.get(delayedTask.getId())));
     }
 }
