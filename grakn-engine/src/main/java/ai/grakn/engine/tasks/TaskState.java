@@ -69,7 +69,7 @@ public class TaskState implements Serializable {
     /**
      * Schedule for when this task should execute
      */
-    private final TaskSchedule schedule;
+    private TaskSchedule schedule;
     /**
      * Used to store any executing failures for the given task.
      */
@@ -189,6 +189,11 @@ public class TaskState implements Serializable {
 
     public TaskSchedule schedule() {
         return schedule;
+    }
+
+    public TaskState schedule(TaskSchedule schedule){
+        this.schedule = schedule;
+        return this;
     }
 
     public String stackTrace() {

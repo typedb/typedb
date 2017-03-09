@@ -127,9 +127,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     }
 
     /**
-     * Only
-     * @param taskId
-     * @return
+     * Stop the task if it is executing on this machine
+     * @param taskId Identifier of the task to stop
+     * @return True if the task is stopped
      */
     public boolean stopTask(TaskId taskId) {
         return taskId.equals(runningTaskId) && runningTask.stop();
@@ -143,14 +143,17 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         if(shouldDelayTask(task)){
             resubmitTask(task);
-        }
-        else if (shouldExecuteTask(task)) {
-            executeTask(task);
+            return;
         }
 
-        if(taskShouldRecur(task)){
-            // re-schedule
-            resubmitTask(task);
+        if (shouldExecuteTask(task)) {
+            executeTask(task);
+
+            if(taskShouldRecur(task)){
+                // re-schedule
+                task.schedule(task.schedule().incrementByInterval());
+                resubmitTask(task);
+            }
         }
     }
 

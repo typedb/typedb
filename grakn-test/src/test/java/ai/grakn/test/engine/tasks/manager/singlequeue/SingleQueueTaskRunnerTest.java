@@ -40,7 +40,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,7 +51,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -72,7 +70,6 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskStarts;
 import static java.time.Duration.between;
 import static java.time.Duration.ofMillis;
 import static java.time.Instant.now;
-import static java.time.Instant.ofEpochMilli;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
@@ -461,28 +458,28 @@ public class SingleQueueTaskRunnerTest {
         assertThat(startedCounter.get(), equalTo(numberOfExecutions));
     }
 
-    @Ignore
     @Test
     public void whenRecurringTaskSubmitted_ThereIsAnIntervalBetweenExecutions(){
-        final int numberOfExecutions = 10;
+        final int numberOfExecutions = 5;
         final Duration interval = Duration.ofMillis(100);
+        final Instant[] lastExecutionTime = {null};
         final AtomicInteger startedCounter = new AtomicInteger(0);
-        final AtomicLong lastExecutionTime = new AtomicLong(now().toEpochMilli());
 
         whenTaskStarts(taskId -> {
-            assertThat(between(ofEpochMilli(lastExecutionTime.get()), now()), greaterThan(interval));
+            if(lastExecutionTime[0] != null) {
+                assertThat(between(lastExecutionTime[0], now()), greaterThan(interval));
+            }
 
-            int numberTimesExecuted = startedCounter.incrementAndGet();
-            if(numberTimesExecuted == numberOfExecutions){
+            // Store the previous execution time for next round
+            lastExecutionTime[0] = storage.getState(taskId).schedule().runAt();
+
+            // Stop the recurring task so this test does not run forever
+            if(startedCounter.incrementAndGet() == numberOfExecutions){
                 taskRunner.stopTask(taskId);
             }
         });
 
-        whenTaskFinishes(taskId -> {
-            lastExecutionTime.set(now().toEpochMilli());
-        });
-
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(now().plus(interval), interval));
+        TaskState task = createTask(ShortExecutionTestTask.class, recurring(now(), interval));
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         taskRunner.run();
