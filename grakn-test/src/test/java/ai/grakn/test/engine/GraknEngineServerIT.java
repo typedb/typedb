@@ -38,7 +38,7 @@ import java.util.List;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
@@ -61,7 +61,7 @@ public class GraknEngineServerIT {
 
     @Before
     public void setUp() {
-        clearCompletedTasks();
+        clearTasks();
         storage = engine1.getTaskManager().storage();
     }
 
