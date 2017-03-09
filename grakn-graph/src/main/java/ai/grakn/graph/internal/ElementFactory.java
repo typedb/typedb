@@ -138,7 +138,7 @@ final class ElementFactory {
             graknGraph.validVertex(v);
             type = Schema.BaseType.valueOf(v.label());
         } catch (IllegalStateException | IllegalArgumentException e){
-            LOG.warn(e.getMessage(), e);
+            LOG.warn("Invalid vertex [" + v + "] due to " + e.getMessage(), e);
             return null;
         }
 
