@@ -132,8 +132,8 @@ export default {
             visualiser.updateRectangle(e.pageX, e.pageY - this.graphOffsetTop);
         },
 
-        onLoadOntology() {
-            const querySub = `match $x sub ${API.ROOT_CONCEPT};`;
+        onLoadOntology(type) {
+            const querySub = `match $x sub ${type};`;
             EngineClient.graqlHAL(querySub).then(this.onGraphResponse, (err) => {
                 this.state.eventHub.$emit('error-message', err.message);
             });
