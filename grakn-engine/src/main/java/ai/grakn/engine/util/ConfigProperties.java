@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
 
@@ -119,7 +120,7 @@ public class ConfigProperties {
         prop = new Properties();
         try (FileInputStream inputStream = new FileInputStream(getConfigFilePath())){
             prop.load(inputStream);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         prop.put(PROJECT_VERSION, GraknVersion.VERSION);

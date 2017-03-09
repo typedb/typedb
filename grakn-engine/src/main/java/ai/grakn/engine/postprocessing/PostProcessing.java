@@ -80,7 +80,7 @@ public class PostProcessing {
         if (!isRunning.getAndSet(true)) {
             LOG.info("Starting maintenance.");
 
-            statDump.submit(this::dumpStats);
+            statDump.execute(this::dumpStats);
             performTasks();
 
             futures = ConcurrentHashMap.newKeySet();

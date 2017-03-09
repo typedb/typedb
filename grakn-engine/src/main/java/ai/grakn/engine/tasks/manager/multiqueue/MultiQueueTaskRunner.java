@@ -199,7 +199,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
                 acceptedTasks.incrementAndGet();
 
                 // Submit to executor
-                executor.submit(() -> executeTask(state));
+                executor.execute(() -> executeTask(state));
             } else {
                 LOG.debug(format("Will not run [%s] because status: [%s]", record.key(), state.status()));
             }
@@ -262,6 +262,8 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
                         .creatingParentContainersIfNeeded()
                         .withMode(CreateMode.EPHEMERAL).forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
             }
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception exception){
             throw new RuntimeException("Could not create Zookeeper paths in TaskRunner");
         }

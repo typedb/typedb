@@ -133,12 +133,13 @@ public class JsonSession {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } catch (ExecutionException e) {
-            RuntimeException inner = (RuntimeException) e.getCause();
+            Throwable inner = e.getCause();
             Throwable cause = inner.getCause();
             if (cause instanceof IOException) {
                 throw (IOException) cause;
             } else {
-                throw inner;
+                assert inner instanceof RuntimeException; // We know the runnable never throws a checked exception
+                throw (RuntimeException) inner;
             }
         }
     }

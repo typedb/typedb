@@ -34,6 +34,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class TaskSchedule implements Serializable {
 
+    private static final long serialVersionUID = 8220146809708041152L;
+
     /**
      * When this task should be executed.
      */

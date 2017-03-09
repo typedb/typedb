@@ -143,7 +143,7 @@ public class LoaderTask implements BackgroundTask {
      * @param e exception to log
      * @param i amount of time to sleep
      */
-    private void handleError(Throwable e, int i) {
+    private void handleError(Throwable e, long i) {
         LOG.error("Caught exception ", e);
         try {
             Thread.sleep((i + 2) * 1000);

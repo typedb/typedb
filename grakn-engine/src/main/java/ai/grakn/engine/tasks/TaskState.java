@@ -42,6 +42,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class TaskState implements Serializable {
 
+    private static final long serialVersionUID = -7301340972479426653L;
+
     /**
      * Id of this task.
      */
