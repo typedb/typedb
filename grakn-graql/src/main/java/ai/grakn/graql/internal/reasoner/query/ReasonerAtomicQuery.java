@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
@@ -325,7 +326,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .distinct();
 
         if (materialise || rule.requiresMaterialisation()) {
-            if (!cache.contains(ruleHead)) ruleHead.lookup(cache);
+            /*
+            LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
+            LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
+            answers = answers
+                    .filter(a -> knownFilter(a, known.stream()))
+                    .filter(a -> knownFilter(a, dknown.stream()))
+                    .flatMap(ruleHead::materialise);
+            */
+
+            ruleHead.lookup(cache);
+            ruleHead.lazyLookup(dCache);
             //filter known to make sure no duplicates are inserted (put behaviour)
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> known = cache.getInverseAnswerMap(ruleHead);
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> dknown = dCache.getInverseAnswerMap(ruleHead);
@@ -334,6 +345,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .filter(a -> knownFilterWithInverse(a, known))
                     .filter(a -> knownFilterWithInverse(a, dknown))
                     .flatMap(ruleHead::materialise);
+
+
             answers = dCache.record(ruleHead, answers);
         }
         //if query not exactly equal to the rule head, do some conversion
@@ -369,12 +382,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return dCache.record(this, answerStream);
     }
 
-    @Override
-    public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
+    public Stream<Map<VarName, Concept>> resolve(boolean materialise, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames();
         } else {
-            return new QueryAnswerIterator(materialise).hasStream();
+            return new QueryAnswerIterator(materialise, cache, dCache).hasStream();
         }
     }
 
@@ -393,12 +405,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private long answers = 0;
         private final boolean materialise;
         private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
-        private final LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        private final LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
+        private final LazyQueryCache<ReasonerAtomicQuery> cache;
+        private final LazyQueryCache<ReasonerAtomicQuery> dCache;
         private Iterator<Map<VarName, Concept>> answerIterator;
 
-        QueryAnswerIterator(boolean materialise){
+        QueryAnswerIterator(boolean materialise, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache){
             this.materialise = materialise;
+            this.cache = cache;
+            this.dCache = dCache;
             this.answerIterator = query().answerStream(subGoals, cache, dCache, materialise, iter != 0).iterator();
         }
 

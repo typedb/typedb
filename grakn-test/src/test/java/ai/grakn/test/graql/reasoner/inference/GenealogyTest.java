@@ -190,7 +190,6 @@ public class GenealogyTest {
         assertEquals(answers.size(), 4);
     }
 
-
     @Test
     public void testMarriedToThemselves(){
         String queryString = "match (spouse2: $x, spouse1: $x) isa marriage;";
@@ -209,22 +208,29 @@ public class GenealogyTest {
 
     @Test
     public void testMarriageType() {
-        //String queryString = "match ($x, $y) isa marriage; ($y, $z) isa marriage;";
-        //QueryAnswers answers = queryAnswers(iqb.parse(queryString));
-        //System.out.println("answers: " + answers.size());
-
-
         String queryString = "match $x isa marriage;";
         String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
-        MatchQuery query0 = qb.parse(queryString);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
 
-        QueryAnswers before = queryAnswers(query0);
-        System.out.println("before: " + before.size());
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);
-        assertEquals(before.size(), answers.size());
+        assertEquals(answers2.size(), answers.size());
+        assertEquals(answers2.size(), 66);
+    }
+
+    @Test
+    public void testMarriageType2() {
+        String queryString = "match $x isa marriage;";
+        String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+
+        String qs = "match ($x, $y) isa marriage; ($y, $z) isa marriage;";
+        iqb.parse(qs).execute();
+
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
         assertEquals(answers2.size(), answers.size());
         assertEquals(answers2.size(), 66);
     }
