@@ -76,22 +76,28 @@ public class PostProcessing {
         return instance;
     }
 
-    public void run() {
-        if (!isRunning.get()) {
+    public boolean run() {
+        if (!isRunning.getAndSet(true)) {
             LOG.info("Starting maintenance.");
-            isRunning.set(true);
 
             statDump.submit(this::dumpStats);
             performTasks();
 
             futures = ConcurrentHashMap.newKeySet();
-            isRunning.set(false);
+            boolean notCancelled = isRunning.getAndSet(false);
+
             LOG.info("Maintenance completed.");
+
+            return notCancelled;
+        } else {
+            return true;
         }
     }
 
-    public void stop() {
-        if(isRunning.get()) {
+    public boolean stop() {
+        boolean running = isRunning.getAndSet(false);
+        
+        if(running) {
             LOG.warn("Shutting down running tasks");
             System.out.println("Shutting down running tasks");
             futures.forEach(f -> f.cancel(true));
@@ -99,7 +105,7 @@ public class PostProcessing {
             statDump.shutdownNow();
         }
 
-        isRunning.set(false);
+        return running;
     }
 
     private void performTasks() {

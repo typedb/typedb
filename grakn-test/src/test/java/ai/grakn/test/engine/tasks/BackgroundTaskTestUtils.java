@@ -19,10 +19,12 @@
 package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
@@ -36,11 +38,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.IntStream;
+import java.util.function.Consumer;
 
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.generate;
+import static org.junit.Assert.fail;
 
 /**
  * Class holding useful methods for use throughout background task tests
@@ -48,6 +56,10 @@ import static java.util.stream.Collectors.toSet;
 public class BackgroundTaskTestUtils {
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
+
+    private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
+    private static Consumer<TaskId> onTaskStart;
+    private static Consumer<TaskId> onTaskFinish;
 
     static void addCompletedTask(TaskId taskId) {
         COMPLETED_TASKS.add(taskId);
@@ -57,24 +69,71 @@ public class BackgroundTaskTestUtils {
         return ImmutableMultiset.copyOf(COMPLETED_TASKS);
     }
 
-    public static void clearCompletedTasks() {
+    static void addCancelledTask(TaskId taskId) {
+        CANCELLED_TASKS.add(taskId);
+    }
+
+    public static ImmutableMultiset<TaskId> cancelledTasks() {
+        return ImmutableMultiset.copyOf(CANCELLED_TASKS);
+    }
+
+    public static void whenTaskStarts(Consumer<TaskId> beforeTaskStarts) {
+        BackgroundTaskTestUtils.onTaskStart = beforeTaskStarts;
+    }
+
+    static void onTaskStart(TaskId taskId) {
+        if (onTaskStart != null) onTaskStart.accept(taskId);
+    }
+
+    public static void whenTaskFinishes(Consumer<TaskId> onTaskFinish) {
+        BackgroundTaskTestUtils.onTaskFinish = onTaskFinish;
+    }
+
+    static void onTaskFinish(TaskId taskId) {
+        if (onTaskFinish != null) onTaskFinish.accept(taskId);
+    }
+
+    public static void clearTasks() {
         COMPLETED_TASKS.clear();
+        CANCELLED_TASKS.clear();
+        onTaskStart = null;
+        onTaskFinish = null;
     }
 
-    public static Set<TaskState> createTasks(int n, TaskStatus status) {
-        return IntStream.range(0, n)
-                .mapToObj(i -> createTask(status, TaskSchedule.now(), Json.object()))
-                .collect(toSet());
+    public static Set<TaskState> createTasks(int n) {
+        return generate(() -> createTask(ShortExecutionTestTask.class)).limit(n).collect(toSet());
     }
 
-    public static TaskState createTask(TaskStatus status, TaskSchedule schedule, Json configuration) {
-        TaskState taskState = TaskState.of(ShortExecutionTestTask.class, BackgroundTaskTestUtils.class.getName(), schedule, configuration)
-                .status(status)
-                .statusChangedBy(BackgroundTaskTestUtils.class.getName());
+    public static Set<TaskState> createScheduledTasks(int n) {
+        return generate(() -> createTask(ShortExecutionTestTask.class).markScheduled()).limit(n).collect(toSet());
+    }
+
+    public static Set<TaskState> createRunningTasks(int n, EngineID engineID) {
+        return generate(() -> createTask(ShortExecutionTestTask.class).markRunning(engineID)).limit(n).collect(toSet());
+    }
+
+    public static TaskState createTask() {
+        return createTask(ShortExecutionTestTask.class);
+    }
+
+    public static TaskState createTask(Class<? extends BackgroundTask> clazz) {
+        return createTask(clazz, now());
+    }
+
+    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule) {
+        return createTask(clazz, schedule, Json.object());
+    }
+
+    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule, Json configuration) {
+        TaskState taskState = TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule, configuration);
         configuration.set("id", taskState.getId().getValue());
         return taskState;
     }
-    
+
+    public static void waitForDoneStatus(TaskStateStorage storage, Collection<TaskState> tasks) {
+        waitForStatus(storage, tasks, COMPLETED, FAILED, STOPPED);
+    }
+
     public static void waitForStatus(TaskStateStorage storage, Collection<TaskState> tasks, TaskStatus... status) {
         HashSet<TaskStatus> statusSet = Sets.newHashSet(status);
         tasks.forEach(t -> waitForStatus(storage, t, statusSet));
@@ -84,13 +143,23 @@ public class BackgroundTaskTestUtils {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
-            try {
+            if (storage.containsTask(task.getId())) {
                 TaskStatus currentStatus = storage.getState(task.getId()).status();
                 if (status.contains(currentStatus)) {
                     return;
                 }
-            } catch (Exception ignored){}
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+        TaskStatus finalStatus = storage.containsTask(task.getId()) ? storage.getState(task.getId()).status() : null;
+
+        fail("Timeout waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
     }
 
     public static Multiset<TaskId> completableTasks(List<TaskState> tasks) {

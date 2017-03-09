@@ -59,15 +59,16 @@ public class LoaderTask implements BackgroundTask {
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public void start(Consumer<String> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<String> saveCheckpoint, Json configuration) {
         attemptInsertions(
                 getKeyspace(configuration),
                 getInserts(configuration));
+        return true;
     }
 
     @Override
-    public void stop() {
-        throw new UnsupportedOperationException("Loader task cannot be stopped");
+    public boolean stop() {
+        return false;
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
+import spark.Service;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -63,9 +64,6 @@ import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static java.time.Instant.ofEpochMilli;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
-import static spark.Spark.get;
-import static spark.Spark.post;
-import static spark.Spark.put;
 
 /**
  * <p>
@@ -80,16 +78,16 @@ public class TasksController {
     private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
     private final TaskManager manager;
 
-    public TasksController(TaskManager manager) {
+    public TasksController(Service spark, TaskManager manager) {
         if (manager==null) {
             throw new GraknEngineServerException(500,"Task manager has not been instantiated.");
         }
         this.manager = manager;
 
-        get(ALL_TASKS_URI, this::getTasks);
-        get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
-        put(TASKS_URI + "/" + ID_PARAMETER + TASK_STOP, this::stopTask);
-        post(TASKS_SCHEDULE_URI, this::scheduleTask);
+        spark.get(ALL_TASKS_URI, this::getTasks);
+        spark.get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
+        spark.put(TASKS_URI + "/" + ID_PARAMETER + TASK_STOP, this::stopTask);
+        spark.post(TASKS_SCHEDULE_URI, this::scheduleTask);
     }
 
     @GET
@@ -122,7 +120,7 @@ public class TasksController {
         }
 
         JSONArray result = new JSONArray();
-        for (TaskState state : manager.storage().getTasks(status, className, creator, limit, offset)) {
+        for (TaskState state : manager.storage().getTasks(status, className, creator, null, limit, offset)) {
             result.put(serialiseStateSubset(state));
         }
 
