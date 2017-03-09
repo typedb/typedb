@@ -24,10 +24,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.config.ConfigHelper;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
-import com.google.common.collect.ImmutableList;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -41,9 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
-import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**
@@ -56,6 +50,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
     private final Consumer<TaskId, TaskState> consumer;
+    private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
@@ -66,35 +61,17 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private BackgroundTask runningTask = null;
 
     /**
-     * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
-     * to retrieve tasks and uses the given {@param storage} to store and retrieve information about tasks.
-     *
-     * @param engineID identifier of the engine this task runner is on
-     * @param storage a place to store and retrieve information about tasks.
-     * @param zookeeper a connection to the running zookeeper instance.
-     */
-
-    SingleQueueTaskRunner(EngineID engineID, TaskStateStorage storage, ZookeeperConnection zookeeper){
-        this.storage = storage;
-        this.engineID = engineID;
-
-        consumer = ConfigHelper.kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
-    }
-
-    /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
      *
      * @param engineID identifier of the engine this task runner is on
-     * @param storage a place to store and retrieve information about tasks.
-     * @param consumer a Kafka consumer from which to poll for tasks
+     * @param manager a place to control the lifecycle of tasks
      */
-    public SingleQueueTaskRunner(EngineID engineID,
-            TaskStateStorage storage, Consumer<TaskId, TaskState> consumer) {
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID){
+        this.manager = manager;
+        this.storage = manager.storage();
+        this.consumer = manager.newConsumer();
         this.engineID = engineID;
-        this.storage = storage;
-        this.consumer = consumer;
     }
 
     /**
@@ -193,7 +170,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             } finally {
                 runningTask = null;
                 runningTaskId = null;
-                storage.updateState(task);
+
+                //TODO Using "manager" here is only so that PMD will be happy
+                manager.storage().updateState(task);
             }
         }
     }

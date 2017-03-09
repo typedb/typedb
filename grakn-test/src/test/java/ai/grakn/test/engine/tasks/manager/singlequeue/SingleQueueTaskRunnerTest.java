@@ -21,6 +21,7 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
@@ -70,8 +71,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.*;
 
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
@@ -79,6 +79,7 @@ public class SingleQueueTaskRunnerTest {
     private static final EngineID engineID = EngineID.me();
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
+    private SingleQueueTaskManager mockedTM;
 
     private MockGraknConsumer<TaskId, TaskState> consumer;
     private TopicPartition partition;
@@ -96,10 +97,14 @@ public class SingleQueueTaskRunnerTest {
         consumer.assign(ImmutableSet.of(partition));
         consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
+
+        mockedTM = mock(SingleQueueTaskManager.class);
+        when(mockedTM.storage()).thenReturn(storage);
+        when(mockedTM.newConsumer()).thenReturn(consumer);
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(engineID, storage, consumer);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID);
 
         createValidQueue(tasks);
 
@@ -125,7 +130,6 @@ public class SingleQueueTaskRunnerTest {
 
     private void createValidQueue(List<List<TaskState>> tasks) {
         Set<TaskId> appearedTasks = Sets.newHashSet();
-        EngineID engineId = EngineID.me();
 
         tasks(tasks).forEach(task -> {
             TaskId taskId = task.getId();
