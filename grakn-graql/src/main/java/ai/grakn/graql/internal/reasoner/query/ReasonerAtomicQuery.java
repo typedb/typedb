@@ -63,7 +63,6 @@ import org.slf4j.LoggerFactory;
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
@@ -252,7 +251,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .forEach(queryToMaterialise::addAtom);
 
         return queryToMaterialise.materialiseDirect();
-        //return !queryToMaterialise.getMatchQuery().execute().isEmpty()? Stream.empty() : queryToMaterialise.materialiseDirect();
     }
 
     private Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom) {
@@ -327,9 +325,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .distinct();
 
         if (materialise || rule.requiresMaterialisation()) {
-            //cache.contains(ruleHead)? ruleHead.lazyLookup(cache);
             if (!cache.contains(ruleHead)) ruleHead.lookup(cache);
-            //ruleHead.lookup(dCache);
+            //filter known to make sure no duplicates are inserted (put behaviour)
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> known = cache.getInverseAnswerMap(ruleHead);
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> dknown = dCache.getInverseAnswerMap(ruleHead);
 

@@ -35,7 +35,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
 
@@ -70,7 +69,7 @@ public class QueryAnswerStream {
         return true;
     }
 
-    public static boolean knownFilterWithInverse(Map<VarName, Concept> answer, Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> stream2InverseMap) {
+    static boolean knownFilterWithInverse(Map<VarName, Concept> answer, Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> stream2InverseMap) {
         Iterator<Map.Entry<VarName, Concept>> eit = answer.entrySet().iterator();
         Map.Entry<VarName, Concept> entry = eit.next();
         Set<Map<VarName, Concept>> matchAnswers = findMatchingAnswers(entry.getKey(), entry.getValue(), stream2InverseMap);
@@ -86,7 +85,7 @@ public class QueryAnswerStream {
         return true;
     }
 
-    public static boolean nonEqualsFilter(Map<VarName, Concept> answer, Set<NotEquals> atoms) {
+    static boolean nonEqualsFilter(Map<VarName, Concept> answer, Set<NotEquals> atoms) {
         if(atoms.isEmpty()) return true;
         for (NotEquals atom : atoms) {
             if (!NotEquals.notEqualsOperator(answer, atom)) {
