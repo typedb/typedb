@@ -29,13 +29,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div v-bind:class="[selectedNodes.length!==2 ? 'dd-item' : 'dd-item active']" @click="emitExploreRelations">
             <span class="list-key">Explore relations</span>
         </div>
-        <div class="dd-header">Align nodes</div>
-        <div class="dd-item active" @click="alignHorizontally">
-            <span class="list-key">Horizontally</span>
-        </div>
-        <div class="dd-item active" @click="alignVertically">
-            <span class="list-key">Vertically</span>
-        </div>
     </div>
 </div>
 </template>
@@ -92,6 +85,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </style>
 
 <script>
+import EngineClient from '../../js/EngineClient';
+import User from '../../js/User';
 import QueryBuilder from '../../js/QueryBuilder';
 
 
@@ -129,63 +124,7 @@ export default {
         emitExploreRelations() {
             if (this.selectedNodes.length === 2)
                 this.$emit('type-query', QueryBuilder.exploreRelationsBuilder(this.selectedNodes));
-        },
-        alignHorizontally() {
-            this.$emit('close-context');
-            let previousNode = this.selectedNodes[0];
-            visualiser.nodes.update({
-                id: previousNode,
-                x: visualiser.rect.startX,
-                y: visualiser.rect.startY
-            });
-            for (let i = 1; i < this.selectedNodes.length; i++) {
-                const nodeId = this.selectedNodes[i];
-                visualiser.nodes.update({
-                    id: nodeId,
-                    x: this.computeXHorizontal(nodeId, previousNode),
-                    y: visualiser.rect.startY
-                });
-                previousNode = nodeId;
-            }
-        },
-        alignVertically() {
-            this.$emit('close-context');
-            let previousNode = this.selectedNodes[0];
-            visualiser.nodes.update({
-                id: previousNode,
-                x: visualiser.rect.startX,
-                y: visualiser.rect.startY
-            });
-            for (let i = 1; i < this.selectedNodes.length; i++) {
-                const nodeId = this.selectedNodes[i];
-                visualiser.nodes.update({
-                    id: nodeId,
-                    x: visualiser.rect.startX,
-                    y: this.computeYVertical(nodeId, previousNode),
-                });
-                previousNode = nodeId;
-            }
-        },
-        computeXHorizontal(nodeId, previousNode) {
-            const nodeSize = this.computeNodeWidth(nodeId);
-            const rightBorderX = visualiser.network.getBoundingBox(previousNode).right;
-            return rightBorderX + 1 + (nodeSize / 2);
-        },
-        computeNodeWidth(nodeId) {
-            const left = visualiser.network.getBoundingBox(nodeId).left;
-            const right = visualiser.network.getBoundingBox(nodeId).right;
-            return (left < 0) ? Math.abs(left) + right : right - left;
-        },
-        computeNodeHeight(nodeId) {
-            const top = visualiser.network.getBoundingBox(nodeId).top;
-            const bottom = visualiser.network.getBoundingBox(nodeId).bottom;
-            return (top < 0) ? Math.abs(top) + bottom : bottom - top;
-        },
-        computeYVertical(nodeId, previousNode) {
-            const nodeSize = this.computeNodeHeight(nodeId);
-            const bottomBorderY = visualiser.network.getBoundingBox(previousNode).bottom;
-            return bottomBorderY + 1 + (nodeSize / 2);
-        },
+        }
     }
 }
 </script>

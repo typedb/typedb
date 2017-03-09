@@ -20,7 +20,6 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.test.EngineContext;
@@ -205,7 +204,9 @@ public class VisualiserControllerTest {
     @Test
     public void testOntologyConceptHAL() {
 
-        Type protagonistType = graph.getType(TypeName.of("protagonist"));
+
+
+                Type protagonistType = graph.getType(TypeName.of("protagonist"));
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
                 .get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + protagonistType.getId().getValue())
@@ -224,7 +225,7 @@ public class VisualiserControllerTest {
 
         //check we are always attaching the correct keyspace
         String hrefLink = person.at("_links").at("self").at("href").asString();
-        Assert.assertEquals(true, hrefLink.contains(graph.getKeyspace()));
+        Assert.assertEquals(true, hrefLink.substring(hrefLink.indexOf("keyspace") + 9).equals(graph.getKeyspace()));
 
         Json embeddedType = person
                 .at("_embedded")
@@ -240,7 +241,7 @@ public class VisualiserControllerTest {
 
         //check we are always attaching the correct keyspace
         String hrefLink = person.at("_links").at("self").at("href").asString();
-        Assert.assertEquals(true, hrefLink.contains(graph.getKeyspace()));
+        Assert.assertEquals(true, hrefLink.substring(hrefLink.indexOf("keyspace") + 9).equals(graph.getKeyspace()));
     }
 
     private Json retrieveConceptById(String id) {
@@ -253,25 +254,6 @@ public class VisualiserControllerTest {
         checkHALStructureOfPersonWithoutEmbedded(samePerson, id);
 
         return samePerson;
-    }
-
-    @Test
-    public void retrieveConceptByIdWithOffsetAndLimit() {
-        Type personType = graph.getType(TypeName.of("person"));
-
-        Response response = with()
-                .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
-                .queryParam("offset", "0")
-                .queryParam("limit", "3")
-                .get(REST.WebPath.CONCEPT_BY_ID_URI + personType.getId())
-                .then().statusCode(200).extract().response().andReturn();
-        Json person = Json.read(response.getBody().asString());
-
-        String hrefLink = person.at("_links").at("self").at("href").asString();
-        Assert.assertEquals(true, hrefLink.contains("offset=3&limit=3"));
-        Assert.assertEquals(3, person.at("_embedded").at("isa").asList().size());
-        Assert.assertEquals(true, person.at("_embedded").at("isa").asJsonList().get(0).at("_links").at("self").at("href").asString().contains("offset=0&limit=3"));
-
     }
 
 
@@ -315,7 +297,7 @@ public class VisualiserControllerTest {
         assertEquals(message.at("_id").asString(), personType.getId().getValue());
         assertEquals(message.at("_name").asString(), "person");
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), message.at("_baseType").asString());
-        assertEquals(message.at("_links").at("self").at("href").asString(), "/graph/concept/" + graph.getType(TypeName.of("person")).getId().getValue() + "?keyspace=" + graph.getKeyspace()+"&offset=0");
+        assertEquals(message.at("_links").at("self").at("href").asString(), "/graph/concept/" + graph.getType(TypeName.of("person")).getId().getValue() + "?keyspace=" + graph.getKeyspace());
         assertEquals(60, message.at("_embedded").at("isa").asJsonList().size());
     }
 

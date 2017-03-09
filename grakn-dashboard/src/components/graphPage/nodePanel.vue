@@ -144,8 +144,8 @@ export default {
         addResourceNodeWithOwners(id) {
             EngineClient.request({
                 url: id,
-            }).then( (resp) => this.$emit('graph-response', resp),
-);
+                callback: (resp) => this.$emit('graph-response', resp),
+            });
         },
         closePanel(){
           this.$emit('close-node-panel');

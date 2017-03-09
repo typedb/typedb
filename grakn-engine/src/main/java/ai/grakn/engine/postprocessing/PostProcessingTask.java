@@ -52,19 +52,17 @@ public class PostProcessingTask implements BackgroundTask {
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      * @param configuration
      */
-    public boolean start(Consumer<String> saveCheckpoint, Json configuration) {
+    public void start(Consumer<String> saveCheckpoint, Json configuration) {
         long lastJob = cache.getLastTimeJobAdded();
         long currentTime = System.currentTimeMillis();
         LOG.info("Checking post processing should run: " + ((currentTime - lastJob) >= timeLapse));
         if((currentTime - lastJob) >= timeLapse) {
-            return postProcessing.run();
-        } else {
-            return true;
+            postProcessing.run();
         }
     }
 
-    public boolean stop() {
-        return postProcessing.stop();
+    public void stop() {
+        postProcessing.stop();
     }
 
     public void pause() {

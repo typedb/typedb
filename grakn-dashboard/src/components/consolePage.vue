@@ -55,13 +55,12 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     overflow-y: scroll;
     overflow-x: hidden;
 }
-
 .panel-body::-webkit-scrollbar {
     display: none;
 }
 
-pre {
-    width: 100%;
+pre{
+  width: 100%;
 }
 </style>
 
@@ -121,16 +120,11 @@ export default {
          */
         onClickSubmit(query) {
             this.errorMessage = undefined;
-            this.queryEngine(query);
+            EngineClient.graqlShell(query, this.shellResponse);
         },
         onLoadOntology() {
             const querySub = `match $x sub ${API.ROOT_CONCEPT};`;
-            this.queryEngine(querySub);
-        },
-        queryEngine(query){
-          EngineClient.graqlShell(query).then(this.shellResponse, (err) => {
-              this.state.eventHub.$emit('error-message', err.message);
-          });
+            EngineClient.graqlShell(querySub, this.shellResponse);
         },
         onClear() {
             this.graqlResponse = undefined;
@@ -143,10 +137,14 @@ export default {
          * EngineClient callbacks
          */
         shellResponse(resp, err) {
-            if (resp.length == 0) {
-                this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+            if (resp != null) {
+                if (resp.length==0) {
+                    this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+                } else {
+                    this.graqlResponse = Prism.highlight(resp, PLang);
+                }
             } else {
-                this.graqlResponse = Prism.highlight(resp, PLang);
+                this.state.eventHub.$emit('error-message', err);
             }
         },
 

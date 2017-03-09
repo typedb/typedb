@@ -18,14 +18,16 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.generator.TaskStates.NewTask;
+import ai.grakn.generator.TaskStates.Status;
+import ai.grakn.generator.TaskStates.UniqueIds;
 import ai.grakn.test.EngineContext;
-import com.google.common.collect.ImmutableList;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.AfterClass;
@@ -37,22 +39,13 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskFinishes;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskStarts;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -67,7 +60,9 @@ public class SingleQueueTaskManagerTest {
 
     @BeforeClass
     public static void setup(){
-        taskManager = new SingleQueueTaskManager(EngineID.me());
+        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(SingleQueueTaskManager.class)).setLevel(Level.DEBUG);
+        taskManager = new SingleQueueTaskManager(EngineID.of("me"));
     }
 
     @AfterClass
@@ -76,87 +71,15 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Before
-    public void clearAllTasks(){
-        clearTasks();
+    public void clearTasks(){
+        clearCompletedTasks();
     }
 
     @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@NewTask TaskState> tasks){
+    public void afterSubmitting_AllTasksAreCompleted(List<@UniqueIds @Status(CREATED) TaskState> tasks){
         tasks.forEach(taskManager::addTask);
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 
         assertEquals(completableTasks(tasks), completedTasks());
-    }
-
-    @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(@NewTask TaskState task, String requester) {
-        taskManager.stopTask(task.getId(), requester);
-
-        taskManager.addTask(task);
-
-        waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
-    }
-
-    @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(@NewTask TaskState task, String requester) {
-        taskManager.stopTask(task.getId(), requester);
-
-        taskManager.addTask(task);
-
-        waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
-
-        assertStatus(task, STOPPED);
-    }
-
-    @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(@NewTask TaskState task, String requester) {
-        whenTaskStarts(id -> taskManager.stopTask(id, requester));
-
-        taskManager.addTask(task);
-
-        waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
-
-        assertThat(completedTasks(), empty());
-        assertThat(cancelledTasks(), contains(task.getId()));
-    }
-
-    @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(@NewTask TaskState task, String requester) {
-        whenTaskStarts(id -> taskManager.stopTask(id, requester));
-
-        taskManager.addTask(task);
-
-        waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
-
-        assertStatus(task, STOPPED);
-    }
-
-    @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(@NewTask TaskState task, String requester) {
-        whenTaskFinishes(id -> taskManager.stopTask(id, requester));
-
-        taskManager.addTask(task);
-
-        waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
-
-        assertThat(cancelledTasks(), empty());
-    }
-
-    @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(@NewTask TaskState task, String requester) {
-        whenTaskFinishes(id -> taskManager.stopTask(id, requester));
-
-        taskManager.addTask(task);
-
-        waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
-
-        assertStatus(task, COMPLETED, FAILED);
-    }
-
-    private void assertStatus(TaskState task, TaskStatus... status) {
-        assertTrue("Task not in storage", taskManager.storage().containsTask(task.getId()));
-        assertThat(taskManager.storage().getState(task.getId()).status(), isOneOf(status));
     }
 }

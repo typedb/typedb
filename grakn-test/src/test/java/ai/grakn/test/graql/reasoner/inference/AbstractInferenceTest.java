@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore
+
 public class AbstractInferenceTest {
     private static QueryBuilder qb;
     private static QueryBuilder iqb;
@@ -47,6 +47,7 @@ public class AbstractInferenceTest {
 
     /**silently allows multiple isas*/
     @Test
+    @Ignore
     public void testQuery() {
         String queryString = "match $x isa Q;";
         String explicitQuery = "match " +
@@ -61,6 +62,7 @@ public class AbstractInferenceTest {
 
     /**silently allows multiple isas*/
     @Test
+    @Ignore
     public void testQuery2() {
         String queryString = "match " +
                         "$yy isa Q;$y isa P;($y, $yy) isa REL; select $yy";

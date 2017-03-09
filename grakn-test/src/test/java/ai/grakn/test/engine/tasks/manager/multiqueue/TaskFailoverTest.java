@@ -25,29 +25,30 @@ import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.zookeeper.CreateMode;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Ignore;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ZK_ENGINE_TASK_PATH;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.lang.String.format;
 import static java.util.Collections.singleton;
@@ -56,29 +57,46 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-@Ignore
 public class TaskFailoverTest {
 
     private static ZookeeperConnection connection;
     private static TaskFailover taskFailover;
     private static TaskStateInMemoryStore storage;
 
-    @Rule
-    public final EngineContext kafkaServer = EngineContext.startKafkaServer();
+    private static Thread failoverThread;
 
-    @Before
-    public void setup() throws Exception {
+    @ClassRule
+    public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
+
+    @BeforeClass
+    public static void setup() throws Exception {
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskFailover.class)).setLevel(Level.DEBUG);
+
         storage = new TaskStateInMemoryStore();
 
-        connection = new ZookeeperConnection();
+        connection = new ZookeeperConnection(client());
 
-        taskFailover = new TaskFailover(connection.connection(), storage);
+        CountDownLatch failoverStartup = new CountDownLatch(1);
+        failoverThread = new Thread(() -> {
+            try {
+                taskFailover = new TaskFailover(connection.connection(), storage);
+                failoverStartup.countDown();
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        });
+
+        failoverThread.start();
+        failoverStartup.await();
     }
 
-    @After
-    public void teardown() throws Exception {
+    @AfterClass
+    public static void teardown() throws Exception {
         taskFailover.close();
         connection.close();
+
+        failoverThread.interrupt();
+        failoverThread.join();
     }
 
     @Test
@@ -87,8 +105,9 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add some tasks to a fake task runner watch and storage, marked as running
-        Set<TaskState> tasks = createRunningTasks(5, fakeEngineID);
+        Set<TaskState> tasks = createTasks(5, RUNNING);
         tasks.forEach(storage::newState);
+        registerTasksInZKLikeTaskRunnerWould(fakeEngineID, tasks);
 
         // Mock killing that engine in ZK
         killFakeEngine(fakeEngineID);
@@ -111,14 +130,15 @@ public class TaskFailoverTest {
         registerFakeEngine(fakeEngineID);
 
         // Add a task in each state (SCHEDULED, COMPLETED, STOPPED, FAILED, RUNNING) to fake task runner watch
-        TaskState scheduled = createTask().markScheduled();
-        TaskState running = createTask().markRunning(fakeEngineID);
-        TaskState stopped = createTask().markStopped();
-        TaskState failed = createTask().markFailed(new IOException());
-        TaskState completed = createTask().markCompleted();
+        TaskState scheduled = createTask(SCHEDULED, TaskSchedule.now(), Json.object());
+        TaskState running = createTask(RUNNING, TaskSchedule.now(), Json.object());
+        TaskState stopped = createTask(STOPPED, TaskSchedule.now(), Json.object());
+        TaskState failed = createTask(FAILED, TaskSchedule.now(), Json.object());
+        TaskState completed = createTask(COMPLETED, TaskSchedule.now(), Json.object());
 
         Set<TaskState> tasks = Sets.newHashSet(scheduled, running, stopped, failed, completed);
         tasks.forEach(storage::newState);
+        registerTasksInZKLikeTaskRunnerWould(fakeEngineID, tasks);
 
         // Mock killing that engine
         killFakeEngine(fakeEngineID);
@@ -148,9 +168,12 @@ public class TaskFailoverTest {
         Json configuration = Json.object("configuration", true);
         Json checkpoint = Json.object("configuration", false);
 
-        TaskState running = createTask(ShortExecutionTestTask.class, TaskSchedule.now(), configuration).markRunning(fakeEngineID);
+        TaskState running = createTask(RUNNING, TaskSchedule.now(), configuration);
         running.checkpoint(checkpoint.toString());
         storage.newState(running);
+
+        // Add them to the task runner watch
+        registerTasksInZKLikeTaskRunnerWould(fakeEngineID, singleton(running));
 
         // Mock killing that engine
         killFakeEngine(fakeEngineID);
@@ -170,6 +193,16 @@ public class TaskFailoverTest {
                     .forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value()));
         }
         assertNotNull(connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value())));
+    }
+
+    private void registerTasksInZKLikeTaskRunnerWould(EngineID id, Set<TaskState> tasks) throws Exception{
+        tasks.forEach(t -> {
+            try {
+                connection.connection().create().creatingParentContainersIfNeeded().forPath(format(ZK_ENGINE_TASK_PATH, id.value(), t.getId().getValue()));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private void killFakeEngine(EngineID id) throws Exception {

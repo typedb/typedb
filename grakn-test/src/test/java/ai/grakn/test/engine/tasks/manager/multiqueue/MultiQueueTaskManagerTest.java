@@ -29,6 +29,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static junit.framework.TestCase.assertEquals;
@@ -52,7 +53,7 @@ public class MultiQueueTaskManagerTest {
     public void endToEndTest(){
         final int startCount = ShortExecutionTestTask.startedCounter.get();
 
-        Set<TaskState> tasks = createTasks(20);
+        Set<TaskState> tasks = createTasks(20, CREATED);
         tasks.forEach(manager::addTask);
 
         waitForStatus(manager.storage(), tasks, COMPLETED);

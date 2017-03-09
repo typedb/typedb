@@ -39,7 +39,7 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
-import spark.Service;
+import spark.Spark;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
@@ -49,6 +49,15 @@ import java.util.Set;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import static spark.Spark.awaitInitialization;
+import static spark.Spark.before;
+import static spark.Spark.exception;
+import static spark.Spark.halt;
+import static spark.Spark.ipAddress;
+import static spark.Spark.port;
+import static spark.Spark.staticFiles;
+import static spark.Spark.webSocket;
+import static spark.Spark.webSocketIdleTimeoutMillis;
 
 /**
  * Main class in charge to start a web server and all the REST controllers.
@@ -56,9 +65,10 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Marco Scoppetta
  */
 
-public class GraknEngineServer implements AutoCloseable {
+public class GraknEngineServer {
     private static final ConfigProperties prop = ConfigProperties.getInstance();
 
+    private static final EngineID ENGINE_ID = EngineID.me();
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
@@ -66,42 +76,27 @@ public class GraknEngineServer implements AutoCloseable {
             REST.WebPath.REMOTE_SHELL_URI,
             REST.WebPath.GRAPH_FACTORY_URI,
             REST.WebPath.IS_PASSWORD_PROTECTED_URI));
+
     public static final boolean isPasswordProtected = prop.getPropertyAsBool(ConfigProperties.PASSWORD_PROTECTED_PROPERTY);
+    private static TaskManager taskManager;
 
-    private final EngineID engineId = EngineID.me();
-    private final int port;
-    private final Service spark = Service.ignite();
-    private final TaskManager taskManager;
+    public static void main(String[] args) {
+        // close GraknEngineServer on SIGTERM
+        Thread closeThread = new Thread(GraknEngineServer::stop, "GraknEngineServer-shutdown");
+        Runtime.getRuntime().addShutdownHook(closeThread);
 
-    private GraknEngineServer(String taskManagerClass, int port) {
-        taskManager = startTaskManager(taskManagerClass);
-        this.port = port;
+        // Start Engine
+        start(prop.getProperty(TASK_MANAGER_IMPLEMENTATION));
+    }
+
+    public static void start(String taskManagerClass){
+        startTaskManager(taskManagerClass);
         startHTTP();
         startPostprocessing();
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
-    public static void main(String[] args) {
-        GraknEngineServer server = mainWithServer();
-
-        // close GraknEngineServer on SIGTERM
-        Thread closeThread = new Thread(server::close, "GraknEngineServer-shutdown");
-        Runtime.getRuntime().addShutdownHook(closeThread);
-    }
-
-    public static GraknEngineServer mainWithServer() {
-        // Start Engine
-        int port = prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER);
-        String taskManagerClass = prop.getProperty(TASK_MANAGER_IMPLEMENTATION);
-        return start(taskManagerClass, port);
-    }
-
-    public static GraknEngineServer start(String taskManagerClass, int port){
-        return new GraknEngineServer(taskManagerClass, port);
-    }
-
-    @Override
-    public void close() {
+    public static void stop() {
         stopHTTP();
         stopTaskManager();
     }
@@ -109,10 +104,10 @@ public class GraknEngineServer implements AutoCloseable {
     /**
      * Check in with the properties file to decide which type of task manager should be started
      */
-    private TaskManager startTaskManager(String taskManagerClassName) {
+    private static void startTaskManager(String taskManagerClassName) {
         try {
             Class<TaskManager> taskManagerClass = (Class<TaskManager>) Class.forName(taskManagerClassName);
-            return taskManagerClass.getConstructor(EngineID.class).newInstance(engineId);
+            taskManager = taskManagerClass.getConstructor(EngineID.class).newInstance(ENGINE_ID);
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException e) {
             throw new IllegalArgumentException("Invalid or unavailable TaskManager class", e);
         } catch (InvocationTargetException e) {
@@ -120,43 +115,43 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    public void startHTTP() {
+    public static void startHTTP() {
         // Set host name
-        spark.ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
+        ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
 
         // Set port
-        spark.port(port);
+        port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
 
         // Set the external static files folder
-        spark.staticFiles.externalLocation(prop.getPath(ConfigProperties.STATIC_FILES_PATH));
+        staticFiles.externalLocation(prop.getPath(ConfigProperties.STATIC_FILES_PATH));
 
         // Start the websocket for Graql
-        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
-        spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
+        webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
+        webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
         // Start all the controllers
-        new VisualiserController(spark);
-        new GraphFactoryController(spark);
-        new CommitLogController(spark);
-        new StatusController(spark);
-        new AuthController(spark);
-        new UserController(spark);
-        new TasksController(spark, taskManager);
+        new VisualiserController();
+        new GraphFactoryController();
+        new CommitLogController();
+        new StatusController();
+        new AuthController();
+        new UserController();
+        new TasksController(taskManager);
 
         //Register filter to check authentication token in each request
-        spark.before((req, res) -> checkAuthorization(req));
+        before((req, res) -> checkAuthorization(req));
 
         //Register Exception Handler
-        spark.exception(GraknEngineServerException.class, (e, request, response) -> {
+        exception(GraknEngineServerException.class, (e, request, response) -> {
             response.status(((GraknEngineServerException) e).getStatus());
             response.body("New exception: " + e.getMessage() + " - Please refer to grakn.log file for full stack trace.");
         });
 
         // This method will block until all the controllers are ready to serve requests
-        spark.awaitInitialization();
+        awaitInitialization();
     }
 
-    private void startPostprocessing(){
+    private static void startPostprocessing(){
         // Submit a recurring post processing task
         Duration interval = Duration.ofMillis(prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE));
         String creator = GraknEngineServer.class.getName();
@@ -164,15 +159,15 @@ public class GraknEngineServer implements AutoCloseable {
         taskManager.addTask(postprocessing);
     }
 
-    public void stopHTTP() {
-        spark.stop();
+    public static void stopHTTP() {
+        Spark.stop();
 
         // Block until server is truly stopped
         // This occurs when there is no longer a port assigned to the Spark server
         boolean running = true;
         while (running) {
             try {
-                spark.port();
+                port();
             }
             catch(IllegalStateException e){
                 LOG.debug("Spark server has been stopped");
@@ -181,7 +176,7 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    private void stopTaskManager() {
+    private static void stopTaskManager() {
         PostProcessing.getInstance().stop();
         try {
             taskManager.close();
@@ -190,11 +185,11 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    public TaskManager getTaskManager(){
+    public static TaskManager getTaskManager(){
         return taskManager;
     }
 
-    private void checkAuthorization(Request request) {
+    private static void checkAuthorization(Request request) {
         if(!isPasswordProtected) return;
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones
@@ -213,7 +208,7 @@ public class GraknEngineServer implements AutoCloseable {
                 throw new GraknEngineServerException(400, e);
             }
             if (!authenticated) {
-                spark.halt(401, "User not authenticated.");
+                halt(401, "User not authenticated.");
             }
         }
     }

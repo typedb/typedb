@@ -33,7 +33,7 @@ import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearCompletedTasks;
 
 /**
  * <p>
@@ -44,13 +44,10 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
  */
 public class EngineContext extends ExternalResource {
 
-    private GraknEngineServer server;
-
     private final boolean startKafka;
     private final boolean startMultiQueueEngine;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
-    private int port = 4567;
 
     private EngineContext(boolean startKafka, boolean startMultiQueueEngine, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startMultiQueueEngine = startMultiQueueEngine;
@@ -75,21 +72,12 @@ public class EngineContext extends ExternalResource {
         return new EngineContext(false, false, false, true);
     }
 
-    public EngineContext port(int port) {
-        this.port = port;
-        return this;
-    }
-
-    public GraknEngineServer server() {
-        return server;
-    }
-
     public TaskManager getTaskManager(){
-        return server.getTaskManager();
+        return GraknEngineServer.getTaskManager();
     }
 
     public GraknGraphFactory factoryWithNewKeyspace() {
-        return Grakn.factory("localhost:" + port, randomKeyspace());
+        return Grakn.factory(Grakn.DEFAULT_URI, randomKeyspace());
     }
 
     @Override
@@ -101,25 +89,25 @@ public class EngineContext extends ExternalResource {
         }
 
         if(startSingleQueueEngine){
-            server = startEngine(SingleQueueTaskManager.class.getName(), port);
+            startEngine(SingleQueueTaskManager.class.getName());
         }
 
         if (startMultiQueueEngine){
-            server = startEngine(MultiQueueTaskManager.class.getName(), port);
+            startEngine(MultiQueueTaskManager.class.getName());
         }
 
         if (startStandaloneEngine){
-            server = startEngine(StandaloneTaskManager.class.getName(), port);
+            startEngine(StandaloneTaskManager.class.getName());
         }
     }
 
     @Override
     public void after() {
-        clearTasks();
+        clearCompletedTasks();
 
         try {
             if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
-                stopEngine(server);
+                stopEngine();
             }
 
             if(startKafka){

@@ -32,20 +32,16 @@ public interface BackgroundTask {
      * Called to start execution of the task, may be called on a newly scheduled or previously stopped task.
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      *                       the task to resume from this point should it crash.
-     *
-     * @return true if the task successfully completed, or false if it was stopped.
      */
-    boolean start(Consumer<String> saveCheckpoint, Json configuration);
+    void start(Consumer<String> saveCheckpoint, Json configuration);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
      * Task should stop gracefully.
      *
-     * @return true if the task was successfully stopped, or false if it could not be stopped.
-     *
      * TODO: Should we allow start() to be called after stop()?
      */
-    boolean stop();
+    void stop();
 
     /**
      * Called to suspend the execution of a currently running task. The object may be destroyed after this call.

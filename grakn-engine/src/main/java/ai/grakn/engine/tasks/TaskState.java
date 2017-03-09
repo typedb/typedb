@@ -26,14 +26,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
 
-import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static java.time.Instant.now;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
@@ -54,6 +47,10 @@ public class TaskState implements Serializable {
      * Time when task status was last updated.
      */
     private Instant statusChangeTime;
+    /**
+     * String identifying who last updated task status.
+     */
+    private String statusChangedBy;
     /**
      * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
      */
@@ -82,29 +79,23 @@ public class TaskState implements Serializable {
     /**
      * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
      */
-    private Json configuration;
+    private @Nullable Json configuration;
 
-    public static TaskState of(TaskId id) {
-        // TODO: Figure out a nicer way than all these nulls...
-        // This method is necessary in order to stop tasks that haven't been added to storage yet
-        return new TaskState(null, null, null, null, id);
-    }
-
-    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration) {
-        return of(taskClass, creator, schedule, configuration, TaskId.generate());
+    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration) {
+        return new TaskState(taskClass, creator, schedule, configuration, TaskId.generate());
     }
 
     public static TaskState of(
-            Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
+            Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
         return new TaskState(taskClass, creator, schedule, configuration, id);
     }
 
-    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
-        this.status = CREATED;
-        this.statusChangeTime = now();
-        this.taskClassName = taskClass != null ? taskClass.getName() : null;
-        this.creator = creator;
-        this.schedule = schedule;
+    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, @Nullable Json configuration, TaskId id) {
+        this.status = TaskStatus.CREATED;
+        this.statusChangeTime = Instant.now();
+        this.taskClassName = taskClass.getName();
+        this.creator = requireNonNull(creator);
+        this.schedule = requireNonNull(schedule);
         this.configuration = configuration;
         this.taskId = id.getValue();
     }
@@ -113,6 +104,7 @@ public class TaskState implements Serializable {
         this.taskId = taskState.taskId;
         this.status = taskState.status;
         this.statusChangeTime = taskState.statusChangeTime;
+        this.statusChangedBy = taskState.statusChangedBy;
         this.taskClassName = taskState.taskClassName;
         this.creator = taskState.creator;
         this.engineID = taskState.engineID;
@@ -127,39 +119,9 @@ public class TaskState implements Serializable {
         return TaskId.of(taskId);
     }
 
-    public TaskState markRunning(EngineID engineID){
-        this.status = RUNNING;
-        this.engineID = engineID;
-        this.statusChangeTime = now();
-        return this;
-    }
-
-    public TaskState markCompleted(){
-        this.status = COMPLETED;
-        this.engineID = null;
-        this.statusChangeTime = now();
-        return this;
-    }
-
-    public TaskState markScheduled(){
-        this.status = SCHEDULED;
-        this.statusChangeTime = now();
-        return this;
-    }
-
-    public TaskState markStopped(){
-        this.status = STOPPED;
-        this.engineID = null;
-        this.statusChangeTime = now();
-        return this;
-    }
-
-    public TaskState markFailed(Throwable exception){
-        this.status = FAILED;
-        this.engineID = null;
-        this.exception = exception.getClass().getName();
-        this.stackTrace = getFullStackTrace(exception);
-        this.statusChangeTime = now();
+    public TaskState status(TaskStatus status) {
+        this.status = status;
+        this.statusChangeTime = Instant.now();
         return this;
     }
 
@@ -169,6 +131,15 @@ public class TaskState implements Serializable {
 
     public Instant statusChangeTime() {
         return statusChangeTime;
+    }
+
+    public TaskState statusChangedBy(String statusChangedBy) {
+        this.statusChangedBy = statusChangedBy;
+        return this;
+    }
+
+    public String statusChangedBy() {
+        return statusChangedBy;
     }
 
     public Class<? extends BackgroundTask> taskClass() {
@@ -183,6 +154,11 @@ public class TaskState implements Serializable {
         return creator;
     }
 
+    public TaskState engineID(EngineID engineID) {
+        this.engineID = engineID;
+        return this;
+    }
+
     public EngineID engineID() {
         return engineID;
     }
@@ -191,8 +167,18 @@ public class TaskState implements Serializable {
         return schedule;
     }
 
+    public TaskState stackTrace(String stackTrace) {
+        this.stackTrace = stackTrace;
+        return this;
+    }
+
     public String stackTrace() {
         return stackTrace;
+    }
+
+    public TaskState exception(String exceptionMessage) {
+        this.exception = exceptionMessage;
+        return this;
     }
 
     public String exception() {

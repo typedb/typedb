@@ -69,7 +69,7 @@ public class HALConceptRepresentationBuilder {
     private final static String NAME_PROPERTY = "_name";
 
 
-    public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace, int offset, int limit) {
+    public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace) {
 
         //Stores connections between variables in Graql result [varName:List<VarAdmin> (only VarAdmins that contain a relation)]
         Map<VarName, Collection<VarAdmin>> linkedNodes =  computeLinkedNodesFromQuery(matchQuery);
@@ -81,18 +81,18 @@ public class HALConceptRepresentationBuilder {
         Set<TypeName> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
 
 
-        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, roleTypes, keyspace, offset, limit);
+        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, roleTypes, keyspace);
     }
 
-    public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace, int offset, int limit) {
-        return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset,limit).render();
+    public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace) {
+        return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace).render();
     }
 
     public static String renderHALConceptOntology(Concept concept, String keyspace) {
         return new HALConceptOntology(concept, keyspace).render();
     }
 
-    private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
+    private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace) {
         final Json lines = Json.array();
         graqlResultsList.forEach(resultLine -> resultLine.entrySet().forEach(current -> {
 
@@ -100,7 +100,7 @@ public class HALConceptRepresentationBuilder {
 
             LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId().getValue());
             Representation currentHal = new HALConceptData(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
-                    typesAskedInQuery, keyspace, offset, limit).getRepresentation();
+                    typesAskedInQuery, keyspace).getRepresentation();
             attachGeneratedRelations(currentHal, current, linkedNodes, resultLine, roleTypes, keyspace);
             lines.add(Json.read(currentHal.toString(RepresentationFactory.HAL_JSON)));
 

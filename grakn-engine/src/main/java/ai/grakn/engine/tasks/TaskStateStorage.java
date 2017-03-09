@@ -19,7 +19,6 @@
 package ai.grakn.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 
 import java.util.Set;
@@ -79,7 +78,6 @@ public interface TaskStateStorage {
      * @param taskStatus See TaskStatus enum.
      * @param taskClassName String containing task class name. See TaskState.
      * @param createdBy String containing created by. See TaskState.
-     * @param runningOnEngine Engine that the task is running on.
      * @param limit Limit the returned result set to @limit amount of entries.
      * @param offset Use in conjunction with @limit for pagination.
      * @return Set<TaskState> of TaskStates corresponding to search
@@ -87,7 +85,6 @@ public interface TaskStateStorage {
     Set<TaskState> getTasks(TaskStatus taskStatus,
                                           String taskClassName,
                                           String createdBy,
-                                          EngineID runningOnEngine,
                                           int limit,
                                           int offset);
 }

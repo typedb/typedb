@@ -41,14 +41,15 @@ let authNeeded;
 const checkIfAuthNeeded = function contactEngine(next) {
   EngineClient.request({
     url: '/auth/enabled/',
-  }).then((result) => {
-    authNeeded = (result === 'true');
-    if (authNeeded === false) {
-      next();
-    } else {
-      next('/login');
-    }
-  }, () => {});
+    callback: (resp, error) => {
+      authNeeded = resp;
+      if (authNeeded) {
+        next('/login');
+      } else {
+        next();
+      }
+    },
+  });
 };
 
 // Middleware to ensure the user is authenticated when needed.

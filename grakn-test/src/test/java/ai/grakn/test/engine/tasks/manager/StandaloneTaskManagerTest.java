@@ -21,11 +21,13 @@ package ai.grakn.test.engine.tasks.manager;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import mjson.Json;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,6 +40,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -60,7 +63,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunSingle() {
-        TaskState task = createTask();
+        TaskState task = createTask(CREATED, TaskSchedule.now(), Json.object());
         taskManager.addTask(task);
 
         // Wait for task to be executed.
@@ -89,7 +92,7 @@ public class StandaloneTaskManagerTest {
         // Schedule tasks
         List<TaskId> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
-            TaskState task = createTask();
+            TaskState task = createTask(CREATED, TaskSchedule.now(), Json.object());
             taskManager.addTask(task);
             ids.add(task.getId());
         }
@@ -115,7 +118,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunRecurring() throws Exception {
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(now().plusSeconds(10), Duration.ofSeconds(100)));
+        TaskState task = createTask(CREATED, recurring(now().plusSeconds(10), Duration.ofSeconds(100)), Json.object());
         taskManager.addTask(task);
 
         Thread.sleep(2000);
@@ -128,7 +131,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testStopSingle() {
-        TaskState task = createTask(ShortExecutionTestTask.class, at(now().plusSeconds(10)));
+        TaskState task = createTask(CREATED, at(now().plusSeconds(10)), Json.object());
         taskManager.addTask(task);
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();

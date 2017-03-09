@@ -22,7 +22,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="graph-panel-body">
         <div v-on:contextmenu="customContextMenu" v-on:mousemove="updateRectangle" id="graph-div" ref="graph"></div>
         <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeOntologyProps="allNodeOntologyProps" :allNodeLinks="allNodeLinks" :selectedNodeLabel="selectedNodeLabel" v-on:graph-response="onGraphResponse" v-on:close-node-panel="showNodePanel=false"></node-panel>
-        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false"></context-menu>
+        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery"></context-menu>
         <node-tool-tip :showToolTip="showToolTip" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop"></node-tool-tip>
         <footer-bar></footer-bar>
     </div>
@@ -48,7 +48,6 @@ import HALParser, {
 } from '../../js/HAL/HALParser';
 import * as API from '../../js/util/HALTerms';
 import EngineClient from '../../js/EngineClient';
-import User from '../../js/User';
 import Visualiser from '../../js/visualiser/Visualiser';
 import GraphPageState from '../../js/state/graphPageState';
 
@@ -88,13 +87,13 @@ export default {
     created() {
         window.visualiser = new Visualiser();
 
-        visualiser.setCallbackOnEvent('click', this.singleClick);
-        visualiser.setCallbackOnEvent('doubleClick', this.doubleClick);
-        visualiser.setCallbackOnEvent('oncontext', this.rightClick);
-        visualiser.setCallbackOnEvent('hold', this.holdOnNode);
-        visualiser.setCallbackOnEvent('hoverNode', this.hoverNode);
-        visualiser.setCallbackOnEvent('blurNode', this.blurNode);
-        visualiser.setCallbackOnEvent('dragStart', this.onDragStart);
+        visualiser.setCallbackOnEvent('click',this.singleClick);
+        visualiser.setCallbackOnEvent('doubleClick',this.doubleClick);
+        visualiser.setCallbackOnEvent('oncontext',this.rightClick);
+        visualiser.setCallbackOnEvent('hold',this.holdOnNode);
+        visualiser.setCallbackOnEvent('hoverNode',this.hoverNode);
+        visualiser.setCallbackOnEvent('blurNode',this.blurNode);
+        visualiser.setCallbackOnEvent('dragStart',this.onDragStart);
 
         this.halParser = new HALParser();
 
@@ -132,11 +131,9 @@ export default {
             visualiser.updateRectangle(e.pageX, e.pageY - this.graphOffsetTop);
         },
 
-        onLoadOntology(type) {
-            const querySub = `match $x sub ${type};`;
-            EngineClient.graqlHAL(querySub).then(this.onGraphResponse, (err) => {
-                this.state.eventHub.$emit('error-message', err.message);
-            });
+        onLoadOntology() {
+            const querySub = `match $x sub ${API.ROOT_CONCEPT};`;
+            EngineClient.graqlHAL(querySub, this.onGraphResponse);
         },
         onClickSubmit(query) {
             if (query.includes('aggregate')) {
@@ -146,20 +143,16 @@ export default {
             }
 
             if (query.trim().startsWith('compute')) {
-                EngineClient.graqlAnalytics(query).then(this.onGraphResponseAnalytics, (err) => {
-                    this.state.eventHub.$emit('error-message', err.message);
-                });
+                EngineClient.graqlAnalytics(query, this.onGraphResponseAnalytics);
             } else {
                 let queryToExecute = query.trim();
 
                 if (!(query.includes('offset')) && !(query.includes('delete')))
                     queryToExecute = queryToExecute + ' offset 0;';
                 if (!(query.includes('limit')) && !(query.includes('delete')))
-                    queryToExecute = queryToExecute + ' limit '+User.getQueryLimit()+';';
+                    queryToExecute = queryToExecute + ' limit 100;';
                 this.emitInjectQuery(queryToExecute);
-                EngineClient.graqlHAL(queryToExecute).then(this.onGraphResponse, (err) => {
-                    this.state.eventHub.$emit('error-message', err.message);
-                });
+                EngineClient.graqlHAL(queryToExecute, this.onGraphResponse);
             }
         },
         emitInjectQuery(query) {
@@ -206,37 +199,29 @@ export default {
         configureNode(nodeType, selectedProps) {
             visualiser.setDisplayProperties(nodeType, selectedProps);
         },
-        onGraphResponseAnalytics(resp) {
-            if (resp.type === 'string') {
-                this.state.eventHub.$emit('analytics-string-response', resp.response);
-            } else {
-                this.halParser.parseResponse(resp.response, false);
-                visualiser.fitGraphToWindow();
-            }
-        },
 
-        onGraphResponse(resp, nodeId) {
-            const responseObject = JSON.parse(resp);
-            if (!this.halParser.parseResponse(responseObject, false)) {
-                this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
-            } else {
-                // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
-                // which will contain a new value for offset
-                if (nodeId) {
-                    visualiser.nodes.update({
-                        id: nodeId,
-                        href: responseObject._links.self.href,
-                    });
+        onGraphResponseAnalytics(resp, err) {
+            if (resp != null) {
+                if (resp.type === 'string') {
+                    this.state.eventHub.$emit('analytics-string-response', resp.response);
+                } else {
+                    this.halParser.parseResponse(resp.response);
+                    visualiser.fitGraphToWindow();
                 }
+            } else {
+                this.state.eventHub.$emit('error-message', err);
             }
-            visualiser.fitGraphToWindow();
         },
 
-        onGraphResponseOntology(resp, err) {
-            if (!this.halParser.parseResponse(JSON.parse(resp),true)) {
-                this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+        onGraphResponse(resp, err) {
+            if (resp != null) {
+                if (!this.halParser.parseResponse(resp)) {
+                    this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+                }
+                visualiser.fitGraphToWindow();
+            } else {
+                this.state.eventHub.$emit('error-message', err);
             }
-            visualiser.fitGraphToWindow();
         },
 
         onClear() {
@@ -270,8 +255,7 @@ export default {
                 if (visualiser.nodes._data[node].ontology) {
                     EngineClient.request({
                         url: visualiser.nodes._data[node].ontology,
-                    }).then(this.onGraphResponseOntology, (err) => {
-                        this.state.eventHub.$emit('error-message', err.message);
+                        callback: this.onGraphResponse,
                     });
                 }
             } else {
@@ -284,9 +268,9 @@ export default {
                 EngineClient.request({
                     url: visualiser.getNode(node).href,
                     appendReasonerParams: generatedNode,
-                }).then((resp) => this.onGraphResponse(resp, node), (err) => {
-                    this.state.eventHub.$emit('error-message', err.message);
+                    callback: this.onGraphResponse,
                 });
+
                 if (generatedNode) {
                     visualiser.deleteNode(node);
                 }
@@ -315,12 +299,12 @@ export default {
         },
         leftClick(param) {
 
-            // TODO: handle multiselect properly now that is enabled.
+            // As multiselect is disabled, there will only ever be one node.
             const node = param.nodes[0];
             const eventKeys = param.event.srcEvent;
             const clickType = param.event.type;
 
-            // If it is a long press on node: return and onHold() method will handle the event.
+            // If it is a long press on node: return
             if (clickType !== 'tap') {
                 return;
             }
@@ -332,27 +316,23 @@ export default {
                 return;
             }
 
-            const nodeObj = visualiser.getNode(node);
 
             if (eventKeys.altKey) {
-                // If alt key is pressed we load ontology related to the current node
-                if (nodeObj.ontology) {
+                if (visualiser.nodes._data[node].ontology) {
                     EngineClient.request({
                         url: visualiser.nodes._data[node].ontology,
-                    }).then(this.onGraphResponseOntology, (err) => {
-                        this.state.eventHub.$emit('error-message', err.message);
+                        callback: this.onGraphResponse,
                     });
                 }
             } else {
-
-                // Show node properties on node panel.
+                const props = visualiser.getNode(node);
                 this.allNodeOntologyProps = {
-                    id: nodeObj.id,
-                    type: nodeObj.type,
-                    baseType: nodeObj.baseType,
+                    id: props.id,
+                    type: props.type,
+                    baseType: props.baseType,
                 };
 
-                this.allNodeResources = this.prepareResources(nodeObj.properties);
+                this.allNodeResources = this.prepareResources(props.properties);
                 this.selectedNodeLabel = visualiser.getNodeLabel(node);
 
                 this.showNodePanel = true;
@@ -385,23 +365,11 @@ export default {
             }
         },
 
-        onDragStart(params) {
-           const eventKeys = params.event.srcEvent;
-           visualiser.draggingNode = true;
-           this.showToolTip = false;
-           //If ctrl key is pressed while dragging node/nodes we also unlock and drag the connected nodes
-           if(eventKeys.ctrlKey){
-             let neighbours = [];
-             params.nodes.forEach(node=>{
-               neighbours.push.apply(neighbours,visualiser.network.getConnectedNodes(node));
-               neighbours.push(node);
-             });
-             visualiser.network.selectNodes(neighbours);
-             visualiser.releaseNodes(neighbours);
-           }else{
-             visualiser.releaseNodes(params.nodes);
-           }
-       },
+        onDragStart(params){
+          visualiser.draggingNode = true;
+          this.showToolTip = false;
+          visualiser.releaseNodes(params.nodes);
+        },
 
         // ----- End of graph interactions ------- //
     },

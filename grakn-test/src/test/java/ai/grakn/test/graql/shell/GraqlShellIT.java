@@ -73,8 +73,7 @@ public class GraqlShellIT {
     private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
-    private static final ImmutableList<String> keyspaces =
-            ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar", "batch");
+    private static final ImmutableList<String> keyspaces = ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar");
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -503,17 +502,6 @@ public class GraqlShellIT {
                 containsString("$x"),
                 containsString("$y"),
                 is("1")
-        );
-    }
-
-    @Test
-    public void whenRunningBatchLoad_LoadCompletes() throws Exception {
-        testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
-        testShell("", "-k", "batch", "-b", "src/test/graql/batch-test.gql");
-
-        assertShellMatches(ImmutableList.of("-k", "batch"),
-                "match $x isa movie; ask;",
-                containsString("True")
         );
     }
 

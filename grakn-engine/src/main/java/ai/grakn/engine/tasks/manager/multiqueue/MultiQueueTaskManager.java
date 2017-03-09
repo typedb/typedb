@@ -25,13 +25,14 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
@@ -46,12 +47,12 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public final class MultiQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskManager.class);
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
 
     private final Producer<TaskId, TaskState> producer;
+
     private final SchedulerElector elector;
-    private final ZookeeperConnection zookeeper;
-    private final TaskStateStorage storage;
+    private final ZookeeperConnection connection;
+    private final TaskStateStorage stateStorage;
 
     private static final String TASKRUNNER_THREAD_NAME = "taskrunner-";
     private final EngineID engineId;
@@ -60,14 +61,14 @@ public final class MultiQueueTaskManager implements TaskManager {
 
     public MultiQueueTaskManager(EngineID engineId) {
         this.engineId = engineId;
-        this.zookeeper = new ZookeeperConnection();
-        this.storage = chooseStorage(properties, zookeeper);
+        connection = new ZookeeperConnection(client());
+        stateStorage = new TaskStateZookeeperStore(connection);
 
         // run the TaskRunner in a thread
         startTaskRunner();
 
         // Elect the scheduler or add yourself to the scheduler pool
-        elector = new SchedulerElector(storage, zookeeper);
+        elector = new SchedulerElector(stateStorage, connection);
 
         this.producer = ConfigHelper.kafkaProducer();
     }
@@ -87,7 +88,7 @@ public final class MultiQueueTaskManager implements TaskManager {
         noThrow(taskRunnerThread::join, "Error waiting for TaskRunner to close");
 
         // stop zookeeper connection
-        noThrow(zookeeper::close, "Error waiting for zookeeper connection to close");
+        noThrow(connection::close, "Error waiting for zookeeper connection to close");
 
         LOG.debug("TaskManager closed");
     }
@@ -99,13 +100,13 @@ public final class MultiQueueTaskManager implements TaskManager {
     }
 
     @Override
-    public void stopTask(TaskId id, String requesterName) {
+    public TaskManager stopTask(TaskId id, String requesterName) {
         throw new UnsupportedOperationException(this.getClass().getName() + " currently doesn't support stopping tasks");
     }
 
     @Override
     public TaskStateStorage storage() {
-        return storage;
+        return stateStorage;
     }
 
     /**
@@ -116,7 +117,7 @@ public final class MultiQueueTaskManager implements TaskManager {
      *        handler that will restart the task runner if any unchecked exception is thrown.
      */
     private void startTaskRunner(){
-        multiQueueTaskRunner = new MultiQueueTaskRunner(engineId, storage, zookeeper);
+        multiQueueTaskRunner = new MultiQueueTaskRunner(engineId, stateStorage, connection);
         taskRunnerThread = new Thread(multiQueueTaskRunner, TASKRUNNER_THREAD_NAME + multiQueueTaskRunner.hashCode());
         taskRunnerThread.setUncaughtExceptionHandler(new TaskRunnerResurrection());
         taskRunnerThread.start();

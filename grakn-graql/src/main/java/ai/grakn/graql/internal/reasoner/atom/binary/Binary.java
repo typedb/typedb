@@ -47,7 +47,7 @@ public abstract class Binary extends BinaryBase {
     protected Binary(VarAdmin pattern, IdPredicate p, ReasonerQuery par) {
         super(pattern, par);
         this.predicate = p;
-        this.typeId = extractTypeId();
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
     protected Binary(Binary a) {
@@ -56,7 +56,7 @@ public abstract class Binary extends BinaryBase {
         this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
     }
 
-    protected abstract ConceptId extractTypeId();
+    protected abstract ConceptId extractTypeId(VarAdmin var);
 
     @Override
     public PatternAdmin getCombinedPattern() {

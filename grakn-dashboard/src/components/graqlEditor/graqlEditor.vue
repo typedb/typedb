@@ -28,7 +28,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="graqlEditor-wrapper">
                 <textarea ref="graqlEditor" class="form-control" rows="3" placeholder=">>"></textarea>
                 <div class="types-wrapper">
-                    <types-panel :typeInstances="typeInstances" :showTypeInstances="showTypeInstances" v-on:type-query="typeQuery" v-on:load-ontology="(type)=>state.eventHub.$emit('load-ontology',type)"></types-panel>
+                    <types-panel :typeInstances="typeInstances" :showTypeInstances="showTypeInstances" v-on:type-query="typeQuery" v-on:load-ontology="state.eventHub.$emit('load-ontology')"></types-panel>
                 </div>
                 <message-panel :showMessagePanel="showMessagePanel" :message="message" v-on:close-message="showMessagePanel=false"></message-panel>
             </div>
@@ -129,6 +129,7 @@ export default {
     data: function() {
         return {
             graqlResponse: undefined,
+            engineClient: {},
             typeInstances: false,
             codeMirror: {},
             currentQuery: undefined,
@@ -214,9 +215,9 @@ export default {
             this.$refs.savedQueries.refreshList();
         },
         loadMetaTypeInstances() {
-            EngineClient.getMetaTypes().then(x => {
+            EngineClient.getMetaTypes(x => {
                 if (x != null) {
-                    this.typeInstances = JSON.parse(x);
+                    this.typeInstances = x;
                 }
             });
         },
@@ -235,11 +236,11 @@ export default {
             //set the panel class to be an error class
         },
         runQuery(ev) {
-            let query = this.codeMirror.getValue().trim();
+            let query = this.codeMirror.getValue();
             this.showMessagePanel = false;
 
             // Empty query.
-            if (query == undefined || query.length === 0)
+            if (query == undefined || query.trim().length === 0)
                 return;
 
             // Add trailing semi-colon

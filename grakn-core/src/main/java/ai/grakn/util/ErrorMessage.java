@@ -202,7 +202,6 @@ public enum ErrorMessage {
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms"),
     GRAQL_PROPERTY_NOT_MAPPED("Graql property [%s] could not be mapped"),
-    CANNOT_CREATE_IDPREDICATE("Cannot create IdPredicate - type [%s] doesn't exist in the graph"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     NO_SOURCE("No valid source id provided"),

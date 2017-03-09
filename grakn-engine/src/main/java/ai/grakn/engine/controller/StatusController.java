@@ -25,13 +25,14 @@ import io.swagger.annotations.ApiOperation;
 import mjson.Json;
 import spark.Request;
 import spark.Response;
-import spark.Service;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.Enumeration;
 import java.util.Properties;
+
+import static spark.Spark.get;
 
 /**
  * <p>
@@ -45,8 +46,8 @@ import java.util.Properties;
 @Produces({"application/json"})
 public class StatusController {
 
-    public StatusController(Service spark) {
-        spark.get(REST.WebPath.GET_STATUS_CONFIG_URI, this::getStatus);
+    public StatusController() {
+        get(REST.WebPath.GET_STATUS_CONFIG_URI, this::getStatus);
     }
 
     @GET

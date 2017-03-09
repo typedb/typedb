@@ -34,10 +34,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
-import spark.Service;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+
+import static spark.Spark.delete;
+import static spark.Spark.post;
 
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
@@ -48,9 +50,9 @@ public class CommitLogController {
     private final EngineCache cache = EngineCache.getInstance();
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
-    public CommitLogController(Service spark){
-        spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
-        spark.delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
+    public CommitLogController(){
+        post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
+        delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }
 
 

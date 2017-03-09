@@ -44,7 +44,7 @@ public class TypeAtom extends Binary{
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
-    protected ConceptId extractTypeId() {
+    protected ConceptId extractTypeId(VarAdmin var) {
         return getPredicate() != null? getPredicate().getPredicate() : null;
     }
 

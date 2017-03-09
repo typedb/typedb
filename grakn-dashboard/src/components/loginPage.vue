@@ -89,7 +89,7 @@ export default {
          * Listener methods on emit from GraqlEditor
          */
         submit() {
-            User.newSession(this.credentials).then(this.onLoginResponse);
+            User.newSession(this.credentials, this.onLoginResponse);
         },
         onLoginResponse(res, err) {
             if (res != null) {

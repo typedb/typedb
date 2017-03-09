@@ -25,6 +25,7 @@ import ai.grakn.client.LoaderClient;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
@@ -102,8 +103,8 @@ public class LoaderClientTest {
             loader.add(query);
 
             if(i%5 == 0) {
-                engine.server().stopHTTP();
-                engine.server().startHTTP();
+                GraknEngineServer.stopHTTP();
+                GraknEngineServer.startHTTP();
             }
         }
 
@@ -136,8 +137,8 @@ public class LoaderClientTest {
             loader.add(query);
 
             if(i%5 == 0) {
-                engine.server().stopHTTP();
-                engine.server().startHTTP();
+                GraknEngineServer.stopHTTP();
+                GraknEngineServer.startHTTP();
             }
         }
 

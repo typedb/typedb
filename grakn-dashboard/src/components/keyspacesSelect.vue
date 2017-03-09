@@ -86,6 +86,7 @@ export default {
     data() {
         return {
             keyspaces: [],
+            engineClient: {},
             currentKeyspace: User.getCurrentKeySpace(),
             showList: false,
             state: undefined,
@@ -103,7 +104,7 @@ export default {
     },
     mounted: function() {
         this.$nextTick(function() {
-            EngineClient.fetchKeyspaces().then((res, err) => {
+            EngineClient.fetchKeyspaces((res, err) => {
                 let list = JSON.parse(res);
                 let currentKeyspace = User.getCurrentKeySpace();
                 for (let i = 0; i < list.length; i++) {
@@ -122,6 +123,9 @@ export default {
                     this.state = GraphPageState;
                     break;
             }
+        },
+        submit() {
+            User.newSession(this.credentials);
         },
         setKeySpace(name) {
             User.setCurrentKeySpace(name);

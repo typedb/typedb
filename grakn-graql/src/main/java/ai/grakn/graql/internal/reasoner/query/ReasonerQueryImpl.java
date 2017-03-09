@@ -491,14 +491,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
             join = Stream.concat(join, subs);
         }
-        return join;
+        return join.distinct();
     }
 
     Stream<Answer> computeJoin(Set<ReasonerAtomicQuery> subGoals,
-                               Cache<ReasonerAtomicQuery, ?> cache,
-                               Cache<ReasonerAtomicQuery, ?> dCache,
-                               boolean materialise,
-                               boolean differentialJoin) {
+                                                                      Cache<ReasonerAtomicQuery, ?> cache,
+                                                                      Cache<ReasonerAtomicQuery, ?> dCache,
+                                                                      boolean materialise,
+                                                                      boolean differentialJoin) {
         Stream<Answer> join = differentialJoin?
                 differentialJoin(subGoals, cache, dCache, materialise) : fullJoin(subGoals, cache, dCache, materialise);
 

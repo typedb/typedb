@@ -18,32 +18,25 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <template>
 <transition name="slideInDown" appear>
-    <div v-if="showTypeInstances" class="types-panel">
-        <div class="tabs-row z-depth-1">
-            <button @click="$emit('load-ontology','concept')" class="btn">Ontology</button>
-            <div class="inline-div">
-              <button @click="$emit('load-ontology','entity')" class="btn norightmargin">Entities</button>
-              <button @click="updateCurrentTab('entities')" :class="{'active':currentTab==='entities'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
+        <div v-if="showTypeInstances" class="types-panel">
+            <div class="tabs-row z-depth-1">
+              <button @click="$emit('load-ontology')" class="btn">Visualise</button>
+                <ul class="nav-tabs">
+                    <li v-for="k in Object.keys(typeInstances)">
+                        <a @click="updateCurrentTab(k)" v-bind:class="[currentTab===k ? 'active noselect' : 'noselect']">{{k[0].toUpperCase() + k.slice(1)}}</a>
+                    </li>
+                </ul>
             </div>
-            <div class="inline-div">
-              <button @click="$emit('load-ontology','resource')" class="btn norightmargin">Resources</button>
-              <button @click="updateCurrentTab('resources')" :class="{'active':currentTab==='resources'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
-            </div>
-            <div class="inline-div">
-              <button @click="$emit('load-ontology','relation')" class="btn norightmargin">Relations</button>
-              <button @click="updateCurrentTab('relations')" :class="{'active':currentTab==='relations'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
-            </div>
-        </div>
-        <transition name="fade-in" v-for="k in Object.keys(typeInstances)">
-            <div v-bind:id="k+'-tab'" class="tab-pane" v-show="currentTab===k">
-                <div v-bind:class="k+'-group concepts-group'">
-                    <div v-for="i in typeInstances[k]">
-                        <button @click="$emit('type-query',k, i)" class="btn btn-link">{{i}}</button>
+            <transition name="fade-in" v-for="k in Object.keys(typeInstances)">
+                <div v-bind:id="k+'-tab'" class="tab-pane" v-show="currentTab===k">
+                    <div v-bind:class="k+'-group concepts-group'">
+                        <div v-for="i in typeInstances[k]">
+                            <button @click="$emit('type-query',k, i)" class="btn btn-link">{{i}}</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </transition>
-    </div>
+            </transition>
+        </div>
 </transition>
 </template>
 
@@ -53,30 +46,8 @@ button {
     cursor: pointer;
 }
 
-i{
-  font-size: 90%;
-}
-
-.norightmargin{
-  margin-right: 0px;
-  border-top-right-radius: 0px;
-  border-bottom-right-radius: 0px;
-  border-right: 1px solid #606060;
-}
-.noleftmargin{
-  margin-left: 0px;
-  border-top-left-radius: 0px;
-  border-bottom-left-radius: 0px;
-  border-left: 1px solid #606060;
-}
-
-.inline-div{
-  display: inline-flex;
-}
-
 .active {
-    background-color: #00eca2;
-    opacity: 0.9;
+    border-bottom: 1px solid #00eca2;
 }
 
 .types-panel {
@@ -89,19 +60,17 @@ i{
     z-index: 0;
 }
 
-
-.tab-pane {
-    margin-top: 5px;
+.tab-pane{
+  margin-top: 5px;
 }
 
-a:hover {
-    color: #00eca2;
+a:hover{
+  color: #00eca2;
 }
 
 .tabs-row {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
     background-color: #0f0f0f;
 }
 

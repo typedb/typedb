@@ -34,17 +34,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ALL_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
 
 /**
  * <p>
@@ -61,6 +64,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final CountDownLatch blocker;
     private final TreeCache cache;
 
+    private Map<String, ChildData> current;
     private Producer<TaskId, TaskState> producer;
 
     public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
@@ -72,6 +76,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         this.cache.getUnhandledErrorListenable().addListener((message, e) -> blocker.countDown());
         this.cache.start();
 
+        current = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
         producer = kafkaProducer();
         scanStaleStates(client);
     }
@@ -94,19 +99,18 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         }
     }
 
-    @Override
     public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
         Map<String, ChildData> nodes = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
 
         switch (event.getType()) {
             case NODE_ADDED:
                 LOG.debug("New engine joined pool. Current engines: " + nodes.keySet());
+                current = nodes;
                 break;
             case NODE_REMOVED:
                 LOG.debug("Engine failure detected. Current engines " + nodes.keySet());
-                String path = event.getData().getPath();
-                EngineID engineId = EngineID.of(path.substring(path.lastIndexOf("/") + 1));
-                reQueue(engineId);
+                failover(client, nodes);
+                current = nodes;
                 break;
             default:
                 break;
@@ -114,27 +118,49 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     }
 
     /**
+     * Find diff between current and @nodes to figure out which engines died. Calls reQueue to resubmit all tasks they were
+     * assigned to to Kafka work queue.
+     * @param client CuratorFramework
+     * @param nodes Map<String, ChildData> of all currently alive ZNodes, a diff between this and cached @current is
+     *              used to figure out which Engines died.
+     * @throws Exception
+     */
+    private void failover(CuratorFramework client, Map<String, ChildData> nodes) throws Exception {
+        for(String engineId: current.keySet()) {
+            // Dead MultiQueueTaskRunner
+            if(!nodes.containsKey(engineId)) {
+                LOG.debug("Dead engine: "+engineId);
+                reQueue(client, EngineID.of(engineId));
+            }
+        }
+    }
+
+    /**
      * GO through all of the children of the engine not, re-submitting
      * all tasks to the work queue that the dead was working on.
      *
+     * @param client CuratorFramework
      * @param engineID String unique ID of engine
      * @throws Exception
      */
-    private void reQueue(EngineID engineID) throws Exception {
+    private void reQueue(CuratorFramework client, EngineID engineID) throws Exception {
         // Get list of tasks that were being processed
-        Set<TaskState> previouslyRunningTasks = stateStorage.getTasks(null, null, null, engineID, 100, 0);
+        List<String> previouslyRunningTasks = client.getChildren().forPath(format(SINGLE_ENGINE_PATH, engineID.value()));
 
         // Re-queue all of the IDs.
-        for(TaskState taskState:previouslyRunningTasks){
+        for(String task:previouslyRunningTasks){
+
+            TaskId id = TaskId.of(task);
+            TaskState taskState = stateStorage.getState(id);
 
             // Send the task to the appropriate queue
             if(taskState.status() == RUNNING) {
-                LOG.debug("Engine {} stopped, task {} requeued", engineID, taskState.getId());
-                stateStorage.updateState(taskState.markScheduled());
-                producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, taskState.getId(), taskState));
+                LOG.debug(format("Engine [%s] stopped, task [%s] requeued", engineID, taskState.getId()));
+                stateStorage.updateState(taskState.status(SCHEDULED));
+                producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id, taskState));
             } else {
-                LOG.debug("Engine {} stopped, task {} not restarted because state {}"
-                        , engineID, taskState.getId(), taskState.status());
+                LOG.debug(format("Engine [%s] stopped, task [%s] not restarted because state [%s]"
+                        , engineID, taskState.getId(), taskState.status()));
             }
         }
     }
@@ -165,8 +191,8 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
             }
 
             // Check if assigned engine is still alive
-            if(client.checkExists().forPath(String.format(SINGLE_ENGINE_PATH, engineId.value())) == null) {
-                reQueue(engineId);
+            if(client.checkExists().forPath(format(SINGLE_ENGINE_PATH, engineId.value())) == null) {
+                reQueue(client, engineId);
                 deadRunners.add(engineId);
             }
         }

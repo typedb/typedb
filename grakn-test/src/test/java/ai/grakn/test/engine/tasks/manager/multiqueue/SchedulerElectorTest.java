@@ -18,9 +18,9 @@
 
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.manager.multiqueue.Scheduler;
 import ai.grakn.engine.tasks.manager.multiqueue.SchedulerElector;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.test.EngineContext;
 import org.junit.AfterClass;
@@ -31,6 +31,7 @@ import org.junit.Test;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static org.junit.Assert.assertNotEquals;
 
 public class SchedulerElectorTest {
@@ -42,7 +43,7 @@ public class SchedulerElectorTest {
 
     @BeforeClass
     public static void instantiate(){
-        connection = new ZookeeperConnection();
+        connection = new ZookeeperConnection(client());
         elector = new SchedulerElector(new TaskStateInMemoryStore(), connection);
     }
 

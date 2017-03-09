@@ -19,7 +19,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <template>
 <div class="container">
     <div class="inline-flex-1"></div>
-    <div class="panel-body" v-if="configuration">
+    <div class="panel-body" v-if="response">
         <div class="table-responsive">
             <table class="table table-hover table-stripped">
                 <thead>
@@ -31,67 +31,67 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 <tbody>
                     <tr>
                         <td>Hostname</td>
-                        <td>{{configuration['server.host']}}</td>
+                        <td>{{response['server.host']}}</td>
                     </tr>
                     <tr>
                         <td>Server Port</td>
-                        <td>{{configuration['server.port']}}</td>
+                        <td>{{response['server.port']}}</td>
                     </tr>
                     <tr>
                         <td>Threads</td>
-                        <td>{{configuration['loader.threads']}}</td>
+                        <td>{{response['loader.threads']}}</td>
                     </tr>
                     <tr>
                         <td>Database config</td>
-                        <td>{{configuration['graphdatabase.config']}}</td>
+                        <td>{{response['graphdatabase.config']}}</td>
                     </tr>
                     <tr>
                         <td>Batch config</td>
-                        <td>{{configuration['graphdatabase.batch-config']}}</td>
+                        <td>{{response['graphdatabase.batch-config']}}</td>
                     </tr>
                     <tr>
                         <td>Graph Computer config</td>
-                        <td>{{configuration['graphdatabase.computer']}}</td>
+                        <td>{{response['graphdatabase.computer']}}</td>
                     </tr>
                     <tr>
                         <td>Engine assets directory</td>
-                        <td>{{configuration['server.static-file-dir']}}</td>
+                        <td>{{response['server.static-file-dir']}}</td>
                     </tr>
                     <tr>
                         <td>Log File</td>
-                        <td>{{configuration['logging.file.main']}}</td>
+                        <td>{{response['logging.file.main']}}</td>
                     </tr>
                     <tr>
                         <td>Logging Level</td>
-                        <td>{{configuration['logging.level']}}</td>
+                        <td>{{response['logging.level']}}</td>
                     </tr>
                     <tr>
                         <td>Background Tasks time lapse</td>
-                        <td>{{configuration['backgroundTasks.time-lapse']}}</td>
+                        <td>{{response['backgroundTasks.time-lapse']}}</td>
                     </tr>
                     <tr>
                         <td>Background Tasks post processing delay</td>
-                        <td>{{configuration['backgroundTasks.post-processing-delay']}}</td>
+                        <td>{{response['backgroundTasks.post-processing-delay']}}</td>
                     </tr>
                     <tr>
                         <td>Batch size</td>
-                        <td>{{configuration['blockingLoader.batch-size']}}</td>
+                        <td>{{response['blockingLoader.batch-size']}}</td>
                     </tr>
                     <tr>
                         <td>Default Keyspace</td>
-                        <td>{{configuration['graphdatabase.default-keyspace']}}</td>
+                        <td>{{response['graphdatabase.default-keyspace']}}</td>
                     </tr>
                     <tr>
                         <td>Repeat Commits</td>
-                        <td>{{configuration['loader.repeat-commits']}}</td>
+                        <td>{{response['loader.repeat-commits']}}</td>
                     </tr>
                     <tr>
                         <td>HAL builder degree</td>
-                        <td>{{configuration['halBuilder.degree']}}</td>
+                        <td>{{response['halBuilder.degree']}}</td>
                     </tr>
                     <tr>
                         <td>Version</td>
-                        <td>{{configuration['project.version']}}</td>
+                        <td>{{response['project.version']}}</td>
                     </tr>
                 </tbody>
             </table>
@@ -107,7 +107,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <pre class="error-pre" v-show="errorMessage">{{errorMessage}}</pre>
         </div>
         <div class="panel-footer">
-            <button @click="loadConfig" class="btn btn-default">Retry Connection<i class="pe-7s-refresh"></i></button>
+            <button @click="retry" class="btn btn-default">Retry Connection<i class="pe-7s-refresh"></i></button>
         </div>
     </div>
     <div class="inline-flex-1"></div>
@@ -119,16 +119,13 @@ table {
     border-collapse: separate;
     border-spacing: 15px;
 }
-
-th {
-    font-weight: bold;
+th{
+  font-weight: bold;
 }
-
-td {
-    border-bottom: 1px solid #606060;
-    padding: 5px;
+td{
+  border-bottom: 1px solid #606060;
+  padding: 5px;
 }
-
 .container {
     display: flex;
     flex-direction: row;
@@ -138,8 +135,8 @@ td {
     position: absolute;
 }
 
-.table-responsive {
-    margin-top: 10px;
+.table-responsive{
+  margin-top: 10px;
 }
 
 .inline-flex-1 {
@@ -169,7 +166,7 @@ export default {
     name: "ConfigurationPage",
     data: () => {
         return {
-            configuration: undefined,
+            response: undefined,
             errorMessage: undefined,
         };
     },
@@ -177,7 +174,7 @@ export default {
     created() {},
     mounted() {
         this.$nextTick(function() {
-            this.loadConfig();
+            EngineClient.getConfig(this.engineStatus);
         });
     },
 
@@ -186,13 +183,20 @@ export default {
             this.response = undefined;
             this.errorMessage = msg;
         },
-        loadConfig() {
-            EngineClient.getConfig().then((resp) => {
-                this.configuration = JSON.parse(resp);
-            }, (err) => {
+        engineStatus(resp, err) {
+            if (resp != null)
+                this.response = resp
+            else
                 this.showError(err);
-            });
         },
+
+        materialiseAll() {
+            EngineClient.preMaterialiseAll();
+        },
+
+        retry() {
+            EngineClient.getConfig(this.engineStatus);
+        }
     }
 
 }
