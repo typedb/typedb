@@ -23,7 +23,7 @@
   <parent>
       <artifactId>grakn</artifactId>
       <groupId>ai.grakn</groupId>
-      <version>0.11.0-SNAPSHOT</version>
+      <version>0.12.0-SNAPSHOT</version>
   </parent>
   <packaging>pom</packaging>
   <modules>
@@ -33,6 +33,7 @@
       <module>base</module>
       <module>export</module>
       <module>sql</module>
+      <module>xml</module>
   </modules>
     <properties>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>

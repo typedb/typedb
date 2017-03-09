@@ -71,7 +71,7 @@ public class TypeNames extends FromGraphGenerator<TypeName> {
     }
 
     private TypeName randomName() {
-        return TypeName.of(gen(String.class));
+        return TypeName.of(gen().make(MetasyntacticStrings.class).generate(random, status));
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

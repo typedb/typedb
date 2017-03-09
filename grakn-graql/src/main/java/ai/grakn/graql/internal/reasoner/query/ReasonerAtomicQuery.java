@@ -34,6 +34,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -42,7 +43,6 @@ import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -63,7 +63,6 @@ import org.slf4j.LoggerFactory;
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;
@@ -158,8 +157,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         getAtom().getTypeConstraints().forEach(type -> {
             Set<Atomic> toUnify = Sets.difference(parent.getEquivalentAtoms(type), unified);
             Atomic equiv = toUnify.stream().findFirst().orElse(null);
-            if (equiv != null){
-                unifiers.putAll(type.getUnifiers(equiv));
+            //only apply if unambiguous
+            if (equiv != null && toUnify.size() == 1){
+                type.getUnifiers(equiv).forEach(unifiers::put);
                 unified.add(equiv);
             }
         });
@@ -244,9 +244,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Map<VarName, Concept>> materialise(Map<VarName, Concept> answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
-        Set<IdPredicate> subs = new HashSet<>();
-        answer.forEach((var, con) -> subs.add(new IdPredicate(var, con, queryToMaterialise)));
-        subs.forEach(queryToMaterialise::addAtom);
+        answer.entrySet().stream()
+                .map(e -> new IdPredicate(e.getKey(), e.getValue(), queryToMaterialise))
+                .forEach(queryToMaterialise::addAtom);
         return queryToMaterialise.materialiseDirect();
     }
 
@@ -272,72 +272,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private Map<VarName, Concept> getIdPredicateAnswer(){
-        return this.getTypeConstraints().stream()
+        Object result = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate).filter(Objects::nonNull)
                 .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
-    }
-
-    private Stream<Map<VarName, Concept>> fullJoin(List<ReasonerAtomicQuery> queries,
-                                                   Set<ReasonerAtomicQuery> subGoals,
-                                                   Cache<ReasonerAtomicQuery, ?> cache,
-                                                   Cache<ReasonerAtomicQuery, ?> dCache,
-                                                   boolean materialise){
-        Iterator<ReasonerAtomicQuery> qit = queries.iterator();
-        ReasonerAtomicQuery childAtomicQuery = qit.next();
-        Stream<Map<VarName, Concept>> join = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
-        Set<VarName> joinedVars = childAtomicQuery.getVarNames();
-        while(qit.hasNext()){
-            childAtomicQuery = qit.next();
-            Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
-            Stream<Map<VarName, Concept>> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
-            join = joinWithInverse(
-                    join,
-                    localSubs,
-                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
-                    ImmutableSet.copyOf(joinVars));
-            joinedVars.addAll(childAtomicQuery.getVarNames());
-        }
-        return join;
-    }
-
-    private Stream<Map<VarName, Concept>> differentialJoin(List<ReasonerAtomicQuery> queries,
-                                                           Set<ReasonerAtomicQuery> subGoals,
-                                                           Cache<ReasonerAtomicQuery, ?> cache,
-                                                           Cache<ReasonerAtomicQuery, ?> dCache,
-                                                           boolean materialise){
-        Stream<Map<VarName, Concept>> join = Stream.empty();
-
-        for(ReasonerAtomicQuery qi : queries){
-            Stream<Map<VarName, Concept>> subs = qi.answerStream(subGoals, cache, dCache, materialise, true);
-            Set<VarName> joinedVars = qi.getVarNames();
-            for(ReasonerAtomicQuery qj : queries){
-                if ( qj != qi ){
-                    Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    subs = joinWithInverse(
-                            subs,
-                            cache.getAnswerStream(qj),
-                            cache.getInverseAnswerMap(qj, joinVars),
-                            ImmutableSet.copyOf(joinVars));
-                    joinedVars.addAll(qj.getVarNames());
-                }
-            }
-            join = Stream.concat(join, subs);
-        }
-        return join.distinct();
-    }
-
-    private Stream<Map<VarName, Concept>> computeJoin(List<ReasonerAtomicQuery> queries,
-                                                      Set<ReasonerAtomicQuery> subGoals,
-                                                      Cache<ReasonerAtomicQuery, ?> cache,
-                                                      Cache<ReasonerAtomicQuery, ?> dCache,
-                                                      boolean materialise,
-                                                      boolean differentialJoin) {
-        if (differentialJoin){
-            return differentialJoin(queries, subGoals, cache, dCache, materialise);
-        } else {
-            return fullJoin(queries, subGoals, cache, dCache, materialise);
-        }
+        return (Map<VarName, Concept>)result;
     }
 
     /**
@@ -361,35 +301,42 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQuery ruleHead = rule.getHead();
 
         subGoals.add(this);
-        Stream<Map<VarName, Concept>> subs = computeJoin(
-                ruleBody.selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList()),
+        Stream<Map<VarName, Concept>> subs = ruleBody.computeJoin(
                 subGoals,
                 cache,
                 dCache,
                 materialise,
                 differentialJoin);
 
+        Set<NotEquals> filters = ruleBody.getFilters();
         Stream<Map<VarName, Concept>> answers = subs
-                .filter(a -> nonEqualsFilter(a, ruleBody.getFilters()))
-                .flatMap(a -> varFilterFunction.apply(a, ruleHead.getVarNames()));
+                .filter(a -> nonEqualsFilter(a, filters));
 
-        if (materialise || ruleHead.getAtom().requiresMaterialisation()) {
+        if (materialise || rule.requiresMaterialisation()) {
+            Set<VarName> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
             LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
             LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
-            Stream<Map<VarName, Concept>> newAnswers = answers.distinct()
+            Stream<Map<VarName, Concept>> newAnswers = answers
+                    .flatMap(a -> varFilterFunction.apply(a, varsToRetain))
+                    .distinct()
                     .filter(a -> knownFilter(a, known.stream()))
                     .filter(a -> knownFilter(a, dknown.stream()))
                     .flatMap(ruleHead::materialise);
 
+            Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
             answers = dCache.record(ruleHead, newAnswers)
-                    .filter(a -> entityTypeFilter(a, atom.getMappedTypeConstraints()));
+                    .filter(a -> entityTypeFilter(a, mappedTypeConstraints));
         }
 
+        Set<VarName> vars = this.getVarNames();
+        Set<Map<VarName, VarName>> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
+        Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
+        Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();
         answers = getIdPredicateAnswerStream(answers)
-                .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()))
-                .flatMap(a -> permuteFunction.apply(a, getPermutationUnifiers(ruleHead.getAtom())))
-                .filter(a -> subFilter(a, atom.getUnmappedIdPredicates()))
-                .filter(a -> entityTypeFilter(a, atom.getUnmappedTypeConstraints()));
+                .flatMap(a -> varFilterFunction.apply(a, vars))
+                .flatMap(a -> permuteFunction.apply(a, permutationUnifiers))
+                .filter(a -> subFilter(a, unmappedIdPredicates))
+                .filter(a -> entityTypeFilter(a, unmappedTypeConstraints));
 
         return dCache.record(this, answers);
     }
@@ -443,16 +390,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     private class QueryAnswerIterator implements Iterator<Map<VarName, Concept>> {
 
-        final private QueryAnswers answers = new QueryAnswers();
-
         private int iter = 0;
+        private long answers = 0;
         private final boolean materialise;
         private final Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
         private final LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         private final LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
         private Iterator<Map<VarName, Concept>> answerIterator;
 
-        public QueryAnswerIterator(boolean materialise){
+        QueryAnswerIterator(boolean materialise){
             this.materialise = materialise;
             this.answerIterator = query().answerStream(subGoals, cache, dCache, materialise, iter != 0).iterator();
         }
@@ -464,7 +410,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
          */
         Stream<Map<VarName, Concept>> hasStream(){
             Iterable<Map<VarName, Concept>> iterable = () -> this;
-            return StreamSupport.stream(iterable.spliterator(), false).distinct();
+            return StreamSupport.stream(iterable.spliterator(), false).distinct().peek(ans -> answers++);
         }
 
         private void computeNext(){
@@ -485,7 +431,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 updateCache();
                 long dAns = differentialAnswerSize();
                 if (dAns != 0 || iter == 0) {
-                    LOG.debug("Atom: " + query().getAtom() + " iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+                    LOG.debug("Atom: " + query().getAtom() + " iter: " + iter + " answers: " + answers + " dAns = " + dAns);
                     computeNext();
                     return answerIterator.hasNext();
                 }
@@ -504,9 +450,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
          */
         @Override
         public Map<VarName, Concept> next() {
-            Map<VarName, Concept> answer = answerIterator.next();
-            answers.add(answer);
-            return answer;
+            return answerIterator.next();
         }
 
         private long differentialAnswerSize(){

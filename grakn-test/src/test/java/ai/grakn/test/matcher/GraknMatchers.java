@@ -240,6 +240,11 @@ public class GraknMatchers {
                         .map(MatchableConcept::new)
                         .collect(toSet());
             }
+
+            @Override
+            public Matcher<?> innerMatcher() {
+                return matcher;
+            }
         };
     }
 
@@ -296,10 +301,14 @@ abstract class PropertyMatcher<T, S> extends TypeSafeDiagnosingMatcher<T> {
 
     @Override
     public final void describeTo(Description description) {
-        description.appendText(getName()).appendText("(").appendDescriptionOf(matcher).appendText(")");
+        description.appendText(getName()).appendText("(").appendDescriptionOf(innerMatcher()).appendText(")");
     }
 
     public abstract String getName();
+
+    public Matcher<?> innerMatcher() {
+        return matcher;
+    }
 
     abstract S transform(T item);
 }

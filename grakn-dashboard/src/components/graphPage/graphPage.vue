@@ -20,8 +20,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <template>
 <div>
     <div class="graph-panel-body">
-        <div v-on:contextmenu.prevent id="graph-div" ref="graph"></div>
+        <div v-on:contextmenu="customContextMenu" v-on:mousemove="updateRectangle" id="graph-div" ref="graph"></div>
         <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeOntologyProps="allNodeOntologyProps" :allNodeLinks="allNodeLinks" :selectedNodeLabel="selectedNodeLabel" v-on:graph-response="onGraphResponse" v-on:close-node-panel="showNodePanel=false"></node-panel>
+        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery"></context-menu>
+        <node-tool-tip :showToolTip="showToolTip" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop"></node-tool-tip>
         <footer-bar></footer-bar>
     </div>
 </div>
@@ -52,13 +54,16 @@ import GraphPageState from '../../js/state/graphPageState';
 // Sub-components
 const NodePanel = require('./nodePanel.vue');
 const FooterBar = require('./footer/footerBar.vue');
-
+const ContextMenu = require('./contextMenu.vue');
+const NodeToolTip = require('./nodeToolTip.vue');
 
 export default {
     name: 'GraphPage',
     components: {
         NodePanel,
         FooterBar,
+        ContextMenu,
+        NodeToolTip,
     },
     data() {
         return {
@@ -72,23 +77,29 @@ export default {
             allNodeResources: {},
             allNodeLinks: {},
             showNodePanel: false,
+            showContextMenu: false,
+            showToolTip: false,
+            graphOffsetTop: undefined,
+            mouseEvent: undefined,
         };
     },
 
     created() {
         window.visualiser = new Visualiser();
-        visualiser.setOnDoubleClick(this.doubleClick)
-            .setOnRightClick(this.rightClick)
-            .setOnClick(this.singleClick)
-            .setOnDragEnd(this.dragEnd)
-            .setOnHoldOnNode(this.holdOnNode);
+
+        visualiser.setCallbackOnEvent('click',this.singleClick);
+        visualiser.setCallbackOnEvent('doubleClick',this.doubleClick);
+        visualiser.setCallbackOnEvent('oncontext',this.rightClick);
+        visualiser.setCallbackOnEvent('hold',this.holdOnNode);
+        visualiser.setCallbackOnEvent('hoverNode',this.hoverNode);
+        visualiser.setCallbackOnEvent('blurNode',this.blurNode);
+        visualiser.setCallbackOnEvent('dragStart',this.onDragStart);
 
         this.halParser = new HALParser();
 
         this.halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
         this.halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
         this.halParser.setNodeAlreadyInGraph(id => visualiser.nodeExists(id));
-
 
         // Register listened on State events
         this.state.eventHub.$on('click-submit', this.onClickSubmit);
@@ -102,37 +113,29 @@ export default {
         this.state.eventHub.$off('click-submit', this.onClickSubmit);
         this.state.eventHub.$off('load-ontology', this.onLoadOntology);
         this.state.eventHub.$off('clear-page', this.onClear);
+        this.state.eventHub.$off('configure-node', this.configureNode);
     },
     mounted() {
         this.$nextTick(function nextTickVisualiser() {
             const graph = this.$refs.graph;
+
+            // TODO: find a way to compute this without jQuery:
+            this.graphOffsetTop = $('#graph-div').offset().top;
+
             visualiser.render(graph);
         });
     },
 
     methods: {
+        updateRectangle(e) {
+            visualiser.updateRectangle(e.pageX, e.pageY - this.graphOffsetTop);
+        },
 
         onLoadOntology() {
             const querySub = `match $x sub ${API.ROOT_CONCEPT};`;
             EngineClient.graqlHAL(querySub, this.onGraphResponse);
         },
-
-        singleClick(param) {
-            const t0 = new Date();
-            const threshold = 200;
-            // all this fun to be able to distinguish a single click from a double click
-            if (t0 - this.doubleClickTime > threshold) {
-                setTimeout(() => {
-                    if (t0 - this.doubleClickTime > threshold) {
-                        this.leftClick(param);
-                    }
-                }, threshold);
-            }
-        },
-
         onClickSubmit(query) {
-            this.state.stopBuilderMode();
-
             if (query.includes('aggregate')) {
                 // Error message until we will not properly support aggregate queries in graph page.
                 this.state.eventHub.$emit('error-message', 'Invalid query: \'aggregate\' queries are not allowed from the Graph page. Please use the Console page.');
@@ -144,59 +147,31 @@ export default {
             } else {
                 let queryToExecute = query.trim();
 
-                // Add trailing semi-colon
-                if(queryToExecute.charAt(queryToExecute.length-1)!==';')
-                    queryToExecute+=';';
-
-                if (!(query.includes('offset'))&&!(query.includes('delete')))
+                if (!(query.includes('offset')) && !(query.includes('delete')))
                     queryToExecute = queryToExecute + ' offset 0;';
-                if (!(query.includes('limit'))&&!(query.includes('delete')))
+                if (!(query.includes('limit')) && !(query.includes('delete')))
                     queryToExecute = queryToExecute + ' limit 100;';
-
-                this.state.eventHub.$emit('inject-query', queryToExecute);
+                this.emitInjectQuery(queryToExecute);
                 EngineClient.graqlHAL(queryToExecute, this.onGraphResponse);
             }
         },
-        leftClick(param) {
-            // As multiselect is disabled, there will only ever be one node.
-            const node = param.nodes[0];
-            const eventKeys = param.event.srcEvent;
-            const clickType = param.event.type;
-
-            if (node === undefined || eventKeys.shiftKey || clickType !== 'tap') {
-                return;
-            }
-
-            if (!this.state.queryBuilderMode) {
-                // When we will enable clustering, also need to check && !visualiser.expandCluster(node)
-                if (eventKeys.altKey) {
-                    if (visualiser.nodes._data[node].ontology) {
-                        EngineClient.request({
-                            url: visualiser.nodes._data[node].ontology,
-                            callback: this.onGraphResponse,
-                        });
-                    }
-                } else {
-                    const props = visualiser.getNode(node);
-                    this.allNodeOntologyProps = {
-                        id: props.id,
-                        type: props.type,
-                        baseType: props.baseType,
-                    };
-
-                    this.allNodeResources = this.prepareResources(props.properties);
-                    this.selectedNodeLabel = visualiser.getNodeLabel(node);
-
-                    this.showNodePanel = true;
-                }
-            }else{
-              this.handleBuildQuery(node);
-            }
+        emitInjectQuery(query) {
+            this.showContextMenu = false;
+            this.state.eventHub.$emit('inject-query', query);
         },
-        handleBuildQuery(node) {
-            this.state.numOfClickedNodesInBuilding+=1;
-            let stringa = this.state.nextBuildingStep(node);
-            this.state.eventHub.$emit('append-query', stringa);
+        checkSelectionRectangleStatus(node, eventKeys, param) {
+            // If we were drawing rectangle and we click again we stop the drawing and compute selected nodes
+            if (visualiser.draggingRect) {
+                visualiser.draggingRect = false;
+                visualiser.resetRectangle();
+                visualiser.network.redraw();
+            } else {
+                if (eventKeys.ctrlKey && node === undefined) {
+                    visualiser.draggingRect = true;
+                    visualiser.startRectangle(param.pointer.canvas.x, param.pointer.canvas.y - this.graphOffsetTop);
+                }
+            }
+
         },
         /**
          * Prepare the list of resources to be shown in the right div panel
@@ -221,16 +196,56 @@ export default {
             const pattern = new RegExp(URL_REGEX, 'i');
             return pattern.test(str);
         },
-        dragEnd(param) {
-            // As multiselect is disabled, there will only ever be one node.
+        configureNode(nodeType, selectedProps) {
+            visualiser.setDisplayProperties(nodeType, selectedProps);
+        },
+
+        onGraphResponseAnalytics(resp, err) {
+            if (resp != null) {
+                if (resp.type === 'string') {
+                    this.state.eventHub.$emit('analytics-string-response', resp.response);
+                } else {
+                    this.halParser.parseResponse(resp.response);
+                    visualiser.fitGraphToWindow();
+                }
+            } else {
+                this.state.eventHub.$emit('error-message', err);
+            }
+        },
+
+        onGraphResponse(resp, err) {
+            if (resp != null) {
+                if (!this.halParser.parseResponse(resp)) {
+                    this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+                }
+                visualiser.fitGraphToWindow();
+            } else {
+                this.state.eventHub.$emit('error-message', err);
+            }
+        },
+
+        onClear() {
+            // Reset all interface elements to default.
+            this.showNodeLabelPanel = false;
+            this.showNodePanel = false;
+
+            // And clear the graph
+            visualiser.clearGraph();
+        },
+
+        ////////////////////////////////////////////////////// ----------- Graph mouse interactions ------------ ///////////////////////////////////////////////////////////
+
+        holdOnNode(param) {
             const node = param.nodes[0];
-            visualiser.disablePhysicsOnNode(node);
+            if (node === undefined) return;
+
+            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node));
         },
 
         doubleClick(param) {
             this.doubleClickTime = new Date();
             const node = param.nodes[0];
-            if (node === undefined || visualiser.expandCluster(node)) {
+            if (node === undefined) {
                 return;
             }
 
@@ -247,7 +262,7 @@ export default {
                 let generatedNode = false;
                 //If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
                 if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
-                  generatedNode = true;
+                    generatedNode = true;
                 }
 
                 EngineClient.request({
@@ -273,50 +288,90 @@ export default {
                 });
             }
         },
-        configureNode(nodeType, selectedProps) {
-            visualiser.setDisplayProperties(nodeType, selectedProps);
+
+        hoverNode(param) {
+            // Mouse event becomes position of hovered node
+            this.mouseEvent = param;
+            this.showToolTip = true;
         },
-        holdOnNode(param) {
+        blurNode() {
+            this.showToolTip = false;
+        },
+        leftClick(param) {
+
+            // As multiselect is disabled, there will only ever be one node.
             const node = param.nodes[0];
-            if (node === undefined) return;
+            const eventKeys = param.event.srcEvent;
+            const clickType = param.event.type;
 
-            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node));
-        },
+            // If it is a long press on node: return
+            if (clickType !== 'tap') {
+                return;
+            }
 
-        onGraphResponseAnalytics(resp, err) {
-            if (resp != null) {
-                if (resp.type === 'string') {
-                    this.state.eventHub.$emit('analytics-string-response', resp.response);
-                } else {
-                    this.halParser.parseResponse(resp.response);
-                    visualiser.fitGraphToWindow();
+            // Check if we need to start or stop drawing the selection rectangle
+            this.checkSelectionRectangleStatus(node, eventKeys, param);
+
+            if (node === undefined) {
+                return;
+            }
+
+
+            if (eventKeys.altKey) {
+                if (visualiser.nodes._data[node].ontology) {
+                    EngineClient.request({
+                        url: visualiser.nodes._data[node].ontology,
+                        callback: this.onGraphResponse,
+                    });
                 }
             } else {
-                this.state.eventHub.$emit('error-message', err);
+                const props = visualiser.getNode(node);
+                this.allNodeOntologyProps = {
+                    id: props.id,
+                    type: props.type,
+                    baseType: props.baseType,
+                };
+
+                this.allNodeResources = this.prepareResources(props.properties);
+                this.selectedNodeLabel = visualiser.getNodeLabel(node);
+
+                this.showNodePanel = true;
+            }
+
+        },
+
+        customContextMenu(e) {
+            e.preventDefault();
+            if (!e.ctrlKey && !e.shiftKey) {
+                this.showContextMenu = true;
+                this.mouseEvent = e;
             }
         },
 
-        onGraphResponse(resp, err) {
-            if (resp != null) {
-                if (!this.halParser.parseResponse(resp)) {
-                    this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
-                } else {
-                    visualiser.cluster();
-                }
-                visualiser.fitGraphToWindow();
-            } else {
-                this.state.eventHub.$emit('error-message', err);
+        singleClick(param) {
+            // Everytime the user clicks on canvas we clear the context-menu and tooltip
+            this.showContextMenu = false;
+            this.showToolTip = false;
+
+            const t0 = new Date();
+            const threshold = 200;
+            // all this fun to be able to distinguish a single click from a double click
+            if (t0 - this.doubleClickTime > threshold) {
+                setTimeout(() => {
+                    if (t0 - this.doubleClickTime > threshold) {
+                        this.leftClick(param);
+                    }
+                }, threshold);
             }
         },
 
-        onClear() {
-            // Reset all interface elements to default.
-            this.showNodeLabelPanel = false;
-            this.showNodePanel = false;
-
-            // And clear the graph
-            visualiser.clearGraph();
+        onDragStart(params){
+          visualiser.draggingNode = true;
+          this.showToolTip = false;
+          visualiser.releaseNodes(params.nodes);
         },
+
+        // ----- End of graph interactions ------- //
     },
 };
 </script>

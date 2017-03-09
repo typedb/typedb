@@ -18,8 +18,7 @@
 
 package ai.grakn.migration.csv;
 
-import ai.grakn.graql.InsertQuery;
-import ai.grakn.migration.base.AbstractMigrator;
+import ai.grakn.migration.base.MigrationCLI;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -32,8 +31,14 @@ import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import static ai.grakn.migration.base.MigrationCLI.die;
+import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -41,27 +46,60 @@ import static java.util.stream.Collectors.toMap;
  * imported into a graph as the user sees fit.
  * @author alexandraorth
  */
-public class CSVMigrator extends AbstractMigrator {
+public class CSVMigrator implements AutoCloseable {
 
     public static final char SEPARATOR = ',';
     public static final char QUOTE = '\"';
     public static final String NULL_STRING = null;
+
     private char separator = SEPARATOR;
     private char quote = QUOTE;
     private String nullString = NULL_STRING;
 
     private final Reader reader;
-    private final String template;
+
+    public static void main(String[] args) {
+        MigrationCLI.init(args, CSVMigrationOptions::new).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(CSVMigrator::runCSV);
+    }
+
+    private static void runCSV(CSVMigrationOptions options){
+        // get files
+        File csvDataFile = new File(options.getInput());
+        File csvTemplate = new File(options.getTemplate());
+
+        if (!csvTemplate.exists()) {
+            die("Cannot find file: " + options.getTemplate());
+        }
+
+        if (!csvDataFile.exists()) {
+            die("Cannot find file: " + options.getInput());
+        }
+
+        printInitMessage(options, csvDataFile.getPath());
+
+        try (
+                CSVMigrator csvMigrator =
+                        new CSVMigrator(csvDataFile)
+                                .setSeparator(options.getSeparator())
+                                .setQuoteChar(options.getQuote())
+                                .setNullString(options.getNullString())
+        ) {
+            MigrationCLI.loadOrPrint(csvTemplate, csvMigrator.convert(), options);
+        } catch (Throwable throwable) {
+            die(throwable);
+        }
+    }
 
     /**
      * Construct a CSVMigrator to migrate data in the given file
-     * @param template parametrized graql insert query
      * @param file file with the data to be migrated
      */
-    public CSVMigrator(String template, File file) {
+    public CSVMigrator(File file) {
         try {
             this.reader = new InputStreamReader(new FileInputStream(file), Charset.defaultCharset());
-            this.template = template;
         } catch (IOException e){
             throw new RuntimeException(e);
         }
@@ -69,12 +107,10 @@ public class CSVMigrator extends AbstractMigrator {
 
     /**
      * Construct a CSVMigrator to migrate data in the given Reader
-     * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
      */
-    public CSVMigrator(String template, Reader reader){
+    public CSVMigrator(Reader reader){
         this.reader = reader;
-        this.template = template;
     }
 
     /**
@@ -109,8 +145,7 @@ public class CSVMigrator extends AbstractMigrator {
      * Each String in the stream is a CSV file
      * @return stream of parsed insert queries
      */
-    @Override
-    public Stream<InsertQuery> migrate() {
+    public Stream<Map<String, Object>> convert() {
         try{
                 CSVParser csvParser = CSVFormat.newFormat(separator)
                             .withIgnoreEmptyLines()
@@ -120,8 +155,7 @@ public class CSVMigrator extends AbstractMigrator {
                             .withNullString(nullString)
                             .parse(reader);
 
-            Iterator<CSVRecord> it = csvParser.iterator();
-            return stream(it).flatMap(col -> template(template, parse(col)).stream());
+            return stream(csvParser.iterator()).map(this::parse);
         } catch (IOException e){
             throw new RuntimeException(e);
         }
@@ -153,4 +187,24 @@ public class CSVMigrator extends AbstractMigrator {
                 .filter((e) -> validValue(e.getValue()))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
-}
+
+    /**
+     * Partition a stream into a stream of collections, each with batchSize elements.
+     * @param iterator Iterator to partition
+     * @param <T> Type of values of iterator
+     * @return Stream over a collection that are each of batchSize
+     */
+    protected <T> Stream<T> stream(Iterator<T> iterator){
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+
+    }
+
+    /**
+     * Test if an object is a valid Grakn value
+     * @param value object to check
+     * @return if the value is valid
+     */
+    protected boolean validValue(Object value){
+        return value != null;
+    }}

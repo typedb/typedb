@@ -259,8 +259,8 @@ public class Relation extends TypeAtom {
                 getRelationPlayers().stream().map(rp -> rp.getRolePlayer().getVarName()).collect(Collectors.toList())
                );
 
-        //case when child atom non-unifiable
-        if (unificationMappings.getKey().size() != childAtom.getRelationPlayers().size()) return false;
+        //case when child atom non-unifiable - not all parent variables mapped
+        if (unificationMappings.getKey().size() < this.getRolePlayers().size()) return false;
 
         for (Map.Entry<RoleType, Pair<VarName, Type>> entry : childRoleMap.entrySet()) {
             RoleType childRole = entry.getKey();
@@ -623,8 +623,13 @@ public class Relation extends TypeAtom {
         List<VarName> varsToAllocate = new ArrayList<>(parentVars);
 
         childMap.entrySet().forEach(entry -> {
-            if (!varsToAllocate.isEmpty()) {
-                VarName chVar = entry.getValue();
+            VarName chVar = entry.getValue();
+            if (varsToAllocate.isEmpty()) {
+                //assign trivial mapping
+                unifiers.put(chVar, chVar);
+                roleMappings.put(entry.getKey(), null);
+            }
+            else{
                 //map to empty if no var matching
                 VarName pVar = VarName.of("");
                 RoleType parentRole = entry.getKey();
@@ -634,7 +639,7 @@ public class Relation extends TypeAtom {
                     pVar = parentMap.getOrDefault(parentRole, VarName.of(""));
                     if (pVar.getValue().isEmpty()) parentRole = parentRole.superType();
                 }
-                if (!pVar.getValue().isEmpty() ){
+                if (!pVar.getValue().isEmpty()){
                     unifiers.put(chVar, pVar);
                     roleMappings.put(entry.getKey(), parentRole);
                     allocatedVars.add(chVar);
@@ -643,20 +648,20 @@ public class Relation extends TypeAtom {
             }
         });
 
+        varsToMap.removeAll(allocatedVars);
         //assign unallocated vars if parent or child unspecified
         if (parentMap.isEmpty() || childMap.isEmpty()) {
-            varsToMap.removeAll(allocatedVars);
             Map<VarName, RoleType> childInverseMap = childMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
             Map<VarName, RoleType> parentInverseMap = childMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
             Iterator<VarName> cit = varsToMap.iterator();
-            Iterator<VarName> pit = varsToAllocate.iterator();
-            while (pit.hasNext() && cit.hasNext()){
+            Iterator<VarName> pit = varsToMap.equals(varsToAllocate)? varsToMap.iterator() : varsToAllocate.iterator();
+            while (cit.hasNext()){
                 VarName chVar = cit.next();
                 VarName pVar = pit.next();
                 RoleType chRole = childInverseMap.get(chVar);
                 RoleType pRole = parentInverseMap.get(pVar);
                 unifiers.put(chVar, pVar);
-                if (chRole != null && pRole != null) roleMappings.put(chRole, pRole);
+                if (chRole != null) roleMappings.put(chRole, pRole);
                 allocatedVars.add(chVar);
             }
         }
@@ -700,7 +705,11 @@ public class Relation extends TypeAtom {
             //get role type unifiers
             unifiers.putAll(getRoleTypeUnifiers(parentAtom));
         }
-        return unifiers;
+
+        //remove trivial unifiers
+        return unifiers.entrySet().stream()
+                .filter(e -> e.getKey() != e.getValue())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @Override

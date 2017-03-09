@@ -37,14 +37,18 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -52,9 +56,9 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.Utility.isCaptured;
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
@@ -145,6 +149,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return false;
     }
 
+    private boolean isTransitive(){
+        return getAtoms().stream().filter(this::containsEquivalentAtom).count() == 2;
+    }
+
     /**
      * @return atom set constituting this query
      */
@@ -207,7 +215,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return !getEquivalentAtoms(atom).isEmpty();
     }
 
-    public Set<Atomic> getEquivalentAtoms(Atomic atom){
+    Set<Atomic> getEquivalentAtoms(Atomic atom){
         return atomSet.stream().filter(at -> at.isEquivalent(atom)).collect(Collectors.toSet());
     }
 
@@ -219,8 +227,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Map<VarName, VarName> getUnifiers(ReasonerQuery parent) {
-        //TODO
-        return new HashMap<>();
+        throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
     }
 
     /**
@@ -278,6 +285,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(atom -> atom.unify(mappings));
         toAdd.forEach(this::addAtom);
 
+        //NB:captures not resolved in place as resolution in-place alters respective atom hash
         mappings.putAll(resolveCaptures());
     }
 
@@ -287,18 +295,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     private Map<VarName, VarName> resolveCaptures() {
         Map<VarName, VarName> newMappings = new HashMap<>();
-        //find captures
-        Set<VarName> captures = new HashSet<>();
-        getVarNames().forEach(v -> {
-            // TODO: This could cause bugs if a user has a variable including the word "capture"
-            if (isCaptured(v)) captures.add(v);
-        });
-
-        captures.forEach(cap -> {
-            VarName old = uncapture(cap);
-            VarName fresh = Utility.createFreshVariable(getVarNames(), old);
-            unify(cap, fresh);
-            newMappings.put(old, fresh);
+        //find and resolve captures
+        // TODO: This could cause bugs if a user has a variable including the word "capture"
+        getVarNames().stream().filter(Utility::isCaptured)
+                .forEach(cap -> {
+                VarName old = uncapture(cap);
+                VarName fresh = VarName.anon();
+                unify(cap, fresh);
+                newMappings.put(old, fresh);
         });
         return newMappings;
     }
@@ -438,6 +442,70 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         return true;
     }
+    
+    private Stream<Map<VarName, Concept>> fullJoin(Set<ReasonerAtomicQuery> subGoals,
+                                                   Cache<ReasonerAtomicQuery, ?> cache,
+                                                   Cache<ReasonerAtomicQuery, ?> dCache,
+                                                   boolean materialise){
+        List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
+        Iterator<ReasonerAtomicQuery> qit = queries.iterator();
+        ReasonerAtomicQuery childAtomicQuery = qit.next();
+        Stream<Map<VarName, Concept>> join = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
+        Set<VarName> joinedVars = childAtomicQuery.getVarNames();
+        while(qit.hasNext()){
+            childAtomicQuery = qit.next();
+            Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
+            Stream<Map<VarName, Concept>> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
+            join = joinWithInverse(
+                    join,
+                    localSubs,
+                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
+                    ImmutableSet.copyOf(joinVars));
+            joinedVars.addAll(childAtomicQuery.getVarNames());
+        }
+        return join;
+    }
+
+    private Stream<Map<VarName, Concept>> differentialJoin(Set<ReasonerAtomicQuery> subGoals,
+                                                           Cache<ReasonerAtomicQuery, ?> cache,
+                                                           Cache<ReasonerAtomicQuery, ?> dCache,
+                                                           boolean materialise){
+        Stream<Map<VarName, Concept>> join = Stream.empty();
+        List<ReasonerAtomicQuery> queries = selectAtoms().stream().map(ReasonerAtomicQuery::new).collect(Collectors.toList());
+        Set<ReasonerAtomicQuery> uniqueQueries = queries.stream().collect(Collectors.toSet());
+        //only do one join for transitive queries
+        List<ReasonerAtomicQuery> queriesToJoin  = isTransitive()? Lists.newArrayList(uniqueQueries) : queries;
+
+        for(ReasonerAtomicQuery qi : queriesToJoin){
+            Stream<Map<VarName, Concept>> subs = qi.answerStream(subGoals, cache, dCache, materialise, true);
+            Set<VarName> joinedVars = qi.getVarNames();
+            for(ReasonerAtomicQuery qj : queries){
+                if ( qj != qi ){
+                    Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
+                    subs = joinWithInverse(
+                            subs,
+                            cache.getAnswerStream(qj),
+                            cache.getInverseAnswerMap(qj, joinVars),
+                            ImmutableSet.copyOf(joinVars));
+                    joinedVars.addAll(qj.getVarNames());
+                }
+            }
+            join = Stream.concat(join, subs);
+        }
+        return join.distinct();
+    }
+
+    Stream<Map<VarName, Concept>> computeJoin(Set<ReasonerAtomicQuery> subGoals,
+                                              Cache<ReasonerAtomicQuery, ?> cache,
+                                              Cache<ReasonerAtomicQuery, ?> dCache,
+                                              boolean materialise,
+                                              boolean differentialJoin) {
+        if (differentialJoin){
+            return differentialJoin(subGoals, cache, dCache, materialise);
+        } else {
+            return fullJoin(subGoals, cache, dCache, materialise);
+        }
+    }
 
     /**
      * resolves the query
@@ -457,8 +525,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
             answerStream = join(answerStream, subAnswerStream);
         }
+
+        Set<NotEquals> filters = this.getFilters();
+        Set<VarName> vars = this.getVarNames();
         return answerStream
-                .filter(a -> nonEqualsFilter(a, this.getFilters()))
-                .flatMap(a -> varFilterFunction.apply(a, this.getVarNames()));
+                .filter(a -> nonEqualsFilter(a, filters))
+                .flatMap(a -> varFilterFunction.apply(a, vars));
     }
 }

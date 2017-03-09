@@ -318,7 +318,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
         }
     }
 
-    public static void close() {
+    public static void clear() {
         graknGraphRDD = null;
         Spark.close();
     }
