@@ -30,10 +30,14 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                    <div class="left"><input type="checkbox" v-model="useReasoner"></div><div class="right"> Activate inference</div>
                 </div>
                 <div class="dd-item">
-                  <div class="left"><input type="checkbox" v-model="materialiseReasoner" :disabled="!useReasoner"></div><div v-bind:class="[useReasoner ? 'right' : 'right grey']" :disabled="!useReasoner">Materialise inference</div>
+                  <div class="left"><input type="checkbox" v-model="materialiseReasoner" :disabled="!useReasoner"></div><div :class="{'grey':!useReasoner}" :disabled="!useReasoner" class="right">Materialise inference</div>
                 </div>
                 <div class="dd-item">
                   <button @click="materialiseAll()" class="btn materialise">Materialise All</button>
+                </div>
+                <div class="divide"></div>
+                <div class="dd-item">
+                  <div class="left">Query Limit:</div><div class="right"><input v-model="queryLimit" type="text" class="form-control" maxlength="3" size="4"></div>
                 </div>
             </div>
         </div>
@@ -49,6 +53,13 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     justify-content: space-between;
     margin-bottom: 10px;
 }
+
+.divide{
+  border-bottom: 1px solid #606060;
+  min-height: 5px;
+  margin-bottom: 5px;
+}
+
 .left{
   display: inline-flex;
   margin-right: 5px;
@@ -120,6 +131,7 @@ export default {
           useReasoner: User.getReasonerStatus(),
           materialiseReasoner: User.getMaterialiseStatus(),
           showSettings:false,
+          queryLimit: User.getQueryLimit(),
         }
     },
     created() {},
@@ -135,6 +147,10 @@ export default {
         },
         materialiseReasoner: function(newVal, oldVal) {
             User.setMaterialiseStatus(newVal);
+        },
+        queryLimit: function(newVal, oldVal) {
+            User.setQueryLimit(newVal);
+            if(newVal.length>0) this.queryLimit=User.getQueryLimit();
         }
     },
     methods: {
