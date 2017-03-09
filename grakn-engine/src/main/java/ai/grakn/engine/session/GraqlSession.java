@@ -364,7 +364,7 @@ class GraqlSession {
             try {
                 session.getRemote().sendString(json.toString());
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                LOG.error("Error while sending JSON: " + json, e);
             }
         });
     }
