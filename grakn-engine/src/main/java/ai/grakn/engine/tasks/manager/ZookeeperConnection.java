@@ -19,20 +19,27 @@
 
 package ai.grakn.engine.tasks.manager;
 
-import ai.grakn.exception.EngineStorageException;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.FAILOVER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
+import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_BASE_SLEEP_TIME;
+import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_MAX_RETRIES;
 import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
+import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
+import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 
 /**
  * <p>
@@ -44,20 +51,17 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
 public class ZookeeperConnection {
 
     private static final int ZOOKEEPER_CONNECTION_TIMEOUT = ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT);
-    private final CuratorFramework zookeeperConnection;
+    private static CuratorFramework zookeeperConnection;
+
+    private static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger(0);
 
     /**
      * Start the connection to zookeeper. This method is blocking.
      */
-    public ZookeeperConnection(CuratorFramework zookeeperConnection) {
-        this.zookeeperConnection = zookeeperConnection;
+    public ZookeeperConnection() {
+        openClient();
 
         try {
-            zookeeperConnection.start();
-            if(!zookeeperConnection.blockUntilConnected(ZOOKEEPER_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)){
-                throw new RuntimeException("Could not connect to zookeeper");
-            }
-
             createZKPaths();
         } catch (Exception exception) {
             throw new RuntimeException("Could not connect to zookeeper");
@@ -68,13 +72,7 @@ public class ZookeeperConnection {
      * Close the connection to zookeeper. This method is blocking.
      */
     public void close(){
-        zookeeperConnection.close();
-        boolean notStopped = true;
-        while(notStopped){
-            if (zookeeperConnection.getState() == CuratorFrameworkState.STOPPED) {
-                notStopped = false;
-            }
-        }
+        closeClient();
     }
 
     /**
@@ -84,7 +82,7 @@ public class ZookeeperConnection {
         return zookeeperConnection;
     }
 
-    public InterProcessMutex mutex(TaskId id){
+    public InterProcessMutex mutex(String id){
         return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
     }
 
@@ -115,6 +113,43 @@ public class ZookeeperConnection {
 
         if(zookeeperConnection.checkExists().forPath(TASKS_PATH_PREFIX) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(TASKS_PATH_PREFIX);
+        }
+    }
+
+    private static void openClient() {
+        if (CONNECTION_COUNTER.getAndIncrement() == 0) {
+            int sleep = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
+            int retries = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
+
+            zookeeperConnection = CuratorFrameworkFactory.builder()
+                    .connectString(ConfigProperties.getInstance().getProperty(ZK_SERVERS))
+                    .namespace(ZookeeperPaths.TASKS_NAMESPACE)
+                    .sessionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_SESSION_TIMEOUT))
+                    .connectionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
+                    .retryPolicy(new ExponentialBackoffRetry(sleep, retries))
+                    .build();
+
+            zookeeperConnection.start();
+
+            try {
+                if(!zookeeperConnection.blockUntilConnected(ZOOKEEPER_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)){
+                    throw new RuntimeException("Could not connect to zookeeper");
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Could not connect to zookeeper");
+            }
+        }
+    }
+
+    private static void closeClient() {
+        if (CONNECTION_COUNTER.decrementAndGet() == 0) {
+            zookeeperConnection.close();
+            boolean notStopped = true;
+            while (notStopped) {
+                if (zookeeperConnection.getState() == CuratorFrameworkState.STOPPED) {
+                    notStopped = false;
+                }
+            }
         }
     }
 }

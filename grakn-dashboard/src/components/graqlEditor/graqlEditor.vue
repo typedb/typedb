@@ -129,7 +129,6 @@ export default {
     data: function() {
         return {
             graqlResponse: undefined,
-            engineClient: {},
             typeInstances: false,
             codeMirror: {},
             currentQuery: undefined,
@@ -215,9 +214,9 @@ export default {
             this.$refs.savedQueries.refreshList();
         },
         loadMetaTypeInstances() {
-            EngineClient.getMetaTypes(x => {
+            EngineClient.getMetaTypes().then(x => {
                 if (x != null) {
-                    this.typeInstances = x;
+                    this.typeInstances = JSON.parse(x);
                 }
             });
         },
@@ -236,11 +235,11 @@ export default {
             //set the panel class to be an error class
         },
         runQuery(ev) {
-            let query = this.codeMirror.getValue();
+            let query = this.codeMirror.getValue().trim();
             this.showMessagePanel = false;
 
             // Empty query.
-            if (query == undefined || query.trim().length === 0)
+            if (query == undefined || query.length === 0)
                 return;
 
             // Add trailing semi-colon

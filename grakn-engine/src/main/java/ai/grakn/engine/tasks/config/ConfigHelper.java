@@ -21,9 +21,6 @@ package ai.grakn.engine.tasks.config;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -37,11 +34,6 @@ import static ai.grakn.engine.util.ConfigProperties.KAFKA_BUFFER_MEM;
 import static ai.grakn.engine.util.ConfigProperties.KAFKA_LINGER_MS;
 import static ai.grakn.engine.util.ConfigProperties.KAFKA_RETRIES;
 import static ai.grakn.engine.util.ConfigProperties.KAFKA_SESSION_TIMEOUT;
-import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_BASE_SLEEP_TIME;
-import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_MAX_RETRIES;
-import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
-import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
-import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
 
 /**
  * <p>
@@ -53,19 +45,6 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
  * //TODO Refactor this class
  */
 public class ConfigHelper {
-
-    public static CuratorFramework client() {
-        int sleep = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
-        int retries = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
-
-        return CuratorFrameworkFactory.builder()
-                    .connectString(ConfigProperties.getInstance().getProperty(ZK_SERVERS))
-                    .namespace(ZookeeperPaths.TASKS_NAMESPACE)
-                    .sessionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_SESSION_TIMEOUT))
-                    .connectionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
-                    .retryPolicy(new ExponentialBackoffRetry(sleep, retries))
-                    .build();
-    }
 
     public static Consumer<TaskId, TaskState> kafkaConsumer(String groupId) {
         Properties properties = new Properties();

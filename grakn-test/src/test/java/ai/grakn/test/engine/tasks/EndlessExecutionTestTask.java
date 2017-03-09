@@ -1,6 +1,6 @@
 /*
  * Grakn - A Distributed Semantic Database
- * Copyright (C) 2016  Grakn Labs Ltd
+ * Copyright (C) 2016  Grakn Labs Limited
  *
  * Grakn is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,34 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.tasks.TaskId;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class LongExecutionTestTask extends MockBackgroundTask {
-    public static final AtomicInteger startedCounter = new AtomicInteger(0);
-    public static final AtomicInteger resumedCounter = new AtomicInteger(0);
+public class EndlessExecutionTestTask extends MockBackgroundTask {
 
     @Override
     protected void startInner(TaskId id) {
-        // A short sleep to allow tasks to step on each other's toes
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        // Never return until stopped
+        if (!cancelled.get()) {
+            synchronized (sync) {
+                try {
+                    sync.wait();
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
-
-        startedCounter.incrementAndGet();
     }
 
     public void pause() {}
 
-    public void resume(Consumer<String> c, String s) {
-        resumedCounter.incrementAndGet();
-    }
+    public void resume(Consumer<String> c, String s) {}
 }

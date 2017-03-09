@@ -30,14 +30,12 @@ import io.swagger.annotations.ApiOperation;
 import mjson.Json;
 import spark.Request;
 import spark.Response;
+import spark.Service;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-
-import static spark.Spark.get;
-import static spark.Spark.post;
 
 /**
  * <p>
@@ -56,9 +54,9 @@ public class AuthController {
     private final static String PASSWORD_KEY = "password";
 
 
-    public AuthController() {
-        post(REST.WebPath.NEW_SESSION_URI, this::newSession);
-        get(REST.WebPath.IS_PASSWORD_PROTECTED_URI,this::isPasswordProtected);
+    public AuthController(Service spark) {
+        spark.post(REST.WebPath.NEW_SESSION_URI, this::newSession);
+        spark.get(REST.WebPath.IS_PASSWORD_PROTECTED_URI,this::isPasswordProtected);
     }
 
     @POST
