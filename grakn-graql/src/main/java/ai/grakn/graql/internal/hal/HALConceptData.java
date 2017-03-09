@@ -229,7 +229,10 @@ class HALConceptData {
 
     private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
 
-        entity.relations().forEach(rel -> {
+        Stream<Relation> relationStream = entity.relations().stream().skip(offset);
+        if (limit >= 0) relationStream = relationStream.limit(limit);
+        relationStream.forEach(rel -> {
+
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
             for (Map.Entry<RoleType, Set<Instance>> entry : rel.allRolePlayers().entrySet()) {
                 //Some role players can be null
@@ -255,7 +258,7 @@ class HALConceptData {
 
 
     private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
-        
+
         rel.allRolePlayers().forEach((roleType, instanceSet) -> {
             instanceSet.forEach(instance -> {
                 if (instance != null) {
