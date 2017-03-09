@@ -84,7 +84,6 @@ li {
 </style>
 
 <script>
-import EngineClient from '../../js/EngineClient.js';
 import User from '../../js/User.js';
 
 

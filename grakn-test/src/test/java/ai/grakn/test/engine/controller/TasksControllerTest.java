@@ -18,24 +18,19 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskId;
-import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import ai.grakn.test.engine.tasks.LongExecutionTestTask;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
-import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,6 +39,7 @@ import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
@@ -59,16 +55,10 @@ public class TasksControllerTest {
     @ClassRule
     public static final EngineContext engine = EngineContext.startMultiQueueServer();
 
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TasksController.class)).setLevel(Level.DEBUG);
-    }
-
     @Before
     public void setUp() throws Exception {
         MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
-        String creator = this.getClass().getName();
-        TaskState status = TaskState.of(ShortExecutionTestTask.class, creator, TaskSchedule.now(), Json.object()).status(COMPLETED);
+        TaskState status = createTask();
         singleTask = manager.storage().newState(status);
     }
 
@@ -108,7 +98,7 @@ public class TasksControllerTest {
 
     @Test
     public void testTasksByCreator() {
-        Response response = given().queryParam("creator", this.getClass().getName())
+        Response response = given().queryParam("creator", BackgroundTaskTestUtils.class.getName())
                                    .queryParam("limit", 10)
                                    .get("/tasks/all");
 
@@ -119,7 +109,7 @@ public class TasksControllerTest {
         JSONArray array = new JSONArray(response.body().asString());
         array.forEach(x -> {
             JSONObject o = (JSONObject)x;
-            Assert.assertEquals(this.getClass().getName(), o.get("creator"));
+            Assert.assertEquals(BackgroundTaskTestUtils.class.getName(), o.get("creator"));
         });
     }
 
@@ -138,9 +128,6 @@ public class TasksControllerTest {
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(singleTask.getValue()));
-
-        // Stopping tasks is not currently supported by the MultiQueueTaskManager.
-//                .and().body("status", equalTo(STOPPED.toString()));
     }
 
     @Test

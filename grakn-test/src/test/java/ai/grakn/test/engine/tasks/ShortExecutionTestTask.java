@@ -18,25 +18,19 @@
 
 package ai.grakn.test.engine.tasks;
 
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
-import mjson.Json;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.addCompletedTask;
-
-public class ShortExecutionTestTask implements BackgroundTask {
+public class ShortExecutionTestTask extends MockBackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
-    public void start(Consumer<String> saveCheckpoint, Json config) {
+    @Override
+    protected void startInner(TaskId id) {
         startedCounter.incrementAndGet();
-        addCompletedTask(TaskId.of(config.at("id").asString()));
     }
-
-    public void stop() {}
 
     public void pause() {}
 

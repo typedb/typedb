@@ -41,8 +41,7 @@ import javafx.util.Pair;
 /**
  *
  * <p>
- * Wrapper class for an answer stream providing higher level filtering facilities
- * as well as unification and join operations.
+ * Wrapper class providing higher level stream operations on answer streams
  * </p>
  *
  * @author Kasper Piskorski
@@ -189,7 +188,7 @@ public class QueryAnswerStream {
      * @param joinVars intersection on variables of two streams
      * @return joined stream
      */
-    public static Stream<Map<VarName, Concept>> join(Stream<Map<VarName, Concept>> stream, Stream<Map<VarName, Concept>> stream2, ImmutableSet<VarName> joinVars) {
+    static Stream<Map<VarName, Concept>> join(Stream<Map<VarName, Concept>> stream, Stream<Map<VarName, Concept>> stream2, ImmutableSet<VarName> joinVars) {
         LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
         return stream.flatMap(a1 -> {
             Stream<Map<VarName, Concept>> answerStream = l2.stream();
@@ -202,10 +201,10 @@ public class QueryAnswerStream {
                 return true;
             });
             return answerStream.map(a2 -> {
-                Map<VarName, Concept> merged = new HashMap<>(a2);
-                merged.putAll(a1);
-                return merged;
-            });
+                    Map<VarName, Concept> merged = new HashMap<>(a2);
+                    merged.putAll(a1);
+                    return merged;
+                });
             });
     }
 
@@ -227,10 +226,10 @@ public class QueryAnswerStream {
      * @param joinVars intersection on variables of two streams
      * @return joined stream
      */
-    public static Stream<Map<VarName, Concept>> joinWithInverse(Stream<Map<VarName, Concept>> stream,
-                                                        Stream<Map<VarName, Concept>> stream2,
-                                                        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> stream2InverseMap,
-                                                        ImmutableSet<VarName> joinVars) {
+    static Stream<Map<VarName, Concept>> joinWithInverse(Stream<Map<VarName, Concept>> stream,
+                                                         Stream<Map<VarName, Concept>> stream2,
+                                                         Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> stream2InverseMap,
+                                                         ImmutableSet<VarName> joinVars) {
         if (joinVars.isEmpty()){
             LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
             return stream.flatMap(a1 -> l2.stream().map(a2 -> {

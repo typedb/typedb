@@ -19,7 +19,6 @@
 package ai.grakn.test.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.TaskId;
-import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
@@ -29,7 +28,6 @@ import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
-import mjson.Json;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
@@ -40,11 +38,9 @@ import org.junit.Test;
 import java.util.Set;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createScheduledTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static java.util.Collections.singleton;
 import static junit.framework.Assert.assertEquals;
@@ -64,7 +60,7 @@ public class MultiQueueTaskRunnerTest {
 
     @Before
     public void setup() throws Exception {
-        connection = new ZookeeperConnection(client());
+        connection = new ZookeeperConnection();
 
         producer = ConfigHelper.kafkaProducer();
         storage = new TaskStateInMemoryStore();
@@ -89,7 +85,7 @@ public class MultiQueueTaskRunnerTest {
         ShortExecutionTestTask.startedCounter.set(0);
         ShortExecutionTestTask.resumedCounter.set(0);
 
-        Set<TaskState> tasks = createTasks(5, SCHEDULED);
+        Set<TaskState> tasks = createScheduledTasks(5);
         tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         waitForStatus(storage, tasks, COMPLETED);
@@ -102,7 +98,7 @@ public class MultiQueueTaskRunnerTest {
         ShortExecutionTestTask.startedCounter.set(0);
         ShortExecutionTestTask.resumedCounter.set(0);
 
-        Set<TaskState> tasks = createTasks(5, SCHEDULED);
+        Set<TaskState> tasks = createScheduledTasks(5);
         tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         sendTasksToWorkQueue(tasks);
@@ -116,7 +112,7 @@ public class MultiQueueTaskRunnerTest {
         ShortExecutionTestTask.startedCounter.set(0);
         ShortExecutionTestTask.resumedCounter.set(0);
 
-        TaskState task = createTask(SCHEDULED, TaskSchedule.now(), Json.object());
+        TaskState task = createTask().markScheduled();
         task.checkpoint("");
         storage.newState(task);
         sendTasksToWorkQueue(singleton(task));

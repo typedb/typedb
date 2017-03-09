@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import java.util.Objects;
 
-import static ai.grakn.engine.tasks.config.ConfigHelper.client;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -45,7 +44,7 @@ public class FailoverElectorTest {
 
     @Before
     public void setupZkConnection() {
-        zookeeper = new ZookeeperConnection(client());
+        zookeeper = new ZookeeperConnection();
         storage = new TaskStateInMemoryStore();
     }
 

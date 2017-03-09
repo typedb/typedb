@@ -81,7 +81,7 @@ export default class Visualiser {
       },
     };
 
-    // Additional properties to show in node label by type.
+        // Additional properties to show in node label by type.
     this.displayProperties = {};
     this.alreadyFittedToWindow = false;
 
@@ -109,7 +109,7 @@ export default class Visualiser {
             },
             this.networkConfig);
 
-    for(const eventName in this.callbacks) {
+    for (const eventName in this.callbacks) {
       this.network.on(eventName, this.callbacks[eventName]);
     }
 

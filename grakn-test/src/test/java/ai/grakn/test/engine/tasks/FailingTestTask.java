@@ -19,20 +19,15 @@
 
 package ai.grakn.test.engine.tasks;
 
-import ai.grakn.engine.tasks.BackgroundTask;
-import mjson.Json;
+import ai.grakn.engine.tasks.TaskId;
 
 import java.util.function.Consumer;
 
-public class FailingTestTask implements BackgroundTask {
+public class FailingTestTask extends MockBackgroundTask {
+
     @Override
-    public void start(Consumer<String> saveCheckpoint, Json configuration) {
+    protected void startInner(TaskId id) {
         throw new RuntimeException("deliberate test failure");
-    }
-
-    @Override
-    public void stop() {
-
     }
 
     @Override

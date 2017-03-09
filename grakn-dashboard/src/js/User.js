@@ -5,12 +5,14 @@ import EngineClient from './EngineClient';
 const DEFAULT_USE_REASONER = false;
 const DEFAULT_MATERIALISE = false;
 const DEFAULT_KEYSPACE = 'grakn';
+const DEFAULT_QUERY_LIMIT = '30';
+
 
 export default {
 
     // --------- User Login and Authentication ----------- //
   newSession(creds, fn) {
-    EngineClient.newSession(creds, fn);
+    return EngineClient.newSession(creds);
   },
 
   setAuthToken(token) {
@@ -80,6 +82,21 @@ export default {
       return false;
     }
     return (modalShown === 'true');
+  },
+
+  // ------------ Limit number of results ---------------- //
+  getQueryLimit() {
+    const queryLimit = localStorage.getItem('query_limit');
+    if (queryLimit == null) {
+      this.setQueryLimit(DEFAULT_QUERY_LIMIT);
+      return DEFAULT_QUERY_LIMIT;
+    }
+    return queryLimit;
+  },
+  setQueryLimit(value) {
+    let parsedValue = parseInt(value, 10) || 0;
+    if (parsedValue < 0) parsedValue = 0;
+    localStorage.setItem('query_limit', parsedValue);
   },
 
 };
