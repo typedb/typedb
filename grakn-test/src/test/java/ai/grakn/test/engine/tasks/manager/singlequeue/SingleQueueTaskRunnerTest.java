@@ -393,7 +393,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenDelayedTaskIsExecuted_ItIsOnlyExecutedAfterDelay() {
-        final Duration delay = Duration.ofMillis(3000);
+        final Duration delay = Duration.ofMillis(1000);
         final Instant submittedTime = now();
         final Instant[] startedTime = {null};
         whenTaskStarts(taskId -> {
