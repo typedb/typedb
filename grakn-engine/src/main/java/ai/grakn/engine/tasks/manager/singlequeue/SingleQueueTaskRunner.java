@@ -35,9 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.*;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.time.Instant.now;
 
@@ -128,6 +126,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         noThrow(consumer::close, "Error closing the task runner");
     }
 
+    /**
+     * Only
+     * @param taskId
+     * @return
+     */
     public boolean stopTask(TaskId taskId) {
         return taskId.equals(runningTaskId) && runningTask.stop();
     }
@@ -139,10 +142,15 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         LOG.debug("{}\treceived", task);
 
         if(shouldDelayTask(task)){
-            delayTask(task);
+            resubmitTask(task);
         }
         else if (shouldExecuteTask(task)) {
             executeTask(task);
+        }
+
+        if(taskShouldRecur(task)){
+            // re-schedule
+            resubmitTask(task);
         }
     }
 
@@ -185,7 +193,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * to be executed
      * @param task Task to be delayed
      */
-    private void delayTask(TaskState task){
+    private void resubmitTask(TaskState task){
         manager.addTask(task);
     }
 
@@ -195,20 +203,32 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         if (task.status().equals(CREATED)) {
             // Only run created tasks if they are not being retried
             return !storage.containsTask(taskId);
+        } else if(task.schedule().isRecurring()){
+            TaskStatus status = storage.getState(taskId).status();
+            return !status.equals(STOPPED) && !status.equals(FAILED);
         } else {
-            // Only run retried tasks if they are not marked completed or failed
+            // Only run retried tasks if they are not failed and (not completed and not recurring)
             // TODO: what if another task runner is running this task? (due to rebalance)
             TaskStatus status = storage.getState(taskId).status();
-            return !status.equals(COMPLETED) && !status.equals(FAILED);
+            return !status.equals(STOPPED) && !status.equals(COMPLETED) && !status.equals(FAILED);
         }
     }
 
     /**
-     * Tasks should be delayed when their schedule is set fot
+     * Tasks should be delayed when their schedule is set for
      * @return If the provided task should be delayed.
      */
     private boolean shouldDelayTask(TaskState task){
         return !task.schedule().runAt().isBefore(now());
+    }
+
+    /**
+     * Determine if task is recurring and should be re-run. Recurring tasks should not
+     * be re-run when they are stopped or failed.
+     * @return If the task should be run again
+     */
+    private boolean taskShouldRecur(TaskState task){
+        return task.schedule().isRecurring() && !task.status().equals(FAILED)&& !task.status().equals(STOPPED);
     }
 
     /**

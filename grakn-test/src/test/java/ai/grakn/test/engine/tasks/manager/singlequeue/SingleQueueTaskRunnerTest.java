@@ -40,6 +40,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -50,12 +51,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
@@ -65,13 +69,12 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskFinishes;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskStarts;
+import static java.time.Duration.between;
+import static java.time.Duration.ofMillis;
 import static java.time.Instant.now;
+import static java.time.Instant.ofEpochMilli;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -393,7 +396,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenDelayedTaskIsExecuted_ItIsOnlyExecutedAfterDelay() {
-        final Duration delay = Duration.ofMillis(1000);
+        final Duration delay = ofMillis(1000);
         final Instant submittedTime = now();
         final Instant[] startedTime = {null};
         whenTaskStarts(taskId -> {
@@ -411,14 +414,14 @@ public class SingleQueueTaskRunnerTest {
 
         taskRunner.run();
 
-        Duration duration = Duration.between(submittedTime, startedTime[0]);
+        Duration duration = between(submittedTime, startedTime[0]);
         assertThat(storage.getState(delayedTask.getId()).status(), is(COMPLETED));
         assertThat(duration, greaterThan(delay));
     }
 
     @Test
     public void whenNonDelayedTaskIsExecuted_ItIsExecutedImmediately(){
-        final Duration delay = Duration.ofMillis(1000);
+        final Duration delay = ofMillis(1000);
         final Instant submittedTime = now();
         final Map<TaskId, Instant> startedTime = new HashMap<>();
         whenTaskStarts(taskId ->
@@ -435,5 +438,73 @@ public class SingleQueueTaskRunnerTest {
         assertThat(storage.getState(instantTask.getId()).status(), is(COMPLETED));
 
         assertThat(startedTime.get(instantTask.getId()), lessThan(startedTime.get(delayedTask.getId())));
+    }
+
+    @Test
+    public void whenRecurringTaskSubmitted_ItExecutesMoreThanOnce(){
+        final int numberOfExecutions = 5;
+        final AtomicInteger startedCounter = new AtomicInteger(0);
+
+        whenTaskStarts(taskId -> {
+                int numberTimesExecuted = startedCounter.incrementAndGet();
+                if(numberTimesExecuted == numberOfExecutions){
+                    taskRunner.stopTask(taskId);
+                }
+            }
+        );
+
+        TaskState task = createTask(ShortExecutionTestTask.class, recurring(ofMillis(100)));
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        taskRunner.run();
+        assertThat(storage.getState(task.getId()).status(), is(STOPPED));
+        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
+    }
+
+    @Ignore
+    @Test
+    public void whenRecurringTaskSubmitted_ThereIsAnIntervalBetweenExecutions(){
+        final int numberOfExecutions = 10;
+        final Duration interval = Duration.ofMillis(100);
+        final AtomicInteger startedCounter = new AtomicInteger(0);
+        final AtomicLong lastExecutionTime = new AtomicLong(now().toEpochMilli());
+
+        whenTaskStarts(taskId -> {
+            assertThat(between(ofEpochMilli(lastExecutionTime.get()), now()), greaterThan(interval));
+
+            int numberTimesExecuted = startedCounter.incrementAndGet();
+            if(numberTimesExecuted == numberOfExecutions){
+                taskRunner.stopTask(taskId);
+            }
+        });
+
+        whenTaskFinishes(taskId -> {
+            lastExecutionTime.set(now().toEpochMilli());
+        });
+
+        TaskState task = createTask(ShortExecutionTestTask.class, recurring(now().plus(interval), interval));
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        taskRunner.run();
+        assertThat(storage.getState(task.getId()).status(), is(STOPPED));
+        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
+    }
+
+    @Test
+    public void whenRecurringTaskThrowsException_ItStopsExecuting(){
+        final int expectedExecutionsBeforeFailure = 1;
+        final AtomicInteger startedCounter = new AtomicInteger(0);
+        whenTaskStarts(taskId -> {
+            startedCounter.incrementAndGet();
+            throw new RuntimeException();
+        });
+
+        TaskState task = createTask(ShortExecutionTestTask.class, recurring(ofMillis(100)));
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        taskRunner.run();
+
+        assertThat(storage.getState(task.getId()).status(), is(FAILED));
+        assertThat(startedCounter.get(), equalTo(expectedExecutionsBeforeFailure));
     }
 }
