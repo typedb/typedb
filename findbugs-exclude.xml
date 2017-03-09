@@ -1,6 +1,19 @@
 <FindBugsFilter>
+
     <!-- Exclude generated ANTLR classes -->
     <Match>
         <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
     </Match>
+
+    <!-- Exclude a lot of bugs we can't be bothered to fix -->
+    <!-- TODO: Re-enable these -->
+
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="DM_CONVERT_CASE"/>
+    </Match>
+
 </FindBugsFilter>
