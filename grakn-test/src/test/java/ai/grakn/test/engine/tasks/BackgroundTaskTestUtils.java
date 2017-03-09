@@ -56,7 +56,6 @@ import static org.junit.Assert.fail;
 public class BackgroundTaskTestUtils {
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
-
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
     private static Consumer<TaskId> onTaskStart;
     private static Consumer<TaskId> onTaskFinish;
