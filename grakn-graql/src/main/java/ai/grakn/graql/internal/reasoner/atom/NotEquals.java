@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
@@ -97,11 +97,11 @@ public class NotEquals extends AtomBase {
 
     public VarName getReferenceVarName(){ return refVarName;}
 
-    public static boolean notEqualsOperator(Map<VarName, Concept> answer, NotEquals atom) {
+    public static boolean notEqualsOperator(Answer answer, NotEquals atom) {
         return !answer.get(atom.varName).equals(answer.get(atom.refVarName));
     }
 
-    public static BiFunction<Map<VarName, Concept>, NotEquals, Stream<Map<VarName, Concept>>> notEqualsFunction =
+    public static BiFunction<Answer, NotEquals, Stream<Answer>> notEqualsFunction =
             (a, atom) -> notEqualsOperator(a, atom)? Stream.empty(): Stream.of(a);
 
     /**
@@ -122,7 +122,7 @@ public class NotEquals extends AtomBase {
      * @param answers the filter should be applied to
      * @return filtered answer stream
      */
-    public Stream<Map<VarName, Concept>> filter(Stream<Map<VarName, Concept>> answers){
+    public Stream<Answer> filter(Stream<Answer> answers){
         return answers.filter(answer -> !answer.get(varName).equals(answer.get(refVarName)));
     }
 }

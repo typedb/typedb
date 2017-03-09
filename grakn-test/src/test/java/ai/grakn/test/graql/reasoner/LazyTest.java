@@ -25,6 +25,7 @@ import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -74,11 +75,11 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Map<VarName, Concept>> dbStream = query.DBlookup();
+        Stream<Answer> dbStream = query.DBlookup();
         cache.record(query, dbStream);
 
-        Set<Map<VarName, Concept>> collect = cache.getAnswerStream(query).collect(toSet());
-        Set<Map<VarName, Concept>> collect2 = cache.getAnswerStream(query2).collect(toSet());
+        Set<Answer> collect = cache.getAnswerStream(query).collect(toSet());
+        Set<Answer> collect2 = cache.getAnswerStream(query2).collect(toSet());
         assertEquals(collect.size(), collect2.size());
     }
 
@@ -97,14 +98,14 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Map<VarName, Concept>> stream = query.lookup(cache);
-        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
-        Stream<Map<VarName, Concept>> joinedStream = QueryAnswerStream.join(stream, stream2);
+        Stream<Answer> stream = query.lookup(cache);
+        Stream<Answer> stream2 = query2.lookup(cache);
+        Stream<Answer> joinedStream = QueryAnswerStream.join(stream, stream2);
 
         joinedStream = cache.record(query3, joinedStream.flatMap(a -> varFilterFunction.apply(a, query3.getVarNames())));
 
-        Set<Map<VarName, Concept>> collect = joinedStream.collect(toSet());
-        Set<Map<VarName, Concept>> collect2 = cache.getAnswerStream(query3).collect(toSet());
+        Set<Answer> collect = joinedStream.collect(toSet());
+        Set<Answer> collect2 = cache.getAnswerStream(query3).collect(toSet());
 
         assertEquals(collect.size(), 37);
         assertEquals(collect.size(), collect2.size());
@@ -125,11 +126,11 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Map<VarName, Concept>> stream = query.lookup(cache);
-        Stream<Map<VarName, Concept>> stream2 = query2.lookup(cache);
-        Stream<Map<VarName, Concept>> stream3 = query3.lookup(cache);
+        Stream<Answer> stream = query.lookup(cache);
+        Stream<Answer> stream2 = query2.lookup(cache);
+        Stream<Answer> stream3 = query3.lookup(cache);
 
-        Stream<Map<VarName, Concept>> join = QueryAnswerStream.join(QueryAnswerStream.join(stream, stream2), stream3);
+        Stream<Answer> join = QueryAnswerStream.join(QueryAnswerStream.join(stream, stream2), stream3);
         assertEquals(join.collect(toSet()).size(), 10);
     }
 
@@ -138,15 +139,16 @@ public class LazyTest {
         GraknGraph graph = geoGraph.graph();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
         MatchQuery query = graph.graql().parse(queryString);
-        QueryAnswers answers = new QueryAnswers(query.admin().streamWithVarNames().collect(toSet()));
+        QueryAnswers answers = queryAnswers(query);
         long count = query.admin()
                 .streamWithVarNames()
+                .map(Answer::new)
                 .filter(a -> QueryAnswerStream.knownFilter(a, answers.stream()))
                 .count();
         assertEquals(count, 0);
     }
 
-    @Test 
+    @Test
     public void testLazy()  {
         final int N = 20;
 
@@ -168,6 +170,10 @@ public class LazyTest {
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
         assertEquals(results.size(), limit);
         assertTrue(answerTime < maxTime);
+    }
+
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().streamWithVarNames().map(Answer::new).collect(toSet()));
     }
 
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){

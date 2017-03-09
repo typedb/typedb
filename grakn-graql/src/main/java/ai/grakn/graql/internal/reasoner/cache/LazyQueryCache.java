@@ -18,12 +18,11 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,7 +48,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
-            Stream<Map<VarName, Concept>> unifiedStream = answers.unify(getRecordUnifiers(query)).stream();
+            Stream<Answer> unifiedStream = answers.unify(getRecordUnifiers(query)).stream();
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
         } else {
             cache.put(query, new Pair<>(query, answers));
@@ -58,7 +57,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> record(Q query, Stream<Map<VarName, Concept>> answers) {
+    public Stream<Answer> record(Q query, Stream<Answer> answers) {
         return recordRetrieveLazy(query, answers).stream();
     }
 
@@ -68,10 +67,10 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
      * @param answers answers to the query
      */
     @Override
-    public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Map<VarName, Concept>> answers){
+    public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Answer> answers){
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match!= null) {
-            Stream<Map<VarName, Concept>> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
+            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
         } else {
             cache.put(query, new Pair<>(query, new LazyAnswerIterator(answers)));
@@ -94,11 +93,11 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> getAnswerStream(Q query){
+    public Stream<Answer> getAnswerStream(Q query){
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
-            return match.getValue().stream().map(a -> QueryAnswers.unify(a, unifiers));
+            return match.getValue().stream().map(a -> a.unify(unifiers));
         }
         else return Stream.empty();
     }
@@ -122,7 +121,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
                 .filter(this::contains)
                 .forEach( q -> {
                     Pair<Q, LazyAnswerIterator> match = cache.get(q);
-                    Set<Map<VarName, Concept>> s = match.getValue().stream().collect(Collectors.toSet());
+                    Set<Answer> s = match.getValue().stream().collect(Collectors.toSet());
                     s.removeAll(c2.getAnswerStream(q).collect(Collectors.toSet()));
                     cache.put(match.getKey(), new Pair<>(match.getKey(), new LazyAnswerIterator(s.stream())));
                 });
@@ -139,5 +138,10 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
                         new LazyAnswerIterator(entry.getValue().getValue().stream().collect(Collectors.toSet()).stream()))));
         cache.clear();
         cache.putAll(newCache);
+    }
+
+    public void consume() {
+        cache.entrySet().forEach(entry ->
+                entry.getValue().getValue().stream().collect(Collectors.toSet()));
     }
 }

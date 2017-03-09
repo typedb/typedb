@@ -20,15 +20,20 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.test.GraphContext;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -183,7 +188,7 @@ public class GeoInferenceTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().results());
+        return new QueryAnswers(query.admin().streamWithVarNames().map(Answer::new).collect(toSet()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

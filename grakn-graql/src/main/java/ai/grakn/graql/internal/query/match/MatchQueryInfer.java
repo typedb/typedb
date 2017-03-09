@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.match;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
@@ -58,10 +59,10 @@ class MatchQueryInfer extends MatchQueryModifier {
 
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-        Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise);
+        Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise).map(Answer::map);
         while(conjIt.hasNext()) {
             conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-            Stream<Map<VarName, Concept>> localStream = conjunctiveQuery.resolve(materialise);
+            Stream<Map<VarName, Concept>> localStream = conjunctiveQuery.resolve(materialise).map(Answer::map);
             answerStream = Stream.concat(answerStream, localStream);
         }
         return answerStream.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));

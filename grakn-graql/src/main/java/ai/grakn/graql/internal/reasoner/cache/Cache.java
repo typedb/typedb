@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import java.util.HashMap;
@@ -39,7 +40,7 @@ import javafx.util.Pair;
  * @author Kasper Piskorski
  *
  */
-public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarName, Concept>>>{
+public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>{
 
     protected final Map<Q, Pair<Q, T>> cache = new HashMap<>();
 
@@ -61,7 +62,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
      * @param answers answer stream of the query
      * @return updated answer stream
      */
-    public abstract Stream<Map<VarName, Concept>> record(Q query, Stream<Map<VarName, Concept>> answers);
+    public abstract Stream<Answer> record(Q query, Stream<Answer> answers);
 
     /**
      * record answer stream for a specific query and retrieve the updated stream in a lazy iterator
@@ -69,28 +70,28 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
      * @param answers answer stream of the query
      * @return lazy iterator of updated answers
      */
-    public abstract LazyIterator<Map<VarName, Concept>> recordRetrieveLazy(Q query, Stream<Map<VarName, Concept>> answers);
+    public abstract LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers);
 
     public abstract T getAnswers(Q query);
-    public abstract Stream<Map<VarName, Concept>> getAnswerStream(Q query);
-    public abstract LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query);
+    public abstract Stream<Answer> getAnswerStream(Q query);
+    public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
-    public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars){
-        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
-        Set<Map<VarName, Concept>> answers = getAnswerStream(query).collect(Collectors.toSet());
+    public Map<Pair<VarName, Concept>, Set<Answer>> getInverseAnswerMap(Q query, Set<VarName> vars){
+        Map<Pair<VarName, Concept>, Set<Answer>> inverseAnswerMap = new HashMap<>();
+        Set<Answer> answers = getAnswerStream(query).collect(Collectors.toSet());
         answers.forEach(answer -> answer.entrySet().stream()
-                    .filter(e -> vars.contains(e.getKey()))
-                    .forEach(entry -> {
-                        Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
-                        Set<Map<VarName, Concept>> match = inverseAnswerMap.get(key);
-                        if (match != null){
-                            match.add(answer);
-                        } else {
-                            Set<Map<VarName, Concept>> ans = new HashSet<>();
-                            ans.add(answer);
-                            inverseAnswerMap.put(key, ans);
-                        }
-                    }));
+                .filter(e -> vars.contains(e.getKey()))
+                .forEach(entry -> {
+                    Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
+                    Set<Answer> match = inverseAnswerMap.get(key);
+                    if (match != null){
+                        match.add(answer);
+                    } else {
+                        Set<Answer> ans = new HashSet<>();
+                        ans.add(answer);
+                        inverseAnswerMap.put(key, ans);
+                    }
+                }));
         return inverseAnswerMap;
     }
 
