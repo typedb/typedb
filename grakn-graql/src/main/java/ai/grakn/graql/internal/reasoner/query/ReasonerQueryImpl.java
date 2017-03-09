@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
+import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -299,11 +300,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         // TODO: This could cause bugs if a user has a variable including the word "capture"
         getVarNames().stream().filter(Utility::isCaptured)
                 .forEach(cap -> {
-                VarName old = uncapture(cap);
-                VarName fresh = VarName.anon();
-                unify(cap, fresh);
-                newMappings.put(old, fresh);
-        });
+                    VarName old = uncapture(cap);
+                    VarName fresh = VarName.anon();
+                    unify(cap, fresh);
+                    newMappings.put(old, fresh);
+                });
         return newMappings;
     }
 
@@ -442,7 +443,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         return true;
     }
-    
+
     private Stream<Map<VarName, Concept>> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                                    Cache<ReasonerAtomicQuery, ?> cache,
                                                    Cache<ReasonerAtomicQuery, ?> dCache,
@@ -509,22 +510,27 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .filter(a -> nonEqualsFilter(a, filters));
     }
 
+    @Override
+    public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
+        return resolve(materialise, new LazyQueryCache<>(), new LazyQueryCache<>());
+    }
+
     /**
      * resolves the query
      * @param materialise materialisation flag
      * @return stream of answers
      */
-    @Override
-    public Stream<Map<VarName, Concept>> resolve(boolean materialise) {
+    public Stream<Map<VarName, Concept>> resolve(boolean materialise, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames();
         }
+
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
-        Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise);
+        Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise, cache, dCache);
         while (atIt.hasNext()) {
             atomicQuery = new ReasonerAtomicQuery(atIt.next());
-            Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise);
+            Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise, cache, dCache);
             answerStream = join(answerStream, subAnswerStream);
         }
 

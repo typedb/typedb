@@ -210,6 +210,22 @@ public class GenealogyTest {
     }
 
     @Test
+    public void testMarriageType2() {
+        String queryString = "match $x isa marriage;";
+        String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+
+        String qs = "match ($x, $y) isa marriage; ($y, $z) isa marriage;";
+        iqb.parse(qs).execute();
+
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers2.size(), answers.size());
+        assertEquals(answers2.size(), 66);
+    }
+
+    @Test
     public void testMarriageMaterialisation() {
         String queryString = "match $rel ($x, $y) isa marriage;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
