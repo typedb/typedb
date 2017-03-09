@@ -209,8 +209,8 @@ public class LoaderClient extends Client {
             status = makeTaskCompletionFuture(taskId);
 
         } catch (Throwable throwable){
-            onCompletionOfTask.accept(null);
             LOG.error(getFullStackTrace(throwable));
+            onCompletionOfTask.accept(null);
             blocker.release();
             return;
         }
