@@ -21,6 +21,7 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
@@ -70,8 +71,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.*;
 
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
@@ -79,6 +79,7 @@ public class SingleQueueTaskRunnerTest {
     private static final EngineID engineID = EngineID.me();
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
+    private SingleQueueTaskManager mockedTM;
 
     private MockGraknConsumer<TaskId, TaskState> consumer;
     private TopicPartition partition;
@@ -88,6 +89,9 @@ public class SingleQueueTaskRunnerTest {
         clearTasks();
 
         storage = new TaskStateInMemoryStore();
+        
+        mockedTM = mock(SingleQueueTaskManager.class);
+        when(mockedTM.storage()).thenReturn(storage);
 
         consumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
@@ -99,7 +103,7 @@ public class SingleQueueTaskRunnerTest {
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(engineID, storage, consumer);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, consumer);
 
         createValidQueue(tasks);
 

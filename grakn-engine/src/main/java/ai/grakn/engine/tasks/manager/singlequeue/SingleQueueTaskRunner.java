@@ -24,8 +24,6 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.config.ConfigHelper;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableList;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -41,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
@@ -56,6 +55,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
     private final Consumer<TaskId, TaskState> consumer;
+    private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
@@ -70,16 +70,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * to retrieve tasks and uses the given {@param storage} to store and retrieve information about tasks.
      *
      * @param engineID identifier of the engine this task runner is on
-     * @param storage a place to store and retrieve information about tasks.
-     * @param zookeeper a connection to the running zookeeper instance.
+     * @param manager a place to control the lifecycle of tasks
      */
 
-    SingleQueueTaskRunner(EngineID engineID, TaskStateStorage storage, ZookeeperConnection zookeeper){
-        this.storage = storage;
-        this.engineID = engineID;
-
-        consumer = ConfigHelper.kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
+    SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID){
+        this(manager, engineID, consumer(manager));
     }
 
     /**
@@ -87,13 +82,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * {@param storage} to store and retrieve information about tasks.
      *
      * @param engineID identifier of the engine this task runner is on
-     * @param storage a place to store and retrieve information about tasks.
+     * @param manager a place to control the lifecycle of tasks
      * @param consumer a Kafka consumer from which to poll for tasks
      */
-    public SingleQueueTaskRunner(EngineID engineID,
-            TaskStateStorage storage, Consumer<TaskId, TaskState> consumer) {
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID,
+                                 Consumer<TaskId, TaskState> consumer) {
+        this.manager = manager;
+        this.storage = manager.storage();
         this.engineID = engineID;
-        this.storage = storage;
         this.consumer = consumer;
     }
 
@@ -193,7 +189,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             } finally {
                 runningTask = null;
                 runningTaskId = null;
-                storage.updateState(task);
+
+                //TODO Using "manager" here is only so that PMD will be happy
+                manager.storage().updateState(task);
             }
         }
     }
@@ -221,5 +219,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             LOG.debug("Partition {}{} has offset {} after receiving {} records",
                     partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
         }
+    }
+
+    /**
+     * Get a new kafka consumer listening on the new tasks topic
+     */
+    private static Consumer<TaskId, TaskState> consumer(SingleQueueTaskManager manager){
+        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
+        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, manager.zookeeper()));
+        return consumer;
     }
 }

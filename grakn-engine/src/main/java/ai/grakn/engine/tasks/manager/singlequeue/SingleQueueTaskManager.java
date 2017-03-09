@@ -99,10 +99,9 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Close the {@link SingleQueueTaskRunner} and . Any errors that occur should not prevent the
      * subsequent ones from executing.
-     * @throws Exception
      */
     @Override
-    public void close() throws Exception {
+    public void close() {
         LOG.debug("Closing SingleQueueTaskManager");
 
         // close kafka producer
@@ -161,12 +160,20 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
+     * Access the Zookeeper connection that this instance of TaskManager uses.
+     * @return A ZookeeperConnection object
+     */
+    public ZookeeperConnection zookeeper(){
+        return zookeeper;
+    }
+
+    /**
      * Create a new instance of {@link SingleQueueTaskRunner} with the configured {@link #storage}}
      * and {@link #zookeeper} connection.
      * @param engineId Identifier of the engine on which this taskrunner is running
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
-        return new SingleQueueTaskRunner(engineId, storage, zookeeper);
+        return new SingleQueueTaskRunner(this, engineId);
     }
 }
