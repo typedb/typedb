@@ -288,6 +288,15 @@ export default class Visualiser {
         links: ls,
       });
     }
+    // else{
+    //   this.nodes.update({
+    //     id: bp.id,
+    //     fixed: {
+    //       x: false,
+    //       y: false,
+    //     },
+    //   });
+    // }
 
     return this;
   }
