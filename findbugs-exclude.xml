@@ -16,4 +16,8 @@
         <Bug pattern="DM_CONVERT_CASE"/>
     </Match>
 
+    <Match>
+        <Bug pattern="UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR"/>
+    </Match>
+
 </FindBugsFilter>

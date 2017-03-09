@@ -46,7 +46,6 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,7 +78,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
  */
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
-    private @Nullable Atom atom = null;
+    private Atom atom;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
