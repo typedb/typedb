@@ -89,9 +89,6 @@ public class SingleQueueTaskRunnerTest {
         clearTasks();
 
         storage = new TaskStateInMemoryStore();
-        
-        mockedTM = mock(SingleQueueTaskManager.class);
-        when(mockedTM.storage()).thenReturn(storage);
 
         consumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
@@ -100,10 +97,14 @@ public class SingleQueueTaskRunnerTest {
         consumer.assign(ImmutableSet.of(partition));
         consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
+
+        mockedTM = mock(SingleQueueTaskManager.class);
+        when(mockedTM.storage()).thenReturn(storage);
+        when(mockedTM.newConsumer()).thenReturn(consumer);
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, consumer);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID);
 
         createValidQueue(tasks);
 
@@ -129,7 +130,6 @@ public class SingleQueueTaskRunnerTest {
 
     private void createValidQueue(List<List<TaskState>> tasks) {
         Set<TaskId> appearedTasks = Sets.newHashSet();
-        EngineID engineId = EngineID.me();
 
         tasks(tasks).forEach(task -> {
             TaskId taskId = task.getId();

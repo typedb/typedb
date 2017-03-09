@@ -25,7 +25,6 @@ import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
-import com.google.common.collect.ImmutableList;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -39,10 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
-import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
-import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**
@@ -66,31 +61,17 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private BackgroundTask runningTask = null;
 
     /**
-     * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
-     * to retrieve tasks and uses the given {@param storage} to store and retrieve information about tasks.
-     *
-     * @param engineID identifier of the engine this task runner is on
-     * @param manager a place to control the lifecycle of tasks
-     */
-
-    SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID){
-        this(manager, engineID, consumer(manager));
-    }
-
-    /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
      *
      * @param engineID identifier of the engine this task runner is on
      * @param manager a place to control the lifecycle of tasks
-     * @param consumer a Kafka consumer from which to poll for tasks
      */
-    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID,
-                                 Consumer<TaskId, TaskState> consumer) {
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID){
         this.manager = manager;
         this.storage = manager.storage();
+        this.consumer = manager.newConsumer();
         this.engineID = engineID;
-        this.consumer = consumer;
     }
 
     /**
@@ -219,14 +200,5 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             LOG.debug("Partition {}{} has offset {} after receiving {} records",
                     partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
         }
-    }
-
-    /**
-     * Get a new kafka consumer listening on the new tasks topic
-     */
-    private static Consumer<TaskId, TaskState> consumer(SingleQueueTaskManager manager){
-        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, manager.zookeeper()));
-        return consumer;
     }
 }

@@ -26,7 +26,9 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
@@ -37,8 +39,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
+import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.stream.Collectors.toSet;
@@ -160,11 +165,12 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
-     * Access the Zookeeper connection that this instance of TaskManager uses.
-     * @return A ZookeeperConnection object
+     * Get a new kafka consumer listening on the new tasks topic
      */
-    public ZookeeperConnection zookeeper(){
-        return zookeeper;
+    public Consumer<TaskId, TaskState> newConsumer(){
+        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
+        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
+        return consumer;
     }
 
     /**
