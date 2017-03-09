@@ -208,7 +208,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @return If the provided task should be delayed.
      */
     private boolean shouldDelayTask(TaskState task){
-        return task.schedule().runAt().isAfter(now());
+        return !task.schedule().runAt().isBefore(now());
     }
 
     /**
