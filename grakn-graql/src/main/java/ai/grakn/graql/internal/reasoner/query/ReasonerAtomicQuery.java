@@ -43,21 +43,21 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
@@ -79,7 +79,7 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
  */
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
-    private Atom atom;
+    private @Nullable Atom atom = null;
 
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
@@ -125,7 +125,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public boolean removeAtom(Atomic at) {
         if (super.removeAtom(at)) {
-            if (atom != null & at.equals(atom)) atom = null;
+            if (at.equals(atom)) atom = null;
             return true;
         } else return false;
     }

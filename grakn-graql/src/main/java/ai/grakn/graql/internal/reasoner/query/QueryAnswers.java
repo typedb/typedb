@@ -50,6 +50,8 @@ import java.util.stream.Stream;
  */
 public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
 
+    private static final long serialVersionUID = -8092703897236995422L;
+
     public QueryAnswers(){super();}
     public QueryAnswers(Collection<? extends Map<VarName, Concept>> ans){ super(ans);}
 

@@ -168,7 +168,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
                 computer = properties.get(COMPUTER).toString();
             }
 
-            return new ConfiguredFactory(properties, computer, FactoryBuilder.getFactory(keyspace, engineUrl, properties));
+            return new ConfiguredFactory(computer, FactoryBuilder.getFactory(keyspace, engineUrl, properties));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
@@ -181,16 +181,14 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      */
     private static ConfiguredFactory configureGraphFactoryInMemory(String keyspace){
         InternalFactory factory = FactoryBuilder.getGraknGraphFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, null);
-        return new ConfiguredFactory(null, TINKER_GRAPH_COMPUTER, factory);
+        return new ConfiguredFactory(TINKER_GRAPH_COMPUTER, factory);
     }
 
     static class ConfiguredFactory {
-        final Properties properties;
         final String graphComputer;
         final InternalFactory factory;
 
-        ConfiguredFactory(Properties properties, String graphComputer, InternalFactory factory){
-            this.properties = properties;
+        ConfiguredFactory(String graphComputer, InternalFactory factory){
             this.graphComputer = graphComputer;
             this.factory = factory;
         }

@@ -26,7 +26,6 @@ import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
@@ -100,9 +99,6 @@ public class NotEquals extends AtomBase {
     public static boolean notEqualsOperator(Map<VarName, Concept> answer, NotEquals atom) {
         return !answer.get(atom.varName).equals(answer.get(atom.refVarName));
     }
-
-    public static BiFunction<Map<VarName, Concept>, NotEquals, Stream<Map<VarName, Concept>>> notEqualsFunction =
-            (a, atom) -> notEqualsOperator(a, atom)? Stream.empty(): Stream.of(a);
 
     /**
      * apply the not equals filter to answer set
