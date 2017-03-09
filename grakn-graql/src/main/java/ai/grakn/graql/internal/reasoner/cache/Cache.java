@@ -75,6 +75,13 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
     public abstract Stream<Map<VarName, Concept>> getAnswerStream(Q query);
     public abstract LazyIterator<Map<VarName, Concept>> getAnswerIterator(Q query);
 
+    /**
+     * return an inverse answer map which is more suitable for operations involving concept comparison (joins, filtering, etc.)
+     * NB: consumes the underlying stream for the specified query
+     * @param query for answer are to be retrieved
+     * @param vars variable names of interest
+     * @return inverse answer map for specified query
+     */
     public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query, Set<VarName> vars){
         Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
         Set<Map<VarName, Concept>> answers = getAnswerStream(query).collect(Collectors.toSet());
@@ -91,6 +98,33 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Map<VarN
                             inverseAnswerMap.put(key, ans);
                         }
                     }));
+        return inverseAnswerMap;
+    }
+
+    /**
+     * returns an inverse answer map with all query variables
+     * @param query for answer are to be retrieved
+     * @return inverse answer map for specified query
+     */
+    //public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query){
+    //    return getInverseAnswerMap(query, query.getVarNames());
+    //}
+
+    public Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> getInverseAnswerMap(Q query){
+        Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> inverseAnswerMap = new HashMap<>();
+        Set<Map<VarName, Concept>> answers = getAnswerStream(query).collect(Collectors.toSet());
+        answers.forEach(answer -> answer.entrySet()
+                .forEach(entry -> {
+                    Pair<VarName, Concept> key = new Pair<>(entry.getKey(), entry.getValue());
+                    Set<Map<VarName, Concept>> match = inverseAnswerMap.get(key);
+                    if (match != null){
+                        match.add(answer);
+                    } else {
+                        Set<Map<VarName, Concept>> ans = new HashSet<>();
+                        ans.add(answer);
+                        inverseAnswerMap.put(key, ans);
+                    }
+                }));
         return inverseAnswerMap;
     }
 
