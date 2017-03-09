@@ -101,11 +101,7 @@ a:hover {
 .tabs-row {
     display: flex;
     flex-direction: row;
-<<<<<<< HEAD
-    justify-content: space-between;
-=======
     justify-content: start;
->>>>>>> shift-click
     background-color: #0f0f0f;
 }
 
