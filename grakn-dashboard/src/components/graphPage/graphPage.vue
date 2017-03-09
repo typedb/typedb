@@ -386,10 +386,22 @@ export default {
         },
 
         onDragStart(params) {
-            visualiser.draggingNode = true;
-            this.showToolTip = false;
-            visualiser.releaseNodes(params.nodes);
-        },
+           const eventKeys = params.event.srcEvent;
+           visualiser.draggingNode = true;
+           this.showToolTip = false;
+           //If ctrl key is pressed while dragging node/nodes we also unlock and drag the connected nodes
+           if(eventKeys.ctrlKey){
+             let neighbours = [];
+             params.nodes.forEach(node=>{
+               neighbours.push.apply(neighbours,visualiser.network.getConnectedNodes(node));
+               neighbours.push(node);
+             });
+             visualiser.network.selectNodes(neighbours);
+             visualiser.releaseNodes(neighbours);
+           }else{
+             visualiser.releaseNodes(params.nodes);
+           }
+       },
 
         // ----- End of graph interactions ------- //
     },
