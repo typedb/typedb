@@ -165,15 +165,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return unifiers;
     }
 
-    private LazyIterator<Map<VarName, Concept>> lazyLookup(Cache<ReasonerAtomicQuery, ?> cache) {
-        boolean queryVisited = cache.contains(this);
-        return queryVisited ? cache.getAnswerIterator(this) : lazyDBlookup(cache);
-    }
-    private LazyIterator<Map<VarName, Concept>> lazyDBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
-        Stream<Map<VarName, Concept>> dbStream = getMatchQuery().admin().streamWithVarNames();
-        return cache.recordRetrieveLazy(this, dbStream);
-    }
-
     /**
      * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
      *
