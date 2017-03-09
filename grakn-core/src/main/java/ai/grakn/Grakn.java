@@ -18,7 +18,9 @@
 
 package ai.grakn;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -59,9 +61,9 @@ public class Grakn {
             @SuppressWarnings("unchecked")
             Class<F> cl = (Class<F>)Class.forName(className);
             return cl.getConstructor(String.class, String.class).newInstance(keyspace, location);
-        }
-        catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException
+                | ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
     
@@ -80,7 +82,7 @@ public class Grakn {
      * @return A factory instance that can produce concurrent connection to the knowledge graph.
      */
     public static GraknGraphFactory factory(String location, String keyspace) {
-        String finalKeyspace = keyspace.toLowerCase();
+        String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
         String key = location + finalKeyspace;
         return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAIN_GRAPH_FACTORY_IMPLEMENTATION, location, finalKeyspace));
     }
