@@ -98,7 +98,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 // This TskRunner should only ever receive one record
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
-                    handleRecord(record.value());
+                    handleTask(record.value());
 
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
@@ -138,7 +138,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Returns false if cannot handle record because the executor is full
      */
-    private void handleRecord(TaskState task) {
+    private void handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
         if(shouldDelayTask(task)){
