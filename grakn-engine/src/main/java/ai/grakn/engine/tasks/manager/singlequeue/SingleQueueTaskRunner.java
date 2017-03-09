@@ -143,10 +143,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         if(shouldDelayTask(task)){
             resubmitTask(task);
-            return;
         }
-
-        if (shouldExecuteTask(task)) {
+        else if (shouldExecuteTask(task)) {
             executeTask(task);
 
             if(taskShouldRecur(task)){
@@ -206,14 +204,12 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         if (task.status().equals(CREATED)) {
             // Only run created tasks if they are not being retried
             return !storage.containsTask(taskId);
-        } else if(task.schedule().isRecurring()){
-            TaskStatus status = storage.getState(taskId).status();
-            return !status.equals(STOPPED) && !status.equals(FAILED);
         } else {
-            // Only run retried tasks if they are not failed and (not completed and not recurring)
+            // Only run retried tasks if they are not failed and if not completed or recurring)
             // TODO: what if another task runner is running this task? (due to rebalance)
             TaskStatus status = storage.getState(taskId).status();
-            return !status.equals(STOPPED) && !status.equals(COMPLETED) && !status.equals(FAILED);
+            return !status.equals(STOPPED) && !status.equals(FAILED) &&
+                    (!status.equals(COMPLETED) || task.schedule().isRecurring());
         }
     }
 
