@@ -242,8 +242,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
-    public static long inserts = 0;
-
     public Stream<Map<VarName, Concept>> materialise(Map<VarName, Concept> answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
         answer.entrySet().stream()
@@ -325,17 +323,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .distinct();
 
         if (materialise || rule.requiresMaterialisation()) {
-            /*
-            LazyIterator<Map<VarName, Concept>> known = ruleHead.lazyLookup(cache);
-            LazyIterator<Map<VarName, Concept>> dknown = ruleHead.lazyLookup(dCache);
-            answers = answers
-                    .filter(a -> knownFilter(a, known.stream()))
-                    .filter(a -> knownFilter(a, dknown.stream()))
-                    .flatMap(ruleHead::materialise);
-            */
-
-            ruleHead.lookup(cache);
-            ruleHead.lazyLookup(dCache);
+            if (!cache.contains(ruleHead)) ruleHead.lookup(cache);
             //filter known to make sure no duplicates are inserted (put behaviour)
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> known = cache.getInverseAnswerMap(ruleHead);
             Map<Pair<VarName, Concept>, Set<Map<VarName, Concept>>> dknown = dCache.getInverseAnswerMap(ruleHead);
