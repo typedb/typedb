@@ -210,14 +210,14 @@ export default {
             if (resp.type === 'string') {
                 this.state.eventHub.$emit('analytics-string-response', resp.response);
             } else {
-                this.halParser.parseResponse(resp.response, false);
+                this.halParser.parseResponse(resp.response, false,false);
                 visualiser.fitGraphToWindow();
             }
         },
 
         onGraphResponse(resp, nodeId) {
             const responseObject = JSON.parse(resp);
-            if (!this.halParser.parseResponse(responseObject, false)) {
+            if (!this.halParser.parseResponse(responseObject, false,false)) {
                 this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
             } else {
                 // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
@@ -233,7 +233,7 @@ export default {
         },
 
         onGraphResponseOntology(resp, err) {
-            if (!this.halParser.parseResponse(JSON.parse(resp),true)) {
+            if (!this.halParser.parseResponse(JSON.parse(resp),true,true)) {
                 this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
             }
             visualiser.fitGraphToWindow();
@@ -334,7 +334,7 @@ export default {
 
             const nodeObj = visualiser.getNode(node);
 
-            if (eventKeys.altKey) {
+            if (eventKeys.shiftKey) {
                 // If alt key is pressed we load ontology related to the current node
                 if (nodeObj.ontology) {
                     EngineClient.request({

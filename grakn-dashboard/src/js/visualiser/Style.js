@@ -85,6 +85,7 @@ export default class Style {
           },
         };
       case API.RESOURCE_TYPE:
+      case API.RESOURCE:
         return {
           background: '#1d65cb',
           highlight: {
