@@ -20,6 +20,8 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.config.ZookeeperPaths;
+import ai.grakn.exception.EngineStorageException;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;

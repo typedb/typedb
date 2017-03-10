@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.tasks.config;
 
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import org.apache.kafka.clients.consumer.Consumer;
