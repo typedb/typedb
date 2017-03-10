@@ -57,7 +57,6 @@ export default class Visualiser {
       physics: {
         barnesHut: {
           springLength: 140,
-          avoidOverlap: 0.9,
         },
         minVelocity: 0.75,
       },
