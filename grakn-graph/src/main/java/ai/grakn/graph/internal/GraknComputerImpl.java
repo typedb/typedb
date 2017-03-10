@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.GraknComputer;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -50,17 +51,18 @@ import java.util.concurrent.ExecutionException;
  */
 public class GraknComputerImpl implements GraknComputer {
     private final Graph graph;
-    private final Class<? extends GraphComputer> graphComputer;
+    private final Class<? extends GraphComputer> graphComputerClass;
+    private GraphComputer graphComputer = null;
 
     public GraknComputerImpl(Graph graph, String graphComputerType) {
         this.graph = graph;
-        this.graphComputer = getGraphComputer(graphComputerType);
+        this.graphComputerClass = getGraphComputerClass(graphComputerType);
     }
 
     @Override
     public ComputerResult compute(VertexProgram program, MapReduce... mapReduces) {
         try {
-            GraphComputer graphComputer = getComputer().program(program);
+            graphComputer = getGraphComputer().program(program);
             for (MapReduce mapReduce : mapReduces)
                 graphComputer = graphComputer.mapReduce(mapReduce);
             return graphComputer.submit().get();
@@ -72,9 +74,17 @@ public class GraknComputerImpl implements GraknComputer {
     @Override
     public ComputerResult compute(MapReduce mapReduce) {
         try {
-            return getComputer().mapReduce(mapReduce).submit().get();
+            graphComputer = getGraphComputer().mapReduce(mapReduce);
+            return graphComputer.submit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw asRuntimeException(e);
+        }
+    }
+
+    @Override
+    public void killJobs() {
+        if (graphComputer != null && graphComputerClass.equals(GraknSparkComputer.class)) {
+            ((GraknSparkComputer)graphComputer).cancelJobs();
         }
     }
 
@@ -91,7 +101,7 @@ public class GraknComputerImpl implements GraknComputer {
      * @return A graph compute supported by this grakn graph
      */
     @SuppressWarnings("unchecked")
-    protected Class<? extends GraphComputer> getGraphComputer(String graphComputerType) {
+    protected Class<? extends GraphComputer> getGraphComputerClass(String graphComputerType) {
         try {
             return (Class<? extends GraphComputer>) Class.forName(graphComputerType);
         } catch (ClassNotFoundException e) {
@@ -99,8 +109,8 @@ public class GraknComputerImpl implements GraknComputer {
         }
     }
 
-    protected GraphComputer getComputer() {
-        return graph.compute(this.graphComputer);
+    protected GraphComputer getGraphComputer() {
+        return graph.compute(this.graphComputerClass);
     }
 
 }
