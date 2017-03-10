@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import com.jayway.restassured.response.Response;

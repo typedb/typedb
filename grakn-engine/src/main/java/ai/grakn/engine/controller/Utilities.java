@@ -18,13 +18,13 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 import mjson.Json;
 import spark.Request;
 
 import java.util.List;
 
-import static ai.grakn.engine.util.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
+import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static java.util.stream.Collectors.toList;
 

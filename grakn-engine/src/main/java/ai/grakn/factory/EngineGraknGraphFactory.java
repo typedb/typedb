@@ -20,11 +20,8 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.util.GraknEngineConfig;
-import ai.grakn.util.ErrorMessage;
+import ai.grakn.engine.GraknEngineConfig;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.Properties;
 
 /**

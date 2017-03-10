@@ -24,7 +24,7 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateDeserializer;
 import ai.grakn.engine.tasks.TaskStateSerializer;
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;

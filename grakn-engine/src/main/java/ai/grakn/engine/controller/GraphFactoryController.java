@@ -24,7 +24,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -44,9 +44,8 @@ import javax.ws.rs.Path;
 import java.util.Collection;
 import java.util.Properties;
 
-import static ai.grakn.engine.util.GraknEngineConfig.FACTORY_ANALYTICS;
-import static ai.grakn.engine.util.GraknEngineConfig.FACTORY_INTERNAL;
-import static com.google.common.collect.Maps.fromProperties;
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
+import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
 
 
 /**

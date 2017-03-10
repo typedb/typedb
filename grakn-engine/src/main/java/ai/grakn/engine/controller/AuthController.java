@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;

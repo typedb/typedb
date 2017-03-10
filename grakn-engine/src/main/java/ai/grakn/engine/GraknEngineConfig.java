@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.util;
+package ai.grakn.engine;
 
 import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;

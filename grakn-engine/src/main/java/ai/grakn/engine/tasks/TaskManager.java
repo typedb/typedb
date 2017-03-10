@@ -21,9 +21,9 @@ package ai.grakn.engine.tasks;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 
-import static ai.grakn.engine.util.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
+import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
 
 import ai.grakn.engine.TaskId;
 

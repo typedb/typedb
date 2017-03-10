@@ -19,14 +19,14 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.util.GraknEngineConfig.POST_PROCESSING_DELAY;
+import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
 
 /**
  * <p>

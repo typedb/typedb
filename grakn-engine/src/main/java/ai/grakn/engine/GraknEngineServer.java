@@ -30,7 +30,6 @@ import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
@@ -47,7 +46,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.engine.util.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**

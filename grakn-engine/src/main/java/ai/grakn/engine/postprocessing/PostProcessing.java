@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.engine.util.GraknEngineConfig;
+import ai.grakn.engine.GraknEngineConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
