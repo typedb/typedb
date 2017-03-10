@@ -103,8 +103,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
 
     @Override
     public void close() throws GraphRuntimeException {
-        checkClosure(openGraphTxs(), graph);
-        checkClosure(openGraphBatchTxs(), graphBatch);
+        checkClosure(graph);
+        checkClosure(graphBatch);
 
         //Close the main graph connections
         try {
@@ -115,8 +115,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
         }
     }
 
-    private void checkClosure(int numOpenTransactions, GraknGraph graph){
-        if(numOpenTransactions > 0){
+    private void checkClosure(GraknGraph graph){
+        if(openTxs(graph) > 0){
             throw new GraphRuntimeException(ErrorMessage.TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace()));
         }
     }
