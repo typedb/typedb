@@ -43,8 +43,9 @@ public abstract class GraknTestEnv {
 
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
+            LOG.info("starting cassandra...");
             startEmbeddedCassandra();
-            LOG.info("cassandra running.");
+            LOG.info("cassandra started.");
         }
     }
 
@@ -77,15 +78,21 @@ public abstract class GraknTestEnv {
     static void startKafka() throws Exception {
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
+            LOG.info("starting kafka...");
+
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
             kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads() * 4);
+
+            LOG.info("kafka started.");
         }
     }
 
     static void stopKafka() throws Exception {
         if (KAFKA_COUNTER.decrementAndGet() == 0) {
+            LOG.info("stopping kafka...");
             kafkaUnit.shutdown();
+            LOG.info("kafka stopped.");
         }
     }
 
