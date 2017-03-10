@@ -53,7 +53,7 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
 
     @Override
     public int numOpenTx() {
-        return 1;
+        return localNestedTransactionCount.get();
     }
 
     @Override

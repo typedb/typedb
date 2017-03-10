@@ -104,10 +104,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
-    private final ThreadLocal<Integer> localNestedTransactionCount = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
+    protected final ThreadLocal<Integer> localNestedTransactionCount = new ThreadLocal<>();
 
     private Cache<TypeName, Type> cachedOntology = CacheBuilder.newBuilder()
             .maximumSize(1000)
