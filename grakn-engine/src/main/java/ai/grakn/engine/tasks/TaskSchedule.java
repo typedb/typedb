@@ -97,4 +97,12 @@ public class TaskSchedule implements Serializable {
     public boolean isRecurring() {
         return interval != null;
     }
+
+    /**
+     * Returns a copy of this Schedule that will start a task after the given interval
+     * @return a Schedule with the given amount added
+     */
+    public TaskSchedule incrementByInterval(){
+        return new TaskSchedule(runAt.plus(interval), interval);
+    }
 }
