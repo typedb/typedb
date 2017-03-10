@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -47,7 +46,6 @@ class HALConceptOntology {
 
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
-    private final static String ISA_EDGE = "isa";
     private final static String SUB_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
@@ -80,7 +78,7 @@ class HALConceptOntology {
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + this.keyspace);
         generateConceptState(resource,concept);
     }
-    
+
     private void handleConceptOntology(Representation halResource, Concept concept) {
         generateStateAndLinks(halResource, concept);
 
