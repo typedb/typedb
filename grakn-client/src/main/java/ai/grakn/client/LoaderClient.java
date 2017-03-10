@@ -18,26 +18,22 @@
 
 package ai.grakn.client;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.REST;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpRetryException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -47,19 +43,19 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.util.REST.HttpConn.APPLICATION_POST_TYPE;
+import static ai.grakn.util.REST.HttpConn.CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.LIMIT_PARAM;
+import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
+import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
+import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_URI;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
-
-import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
-import static ai.grakn.util.REST.Request.LIMIT_PARAM;
-
-import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -71,14 +67,14 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  *
  * @author alexandraorth
  */
-public class LoaderClient {
+public class LoaderClient extends Client {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoaderClient.class);
 
-    private final String POST = "http://%s" + TASKS_SCHEDULE_URI;
-    private final String GET = "http://%s" + TASKS_URI + "/%s";
+    private static final String POST = "http://%s" + TASKS_SCHEDULE_URI;
+    private static final String GET = "http://%s" + TASKS_URI + "/{id}";
 
-    private final Map<Integer,CompletableFuture> futures;
+    private final Set<TaskId> submittedTasks;
     private final Collection<InsertQuery> queries;
     private final String keyspace;
     private final String uri;
@@ -98,7 +94,7 @@ public class LoaderClient {
         this.uri = uri;
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
-        this.futures = new ConcurrentHashMap<>();
+        this.submittedTasks = ConcurrentHashMap.newKeySet();
         this.onCompletionOfTask = onCompletionOfTask;
         this.batchNumber = new AtomicInteger(0);
 
@@ -189,8 +185,7 @@ public class LoaderClient {
      */
     public void waitToFinish(){
         flush();
-        while(!futures.values().stream().allMatch(CompletableFuture::isDone)
-                && blocker.availablePermits() != blockerSize){
+        while(!submittedTasks.isEmpty() && blocker.availablePermits() != blockerSize) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -209,39 +204,37 @@ public class LoaderClient {
      * @param queries Queries to be inserted
      */
     private void sendQueriesToLoader(Collection<InsertQuery> queries){
+        TaskId taskId;
+        CompletableFuture<Json> status;
+
         try {
             blocker.acquire();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
 
-        try {
-            String taskId = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
+            taskId = TaskId.of(executePost(getConfiguration(queries, batchNumber.incrementAndGet())));
 
-            CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
+            // Add this task to the set of submitted tasks
+            submittedTasks.add(taskId);
+            status = makeTaskCompletionFuture(taskId);
 
-            // Add this status to the set of completable futures
-            futures.put(status.hashCode(), status);
-
-            // Function to execute when the task completes
-            status.whenComplete((result, error) -> {
-                unblock(status);
-
-                if(error != null){
-                    LOG.error(getFullStackTrace(error));
-                }
-
-                onCompletionOfTask.accept(result);
-            });
         } catch (Throwable throwable){
             LOG.error(getFullStackTrace(throwable));
+            onCompletionOfTask.accept(null);
             blocker.release();
+            return;
         }
-    }
 
-    private void unblock(CompletableFuture<Json> status){
-        blocker.release();
-        futures.remove(status.hashCode());
+        // Function to execute when the task completes
+        status.whenComplete((result, error) -> {
+            blocker.release();
+
+            if (error != null) {
+                LOG.error(getFullStackTrace(error));
+            }
+
+            onCompletionOfTask.accept(result);
+        }).whenComplete((result, error) ->
+            submittedTasks.remove(taskId)
+        );
     }
 
     /**
@@ -250,37 +243,23 @@ public class LoaderClient {
      *
      * @return A Completable future that terminates when the task is finished
      */
-    private String executePost(String body) throws HttpRetryException {
-        HttpURLConnection connection = null;
+    private String executePost(String body) {
         try {
-            URL url = new URL(format(POST, uri) + "?" + getPostParams());
+            HttpResponse<Json> response = Unirest.post(format(POST, uri))
+                    .queryString(TASK_CLASS_NAME_PARAMETER, "ai.grakn.engine.loader.LoaderTask")
+                    .queryString(TASK_RUN_AT_PARAMETER, String.valueOf(new Date().getTime()))
+                    .queryString(LIMIT_PARAM, "10000")
+                    .queryString(TASK_CREATOR_PARAMETER, LoaderClient.class.getName())
+                    .header(CONTENT_TYPE, APPLICATION_POST_TYPE)
+                    .body(body)
+                    .asObject(Json.class);
 
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setDoOutput(true);
-
-            // create post
-            connection.setRequestMethod(REST.HttpConn.POST_METHOD);
-            connection.addRequestProperty(REST.HttpConn.CONTENT_TYPE, REST.HttpConn.APPLICATION_POST_TYPE);
-
-            // add body and execute
-            connection.setRequestProperty(REST.HttpConn.CONTENT_LENGTH, Integer.toString(body.length()));
-            connection.getOutputStream().write(body.getBytes(REST.HttpConn.UTF8));
-            connection.getOutputStream().flush();
-
-            // get response
-            Json response = Json.read(readResponse(connection.getInputStream()));
-
-            return response.at("id").asString();
-        }
-        catch (IOException e){
+            return response.getBody().at("id").asString();
+        } catch (UnirestException e) {
             if(retry){
                 return executePost(body);
             } else {
-                throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri));
-            }
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
+                throw new RuntimeException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri), e);
             }
         }
     }
@@ -290,30 +269,20 @@ public class LoaderClient {
      * @param id ID of the task to be fetched
      * @return Json object containing status of the task
      */
-    private Json getStatus(String id) throws HttpRetryException {
-        HttpURLConnection connection = null;
+    private Json getStatus(TaskId id) throws HttpRetryException {
         try {
-            URL url = new URL(format(GET, uri, id));
+            HttpResponse<Json> response = Unirest.get(format(GET, uri))
+                    .routeParam("id", id.getValue())
+                    .asObject(Json.class);
 
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setDoOutput(true);
-
-            // create post
-            connection.setRequestMethod(REST.HttpConn.GET_METHOD);
-
-            if(connection.getResponseCode() == 404){
+            if(response.getStatus() == 404){
                 throw new IllegalArgumentException("Not found in Grakn task storage: " + id);
             }
 
             // get response
-            return Json.read(readResponse(connection.getInputStream()));
-        }
-        catch (IOException e){
+            return response.getBody();
+        } catch (UnirestException e) {
             throw new HttpRetryException(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(uri), 404);
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
         }
     }
 
@@ -324,7 +293,7 @@ public class LoaderClient {
      * @param id ID of the task to wait on completion
      * @return Completable future that will await completion of the given task
      */
-    private CompletableFuture<Json> makeTaskCompletionFuture(String id){
+    private CompletableFuture<Json> makeTaskCompletionFuture(TaskId id){
         return CompletableFuture.supplyAsync(() -> {
             while (true) {
                 try {
@@ -356,13 +325,6 @@ public class LoaderClient {
         });
     }
 
-    private String getPostParams(){
-        return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.LoaderTask&" +
-                TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
-                LIMIT_PARAM + "=" + 10000 + "&" +
-                TASK_CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
-    }
-
     /**
      * Transform queries into Json configuration needed by the Loader task
      * @param queries queries to include in configuration
@@ -377,20 +339,5 @@ public class LoaderClient {
                 .toString();
     }
 
-    /**
-     * Read the input stream from a HttpURLConnection into a String
-     * @return String containing response from the server
-     */
-    private String readResponse(InputStream inputStream) throws IOException {
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))){
-            StringBuilder response = new StringBuilder();
-            String inputLine;
-            while ((inputLine = reader.readLine()) != null) {
-                response.append(inputLine);
-            }
-
-            return response.toString();
-        }
-    }
 }
 

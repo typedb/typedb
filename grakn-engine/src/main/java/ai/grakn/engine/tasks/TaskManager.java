@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.tasks;
 
+import ai.grakn.engine.TaskId;
+
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;

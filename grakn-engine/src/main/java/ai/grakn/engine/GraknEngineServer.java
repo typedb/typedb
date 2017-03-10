@@ -83,7 +83,7 @@ public class GraknEngineServer implements AutoCloseable {
 
     public static void main(String[] args) {
         GraknEngineServer server = mainWithServer();
-
+        
         // close GraknEngineServer on SIGTERM
         Thread closeThread = new Thread(server::close, "GraknEngineServer-shutdown");
         Runtime.getRuntime().addShutdownHook(closeThread);
