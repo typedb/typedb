@@ -35,6 +35,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -918,7 +919,7 @@ public class ReasonerTest {
         return Patterns.conjunction(vars);
     }
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().streamWithVarNames().map(Answer::new).collect(toSet()));
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
     }
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         QueryAnswers answers = queryAnswers(q1);

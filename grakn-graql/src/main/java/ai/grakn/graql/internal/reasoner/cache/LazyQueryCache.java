@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Explanation;
+import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
@@ -89,7 +89,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     public LazyAnswerIterator getAnswers(Q query) {
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
-            Explanation exp = new LookupExplanation(query.copy());
+            AnswerExplanation exp = new LookupExplanation(query.copy());
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
             return match.getValue()
                     .unify(unifiers)
@@ -103,10 +103,10 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
-            Explanation exp = new LookupExplanation(query.copy());
+            AnswerExplanation exp = new LookupExplanation(query.copy());
             return match.getValue().stream()
                     .map(a -> a.unify(unifiers))
-                    .map(a -> a.getExplanation().isLookupExplanation()? a.explain(exp) : a);
+                    .map(a -> a.getExplanation() != null && a.getExplanation().isLookupExplanation()? a.explain(exp) : a);
         }
         else return Stream.empty();
     }

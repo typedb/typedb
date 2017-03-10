@@ -16,32 +16,24 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.explanation;
+package ai.grakn.graql.admin;
 
-import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import java.util.Set;
 
 /**
  *
  * <p>
- * Explanation class for rule application.
+ * Base class for explanation classes.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class RuleExplanation extends Explanation {
+public interface AnswerExplanation {
 
-    private final InferenceRule rule;
+    boolean addAnswer(Answer a);
 
-    public RuleExplanation(InferenceRule rl){ this.rule = rl;}
-    public RuleExplanation(RuleExplanation exp){
-        super(exp);
-        this.rule = exp.getRule();
-    }
+    Set<Answer> getAnswers();
 
-    @Override
-    public AnswerExplanation copy(){ return new RuleExplanation(this);}
-
-    public InferenceRule getRule(){ return rule;}
+    boolean isLookupExplanation();
 }

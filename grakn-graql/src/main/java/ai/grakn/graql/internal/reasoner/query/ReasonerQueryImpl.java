@@ -522,7 +522,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Stream<Answer> resolve(boolean materialise) {
         if (!this.isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(Answer::new);
+            return this.getMatchQuery().admin().streamWithVarNames()
+                    .map(QueryAnswer::new);
         }
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());

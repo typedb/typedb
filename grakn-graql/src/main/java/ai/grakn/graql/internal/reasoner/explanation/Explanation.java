@@ -18,30 +18,35 @@
 
 package ai.grakn.graql.internal.reasoner.explanation;
 
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.admin.ReasonerQuery;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
  * <p>
- * Explanation class for rule application.
+ * Base class for explanation classes.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class RuleExplanation extends Explanation {
+public class Explanation implements AnswerExplanation {
 
-    private final InferenceRule rule;
+    private final Set<Answer> answers;
 
-    public RuleExplanation(InferenceRule rl){ this.rule = rl;}
-    public RuleExplanation(RuleExplanation exp){
-        super(exp);
-        this.rule = exp.getRule();
-    }
+    public Explanation(){ answers = new HashSet<>();}
+    public Explanation(Set<Answer> ans){ answers = ans;}
+    public Explanation(Explanation e){ answers = new HashSet<>(e.answers);}
 
-    @Override
-    public AnswerExplanation copy(){ return new RuleExplanation(this);}
+    public AnswerExplanation copy(){ return new Explanation(this);};
 
-    public InferenceRule getRule(){ return rule;}
+    public boolean addAnswer(Answer a){ return answers.add(a);}
+    public Set<Answer> getAnswers(){ return answers;}
+
+    public boolean isLookupExplanation(){ return false;};
+
+    public ReasonerQuery getQuery(){ return null;}
 }

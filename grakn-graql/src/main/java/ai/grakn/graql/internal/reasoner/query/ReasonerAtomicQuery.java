@@ -30,7 +30,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.admin.Explanation;
+import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -174,7 +174,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return queryVisited ? cache.getAnswerIterator(this) : lazyDBlookup(cache);
     }
     private LazyIterator<Answer> lazyDBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
-        Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames().map(Answer::new);
+        Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames()
+                .map(QueryAnswer::new);
         return cache.recordRetrieveLazy(this, dbStream);
     }
 
@@ -192,9 +193,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * resolve the query by performing a db lookup with subsequent cache update
      */
     private Stream<Answer> DBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
-        Explanation exp = new LookupExplanation(this.copy());
+        AnswerExplanation exp = new LookupExplanation(this.copy());
         Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames()
-                .map(Answer::new)
+                .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
         cache.record(this, dbStream);
         return cache.getAnswerStream(this);
@@ -204,9 +205,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * resolve the query by performing a db lookup
      */
     public Stream<Answer> DBlookup() {
-        Explanation exp = new LookupExplanation(this.copy());
+        AnswerExplanation exp = new LookupExplanation(this.copy());
         return getMatchQuery().admin().streamWithVarNames()
-                .map(Answer::new)
+                .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
     }
 
@@ -217,7 +218,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
         return insert.stream()
                 .map(m -> m.entrySet().stream().collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
-                .map(Answer::new);
+                .map(QueryAnswer::new);
     }
 
     private Stream<Answer> materialiseDirect() {
@@ -256,10 +257,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), queryToMaterialise))
                 .forEach(queryToMaterialise::addAtom);
         return queryToMaterialise.materialiseDirect()
-                .map(ans -> {
-                        ans.setExplanation(answer.getExplanation());
-                        return ans;
-                });
+                .map(ans -> ans.setExplanation(answer.getExplanation()));
 
     }
 
@@ -380,7 +378,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public Stream<Answer> resolve(boolean materialise) {
         if (!this.getAtom().isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(Answer::new);
+            return this.getMatchQuery().admin().streamWithVarNames()
+                    .map(QueryAnswer::new);
         } else {
             return new QueryAnswerIterator(materialise).hasStream();
         }

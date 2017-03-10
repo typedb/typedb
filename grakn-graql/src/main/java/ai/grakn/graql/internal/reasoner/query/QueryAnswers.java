@@ -80,7 +80,9 @@ public class QueryAnswers implements Iterable<Answer>{
      * @return filtered answers
      */
     public QueryAnswers filterVars(Set<VarName> vars) {
-        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result.map(), vars::contains)).map(Answer::new).collect(Collectors.toSet()));
+        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result.map(), vars::contains))
+                .map(QueryAnswer::new)
+                .collect(Collectors.toSet()));
     }
 
     /**
