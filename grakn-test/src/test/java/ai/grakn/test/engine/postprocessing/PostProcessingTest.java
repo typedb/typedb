@@ -79,7 +79,6 @@ public class PostProcessingTest {
         graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
         GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace());
-        graph = factory.getGraph();
         roleType1 = graph.getRoleType("role 1");
         roleType2 = graph.getRoleType("role 2");
         RelationType relationType = graph.getRelationType("rel type");
@@ -175,15 +174,12 @@ public class PostProcessingTest {
         GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
         GraknGraph graph = factory.getGraph();
         graph.putResourceType(sample, ResourceType.DataType.STRING);
-
-        graph = factory.getGraph();
         ResourceType<String> resourceType = graph.getResourceType(sample);
-
         Resource<String> resource = resourceType.putResource(value);
         graph.commitOnClose();
         graph.close();
-        graph = factory.getGraph();
 
+        graph = factory.getGraph();
         assertEquals(1, resourceType.instances().size());
         waitForCache(false, keyspace, 1);
 
@@ -193,16 +189,22 @@ public class PostProcessingTest {
         createDuplicateResource(graph, resourceType, resource);
         createDuplicateResource(graph, resourceType, resource);
         assertEquals(5, resourceType.instances().size());
+
+        graph.commitOnClose();
+        graph.close();
+
         waitForCache(false, keyspace, 5);
 
         //Now fix everything
         postProcessing.run();
 
         //Check it's fixed
+        graph = factory.getGraph();
         assertEquals(1, graph.getResourceType(sample).instances().size());
 
         //Check the cache has been cleared
         assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
+        graph.close();
     }
     private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
         AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;
