@@ -41,12 +41,12 @@ public class Explanation implements AnswerExplanation {
     public Explanation(Set<Answer> ans){ answers = ans;}
     public Explanation(Explanation e){ answers = new HashSet<>(e.answers);}
 
-    public AnswerExplanation copy(){ return new Explanation(this);};
+    public AnswerExplanation copy(){ return new Explanation(this);}
 
     public boolean addAnswer(Answer a){ return answers.add(a);}
     public Set<Answer> getAnswers(){ return answers;}
 
-    public boolean isLookupExplanation(){ return false;};
+    public boolean isLookupExplanation(){ return false;}
 
     public ReasonerQuery getQuery(){ return null;}
 }
