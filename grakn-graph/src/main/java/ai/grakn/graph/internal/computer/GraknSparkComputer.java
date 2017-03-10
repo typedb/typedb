@@ -144,11 +144,12 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
     private Future<ComputerResult> submitWithExecutor(Executor exec) {
         getGraphRDD();
         jobGroupId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
-
+        String jobDescription = this.vertexProgram == null ? this.mapReducers.toString() :
+                this.vertexProgram + "+" + this.mapReducers;
         // create the completable future
         return CompletableFuture.supplyAsync(() -> {
             try {
-                graknGraphRDD.sparkContext.setJobGroup(jobGroupId, jobGroupId);
+                graknGraphRDD.sparkContext.setJobGroup(jobGroupId, jobDescription);
                 final long startTime = System.currentTimeMillis();
 
                 GraknSparkMemory memory = null;
@@ -347,9 +348,11 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
         }
     }
 
-    public static void clear() {
+    public static synchronized void clear() {
         if (graknGraphRDD != null) {
-            graknGraphRDD.loadedGraphRDD.unpersist();
+            if (graknGraphRDD.loadedGraphRDD != null) {
+                graknGraphRDD.loadedGraphRDD.unpersist();
+            }
             graknGraphRDD = null;
         }
         Spark.close();
