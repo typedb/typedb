@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.util;
 
-import ai.grakn.engine.*;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknEngineServerException;
 import com.auth0.jwt.JWTSigner;
 import com.auth0.jwt.JWTVerifier;
