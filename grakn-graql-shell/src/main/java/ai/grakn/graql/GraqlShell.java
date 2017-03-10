@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.client.LoaderClient;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.graql.internal.shell.ErrorMessage;
 import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
@@ -53,6 +54,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
@@ -80,6 +82,7 @@ import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
+import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJavaScript;
@@ -252,7 +255,18 @@ public class GraqlShell {
     }
 
     private static void sendBatchRequest(String uriString, String graqlPath, String keyspace) throws IOException {
-        LoaderClient loaderClient = new LoaderClient(keyspace, uriString);
+        AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
+
+        LoaderClient loaderClient = new LoaderClient(keyspace, uriString).setRetryPolicy(true);
+        loaderClient.setTaskCompletionConsumer((json) -> {
+            TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
+            int batch = Json.read(json.at("configuration").asString()).at("batchNumber").asInteger();
+
+            numberBatchesCompleted.incrementAndGet();
+            System.out.println(format("Status of batch [%s]: %s", batch, status));
+            System.out.println(format("Number batches completed: %s", numberBatchesCompleted.get()));
+            System.out.println(format("Approximate queries executed: %s", numberBatchesCompleted.get() * loaderClient.getBatchSize()));
+        });
 
         String queries = loadQuery(graqlPath);
 
