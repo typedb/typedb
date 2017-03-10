@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -42,6 +43,7 @@ import java.util.stream.StreamSupport;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -49,6 +51,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import static ai.grakn.migration.base.MigrationCLI.die;
 import static ai.grakn.migration.base.MigrationCLI.printInitMessage;
@@ -231,17 +234,11 @@ public class XmlMigrator implements AutoCloseable {
             DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(new InputSource(reader)); 
-            final NodeList list = doc.getElementsByTagName(this.element); 
-            Iterable<Element> iterable = () -> new Iterator<Element>() {
-                int current = 0;
-                public boolean hasNext() { return current < list.getLength(); }
-                public Element next() { return (Element)list.item(current++); }
-                public void remove() { throw new UnsupportedOperationException(); }
-            };
+            final NodeList list = doc.getElementsByTagName(this.element);
+            Iterable<Element> iterable = () -> new ElementIterator(list);
             return StreamSupport.stream(iterable.spliterator(), false);
-        }
-        catch (Exception ex) {
-            throw new RuntimeException(ex);
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            throw new RuntimeException(e);
         }
     }
     
@@ -262,4 +259,27 @@ public class XmlMigrator implements AutoCloseable {
      * Filter that will only accept XML files with the .xml extension
      */
     private final FilenameFilter xmlFiles = (dir, name) -> name.toLowerCase().endsWith(".xml");
+
+    private static class ElementIterator implements Iterator<Element> {
+        private final NodeList list;
+        int current;
+
+        ElementIterator(NodeList list) {
+            this.list = list;
+            current = 0;
+        }
+
+        public boolean hasNext() { return current < list.getLength(); }
+
+        public Element next() {
+            Element elem = (Element) list.item(current++);
+            if (elem == null) {
+                throw new NoSuchElementException();
+            } else {
+                return elem;
+            }
+        }
+
+        public void remove() { throw new UnsupportedOperationException(); }
+    }
 }

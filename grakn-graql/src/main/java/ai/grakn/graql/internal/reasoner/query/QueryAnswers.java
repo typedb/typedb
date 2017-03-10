@@ -42,6 +42,8 @@ import java.util.stream.Stream;
  */
 public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
 
+    private static final long serialVersionUID = -8092703897236995422L;
+
     private final HashSet<Map<VarName, Concept>> set = new HashSet<>();
 
     @Override

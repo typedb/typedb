@@ -124,7 +124,7 @@ public class VisualiserController {
             }
 
             return renderHALConceptData(concept, separationDegree, keyspace, offset, limit);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -143,7 +143,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
             return renderHALConceptOntology(concept, keyspace);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -165,7 +165,7 @@ public class VisualiserController {
             responseObj.put(RELATIONS_JSON_FIELD, instances(graph.admin().getMetaRelationType()));
             responseObj.put(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
             return responseObj.toString();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -202,7 +202,7 @@ public class VisualiserController {
             } else {
                 throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -241,7 +241,7 @@ public class VisualiserController {
                 response.put(COMPUTE_RESPONSE_FIELD, formatAsGraql(computeQuery));
             }
             return response.toString();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -255,7 +255,7 @@ public class VisualiserController {
             //TODO: Fix ugly casting here
             Reasoner.precomputeInferences(graph);
             return "Done.";
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }

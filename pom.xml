@@ -342,6 +342,8 @@
                 <version>3.0.4</version>
                 <configuration>
                     <excludeFilterFile>findbugs-exclude.xml</excludeFilterFile>
+                    <effort>Max</effort>
+                    <threshold>Low</threshold>
                 </configuration>
                 <executions>
                     <execution>

@@ -592,6 +592,8 @@ public class GraqlShellIT {
         PrintStream err = new PrintStream(new TeeOutputStream(berr, trueErr));
 
         try {
+            System.out.flush();
+            System.err.flush();
             System.setIn(in);
             System.setOut(out);
             System.setErr(err);

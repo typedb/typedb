@@ -202,7 +202,7 @@ public class TasksController {
 
             response.type("application/json");
             return Json.object("id", taskState.getId().getValue()).toString();
-        } catch (Exception e) {
+        } catch (ClassNotFoundException | RuntimeException e) {
             LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
         }

@@ -98,7 +98,7 @@ class GraqlSession {
         this.outputFormat = outputFormat;
         this.printer = getPrinter();
 
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             try {
                 refreshGraph();
                 sendTypes();
@@ -175,7 +175,7 @@ class GraqlSession {
      * Close the session, which will close the transaction.
      */
     void close() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             try {
                 graph.close();
             } catch (Exception e) {
@@ -188,7 +188,7 @@ class GraqlSession {
      * Receive and remember part of a query
      */
     void receiveQuery(Json json) {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             String queryString = json.at(QUERY).asString();
             queryStringBuilder.append(queryString);
         });
@@ -198,7 +198,7 @@ class GraqlSession {
      * Execute the Graql query described in the given JSON request
      */
     void executeQuery() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
 
             String errorMessage = null;
             List<Query<?>> queries = null;
@@ -246,7 +246,7 @@ class GraqlSession {
      * Commit and report any errors to the client
      */
     void commit() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             try {
                 graph.commitOnClose();
                 graph.close();
@@ -263,7 +263,7 @@ class GraqlSession {
      * Rollback the transaction, removing uncommitted changes
      */
     void rollback() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             graph.close();
             attemptRefresh();
         });
@@ -273,7 +273,7 @@ class GraqlSession {
      * Clean the transaction, removing everything in the graph (but not committing)
      */
     void clean() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             graph.clear();
             attemptRefresh();
         });
@@ -288,7 +288,7 @@ class GraqlSession {
     }
 
     void setDisplayOptions(Json json) {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             ResourceType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
                     .map(Json::asString)
                     .map(graph::getResourceType)
@@ -359,12 +359,12 @@ class GraqlSession {
      * Send the given JSON to the client
      */
     private void sendJson(Json json) {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             LOG.debug("Sending message: " + json);
             try {
                 session.getRemote().sendString(json.toString());
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                LOG.error("Error while sending JSON: " + json, e);
             }
         });
     }
