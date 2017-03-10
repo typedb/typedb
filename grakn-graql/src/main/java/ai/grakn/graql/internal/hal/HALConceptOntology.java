@@ -80,21 +80,7 @@ class HALConceptOntology {
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + this.keyspace);
         generateConceptState(resource,concept);
     }
-
-    private void embedType(Representation halResource, Concept concept) {
-
-        // temp fix until a new behaviour is defined
-        Representation HALType;
-        if (concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            HALType = factory.newRepresentation(resourceLinkPrefix + instance.type().getId()+this.keyspace)
-                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(HALType, instance.type());
-            halResource.withRepresentation(ISA_EDGE, HALType);
-        }
-
-    }
-
+    
     private void handleConceptOntology(Representation halResource, Concept concept) {
         generateStateAndLinks(halResource, concept);
 
