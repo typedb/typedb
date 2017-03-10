@@ -62,8 +62,6 @@ public class GraknEngineConfig {
     public static final String LOGGING_LEVEL = "logging.level";
 
 
-    public static final String PROJECT_VERSION = "project.version";
-
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "grakn.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "grakn.conf";
     public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN = "grakn.log.file.main";
@@ -119,7 +117,6 @@ public class GraknEngineConfig {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        prop.put(PROJECT_VERSION, GraknVersion.VERSION);
         initialiseLogger();
         computeThreadsNumber();
         LOG.info("Project directory in use: [" + getProjectPath() + "]");
