@@ -37,7 +37,7 @@ const router = new VueRouter({
 
 let authNeeded;
 
-// Functino used to ask Engine if a token is needed to use its APIs
+// Function used to ask Engine if a token is needed to use its APIs
 const checkIfAuthNeeded = function contactEngine(next) {
   EngineClient.request({
     url: '/auth/enabled/',
