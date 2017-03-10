@@ -235,7 +235,7 @@ public class LoaderClient extends Client {
      *
      * @return A Completable future that terminates when the task is finished
      */
-    private String executePost(String body) throws HttpRetryException {
+    private String executePost(String body) {
         try {
             HttpResponse<Json> response = Unirest.post(format(POST, uri))
                     .queryString(TASK_CLASS_NAME_PARAMETER, "ai.grakn.engine.loader.LoaderTask")
