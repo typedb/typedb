@@ -135,6 +135,12 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                 .runWithBackgroundThread(this::submitWithExecutor, "SparkSubmitter");
     }
 
+    public void cancelJobs() {
+        if (jobGroupId != null && graknGraphRDD != null && graknGraphRDD.sparkContext != null) {
+            graknGraphRDD.sparkContext.cancelJobGroup(jobGroupId);
+        }
+    }
+
     private Future<ComputerResult> submitWithExecutor(Executor exec) {
         getGraphRDD();
         jobGroupId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
@@ -342,8 +348,10 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
     }
 
     public static void clear() {
-        graknGraphRDD.loadedGraphRDD.unpersist();
-        graknGraphRDD = null;
+        if (graknGraphRDD != null) {
+            graknGraphRDD.loadedGraphRDD.unpersist();
+            graknGraphRDD = null;
+        }
         Spark.close();
     }
 

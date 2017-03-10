@@ -44,7 +44,7 @@ public class GraknComputerMock extends GraknComputerImpl {
     }
 
     @Override
-    protected GraphComputer getComputer() {
-        return graph.compute(getGraphComputer(graphComputerType)).workers(numberOfWorkers);
+    protected GraphComputer getGraphComputer() {
+        return graph.compute(getGraphComputerClass(graphComputerType)).workers(numberOfWorkers);
     }
 }
