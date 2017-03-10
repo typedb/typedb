@@ -3,7 +3,7 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
@@ -33,7 +33,7 @@ public abstract class GraknTestEnv {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
 
-    private static final ConfigProperties properties = ConfigProperties.getInstance();
+    private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
 
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);

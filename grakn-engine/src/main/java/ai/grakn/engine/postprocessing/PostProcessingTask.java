@@ -19,14 +19,14 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.util.ConfigProperties.POST_PROCESSING_DELAY;
+import static ai.grakn.engine.util.GraknEngineConfig.POST_PROCESSING_DELAY;
 
 /**
  * <p>
@@ -40,8 +40,8 @@ import static ai.grakn.engine.util.ConfigProperties.POST_PROCESSING_DELAY;
  * @author Denis Lobanov, alexandraorth
  */
 public class PostProcessingTask implements BackgroundTask {
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
-    private static final ConfigProperties properties = ConfigProperties.getInstance();
+    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
+    private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
     private static final EngineCache cache = EngineCache.getInstance();
 

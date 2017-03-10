@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author fppt
  */
 public class PostProcessing {
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
     private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
@@ -62,7 +62,7 @@ public class PostProcessing {
     private final EngineCache cache;
 
     private PostProcessing() {
-        postpool = Executors.newFixedThreadPool(Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.POST_PROCESSING_THREADS)));
+        postpool = Executors.newFixedThreadPool(Integer.parseInt(GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
         cache = EngineCache.getInstance();
         futures = ConcurrentHashMap.newKeySet();

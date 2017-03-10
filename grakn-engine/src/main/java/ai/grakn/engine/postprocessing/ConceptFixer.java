@@ -20,7 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -46,7 +46,7 @@ import java.util.function.Function;
  * @author fppt
  */
 class ConceptFixer {
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigProperties.LOG_NAME_POSTPROCESSING_DEFAULT);
+    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final int MAX_RETRY = 10;
 
     static void checkResources(String keyspace, String index, Set<ConceptId> conceptIds){

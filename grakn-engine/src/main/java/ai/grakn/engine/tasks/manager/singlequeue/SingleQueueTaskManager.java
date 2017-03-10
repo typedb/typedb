@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -58,9 +58,9 @@ import static java.util.stream.Stream.generate;
 public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
+    private final static GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
-    private final static int CAPACITY = ConfigProperties.getInstance().getAvailableThreads();
+    private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
 
     private final Producer<TaskId, TaskState> producer;
     private final ZookeeperConnection zookeeper;

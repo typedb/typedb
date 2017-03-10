@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks.config;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -28,12 +28,12 @@ import org.apache.kafka.clients.producer.Producer;
 
 import java.util.Properties;
 
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_BATCH_SIZE;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_BOOTSTRAP_SERVERS;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_BUFFER_MEM;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_LINGER_MS;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_RETRIES;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_SESSION_TIMEOUT;
+import static ai.grakn.engine.util.GraknEngineConfig.KAFKA_BATCH_SIZE;
+import static ai.grakn.engine.util.GraknEngineConfig.KAFKA_BOOTSTRAP_SERVERS;
+import static ai.grakn.engine.util.GraknEngineConfig.KAFKA_BUFFER_MEM;
+import static ai.grakn.engine.util.GraknEngineConfig.KAFKA_LINGER_MS;
+import static ai.grakn.engine.util.GraknEngineConfig.KAFKA_RETRIES;
+import static ai.grakn.engine.util.GraknEngineConfig.KAFKA_SESSION_TIMEOUT;
 
 /**
  * <p>
@@ -48,12 +48,12 @@ public class ConfigHelper {
 
     public static Consumer<TaskId, TaskState> kafkaConsumer(String groupId) {
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
+        properties.put("bootstrap.servers", GraknEngineConfig.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("group.id", groupId);
         properties.put("enable.auto.commit", "false");
         properties.put("auto.offset.reset", "earliest");
         properties.put("metadata.max.age.ms", "1000");
-        properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
+        properties.put("session.timeout.ms", GraknEngineConfig.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
         properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
         properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
         properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");
@@ -72,12 +72,12 @@ public class ConfigHelper {
     public static Producer<TaskId, TaskState> kafkaProducer() {
         Properties properties = new Properties();
 
-        properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
+        properties.put("bootstrap.servers", GraknEngineConfig.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
         properties.put("acks", "all");
-        properties.put("retries", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_RETRIES));
-        properties.put("batch.size", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_BATCH_SIZE));
-        properties.put("linger.ms", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_LINGER_MS));
-        properties.put("buffer.memory", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_BUFFER_MEM));
+        properties.put("retries", GraknEngineConfig.getInstance().getPropertyAsInt(KAFKA_RETRIES));
+        properties.put("batch.size", GraknEngineConfig.getInstance().getPropertyAsInt(KAFKA_BATCH_SIZE));
+        properties.put("linger.ms", GraknEngineConfig.getInstance().getPropertyAsInt(KAFKA_LINGER_MS));
+        properties.put("buffer.memory", GraknEngineConfig.getInstance().getPropertyAsInt(KAFKA_BUFFER_MEM));
         properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
         properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
         properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");

@@ -21,7 +21,7 @@ package ai.grakn.engine.loader;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.Graql;
@@ -37,7 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.util.ConfigProperties.LOADER_REPEAT_COMMITS;
+import static ai.grakn.engine.util.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
@@ -55,7 +55,7 @@ import static java.util.stream.Collectors.toList;
 public class LoaderTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoaderTask.class);
-    private static final int repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
+    private static final int repeatCommits = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override

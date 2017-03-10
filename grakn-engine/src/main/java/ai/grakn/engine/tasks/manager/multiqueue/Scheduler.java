@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -74,7 +74,7 @@ public class Scheduler implements Runnable, AutoCloseable {
     private static final String STATUS_MESSAGE = "Topic [%s], partition [%s] received [%s] records, next offset is [%s]";
 
     private final static Logger LOG = LoggerFactory.getLogger(Scheduler.class);
-    private final static int SCHEDULER_THREADS = ConfigProperties.getInstance().getAvailableThreads();
+    private final static int SCHEDULER_THREADS = GraknEngineConfig.getInstance().getAvailableThreads();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private final TaskStateStorage storage;

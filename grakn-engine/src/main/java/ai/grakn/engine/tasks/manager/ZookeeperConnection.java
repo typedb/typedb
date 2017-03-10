@@ -20,8 +20,8 @@
 package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.config.ZookeeperPaths;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.exception.EngineStorageException;
-import ai.grakn.engine.util.ConfigProperties;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
@@ -35,11 +35,11 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.FAILOVER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
-import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_BASE_SLEEP_TIME;
-import static ai.grakn.engine.util.ConfigProperties.ZK_BACKOFF_MAX_RETRIES;
-import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
-import static ai.grakn.engine.util.ConfigProperties.ZK_SERVERS;
-import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
+import static ai.grakn.engine.util.GraknEngineConfig.ZK_BACKOFF_BASE_SLEEP_TIME;
+import static ai.grakn.engine.util.GraknEngineConfig.ZK_BACKOFF_MAX_RETRIES;
+import static ai.grakn.engine.util.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
+import static ai.grakn.engine.util.GraknEngineConfig.ZK_SERVERS;
+import static ai.grakn.engine.util.GraknEngineConfig.ZK_SESSION_TIMEOUT;
 
 /**
  * <p>
@@ -50,7 +50,7 @@ import static ai.grakn.engine.util.ConfigProperties.ZK_SESSION_TIMEOUT;
  */
 public class ZookeeperConnection {
 
-    private static final int ZOOKEEPER_CONNECTION_TIMEOUT = ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT);
+    private static final int ZOOKEEPER_CONNECTION_TIMEOUT = GraknEngineConfig.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT);
     private static CuratorFramework zookeeperConnection;
 
     private static final AtomicInteger CONNECTION_COUNTER = new AtomicInteger(0);
@@ -118,14 +118,14 @@ public class ZookeeperConnection {
 
     private static void openClient() {
         if (CONNECTION_COUNTER.getAndIncrement() == 0) {
-            int sleep = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
-            int retries = ConfigProperties.getInstance().getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
+            int sleep = GraknEngineConfig.getInstance().getPropertyAsInt(ZK_BACKOFF_BASE_SLEEP_TIME);
+            int retries = GraknEngineConfig.getInstance().getPropertyAsInt(ZK_BACKOFF_MAX_RETRIES);
 
             zookeeperConnection = CuratorFrameworkFactory.builder()
-                    .connectString(ConfigProperties.getInstance().getProperty(ZK_SERVERS))
+                    .connectString(GraknEngineConfig.getInstance().getProperty(ZK_SERVERS))
                     .namespace(ZookeeperPaths.TASKS_NAMESPACE)
-                    .sessionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_SESSION_TIMEOUT))
-                    .connectionTimeoutMs(ConfigProperties.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
+                    .sessionTimeoutMs(GraknEngineConfig.getInstance().getPropertyAsInt(ZK_SESSION_TIMEOUT))
+                    .connectionTimeoutMs(GraknEngineConfig.getInstance().getPropertyAsInt(ZK_CONNECTION_TIMEOUT))
                     .retryPolicy(new ExponentialBackoffRetry(sleep, retries))
                     .build();
 

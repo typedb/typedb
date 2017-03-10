@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -84,7 +84,7 @@ public class CommitLogController {
             String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
 
             if (graphName == null) {
-                graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_KEYSPACE_PROPERTY);
+                graphName = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
             }
             LOG.info("Commit log received for graph [" + graphName + "]");
 

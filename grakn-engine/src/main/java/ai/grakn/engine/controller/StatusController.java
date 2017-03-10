@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -56,7 +56,7 @@ public class StatusController {
     private String getStatus(Request req, Response res) {
 
         Json configObj = Json.object();
-        Properties props = ConfigProperties.getInstance().getProperties();
+        Properties props = GraknEngineConfig.getInstance().getProperties();
         Enumeration e = props.propertyNames();
 
         while (e.hasMoreElements()) {
@@ -64,7 +64,7 @@ public class StatusController {
             configObj.set(key,props.getProperty(key));
         }
 
-        configObj.delAt(ConfigProperties.JWT_SECRET_PROPERTY);
+        configObj.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
 
         return configObj.toString();
     }

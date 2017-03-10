@@ -24,7 +24,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -75,18 +75,18 @@ public class GraphFactoryController {
     @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
     private String getGraphConfig(Request request, Response response) {
         String graphConfig = request.queryParams(REST.Request.GRAPH_CONFIG_PARAM);
-        ConfigProperties prop = ConfigProperties.getInstance();
+        GraknEngineConfig prop = GraknEngineConfig.getInstance();
 
         try {
             if (graphConfig == null) {
-                graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
+                graphConfig = GraknEngineConfig.GRAPH_CONFIG_PROPERTY;
             } else {
                 switch (graphConfig) {
                     case REST.GraphConfig.DEFAULT:
-                        graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
+                        graphConfig = GraknEngineConfig.GRAPH_CONFIG_PROPERTY;
                         break;
                     case REST.GraphConfig.COMPUTER:
-                        graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
+                        graphConfig = GraknEngineConfig.GRAPH_COMPUTER_CONFIG_PROPERTY;
                         break;
                     default:
                         throw new RuntimeException("Unrecognised graph config: " + graphConfig);

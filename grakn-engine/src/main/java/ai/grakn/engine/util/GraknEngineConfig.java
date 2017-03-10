@@ -35,7 +35,7 @@ import java.util.Properties;
  *
  * @author Marco Scoppetta
  */
-public class ConfigProperties {
+public class GraknEngineConfig {
 
     //Test Configs
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn-engine.properties";
@@ -52,8 +52,6 @@ public class ConfigProperties {
 
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
-
-    public static final String HAL_DEGREE_PROPERTY = "halBuilder.degree";
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
     public static final String POST_PROCESSING_DELAY = "backgroundTasks.post-processing-delay";
@@ -81,7 +79,6 @@ public class ConfigProperties {
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
-
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
     public static final String USE_ZOOKEEPER_STORAGE = "taskmanager.storage.zk";
@@ -99,23 +96,22 @@ public class ConfigProperties {
     public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";
     public static final String ZK_BACKOFF_MAX_RETRIES = "tasks.zookeeper.backoff.max_retries";
 
-    public static final String SCHEDULER_POLLING_FREQ = "tasks.scheduler.polling-frequency";
     public static final String TASKRUNNER_POLLING_FREQ = "tasks.runner.polling-frequency";
 
     private Logger LOG;
 
     private final int MAX_NUMBER_OF_THREADS = 120;
     private final Properties prop;
-    private static ConfigProperties instance = null;
+    private static GraknEngineConfig instance = null;
     private String configFilePath = null;
     private int numOfThreads = -1;
 
-    public synchronized static ConfigProperties getInstance() {
-        if (instance == null) instance = new ConfigProperties();
+    public synchronized static GraknEngineConfig getInstance() {
+        if (instance == null) instance = new GraknEngineConfig();
         return instance;
     }
 
-    private ConfigProperties() {
+    private GraknEngineConfig() {
         getProjectPath();
         prop = new Properties();
         try (FileInputStream inputStream = new FileInputStream(getConfigFilePath())){
@@ -140,7 +136,7 @@ public class ConfigProperties {
      * If it is not set, it sets it to the default one.
      */
     private void setConfigFilePath() {
-        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.DEFAULT_CONFIG_FILE;
+        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
@@ -165,9 +161,9 @@ public class ConfigProperties {
         setLogLevel();
 
         if (!(new File(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY))).exists()) {
-            LoggerFactory.getLogger(ConfigProperties.class).error(ErrorMessage.NO_LOG_CONFIG_FILE.getMessage(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY)));
+            LoggerFactory.getLogger(GraknEngineConfig.class).error(ErrorMessage.NO_LOG_CONFIG_FILE.getMessage(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY)));
         } else {
-            LOG = LoggerFactory.getLogger(ConfigProperties.class);
+            LOG = LoggerFactory.getLogger(GraknEngineConfig.class);
             LOG.info("Logging configuration file in use:[" + System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) + "]");
         }
     }

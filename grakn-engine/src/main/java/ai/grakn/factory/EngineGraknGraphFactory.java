@@ -20,7 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import ai.grakn.util.ErrorMessage;
 
 import java.io.FileInputStream;
@@ -56,7 +56,7 @@ public class EngineGraknGraphFactory {
 
     private EngineGraknGraphFactory() {
         properties = new Properties();
-        String pathToConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+        String pathToConfig = GraknEngineConfig.getInstance().getPath(GraknEngineConfig.GRAPH_CONFIG_PROPERTY);
 
         try(FileInputStream input = new FileInputStream(pathToConfig)){
             properties.load(input);

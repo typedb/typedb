@@ -18,13 +18,13 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.GraknEngineConfig;
 import mjson.Json;
 import spark.Request;
 
 import java.util.List;
 
-import static ai.grakn.engine.util.ConfigProperties.DEFAULT_KEYSPACE_PROPERTY;
+import static ai.grakn.engine.util.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static java.util.stream.Collectors.toList;
 
@@ -34,7 +34,7 @@ import static java.util.stream.Collectors.toList;
  * @author Alexandra Orth
  */
 public abstract class Utilities {
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
+    private final static GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private static final String defaultKeyspace = properties.getProperty(DEFAULT_KEYSPACE_PROPERTY);
 
     public static String getKeyspace(Request request){
