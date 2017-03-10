@@ -25,6 +25,8 @@ import ai.grakn.engine.util.ConfigProperties;
 
 import static ai.grakn.engine.util.ConfigProperties.USE_ZOOKEEPER_STORAGE;
 
+import ai.grakn.engine.TaskId;
+
 /**
  * <p>
  *     The base TaskManager interface.

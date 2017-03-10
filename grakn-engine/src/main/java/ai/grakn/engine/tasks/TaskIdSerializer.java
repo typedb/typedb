@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.tasks;
 
+import ai.grakn.engine.TaskId;
 import org.apache.kafka.common.serialization.Serializer;
 
 import java.nio.charset.StandardCharsets;
