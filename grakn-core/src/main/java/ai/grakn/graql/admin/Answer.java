@@ -20,6 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,16 +41,18 @@ import java.util.stream.Stream;
 public class Answer{
 
     private Map<VarName, Concept> map = new HashMap<>();
-    private Set<Set<Concept>> explanation = new HashSet<>();
+    private Explanation explanation;
 
     public Answer(){}
     public Answer(Answer a){
         map.putAll(a.map);
-        explanation.addAll(a.explanation);
+        explanation = a.getExplanation();
     }
     public Answer(Map<VarName, Concept> m){
         map.putAll(m);
     }
+
+    public Answer copy(){ return new Answer(this);}
 
     @Override
     public boolean equals(Object obj) {
@@ -75,12 +78,12 @@ public class Answer{
     public Concept get(VarName var){ return map.get(var);}
     
     public Concept put(VarName var, Concept con){ return map.put(var, con);}
+
+    public Concept remove(VarName var){ return map.remove(var);}
     
     public Map<VarName, Concept> map(){ return map;}
 
     public void putAll(Answer a2){ map.putAll(a2.map);}
-
-    
     public void putAll(Map<VarName, Concept> m2){ map.putAll(m2);}
 
     
@@ -96,21 +99,25 @@ public class Answer{
         Answer merged = new Answer(a2);
         merged.putAll(this);
 
-        Stream.concat(this.getExplanation().stream(), a2.getExplanation().stream()).forEach(merged.getExplanation()::add);
-        if (getExplanation().isEmpty()) merged.getExplanation().add(this.concepts());
-        if (a2.getExplanation().isEmpty()) merged.getExplanation().add(a2.concepts());
+        merged.setExplanation(new Explanation());
+        Stream.of(this.copy(), a2.copy()).forEach(merged.getExplanation()::addAnswer);
 
         return merged;
     }
 
-    
-    public Answer filterVars(Set<VarName> vars) {
-        Answer filteredAnswer = new Answer();
-        vars.stream()
-                .filter(this::containsKey)
-                .forEach(var -> filteredAnswer.put(var, this.get(var)));
+    public Answer explain(Explanation exp){
+        Set<Answer> answers = explanation != null? explanation.getAnswers() : new HashSet<>();
+        explanation = exp;
+        answers.forEach(explanation::addAnswer);
+        return this;
+    }
 
-        filteredAnswer.getExplanation().addAll(this.getExplanation());
+    public Answer filterVars(Set<VarName> vars) {
+        Answer filteredAnswer = new Answer(this);
+        Set<VarName> varsToRemove = Sets.difference(this.keySet(), vars);
+        varsToRemove.forEach(filteredAnswer::remove);
+
+        filteredAnswer.setExplanation(this.getExplanation());
         return filteredAnswer;
     }
 
@@ -122,11 +129,15 @@ public class Answer{
                         .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())?  unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue))
         );
 
-        unified.getExplanation().addAll(this.getExplanation());
+        Explanation exp = this.getExplanation().copy();
+        unified.setExplanation(exp);
+        //if (unified.getExplanation().isLookupExplanation()){
+        //    unified.getExplanation().getQuery().unify(unifiers);
+        //}
         return unified;
     }
 
-    
-    public Set<Set<Concept>> getExplanation(){return explanation;}
+    public Explanation getExplanation(){ return explanation;}
+    public void setExplanation(Explanation e){ this.explanation = e;}
 }
 

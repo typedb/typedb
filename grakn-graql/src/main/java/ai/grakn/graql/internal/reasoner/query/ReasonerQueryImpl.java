@@ -97,6 +97,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         inferTypes();
     }
 
+    @Override
+    public ReasonerQuery copy(){ return new ReasonerQueryImpl(this);}
+
     //alpha-equivalence equality
     @Override
     public boolean equals(Object obj){
@@ -309,6 +312,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return corresponding MatchQuery
      */
+    @Override
     public MatchQuery getMatchQuery() {
         return graph.graql().infer(false).match(getPattern());
     }
@@ -455,11 +459,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             childAtomicQuery = qit.next();
             Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
+            join = join(join, localSubs, ImmutableSet.copyOf(joinVars));
+            /*
             join = joinWithInverse(
                     join,
                     localSubs,
                     cache.getInverseAnswerMap(childAtomicQuery, joinVars),
                     ImmutableSet.copyOf(joinVars));
+                    */
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
         return join;

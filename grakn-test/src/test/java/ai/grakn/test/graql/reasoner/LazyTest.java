@@ -78,8 +78,9 @@ public class LazyTest {
         Stream<Answer> dbStream = query.DBlookup();
         cache.record(query, dbStream);
 
-        Set<Answer> collect = cache.getAnswerStream(query).collect(toSet());
         Set<Answer> collect2 = cache.getAnswerStream(query2).collect(toSet());
+        Set<Answer> collect = cache.getAnswerStream(query).collect(toSet());
+
         assertEquals(collect.size(), collect2.size());
     }
 

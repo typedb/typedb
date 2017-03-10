@@ -30,6 +30,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.Explanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -40,6 +41,8 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
@@ -95,6 +98,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         super(at);
         atom = selectAtoms().stream().findFirst().orElse(null);
     }
+
+    @Override
+    public ReasonerQuery copy(){ return new ReasonerAtomicQuery(this);}
 
     @Override
     public boolean equals(Object obj) {
@@ -186,7 +192,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * resolve the query by performing a db lookup with subsequent cache update
      */
     private Stream<Answer> DBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
-        Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames().map(Answer::new);
+        Explanation exp = new LookupExplanation(this.copy());
+        Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames()
+                .map(Answer::new)
+                .map(a -> a.explain(exp));
         cache.record(this, dbStream);
         return cache.getAnswerStream(this);
     }
@@ -195,7 +204,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * resolve the query by performing a db lookup
      */
     public Stream<Answer> DBlookup() {
-        return getMatchQuery().admin().streamWithVarNames().map(Answer::new);
+        Explanation exp = new LookupExplanation(this.copy());
+        return getMatchQuery().admin().streamWithVarNames()
+                .map(Answer::new)
+                .map(a -> a.explain(exp));
     }
 
     /**
@@ -245,9 +257,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .forEach(queryToMaterialise::addAtom);
         return queryToMaterialise.materialiseDirect()
                 .map(ans -> {
-                        ans.getExplanation().addAll(answer.getExplanation());
+                        ans.setExplanation(answer.getExplanation());
                         return ans;
                 });
+
     }
 
     private Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom) {
@@ -319,7 +332,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Answer> answers = ruleBody
                 .computeJoin(subGoals, cache, dCache, materialise, differentialJoin)
                 .flatMap(a -> varFilterFunction.apply(a, varsToRetain))
-                .distinct();
+                .distinct()
+                .map(ans -> ans.explain(new RuleExplanation(rule)));
 
         if (materialise || rule.requiresMaterialisation()) {
             LazyIterator<Answer> known = ruleHead.lazyLookup(cache);

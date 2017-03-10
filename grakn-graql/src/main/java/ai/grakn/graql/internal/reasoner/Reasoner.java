@@ -98,7 +98,7 @@ public class Reasoner {
      * @param materialise whether to materialise inferences
      * @return stream of answers
      */
-    public static Stream<Answer> resolveWithPath(MatchQuery query, boolean materialise) {
+    public static Stream<Answer> resolveWithExplanation(MatchQuery query, boolean materialise) {
         GraknGraph graph = optionalOr(query.admin().getGraph()).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
