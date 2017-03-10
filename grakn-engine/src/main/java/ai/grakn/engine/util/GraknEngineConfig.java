@@ -36,12 +36,11 @@ import java.util.Properties;
  */
 public class GraknEngineConfig {
 
-    //Test Configs
-    public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn-engine.properties";
-    public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
+    public static final String FACTORY_INTERNAL = "factory.internal";
+    public static final String FACTORY_ANALYTICS = "factory.analytics";
 
-    public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
-    public static final String GRAPH_COMPUTER_CONFIG_PROPERTY = "graphdatabase.computer";
+    public static final String DEFAULT_CONFIG_FILE = "../conf/main/grakn.properties";
+    public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
     public static final String DEFAULT_KEYSPACE_PROPERTY = "graphdatabase.default-keyspace";
 
@@ -59,7 +58,6 @@ public class GraknEngineConfig {
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
     public static final String LOGGING_FILE_PATH_MAIN = "logging.file.main";
     public static final String LOGGING_LEVEL = "logging.level";
-
 
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "grakn.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "grakn.conf";
@@ -79,13 +77,6 @@ public class GraknEngineConfig {
     // Engine Config
     public static final String TASK_MANAGER_IMPLEMENTATION = "taskmanager.implementation";
     public static final String USE_ZOOKEEPER_STORAGE = "taskmanager.storage.zk";
-
-    public static final String KAFKA_BOOTSTRAP_SERVERS = "tasks.kafka.bootstrap-servers";
-    public static final String KAFKA_SESSION_TIMEOUT = "tasks.kafka.consumer.session-timeout";
-    public static final String KAFKA_RETRIES = "tasks.kafka.producer.retries";
-    public static final String KAFKA_BATCH_SIZE = "tasks.kafka.producer.batch-size";
-    public static final String KAFKA_LINGER_MS = "tasks.kafka.producer.linger-ms";
-    public static final String KAFKA_BUFFER_MEM = "tasks.kafka.producer.buffer-mem";
 
     public static final String ZK_SERVERS = "tasks.zookeeper.servers";
     public static final String ZK_SESSION_TIMEOUT = "tasks.zookeeper.session_timeout_ms";

@@ -24,19 +24,18 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.util.EngineCommunicator;
 import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.Properties;
 import java.util.function.Supplier;
 
+import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
+import static mjson.Json.read;
 
 /**
  * <p>
@@ -157,21 +156,17 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      * @return A new or existing grakn graph factory with the defined name connecting to the specified remote location
      */
     private static ConfiguredFactory configureGraphFactoryRemote(String keyspace, String engineUrl, String graphType){
-        try {
-            String restFactoryUri = engineUrl + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
+        String restFactoryUri = engineUrl + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
 
-            Properties properties = new Properties();
-            properties.load(new StringReader(EngineCommunicator.contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)));
+        Properties properties = new Properties();
+        properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
 
-            String computer = null;
-            if(properties.containsKey(COMPUTER)){
-                computer = properties.get(COMPUTER).toString();
-            }
-
-            return new ConfiguredFactory(computer, FactoryBuilder.getFactory(keyspace, engineUrl, properties));
-        } catch (IOException e) {
-            throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
+        String computer = null;
+        if(properties.containsKey(COMPUTER)){
+            computer = properties.get(COMPUTER).toString();
         }
+
+        return new ConfiguredFactory(computer, FactoryBuilder.getFactory(keyspace, engineUrl, properties));
     }
 
     /**

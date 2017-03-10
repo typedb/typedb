@@ -55,7 +55,7 @@ public class StatusController {
     private String getStatus(Request req, Response res) {
 
         // Turn the properties into a Json object
-        Json config = Json.make(Maps.fromProperties(GraknEngineConfig.getInstance().getProperties()));
+        Json config = Json.make(GraknEngineConfig.getInstance().getProperties());
 
         // Remove the JWT Secret
         config.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);

@@ -55,7 +55,7 @@ public abstract class GraknTestEnv {
     static GraknEngineServer startEngine(String taskManagerClass, int port) throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
-    	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
+    	// -Dgrakn.conf=../conf/test/tinker/grakn.properties
     	//
     	// When using titan, add -Dgrakn.test-profile=titan
     	//

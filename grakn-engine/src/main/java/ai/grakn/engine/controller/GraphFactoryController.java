@@ -41,11 +41,13 @@ import spark.Service;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Properties;
+
+import static ai.grakn.engine.util.GraknEngineConfig.FACTORY_ANALYTICS;
+import static ai.grakn.engine.util.GraknEngineConfig.FACTORY_INTERNAL;
+import static com.google.common.collect.Maps.fromProperties;
+
 
 /**
  * <p>
@@ -75,27 +77,29 @@ public class GraphFactoryController {
     @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
     private String getGraphConfig(Request request, Response response) {
         String graphConfig = request.queryParams(REST.Request.GRAPH_CONFIG_PARAM);
-        GraknEngineConfig prop = GraknEngineConfig.getInstance();
-
-        try {
-            if (graphConfig == null) {
-                graphConfig = GraknEngineConfig.GRAPH_CONFIG_PROPERTY;
-            } else {
-                switch (graphConfig) {
-                    case REST.GraphConfig.DEFAULT:
-                        graphConfig = GraknEngineConfig.GRAPH_CONFIG_PROPERTY;
-                        break;
-                    case REST.GraphConfig.COMPUTER:
-                        graphConfig = GraknEngineConfig.GRAPH_COMPUTER_CONFIG_PROPERTY;
-                        break;
-                    default:
-                        throw new RuntimeException("Unrecognised graph config: " + graphConfig);
-                }
-            }
-            return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new GraknEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
+        if(graphConfig == null){
+            graphConfig = REST.GraphConfig.DEFAULT;
         }
+
+        Properties properties = new Properties();
+        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+        switch (graphConfig) {
+            case REST.GraphConfig.DEFAULT:
+                break; // Factory is already correctly set
+            case REST.GraphConfig.COMPUTER:
+                properties.setProperty(FACTORY_INTERNAL, properties.get(FACTORY_ANALYTICS).toString());
+                break;
+            default:
+                throw new RuntimeException("Unrecognised graph config: " + graphConfig);
+        }
+
+        // Turn the properties into a Json object
+        Json config = Json.make(properties);
+
+        // Remove the JWT Secret
+        config.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
+
+        return config.toString();
     }
 
     @GET

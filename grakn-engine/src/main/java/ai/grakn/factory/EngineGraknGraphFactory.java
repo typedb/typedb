@@ -56,13 +56,7 @@ public class EngineGraknGraphFactory {
 
     private EngineGraknGraphFactory() {
         properties = new Properties();
-        String pathToConfig = GraknEngineConfig.getInstance().getPath(GraknEngineConfig.GRAPH_CONFIG_PROPERTY);
-
-        try(FileInputStream input = new FileInputStream(pathToConfig)){
-            properties.load(input);
-        } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
-        }
+        properties.putAll(GraknEngineConfig.getInstance().getProperties());
     }
 
     public synchronized GraknGraph getGraph(String keyspace) {
