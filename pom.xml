@@ -355,6 +355,14 @@
                 </executions>
             </plugin>
             <plugin>
+                <!--
+                PMD prints warnings for a few files. This is because
+                it cannot parse method references with generic parameters, such
+                as `this::<RoleType>getType`.
+
+                Any files containing these will not be checked for violations
+                by PMD.
+                -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
                 <version>3.7</version>

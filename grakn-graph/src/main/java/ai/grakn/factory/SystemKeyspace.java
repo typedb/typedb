@@ -123,7 +123,6 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
             try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE), StandardCharsets.UTF_8))) {
                 query = buffer.lines().collect(Collectors.joining("\n"));
             }
-            LOG.info("System ontology is " + query);
             graph.graql().parse(query).execute();
             graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();
