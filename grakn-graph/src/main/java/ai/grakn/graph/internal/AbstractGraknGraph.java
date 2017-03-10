@@ -793,13 +793,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public void close() throws GraknValidationException {
         if(!isClosed()) {
             Integer currentNumOfTransactions = localNestedTransactionCount.get() - 1;
-            localNestedTransactionCount.set(currentNumOfTransactions);
             if(currentNumOfTransactions == 0) {
                 if (getCommitRequired()) {
                     commit();
                 }
                 localCommitRequired.remove();
                 closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
+            } else {
+                localNestedTransactionCount.set(currentNumOfTransactions);
             }
         }
     }
