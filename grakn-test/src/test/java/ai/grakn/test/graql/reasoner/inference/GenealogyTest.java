@@ -109,14 +109,14 @@ public class GenealogyTest {
         String queryString = "match $x isa person has identifier $id has gender 'female';";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers.size(), 32);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
     public void testGender() {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertEquals(answers.size(), qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }
 
@@ -162,7 +162,7 @@ public class GenealogyTest {
         QueryAnswers answers2 = queryAnswers(iqb.parse(queryString2));
         answers.forEach(answer -> assertEquals(answer.size(), 1));
         assertEquals(answers, answers2);
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQueryAdmin>parse(queryString).results()));
+        assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
@@ -202,6 +202,22 @@ public class GenealogyTest {
         String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
+
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers2.size(), answers.size());
+        assertEquals(answers2.size(), 66);
+    }
+
+    @Test
+    public void testMarriageType2() {
+        String queryString = "match $x isa marriage;";
+        String queryString2 = "match $x($x1, $x2) isa marriage;select $x;";
+        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query2 = iqb.parse(queryString2);
+
+        String qs = "match ($x, $y) isa marriage; ($y, $z) isa marriage;";
+        iqb.parse(qs).execute();
 
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 = queryAnswers(query2);

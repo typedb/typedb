@@ -24,10 +24,7 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.config.ConfigHelper;
-import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
-import com.google.common.collect.ImmutableList;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -41,10 +38,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
-import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.time.Instant.now;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -56,6 +51,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
     private final Consumer<TaskId, TaskState> consumer;
+    private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
@@ -66,35 +62,17 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private BackgroundTask runningTask = null;
 
     /**
-     * Create a {@link SingleQueueTaskRunner} which creates a {@link Consumer} with the given {@param connection)}
-     * to retrieve tasks and uses the given {@param storage} to store and retrieve information about tasks.
-     *
-     * @param engineID identifier of the engine this task runner is on
-     * @param storage a place to store and retrieve information about tasks.
-     * @param zookeeper a connection to the running zookeeper instance.
-     */
-
-    SingleQueueTaskRunner(EngineID engineID, TaskStateStorage storage, ZookeeperConnection zookeeper){
-        this.storage = storage;
-        this.engineID = engineID;
-
-        consumer = ConfigHelper.kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
-    }
-
-    /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
      *
      * @param engineID identifier of the engine this task runner is on
-     * @param storage a place to store and retrieve information about tasks.
-     * @param consumer a Kafka consumer from which to poll for tasks
+     * @param manager a place to control the lifecycle of tasks
      */
-    public SingleQueueTaskRunner(EngineID engineID,
-            TaskStateStorage storage, Consumer<TaskId, TaskState> consumer) {
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID){
+        this.manager = manager;
+        this.storage = manager.storage();
+        this.consumer = manager.newConsumer();
         this.engineID = engineID;
-        this.storage = storage;
-        this.consumer = consumer;
     }
 
     /**
@@ -122,7 +100,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 // This TskRunner should only ever receive one record
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
-                    handleRecord(record);
+                    handleRecord(record.value());
 
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
@@ -157,45 +135,58 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Returns false if cannot handle record because the executor is full
      */
-    private void handleRecord(ConsumerRecord<TaskId, TaskState> record) {
-        TaskState task = record.value();
-
+    private void handleRecord(TaskState task) {
         LOG.debug("{}\treceived", task);
 
-        if (shouldExecuteTask(task)) {
-
-            // Mark as running
-            task.markRunning(engineID);
-
-            //TODO Make this a put within state storage
-            if(storage.containsTask(task.getId())) {
-                storage.updateState(task);
-            } else {
-                storage.newState(task);
-            }
-
-            LOG.debug("{}\tmarked as running", task);
-
-            // Execute task
-            try {
-                runningTaskId = task.getId();
-                runningTask = task.taskClass().newInstance();
-                boolean completed = runningTask.start(null, task.configuration());
-                if (completed) {
-                    task.markCompleted();
-                } else {
-                    task.markStopped();
-                }
-                LOG.debug("{}\tmarked as completed", task);
-            } catch (Throwable throwable) {
-                task.markFailed(throwable);
-                LOG.debug("{}\tmarked as failed", task);
-            } finally {
-                runningTask = null;
-                runningTaskId = null;
-                storage.updateState(task);
-            }
+        if(shouldDelayTask(task)){
+            delayTask(task);
         }
+        else if (shouldExecuteTask(task)) {
+            executeTask(task);
+        }
+    }
+
+    private void executeTask(TaskState task){
+        // Mark as running
+        task.markRunning(engineID);
+
+        //TODO Make this a put within state storage
+        if(storage.containsTask(task.getId())) {
+            storage.updateState(task);
+        } else {
+            storage.newState(task);
+        }
+
+        LOG.debug("{}\tmarked as running", task);
+
+        // Execute task
+        try {
+            runningTaskId = task.getId();
+            runningTask = task.taskClass().newInstance();
+            boolean completed = runningTask.start(null, task.configuration());
+            if (completed) {
+                task.markCompleted();
+            } else {
+                task.markStopped();
+            }
+            LOG.debug("{}\tmarked as completed", task);
+        } catch (Throwable throwable) {
+            task.markFailed(throwable);
+            LOG.debug("{}\tmarked as failed", task);
+        } finally {
+            runningTask = null;
+            runningTaskId = null;
+            storage.updateState(task);
+        }
+    }
+
+    /**
+     * Tasks are delayed by re-submitting them to the queue until it is time for them
+     * to be executed
+     * @param task Task to be delayed
+     */
+    private void delayTask(TaskState task){
+        manager.addTask(task);
     }
 
     private boolean shouldExecuteTask(TaskState task) {
@@ -210,6 +201,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             TaskStatus status = storage.getState(taskId).status();
             return !status.equals(COMPLETED) && !status.equals(FAILED);
         }
+    }
+
+    /**
+     * Tasks should be delayed when their schedule is set fot
+     * @return If the provided task should be delayed.
+     */
+    private boolean shouldDelayTask(TaskState task){
+        return !task.schedule().runAt().isBefore(now());
     }
 
     /**

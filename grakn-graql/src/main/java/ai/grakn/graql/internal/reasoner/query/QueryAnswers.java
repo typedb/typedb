@@ -19,21 +19,13 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.atom.NotEquals;
-import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,39 +34,46 @@ import java.util.stream.Stream;
  *
  * <p>
  * Wrapper class for a set of answers providing higher level filtering facilities
- * as well as unification and join operations.
+ * as well as unification operation.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
-public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
+public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
 
     private static final long serialVersionUID = -8092703897236995422L;
 
-    public QueryAnswers(){super();}
-    public QueryAnswers(Collection<? extends Map<VarName, Concept>> ans){ super(ans);}
+    private final HashSet<Map<VarName, Concept>> set = new HashSet<>();
 
-    private Set<VarName> getVars(){
-        Optional<Map<VarName, Concept>> map = this.stream().findFirst();
-        return map.isPresent()? map.get().keySet() : new HashSet<>();
+    @Override
+    public Iterator<Map<VarName, Concept>> iterator() { return set.iterator();}
+
+    @Override
+    public boolean equals(Object obj){
+        if (obj == this) return true;
+        if (obj == null || !(obj instanceof QueryAnswers)) return false;
+        QueryAnswers a2 = (QueryAnswers) obj;
+        return set.equals(a2.set);
     }
 
-    /**
-     * permute answer based on specified sets of permutations defined by unifiers
-     * @param unifierSet set of unifier mappings to perform the permutation on
-     * @param subs substitutions that need to met
-     * @param types type constraints that need to be met
-     * @return permuted answers
-     */
-    public QueryAnswers permute(Set<Map<VarName, VarName>> unifierSet, Set<IdPredicate> subs, Set<TypeAtom> types){
-        if (unifierSet.isEmpty()) return this;
-        QueryAnswers permutedAnswers = new QueryAnswers();
-        unifierSet.forEach(unifiers -> permutedAnswers.addAll(this.unify(unifiers)));
-        return permutedAnswers
-                .filterBySubstitutions(subs)
-                .filterByEntityTypes(types);
-    }
+    @Override
+    public int hashCode(){return set.hashCode();}
+
+    public Stream<Map<VarName, Concept>> stream(){ return set.stream();}
+
+    public QueryAnswers(){}
+    public QueryAnswers(Collection<Map<VarName, Concept>> ans){ ans.forEach(set::add);}
+    public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
+
+    public boolean add(Map<VarName, Concept> a){ return set.add(a);}
+    public boolean addAll(QueryAnswers ans){ return set.addAll(ans.set);}
+    public boolean remove(Map<VarName, Concept> a){ return set.remove(a);}
+    public boolean removeAll(QueryAnswers ans){ return set.removeAll(ans.set);}
+    public boolean containsAll(QueryAnswers ans){ return set.containsAll(ans.set);}
+
+    public int size(){ return set.size();}
+    public boolean isEmpty(){ return set.isEmpty();}
 
     /**
      * filter answers by constraining the variable set to the provided one
@@ -86,91 +85,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
     }
 
     /**
-     * filter answers by discarding the already known ones
-     * @param known set of known answers
-     * @return filtered answers
-     */
-    public QueryAnswers filterKnown(QueryAnswers known){
-        if (this.getVars().equals(known.getVars()) || known.isEmpty() ){
-            QueryAnswers results = new QueryAnswers(this);
-            results.removeAll(known);
-            return results;
-        }
-        QueryAnswers results = new QueryAnswers();
-        this.forEach(answer ->{
-            boolean isKnown = false;
-            Iterator<Map<VarName, Concept>> it = known.iterator();
-            while(it.hasNext() && !isKnown) {
-                Map<VarName, Concept> knownAnswer = it.next();
-                isKnown = knownAnswer.entrySet().containsAll(answer.entrySet());
-            }
-            if (!isKnown) results.add(answer);
-        });
-        return results;
-    }
-
-    /**
-     * filter answers by applying NonEquals filters
-     * @param filters non equal atoms to
-     * @return filtered answers
-     */
-    public QueryAnswers filterNonEquals(Set<NotEquals> filters){
-        if(filters.isEmpty()) return this;
-        QueryAnswers results = new QueryAnswers(this);
-        for (NotEquals filter : filters) results = filter.filter(results);
-        return results;
-    }
-
-    public QueryAnswers filterBySubstitutions(Set<IdPredicate> subs){
-        if (subs.isEmpty()) return this;
-        QueryAnswers results = new QueryAnswers(this);
-        subs.forEach( sub -> this.stream()
-                .filter(answer -> !answer.get(sub.getVarName()).getId().equals(sub.getPredicate()))
-                .forEach(results::remove));
-        return results;
-    }
-
-    public QueryAnswers filterByEntityTypes(Set<TypeAtom> types){
-        if (types.isEmpty()) return this;
-        QueryAnswers results = new QueryAnswers();
-        this.forEach(answer -> {
-            boolean isCompatible = true;
-            Iterator<TypeAtom> it = types.stream().filter(t -> answer.keySet().contains(t.getVarName())).iterator();
-            while( it.hasNext() && isCompatible){
-                TypeAtom type = it.next();
-                VarName var = type.getVarName();
-                Type t = type.getType();
-                isCompatible = answer.get(var).asInstance().type().equals(t);
-            }
-            if (isCompatible) results.add(answer);
-        });
-        return results;
-    }
-
-    /**
-     * perform a join operation between this and provided answers
-     * @param localTuples right operand of join operation
-     * @return joined answers
-     */
-    public QueryAnswers join(QueryAnswers localTuples) {
-        if (this.isEmpty() || localTuples.isEmpty()) {
-            return new QueryAnswers();
-        }
-        QueryAnswers join = new QueryAnswers();
-        Set<VarName> joinVars = Sets.intersection(this.getVars(), localTuples.getVars());
-        for( Map<VarName, Concept> lanswer : localTuples){
-            Stream<Map<VarName, Concept>> answerStream = this.stream();
-            for (VarName v : joinVars) answerStream = answerStream.filter(ans -> ans.get(v).equals(lanswer.get(v)));
-            answerStream.map(ans ->  {
-                Map<VarName, Concept> merged = new HashMap<>(lanswer);
-                merged.putAll(ans);
-                return merged;
-            }).forEach(join::add);
-        }
-        return join;
-    }
-
-    /**
      * unify the answers by applying unifiers to variable set
      * @param unifiers map of [key: from/value: to] unifiers
      * @return unified query answers
@@ -179,8 +93,7 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
         if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(answer -> {
-            Map<VarName, Concept> unifiedAnswer = answer.entrySet().stream()
-                    .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())? unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
+            Map<VarName, Concept> unifiedAnswer = unify(answer, unifiers);
             unifiedAnswers.add(unifiedAnswer);
         });
 
@@ -200,6 +113,6 @@ public class QueryAnswers extends HashSet<Map<VarName, Concept>> {
      */
     public static <T extends ReasonerQuery> QueryAnswers getUnifiedAnswers(T parentQuery, T childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        return answers.unify(childQuery.getUnifiers(parentQuery)).filterVars(parentQuery.getVarNames());
+        return answers.unify(childQuery.getUnifiers(parentQuery));
     }
 }
