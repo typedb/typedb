@@ -21,6 +21,7 @@ import _ from 'underscore';
 import vis from 'vis';
 
 import Style from './Style';
+import User from '../User';
 
 /*
  * Main class for creating a graph of nodes and edges. See Style class for asthetic customisation.
@@ -207,7 +208,7 @@ export default class Visualiser {
     // Methods used to fix and release nodes when one or more are dragged //
 
   fixNodes(nodeIds) {
-    if (new Date() - this.lastFixTime > 100) {
+    if ((User.getFreezeNodes()) && (new Date() - this.lastFixTime > 100)) {
             // this.network.storePositions();
       this.lastFixTime = new Date();
       if (nodeIds !== undefined) {

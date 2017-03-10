@@ -48,6 +48,19 @@ export default {
     localStorage.setItem('reasoner_materialise', status);
   },
 
+  getFreezeNodes() {
+    const freezeNodes = localStorage.getItem('freeze_nodes');
+    if (freezeNodes == null) {
+      this.setFreezeNodes(false);
+      return false;
+    }
+    return (freezeNodes === 'true');
+  },
+
+  setFreezeNodes(status) {
+    localStorage.setItem('freeze_nodes', status);
+  },
+
     // @return boolean
   getMaterialiseStatus() {
     const materialiseReasoner = localStorage.getItem('reasoner_materialise');
