@@ -61,7 +61,6 @@ public class GraknTinkerGraphTest extends GraphTestBase{
     private void addEntityType(){
         try(GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph()){
             graph.putEntityType(UUID.randomUUID().toString());
-            graknGraph.commitOnClose();
         } catch (GraknValidationException e) {
             e.printStackTrace();
         }
