@@ -811,6 +811,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Ignored for Tinker
         }
         localClosedReason.set(closedReason);
+        localNestedTransactionCount.set(0);
         clearLocalVariables();
     }
 
