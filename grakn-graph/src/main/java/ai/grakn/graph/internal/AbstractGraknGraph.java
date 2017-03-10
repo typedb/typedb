@@ -104,7 +104,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
+    private final ThreadLocal<Integer> localNestedTransactionCount = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
@@ -120,9 +120,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.engine = engine;
         elementFactory = new ElementFactory(this);
 
-        localIsOpen.set(true);
-
+        localNestedTransactionCount.set(1); //Needed so we can initialise the meta ontology
         if(initialiseMetaConcepts()) commitTransaction();
+        localNestedTransactionCount.set(0);
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         localShowImplicitStructures.set(false);
@@ -144,7 +144,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Opens the thread bound transaction
      */
     public void openTransaction(){
-        localIsOpen.set(true);
+        Integer currentCount = localNestedTransactionCount.get();
+        if(currentCount == null) currentCount = 0;
+        localNestedTransactionCount.set(++currentCount);
     }
 
     @Override
@@ -158,7 +160,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public boolean isClosed(){
-        return !getBooleanFromLocalThread(localIsOpen);
+        return localNestedTransactionCount.get() == null || localNestedTransactionCount.get() == 0;
     }
 
     @Override
@@ -789,11 +791,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void close() throws GraknValidationException {
-        if(getCommitRequired()){
-            commit();
+        if(!isClosed()) {
+            Integer currentNumOfTransactions = localNestedTransactionCount.get() - 1;
+            localNestedTransactionCount.set(currentNumOfTransactions);
+            if(currentNumOfTransactions == 0) {
+                if (getCommitRequired()) {
+                    commit();
+                }
+                localCommitRequired.remove();
+                closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
+            }
         }
-        localCommitRequired.remove();
-        closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
     }
 
     private void closeGraph(String closedReason){
@@ -803,7 +811,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Ignored for Tinker
         }
         localClosedReason.set(closedReason);
-        localIsOpen.set(false);
         clearLocalVariables();
     }
 
