@@ -58,8 +58,6 @@ class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, Ti
 
     @Override
     TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
-        LOG.warn("In memory Tinkergraph ignores the address [" + super.engineUrl + "] and " +
-                 "the config path [" + super.properties + "]");
         return TinkerGraph.open();
     }
 
