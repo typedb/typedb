@@ -67,6 +67,7 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
 /**
@@ -87,6 +88,8 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
 
     private org.apache.commons.configuration.Configuration apacheConfiguration = null;
     private Configuration hadoopConfiguration = null;
+
+    private String jobGroupId = null;
 
     public GraknSparkComputer(final HadoopGraph hadoopGraph) {
         super(hadoopGraph);
@@ -134,113 +137,122 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
 
     private Future<ComputerResult> submitWithExecutor(Executor exec) {
         getGraphRDD();
+        jobGroupId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
+
         // create the completable future
         return CompletableFuture.supplyAsync(() -> {
-            final long startTime = System.currentTimeMillis();
+            try {
+                graknGraphRDD.sparkContext.setJobGroup(jobGroupId, jobGroupId);
+                final long startTime = System.currentTimeMillis();
 
-            GraknSparkMemory memory = null;
-            JavaPairRDD<Object, VertexWritable> computedGraphRDD = null;
-            JavaPairRDD<Object, ViewIncomingPayload<Object>> viewIncomingRDD = null;
+                GraknSparkMemory memory = null;
+                JavaPairRDD<Object, VertexWritable> computedGraphRDD = null;
+                JavaPairRDD<Object, ViewIncomingPayload<Object>> viewIncomingRDD = null;
 
-            ////////////////////////////////
-            // process the vertex program //
-            ////////////////////////////////
-            if (null != this.vertexProgram) {
-                // set up the vertex program and wire up configurations
-                this.mapReducers.addAll(this.vertexProgram.getMapReducers());
-                memory = new GraknSparkMemory(this.vertexProgram, this.mapReducers, graknGraphRDD.sparkContext);
-                this.vertexProgram.setup(memory);
-                memory.broadcastMemory(graknGraphRDD.sparkContext);
-                final HadoopConfiguration vertexProgramConfiguration = new HadoopConfiguration();
-                this.vertexProgram.storeState(vertexProgramConfiguration);
-                ConfigurationUtils.copy(vertexProgramConfiguration, apacheConfiguration);
-                ConfUtil.mergeApacheIntoHadoopConfiguration(vertexProgramConfiguration, hadoopConfiguration);
-                // execute the vertex program
-                while (true) {
-                    memory.setInTask(true);
-                    viewIncomingRDD = GraknSparkExecutor.executeVertexProgramIteration(
-                            graknGraphRDD.loadedGraphRDD, viewIncomingRDD, memory, vertexProgramConfiguration);
-                    memory.setInTask(false);
-                    if (this.vertexProgram.terminate(memory)) break;
-                    else {
-                        memory.incrIteration();
-                        memory.broadcastMemory(graknGraphRDD.sparkContext);
+                ////////////////////////////////
+                // process the vertex program //
+                ////////////////////////////////
+                if (null != this.vertexProgram) {
+                    // set up the vertex program and wire up configurations
+                    this.mapReducers.addAll(this.vertexProgram.getMapReducers());
+                    memory = new GraknSparkMemory(this.vertexProgram, this.mapReducers, graknGraphRDD.sparkContext);
+                    this.vertexProgram.setup(memory);
+                    memory.broadcastMemory(graknGraphRDD.sparkContext);
+                    final HadoopConfiguration vertexProgramConfiguration = new HadoopConfiguration();
+                    this.vertexProgram.storeState(vertexProgramConfiguration);
+                    ConfigurationUtils.copy(vertexProgramConfiguration, apacheConfiguration);
+                    ConfUtil.mergeApacheIntoHadoopConfiguration(vertexProgramConfiguration, hadoopConfiguration);
+                    // execute the vertex program
+                    while (true) {
+                        memory.setInTask(true);
+                        viewIncomingRDD = GraknSparkExecutor.executeVertexProgramIteration(
+                                graknGraphRDD.loadedGraphRDD, viewIncomingRDD, memory, vertexProgramConfiguration);
+                        memory.setInTask(false);
+                        if (this.vertexProgram.terminate(memory)) break;
+                        else {
+                            memory.incrIteration();
+                            memory.broadcastMemory(graknGraphRDD.sparkContext);
+                        }
+                    }
+                    // write the computed graph to the respective output (rdd or output format)
+                    final String[] elementComputeKeys = this.vertexProgram == null ? new String[0] :
+                            this.vertexProgram.getElementComputeKeys().toArray(
+                                    new String[this.vertexProgram.getElementComputeKeys().size()]);
+                    computedGraphRDD = GraknSparkExecutor.prepareFinalGraphRDD(
+                            graknGraphRDD.loadedGraphRDD, viewIncomingRDD, elementComputeKeys);
+                    if ((hadoopConfiguration.get(Constants.GREMLIN_HADOOP_GRAPH_OUTPUT_FORMAT, null) != null ||
+                            hadoopConfiguration.get(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD, null) != null) &&
+                            !this.persist.equals(Persist.NOTHING)) {
+                        try {
+                            hadoopConfiguration
+                                    .getClass(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD,
+                                            OutputFormatRDD.class, OutputRDD.class)
+                                    .newInstance()
+                                    .writeGraphRDD(apacheConfiguration, computedGraphRDD);
+                        } catch (final InstantiationException | IllegalAccessException e) {
+                            throw new IllegalStateException(e.getMessage(), e);
+                        }
                     }
                 }
-                // write the computed graph to the respective output (rdd or output format)
-                final String[] elementComputeKeys = this.vertexProgram.getElementComputeKeys().toArray(
-                                new String[this.vertexProgram.getElementComputeKeys().size()]);
-                computedGraphRDD = GraknSparkExecutor.prepareFinalGraphRDD(
-                        graknGraphRDD.loadedGraphRDD, viewIncomingRDD, elementComputeKeys);
-                if ((hadoopConfiguration.get(Constants.GREMLIN_HADOOP_GRAPH_OUTPUT_FORMAT, null) != null ||
-                        hadoopConfiguration.get(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD, null) != null) &&
-                        !this.persist.equals(Persist.NOTHING)) {
-                    try {
-                        hadoopConfiguration
-                                .getClass(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD,
-                                        OutputFormatRDD.class, OutputRDD.class)
-                                .newInstance()
-                                .writeGraphRDD(apacheConfiguration, computedGraphRDD);
-                    } catch (final InstantiationException | IllegalAccessException e) {
-                        throw new IllegalStateException(e.getMessage(), e);
+
+                final boolean computedGraphCreated = computedGraphRDD != null;
+                if (!computedGraphCreated) {
+                    computedGraphRDD = graknGraphRDD.loadedGraphRDD;
+                }
+
+                final Memory.Admin finalMemory = null == memory ? new MapMemory() : new MapMemory(memory);
+
+                //////////////////////////////
+                // process the map reducers //
+                //////////////////////////////
+                if (!this.mapReducers.isEmpty()) {
+                    for (final MapReduce mapReduce : this.mapReducers) {
+                        // execute the map reduce job
+                        final HadoopConfiguration newApacheConfiguration = new HadoopConfiguration(apacheConfiguration);
+                        mapReduce.storeState(newApacheConfiguration);
+                        // map
+                        final JavaPairRDD mapRDD = GraknSparkExecutor
+                                .executeMap((JavaPairRDD) computedGraphRDD, mapReduce, newApacheConfiguration);
+                        // combine
+                        final JavaPairRDD combineRDD = mapReduce.doStage(MapReduce.Stage.COMBINE) ?
+                                GraknSparkExecutor.executeCombine(mapRDD, newApacheConfiguration) : mapRDD;
+                        // reduce
+                        final JavaPairRDD reduceRDD = mapReduce.doStage(MapReduce.Stage.REDUCE) ?
+                                GraknSparkExecutor.executeReduce(combineRDD, mapReduce, newApacheConfiguration) : combineRDD;
+                        // write the map reduce output back to disk and computer result memory
+                        try {
+                            mapReduce.addResultToMemory(finalMemory, hadoopConfiguration
+                                    .getClass(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD,
+                                            OutputFormatRDD.class, OutputRDD.class)
+                                    .newInstance()
+                                    .writeMemoryRDD(apacheConfiguration, mapReduce.getMemoryKey(), reduceRDD));
+                        } catch (final InstantiationException | IllegalAccessException e) {
+                            throw new IllegalStateException(e.getMessage(), e);
+                        }
                     }
                 }
-            }
 
-            final boolean computedGraphCreated = computedGraphRDD != null;
-            if (!computedGraphCreated) {
-                computedGraphRDD = graknGraphRDD.loadedGraphRDD;
-            }
-
-            final Memory.Admin finalMemory = null == memory ? new MapMemory() : new MapMemory(memory);
-
-            //////////////////////////////
-            // process the map reducers //
-            //////////////////////////////
-            if (!this.mapReducers.isEmpty()) {
-                for (final MapReduce mapReduce : this.mapReducers) {
-                    // execute the map reduce job
-                    final HadoopConfiguration newApacheConfiguration = new HadoopConfiguration(apacheConfiguration);
-                    mapReduce.storeState(newApacheConfiguration);
-                    // map
-                    final JavaPairRDD mapRDD = GraknSparkExecutor
-                            .executeMap((JavaPairRDD) computedGraphRDD, mapReduce, newApacheConfiguration);
-                    // combine
-                    final JavaPairRDD combineRDD = mapReduce.doStage(MapReduce.Stage.COMBINE) ?
-                            GraknSparkExecutor.executeCombine(mapRDD, newApacheConfiguration) : mapRDD;
-                    // reduce
-                    final JavaPairRDD reduceRDD = mapReduce.doStage(MapReduce.Stage.REDUCE) ?
-                            GraknSparkExecutor.executeReduce(combineRDD, mapReduce, newApacheConfiguration) : combineRDD;
-                    // write the map reduce output back to disk and computer result memory
-                    try {
-                        mapReduce.addResultToMemory(finalMemory, hadoopConfiguration
-                                .getClass(Constants.GREMLIN_SPARK_GRAPH_OUTPUT_RDD,
-                                        OutputFormatRDD.class, OutputRDD.class)
-                                .newInstance()
-                                .writeMemoryRDD(apacheConfiguration, mapReduce.getMemoryKey(), reduceRDD));
-                    } catch (final InstantiationException | IllegalAccessException e) {
-                        throw new IllegalStateException(e.getMessage(), e);
+                // unpersist the computed graph if it will not be used again (no PersistedOutputRDD)
+                if (!graknGraphRDD.outputToSpark || this.persist.equals(GraphComputer.Persist.NOTHING)) {
+                    computedGraphRDD.unpersist();
+                }
+                // delete any file system or rdd data if persist nothing
+                if (null != graknGraphRDD.outputLocation && this.persist.equals(GraphComputer.Persist.NOTHING)) {
+                    if (graknGraphRDD.outputToHDFS) {
+                        graknGraphRDD.fileSystemStorage.rm(graknGraphRDD.outputLocation);
+                    }
+                    if (graknGraphRDD.outputToSpark) {
+                        graknGraphRDD.sparkContextStorage.rm(graknGraphRDD.outputLocation);
                     }
                 }
+                // update runtime and return the newly computed graph
+                finalMemory.setRuntime(System.currentTimeMillis() - startTime);
+                return new DefaultComputerResult(InputOutputHelper.getOutputGraph(
+                        apacheConfiguration, this.resultGraph, this.persist), finalMemory.asImmutable());
+            } catch (Exception e) {
+                clear();
+                throw e;
             }
-
-            // unpersist the computed graph if it will not be used again (no PersistedOutputRDD)
-            if (!graknGraphRDD.outputToSpark || this.persist.equals(GraphComputer.Persist.NOTHING)) {
-                computedGraphRDD.unpersist();
-            }
-            // delete any file system or rdd data if persist nothing
-            if (null != graknGraphRDD.outputLocation && this.persist.equals(GraphComputer.Persist.NOTHING)) {
-                if (graknGraphRDD.outputToHDFS) {
-                    graknGraphRDD.fileSystemStorage.rm(graknGraphRDD.outputLocation);
-                }
-                if (graknGraphRDD.outputToSpark) {
-                    graknGraphRDD.sparkContextStorage.rm(graknGraphRDD.outputLocation);
-                }
-            }
-            // update runtime and return the newly computed graph
-            finalMemory.setRuntime(System.currentTimeMillis() - startTime);
-            return new DefaultComputerResult(InputOutputHelper.getOutputGraph(
-                    apacheConfiguration, this.resultGraph, this.persist), finalMemory.asImmutable());
         }, exec);
     }
 
@@ -317,12 +329,27 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
         }
     }
 
+    public static void refresh() {
+        if (!GraknGraphRDD.commit) {
+            setCommitFlag();
+        }
+    }
+
+    private static synchronized void setCommitFlag() {
+        if (!GraknGraphRDD.commit) {
+            GraknGraphRDD.commit = true;
+        }
+    }
+
     public static void clear() {
+        graknGraphRDD.loadedGraphRDD.unpersist();
         graknGraphRDD = null;
         Spark.close();
     }
 
     private static class GraknGraphRDD {
+
+        private static boolean commit = false;
 
         private Storage fileSystemStorage;
         private Storage sparkContextStorage;
