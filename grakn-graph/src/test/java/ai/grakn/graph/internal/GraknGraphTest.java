@@ -2,6 +2,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -30,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.TRANSACTIONS_OPEN;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,6 +42,38 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTest extends GraphTestBase {
+
+    @Test
+    public void openMultipleFakeNestedTransactions_CheckCloseOnlyOccursOnCorrectClose(){
+        GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, "BobGraph");
+
+        //Open One Close One
+        GraknGraph graph = factory.getGraph();
+        assertFalse(graph.isClosed());
+        graph.close();
+        assertTrue(graph.isClosed());
+
+        //Open Two Close One
+        factory.getGraph(); //Due to the singleton nature of the factory this alone is enough to increment the count
+        graph = factory.getGraph();
+        assertFalse(graph.isClosed());
+        graph.close();
+        assertFalse(graph.isClosed());
+
+        //Close final one
+        graph.close();
+        assertTrue(graph.isClosed());
+
+        //Open Three Close One Try to Close Factory And Fail
+        factory.getGraph();
+        graph = factory.getGraph();
+        graph.close();
+
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), 2));
+        factory.close();
+    }
+
     @Test
     public void testPutConcept() throws Exception {
         int numVerticies = 14;
