@@ -19,7 +19,6 @@
 package ai.grakn.engine.util;
 
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.GraknVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
