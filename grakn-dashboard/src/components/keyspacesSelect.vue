@@ -38,7 +38,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     align-items: center;
 }
 
-
 .selector-button {
     cursor: pointer;
     color: #00eca2;
@@ -72,10 +71,11 @@ li:hover {
     border-radius: 3px;
     margin: 3px 0px;
 }
-
 </style>
 <script>
-import User from '../js/User.js'
+import User, {
+    DEFAULT_KEYSPACE
+} from '../js/User.js'
 import EngineClient from '../js/EngineClient.js';
 import GraphPageState from '../js/state/graphPageState';
 import ConsolePageState from '../js/state/consolePageState';
@@ -86,7 +86,7 @@ export default {
     data() {
         return {
             keyspaces: [],
-            currentKeyspace: User.getCurrentKeySpace(),
+            currentKeyspace: undefined,
             showList: false,
             state: undefined,
         }
@@ -103,9 +103,18 @@ export default {
     },
     mounted: function() {
         this.$nextTick(function() {
+
             EngineClient.fetchKeyspaces().then((res, err) => {
+                const checkCurrentKeySpace = function checkKS() {
+                    EngineClient.fetchKeyspaces().then((resp) => {
+                        const keyspaces = JSON.parse(resp);
+                    });
+                };
                 let list = JSON.parse(res);
-                let currentKeyspace = User.getCurrentKeySpace();
+
+                this.currentKeyspace = User.getCurrentKeySpace();
+              
+
                 for (let i = 0; i < list.length; i++) {
                     this.keyspaces.push(list[i]);
                 }
