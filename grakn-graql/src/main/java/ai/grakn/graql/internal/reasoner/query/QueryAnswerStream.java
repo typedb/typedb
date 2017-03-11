@@ -106,10 +106,10 @@ public class QueryAnswerStream {
             isCompatible = m1.get(var).equals(m2.get(var));
         }
         if (isCompatible) {
-            Answer merged = new Answer(m1);
+            QueryAnswer merged = new QueryAnswer(m1);
             merged.putAll(m2);
             return merged;
-        } else return new Answer();
+        } else return new QueryAnswer();
     }
 
     public static final BiFunction<Answer, Set<VarName>, Stream<Answer>> varFilterFunction = (a, vars) -> {

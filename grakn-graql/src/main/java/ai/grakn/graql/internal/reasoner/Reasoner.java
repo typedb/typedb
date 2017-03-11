@@ -29,6 +29,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -98,12 +99,12 @@ public class Reasoner {
      * @param materialise whether to materialise inferences
      * @return stream of answers
      */
-    public static Stream<Answer> resolveWithPath(MatchQuery query, boolean materialise) {
+    public static Stream<Answer> resolveWithExplanation(MatchQuery query, boolean materialise) {
         GraknGraph graph = optionalOr(query.admin().getGraph()).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        if (!Reasoner.hasRules(graph)) return query.admin().streamWithVarNames().map(Answer::new);
+        if (!Reasoner.hasRules(graph)) return query.admin().streamWithVarNames().map(QueryAnswer::new);
 
         Iterator<Conjunction<VarAdmin>> conjIt = query.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);

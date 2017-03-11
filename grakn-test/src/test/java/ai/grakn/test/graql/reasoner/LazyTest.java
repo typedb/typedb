@@ -30,6 +30,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -78,8 +79,9 @@ public class LazyTest {
         Stream<Answer> dbStream = query.DBlookup();
         cache.record(query, dbStream);
 
-        Set<Answer> collect = cache.getAnswerStream(query).collect(toSet());
         Set<Answer> collect2 = cache.getAnswerStream(query2).collect(toSet());
+        Set<Answer> collect = cache.getAnswerStream(query).collect(toSet());
+
         assertEquals(collect.size(), collect2.size());
     }
 
@@ -142,7 +144,7 @@ public class LazyTest {
         QueryAnswers answers = queryAnswers(query);
         long count = query.admin()
                 .streamWithVarNames()
-                .map(Answer::new)
+                .map(QueryAnswer::new)
                 .filter(a -> QueryAnswerStream.knownFilter(a, answers.stream()))
                 .count();
         assertEquals(count, 0);
@@ -173,7 +175,7 @@ public class LazyTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().streamWithVarNames().map(Answer::new).collect(toSet()));
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
     }
 
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){

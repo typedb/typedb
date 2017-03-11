@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
@@ -54,10 +55,12 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InferenceRule {
 
+    private final ConceptId ruleId;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
+        ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
         body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
@@ -69,6 +72,8 @@ public class InferenceRule {
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
     }
+
+    public ConceptId getRuleId(){ return ruleId;}
 
     /**
      * @return true if head and body do not share any variables

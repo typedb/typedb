@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
@@ -112,7 +113,7 @@ public class AtomicQueryTest {
         Conjunction<VarAdmin> pattern = conjunction(patternString, snbGraph.graph());
         QueryAnswers answers = new QueryAnswers();
 
-        answers.add(new Answer(
+        answers.add(new QueryAnswer(
                 ImmutableMap.of(
                         VarName.of("x"), getConcept("Bob"),
                         VarName.of("y"), getConcept("Colour of Magic")))
@@ -165,8 +166,8 @@ public class AtomicQueryTest {
         QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
-        Set<Answer> answers = query.admin().streamWithVarNames().map(Answer::new).collect(toSet());
-        Set<Answer> fullAnswers = query2.admin().streamWithVarNames().map(Answer::new).collect(toSet());
+        Set<Answer> answers = query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet());
+        Set<Answer> fullAnswers = query2.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet());
         Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
         Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
 
@@ -232,7 +233,7 @@ public class AtomicQueryTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().streamWithVarNames().map(Answer::new).collect(toSet()));
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
     }
     private Concept getConcept(String id){
         Set<Concept> instances = snbGraph.graph().getResourcesByValue(id)

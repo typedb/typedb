@@ -21,12 +21,8 @@ package ai.grakn.graql.admin;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
@@ -37,96 +33,45 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public class Answer{
+public interface Answer {
 
-    private Map<VarName, Concept> map = new HashMap<>();
-    private Set<Set<Concept>> explanation = new HashSet<>();
+    Answer copy();
 
-    public Answer(){}
-    public Answer(Answer a){
-        map.putAll(a.map);
-        explanation.addAll(a.explanation);
-    }
-    public Answer(Map<VarName, Concept> m){
-        map.putAll(m);
-    }
+    Set<VarName> keySet();
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || !(obj instanceof Answer)) return false;
-        Answer a2 = (Answer) obj;
-        return map.equals(a2.map);
-    }
+    Collection<Concept> values();
 
-    @Override
-    public int hashCode(){ return map.hashCode();}
+    Set<Concept> concepts();
 
-    
-    public Set<VarName> keySet(){ return map.keySet();}
-    
-    public Collection<Concept> values(){ return map.values();}
-    
-    public Set<Concept> concepts(){ return map.values().stream().collect(Collectors.toSet());}
-    
-    public Set<Map.Entry<VarName, Concept>> entrySet(){ return map.entrySet();}
+    Set<Map.Entry<VarName, Concept>> entrySet();
 
-    
-    public Concept get(VarName var){ return map.get(var);}
-    
-    public Concept put(VarName var, Concept con){ return map.put(var, con);}
-    
-    public Map<VarName, Concept> map(){ return map;}
+    Concept get(VarName var);
 
-    public void putAll(Answer a2){ map.putAll(a2.map);}
+    Concept put(VarName var, Concept con);
 
-    
-    public void putAll(Map<VarName, Concept> m2){ map.putAll(m2);}
+    Concept remove(VarName var);
 
-    
-    public boolean containsKey(VarName var){ return map.containsKey(var);}
-    
-    public boolean isEmpty(){ return map.isEmpty();}
+    Map<VarName, Concept> map();
 
-    
-    public int size(){ return map.size();}
+    void putAll(Answer a);
 
-    
-    public Answer merge(Answer a2){
-        Answer merged = new Answer(a2);
-        merged.putAll(this);
+    void putAll(Map<VarName, Concept> m2);
 
-        Stream.concat(this.getExplanation().stream(), a2.getExplanation().stream()).forEach(merged.getExplanation()::add);
-        if (getExplanation().isEmpty()) merged.getExplanation().add(this.concepts());
-        if (a2.getExplanation().isEmpty()) merged.getExplanation().add(a2.concepts());
+    boolean containsKey(VarName var);
 
-        return merged;
-    }
+    boolean isEmpty();
 
-    
-    public Answer filterVars(Set<VarName> vars) {
-        Answer filteredAnswer = new Answer();
-        vars.stream()
-                .filter(this::containsKey)
-                .forEach(var -> filteredAnswer.put(var, this.get(var)));
+    int size();
 
-        filteredAnswer.getExplanation().addAll(this.getExplanation());
-        return filteredAnswer;
-    }
+    Answer merge(Answer a2);
 
-    
-    public Answer unify(Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return this;
-        Answer unified = new Answer(
-                this.entrySet().stream()
-                        .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())?  unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue))
-        );
+    Answer explain(AnswerExplanation exp);
 
-        unified.getExplanation().addAll(this.getExplanation());
-        return unified;
-    }
+    Answer filterVars(Set<VarName> vars);
 
-    
-    public Set<Set<Concept>> getExplanation(){return explanation;}
+    Answer unify(Map<VarName, VarName> unifiers);
+
+    AnswerExplanation getExplanation();
+
+    Answer setExplanation(AnswerExplanation e);
 }
-
