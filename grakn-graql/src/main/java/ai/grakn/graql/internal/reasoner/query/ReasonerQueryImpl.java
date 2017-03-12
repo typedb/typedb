@@ -97,6 +97,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         inferTypes();
     }
 
+    @Override
+    public ReasonerQuery copy(){ return new ReasonerQueryImpl(this);}
+
     //alpha-equivalence equality
     @Override
     public boolean equals(Object obj){
@@ -309,6 +312,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     /**
      * @return corresponding MatchQuery
      */
+    @Override
     public MatchQuery getMatchQuery() {
         return graph.graql().infer(false).match(getPattern());
     }
@@ -515,7 +519,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Stream<Answer> resolve(boolean materialise) {
         if (!this.isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(Answer::new);
+            return this.getMatchQuery().admin().streamWithVarNames()
+                    .map(QueryAnswer::new);
         }
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());

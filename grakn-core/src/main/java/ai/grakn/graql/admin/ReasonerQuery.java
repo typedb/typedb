@@ -20,6 +20,7 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +36,10 @@ import java.util.stream.Stream;
  *
  */
 public interface ReasonerQuery{
+
+
+    ReasonerQuery copy();
+
     /**
      * @return GraknGraph associated with this reasoner query
      */
@@ -54,6 +59,11 @@ public interface ReasonerQuery{
      * @return atom set constituting this reasoner query
      */
     Set<Atomic> getAtoms();
+
+    /**
+     * @return corresponding MatchQuery
+     */
+    MatchQuery getMatchQuery();
 
     /**
      * @return true if any of the atoms constituting the query can be resolved through a rule
