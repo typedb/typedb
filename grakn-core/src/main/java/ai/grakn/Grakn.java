@@ -70,7 +70,8 @@ import java.util.Map;
  You can initialise an in memory graph without having the Grakn server running:
 
  <pre>{@code GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "keyspace").getGraph();}</pre>
-
+ This in memory graph serves as a toy graph for you to become accustomed to the API without needing to setup a
+ Grakn Server. It is also useful for testing purposes.
  </p>
 
  @see <a href="https://grakn.ai/pages/documentation/developing-with-java/java-setup.html" target="_top">GRAKN.AI Portal documentation for Java developers</a>
@@ -79,21 +80,13 @@ import java.util.Map;
 
 
 public class Grakn {
-//Docs to do @Filipe
-/*
-    Please can you add some information that the default_uri is currently localhost: 4567 and also
-    state whether it is possible for the developer to change this via a configuration file. I'm assuming
-    that it is not because I see it is hard-coded below :) So maybe you just need to add
-    "This is a constant, which is set to localhost: 4567 and cannot be changed in development"
-*/
     /**
      * Constant to be passed to {@link #factory(String, String)} to specify the default localhost Grakn Engine location.
+     * This default constant, which is set to localhost: 4567 cannot be changed in development"
      */
     public static final String DEFAULT_URI = "localhost:4567";
 
-    //Docs to do @Filipe
-    //Typo in the constant name below GRAIN rather than GRAKN
-    private static final String GRAIN_GRAPH_FACTORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryImpl";
+    private static final String GRAKN_GRAPH_FACTORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryImpl";
 
     /**
      * Constant to be passed to {@link #factory(String, String)} to specify an in-memory graph.
@@ -134,6 +127,6 @@ public class Grakn {
     public static GraknGraphFactory factory(String location, String keyspace) {
         String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
         String key = location + finalKeyspace;
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAIN_GRAPH_FACTORY_IMPLEMENTATION, location, finalKeyspace));
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_GRAPH_FACTORY_IMPLEMENTATION, location, finalKeyspace));
     }
 }
