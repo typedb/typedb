@@ -677,16 +677,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void putNewShortcutEdge(Instance fromInstance, Relation toRelation, RoleType roleType){
-        boolean exists  = getTinkerPopGraph().traversal().V(fromInstance.getId().getRawValue()).
+    private void putNewShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
+        boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_NAME.name(), toRelation.type().getName().getValue()).
+                has(Schema.EdgeProperty.RELATION_TYPE_NAME.name(), fromRelation.type().getName().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), roleType.getName().getValue()).inV().
-                hasId(toRelation.getId()).hasNext();
+                hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeImpl edge = addEdge(fromInstance, toRelation, Schema.EdgeLabel.NEW_SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, toRelation.type().getName().getValue());
+            EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.NEW_SHORTCUT);
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, fromRelation.type().getName().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, roleType.getName().getValue());
         }
     }
