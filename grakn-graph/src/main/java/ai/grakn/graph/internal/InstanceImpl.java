@@ -128,6 +128,16 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         return castings;
     }
 
+    <X extends Instance> Set<X> getShortcutNeighbours(){
+        Set<X> foundNeighbours = new HashSet<X>();
+        getGraknGraph().getTinkerTraversal().
+                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+                in(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
+                out(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
+                forEachRemaining(vertex -> foundNeighbours.add(getGraknGraph().buildConcept(vertex)));
+        return foundNeighbours;
+    }
+
     /**
      *
      * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
