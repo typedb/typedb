@@ -658,7 +658,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
         //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
-        putNewShortcutEdge(rolePlayer, relation, role);
+        if(rolePlayer != null) putNewShortcutEdge(rolePlayer, relation, role);
 
         return foundCasting;
     }
