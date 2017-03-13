@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -129,6 +130,7 @@ public class RelationTest extends GraphTestBase{
         relation.addRolePlayer(role3, entity6r1r2r3);
 
         //Check the structure of the shortcut edges
+        //TODO: Remove this section
         assertThat(entity1r1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
                 containsInAnyOrder(entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
         assertThat(entity2r1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
@@ -141,6 +143,28 @@ public class RelationTest extends GraphTestBase{
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity6r1r2r3));
         assertThat(entity6r1r2r3.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+
+
+        //Check the structure of the NEW shortcut edges
+        assertThat(followShortcutsToNeighbours(graknGraph, entity1r1),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(followShortcutsToNeighbours(graknGraph, entity2r1),
+                containsInAnyOrder(entity2r1, entity1r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(followShortcutsToNeighbours(graknGraph, entity3r2r3),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(followShortcutsToNeighbours(graknGraph, entity4r3),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(followShortcutsToNeighbours(graknGraph, entity5r1),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+        assertThat(followShortcutsToNeighbours(graknGraph, entity6r1r2r3),
+                containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
+    }
+    private Set<Concept> followShortcutsToNeighbours(GraknGraph graph, Instance instance){
+        List<Vertex> vertices = graph.admin().getTinkerTraversal().hasId(instance.getId()).
+                out(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
+                in(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).toList();
+
+        return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asInstance()).collect(Collectors.toSet());
     }
 
     @Test
