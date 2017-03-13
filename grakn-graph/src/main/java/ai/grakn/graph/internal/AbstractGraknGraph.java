@@ -77,7 +77,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 /**
  * <p>
@@ -658,8 +657,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
-        putShortcutEdges(relation, relation.type(), foundCasting);
-
         //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
         putNewShortcutEdge(rolePlayer, relation, role);
 
@@ -692,78 +689,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, toRelation.type().getName().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, roleType.getName().getValue());
         }
-    }
-
-    private void putShortcutEdges(RelationImpl relation, RelationType relationType, CastingImpl newCasting){
-        Map<RoleType, Set<Instance>> roleMap = relation.allRolePlayers();
-
-        //This ensures the latest casting is taken into account when transferring relations
-        roleMap.computeIfAbsent(newCasting.getRole(), (k) -> new HashSet<>()).add(newCasting.getRolePlayer());
-
-        Set<CastingImpl> castings = relation.getMappingCasting();
-
-        for (CastingImpl fromCasting : castings) {
-            RoleType fromRole = fromCasting.getRole();
-            Instance from = fromCasting.getRolePlayer();
-
-            for (CastingImpl toCasting : castings) {
-                RoleType toRole = toCasting.getRole();
-                Instance to = toCasting.getRolePlayer();
-
-                if (from != null && to != null &&  (!fromRole.equals(toRole) || !from.equals(to)) ) {
-                    putShortcutEdge(relation, relationType, fromRole, from, toRole, to);
-                }
-            }
-        }
-    }
-
-    private void putShortcutEdge(Relation  relation, RelationType  relationType, RoleType fromRole, Instance from, RoleType  toRole, Instance to){
-        InstanceImpl fromRolePlayer = (InstanceImpl) from;
-        InstanceImpl toRolePlayer = (InstanceImpl) to;
-
-        String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getId().getRawValue()).
-                    local(outE(Schema.EdgeLabel.SHORTCUT.getLabel()).has(Schema.EdgeProperty.SHORTCUT_HASH.name(), hash)).
-                    hasNext();
-
-        if (!exists) {
-            EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
-
-            if (fromRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
-            }
-            edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
-
-            if (toRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
-            }
-            edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
-
-            edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toRolePlayer.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.SHORTCUT_HASH, hash);
-        }
-    }
-
-    private String calculateShortcutHash(Relation relation, RelationType relationType, RoleType fromRole, Instance fromRolePlayer, RoleType toRole, Instance toRolePlayer){
-        String hash = "";
-        String relationIdValue = relationType.getId().getValue();
-        String fromIdValue = fromRolePlayer.getId().getValue();
-        String fromRoleValue = fromRole.getId().getValue();
-        String toIdValue = toRolePlayer.getId().getValue();
-        String toRoleValue = toRole.getId().getValue();
-        String assertionIdValue = relation.getId().getValue();
-
-        if(relationIdValue != null) hash += relationIdValue;
-        if(fromIdValue != null) hash += fromIdValue;
-        if(fromRoleValue != null) hash += fromRoleValue;
-        if(toIdValue != null) hash += toIdValue;
-        if(toRoleValue != null) hash += toRoleValue;
-        hash += String.valueOf(assertionIdValue);
-
-        return hash;
     }
 
     private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
