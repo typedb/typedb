@@ -152,11 +152,14 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
                 GraphTraversal traversal = getGraknGraph().getTinkerTraversal().
                         hasId(resource.getId().getValue()).
-                        out(Schema.EdgeLabel.SHORTCUT.getLabel());
+                        in(Schema.EdgeLabel.NEW_SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
-                    InstanceImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
-                    throw new ConceptNotUniqueException(resource, foundNeighbour);
+                    RelationImpl relation = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
+                    Collection<Instance> rolePlayers = relation.rolePlayers();
+                    rolePlayers.remove(resource);
+
+                    if(!rolePlayers.isEmpty()) throw new ConceptNotUniqueException(resource, rolePlayers.iterator().next());
                 }
             }
         }
