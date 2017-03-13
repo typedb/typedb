@@ -21,7 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -61,8 +60,6 @@ public class PostprocessingTest extends GraphTestBase{
 
         relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
-        assertEquals(2, graknGraph.getTinkerPopGraph().traversal().E().
-                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
     }
 
     @Test
@@ -93,29 +90,7 @@ public class PostprocessingTest extends GraphTestBase{
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), mainRoleType.getId());
 
-        putFakeShortcutEdge(relationType, relation, mainRoleType, mainInstance, otherRoleType, otherInstance);
-        putFakeShortcutEdge(relationType, relation, otherRoleType, otherInstance, mainRoleType, mainInstance);
-
         return graknGraph.admin().buildConcept(castingVertex);
-    }
-
-    private void putFakeShortcutEdge(RelationType relationType, Relation relation, RoleType fromRole, InstanceImpl fromInstance, RoleType toRole, InstanceImpl toInstance){
-        Edge tinkerEdge = fromInstance.getVertex().addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
-        EdgeImpl edge = new EdgeImpl(tinkerEdge, graknGraph);
-
-        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
-        edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
-
-        if (fromInstance.getId() != null)
-            edge.setProperty(Schema.EdgeProperty.FROM_ID, fromInstance.getId().getValue());
-        edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
-
-        if (toInstance.getId() != null)
-            edge.setProperty(Schema.EdgeProperty.TO_ID, toInstance.getId().getValue());
-        edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
-
-        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.type().getName().getValue());
-        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.type().getName().getValue());
     }
 
     @Test
@@ -131,18 +106,11 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(2, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
 
-        assertEquals(6, graknGraph.getTinkerPopGraph().traversal().E().
-                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
-
         graknGraph.fixDuplicateCastings(mainCasting.getIndex(), castingVertexIds);
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
-
-        assertEquals(4, graknGraph.getTinkerPopGraph().traversal().E().
-                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
-
     }
 
     @Test
