@@ -70,8 +70,8 @@ public class EdgeTest extends GraphTestBase{
 
     @Test
     public void testProperty() throws Exception {
-        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, "role");
-        assertEquals("role", edge.getProperty(Schema.EdgeProperty.ROLE_TYPE));
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, "role");
+        assertEquals("role", edge.getProperty(Schema.EdgeProperty.ROLE_TYPE_NAME));
         assertNull(edge.getProperty(Schema.EdgeProperty.FROM_TYPE_NAME));
     }
 

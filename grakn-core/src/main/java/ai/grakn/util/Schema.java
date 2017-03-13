@@ -54,7 +54,7 @@ public final class Schema {
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
         SHORTCUT("shortcut"),
-        NEW_SHORTCUT("shortcut"); //TODO: Change this to SHORTCUT
+        NEW_SHORTCUT("new-shortcut"); //TODO: Change this to SHORTCUT
 
         private final String label;
 
@@ -170,7 +170,7 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE(String.class), //TODO: Check if we can remove completely. Only used for deletions
+        ROLE_TYPE_NAME(String.class), //TODO: Check if we can remove completely. Only used for deletions
         RELATION_ID(String.class), //TODO: Check if we can remove completely. Only used for deletions
         RELATION_TYPE_NAME(String.class),
         TO_ID(String.class), //TODO: Check if we can remove completely.
