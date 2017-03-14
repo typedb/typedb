@@ -26,6 +26,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                 <a @click="closeSettings"><i class="fa fa-times"></i></a>
             </div>
             <div class="panel-body">
+              <div class="dd-item">
+                 <div class="left"><input type="checkbox" v-model="freezeNodes"></div><div class="right">Freeze nodes</div>
+              </div>
+                <div class="divide"></div>
                 <div class="dd-item">
                    <div class="left"><input type="checkbox" v-model="useReasoner"></div><div class="right"> Activate inference</div>
                 </div>
@@ -130,8 +134,9 @@ export default {
         return {
           useReasoner: User.getReasonerStatus(),
           materialiseReasoner: User.getMaterialiseStatus(),
-          showSettings:false,
+          showSettings: false,
           queryLimit: User.getQueryLimit(),
+          freezeNodes: User.getFreezeNodes(),
         }
     },
     created() {},
@@ -147,6 +152,14 @@ export default {
         },
         materialiseReasoner: function(newVal, oldVal) {
             User.setMaterialiseStatus(newVal);
+        },
+        freezeNodes: function(newVal, oldVal) {
+            User.setFreezeNodes(newVal);
+            if(newVal){
+              visualiser.fixAllNodes();
+            }else{
+              visualiser.releaseAllNodes();
+            }
         },
         queryLimit: function(newVal, oldVal) {
             User.setQueryLimit(newVal);

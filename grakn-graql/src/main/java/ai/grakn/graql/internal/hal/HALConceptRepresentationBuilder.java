@@ -88,8 +88,8 @@ public class HALConceptRepresentationBuilder {
         return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset,limit).render();
     }
 
-    public static String renderHALConceptOntology(Concept concept, String keyspace) {
-        return new HALConceptOntology(concept, keyspace).render();
+    public static String renderHALConceptOntology(Concept concept, String keyspace, int offset, int limit) {
+        return new HALConceptOntology(concept, keyspace, offset, limit).render();
     }
 
     private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
