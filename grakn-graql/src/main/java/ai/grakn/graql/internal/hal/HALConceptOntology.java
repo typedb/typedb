@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -46,9 +45,9 @@ class HALConceptOntology {
     private final int limit;
     private final int offset;
 
+
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
-    private final static String ISA_EDGE = "isa";
     private final static String SUB_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
@@ -81,27 +80,13 @@ class HALConceptOntology {
         // If limit -1, we don't append the limit parameter to the URI string
         String limitParam = (this.limit >= 0) ? "&limit=" + this.limit : "";
 
-        return "?keyspace=" + this.keyspace + "&offset=0"+ limitParam;
+        return "?keyspace=" + this.keyspace + "&offset="+this.offset+ limitParam;
     }
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + getURIParams());
         generateConceptState(resource,concept);
-    }
-
-    private void embedType(Representation halResource, Concept concept) {
-
-        // temp fix until a new behaviour is defined
-        Representation HALType;
-        if (concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            HALType = factory.newRepresentation(resourceLinkPrefix + instance.type().getId()+getURIParams())
-                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(HALType, instance.type());
-            halResource.withRepresentation(ISA_EDGE, HALType);
-        }
-
     }
 
     private void handleConceptOntology(Representation halResource, Concept concept) {

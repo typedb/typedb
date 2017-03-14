@@ -207,10 +207,11 @@ export default {
             visualiser.setDisplayProperties(nodeType, selectedProps);
         },
         onGraphResponseAnalytics(resp) {
-            if (resp.type === 'string') {
-                this.state.eventHub.$emit('analytics-string-response', resp.response);
+          const responseObject = JSON.parse(resp);
+            if (responseObject.type === 'string') {
+                this.state.eventHub.$emit('analytics-string-response', responseObject.response);
             } else {
-                this.halParser.parseResponse(resp.response, false, false);
+                this.halParser.parseResponse(responseObject.response, false, false);
                 visualiser.fitGraphToWindow();
             }
         },
