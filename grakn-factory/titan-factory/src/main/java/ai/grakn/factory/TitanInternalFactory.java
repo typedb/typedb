@@ -176,7 +176,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
             }
 
             //Create index on all property keys
-            String propertyKeyId = propertyKeys.stream().map(Namifiable::name).collect(Collectors.joining(","));
+            String propertyKeyId = propertyKeys.stream().map(Namifiable::name).collect(Collectors.joining("_"));
             if (management.getRelationIndex(relationType, edgeLabel + "by" + propertyKeyId) == null) {
                 PropertyKey [] allKeys = propertyKeys.toArray(new PropertyKey[propertyKeys.size()]);
                 management.buildEdgeIndex(label, edgeLabel + "by" + propertyKeyId, Direction.BOTH, Order.decr, allKeys);
