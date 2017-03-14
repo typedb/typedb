@@ -928,9 +928,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(vertex == null) {
             throw new IllegalStateException("The provided vertex is null");
         }
-
-        //Sample read
-        vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
