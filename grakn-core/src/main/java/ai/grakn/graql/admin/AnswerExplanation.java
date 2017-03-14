@@ -36,4 +36,5 @@ public interface AnswerExplanation {
     Set<Answer> getAnswers();
 
     boolean isLookupExplanation();
+    boolean isRuleExplanation();
 }

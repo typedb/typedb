@@ -116,7 +116,19 @@ public class QueryAnswer implements Answer {
         merged.putAll(this);
 
         merged.setExplanation(new Explanation());
-        Stream.of(this, a2).forEach(merged.getExplanation()::addAnswer);
+
+        if (this.getExplanation() != null
+                && (!this.getExplanation().isLookupExplanation() && !this.getExplanation().isRuleExplanation())){
+            this.getExplanation().getAnswers().forEach(merged.getExplanation()::addAnswer);
+        } else {
+            merged.getExplanation().addAnswer(this);
+        }
+        if (a2.getExplanation() != null
+                && (!a2.getExplanation().isLookupExplanation() && !a2.getExplanation().isRuleExplanation())){
+            a2.getExplanation().getAnswers().forEach(merged.getExplanation()::addAnswer);
+        } else {
+            merged.getExplanation().addAnswer(a2);
+        }
 
         return merged;
     }

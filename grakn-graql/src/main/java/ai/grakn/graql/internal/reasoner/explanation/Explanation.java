@@ -43,10 +43,17 @@ public class Explanation implements AnswerExplanation {
 
     public AnswerExplanation copy(){ return new Explanation(this);}
 
+    @Override
     public boolean addAnswer(Answer a){ return answers.add(a);}
+
+    @Override
     public Set<Answer> getAnswers(){ return answers;}
 
+    @Override
     public boolean isLookupExplanation(){ return false;}
+
+    @Override
+    public boolean isRuleExplanation(){ return false;}
 
     public ReasonerQuery getQuery(){ return null;}
 }
