@@ -44,7 +44,9 @@ import java.util.Properties;
 public class ConfigHelper {
 
     public static Consumer<TaskId, TaskState> kafkaConsumer(String groupId) {
-        Properties properties = GraknEngineConfig.getInstance().getProperties();
+        Properties properties = new Properties();
+        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+
         properties.put("group.id", groupId);
         properties.put("enable.auto.commit", "false");
         properties.put("auto.offset.reset", "earliest");
@@ -61,7 +63,9 @@ public class ConfigHelper {
     }
 
     public static Producer<TaskId, TaskState> kafkaProducer() {
-        Properties properties = GraknEngineConfig.getInstance().getProperties();
+        Properties properties = new Properties();
+        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+
         return new KafkaProducer<>(properties, new TaskIdSerializer(), new TaskStateSerializer());
     }
 }
