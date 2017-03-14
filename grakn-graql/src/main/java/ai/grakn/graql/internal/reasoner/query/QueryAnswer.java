@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  *
@@ -50,7 +49,7 @@ public class QueryAnswer implements Answer {
 
     public QueryAnswer(Answer a){
         map.putAll(a.map());
-        //explanation = explanation != null? a.getExplanation().copy() : null;
+        explanation = explanation != null? a.getExplanation().copy() : null;
     }
 
     public QueryAnswer(Map<VarName, Concept> m){

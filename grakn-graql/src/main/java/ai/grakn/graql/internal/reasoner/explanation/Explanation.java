@@ -36,15 +36,14 @@ import java.util.Set;
 public class Explanation implements AnswerExplanation {
 
     private ReasonerQuery query;
-
     private final Set<Answer> answers;
 
     public Explanation(){ answers = new HashSet<>();}
-    public Explanation(ReasonerQuery q, Set<Answer> ans){
+    Explanation(ReasonerQuery q, Set<Answer> ans){
         this.query = q.copy();
         this.answers = new HashSet<>(ans);
     }
-    public Explanation(Explanation e){
+    Explanation(Explanation e){
         this.answers = new HashSet<>(e.answers);
         this.query = query != null? query.copy() : null;
     }
@@ -69,7 +68,6 @@ public class Explanation implements AnswerExplanation {
 
     @Override
     public AnswerExplanation setQuery(ReasonerQuery q){
-        //return new Explanation(getRuleId(), q, getAnswers());
         this.query = q.copy();
         return this;
     }
