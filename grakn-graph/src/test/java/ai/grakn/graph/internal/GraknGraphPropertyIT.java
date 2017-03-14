@@ -256,9 +256,7 @@ public class GraknGraphPropertyIT {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-
         graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
-
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
@@ -266,10 +264,10 @@ public class GraknGraphPropertyIT {
             });
     }
 
-    @Ignore // TODO: Fix this AFTER transaction refactor
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
+        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
         assertNotNull(graph.getType(typeName));
     }
 
