@@ -27,6 +27,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.engine.tasks.EndlessExecutionTestTask;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
