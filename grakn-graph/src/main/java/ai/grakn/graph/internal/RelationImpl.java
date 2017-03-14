@@ -151,7 +151,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
                 GraphTraversal traversal = getGraknGraph().getTinkerTraversal().
                         hasId(resource.getId().getValue()).
-                        in(Schema.EdgeLabel.NEW_SHORTCUT.getLabel());
+                        in(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
                     RelationImpl relation = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());

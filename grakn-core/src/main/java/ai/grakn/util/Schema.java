@@ -53,7 +53,7 @@ public final class Schema {
         ROLE_PLAYER("role-player"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
-        NEW_SHORTCUT("shortcut");
+        SHORTCUT("shortcut");
 
         private final String label;
 

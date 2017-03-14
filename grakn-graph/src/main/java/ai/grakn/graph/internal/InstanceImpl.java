@@ -133,8 +133,8 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         Set<X> foundNeighbours = new HashSet<X>();
         getGraknGraph().getTinkerTraversal().
                 has(Schema.ConceptProperty.ID.name(), getId().getValue()).
-                in(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
-                out(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
+                in(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                out(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 forEachRemaining(vertex -> foundNeighbours.add(getGraknGraph().buildConcept(vertex)));
         return foundNeighbours;
     }

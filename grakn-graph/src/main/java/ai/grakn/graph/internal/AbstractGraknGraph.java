@@ -677,13 +677,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
-                outE(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_NAME.name(), fromRelation.type().getName().getValue()).
                 has(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), roleType.getName().getValue()).inV().
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
-            EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.NEW_SHORTCUT);
+            EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
             edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, fromRelation.type().getName().getValue());
             edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, roleType.getName().getValue());
         }
@@ -974,7 +974,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
                 //Delete the shortcut edges of the resource we going to delete.
                 //This is so we can copy them uniquely later
-                otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.NEW_SHORTCUT).forEach(EdgeImpl::delete);
+                otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
 
                 //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {

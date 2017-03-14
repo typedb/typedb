@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
-import static ai.grakn.util.Schema.EdgeLabel.NEW_SHORTCUT;
+import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_NAME;
 
@@ -53,10 +53,10 @@ class ShortcutFragment extends AbstractFragment {
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         // TODO: Split this traversal in two
         String shortcutIn = UUID.randomUUID().toString();
-        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(NEW_SHORTCUT.getLabel()).as(shortcutIn);
+        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(SHORTCUT.getLabel()).as(shortcutIn);
         roleStart.ifPresent(rs -> edgeTraversal.has(ROLE_TYPE_NAME.name(), rs.getValue()));
         relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_NAME.name(), rt.getValue()));
-        edgeTraversal.otherV().outE(NEW_SHORTCUT.getLabel()).where(P.neq(shortcutIn));
+        edgeTraversal.otherV().outE(SHORTCUT.getLabel()).where(P.neq(shortcutIn));
         roleEnd.ifPresent(re -> edgeTraversal.has(ROLE_TYPE_NAME.name(), re.getValue()));
         edgeTraversal.inV();
     }

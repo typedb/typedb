@@ -145,8 +145,8 @@ public class RelationTest extends GraphTestBase{
     }
     private Set<Concept> followShortcutsToNeighbours(GraknGraph graph, Instance instance){
         List<Vertex> vertices = graph.admin().getTinkerTraversal().hasId(instance.getId().getRawValue()).
-                in(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).
-                out(Schema.EdgeLabel.NEW_SHORTCUT.getLabel()).toList();
+                in(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                out(Schema.EdgeLabel.SHORTCUT.getLabel()).toList();
 
         return vertices.stream().map(vertex -> graph.admin().buildConcept(vertex).asInstance()).collect(Collectors.toSet());
     }
