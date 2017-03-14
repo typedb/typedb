@@ -37,13 +37,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.stream;
+
 
 /**
  * <p>
@@ -156,7 +156,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
             String[] propertyKeyStrings = keys.getString(edgeLabel).split(",");
 
             //Get all the property keys we need
-            Set<PropertyKey> propertyKeys = Arrays.stream(propertyKeyStrings).map(keyId ->{
+            Set<PropertyKey> propertyKeys = stream(propertyKeyStrings).map(keyId ->{
                 PropertyKey key = management.getPropertyKey(keyId);
                 if (key == null) {
                     throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + keyId + "] does not exist");
