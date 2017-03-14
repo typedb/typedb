@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
@@ -99,7 +100,7 @@ public class GraknEngineServerIT {
     @Property(trials=10)
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
         String uri1 = "localhost:" + PORT1;
-        TaskClient.of(uri1).stopTask(task.getId());
+        assertTrue(TaskClient.of(uri1).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
@@ -111,7 +112,7 @@ public class GraknEngineServerIT {
     @Property(trials=10)
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
         String uri2 = "localhost:" + PORT2;
-        TaskClient.of(uri2).stopTask(task.getId());
+        assertTrue(TaskClient.of(uri2).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
@@ -124,7 +125,7 @@ public class GraknEngineServerIT {
     public void whenEngine1StopsATaskDuringExecution_TheTaskIsStopped(
             @NewTask @WithClass(EndlessExecutionTestTask.class) TaskState task) {
         String uri1 = "localhost:" + PORT1;
-        whenTaskStarts(id -> TaskClient.of(uri1).stopTask(task.getId()));
+        whenTaskStarts(id -> assertTrue(TaskClient.of(uri1).stopTask(task.getId())));
 
         engine1.getTaskManager().addTask(task);
 
@@ -137,7 +138,7 @@ public class GraknEngineServerIT {
     public void whenEngine2StopsATaskDuringExecution_TheTaskIsStopped(
             @NewTask @WithClass(EndlessExecutionTestTask.class) TaskState task) {
         String uri2 = "localhost:" + PORT2;
-        whenTaskStarts(id -> TaskClient.of(uri2).stopTask(task.getId()));
+        whenTaskStarts(id -> assertTrue(TaskClient.of(uri2).stopTask(task.getId())));
 
         engine1.getTaskManager().addTask(task);
 

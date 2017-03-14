@@ -21,11 +21,16 @@ package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import mjson.Json;
+import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.time.Instant;
-import mjson.Json;
 
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
@@ -42,6 +47,7 @@ import static java.lang.String.format;
  * @author Felix Chapman
  */
 public class TaskClient extends Client {
+    private final Logger LOG = LoggerFactory.getLogger(TaskClient.class);
 
     private final String uri;
 
@@ -84,12 +90,21 @@ public class TaskClient extends Client {
     /**
      * Stop a task using the given ID.
      * @param id the ID of the task to stop
+     * @return whether the task was successfully stopped
      */
-    public void stopTask(TaskId id) {
+    public boolean stopTask(TaskId id) {
         try {
-            Unirest.put(format("http://%s/%s", uri, TASKS_STOP_URI))
+            HttpResponse<String> response = Unirest.put(format("http://%s/%s", uri, TASKS_STOP_URI))
                     .routeParam("id", id.getValue())
-                    .asBinary();
+                    .asString();
+
+            boolean isOK = response.getStatus() == HttpStatus.SC_OK;
+
+            if (!isOK) {
+                LOG.error("Failed to stop task: " + response.getBody());
+            }
+
+            return isOK;
         } catch (UnirestException e) {
             throw new RuntimeException(e);
         }
