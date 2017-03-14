@@ -488,7 +488,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
                     Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    join = join(join, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars));
+                    subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars));
                     /*
                     subs = joinWithInverse(
                             subs,

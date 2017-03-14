@@ -42,10 +42,10 @@ public class Explanation implements AnswerExplanation {
     public Explanation(){ answers = new HashSet<>();}
     public Explanation(ReasonerQuery q, Set<Answer> ans){
         this.query = q.copy();
-        answers = ans;
+        this.answers = new HashSet<>(ans);
     }
     public Explanation(Explanation e){
-        answers = new HashSet<>(e.answers);
+        this.answers = new HashSet<>(e.answers);
         this.query = query != null? query.copy() : null;
     }
 

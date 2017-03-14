@@ -103,20 +103,18 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
-            //AnswerExplanation exp = new LookupExplanation(query);
+            AnswerExplanation exp = new LookupExplanation(query);
             return match.getValue().stream()
                     .map(a -> a.unify(unifiers))
                     .map(a -> {
-                        AnswerExplanation exp = new LookupExplanation(query);
                         if (a.getExplanation() == null || a.getExplanation().isLookupExplanation())
-                                a.explain(exp);
+                            a.explain(exp);
                         else {
-                            //a.setExplanation(a.getExplanation().setQuery(query)) );
-                            a.getExplanation().setQuery(query);
+                            a.setExplanation(a.getExplanation().setQuery(query));
+                            //a.getExplanation().setQuery(query);
                         }
                         return a;
                     });
-                            //a);
         }
         else return Stream.empty();
     }

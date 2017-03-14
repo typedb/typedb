@@ -50,7 +50,7 @@ public class QueryAnswer implements Answer {
 
     public QueryAnswer(Answer a){
         map.putAll(a.map());
-        explanation = a.getExplanation().copy();
+        explanation = explanation != null? a.getExplanation().copy() : null;
     }
 
     public QueryAnswer(Map<VarName, Concept> m){

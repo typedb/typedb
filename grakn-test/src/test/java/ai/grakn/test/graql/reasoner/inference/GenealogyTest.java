@@ -293,6 +293,9 @@ public class GenealogyTest {
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
         MatchQuery query = iqb.parse(queryString);
+
+        List<Answer> collect = Reasoner.resolveWithExplanation(query, false).collect(Collectors.toList());
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
@@ -313,7 +316,7 @@ public class GenealogyTest {
     public void testInLaws() {
         String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
         MatchQuery query = iqb.parse(queryString);
-        
+
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers requeriedAnswers = queryAnswers(query);
         assertEquals(answers.size(), 50);

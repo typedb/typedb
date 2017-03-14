@@ -233,9 +233,9 @@ lhs
 (parent: $m, child: $y) isa parentship;
 (parent: $f, child: $x) isa parentship;
 (parent: $f, child: $y) isa parentship;
-$m has gender "female";
-$f has gender "male";
-$x != $y;
+#$m has gender "female";
+#$f has gender "male";
+#$x != $y;
 }
 rhs
 {(sibling1: $x, sibling2: $y) isa siblings;};

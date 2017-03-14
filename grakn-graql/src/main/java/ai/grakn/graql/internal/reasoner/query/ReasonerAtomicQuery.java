@@ -193,10 +193,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * resolve the query by performing a db lookup with subsequent cache update
      */
     private Stream<Answer> DBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
-        //AnswerExplanation exp = new LookupExplanation(this);
+        AnswerExplanation exp = new LookupExplanation(this);
         Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames()
                 .map(QueryAnswer::new)
-                .map(a -> a.explain(new LookupExplanation(this)));
+                .map(a -> a.explain(exp));
         cache.record(this, dbStream);
         return cache.getAnswerStream(this);
     }
@@ -205,10 +205,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * resolve the query by performing a db lookup
      */
     public Stream<Answer> DBlookup() {
-        //AnswerExplanation exp = new LookupExplanation(this);
+        AnswerExplanation exp = new LookupExplanation(this);
         return getMatchQuery().admin().streamWithVarNames()
                 .map(QueryAnswer::new)
-                .map(a -> a.explain(new LookupExplanation(this)));
+                .map(a -> a.explain(exp));
     }
 
     /**
