@@ -50,7 +50,7 @@ public class QueryAnswer implements Answer {
 
     public QueryAnswer(Answer a){
         map.putAll(a.map());
-        explanation = explanation != null? a.getExplanation().copy() : null;
+        //explanation = explanation != null? a.getExplanation().copy() : null;
     }
 
     public QueryAnswer(Map<VarName, Concept> m){
@@ -116,7 +116,6 @@ public class QueryAnswer implements Answer {
         merged.putAll(this);
 
         merged.setExplanation(new Explanation());
-
         if (this.getExplanation() != null
                 && (!this.getExplanation().isLookupExplanation() && !this.getExplanation().isRuleExplanation())){
             this.getExplanation().getAnswers().forEach(merged.getExplanation()::addAnswer);

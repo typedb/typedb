@@ -110,8 +110,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
                         if (a.getExplanation() == null || a.getExplanation().isLookupExplanation())
                             a.explain(exp);
                         else {
-                            a.setExplanation(a.getExplanation().setQuery(query));
-                            //a.getExplanation().setQuery(query);
+                            a.getExplanation().setQuery(query);
                         }
                         return a;
                     });

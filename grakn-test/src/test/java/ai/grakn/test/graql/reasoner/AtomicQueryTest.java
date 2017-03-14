@@ -44,6 +44,7 @@ import com.google.common.collect.Sets;
 import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -58,6 +59,7 @@ import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest {
@@ -101,6 +103,24 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
         assertEquals(atomicQuery, copy);
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
+    }
+
+    @Ignore
+    @Test
+    public void testCopyConstructor2(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{(recommended-item: $x, recommended-customer: $y) isa recommendation;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, graph);
+        MatchQuery q1 = atomicQuery.getMatchQuery();
+
+        ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
+        MatchQuery q2 = copy.getMatchQuery();
+
+        atomicQuery.unify(VarName.of("y"), VarName.of("z"));
+
+        assertTrue(!q1.toString().equals(q2.toString()));
+        assertEquals(new ReasonerAtomicQuery(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
     }
 
     @Test
