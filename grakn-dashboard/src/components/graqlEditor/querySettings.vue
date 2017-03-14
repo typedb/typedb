@@ -155,6 +155,11 @@ export default {
         },
         freezeNodes: function(newVal, oldVal) {
             User.setFreezeNodes(newVal);
+            if(newVal){
+              visualiser.fixAllNodes();
+            }else{
+              visualiser.releaseAllNodes();
+            }
         },
         queryLimit: function(newVal, oldVal) {
             User.setQueryLimit(newVal);

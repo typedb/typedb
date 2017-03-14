@@ -204,6 +204,13 @@ export default class Visualiser {
 
     //  ----------------------------------------------  //
 
+  fixAllNodes() {
+    this.fixNodes(this.nodes.getIds());
+  }
+
+  releaseAllNodes() {
+    this.releaseNodes(this.nodes.getIds());
+  }
 
     // Methods used to fix and release nodes when one or more are dragged //
 
