@@ -212,7 +212,7 @@ final class ElementFactory {
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
     }
 
-    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
+    EdgeImpl buildEdge(Edge edge, AbstractGraknGraph graknGraph){
         return new EdgeImpl(edge, graknGraph);
     }
 }
