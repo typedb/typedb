@@ -313,7 +313,7 @@ public class GenealogyTest {
     public void testInLaws() {
         String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
         MatchQuery query = iqb.parse(queryString);
-
+        
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers requeriedAnswers = queryAnswers(query);
         assertEquals(answers.size(), 50);

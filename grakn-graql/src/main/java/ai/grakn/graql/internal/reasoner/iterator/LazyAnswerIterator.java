@@ -51,10 +51,14 @@ public class LazyAnswerIterator extends LazyIterator<Answer> {
 
     public LazyAnswerIterator explain(AnswerExplanation exp){
         Iterator<Answer> transform = Iterators.transform(iterator(), input -> {
+
             if (input == null) return null;
-            return input.getExplanation() != null
-                    && input.getExplanation().isLookupExplanation()?
-                    input.explain(exp) : input;
+            if (input.getExplanation() == null || input.getExplanation().isLookupExplanation()){
+                input.explain(exp.copy());
+            } else{
+                input.getExplanation().setQuery(exp.getQuery());
+            }
+            return input;
         });
         return new LazyAnswerIterator(transform);
     }

@@ -35,12 +35,21 @@ import java.util.Set;
  */
 public class Explanation implements AnswerExplanation {
 
+    private ReasonerQuery query;
+
     private final Set<Answer> answers;
 
     public Explanation(){ answers = new HashSet<>();}
-    public Explanation(Set<Answer> ans){ answers = ans;}
-    public Explanation(Explanation e){ answers = new HashSet<>(e.answers);}
+    public Explanation(ReasonerQuery q, Set<Answer> ans){
+        this.query = q.copy();
+        answers = ans;
+    }
+    public Explanation(Explanation e){
+        answers = new HashSet<>(e.answers);
+        this.query = query != null? query.copy() : null;
+    }
 
+    @Override
     public AnswerExplanation copy(){ return new Explanation(this);}
 
     @Override
@@ -55,5 +64,13 @@ public class Explanation implements AnswerExplanation {
     @Override
     public boolean isRuleExplanation(){ return false;}
 
-    public ReasonerQuery getQuery(){ return null;}
+    @Override
+    public ReasonerQuery getQuery(){ return query;}
+
+    @Override
+    public AnswerExplanation setQuery(ReasonerQuery q){
+        //return new Explanation(getRuleId(), q, getAnswers());
+        this.query = q.copy();
+        return this;
+    }
 }

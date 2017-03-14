@@ -36,6 +36,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -128,12 +129,14 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Answer> stream = query.lookup(cache);
-        Stream<Answer> stream2 = query2.lookup(cache);
-        Stream<Answer> stream3 = query3.lookup(cache);
+        query.lookup(cache);
+        Stream<Answer> stream = cache.getAnswerStream(query);
+        Stream<Answer> stream2 = cache.getAnswerStream(query2);
+        Stream<Answer> stream3 = cache.getAnswerStream(query3);
 
-        Stream<Answer> join = QueryAnswerStream.join(QueryAnswerStream.join(stream, stream2), stream3);
-        assertEquals(join.collect(toSet()).size(), 10);
+        //Stream<Answer> join = QueryAnswerStream.join(stream, stream2);
+        List<Answer> collect = QueryAnswerStream.join(QueryAnswerStream.join(stream, stream2), stream3).collect(Collectors.toList());
+        assertEquals(collect.size(), 10);
     }
 
     @Test
