@@ -45,6 +45,12 @@ public abstract class MockBackgroundTask implements BackgroundTask {
 
         if (!wasCancelled) {
             startInner(id);
+        }
+
+        // Cancelled status may have changed
+        wasCancelled = cancelled.get();
+
+        if (!wasCancelled) {
             addCompletedTask(id);
         } else {
             addCancelledTask(id);
