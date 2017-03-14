@@ -20,9 +20,19 @@
 package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import java.time.Duration;
+import java.time.Instant;
+import mjson.Json;
 
+import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
+import static ai.grakn.util.REST.WebPath.TASKS_GET_URI;
+import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
 import static ai.grakn.util.REST.WebPath.TASKS_STOP_URI;
 import static java.lang.String.format;
 
@@ -41,6 +51,34 @@ public class TaskClient extends Client {
     
     public static TaskClient of(String uri) {
         return new TaskClient(uri);
+    }
+
+    public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval, Json configuration){
+        try {
+            String idValue = Unirest.post(format("http://%s/%s", uri, TASKS_SCHEDULE_URI))
+                    .queryString(TASK_CLASS_NAME_PARAMETER, taskClass.getName())
+                    .queryString(TASK_CREATOR_PARAMETER, creator)
+                    .queryString(TASK_RUN_AT_PARAMETER, runAt.toEpochMilli())
+                    .queryString(TASK_RUN_INTERVAL_PARAMETER, interval.toMillis())
+                    .body(configuration.toString())
+                    .asJson().getBody().getObject().getString("id");
+
+            return TaskId.of(idValue);
+        } catch (UnirestException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public TaskStatus getStatus(TaskId id){
+        try {
+            String statusValue = Unirest.get(format("http://%s/%s", uri, TASKS_GET_URI))
+                    .routeParam("id", id.getValue())
+                    .asJson().getBody().getObject().getString("status");
+
+            return TaskStatus.valueOf(statusValue);
+        } catch (UnirestException e){
+            throw new RuntimeException(e);
+        }
     }
 
     /**
