@@ -172,7 +172,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private boolean handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
-        if(shouldDelayTask(task)){
+        if (shouldStopTask(task)) {
+            stopTask(task);
+        } else if(shouldDelayTask(task)){
             resubmitTask(task);
             return false;
         } else if (shouldExecuteTask(task)) {
@@ -193,13 +195,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private void executeTask(TaskState task){
         // Mark as running
         task.markRunning(engineID);
-
-        //TODO Make this a put within state storage
-        if(storage.containsTask(task.getId())) {
-            storage.updateState(task);
-        } else {
-            storage.newState(task);
-        }
+        putState(task);
 
         LOG.debug("{}\tmarked as running", task);
 
@@ -233,6 +229,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         manager.addTask(task);
     }
 
+    private void stopTask(TaskState task) {
+        task.markStopped();
+        putState(task);
+    }
+
     private boolean shouldExecuteTask(TaskState task) {
         TaskId taskId = task.getId();
 
@@ -263,6 +264,19 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private boolean taskShouldRecur(TaskState task){
         return task.schedule().isRecurring() && !task.status().equals(FAILED)&& !task.status().equals(STOPPED);
+    }
+
+    private boolean shouldStopTask(TaskState task) {
+        return manager.isTaskMarkedStopped(task.getId());
+    }
+
+    private void putState(TaskState taskState) {
+        //TODO Make this a put within state storage
+        if(storage.containsTask(taskState.getId())) {
+            storage.updateState(taskState);
+        } else {
+            storage.newState(taskState);
+        }
     }
 
     /**

@@ -26,7 +26,6 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
@@ -47,14 +46,19 @@ public class TaskStates extends Generator<TaskState> {
 
     private boolean newTask = false;
 
+    // TODO: make this generate more classes
+    @SuppressWarnings("unchecked")
+    private Class<? extends BackgroundTask>[] classes = new Class[] {
+            LongExecutionMockTask.class, ShortExecutionMockTask.class, FailingMockTask.class
+    };
+
     public TaskStates() {
         super(TaskState.class);
     }
 
     @Override
     public TaskState generate(SourceOfRandomness random, GenerationStatus status) {
-        // TODO: make this generate more classes
-        Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionMockTask.class, ShortExecutionMockTask.class, FailingMockTask.class));
+        Class<? extends BackgroundTask> taskClass = random.choose(classes);
 
         TaskId taskId;
 
@@ -80,10 +84,21 @@ public class TaskStates extends Generator<TaskState> {
         this.newTask = newTask.value();
     }
 
+    public void configure(WithClass withClass) {
+        this.classes = withClass.value();
+    }
+
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
     public @interface NewTask {
         boolean value() default true;
+    }
+
+    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
+    @Retention(RUNTIME)
+    @GeneratorConfiguration
+    public @interface WithClass {
+        Class<? extends BackgroundTask>[] value() default {};
     }
 }

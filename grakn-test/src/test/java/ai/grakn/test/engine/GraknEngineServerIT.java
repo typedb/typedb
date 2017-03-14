@@ -19,10 +19,14 @@
 
 package ai.grakn.test.engine;
 
+import ai.grakn.client.TaskClient;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.generator.TaskStates.NewTask;
+import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -39,23 +43,31 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
+
+    private static final String host = "localhost";
+    private static final int PORT1 = 4567;
+    private static final int PORT2 = 5678;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
-    public static final EngineContext engine1 = EngineContext.startSingleQueueServer().port(4567);
+    public static final EngineContext engine1 = EngineContext.startSingleQueueServer().port(PORT1);
 
     @ClassRule
-    public static final EngineContext engine2 = EngineContext.startSingleQueueServer().port(5678);
+    public static final EngineContext engine2 = EngineContext.startSingleQueueServer().port(PORT2);
 
     private TaskStateStorage storage;
 
@@ -83,5 +95,53 @@ public class GraknEngineServerIT {
         waitForStatus(storage, allTasks, COMPLETED, STOPPED, FAILED);
 
         assertEquals(completableTasks(allTasks), completedTasks());
+    }
+
+    @Property(trials=10)
+    public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
+        String uri1 = "localhost:" + PORT1;
+        TaskClient.of(uri1).stopTask(task.getId());
+
+        engine1.getTaskManager().addTask(task);
+
+        waitForDoneStatus(storage, ImmutableList.of(task));
+
+        assertThat(completedTasks(), empty());
+    }
+
+    @Property(trials=10)
+    public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
+        String uri2 = "localhost:" + PORT2;
+        TaskClient.of(uri2).stopTask(task.getId());
+
+        engine1.getTaskManager().addTask(task);
+
+        waitForDoneStatus(storage, ImmutableList.of(task));
+
+        assertThat(completedTasks(), empty());
+    }
+
+    @Property(trials=10)
+    public void whenEngine1StopsATaskDuringExecution_TheTaskIsStopped(
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+        whenTaskStarts(id -> TaskClient.of(host, PORT1).stopTask(task.getId()));
+
+        engine1.getTaskManager().addTask(task);
+
+        waitForDoneStatus(storage, ImmutableList.of(task));
+
+        assertThat(completedTasks(), empty());
+    }
+
+    @Property(trials=10)
+    public void whenEngine2StopsATaskDuringExecution_TheTaskIsStopped(
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+        whenTaskStarts(id -> TaskClient.of(host, PORT2).stopTask(task.getId()));
+
+        engine1.getTaskManager().addTask(task);
+
+        waitForDoneStatus(storage, ImmutableList.of(task));
+
+        assertThat(completedTasks(), empty());
     }
 }
