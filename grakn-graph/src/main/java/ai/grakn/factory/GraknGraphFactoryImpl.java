@@ -161,10 +161,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
         Properties properties = new Properties();
         properties.putAll(read(contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD)).asMap());
 
-        String computer = null;
-        if(properties.containsKey(COMPUTER)){
-            computer = properties.get(COMPUTER).toString();
-        }
+        String computer = properties.get(COMPUTER).toString();
 
         return new ConfiguredFactory(computer, FactoryBuilder.getFactory(keyspace, engineUrl, properties));
     }
