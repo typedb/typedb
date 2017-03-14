@@ -113,7 +113,7 @@ export default class Visualiser {
     }
 
     this.network.on('stabilized', (params) => {
-      if (this.draggingNode === false) {
+      if (this.draggingNode === false && User.getFreezeNodes()) {
         this.fixNodes();
       }
     });
@@ -208,7 +208,7 @@ export default class Visualiser {
     // Methods used to fix and release nodes when one or more are dragged //
 
   fixNodes(nodeIds) {
-    if ((User.getFreezeNodes()) && (new Date() - this.lastFixTime > 100)) {
+    if (new Date() - this.lastFixTime > 100) {
             // this.network.storePositions();
       this.lastFixTime = new Date();
       if (nodeIds !== undefined) {
@@ -287,7 +287,7 @@ export default class Visualiser {
         properties: ap,
         links: ls,
       });
-    } else if (bp.id !== cn) { // If node already in graph and it's not the node clicked by user, unlock it
+    } else if (bp.id !== cn && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
       this.nodes.update({
         id: bp.id,
         fixed: {
