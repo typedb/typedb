@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
@@ -144,9 +144,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private void handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
-        if (shouldStopTask(task)) {
-            stopTask(task);
-        } else if(shouldDelayTask(task)){
+        if(shouldDelayTask(task)){
             resubmitTask(task);
         }
         else if (shouldExecuteTask(task)) {
@@ -163,7 +161,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private void executeTask(TaskState task){
         // Mark as running
         task.markRunning(engineID);
-        putState(task);
+
+        //TODO Make this a put within state storage
+        if(storage.containsTask(task.getId())) {
+            storage.updateState(task);
+        } else {
+            storage.newState(task);
+        }
 
         LOG.debug("{}\tmarked as running", task);
 
@@ -197,11 +201,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         manager.addTask(task);
     }
 
-    private void stopTask(TaskState task) {
-        task.markStopped();
-        putState(task);
-    }
-
     private boolean shouldExecuteTask(TaskState task) {
         TaskId taskId = task.getId();
 
@@ -232,19 +231,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private boolean taskShouldRecur(TaskState task){
         return task.schedule().isRecurring() && !task.status().equals(FAILED)&& !task.status().equals(STOPPED);
-    }
-
-    private boolean shouldStopTask(TaskState task) {
-        return manager.isTaskMarkedStopped(task.getId());
-    }
-
-    private void putState(TaskState taskState) {
-        //TODO Make this a put within state storage
-        if(storage.containsTask(taskState.getId())) {
-            storage.updateState(taskState);
-        } else {
-            storage.newState(taskState);
-        }
     }
 
     /**
