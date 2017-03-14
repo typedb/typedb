@@ -53,8 +53,7 @@ public final class Schema {
         ROLE_PLAYER("role-player"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
-        SHORTCUT("shortcut"),
-        NEW_SHORTCUT("new-shortcut"); //TODO: Change this to SHORTCUT
+        NEW_SHORTCUT("shortcut");
 
         private final String label;
 
@@ -170,16 +169,8 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE_NAME(String.class), //TODO: Check if we can remove completely. Only used for deletions
-        RELATION_ID(String.class), //TODO: Check if we can remove completely. Only used for deletions
+        ROLE_TYPE_NAME(String.class),
         RELATION_TYPE_NAME(String.class),
-        TO_ID(String.class), //TODO: Check if we can remove completely.
-        TO_ROLE_NAME(String.class),
-        TO_TYPE_NAME(String.class), //TODO: Check if we can remove completely.
-        FROM_ID(String.class), //TODO: Check if we can remove completely.
-        FROM_ROLE_NAME(String.class),
-        FROM_TYPE_NAME(String.class), //TODO: Check if we can remove completely.
-        SHORTCUT_HASH(String.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;

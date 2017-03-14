@@ -27,7 +27,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
 
 public class EdgeTest extends GraphTestBase{
 
@@ -67,12 +66,4 @@ public class EdgeTest extends GraphTestBase{
     public void testGetType() throws Exception {
         assertEquals(Schema.EdgeLabel.ISA, edge.getType());
     }
-
-    @Test
-    public void testProperty() throws Exception {
-        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, "role");
-        assertEquals("role", edge.getProperty(Schema.EdgeProperty.ROLE_TYPE_NAME));
-        assertNull(edge.getProperty(Schema.EdgeProperty.FROM_TYPE_NAME));
-    }
-
 }
