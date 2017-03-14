@@ -170,7 +170,6 @@ public class GraknGraphPropertyIT {
         assertEquals(expectedResources, resourcesAfter);
     }
 
-    @Ignore // TODO: Fix this test
     @Property
     public void whenCallingGetResourcesByValueAfterDeletingAResource_TheResultDoesNotIncludesTheResource(
             @Open GraknGraph graph, @FromGraph Resource<Object> resource) {
