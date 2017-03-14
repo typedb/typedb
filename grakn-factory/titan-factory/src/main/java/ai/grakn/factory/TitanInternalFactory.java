@@ -22,6 +22,7 @@ import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.Namifiable;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanFactory;
@@ -40,6 +41,9 @@ import java.util.Arrays;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.Arrays.stream;
 
 /**
  * <p>
@@ -149,30 +153,42 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
         Set<String> edgeLabels = keys.keySet();
         for(String edgeLabel : edgeLabels){
-            String properties = keys.getString(edgeLabel);
-            if(properties.length() > 0){
-                String[] propertyKey = keys.getString(edgeLabel).split(",");
-                for (String aPropertyKey : propertyKey) {
-                    PropertyKey key = management.getPropertyKey(aPropertyKey);
-                    if (key == null) {
-                        throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + aPropertyKey + "] does not exist");
-                    }
+            String[] propertyKeyStrings = keys.getString(edgeLabel).split(",");
 
-                    RelationType relationType = management.getRelationType(edgeLabel);
-                    if (management.getRelationIndex(relationType, edgeLabel + "by" + aPropertyKey) == null) {
-                        EdgeLabel label = management.getEdgeLabel(edgeLabel);
-                        management.buildEdgeIndex(label, edgeLabel + "by" + aPropertyKey, Direction.OUT, Order.decr, key);
-                    }
+            //Get all the property keys we need
+            Set<PropertyKey> propertyKeys = Arrays.stream(propertyKeyStrings).map(keyId ->{
+                PropertyKey key = management.getPropertyKey(keyId);
+                if (key == null) {
+                    throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + keyId + "] does not exist");
                 }
+                return key;
+            }).collect(Collectors.toSet());
+
+            //Get the edge and indexing information
+            RelationType relationType = management.getRelationType(edgeLabel);
+            EdgeLabel label = management.getEdgeLabel(edgeLabel);
+
+            //Create index on each property key
+            for (PropertyKey key : propertyKeys) {
+                if (management.getRelationIndex(relationType, edgeLabel + "by" + key.name()) == null) {
+                    management.buildEdgeIndex(label, edgeLabel + "by" + key.name(), Direction.BOTH, Order.decr, key);
+                }
+            }
+
+            //Create index on all property keys
+            String propertyKeyId = propertyKeys.stream().map(Namifiable::name).collect(Collectors.joining(","));
+            if (management.getRelationIndex(relationType, edgeLabel + "by" + propertyKeyId) == null) {
+                PropertyKey [] allKeys = propertyKeys.toArray(new PropertyKey[propertyKeys.size()]);
+                management.buildEdgeIndex(label, edgeLabel + "by" + propertyKeyId, Direction.BOTH, Order.decr, allKeys);
             }
         }
     }
 
     private static void makePropertyKeys(TitanManagement management){
-        Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
+        stream(Schema.ConceptProperty.values()).forEach(property ->
                 makePropertyKey(management, property.name(), property.getDataType()));
 
-        Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
+        stream(Schema.EdgeProperty.values()).forEach(property ->
                 makePropertyKey(management, property.name(), property.getDataType()));
     }
 
