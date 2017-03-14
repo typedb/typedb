@@ -52,8 +52,6 @@ import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
@@ -896,36 +894,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             Set<RelationImpl> duplicateRelations = mergeCastings(mainCasting, castings);
 
             //Remove Redundant Relations
-            deleteRelations(duplicateRelations);
+            duplicateRelations.forEach(ConceptImpl::deleteNode);
 
             return true;
         }
 
         return false;
-    }
-
-    /**
-     *
-     * @param relations The duplicate relations to be merged
-     */
-    private void deleteRelations(Set<RelationImpl> relations){
-        for (RelationImpl relation : relations) {
-            String relationID = relation.getId().getValue();
-
-            //Kill Shortcut Edges
-            relation.rolePlayers().forEach(instance -> {
-                if(instance != null) {
-                    List<Edge> edges = getTinkerTraversal().
-                            hasId(instance.getId().getValue()).
-                            bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                            has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
-
-                    edges.forEach(Element::remove);
-                }
-            });
-
-            relation.deleteNode();
-        }
     }
 
     /**
@@ -1000,9 +974,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
                 //Delete the shortcut edges of the resource we going to delete.
                 //This is so we can copy them uniquely later
-                otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
+                otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.NEW_SHORTCUT).forEach(EdgeImpl::delete);
 
-                //Cope the actual relation
+                //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
