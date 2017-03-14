@@ -329,7 +329,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
     }
 
     private synchronized void getGraphRDD() {
-        if (graknGraphRDD == null) {
+        if (graknGraphRDD == null || GraknGraphRDD.commit) {
             logger.debug("Creating a new Grakn Graph RDD");
             graknGraphRDD = new GraknGraphRDD(this);
         }
@@ -442,6 +442,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                             StorageLevel.fromString(graknSparkComputer.hadoopConfiguration
                                     .get(Constants.GREMLIN_SPARK_GRAPH_STORAGE_LEVEL, "MEMORY_ONLY")));
                 }
+                GraknGraphRDD.commit = false;
             } catch (final InstantiationException | IllegalAccessException e) {
                 throw new IllegalStateException(e.getMessage(), e);
             }

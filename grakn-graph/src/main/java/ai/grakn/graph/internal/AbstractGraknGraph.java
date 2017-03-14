@@ -41,6 +41,7 @@ import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
@@ -865,6 +866,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransaction();
+
+        //TODO: Kill when analytics no longer needs this
+        GraknSparkComputer.refresh();
 
         LOG.trace("Graph committed.");
         getConceptLog().writeToCentralCache(true);
