@@ -51,7 +51,6 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
@@ -79,8 +78,6 @@ class GraqlSession {
 
     private static final int QUERY_CHUNK_SIZE = 1000;
     private static final int PING_INTERVAL = 60_000;
-
-    private boolean queryCancelled = false;
 
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor =
@@ -127,9 +124,6 @@ class GraqlSession {
                 break;
             case ACTION_END:
                 executeQuery();
-                break;
-            case ACTION_QUERY_ABORT:
-                abortQuery();
                 break;
             case ACTION_COMMIT:
                 commit();
@@ -210,11 +204,7 @@ class GraqlSession {
                 queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString);
 
                 // Return results unless query is cancelled
-                queries.stream().flatMap(query -> query.resultsString(printer)).forEach(result -> {
-                    if (queryCancelled) return;
-                    sendQueryResult(result);
-                });
-                queryCancelled = false;
+                queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
             } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
                 errorMessage = e.getMessage();
                 LOG.error(errorMessage,e);
@@ -236,10 +226,6 @@ class GraqlSession {
                 sendEnd();
             }
         });
-    }
-
-    void abortQuery() {
-        queryCancelled = true;
     }
 
     /**
