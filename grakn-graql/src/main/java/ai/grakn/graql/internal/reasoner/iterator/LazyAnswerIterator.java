@@ -54,7 +54,7 @@ public class LazyAnswerIterator extends LazyIterator<Answer> {
             if (input == null) return null;
             if (input.getExplanation() == null || input.getExplanation().isLookupExplanation()){
                 input.explain(exp);
-            } else{
+            } else {
                 input.getExplanation().setQuery(exp.getQuery());
             }
             return input;

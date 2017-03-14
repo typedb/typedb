@@ -107,9 +107,9 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
             return match.getValue().stream()
                     .map(a -> a.unify(unifiers))
                     .map(a -> {
-                        if (a.getExplanation() == null || a.getExplanation().isLookupExplanation())
+                        if (a.getExplanation() == null || a.getExplanation().isLookupExplanation()) {
                             a.explain(exp);
-                        else {
+                        } else {
                             a.getExplanation().setQuery(query);
                         }
                         return a;
