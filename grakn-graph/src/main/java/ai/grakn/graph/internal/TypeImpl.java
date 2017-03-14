@@ -529,7 +529,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         //Check if resource type is the meta
         if(Schema.MetaSchema.RESOURCE.getName().equals(resourceType.getName())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resourceType.getName()));
         }
 
         TypeName resourceTypeName = resourceType.getName();

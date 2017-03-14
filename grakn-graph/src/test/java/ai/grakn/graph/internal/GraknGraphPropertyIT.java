@@ -42,6 +42,7 @@ import ai.grakn.generator.MetaTypeNames;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -75,7 +76,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeThat;
@@ -344,17 +344,18 @@ public class GraknGraphPropertyIT {
         resource.superType();
     }
 
-    @Ignore // TODO: Fix this and write test properly!
     @Property
     public void whenCallingHasResourceWithMetaResourceType_DontThrowClassCastException(
             @Open GraknGraph graph, @FromGraph Type type) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        try {
-            type.hasResource(resource);
-        } catch (ClassCastException e) {
-            fail();
+        exception.expect(ConceptException.class);
+        if(Schema.MetaSchema.isMetaName(type.getName())) {
+            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        } else {
+            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getName()));
         }
+        type.hasResource(resource);
     }
 
     @Property
