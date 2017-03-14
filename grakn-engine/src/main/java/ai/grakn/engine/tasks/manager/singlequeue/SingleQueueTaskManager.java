@@ -28,14 +28,17 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableList;
+import com.google.common.base.Charsets;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -47,10 +50,14 @@ import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.lang.String.format;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.generate;
+import static org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.Type.CHILD_ADDED;
 
 /**
  * {@link TaskManager} implementation that operates using a single Kafka queue and controls the
@@ -69,10 +76,13 @@ public class SingleQueueTaskManager implements TaskManager {
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
     private final FailoverElector failover;
+    private final PathChildrenCache stoppedTasks;
     private final ExternalOffsetStorage offsetStorage;
 
     private Set<SingleQueueTaskRunner> taskRunners;
     private ExecutorService taskRunnerThreadPool;
+
+    private Charset zkCharset = Charsets.UTF_8;
 
     /**
      * Create a {@link SingleQueueTaskManager}
@@ -87,6 +97,19 @@ public class SingleQueueTaskManager implements TaskManager {
         this.zookeeper = new ZookeeperConnection();
         this.storage = chooseStorage(properties, zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
+
+        stoppedTasks = new PathChildrenCache(zookeeper.connection(), TASKS_STOPPED_PREFIX, true);
+        stoppedTasks.getListenable().addListener((client, event) -> {
+            if (event.getType() == CHILD_ADDED) {
+                TaskId id = TaskId.of(new String(event.getData().getData(), zkCharset));
+                taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
+            }
+        });
+        try {
+            stoppedTasks.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         //TODO check that the number of partitions is at least the capacity
         //TODO Single queue task manager should have its own impl of failover
@@ -153,12 +176,13 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void stopTask(TaskId id, String requesterName) {
-        // TODO: Make only one call to storage if possible
-        if (!storage.containsTask(id)) {
-            TaskState task = TaskState.of(id).markStopped();
-            storage.newState(task);
-        } else {
-            taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
+        byte[] serializedId = id.getValue().getBytes(zkCharset);
+        try {
+            zookeeper.connection().create().creatingParentsIfNeeded().forPath(format(TASKS_STOPPED, id), serializedId);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -178,6 +202,15 @@ public class SingleQueueTaskManager implements TaskManager {
         Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
         consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, offsetStorage));
         return consumer;
+    }
+
+    /**
+     * Check in Zookeeper whether the task has been stopped.
+     * @param taskId the task ID to look up in Zookeeper
+     * @return true if the task has been marked stopped
+     */
+    boolean isTaskMarkedStopped(TaskId taskId) {
+        return stoppedTasks.getCurrentData(format(TASKS_STOPPED, taskId)) != null;
     }
 
     /**
