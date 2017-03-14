@@ -345,7 +345,7 @@ public class GraknGraphPropertyIT {
     }
 
     @Property
-    public void whenCallingHasResourceWithMetaResourceType_DontThrowClassCastException(
+    public void whenCallingHasResourceWithMetaResourceType_ThrowMetaTypeImmutableException(
             @Open GraknGraph graph, @FromGraph Type type) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
