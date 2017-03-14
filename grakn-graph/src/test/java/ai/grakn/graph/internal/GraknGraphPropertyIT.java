@@ -184,14 +184,13 @@ public class GraknGraphPropertyIT {
         assertEquals(expectedResources, resourcesAfter);
     }
 
-    @Ignore // TODO: Fix this test
     @Property
     public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
             @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
         Collection<Resource<?>> allResources = graph.admin().getMetaResourceType().instances();
 
         Set<Resource<?>> allResourcesOfValue =
-                allResources.stream().filter(resource -> resource.getValue().equals(resourceValue)).collect(toSet());
+                allResources.stream().filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
 
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
     }
