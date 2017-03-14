@@ -253,10 +253,11 @@ public class GraknGraphPropertyIT {
         assertTrue(graph.isClosed());
     }
 
-    @Ignore // TODO: Re-enable this when test below is fixed and AFTER the transaction refactor
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
+
+        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
 
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
