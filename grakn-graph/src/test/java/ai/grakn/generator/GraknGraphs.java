@@ -21,6 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -42,7 +43,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.var;
@@ -93,8 +93,15 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     @Override
     public GraknGraph generate() {
-        String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
+        // TODO: Generate more keyspaces
+        // We don't do this now because creating lots of keyspaces seems to slow the system graph
+        String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
+        GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, keyspace);
+
+        // Clear graph before retrieving
+        graph = factory.getGraph();
+        graph.clear();
+        graph = factory.getGraph();
 
         for (int i = 0; i < status.size(); i++) {
             mutateOnce();
