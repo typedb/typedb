@@ -104,7 +104,7 @@ public abstract class MockBackgroundTask implements BackgroundTask {
     public final boolean stop() {
         cancelled.set(true);
         synchronized (sync) {
-            sync.notify();
+            sync.notifyAll();
         }
         return true;
     }
