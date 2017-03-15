@@ -31,9 +31,9 @@ import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
-import static ai.grakn.util.REST.WebPath.TASKS_GET_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_STOP_URI;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.String.format;
 
 /**
@@ -55,7 +55,7 @@ public class TaskClient extends Client {
 
     public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval, Json configuration){
         try {
-            String idValue = Unirest.post(format("http://%s/%s", uri, TASKS_SCHEDULE_URI))
+            String idValue = Unirest.post(format("http://%s/%s", uri, TASKS))
                     .queryString(TASK_CLASS_NAME_PARAMETER, taskClass.getName())
                     .queryString(TASK_CREATOR_PARAMETER, creator)
                     .queryString(TASK_RUN_AT_PARAMETER, runAt.toEpochMilli())
@@ -71,7 +71,7 @@ public class TaskClient extends Client {
 
     public TaskStatus getStatus(TaskId id){
         try {
-            String statusValue = Unirest.get(format("http://%s/%s", uri, TASKS_GET_URI))
+            String statusValue = Unirest.get(format("http://%s/%s", uri, convert(GET)))
                     .routeParam("id", id.getValue())
                     .asJson().getBody().getObject().getString("status");
 
@@ -87,7 +87,7 @@ public class TaskClient extends Client {
      */
     public void stopTask(TaskId id) {
         try {
-            Unirest.put(format("http://%s/%s", uri, TASKS_STOP_URI))
+            Unirest.put(format("http://%s/%s", uri, convert(STOP)))
                     .routeParam("id", id.getValue())
                     .asBinary();
         } catch (UnirestException e) {

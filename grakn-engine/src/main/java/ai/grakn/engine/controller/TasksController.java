@@ -56,10 +56,9 @@ import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_STOP;
-import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static java.time.Instant.ofEpochMilli;
@@ -84,14 +83,14 @@ public class TasksController {
         }
         this.manager = manager;
 
-        spark.get(ALL_TASKS_URI, this::getTasks);
-        spark.get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
-        spark.put(TASKS_URI + "/" + ID_PARAMETER + TASK_STOP, this::stopTask);
-        spark.post(TASKS_SCHEDULE_URI, this::scheduleTask);
+        spark.get(TASKS,       this::getTasks);
+        spark.get(GET,         this::getTask);
+        spark.put(STOP,        this::stopTask);
+        spark.post(TASKS,      this::scheduleTask);
     }
 
     @GET
-    @Path("/all")
+    @Path("/")
     @ApiOperation(value = "Get tasks matching a specific TaskStatus.")
     @ApiImplicitParams({
         @ApiImplicitParam(name = "status", value = "TaskStatus as string.", dataType = "string", paramType = "query"),
@@ -129,11 +128,11 @@ public class TasksController {
     }
 
     @GET
-    @Path("/:uuid")
+    @Path("/{id}")
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
-        String id = request.params(ID_PARAMETER);
+        String id = request.params("id");
 
         try {
             response.status(200);
@@ -148,7 +147,7 @@ public class TasksController {
     }
 
     @PUT
-    @Path("/:uuid/stop")
+    @Path("/{id}/stop")
     @ApiOperation(value = "Stop a running or paused task.")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String stopTask(Request request, Response response) {
@@ -163,7 +162,7 @@ public class TasksController {
     }
 
     @POST
-    @Path("/schedule")
+    @Path("/")
     @ApiOperation(value = "Schedule a task.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "className", value = "Class name of object implementing the BackgroundTask interface", required = true, dataType = "string", paramType = "query"),
