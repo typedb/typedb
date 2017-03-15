@@ -27,6 +27,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,7 +194,7 @@ final class ElementFactory {
         return graknGraph.getConceptLog().getCachedConcept(conceptId);
     }
 
-    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
+    EdgeImpl buildEdge(Edge edge){
         return new EdgeImpl(edge, graknGraph);
     }
 }

@@ -521,7 +521,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         if(!traversal.hasNext()) {
             return addEdge(toConcept, type);
         } else {
-            return graknGraph.getElementFactory().buildEdge(traversal.next(), graknGraph);
+            return graknGraph.getElementFactory().buildEdge(traversal.next());
         }
     }
 
@@ -532,7 +532,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @return The edge created
      */
     EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()), graknGraph);
+        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(getVertex(), type.getLabel()));
     }
 
     /**
