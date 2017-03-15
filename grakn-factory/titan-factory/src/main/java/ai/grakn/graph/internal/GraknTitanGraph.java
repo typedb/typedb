@@ -77,8 +77,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         try {
             super.commitTransaction();
         } catch (TitanException e){
-            Throwable innerException = e.getCause();
-            if(innerException != null && innerException instanceof TemporaryLockingException || innerException instanceof PermanentLockingException){
+            if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw new GraknLockingException(e);
             } else {
                 throw new GraknBackendException(e);
