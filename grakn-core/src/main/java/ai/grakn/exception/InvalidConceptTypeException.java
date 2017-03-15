@@ -18,10 +18,12 @@
 
 package ai.grakn.exception;
 
-//TODO: communicate in complete sentences
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Resource;
+
 /**
  * This exception is thrown when attempting to incorrectly cast a concept to something it is not.
- * For example when
+ * For example when using {@link Concept#asEntityType()} on a {@link Resource}
  *
  * @author Filipe Teixiera
  */

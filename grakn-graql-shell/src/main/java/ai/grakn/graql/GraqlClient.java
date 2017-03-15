@@ -32,7 +32,7 @@ class GraqlClient {
 
     private static final long TIMEOUT = 3_600_000;
 
-    private WebSocketClient client;
+    private WebSocketClient client = null;
 
     Future<Session> connect(Object websocket, URI uri) {
         client = new WebSocketClient();
@@ -52,6 +52,9 @@ class GraqlClient {
     }
 
     public void close() {
+        if (client == null) {
+            throw new IllegalStateException("Closed client before connecting");
+        }
         try {
             client.stop();
         } catch (Exception e) {

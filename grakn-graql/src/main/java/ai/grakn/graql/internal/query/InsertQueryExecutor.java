@@ -344,7 +344,7 @@ public class InsertQueryExecutor {
      */
     private ResourceType.DataType<?> getDataType(VarAdmin var) {
         Optional<ResourceType.DataType<?>> directDataType =
-                var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype);
+                var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDataType);
 
         Optional<ResourceType.DataType<?>> indirectDataType =
                 getSub(var).map(sub -> getConcept(sub).asResourceType().getDataType());

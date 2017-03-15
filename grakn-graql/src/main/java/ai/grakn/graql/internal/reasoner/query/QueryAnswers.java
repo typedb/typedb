@@ -34,13 +34,15 @@ import java.util.stream.Stream;
  *
  * <p>
  * Wrapper class for a set of answers providing higher level filtering facilities
- * as well as unification and join operations.
+ * as well as unification operation.
  * </p>
  *
  * @author Kasper Piskorski
  *
  */
 public class QueryAnswers implements Iterable<Answer>{
+
+    private static final long serialVersionUID = -8092703897236995422L;
 
     private final HashSet<Answer> set = new HashSet<>();
 

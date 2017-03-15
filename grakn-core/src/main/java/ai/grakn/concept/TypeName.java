@@ -34,6 +34,8 @@ import java.util.function.Function;
  * @author fppt
  */
 public class TypeName implements Comparable<TypeName>, Serializable {
+    private static final long serialVersionUID = 2051578406740868932L;
+
     private String name;
     private TypeName(String name){
         this.name = name;

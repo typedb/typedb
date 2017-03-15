@@ -27,7 +27,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;

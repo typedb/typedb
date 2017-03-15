@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class TitanHadoopInternalFactoryTest {
-    private final String TEST_CONFIG = "../../conf/main/grakn-analytics.properties";
+    private final String TEST_CONFIG = "../../conf/main/grakn.properties";
     private final static Properties TEST_PROPERTIES = new Properties();
 
     private TitanHadoopInternalFactory factory;

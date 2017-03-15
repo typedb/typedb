@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -202,7 +202,7 @@ public class TasksController {
 
             response.type("application/json");
             return Json.object("id", taskState.getId().getValue()).toString();
-        } catch (Exception e) {
+        } catch (ClassNotFoundException | RuntimeException e) {
             LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
         }

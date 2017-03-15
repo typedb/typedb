@@ -136,6 +136,14 @@ public class LoaderClient {
     }
 
     /**
+     * Get the number of queries in each transaction
+     * @return the batch size
+     */
+    public int getBatchSize(){
+        return batchSize;
+    }
+
+    /**
      * Number of active tasks running on the server at any one time.
      * Consider this a safeguard on system load.
      *

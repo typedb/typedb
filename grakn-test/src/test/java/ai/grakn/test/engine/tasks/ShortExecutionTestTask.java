@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.tasks;
 
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;

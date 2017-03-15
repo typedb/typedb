@@ -98,8 +98,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
         //Load default properties if none provided
         if(properties == null){
             properties = new Properties();
-            InputStream in = getClass().getResourceAsStream(DEFAULT_CONFIG);
-            try {
+            try (InputStream in = getClass().getResourceAsStream(DEFAULT_CONFIG)) {
                 properties.load(in);
                 in.close();
             } catch (IOException e) {

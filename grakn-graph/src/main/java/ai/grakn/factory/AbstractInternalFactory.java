@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import javax.annotation.CheckReturnValue;
 import java.util.Properties;
 
-import static javax.annotation.meta.When.MAYBE;
+import static javax.annotation.meta.When.NEVER;
 
 /**
  * <p>
@@ -145,7 +145,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         }
     }
 
-    @CheckReturnValue(when=MAYBE)
+    @CheckReturnValue(when=NEVER)
     protected abstract G getGraphWithNewTransaction(G graph);
 
 }
