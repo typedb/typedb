@@ -73,6 +73,9 @@ public abstract class GraknTestEnv {
     }
 
     static void startKafka() throws Exception {
+        // Kafka is using log4j, which is super annoying. We make sure it only logs error here
+        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
+
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("starting kafka...");
@@ -124,11 +127,9 @@ public abstract class GraknTestEnv {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
             Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-            hideLogs();
 
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
-            hideLogs();
 
             try {Thread.sleep(5000);} catch(InterruptedException ex) { LOG.info("Thread sleep interrupted."); }
         }
@@ -140,11 +141,6 @@ public abstract class GraknTestEnv {
     static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    public static void hideLogs() {
-        // Some dependencies are using log4j, so must be managed separately
-        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
     }
 
     public static boolean usingTinker() {
