@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
@@ -531,11 +532,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
-
-        Stream<Answer> answerStream = atomicQuery.resolve(materialise);
+        Stream<Answer> answerStream = atomicQuery.resolve(materialise, cache, dCache);
         while (atIt.hasNext()) {
             atomicQuery = new ReasonerAtomicQuery(atIt.next());
-            Stream<Answer> subAnswerStream = atomicQuery.resolve(materialise);
+            Stream<Answer> subAnswerStream = atomicQuery.resolve(materialise, cache, dCache);
             answerStream = join(answerStream, subAnswerStream);
         }
 
