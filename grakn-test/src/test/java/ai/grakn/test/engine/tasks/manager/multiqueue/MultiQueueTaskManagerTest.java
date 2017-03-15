@@ -21,7 +21,7 @@ package ai.grakn.test.engine.tasks.manager.multiqueue;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
-import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -50,12 +50,12 @@ public class MultiQueueTaskManagerTest {
      */
     @Test
     public void endToEndTest(){
-        final int startCount = ShortExecutionTestTask.startedCounter.get();
+        final int startCount = ShortExecutionMockTask.startedCounter.get();
 
         Set<TaskState> tasks = createTasks(20);
         tasks.forEach(manager::addTask);
 
         waitForStatus(manager.storage(), tasks, COMPLETED);
-        assertEquals(20, ShortExecutionTestTask.startedCounter.get()-startCount);
+        assertEquals(20, ShortExecutionMockTask.startedCounter.get()-startCount);
     }
 }

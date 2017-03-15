@@ -26,8 +26,8 @@ import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
-import ai.grakn.engine.tasks.mock.LongExecutionTestTask;
-import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -326,7 +326,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedAfterExecution_TheTaskIsCompleted() throws Exception {
-        TaskState task = createTask(LongExecutionTestTask.class);
+        TaskState task = createTask(LongExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -340,7 +340,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedAfterExecution_TheTaskIsMarkedAsCompleted() throws Exception {
-        TaskState task = createTask(LongExecutionTestTask.class);
+        TaskState task = createTask(LongExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -406,7 +406,7 @@ public class SingleQueueTaskRunnerTest {
             startedTime[0] = now();
         });
 
-        TaskState delayedTask = createTask(ShortExecutionTestTask.class, at(submittedTime.plus(delay)));
+        TaskState delayedTask = createTask(ShortExecutionMockTask.class, at(submittedTime.plus(delay)));
         setUpTasks(ImmutableList.of(ImmutableList.of(delayedTask)));
 
         taskRunner.run();
@@ -425,8 +425,8 @@ public class SingleQueueTaskRunnerTest {
                 startedTime.put(taskId, now())
         );
 
-        TaskState delayedTask = createTask(ShortExecutionTestTask.class, at(submittedTime.plus(delay)));
-        TaskState instantTask = createTask(ShortExecutionTestTask.class, at(submittedTime));
+        TaskState delayedTask = createTask(ShortExecutionMockTask.class, at(submittedTime.plus(delay)));
+        TaskState instantTask = createTask(ShortExecutionMockTask.class, at(submittedTime));
         setUpTasks(ImmutableList.of(ImmutableList.of(delayedTask, instantTask)));
 
         taskRunner.run();
@@ -450,7 +450,7 @@ public class SingleQueueTaskRunnerTest {
             }
         );
 
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(ofMillis(100)));
+        TaskState task = createTask(ShortExecutionMockTask.class, recurring(ofMillis(100)));
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         taskRunner.run();
@@ -479,7 +479,7 @@ public class SingleQueueTaskRunnerTest {
             }
         });
 
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(now(), interval));
+        TaskState task = createTask(ShortExecutionMockTask.class, recurring(now(), interval));
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         taskRunner.run();
@@ -496,7 +496,7 @@ public class SingleQueueTaskRunnerTest {
             throw new RuntimeException();
         });
 
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(ofMillis(100)));
+        TaskState task = createTask(ShortExecutionMockTask.class, recurring(ofMillis(100)));
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         taskRunner.run();

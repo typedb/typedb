@@ -27,7 +27,7 @@ import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.After;
@@ -82,21 +82,21 @@ public class MultiQueueTaskRunnerTest {
 
     @Test
     public void testSendReceive() throws Exception {
-        ShortExecutionTestTask.startedCounter.set(0);
-        ShortExecutionTestTask.resumedCounter.set(0);
+        ShortExecutionMockTask.startedCounter.set(0);
+        ShortExecutionMockTask.resumedCounter.set(0);
 
         Set<TaskState> tasks = createScheduledTasks(5);
         tasks.forEach(storage::newState);
         sendTasksToWorkQueue(tasks);
         waitForStatus(storage, tasks, COMPLETED);
 
-        assertEquals(5, ShortExecutionTestTask.startedCounter.get());
+        assertEquals(5, ShortExecutionMockTask.startedCounter.get());
     }
 
     @Test
     public void testSendDuplicate() throws Exception {
-        ShortExecutionTestTask.startedCounter.set(0);
-        ShortExecutionTestTask.resumedCounter.set(0);
+        ShortExecutionMockTask.startedCounter.set(0);
+        ShortExecutionMockTask.resumedCounter.set(0);
 
         Set<TaskState> tasks = createScheduledTasks(5);
         tasks.forEach(storage::newState);
@@ -104,13 +104,13 @@ public class MultiQueueTaskRunnerTest {
         sendTasksToWorkQueue(tasks);
 
         waitForStatus(storage, tasks, COMPLETED);
-        assertEquals(5, ShortExecutionTestTask.startedCounter.get());
+        assertEquals(5, ShortExecutionMockTask.startedCounter.get());
     }
 
     @Test
     public void testSendWithCheckpoint() {
-        ShortExecutionTestTask.startedCounter.set(0);
-        ShortExecutionTestTask.resumedCounter.set(0);
+        ShortExecutionMockTask.startedCounter.set(0);
+        ShortExecutionMockTask.resumedCounter.set(0);
 
         TaskState task = createTask().markScheduled();
         task.checkpoint("");
@@ -121,8 +121,8 @@ public class MultiQueueTaskRunnerTest {
 
         // Task should be resumed, not started
         // This is because it was sent to the work queue with a non-null checkpoint
-        assertEquals(1, ShortExecutionTestTask.resumedCounter.get());
-        assertEquals(0, ShortExecutionTestTask.startedCounter.get());
+        assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
+        assertEquals(0, ShortExecutionMockTask.startedCounter.get());
     }
 
     private void sendTasksToWorkQueue(Set<TaskState> tasks) {

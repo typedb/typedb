@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -56,7 +56,7 @@ public class TaskStateInMemoryStoreTest {
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
-        assertEquals("name", ShortExecutionTestTask.class, state.taskClass());
+        assertEquals("name", ShortExecutionMockTask.class, state.taskClass());
         assertEquals("creator", this.getClass().getName(), state.creator());
         assertEquals("recurring", false, state.schedule().isRecurring());
         assertEquals("interval", Optional.empty(), state.schedule().interval());
@@ -116,7 +116,7 @@ public class TaskStateInMemoryStoreTest {
     @Test
     public void testGetTasksByClassName() {
         TaskId id = stateStorage.newState(task());
-        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionMockTask.class.getName(), null, null, 0, 0);
 
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
@@ -160,6 +160,6 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return TaskState.of(ShortExecutionTestTask.class, this.getClass().getName(), TaskSchedule.now(), null);
+        return TaskState.of(ShortExecutionMockTask.class, this.getClass().getName(), TaskSchedule.now(), null);
     }
 }

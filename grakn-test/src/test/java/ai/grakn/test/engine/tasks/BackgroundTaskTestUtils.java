@@ -24,10 +24,9 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.mock.FailingTestTask;
-import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.FailingMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
@@ -40,7 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -58,19 +56,19 @@ import static org.junit.Assert.fail;
 public class BackgroundTaskTestUtils {
 
     public static Set<TaskState> createTasks(int n) {
-        return generate(() -> createTask(ShortExecutionTestTask.class)).limit(n).collect(toSet());
+        return generate(() -> createTask(ShortExecutionMockTask.class)).limit(n).collect(toSet());
     }
 
     public static Set<TaskState> createScheduledTasks(int n) {
-        return generate(() -> createTask(ShortExecutionTestTask.class).markScheduled()).limit(n).collect(toSet());
+        return generate(() -> createTask(ShortExecutionMockTask.class).markScheduled()).limit(n).collect(toSet());
     }
 
     public static Set<TaskState> createRunningTasks(int n, EngineID engineID) {
-        return generate(() -> createTask(ShortExecutionTestTask.class).markRunning(engineID)).limit(n).collect(toSet());
+        return generate(() -> createTask(ShortExecutionMockTask.class).markRunning(engineID)).limit(n).collect(toSet());
     }
 
     public static TaskState createTask() {
-        return createTask(ShortExecutionTestTask.class);
+        return createTask(ShortExecutionMockTask.class);
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz) {
@@ -135,7 +133,7 @@ public class BackgroundTaskTestUtils {
             // 3. it is RUNNING or not being retried
             TaskId id = task.getId();
             boolean visited = visitedTasks.contains(id);
-            boolean willFail = task.taskClass().equals(FailingTestTask.class);
+            boolean willFail = task.taskClass().equals(FailingMockTask.class);
             boolean isRunning = appearedTasks.contains(id);
             boolean isRetried = retriedTasks.contains(id);
             if (!visited && (isRunning || !isRetried)) {

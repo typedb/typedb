@@ -20,22 +20,28 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class FailingTestTask extends MockBackgroundTask {
+public class LongExecutionMockTask extends MockBackgroundTask {
+    public static final AtomicInteger startedCounter = new AtomicInteger(0);
+    public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     @Override
     protected void startInner(TaskId id) {
-        throw new RuntimeException("deliberate test failure");
+        // A short sleep to allow tasks to step on each other's toes
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        startedCounter.incrementAndGet();
     }
 
-    @Override
-    public void pause() {
+    public void pause() {}
 
-    }
-
-    @Override
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
-
+    public void resume(Consumer<String> c, String s) {
+        resumedCounter.incrementAndGet();
     }
 }

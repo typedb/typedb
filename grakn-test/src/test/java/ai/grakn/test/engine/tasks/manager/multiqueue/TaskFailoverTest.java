@@ -25,7 +25,7 @@ import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.zookeeper.CreateMode;
@@ -146,7 +146,7 @@ public class TaskFailoverTest {
         Json configuration = Json.object("configuration", true);
         Json checkpoint = Json.object("configuration", false);
 
-        TaskState running = createTask(ShortExecutionTestTask.class, TaskSchedule.now(), configuration).markRunning(fakeEngineID);
+        TaskState running = createTask(ShortExecutionMockTask.class, TaskSchedule.now(), configuration).markRunning(fakeEngineID);
         running.checkpoint(checkpoint.toString());
         storage.newState(running);
 
