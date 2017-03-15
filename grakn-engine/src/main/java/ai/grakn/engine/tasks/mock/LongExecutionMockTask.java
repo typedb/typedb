@@ -23,6 +23,11 @@ import ai.grakn.engine.TaskId;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+/**
+ * Mock task that will run for 10 ms
+ *
+ * @author alexandraorth, Felix Chapman
+ */
 public class LongExecutionMockTask extends MockBackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);

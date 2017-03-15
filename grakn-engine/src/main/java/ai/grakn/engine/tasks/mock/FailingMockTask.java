@@ -22,6 +22,11 @@ import ai.grakn.engine.TaskId;
 
 import java.util.function.Consumer;
 
+/**
+ * Mocked task that will throw exception
+ *
+ * @author alexandraorth, Felix Chapman
+ */
 public class FailingMockTask extends MockBackgroundTask {
 
     @Override

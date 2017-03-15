@@ -22,6 +22,11 @@ import ai.grakn.engine.TaskId;
 
 import java.util.function.Consumer;
 
+/**
+ * Mocked task that will never end
+ *
+ * @author alexandraorth, Felix Chapman
+ */
 public class EndlessExecutionMockTask extends MockBackgroundTask {
 
     @Override

@@ -27,6 +27,11 @@ import mjson.Json;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+/**
+ * Main task Mock class- keeps track of completed and failed tasks
+ *
+ * @author alexandraorth, Felix Chapman
+ */
 public abstract class MockBackgroundTask implements BackgroundTask {
 
     private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();

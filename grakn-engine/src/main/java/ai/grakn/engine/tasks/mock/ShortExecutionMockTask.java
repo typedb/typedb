@@ -23,6 +23,11 @@ import ai.grakn.engine.TaskId;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+/**
+ * Mocked task that will finish nearly instantaneously
+ *
+ * @author alexandraorth, Felix Chapman
+ */
 public class ShortExecutionMockTask extends MockBackgroundTask {
     public static final AtomicInteger startedCounter = new AtomicInteger(0);
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
