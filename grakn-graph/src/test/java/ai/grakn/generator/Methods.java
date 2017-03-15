@@ -58,7 +58,7 @@ public class Methods extends AbstractGenerator<Method> {
     }
 
     private static <T> T mock(Class<T> clazz) {
-        if (clazz.equals(boolean.class)) {
+        if (clazz.equals(boolean.class) || clazz.equals(Object.class)) {
             return (T) Boolean.FALSE;
         } else if (clazz.equals(String.class)) {
             return (T) "";
