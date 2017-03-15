@@ -459,14 +459,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             childAtomicQuery = qit.next();
             Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, false);
+            //TODO bring back the inverse join
             join = join(join, localSubs, ImmutableSet.copyOf(joinVars));
-            /*
-            join = joinWithInverse(
-                    join,
-                    localSubs,
-                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
-                    ImmutableSet.copyOf(joinVars));
-                    */
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
         return join;
@@ -488,14 +482,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
                     Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
+                    //TODO bring back the inverse join
                     subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars));
-                    /*
-                    subs = joinWithInverse(
-                            subs,
-                            cache.getAnswerStream(qj),
-                            cache.getInverseAnswerMap(qj, joinVars),
-                            ImmutableSet.copyOf(joinVars));
-                            */
                     joinedVars.addAll(qj.getVarNames());
                 }
             }
