@@ -110,26 +110,21 @@ public class QueryAnswer implements Answer {
     public int size(){ return map.size();}
 
     @Override
-    public Answer merge(Answer a2){
+    public Answer merge(Answer a2, boolean explanation){
         QueryAnswer merged = new QueryAnswer(a2);
         merged.putAll(this);
 
-        merged.setExplanation(new Explanation());
-        if (this.getExplanation() != null
-                && (!this.getExplanation().isLookupExplanation() && !this.getExplanation().isRuleExplanation())){
-            this.getExplanation().getAnswers().forEach(merged.getExplanation()::addAnswer);
-        } else {
-            merged.getExplanation().addAnswer(this);
+        if(explanation) {
+            AnswerExplanation exp = this.getExplanation().merge(a2.getExplanation());
+            if (this.getExplanation() == null || !this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
+            if (a2.getExplanation() == null || !a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
+            merged.setExplanation(exp);
         }
-        if (a2.getExplanation() != null
-                && (!a2.getExplanation().isLookupExplanation() && !a2.getExplanation().isRuleExplanation())){
-            a2.getExplanation().getAnswers().forEach(merged.getExplanation()::addAnswer);
-        } else {
-            merged.getExplanation().addAnswer(a2);
-        }
-
         return merged;
     }
+
+    @Override
+    public Answer merge(Answer a2){ return this.merge(a2, false);}
 
     @Override
     public QueryAnswer explain(AnswerExplanation exp){

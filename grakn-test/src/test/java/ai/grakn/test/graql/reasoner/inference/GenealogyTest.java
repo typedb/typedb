@@ -111,16 +111,18 @@ public class GenealogyTest {
 
     @Test
     public void testFemale() {
-        String queryString = "match $x isa person has identifier $id has gender 'female';";
-        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        String queryString = "match $x isa person has gender 'female';";
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 32);
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
     public void testGender() {
-        String queryString = "match $x isa person has identifier $id has gender $gender;";
-        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        String queryString = "match $x isa person has gender $gender;";
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertEquals(answers.size(), qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }

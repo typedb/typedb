@@ -40,7 +40,9 @@ public interface AnswerExplanation {
 
     Set<Answer> getAnswers();
 
-    boolean isLookupExplanation();
+    AnswerExplanation merge(AnswerExplanation a2);
 
+    boolean isLookupExplanation();
     boolean isRuleExplanation();
+    boolean isJoinExplanation();
 }

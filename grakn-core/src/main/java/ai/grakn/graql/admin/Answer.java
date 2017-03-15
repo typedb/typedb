@@ -65,6 +65,8 @@ public interface Answer {
 
     Answer merge(Answer a2);
 
+    Answer merge(Answer a2, boolean explanation);
+
     Answer explain(AnswerExplanation exp);
 
     Answer filterVars(Set<VarName> vars);

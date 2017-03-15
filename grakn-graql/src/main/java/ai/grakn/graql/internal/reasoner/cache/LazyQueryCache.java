@@ -45,6 +45,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
 
 
     public LazyQueryCache(){ super();}
+    public LazyQueryCache(boolean explanation){ super(explanation);}
 
     @Override
     public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
@@ -91,9 +92,8 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         if (match != null) {
             AnswerExplanation exp = new LookupExplanation(query);
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
-            return match.getValue()
-                    .unify(unifiers)
-                    .explain(exp);
+            LazyAnswerIterator unified = match.getValue().unify(unifiers);
+            return explanation? unified.explain(exp) : unified;
         }
         else return new LazyAnswerIterator(Stream.empty());
     }
@@ -104,16 +104,17 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         if (match != null) {
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
             AnswerExplanation exp = new LookupExplanation(query);
-            return match.getValue().stream()
-                    .map(a -> a.unify(unifiers))
-                    .map(a -> {
+            Stream<Answer> unified = match.getValue().stream().map(a -> a.unify(unifiers));
+            return explanation?
+                    unified.map(a -> {
                         if (a.getExplanation() == null || a.getExplanation().isLookupExplanation()) {
                             a.explain(exp);
                         } else {
                             a.getExplanation().setQuery(query);
                         }
                         return a;
-                    });
+                    })
+                    : unified;
         }
         else return Stream.empty();
     }

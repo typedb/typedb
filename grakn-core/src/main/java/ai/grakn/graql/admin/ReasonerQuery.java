@@ -91,9 +91,10 @@ public interface ReasonerQuery{
     /**
      * resolves the query
      * @param materialise materialisation flag
+     * @param explanation whether to provide explanation
      * @return stream of answers
      */
-    Stream<Answer> resolve(boolean materialise);
+    Stream<Answer> resolve(boolean materialise, boolean explanation);
 
     /**
      * @return map of variable name - corresponding type pairs

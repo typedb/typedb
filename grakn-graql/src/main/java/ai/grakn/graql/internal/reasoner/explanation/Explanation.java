@@ -64,11 +64,28 @@ public class Explanation implements AnswerExplanation {
     public boolean isRuleExplanation(){ return false;}
 
     @Override
+    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation();}
+
+    @Override
     public ReasonerQuery getQuery(){ return query;}
 
     @Override
     public AnswerExplanation setQuery(ReasonerQuery q){
         this.query = q.copy();
         return this;
+    }
+
+    @Override
+    public AnswerExplanation merge(AnswerExplanation a2) {
+        AnswerExplanation exp = new Explanation();
+        if (this.isJoinExplanation()) {
+            this.getAnswers().forEach(exp::addAnswer);
+        }
+
+        if (a2 != null && a2.isJoinExplanation()) {
+            a2.getAnswers().forEach(exp::addAnswer);
+        }
+
+        return exp;
     }
 }
