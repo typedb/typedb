@@ -114,26 +114,10 @@ public class QueryAnswer implements Answer {
         merged.putAll(this);
 
         if(explanation) {
-            /*
             AnswerExplanation exp = this.getExplanation().merge(a2.getExplanation());
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
-            */
-
-            AnswerExplanation exp = new Explanation();
-            if (this.getExplanation() != null
-                    && (!this.getExplanation().isLookupExplanation() && !this.getExplanation().isRuleExplanation())){
-                this.getExplanation().getAnswers().forEach(exp::addAnswer);
-            } else {
-                exp.addAnswer(this);
-            }
-            if (a2.getExplanation() != null
-                    && (!a2.getExplanation().isLookupExplanation() && !a2.getExplanation().isRuleExplanation())){
-                a2.getExplanation().getAnswers().forEach(exp::addAnswer);
-            } else {
-                exp.addAnswer(a2);
-            }
-            merged.setExplanation(new Explanation());
+            merged.setExplanation(exp);
         }
         return merged;
     }
