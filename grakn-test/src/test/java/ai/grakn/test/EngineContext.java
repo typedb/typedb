@@ -33,7 +33,7 @@ import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
 
 /**
  * <p>
