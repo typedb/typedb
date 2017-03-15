@@ -58,10 +58,12 @@ import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ID;
 import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.TO_TYPE_NAME;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class RelationTest extends GraphTestBase{
@@ -540,7 +542,7 @@ public class RelationTest extends GraphTestBase{
 
         assertEquals(Schema.BaseType.ENTITY.name(), pacino.getBaseType());
         for(CastingImpl casting: assertion.getMappingCasting()){
-            assertEquals(casting.getRolePlayer().getBaseType(), Schema.BaseType.ENTITY.name());
+            assertThat(casting.getRolePlayer(), instanceOf(Entity.class));
         }
 
     }

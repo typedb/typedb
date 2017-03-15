@@ -18,14 +18,12 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -64,13 +62,8 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      *
      * @return The {@link Instance} which is the roleplayer in this casting
      */
-    public InstanceImpl getRolePlayer() {
-        Optional<Concept> concept = getOutgoingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).findFirst();
-        if(concept.isPresent()) {
-            return (InstanceImpl) concept.get();
-        } else {
-            return null;
-        }
+    Instance getRolePlayer() {
+        return this.<Instance>getOutgoingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).findFirst().orElse(null);
     }
 
     /**
