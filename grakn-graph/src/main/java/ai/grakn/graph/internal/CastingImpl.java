@@ -22,7 +22,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.NoEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -58,12 +57,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      * @return The {@link RoleType} this casting is linked with
      */
     public RoleType getRole() {
-        Concept concept = type();
-        if(concept != null) {
-            return concept.asRoleType();
-        } else {
-            throw new NoEdgeException(toString(), Schema.BaseType.ROLE_TYPE.name());
-        }
+       return type();
     }
 
     /**
