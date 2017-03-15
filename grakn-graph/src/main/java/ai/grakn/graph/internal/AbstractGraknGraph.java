@@ -52,8 +52,6 @@ import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
@@ -77,7 +75,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 /**
  * <p>
@@ -638,7 +635,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         }
         return casting;
     }
@@ -653,11 +650,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         // Relation To Casting
+
         EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
-        putShortcutEdges(relation, relation.type(), foundCasting);
+        //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
+        if(rolePlayer != null) putShortcutEdge(rolePlayer, relation, role);
 
         return foundCasting;
     }
@@ -676,76 +675,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void putShortcutEdges(RelationImpl relation, RelationType relationType, CastingImpl newCasting){
-        Map<RoleType, Set<Instance>> roleMap = relation.allRolePlayers();
+    private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
+        boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                has(Schema.EdgeProperty.RELATION_TYPE_NAME.name(), fromRelation.type().getName().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), roleType.getName().getValue()).inV().
+                hasId(toInstance.getId().getRawValue()).hasNext();
 
-        //This ensures the latest casting is taken into account when transferring relations
-        roleMap.computeIfAbsent(newCasting.getRole(), (k) -> new HashSet<>()).add(newCasting.getRolePlayer());
-
-        Set<CastingImpl> castings = relation.getMappingCasting();
-
-        for (CastingImpl fromCasting : castings) {
-            RoleType fromRole = fromCasting.getRole();
-            Instance from = fromCasting.getRolePlayer();
-
-            for (CastingImpl toCasting : castings) {
-                RoleType toRole = toCasting.getRole();
-                Instance to = toCasting.getRolePlayer();
-
-                if (from != null && to != null &&  (!fromRole.equals(toRole) || !from.equals(to)) ) {
-                    putShortcutEdge(relation, relationType, fromRole, from, toRole, to);
-                }
-            }
+        if(!exists){
+            EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, fromRelation.type().getName().getValue());
+            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, roleType.getName().getValue());
         }
-    }
-
-    private void putShortcutEdge(Relation  relation, RelationType  relationType, RoleType fromRole, Instance from, RoleType  toRole, Instance to){
-        InstanceImpl fromRolePlayer = (InstanceImpl) from;
-        InstanceImpl toRolePlayer = (InstanceImpl) to;
-
-        String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getId().getRawValue()).
-                    local(outE(Schema.EdgeLabel.SHORTCUT.getLabel()).has(Schema.EdgeProperty.SHORTCUT_HASH.name(), hash)).
-                    hasNext();
-
-        if (!exists) {
-            EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
-
-            if (fromRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
-            }
-            edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
-
-            if (toRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
-            }
-            edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
-
-            edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toRolePlayer.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.SHORTCUT_HASH, hash);
-        }
-    }
-
-    private String calculateShortcutHash(Relation relation, RelationType relationType, RoleType fromRole, Instance fromRolePlayer, RoleType toRole, Instance toRolePlayer){
-        String hash = "";
-        String relationIdValue = relationType.getId().getValue();
-        String fromIdValue = fromRolePlayer.getId().getValue();
-        String fromRoleValue = fromRole.getId().getValue();
-        String toIdValue = toRolePlayer.getId().getValue();
-        String toRoleValue = toRole.getId().getValue();
-        String assertionIdValue = relation.getId().getValue();
-
-        if(relationIdValue != null) hash += relationIdValue;
-        if(fromIdValue != null) hash += fromIdValue;
-        if(fromRoleValue != null) hash += fromRoleValue;
-        if(toIdValue != null) hash += toIdValue;
-        if(toRoleValue != null) hash += toRoleValue;
-        hash += String.valueOf(assertionIdValue);
-
-        return hash;
     }
 
     private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
@@ -950,36 +891,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             Set<RelationImpl> duplicateRelations = mergeCastings(mainCasting, castings);
 
             //Remove Redundant Relations
-            deleteRelations(duplicateRelations);
+            duplicateRelations.forEach(ConceptImpl::deleteNode);
 
             return true;
         }
 
         return false;
-    }
-
-    /**
-     *
-     * @param relations The duplicate relations to be merged
-     */
-    private void deleteRelations(Set<RelationImpl> relations){
-        for (RelationImpl relation : relations) {
-            String relationID = relation.getId().getValue();
-
-            //Kill Shortcut Edges
-            relation.rolePlayers().forEach(instance -> {
-                if(instance != null) {
-                    List<Edge> edges = getTinkerTraversal().
-                            hasId(instance.getId().getValue()).
-                            bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                            has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
-
-                    edges.forEach(Element::remove);
-                }
-            });
-
-            relation.deleteNode();
-        }
     }
 
     /**
@@ -1010,7 +927,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //Perform the transfer
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
                 }
             }
 
@@ -1056,7 +973,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //This is so we can copy them uniquely later
                 otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
 
-                //Cope the actual relation
+                //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }

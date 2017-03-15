@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -167,7 +168,7 @@ public class ResourceTest extends GraphTestBase{
         hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey1).addRolePlayer(entityRole, entity1);
         assertEquals(entity1, pimaryKey1.owner());
 
-        hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey2).addRolePlayer(entityRole, entity2);
+        Relation relation = hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey2).addRolePlayer(entityRole, entity2);
 
         expectedException.expect(ConceptNotUniqueException.class);
         expectedException.expectMessage(RESOURCE_TYPE_UNIQUE.getMessage(pimaryKey1.getId(), entity1.getId()));
