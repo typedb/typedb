@@ -21,8 +21,10 @@ package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
+import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import com.mashape.unirest.request.HttpRequestWithBody;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
@@ -39,7 +41,7 @@ import static java.lang.String.format;
 /**
  * Client for interacting with tasks on engine
  *
- * @author Felix Chapman
+ * @author Felix Chapman, alexandraorth
  */
 public class TaskClient extends Client {
 
@@ -55,15 +57,22 @@ public class TaskClient extends Client {
 
     public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval, Json configuration){
         try {
-            String idValue = Unirest.post(format("http://%s/%s", uri, TASKS))
+            HttpRequestWithBody request = Unirest.post(format("http://%s/%s", uri, TASKS))
                     .queryString(TASK_CLASS_NAME_PARAMETER, taskClass.getName())
                     .queryString(TASK_CREATOR_PARAMETER, creator)
-                    .queryString(TASK_RUN_AT_PARAMETER, runAt.toEpochMilli())
-                    .queryString(TASK_RUN_INTERVAL_PARAMETER, interval.toMillis())
-                    .body(configuration.toString())
-                    .asJson().getBody().getObject().getString("id");
+                    .queryString(TASK_RUN_AT_PARAMETER, runAt.toEpochMilli());
 
-            return TaskId.of(idValue);
+            if(interval != null){
+                request = request.queryString(TASK_RUN_INTERVAL_PARAMETER, interval.toMillis());
+            }
+
+            HttpResponse<Json> response = request.body(configuration.toString()).asObject(Json.class);
+
+            if(response.getStatus() != 200){
+                throw new UnirestException(response.getBody().at("exception").toString());
+            }
+
+            return TaskId.of(response.getBody().at("id").asString());
         } catch (UnirestException e){
             throw new RuntimeException(e);
         }
@@ -71,11 +80,14 @@ public class TaskClient extends Client {
 
     public TaskStatus getStatus(TaskId id){
         try {
-            String statusValue = Unirest.get(format("http://%s/%s", uri, convert(GET)))
-                    .routeParam("id", id.getValue())
-                    .asJson().getBody().getObject().getString("status");
+            HttpResponse<Json> response = Unirest.get(format("http://%s/%s", uri, convert(GET)))
+                    .routeParam("id", id.getValue()).asObject(Json.class);
 
-            return TaskStatus.valueOf(statusValue);
+            if(response.getStatus() != 200){
+                throw new UnirestException(response.getBody().at("exception").toString());
+            }
+
+            return TaskStatus.valueOf(response.getBody().at("status").asString());
         } catch (UnirestException e){
             throw new RuntimeException(e);
         }

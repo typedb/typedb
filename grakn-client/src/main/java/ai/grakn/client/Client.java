@@ -20,10 +20,13 @@ package ai.grakn.client;
 
 import ai.grakn.util.REST;
 
+import com.mashape.unirest.http.ObjectMapper;
+import com.mashape.unirest.http.Unirest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import mjson.Json;
 
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 
@@ -33,6 +36,22 @@ import static ai.grakn.util.REST.Request.ID_PARAMETER;
  * @author alexandraorth
  */
 public class Client {
+
+    // This static block will allow Unirest to serialize/deserialize directly to Json
+    static {
+        Unirest.setObjectMapper(new ObjectMapper() {
+            @Override
+            public <T> T readValue(String value, Class<T> valueType) {
+                return (T) Json.read(value);
+            }
+
+            @Override
+            public String writeValue(Object value) {
+                return ((Json) value).asString();
+            }
+        });
+    }
+
 
     /**
      * Check if Grakn Engine has been started
