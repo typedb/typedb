@@ -35,7 +35,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.exception.MoreThanOneEdgeException;
+import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -399,7 +399,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         } else if(concepts.isEmpty()){
             return null;
         } else {
-            throw new MoreThanOneEdgeException(this, edgeLabel);
+            throw new MoreThanOneConceptException(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(getId(), edgeLabel.getLabel()));
         }
     }
 
@@ -502,23 +502,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         getVertex().edges(direction, type.getLabel()).
                 forEachRemaining(e -> edges.add(new EdgeImpl(e, getGraknGraph())));
         return edges;
-    }
-
-    /**
-     *
-     * @param type The type of the edge to retrieve
-     * @return An edge from this concept in a particular direction of a specific type
-     * @throws MoreThanOneEdgeException when more than one edge of s specific type
-     */
-    EdgeImpl getEdgeOutgoingOfType(Schema.EdgeLabel type) {
-        Set<EdgeImpl> edges = getEdgesOfType(Direction.OUT, type);
-        if(edges.size() == 1) {
-            return edges.iterator().next();
-        } else if(edges.size() > 1) {
-            throw new MoreThanOneEdgeException(this, type);
-        } else {
-            return null;
-        }
     }
 
     /**

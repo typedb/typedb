@@ -33,6 +33,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -393,9 +394,9 @@ public class EntityTypeTest extends GraphTestBase{
         relationType.hasRoles().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertFalse(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
@@ -461,9 +462,9 @@ public class EntityTypeTest extends GraphTestBase{
         relationType.hasRoles().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
@@ -478,9 +479,9 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(relationTypeHasResource, relationTypeKey);
 
         // Check that resource is required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
@@ -495,29 +496,10 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(relationTypeHasResource, relationTypeKey);
 
         // Check that resource is required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl) resourceType).getEdgeOutgoingOfType(Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-    }
-
-    @Test
-    public void testIsaAndSubEdge() {
-        EntityType product = graknGraph.putEntityType("product");
-        EntityTypeImpl video = (EntityTypeImpl) graknGraph.putEntityType("video");
-
-        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
-        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
-
-        video.superType(product);
-
-        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
-        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
-
-        video = (EntityTypeImpl) graknGraph.putEntityType("video");
-
-        assertNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
-        assertNotNull(video.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
     }
 
     @Test
