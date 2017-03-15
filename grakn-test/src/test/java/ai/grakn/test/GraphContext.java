@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 
 import static ai.grakn.graphs.TestGraph.loadFromFile;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 
@@ -109,6 +110,7 @@ public class GraphContext implements TestRule {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
+                hideLogs();
                 ensureCassandraRunning();
 
                 loadGraph();

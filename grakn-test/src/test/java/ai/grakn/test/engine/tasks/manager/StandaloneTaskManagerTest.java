@@ -46,6 +46,7 @@ import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
 import static org.junit.Assert.assertEquals;
@@ -56,6 +57,7 @@ public class StandaloneTaskManagerTest {
 
     @Before
     public void setUp() {
+        hideLogs();
         taskManager = new StandaloneTaskManager(EngineID.of("hello")) ;
     }
 

@@ -58,6 +58,7 @@ import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
@@ -95,6 +96,7 @@ public class SingleQueueTaskRunnerTest {
     @Before
     public void setUp() {
         clearTasks();
+        hideLogs();
 
         storage = new TaskStateInMemoryStore();
         

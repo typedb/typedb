@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import org.junit.rules.ExternalResource;
 
+import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
@@ -93,6 +94,8 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
+        hideLogs();
+
         if(startKafka){
             startKafka();
         }
