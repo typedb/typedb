@@ -27,7 +27,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
             </div>
             <div class="panel-body">
               <div class="dd-item">
-                 <div class="left"><input type="checkbox" v-model="freezeNodes"></div><div class="right">Freeze nodes</div>
+                 <div class="left"><input type="checkbox" v-model="freezeNodes"></div><div class="right">Lock nodes position</div>
               </div>
                 <div class="divide"></div>
                 <div class="dd-item">
@@ -139,7 +139,15 @@ export default {
           freezeNodes: User.getFreezeNodes(),
         }
     },
-    created() {},
+    created() {
+      //Global key binding for locking/unlocking nodes
+      window.addEventListener('keyup', (e) => {
+          if(e.ctrlKey && e.keyCode === 76)
+          {
+            this.freezeNodes=!this.freezeNodes;
+          }
+      })
+    },
     mounted: function() {
         this.$nextTick(function() {
 
@@ -157,8 +165,10 @@ export default {
             User.setFreezeNodes(newVal);
             if(newVal){
               visualiser.fixAllNodes();
+              toastr.success("All nodes LOCKED.");
             }else{
               visualiser.releaseAllNodes();
+              toastr.success("All nodes UNLOCKED.");
             }
         },
         queryLimit: function(newVal, oldVal) {

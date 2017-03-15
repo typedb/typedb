@@ -141,7 +141,6 @@ public class VisualiserController {
 
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
-
             return renderHALConceptOntology(concept, keyspace,offset, limit);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
