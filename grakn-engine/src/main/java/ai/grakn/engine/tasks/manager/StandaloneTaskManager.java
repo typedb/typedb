@@ -26,7 +26,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ public class StandaloneTaskManager implements TaskManager {
         stateStorage = new TaskStateInMemoryStore();
         stateUpdateLock = new ReentrantLock();
 
-        ConfigProperties properties = ConfigProperties.getInstance();
+        GraknEngineConfig properties = GraknEngineConfig.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
     }

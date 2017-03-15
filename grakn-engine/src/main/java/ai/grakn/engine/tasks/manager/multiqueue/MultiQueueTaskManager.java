@@ -25,7 +25,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.config.ConfigHelper;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -46,7 +46,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public final class MultiQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskManager.class);
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
+    private final static GraknEngineConfig properties = GraknEngineConfig.getInstance();
 
     private final Producer<TaskId, TaskState> producer;
     private final SchedulerElector elector;

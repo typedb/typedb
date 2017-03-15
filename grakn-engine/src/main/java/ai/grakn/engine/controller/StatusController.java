@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -30,8 +30,6 @@ import spark.Service;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import java.util.Enumeration;
-import java.util.Properties;
 
 /**
  * <p>
@@ -55,18 +53,12 @@ public class StatusController {
             value = "Return config file as a JSONObject.")
     private String getStatus(Request req, Response res) {
 
-        Json configObj = Json.object();
-        Properties props = ConfigProperties.getInstance().getProperties();
-        Enumeration e = props.propertyNames();
+        // Turn the properties into a Json object
+        Json config = Json.make(GraknEngineConfig.getInstance().getProperties());
 
-        while (e.hasMoreElements()) {
-            String key = (String) e.nextElement();
-            configObj.set(key,props.getProperty(key));
-        }
+        // Remove the JWT Secret
+        config.delAt(GraknEngineConfig.JWT_SECRET_PROPERTY);
 
-        configObj.delAt(ConfigProperties.JWT_SECRET_PROPERTY);
-
-        return configObj.toString();
+        return config.toString();
     }
-
 }
