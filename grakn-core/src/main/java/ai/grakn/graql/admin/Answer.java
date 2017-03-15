@@ -63,10 +63,29 @@ public interface Answer {
 
     int size();
 
+    /**
+     * perform an answer merge without explanation
+     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
+     * @param a2 answer to be merged with
+     * @return merged answer
+     */
     Answer merge(Answer a2);
 
+
+    /**
+     * perform an answer merge with optional explanation
+     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
+     * @param a2 answer to be merged with
+     * @param explanation flag for providing explanation
+     * @return merged answer
+     */
     Answer merge(Answer a2, boolean explanation);
 
+    /**
+     * explain this answer by providing explanation with preserving the structure of dependent answers
+     * @param exp explanation for this answer
+     * @return explained answer
+     */
     Answer explain(AnswerExplanation exp);
 
     Answer filterVars(Set<VarName> vars);
@@ -75,5 +94,9 @@ public interface Answer {
 
     AnswerExplanation getExplanation();
 
+    /**
+     * @param e explanation to be set for this answer
+     * @return answer with provided explanation
+     */
     Answer setExplanation(AnswerExplanation e);
 }

@@ -151,7 +151,6 @@ public class LazyTest {
 
         cache.record(rule.getHead(), join);
 
-
         Stream<Answer> stream = cache.getAnswerStream(rule.getHead());
         Stream<Answer> stream2 = cache.getAnswerStream(query3);
         joinVars = Sets.intersection(rule.getHead().getVarNames(), query3.getVarNames());

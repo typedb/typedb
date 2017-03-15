@@ -26,7 +26,6 @@ import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,7 +42,7 @@ import java.util.stream.Collectors;
 public class QueryAnswer implements Answer {
 
     private Map<VarName, Concept> map = new HashMap<>();
-    private AnswerExplanation explanation;
+    private AnswerExplanation explanation = new Explanation();
 
     public QueryAnswer(){}
 
@@ -115,10 +114,26 @@ public class QueryAnswer implements Answer {
         merged.putAll(this);
 
         if(explanation) {
+            /*
             AnswerExplanation exp = this.getExplanation().merge(a2.getExplanation());
-            if (this.getExplanation() == null || !this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
-            if (a2.getExplanation() == null || !a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
-            merged.setExplanation(exp);
+            if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
+            if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
+            */
+
+            AnswerExplanation exp = new Explanation();
+            if (this.getExplanation() != null
+                    && (!this.getExplanation().isLookupExplanation() && !this.getExplanation().isRuleExplanation())){
+                this.getExplanation().getAnswers().forEach(exp::addAnswer);
+            } else {
+                exp.addAnswer(this);
+            }
+            if (a2.getExplanation() != null
+                    && (!a2.getExplanation().isLookupExplanation() && !a2.getExplanation().isRuleExplanation())){
+                a2.getExplanation().getAnswers().forEach(exp::addAnswer);
+            } else {
+                exp.addAnswer(a2);
+            }
+            merged.setExplanation(new Explanation());
         }
         return merged;
     }
@@ -128,7 +143,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public QueryAnswer explain(AnswerExplanation exp){
-        Set<Answer> answers = explanation != null? explanation.getAnswers() : new HashSet<>();
+        Set<Answer> answers = explanation.getAnswers();
         explanation = exp;
         answers.forEach(explanation::addAnswer);
         return this;

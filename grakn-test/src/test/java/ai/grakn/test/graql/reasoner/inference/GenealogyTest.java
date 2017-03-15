@@ -325,6 +325,8 @@ public class GenealogyTest {
         String queryString = "match ($x, $y) isa cousins;";
         MatchQuery query = iqb.parse(queryString);
 
+        List<Answer> collect = Reasoner.resolveWithExplanation(query, false).collect(Collectors.toList());
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 192);
         assertTrue(!hasDuplicates(answers));

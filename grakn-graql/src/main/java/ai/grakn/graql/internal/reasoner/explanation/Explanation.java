@@ -78,14 +78,8 @@ public class Explanation implements AnswerExplanation {
     @Override
     public AnswerExplanation merge(AnswerExplanation a2) {
         AnswerExplanation exp = new Explanation();
-        if (this.isJoinExplanation()) {
-            this.getAnswers().forEach(exp::addAnswer);
-        }
-
-        if (a2 != null && a2.isJoinExplanation()) {
-            a2.getAnswers().forEach(exp::addAnswer);
-        }
-
+        if (this.isJoinExplanation()) this.getAnswers().forEach(exp::addAnswer);
+        if (a2.isJoinExplanation()) a2.getAnswers().forEach(exp::addAnswer);
         return exp;
     }
 }
