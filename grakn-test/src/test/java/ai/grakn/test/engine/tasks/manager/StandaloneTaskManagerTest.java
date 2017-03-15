@@ -18,16 +18,19 @@
 
 package ai.grakn.test.engine.tasks.manager;
 
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -142,6 +145,9 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void consecutiveStopStart() {
+        // Disable excessive logs for this test
+        ((Logger) LoggerFactory.getLogger(StandaloneTaskManager.class)).setLevel(Level.WARN);
+
         for (int i = 0; i < 100000; i++) {
             testStopSingle();
         }
