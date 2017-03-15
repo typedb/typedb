@@ -68,6 +68,7 @@ public enum ErrorMessage {
     GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
     CANNOT_FIND_VERTEX("Cannot find vertex using id [%s] on graph [%s] on a already constructed concept. This may be due to the vertex being deleted."),
     TRANSACTIONS_OPEN("Cannot close graph [%s] connecting to keyspace [%s] because there are [%s] open transactions"),
+    LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

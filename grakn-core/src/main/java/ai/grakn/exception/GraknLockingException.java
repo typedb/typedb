@@ -18,18 +18,16 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.Schema;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.concept.Concept;
 
 /**
- * Thrown when more than one edge appears between two oncepts when it should not be the case.
- * For example if 2 isa edges appear between the same concepts.
+ * A locking exception which may occur in a multi threaded environment.
+ * Catching this exception, clearing the transaction, and retrying may allow the commit to execute successfully.
  *
  * @author Filipe Teixeira
  */
-public class MoreThanOneEdgeException extends GraphRuntimeException {
-    public MoreThanOneEdgeException(Concept concept, Schema.EdgeLabel edgeType) {
-        super(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(concept, edgeType.name()));
+public class GraknLockingException extends GraknBackendException {
+    public GraknLockingException(Exception e) {
+        super(ErrorMessage.LOCKING_EXCEPTION.getMessage(), e);
     }
 }

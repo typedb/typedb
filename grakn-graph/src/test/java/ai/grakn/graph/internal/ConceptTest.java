@@ -31,7 +31,6 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -46,8 +45,6 @@ import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ConceptTest extends GraphTestBase{
@@ -58,23 +55,6 @@ public class ConceptTest extends GraphTestBase{
     @Before
     public void setUp(){
         concept = (ConceptImpl) graknGraph.putEntityType("main_concept");
-    }
-
-    @Test(expected=MoreThanOneEdgeException.class)
-    public void testGetEdgeOutgoingOfType(){
-        ConceptImpl<?> concept = (ConceptImpl<?>) graknGraph.putEntityType("Thing");
-        assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
-
-        TypeImpl type1 = (TypeImpl) graknGraph.putEntityType("Type 1");
-        TypeImpl type2 = (TypeImpl) graknGraph.putEntityType("Type 2");
-        TypeImpl type3 = (TypeImpl) graknGraph.putEntityType("Type 3");
-
-        assertNotNull(type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
-
-        Vertex vertexType1 = graknGraph.getTinkerPopGraph().traversal().V(type1.getId().getRawValue()).next();
-        Vertex vertexType3 = graknGraph.getTinkerPopGraph().traversal().V(type3.getId().getRawValue()).next();
-        vertexType1.addEdge(Schema.EdgeLabel.SUB.getLabel(), vertexType3);
-        type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB);
     }
 
     @Test
