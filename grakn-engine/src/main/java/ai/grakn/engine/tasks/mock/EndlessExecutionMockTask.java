@@ -22,7 +22,7 @@ import ai.grakn.engine.TaskId;
 
 import java.util.function.Consumer;
 
-public class EndlessExecutionTestTask extends MockBackgroundTask {
+public class EndlessExecutionMockTask extends MockBackgroundTask {
 
     @Override
     protected void startInner(TaskId id) {

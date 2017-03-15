@@ -25,7 +25,7 @@ import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.engine.tasks.mock.EndlessExecutionTestTask;
+import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.LongExecutionTestTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
 import com.google.common.collect.ImmutableList;
@@ -283,7 +283,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_TheTaskIsCancelled() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class);
+        TaskState task = createTask(EndlessExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -296,7 +296,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_TheTaskIsMarkedAsStopped() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class);
+        TaskState task = createTask(EndlessExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -309,7 +309,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_ReturnTrue() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class);
+        TaskState task = createTask(EndlessExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
