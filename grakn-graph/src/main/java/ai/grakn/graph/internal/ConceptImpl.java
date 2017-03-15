@@ -35,7 +35,6 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.InvalidConceptTypeException;
 import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -45,8 +44,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -391,35 +388,11 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     /**
      *
-     * @param edgeLabel The edge label to traverse
-     * @return The neighbouring concept found by traversing one outgoing edge of a specific type
-     */
-    <X extends Concept> X getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
-        Set<X> concepts = getOutgoingNeighbours(edgeLabel);
-        if(concepts.size() == 1){
-            return concepts.iterator().next();
-        } else if(concepts.isEmpty()){
-            return null;
-        } else {
-            throw new MoreThanOneConceptException(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(getId(), edgeLabel.getLabel()));
-        }
-    }
-
-    /**
-     *
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
-    <X extends Concept> Set<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
-        Set<X> outgoingNeighbours = new HashSet<>();
-
-        getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
-            X found = edge.getTarget();
-            if(found != null) {
-                outgoingNeighbours.add(found);
-            }
-        });
-        return outgoingNeighbours;
+    <X extends Concept> Stream<X> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
+        return getEdgesOfType(Direction.OUT, edgeType).map(EdgeImpl::getTarget);
     }
 
     /**
@@ -427,15 +400,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
-    <X extends Concept> Set<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
-        Set<X> incomingNeighbours = new HashSet<>();
-        getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
-            X found = edge.getSource();
-            if(found != null){
-                incomingNeighbours.add(found);
-            }
-        });
-        return incomingNeighbours;
+    <X extends Concept> Stream<X> getIncomingNeighbours(Schema.EdgeLabel edgeType){
+        return getEdgesOfType(Direction.IN, edgeType).map(EdgeImpl::getSource);
     }
 
     /**

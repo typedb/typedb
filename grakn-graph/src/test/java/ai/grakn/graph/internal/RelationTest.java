@@ -115,26 +115,26 @@ public class RelationTest extends GraphTestBase{
         EntityImpl b = (EntityImpl) type.addEntity();
         EntityImpl c = (EntityImpl) type.addEntity();
 
-        assertEquals(0, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(0, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(0, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
 
         Relation relation = relationType.addRelation();
 
         relation.putRolePlayer(role1, a);
-        assertEquals(0, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(0, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(0, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
 
         relation.putRolePlayer(role2, b);
-        assertEquals(1, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(1, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(1, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(1, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(0, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
 
         relation.putRolePlayer(role3, c);
-        assertEquals(2, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(2, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(2, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(2, a.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(2, b.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(2, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
 
         //Check Structure of Shortcut Edge
         a.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).forEach(edge -> {
