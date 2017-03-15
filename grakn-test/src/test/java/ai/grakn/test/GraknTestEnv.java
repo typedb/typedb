@@ -147,6 +147,10 @@ public abstract class GraknTestEnv {
 
     public static void hideLogs() {
         ((Logger) org.slf4j.LoggerFactory.getLogger(ROOT_LOGGER_NAME)).setLevel(Level.ERROR);
+
+        // Some dependencies are using log4j, so must be managed separately
+        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
+
         ((Logger) org.slf4j.LoggerFactory.getLogger("ai.grakn")).setLevel(Level.INFO);
     }
 
