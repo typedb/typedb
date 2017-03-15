@@ -22,8 +22,6 @@ import ai.grakn.Grakn;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
@@ -64,9 +62,6 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
-
         sharedGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING).getTinkerPopGraph();
 
         int max = 1000;

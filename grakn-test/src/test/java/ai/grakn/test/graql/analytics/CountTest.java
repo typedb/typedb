@@ -23,12 +23,8 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -54,12 +50,6 @@ public class CountTest {
 
         factory = rule.factoryWithNewKeyspace();
         graph = factory.getGraph();
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
-        logger.setLevel(Level.DEBUG);
     }
 
     @Test
