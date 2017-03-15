@@ -43,6 +43,11 @@ public interface AnswerExplanation {
     AnswerExplanation merge(AnswerExplanation a2);
 
     boolean isLookupExplanation();
+<<<<<<< HEAD
     boolean isRuleExplanation();
     boolean isJoinExplanation();
+=======
+
+    boolean isRuleExplanation();
+>>>>>>> 2ae6ae170ead291c60a66e0ad5d7cfb9e8ca261e
 }
