@@ -137,10 +137,8 @@ public class RelationTest extends GraphTestBase{
         assertEquals(2, c.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).size());
 
         //Check Structure of Shortcut Edge
-        boolean foundEdge = false;
-        for (EdgeImpl edge : a.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT)) {
+        a.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).forEach(edge -> {
             if(edge.getProperty(TO_ROLE_NAME).equals(role2.getName().getValue())) {
-                foundEdge = true;
                 assertEquals(edge.getProperty(RELATION_TYPE_NAME), relationType.getName().getValue());
                 assertEquals(edge.getProperty(RELATION_ID), relation.getId().getValue());
                 assertEquals(edge.getProperty(TO_ID), b.getId().getValue());
@@ -148,8 +146,7 @@ public class RelationTest extends GraphTestBase{
                 assertEquals(edge.getProperty(FROM_TYPE_NAME), a.type().getName().getValue());
                 assertEquals(edge.getProperty(TO_TYPE_NAME), b.type().getName().getValue());
             }
-        }
-        assertTrue(foundEdge);
+        });
     }
 
     @Test
@@ -273,16 +270,16 @@ public class RelationTest extends GraphTestBase{
         assertEquals(1, instance1.resources().size());
         assertEquals(2, resource.ownerInstances().size());
 
-        assertEquals(3, instance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(3, instance1.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(3, instance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(3, instance1.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
 
         rel.delete();
 
         assertEquals(0, instance1.resources().size());
         assertEquals(0, resource.ownerInstances().size());
 
-        assertEquals(1, instance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).size());
-        assertEquals(1, instance1.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(1, instance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
+        assertEquals(1, instance1.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet()).size());
     }
 
     @Test
