@@ -90,6 +90,9 @@ public class GraqlShellIT {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
+
+        // Disable engine logs so we can test stdout
+        ((Logger) org.slf4j.LoggerFactory.getLogger("ai.grakn.engine")).setLevel(Level.OFF);
     }
 
     @After
@@ -523,6 +526,18 @@ public class GraqlShellIT {
         assertShellMatches(ImmutableList.of("-k", "batch"),
                 "match $x isa movie; ask;",
                 containsString("True")
+        );
+    }
+
+    @Test
+    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
+        testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
+
+        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
+                is("Status of batch [1]: FAILED"),
+                is("Number batches completed: 1"),
+                containsString("Approximate queries executed:"),
+                containsString("All tasks completed")
         );
     }
 
