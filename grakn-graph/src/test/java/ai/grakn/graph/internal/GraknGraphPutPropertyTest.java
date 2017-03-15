@@ -60,7 +60,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitQuickcheck.class)
-public class GraknGraphPutPropertyIT {
+public class GraknGraphPutPropertyTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
