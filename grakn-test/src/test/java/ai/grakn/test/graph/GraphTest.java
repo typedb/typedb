@@ -19,6 +19,7 @@ import java.util.concurrent.Future;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.ErrorMessage.TRANSACTIONS_OPEN;
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -123,8 +124,48 @@ public class GraphTest {
         Executors.newSingleThreadExecutor().submit(factory::getGraph).get();
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), 2));
+        expectedException.expectMessage(TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace()));
 
+        factory.close();
+    }
+
+    @Test
+    public void openMultipleFakeNestedTransactions_CheckCloseOnlyOccursOnCorrectClose(){
+        GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, "BobGraph");
+
+        //Open One Close One
+        GraknGraph graph = factory.getGraph();
+        assertFalse(graph.isClosed());
+        graph.close();
+        assertTrue(graph.isClosed());
+
+        //Open Two Close One
+        factory.getGraph(); //Due to the singleton nature of the factory this alone is enough to increment the count
+        graph = factory.getGraph();
+        assertFalse(graph.isClosed());
+        graph.close();
+        assertFalse(graph.isClosed());
+
+        //Close final one
+        graph.close();
+        assertTrue(graph.isClosed());
+
+        //Open Three Close One Try to Close Factory And Fail
+        factory.getGraph();
+        graph = factory.getGraph();
+        graph.close();
+
+        Exception caughtException = null;
+        try{
+            factory.close();
+        } catch (GraphRuntimeException e){
+            caughtException = e;
+        }
+
+        assertNotNull(caughtException);
+        assertEquals(TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace()), caughtException.getMessage());
+
+        graph.close();//Close the final transaction
         factory.close();
     }
 }

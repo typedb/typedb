@@ -88,36 +88,37 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     public synchronized M getGraph(boolean batchLoading){
         if(batchLoading){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
-            batchLoadingGraknGraph.openTransaction();
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, false);
-            graknGraph.openTransaction();
             return graknGraph;
         }
     }
     protected M getGraph(M graknGraph, boolean batchLoading){
         if(graknGraph == null){
-            graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+            graknGraph = buildNewGraknGraphFromTinker(batchLoading);
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
                 systemKeyspace.keyspaceOpened(this.keyspace);
             }
         } else {
-            if(graknGraph.isClosed()){
-                graknGraph.openTransaction();
-            }
+            graknGraph.openTransaction();
 
             //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
             G innerGraph = graknGraph.getTinkerPopGraph();
             synchronized (innerGraph){
                 if(isClosed(innerGraph)){
-                    graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+                    graknGraph = buildNewGraknGraphFromTinker(batchLoading);
                 } else {
                     getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
                 }
             }
         }
 
+        return graknGraph;
+    }
+    private M buildNewGraknGraphFromTinker(boolean batchLoading){
+        M graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
+        graknGraph.openTransaction();
         return graknGraph;
     }
 

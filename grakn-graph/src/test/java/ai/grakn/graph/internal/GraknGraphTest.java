@@ -40,6 +40,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTest extends GraphTestBase {
+
     @Test
     public void testPutConcept() throws Exception {
         int numVerticies = 14;
