@@ -32,7 +32,6 @@ import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
@@ -41,10 +40,7 @@ import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.MetaTypeNames;
 import ai.grakn.generator.Methods.MethodOf;
-import ai.grakn.generator.PutTypeFunctions;
-import ai.grakn.generator.ResourceTypes.Unique;
 import ai.grakn.generator.ResourceValues;
-import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
@@ -60,16 +56,14 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static ai.grakn.generator.GraknGraphs.allConceptsFrom;
 import static ai.grakn.generator.GraknGraphs.allTypesFrom;
 import static ai.grakn.generator.Methods.mockParamsOf;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toSet;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -81,9 +75,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeThat;
@@ -108,347 +100,6 @@ public class GraknGraphPropertyIT {
         exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))));
 
         method.invoke(graph, params);
-    }
-
-    @Property
-    public void whenCallingAnyPutTypeMethod_CreateATypeWithTheGivenName(
-            @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        assertEquals(typeName, type.getName());
-    }
-
-    @Property
-    public void whenCallingAnyPutTypeMethod_CreateATypeWithoutSubTypes(
-            @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        graph.showImplicitConcepts(true);
-        assertThat(type.subTypes(), contains(type));
-    }
-
-    @Property
-    public void whenCallingAnyPutTypeMethod_CreateATypeNotPlayingAnyRoles(
-            @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        graph.showImplicitConcepts(true);
-        assertThat(type.playsRoles(), empty());
-    }
-
-    @Property
-    public void whenCallingAnyPutTypeMethod_CreateANonAbstractType(
-            @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        assertFalse(type.isAbstract());
-    }
-
-    @Property
-    public void whenCallingAnyPutTypeMethod_CreateANonImplicitType(
-            @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        assertFalse(type.isImplicit());
-    }
-
-    @Property
-    public void whenCallingAnyPutTypeMethod_CreateATypeWithoutHypotheses(
-            @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        assertThat(type.getRulesOfHypothesis(), empty());
-    }
-
-    @Property
-    public void whenCallingAnyPutTypeMethod_CreateATypeWithoutConclusions(
-            @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        assertThat(type.getRulesOfConclusion(), empty());
-    }
-
-    @Property
-    public void whenCallingPutEntityType_CreateATypeWithSuperTypeEntity(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        EntityType entityType = graph.putEntityType(typeName);
-        assertEquals(graph.admin().getMetaEntityType(), entityType.superType());
-    }
-
-    @Property
-    public void whenCallingPutEntityTypeWithAnExistingEntityTypeName_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph EntityType entityType) {
-        EntityType newType = graph.putEntityType(entityType.getName());
-        assertEquals(entityType, newType);
-    }
-
-    @Property
-    public void whenCallingPutEntityTypeWithAnExistingNonEntityTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isEntityType());
-
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
-
-        graph.putEntityType(type.getName());
-    }
-
-    @Property
-    public void whenCallingPutResourceType_CreateATypeWithSuperTypeResource(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
-        assertEquals(graph.admin().getMetaResourceType(), resourceType.superType());
-    }
-
-    @Property
-    public void whenCallingPutResourceType_CreateATypeWithTheGivenDataType(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
-        assertEquals(dataType, resourceType.getDataType());
-    }
-
-    @Property
-    public void whenCallingPutResourceType_TheResultingTypeIsNotUnique(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
-        assertFalse(resourceType.isUnique());
-    }
-
-    @Property
-    public void whenCallingPutResourceType_TheResultingTypeHasNoRegexConstraint(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
-        assertNull(resourceType.getRegex());
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingNonUniqueResourceType_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType) {
-        assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
-
-        TypeName typeName = resourceType.getName();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
-
-        ResourceType<?> newType = graph.putResourceType(typeName, dataType);
-
-        assertEquals(resourceType, newType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph Type type, ResourceType.DataType<?> dataType) {
-        assumeFalse(type.isResourceType());
-
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
-
-        graph.putResourceType(type.getName(), dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeNameButADifferentDataType_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType,
-            ResourceType.DataType<?> dataType) {
-        assumeThat(dataType, not(is(resourceType.getDataType())));
-        TypeName typeName = resourceType.getName();
-
-        exception.expect(ConceptException.class);
-        if(isMetaName(typeName)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
-        } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
-        }
-
-        graph.putResourceType(typeName, dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeWithAnExistingUniqueResourceTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType) {
-        TypeName typeName = resourceType.getName();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
-
-        exception.expect(ConceptException.class);
-        if(isMetaName(typeName)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
-        } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(true, resourceType, false, Schema.ConceptProperty.IS_UNIQUE.name()));
-        }
-
-        graph.putResourceType(typeName, dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUnique_CreateATypeWithSuperTypeResource(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
-        assertEquals(graph.admin().getMetaResourceType(), resourceType.superType());
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUnique_CreateATypeWithTheGivenDataType(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
-        assertEquals(dataType, resourceType.getDataType());
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUnique_TheResultingTypeIsUnique(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
-        assertTrue(resourceType.isUnique());
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUnique_TheResultingTypeHasNoRegexConstraint(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
-        assertNull(resourceType.getRegex());
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithThePropertiesOfAnExistingUniqueResourceType_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType) {
-        TypeName typeName = resourceType.getName();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
-
-        ResourceType<?> newType = graph.putResourceTypeUnique(typeName, dataType);
-
-        assertEquals(resourceType, newType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithAnExistingNonResourceTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph Type type, ResourceType.DataType<?> dataType) {
-        assumeFalse(type.isResourceType());
-
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
-
-        graph.putResourceTypeUnique(type.getName(), dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithAnExistingUniqueResourceTypeNameButADifferentDataType_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType,
-            ResourceType.DataType<?> dataType) {
-        assumeThat(dataType, not(is(resourceType.getDataType())));
-        TypeName typeName = resourceType.getName();
-
-        exception.expect(InvalidConceptValueException.class);
-        exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType().getName(), resourceType, dataType.getName(), Schema.ConceptProperty.DATA_TYPE.name()));
-
-        graph.putResourceTypeUnique(typeName, dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithAnExistingNonUniqueResourceTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType) {
-        TypeName typeName = resourceType.getName();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
-
-        exception.expect(ConceptException.class);
-        if(isMetaName(typeName)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
-        } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(false, resourceType, true, Schema.ConceptProperty.IS_UNIQUE.name()));
-        }
-
-        graph.putResourceTypeUnique(typeName, dataType);
-    }
-
-    @Property
-    public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknGraph graph, @Unused TypeName typeName) {
-        RuleType ruleType = graph.putRuleType(typeName);
-        assertEquals(graph.admin().getMetaRuleType(), ruleType.superType());
-    }
-
-    @Property
-    public void whenCallingPutRuleTypeWithAnExistingRuleTypeName_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph RuleType ruleType) {
-        RuleType newType = graph.putRuleType(ruleType.getName());
-        assertEquals(ruleType, newType);
-    }
-
-    @Property
-    public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isRuleType());
-
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
-
-        graph.putRuleType(type.getName());
-    }
-
-    @Property
-    public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        RelationType relationType = graph.putRelationType(typeName);
-        assertEquals(graph.admin().getMetaRelationType(), relationType.superType());
-    }
-
-    @Property
-    public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        RelationType relationType = graph.putRelationType(typeName);
-        graph.showImplicitConcepts(true);
-        assertThat(relationType.hasRoles(), empty());
-    }
-
-    @Property
-    public void whenCallingPutRelationTypeWithAnExistingRelationTypeName_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph RelationType relationType) {
-        RelationType newType = graph.putRelationType(relationType.getName());
-        assertEquals(relationType, newType);
-    }
-
-    @Property
-    public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isRelationType());
-
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
-
-        graph.putRelationType(type.getName());
-    }
-
-    @Property
-    public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused TypeName typeName) {
-        RoleType roleType = graph.putRoleType(typeName);
-        assertEquals(graph.admin().getMetaRoleType(), roleType.superType());
-    }
-
-    @Property
-    public void whenCallingPutRoleType_CreateATypePlayedByNoTypes(@Open GraknGraph graph, @Unused TypeName typeName) {
-        RoleType roleType = graph.putRoleType(typeName);
-        assertThat(roleType.playedByTypes(), empty());
-    }
-
-    @Property
-    public void whenCallingPutRoleType_CreateATypeOwnedByNoRelationTypes(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        RoleType roleType = graph.putRoleType(typeName);
-        assertThat(roleType.relationTypes(), empty());
-    }
-
-    @Property
-    public void whenCallingPutRoleTypeWithAnExistingRoleTypeName_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph RoleType roleType) {
-        RoleType newType = graph.putRoleType(roleType.getName());
-        assertEquals(roleType, newType);
-    }
-
-    @Property
-    public void whenCallingPutRoleTypeWithAnExistingNonRoleTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph Type type) {
-        assumeFalse(type.isRoleType());
-
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
-
-        graph.putRoleType(type.getName());
     }
 
     @Property
@@ -521,7 +172,6 @@ public class GraknGraphPropertyIT {
         assertEquals(expectedResources, resourcesAfter);
     }
 
-    @Ignore // TODO: Fix this test
     @Property
     public void whenCallingGetResourcesByValueAfterDeletingAResource_TheResultDoesNotIncludesTheResource(
             @Open GraknGraph graph, @FromGraph Resource<Object> resource) {
@@ -536,22 +186,22 @@ public class GraknGraphPropertyIT {
         assertEquals(expectedResources, resourcesAfter);
     }
 
-    @Ignore // TODO: Fix this test
     @Property
     public void whenCallingGetResourcesByValue_TheResultIsAllResourcesWithTheGivenValue(
             @Open GraknGraph graph, @From(ResourceValues.class) Object resourceValue) {
         Collection<Resource<?>> allResources = graph.admin().getMetaResourceType().instances();
 
         Set<Resource<?>> allResourcesOfValue =
-                allResources.stream().filter(resource -> resource.getValue().equals(resourceValue)).collect(toSet());
+                allResources.stream().filter(resource -> resourceValue.equals(resource.getValue())).collect(toSet());
 
         assertEquals(allResourcesOfValue, graph.getResourcesByValue(resourceValue));
     }
 
-    @Ignore // TODO: Fix this test
     @Property
     public void whenCallingGetResourcesByValueWithAnUnsupportedDataType_Throw(@Open GraknGraph graph, List value) {
-        exception.expect(GraphRuntimeException.class); // TODO: Better define the expected error
+        String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
+        exception.expect(InvalidConceptValueException.class);
+        exception.expectMessage(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
         graph.getResourcesByValue(value);
     }
 
@@ -603,11 +253,10 @@ public class GraknGraphPropertyIT {
         assertTrue(graph.isClosed());
     }
 
-    @Ignore // TODO: Re-enable this when test below is fixed and AFTER the transaction refactor
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-
+        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
@@ -615,10 +264,10 @@ public class GraknGraphPropertyIT {
             });
     }
 
-    @Ignore // TODO: Fix this AFTER transaction refactor
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
+        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
         assertNotNull(graph.getType(typeName));
     }
 
@@ -695,17 +344,18 @@ public class GraknGraphPropertyIT {
         resource.superType();
     }
 
-    @Ignore // TODO: Fix this and write test properly!
     @Property
-    public void whenCallingHasResourceWithMetaResourceType_DontThrowClassCastException(
+    public void whenCallingHasResourceWithMetaResourceType_ThrowMetaTypeImmutableException(
             @Open GraknGraph graph, @FromGraph Type type) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
-        try {
-            type.hasResource(resource);
-        } catch (ClassCastException e) {
-            fail();
+        exception.expect(ConceptException.class);
+        if(Schema.MetaSchema.isMetaName(type.getName())) {
+            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        } else {
+            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getName()));
         }
+        type.hasResource(resource);
     }
 
     @Property

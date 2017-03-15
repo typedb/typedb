@@ -27,7 +27,6 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
@@ -152,11 +151,14 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
 
                 GraphTraversal traversal = getGraknGraph().getTinkerTraversal().
                         hasId(resource.getId().getValue()).
-                        out(Schema.EdgeLabel.SHORTCUT.getLabel());
+                        in(Schema.EdgeLabel.SHORTCUT.getLabel());
 
                 if(traversal.hasNext()) {
-                    InstanceImpl foundNeighbour = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
-                    throw new ConceptNotUniqueException(resource, foundNeighbour);
+                    RelationImpl relation = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
+                    Collection<Instance> rolePlayers = relation.rolePlayers();
+                    rolePlayers.remove(resource);
+
+                    if(!rolePlayers.isEmpty()) throw new ConceptNotUniqueException(resource, rolePlayers.iterator().next());
                 }
             }
         }
@@ -194,27 +196,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         if(performDeletion){
             delete();
         }
-    }
-
-    /**
-     * Deletes the concept as a Relation
-     */
-    @Override
-    public void delete() {
-        Set<CastingImpl> castings = getMappingCasting();
-
-        for (CastingImpl casting: castings) {
-            InstanceImpl<?, ?> instance = casting.getRolePlayer();
-            if(instance != null) {
-                for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT)) {
-                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId().getValue())){
-                        edge.delete();
-                    }
-                }
-            }
-        }
-
-        super.delete();
     }
 
     @Override

@@ -168,8 +168,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                     }
                 }
                 // write the computed graph to the respective output (rdd or output format)
-                final String[] elementComputeKeys = this.vertexProgram == null ? new String[0] :
-                        this.vertexProgram.getElementComputeKeys().toArray(
+                final String[] elementComputeKeys = this.vertexProgram.getElementComputeKeys().toArray(
                                 new String[this.vertexProgram.getElementComputeKeys().size()]);
                 computedGraphRDD = GraknSparkExecutor.prepareFinalGraphRDD(
                         graknGraphRDD.loadedGraphRDD, viewIncomingRDD, elementComputeKeys);

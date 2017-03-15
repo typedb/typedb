@@ -28,7 +28,7 @@
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn-engine.properties</grakn.conf>
+                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
@@ -50,7 +50,7 @@
 
                 <configuration>
                     <systemPropertyVariables>
-                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn-engine.properties</grakn.conf>
+                        <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
                     </systemPropertyVariables>
                 </configuration>

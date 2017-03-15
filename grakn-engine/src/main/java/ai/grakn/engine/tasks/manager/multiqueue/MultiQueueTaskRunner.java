@@ -20,11 +20,11 @@
 package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -51,7 +51,7 @@ import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
-import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
+import static ai.grakn.engine.GraknEngineConfig.TASKRUNNER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
@@ -72,7 +72,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  */
 public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskRunner.class);
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
+    private final static GraknEngineConfig properties = GraknEngineConfig.getInstance();
 
     private final static int POLLING_FREQUENCY = properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ);
     private final EngineID engineId;
@@ -199,7 +199,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
                 acceptedTasks.incrementAndGet();
 
                 // Submit to executor
-                executor.submit(() -> executeTask(state));
+                executor.execute(() -> executeTask(state));
             } else {
                 LOG.debug(format("Will not run [%s] because status: [%s]", record.key(), state.status()));
             }
@@ -262,6 +262,8 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
                         .creatingParentContainersIfNeeded()
                         .withMode(CreateMode.EPHEMERAL).forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
             }
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception exception){
             throw new RuntimeException("Could not create Zookeeper paths in TaskRunner");
         }

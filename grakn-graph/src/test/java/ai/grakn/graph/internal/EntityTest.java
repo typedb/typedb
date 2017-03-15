@@ -88,7 +88,7 @@ public class EntityTest extends GraphTestBase{
                 addRolePlayer(role3, rolePlayer3);
 
         assertEquals(20, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(34, graknGraph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(31, graknGraph.getTinkerPopGraph().traversal().E().toList().size());
 
         ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();
@@ -118,7 +118,7 @@ public class EntityTest extends GraphTestBase{
         long value = graknGraph.getTinkerPopGraph().traversal().V().count().next();
         assertEquals(16, value);
         value = graknGraph.getTinkerPopGraph().traversal().E().count().next();
-        assertEquals(20, value);
+        assertEquals(21, value);
 
         ConceptId idOfDeleted = rolePlayer1.getId();
         rolePlayer1.delete();

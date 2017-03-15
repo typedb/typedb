@@ -36,8 +36,12 @@ import static org.apache.commons.lang.StringEscapeUtils.escapeJava;
  * @author Denis Lobanov, Felix Chapman
  */
 public class EngineID implements Serializable {
-    private final String value;
+
+    private static final long serialVersionUID = 8846772120873129437L;
+
     private static final Logger LOG = LoggerFactory.getLogger(EngineID.class);
+
+    private final String value;
 
     private EngineID(String value) {
         this.value = value;
