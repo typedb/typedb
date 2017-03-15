@@ -98,6 +98,8 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @SuppressWarnings("unchecked")
     @Override
     public Resource<D> putResource(D value) {
+        if(value == null) throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage("resource value"));
+
         Resource<D> resource = getResource(value);
         if(resource == null){
             resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->

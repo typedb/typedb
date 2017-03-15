@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.user.UsersHandler;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.util.REST;
@@ -92,6 +92,6 @@ public class AuthController {
     @ApiOperation(
             value = "Returns true if Engine endpoints are password protected. False otherwise.")
     private String isPasswordProtected(Request req, Response res) {
-        return ConfigProperties.getInstance().getProperty(ConfigProperties.PASSWORD_PROTECTED_PROPERTY);
+        return GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
     }
 }

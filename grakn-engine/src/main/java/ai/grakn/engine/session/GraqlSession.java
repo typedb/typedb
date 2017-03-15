@@ -51,7 +51,6 @@ import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ERROR;
 import static ai.grakn.util.REST.RemoteShell.ACTION_PING;
 import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY;
-import static ai.grakn.util.REST.RemoteShell.ACTION_QUERY_ABORT;
 import static ai.grakn.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static ai.grakn.util.REST.RemoteShell.ACTION_TYPES;
 import static ai.grakn.util.REST.RemoteShell.DISPLAY;
@@ -80,8 +79,6 @@ class GraqlSession {
     private static final int QUERY_CHUNK_SIZE = 1000;
     private static final int PING_INTERVAL = 60_000;
 
-    private boolean queryCancelled = false;
-
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor =
             Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("graql-session-%s").build());
@@ -98,7 +95,7 @@ class GraqlSession {
         this.outputFormat = outputFormat;
         this.printer = getPrinter();
 
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             try {
                 refreshGraph();
                 sendTypes();
@@ -127,9 +124,6 @@ class GraqlSession {
                 break;
             case ACTION_END:
                 executeQuery();
-                break;
-            case ACTION_QUERY_ABORT:
-                abortQuery();
                 break;
             case ACTION_COMMIT:
                 commit();
@@ -175,7 +169,7 @@ class GraqlSession {
      * Close the session, which will close the transaction.
      */
     void close() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             try {
                 graph.close();
             } catch (Exception e) {
@@ -188,7 +182,7 @@ class GraqlSession {
      * Receive and remember part of a query
      */
     void receiveQuery(Json json) {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             String queryString = json.at(QUERY).asString();
             queryStringBuilder.append(queryString);
         });
@@ -198,7 +192,7 @@ class GraqlSession {
      * Execute the Graql query described in the given JSON request
      */
     void executeQuery() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
 
             String errorMessage = null;
             List<Query<?>> queries = null;
@@ -210,11 +204,7 @@ class GraqlSession {
                 queries = graph.graql().infer(infer).materialise(materialise).parseList(queryString);
 
                 // Return results unless query is cancelled
-                queries.stream().flatMap(query -> query.resultsString(printer)).forEach(result -> {
-                    if (queryCancelled) return;
-                    sendQueryResult(result);
-                });
-                queryCancelled = false;
+                queries.stream().flatMap(query -> query.resultsString(printer)).forEach(this::sendQueryResult);
             } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
                 errorMessage = e.getMessage();
                 LOG.error(errorMessage,e);
@@ -238,15 +228,11 @@ class GraqlSession {
         });
     }
 
-    void abortQuery() {
-        queryCancelled = true;
-    }
-
     /**
      * Commit and report any errors to the client
      */
     void commit() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             try {
                 graph.commitOnClose();
                 graph.close();
@@ -263,7 +249,7 @@ class GraqlSession {
      * Rollback the transaction, removing uncommitted changes
      */
     void rollback() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             graph.close();
             attemptRefresh();
         });
@@ -273,7 +259,7 @@ class GraqlSession {
      * Clean the transaction, removing everything in the graph (but not committing)
      */
     void clean() {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             graph.clear();
             attemptRefresh();
         });
@@ -288,7 +274,7 @@ class GraqlSession {
     }
 
     void setDisplayOptions(Json json) {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             ResourceType[] displayOptions = json.at(DISPLAY).asJsonList().stream()
                     .map(Json::asString)
                     .map(graph::getResourceType)
@@ -359,12 +345,12 @@ class GraqlSession {
      * Send the given JSON to the client
      */
     private void sendJson(Json json) {
-        queryExecutor.submit(() -> {
+        queryExecutor.execute(() -> {
             LOG.debug("Sending message: " + json);
             try {
                 session.getRemote().sendString(json.toString());
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                LOG.error("Error while sending JSON: " + json, e);
             }
         });
     }

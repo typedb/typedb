@@ -80,13 +80,13 @@ public class EngineCommunicator {
                 }
 
                 //Reading from Connection
-                BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
                 StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append("\n").append(line);
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        sb.append("\n").append(line);
+                    }
                 }
-                br.close();
                 return sb.toString();
             } catch (IOException e) {
                 LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUrl), e);

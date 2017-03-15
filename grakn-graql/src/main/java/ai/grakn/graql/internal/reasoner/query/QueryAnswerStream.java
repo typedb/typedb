@@ -40,8 +40,7 @@ import javafx.util.Pair;
 /**
  *
  * <p>
- * Wrapper class for an answer stream providing higher level filtering facilities
- * as well as unification and join operations.
+ * Wrapper class providing higher level stream operations on answer streams
  * </p>
  *
  * @author Kasper Piskorski
@@ -60,7 +59,23 @@ public class QueryAnswerStream {
         return true;
     }
 
-    public static boolean nonEqualsFilter(Answer answer, Set<NotEquals> atoms) {
+    static boolean knownFilterWithInverse(Answer answer, Map<Pair<VarName, Concept>, Set<Answer>> stream2InverseMap) {
+        Iterator<Map.Entry<VarName, Concept>> eit = answer.entrySet().iterator();
+        Map.Entry<VarName, Concept> entry = eit.next();
+        Set<Answer> matchAnswers = findMatchingAnswers(entry.getKey(), entry.getValue(), stream2InverseMap);
+        while(eit.hasNext()){
+            entry = eit.next();
+            matchAnswers = Sets.intersection(matchAnswers, findMatchingAnswers(entry.getKey(), entry.getValue(), stream2InverseMap));
+        }
+        for (Answer knownAnswer : matchAnswers) {
+            if (knownAnswer.entrySet().containsAll(answer.entrySet())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static boolean nonEqualsFilter(Answer answer, Set<NotEquals> atoms) {
         if(atoms.isEmpty()) return true;
         for (NotEquals atom : atoms) {
             if (!NotEquals.notEqualsOperator(answer, atom)) {
@@ -179,6 +194,12 @@ public class QueryAnswerStream {
             return answerStream.map(a1::merge);
         });
     }
+
+    private static Set<Answer> findMatchingAnswers(VarName var, Concept con, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap){
+        Pair<VarName, Concept> key = new Pair<>(var, con);
+        return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
+    }
+
     private static Set<Answer> findMatchingAnswers(Answer answer, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap, VarName joinVar){
         Pair<VarName, Concept> key = new Pair<>(joinVar, answer.get(joinVar));
         return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();

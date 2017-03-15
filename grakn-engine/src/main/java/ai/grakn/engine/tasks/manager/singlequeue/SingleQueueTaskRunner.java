@@ -21,7 +21,7 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
@@ -35,10 +35,12 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
+import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.time.Instant.now;
 
 /**
  * The {@link SingleQueueTaskRunner} is used by the {@link SingleQueueTaskManager} to execute tasks from a Kafka queue.
@@ -99,7 +101,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 // This TskRunner should only ever receive one record
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
-                    handleRecord(record);
+                    handleTask(record.value());
 
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
@@ -127,6 +129,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         noThrow(consumer::close, "Error closing the task runner");
     }
 
+    /**
+     * Stop the task if it is executing on this machine
+     * @param taskId Identifier of the task to stop
+     * @return True if the task is stopped
+     */
     public boolean stopTask(TaskId taskId) {
         return taskId.equals(runningTaskId) && runningTask.stop();
     }
@@ -134,47 +141,64 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Returns false if cannot handle record because the executor is full
      */
-    private void handleRecord(ConsumerRecord<TaskId, TaskState> record) {
-        TaskState task = record.value();
-
+    private void handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
-        if (shouldExecuteTask(task)) {
+        if(shouldDelayTask(task)){
+            resubmitTask(task);
+        }
+        else if (shouldExecuteTask(task)) {
+            executeTask(task);
 
-            // Mark as running
-            task.markRunning(engineID);
-
-            //TODO Make this a put within state storage
-            if(storage.containsTask(task.getId())) {
-                storage.updateState(task);
-            } else {
-                storage.newState(task);
-            }
-
-            LOG.debug("{}\tmarked as running", task);
-
-            // Execute task
-            try {
-                runningTaskId = task.getId();
-                runningTask = task.taskClass().newInstance();
-                boolean completed = runningTask.start(null, task.configuration());
-                if (completed) {
-                    task.markCompleted();
-                } else {
-                    task.markStopped();
-                }
-                LOG.debug("{}\tmarked as completed", task);
-            } catch (Throwable throwable) {
-                task.markFailed(throwable);
-                LOG.debug("{}\tmarked as failed", task);
-            } finally {
-                runningTask = null;
-                runningTaskId = null;
-
-                //TODO Using "manager" here is only so that PMD will be happy
-                manager.storage().updateState(task);
+            if(taskShouldRecur(task)){
+                // re-schedule
+                task.schedule(task.schedule().incrementByInterval());
+                resubmitTask(task);
             }
         }
+    }
+
+    private void executeTask(TaskState task){
+        // Mark as running
+        task.markRunning(engineID);
+
+        //TODO Make this a put within state storage
+        if(storage.containsTask(task.getId())) {
+            storage.updateState(task);
+        } else {
+            storage.newState(task);
+        }
+
+        LOG.debug("{}\tmarked as running", task);
+
+        // Execute task
+        try {
+            runningTaskId = task.getId();
+            runningTask = task.taskClass().newInstance();
+            boolean completed = runningTask.start(null, task.configuration());
+            if (completed) {
+                task.markCompleted();
+            } else {
+                task.markStopped();
+            }
+            LOG.debug("{}\tmarked as completed", task);
+        } catch (Throwable throwable) {
+            task.markFailed(throwable);
+            LOG.debug("{}\tmarked as failed", task);
+        } finally {
+            runningTask = null;
+            runningTaskId = null;
+            storage.updateState(task);
+        }
+    }
+
+    /**
+     * Tasks are delayed by re-submitting them to the queue until it is time for them
+     * to be executed
+     * @param task Task to be delayed
+     */
+    private void resubmitTask(TaskState task){
+        manager.addTask(task);
     }
 
     private boolean shouldExecuteTask(TaskState task) {
@@ -184,11 +208,29 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             // Only run created tasks if they are not being retried
             return !storage.containsTask(taskId);
         } else {
-            // Only run retried tasks if they are not marked completed or failed
+            // Only run retried tasks if they are not failed and if not completed or recurring)
             // TODO: what if another task runner is running this task? (due to rebalance)
             TaskStatus status = storage.getState(taskId).status();
-            return !status.equals(COMPLETED) && !status.equals(FAILED);
+            return !status.equals(STOPPED) && !status.equals(FAILED) &&
+                    (!status.equals(COMPLETED) || task.schedule().isRecurring());
         }
+    }
+
+    /**
+     * Tasks should be delayed when their schedule is set for
+     * @return If the provided task should be delayed.
+     */
+    private boolean shouldDelayTask(TaskState task){
+        return !task.schedule().runAt().isBefore(now());
+    }
+
+    /**
+     * Determine if task is recurring and should be re-run. Recurring tasks should not
+     * be re-run when they are stopped or failed.
+     * @return If the task should be run again
+     */
+    private boolean taskShouldRecur(TaskState task){
+        return task.schedule().isRecurring() && !task.status().equals(FAILED)&& !task.status().equals(STOPPED);
     }
 
     /**

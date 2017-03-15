@@ -208,7 +208,7 @@ public enum ErrorMessage {
     NO_SOURCE("No valid source id provided"),
     NO_DESTINATION("No valid destination id provided"),
     RESOURCE_TYPE_NOT_SPECIFIED("no resource type provided for compute query."),
-    INSTANCE_DOES_NOT_EXIST("Instance does not exist."),
+    INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
     NO_PATH_EXIST("There is no path between the two instances."),
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
     BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),

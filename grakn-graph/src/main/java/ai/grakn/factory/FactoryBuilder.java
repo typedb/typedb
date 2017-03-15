@@ -85,7 +85,7 @@ class FactoryBuilder {
     /**
      *
      * @param key A unique string identifying this factory
-     * @param factoryType The type of the factory to initlaise. Any factory which implements {@link InternalFactory}
+     * @param factoryType The type of the factory to initialise. Any factory which implements {@link InternalFactory}
      * @param keyspace The keyspace of the graph
      * @param engineUrl The location of the running engine instance
      * @param properties Additional properties to apply to the graph

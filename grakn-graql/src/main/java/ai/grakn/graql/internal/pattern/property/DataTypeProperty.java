@@ -47,7 +47,7 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
         this.datatype = datatype;
     }
 
-    public ResourceType.DataType<?> getDatatype() {
+    public ResourceType.DataType<?> getDataType() {
         return datatype;
     }
 
