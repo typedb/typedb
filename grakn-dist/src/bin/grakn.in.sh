@@ -1,10 +1,10 @@
-export GRAKN_ENGINE_CONFIG="${GRAKN_HOME}/conf/main/grakn-engine.properties"
+export GRAKN_ENGINE_CONFIG="${GRAKN_HOME}/conf/main/grakn.properties"
 
 if [ -z "$FOREGROUND" ]; then
   export FOREGROUND=false
 fi
 
-# Check grakn-engine.properties
+# Check grakn.properties
 # Set USE_KAFKA if taskmanager.distributed is true 
 GRAKN_TASKMANAGER_DISTRIBUTED=$(grep ^taskmanager.distributed= "${GRAKN_ENGINE_CONFIG}"| cut -d '=' -f 2)
 if [[ "$GRAKN_TASKMANAGER_DISTRIBUTED" == "true" ]]; then
