@@ -21,6 +21,7 @@ import _ from 'underscore';
 import vis from 'vis';
 
 import Style from './Style';
+import User from '../User';
 
 /*
  * Main class for creating a graph of nodes and edges. See Style class for asthetic customisation.
@@ -57,7 +58,6 @@ export default class Visualiser {
       physics: {
         barnesHut: {
           springLength: 140,
-          // avoidOverlap: 0.9,
         },
         minVelocity: 0.75,
       },
@@ -113,7 +113,7 @@ export default class Visualiser {
     }
 
     this.network.on('stabilized', (params) => {
-      if (this.draggingNode === false) {
+      if (this.draggingNode === false && User.getFreezeNodes()) {
         this.fixNodes();
       }
     });
@@ -204,6 +204,13 @@ export default class Visualiser {
 
     //  ----------------------------------------------  //
 
+  fixAllNodes() {
+    this.fixNodes(this.nodes.getIds());
+  }
+
+  releaseAllNodes() {
+    this.releaseNodes(this.nodes.getIds());
+  }
 
     // Methods used to fix and release nodes when one or more are dragged //
 
@@ -257,7 +264,7 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-  addNode(href, bp, ap, ls) {
+  addNode(href, bp, ap, ls, cn) {
     if (!this.nodeExists(bp.id)) {
       const colorObj = this.style.getNodeColour(bp.type, bp.baseType);
       const highlightObj = {
@@ -287,16 +294,15 @@ export default class Visualiser {
         properties: ap,
         links: ls,
       });
+    } else if (bp.id !== cn && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
+      this.nodes.update({
+        id: bp.id,
+        fixed: {
+          x: false,
+          y: false,
+        },
+      });
     }
-    // else{
-    //   this.nodes.update({
-    //     id: bp.id,
-    //     fixed: {
-    //       x: false,
-    //       y: false,
-    //     },
-    //   });
-    // }
 
     return this;
   }
@@ -323,7 +329,7 @@ export default class Visualiser {
         color: this.style.getEdgeColour(label),
         font: this.style.getEdgeFont(label),
         arrows: {
-          to: (label != 'has-role'),
+          to: (label !== 'has-role'),
         },
       });
     }

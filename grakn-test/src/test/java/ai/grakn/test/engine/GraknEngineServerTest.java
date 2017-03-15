@@ -24,16 +24,15 @@ import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.test.EngineContext;
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_IMPLEMENTATION;
-import static ai.grakn.engine.util.ConfigProperties.USE_ZOOKEEPER_STORAGE;
-import static ai.grakn.engine.util.ConfigProperties.ZK_CONNECTION_TIMEOUT;
+import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
+import static ai.grakn.engine.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,7 +49,7 @@ public class GraknEngineServerTest {
     @Test
     public void whenEnginePropertiesIndicatesStandaloneTM_StandaloneTmIsStarted() {
         // Should start engine with in-memory server
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
+        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, StandaloneTaskManager.class.getName());
 
         try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
             assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
@@ -61,8 +60,8 @@ public class GraknEngineServerTest {
     public void whenEnginePropertiesIndicatesMultiQueueTM_MultiQueueTmIsStarted() {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, MultiQueueTaskManager.class.getName());
+        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, MultiQueueTaskManager.class.getName());
 
         try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
             assertThat(server.getTaskManager(), instanceOf(MultiQueueTaskManager.class));
@@ -73,8 +72,8 @@ public class GraknEngineServerTest {
     public void whenEnginePropertiesIndicatesSingleQueueTM_SingleQueueTmIsStarted() {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
+        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
         try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
             assertThat(server.getTaskManager(), instanceOf(SingleQueueTaskManager.class));
@@ -85,9 +84,9 @@ public class GraknEngineServerTest {
     public void whenEnginePropertiesIndicatesZookeeperStorage_ZookeeperStorageIsUsed() {
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
-        ConfigProperties.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
+        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
+        GraknEngineConfig.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
 
         try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
             assertThat(server.getTaskManager().storage(), instanceOf(TaskStateZookeeperStore.class));
@@ -100,14 +99,14 @@ public class GraknEngineServerTest {
 
         // Should start engine with distributed server, which means we will get a cannot
         // connect to Zookeeper exception (that has not been started)
-        ConfigProperties.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
-        ConfigProperties.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "false");
+        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
+        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
+        GraknEngineConfig.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "false");
 
         try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
             assertThat(server.getTaskManager().storage(), instanceOf(TaskStateGraphStore.class));
         }
 
-        ConfigProperties.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
+        GraknEngineConfig.getInstance().setConfigProperty(USE_ZOOKEEPER_STORAGE, "true");
     }
 }

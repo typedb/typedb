@@ -76,6 +76,13 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
     public abstract Stream<Answer> getAnswerStream(Q query);
     public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
+    /**
+     * return an inverse answer map which is more suitable for operations involving concept comparison (joins, filtering, etc.)
+     * NB: consumes the underlying stream for the specified query
+     * @param query for answer are to be retrieved
+     * @param vars variable names of interest
+     * @return inverse answer map for specified query
+     */
     public Map<Pair<VarName, Concept>, Set<Answer>> getInverseAnswerMap(Q query, Set<VarName> vars){
         Map<Pair<VarName, Concept>, Set<Answer>> inverseAnswerMap = new HashMap<>();
         Set<Answer> answers = getAnswerStream(query).collect(Collectors.toSet());
@@ -93,6 +100,15 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
                     }
                 }));
         return inverseAnswerMap;
+    }
+
+    /**
+     * returns an inverse answer map with all query variables
+     * @param query for answer are to be retrieved
+     * @return inverse answer map for specified query
+     */
+    public Map<Pair<VarName, Concept>, Set<Answer>> getInverseAnswerMap(Q query){
+        return getInverseAnswerMap(query, query.getVarNames());
     }
 
     Map<VarName, VarName> getRecordUnifiers(Q toRecord){

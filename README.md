@@ -6,7 +6,6 @@
 [![Javadocs](https://javadoc.io/badge/ai.grakn/grakn.svg)](https://javadoc.io/doc/ai.grakn/grakn)
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
 [![Download count](http://shields.grakn.ai/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
-[![Code Triagers Badge](https://www.codetriage.com/graknlabs/grakn/badges/users.svg)](https://www.codetriage.com/graknlabs/grakn)
 
 Copyright (C) 2016  Grakn Labs Limited.  
 

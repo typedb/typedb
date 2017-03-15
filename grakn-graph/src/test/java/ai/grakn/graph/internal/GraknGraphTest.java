@@ -101,9 +101,9 @@ public class GraknGraphTest extends GraphTestBase {
 
         CastingImpl casting = graknGraph.getConcept(ConceptId.of(id));
         EdgeImpl edge = casting.addEdge(role, Schema.EdgeLabel.ISA); // Casting to Role
-        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         edge = casting.addEdge(rolePlayer, Schema.EdgeLabel.ROLE_PLAYER);// Casting to Roleplayer
-        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         relation.addEdge(casting, Schema.EdgeLabel.CASTING);// Assertion to Casting
     }
 

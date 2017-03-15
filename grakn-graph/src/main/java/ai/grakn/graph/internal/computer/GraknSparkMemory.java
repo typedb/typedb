@@ -50,6 +50,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class GraknSparkMemory implements Memory.Admin, Serializable {
 
+    private static final long serialVersionUID = -3877367965011858056L;
+
     public final Set<String> memoryKeys = new HashSet<>();
     private final AtomicInteger iteration = new AtomicInteger(0);   // do these need to be atomics?
     private final AtomicLong runtime = new AtomicLong(0l);

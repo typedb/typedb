@@ -18,22 +18,19 @@
 
 package ai.grakn.engine.tasks.config;
 
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.tasks.TaskIdDeserializer;
+import ai.grakn.engine.tasks.TaskIdSerializer;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.tasks.TaskStateDeserializer;
+import ai.grakn.engine.tasks.TaskStateSerializer;
+import ai.grakn.engine.GraknEngineConfig;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 
 import java.util.Properties;
-
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_BATCH_SIZE;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_BOOTSTRAP_SERVERS;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_BUFFER_MEM;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_LINGER_MS;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_RETRIES;
-import static ai.grakn.engine.util.ConfigProperties.KAFKA_SESSION_TIMEOUT;
 
 /**
  * <p>
@@ -48,16 +45,12 @@ public class ConfigHelper {
 
     public static Consumer<TaskId, TaskState> kafkaConsumer(String groupId) {
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
+        properties.putAll(GraknEngineConfig.getInstance().getProperties());
+
         properties.put("group.id", groupId);
         properties.put("enable.auto.commit", "false");
         properties.put("auto.offset.reset", "earliest");
         properties.put("metadata.max.age.ms", "1000");
-        properties.put("session.timeout.ms", ConfigProperties.getInstance().getProperty(KAFKA_SESSION_TIMEOUT));
-        properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
-        properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
-        properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");
-        properties.put("value.deserializer", "ai.grakn.engine.tasks.TaskStateDeserializer");
 
         // The max poll time should be set to its largest value
         // Our task runners will only poll again after the tasks have completed
@@ -66,23 +59,13 @@ public class ConfigHelper {
         // Max poll records should be set to one: each TaskRunner should only handle one record at a time
         properties.put("max.poll.records", "1");
 
-        return new KafkaConsumer<>(properties);
+        return new KafkaConsumer<>(properties, new TaskIdDeserializer(), new TaskStateDeserializer());
     }
 
     public static Producer<TaskId, TaskState> kafkaProducer() {
         Properties properties = new Properties();
+        properties.putAll(GraknEngineConfig.getInstance().getProperties());
 
-        properties.put("bootstrap.servers", ConfigProperties.getInstance().getProperty(KAFKA_BOOTSTRAP_SERVERS));
-        properties.put("acks", "all");
-        properties.put("retries", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_RETRIES));
-        properties.put("batch.size", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_BATCH_SIZE));
-        properties.put("linger.ms", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_LINGER_MS));
-        properties.put("buffer.memory", ConfigProperties.getInstance().getPropertyAsInt(KAFKA_BUFFER_MEM));
-        properties.put("key.serializer", "ai.grakn.engine.tasks.TaskIdSerializer");
-        properties.put("key.deserializer", "ai.grakn.engine.tasks.TaskIdDeserializer");
-        properties.put("value.serializer", "ai.grakn.engine.tasks.TaskStateSerializer");
-        properties.put("value.deserializer", "ai.grakn.engine.tasks.TaskStateDeserializer");
-
-        return new KafkaProducer<>(properties);
+        return new KafkaProducer<>(properties, new TaskIdSerializer(), new TaskStateSerializer());
     }
 }
