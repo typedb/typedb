@@ -27,7 +27,7 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;

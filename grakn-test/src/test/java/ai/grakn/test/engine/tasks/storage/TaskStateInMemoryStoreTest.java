@@ -24,7 +24,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

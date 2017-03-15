@@ -24,6 +24,8 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.FailingTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
@@ -54,50 +56,6 @@ import static org.junit.Assert.fail;
  * Class holding useful methods for use throughout background task tests
  */
 public class BackgroundTaskTestUtils {
-
-    private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
-    private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
-    private static Consumer<TaskId> onTaskStart;
-    private static Consumer<TaskId> onTaskFinish;
-
-    static void addCompletedTask(TaskId taskId) {
-        COMPLETED_TASKS.add(taskId);
-    }
-
-    public static ImmutableMultiset<TaskId> completedTasks() {
-        return ImmutableMultiset.copyOf(COMPLETED_TASKS);
-    }
-
-    static void addCancelledTask(TaskId taskId) {
-        CANCELLED_TASKS.add(taskId);
-    }
-
-    public static ImmutableMultiset<TaskId> cancelledTasks() {
-        return ImmutableMultiset.copyOf(CANCELLED_TASKS);
-    }
-
-    public static void whenTaskStarts(Consumer<TaskId> beforeTaskStarts) {
-        BackgroundTaskTestUtils.onTaskStart = beforeTaskStarts;
-    }
-
-    static void onTaskStart(TaskId taskId) {
-        if (onTaskStart != null) onTaskStart.accept(taskId);
-    }
-
-    public static void whenTaskFinishes(Consumer<TaskId> onTaskFinish) {
-        BackgroundTaskTestUtils.onTaskFinish = onTaskFinish;
-    }
-
-    static void onTaskFinish(TaskId taskId) {
-        if (onTaskFinish != null) onTaskFinish.accept(taskId);
-    }
-
-    public static void clearTasks() {
-        COMPLETED_TASKS.clear();
-        CANCELLED_TASKS.clear();
-        onTaskStart = null;
-        onTaskFinish = null;
-    }
 
     public static Set<TaskState> createTasks(int n) {
         return generate(() -> createTask(ShortExecutionTestTask.class)).limit(n).collect(toSet());

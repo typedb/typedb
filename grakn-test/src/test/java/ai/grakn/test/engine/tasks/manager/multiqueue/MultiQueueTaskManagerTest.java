@@ -21,7 +21,7 @@ package ai.grakn.test.engine.tasks.manager.multiqueue;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionTestTask;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
