@@ -1,13 +1,11 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
@@ -18,7 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.graql.Graql.var;
-import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 /**
  * <p>
@@ -146,12 +143,8 @@ public abstract class GraknTestEnv {
     }
 
     public static void hideLogs() {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ROOT_LOGGER_NAME)).setLevel(Level.ERROR);
-
         // Some dependencies are using log4j, so must be managed separately
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
-
-        ((Logger) org.slf4j.LoggerFactory.getLogger("ai.grakn")).setLevel(Level.INFO);
     }
 
     public static boolean usingTinker() {
