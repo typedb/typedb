@@ -43,5 +43,8 @@ public class RuleExplanation extends Explanation {
     @Override
     public AnswerExplanation copy(){ return new RuleExplanation(this);}
 
+    @Override
+    public boolean isRuleExplanation(){ return true;}
+
     public InferenceRule getRule(){ return rule;}
 }

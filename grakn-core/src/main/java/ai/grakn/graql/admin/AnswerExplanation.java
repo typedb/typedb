@@ -31,9 +31,16 @@ import java.util.Set;
  */
 public interface AnswerExplanation {
 
+    AnswerExplanation copy();
+
+    ReasonerQuery getQuery();
+    AnswerExplanation setQuery(ReasonerQuery q);
+
     boolean addAnswer(Answer a);
 
     Set<Answer> getAnswers();
 
     boolean isLookupExplanation();
+
+    boolean isRuleExplanation();
 }

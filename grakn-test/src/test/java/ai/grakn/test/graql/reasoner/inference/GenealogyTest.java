@@ -24,11 +24,13 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -307,6 +309,9 @@ public class GenealogyTest {
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
         MatchQuery query = iqb.parse(queryString);
+
+        List<Answer> collect = Reasoner.resolveWithExplanation(query, false).collect(Collectors.toList());
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
@@ -317,6 +322,7 @@ public class GenealogyTest {
     public void testCousins() {
         String queryString = "match ($x, $y) isa cousins;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 192);
         assertTrue(!hasDuplicates(answers));
@@ -327,6 +333,7 @@ public class GenealogyTest {
     public void testInLaws() {
         String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers requeriedAnswers = queryAnswers(query);
         assertEquals(answers.size(), 50);
