@@ -26,9 +26,9 @@ import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.EndlessExecutionTestTask;
-import ai.grakn.test.engine.tasks.LongExecutionTestTask;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
+import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -63,14 +63,14 @@ import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.cancelledTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.clearTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completedTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskFinishes;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskStarts;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static java.time.Duration.between;
 import static java.time.Duration.ofMillis;
 import static java.time.Instant.now;
@@ -301,7 +301,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_TheTaskIsCancelled() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class);
+        TaskState task = createTask(EndlessExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -314,7 +314,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_TheTaskIsMarkedAsStopped() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class);
+        TaskState task = createTask(EndlessExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -327,7 +327,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedDuringExecution_ReturnTrue() throws Exception {
-        TaskState task = createTask(EndlessExecutionTestTask.class);
+        TaskState task = createTask(EndlessExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -344,7 +344,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedAfterExecution_TheTaskIsCompleted() throws Exception {
-        TaskState task = createTask(LongExecutionTestTask.class);
+        TaskState task = createTask(LongExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -358,7 +358,7 @@ public class SingleQueueTaskRunnerTest {
 
     @Test
     public void whenATaskIsStoppedAfterExecution_TheTaskIsMarkedAsCompleted() throws Exception {
-        TaskState task = createTask(LongExecutionTestTask.class);
+        TaskState task = createTask(LongExecutionMockTask.class);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -424,7 +424,7 @@ public class SingleQueueTaskRunnerTest {
             startedTime[0] = now();
         });
 
-        TaskState delayedTask = createTask(ShortExecutionTestTask.class, at(submittedTime.plus(delay)));
+        TaskState delayedTask = createTask(ShortExecutionMockTask.class, at(submittedTime.plus(delay)));
         setUpTasks(ImmutableList.of(ImmutableList.of(delayedTask)));
 
         taskRunner.run();
@@ -443,8 +443,8 @@ public class SingleQueueTaskRunnerTest {
                 startedTime.put(taskId, now())
         );
 
-        TaskState delayedTask = createTask(ShortExecutionTestTask.class, at(submittedTime.plus(delay)));
-        TaskState instantTask = createTask(ShortExecutionTestTask.class, at(submittedTime));
+        TaskState delayedTask = createTask(ShortExecutionMockTask.class, at(submittedTime.plus(delay)));
+        TaskState instantTask = createTask(ShortExecutionMockTask.class, at(submittedTime));
         setUpTasks(ImmutableList.of(ImmutableList.of(delayedTask, instantTask)));
 
         taskRunner.run();
@@ -468,7 +468,7 @@ public class SingleQueueTaskRunnerTest {
             }
         );
 
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(ofMillis(100)));
+        TaskState task = createTask(ShortExecutionMockTask.class, recurring(ofMillis(100)));
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         taskRunner.run();
@@ -497,7 +497,7 @@ public class SingleQueueTaskRunnerTest {
             }
         });
 
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(now(), interval));
+        TaskState task = createTask(ShortExecutionMockTask.class, recurring(now(), interval));
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         taskRunner.run();
@@ -514,7 +514,7 @@ public class SingleQueueTaskRunnerTest {
             throw new RuntimeException();
         });
 
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(ofMillis(100)));
+        TaskState task = createTask(ShortExecutionMockTask.class, recurring(ofMillis(100)));
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         taskRunner.run();

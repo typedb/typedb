@@ -132,13 +132,13 @@ public class SingleQueueTaskManager implements TaskManager {
     public void close() {
         LOG.debug("Closing SingleQueueTaskManager");
 
-        // close kafka producer
-        noThrow(producer::close, "Error shutting down producer in TaskManager");
-
         // Close all the task runners
         for(SingleQueueTaskRunner taskRunner:taskRunners) {
             noThrow(taskRunner::close, "Error shutting down TaskRunner");
         }
+
+        // close kafka producer
+        noThrow(producer::close, "Error shutting down producer in TaskManager");
 
         // close the thread pool and wait for shutdown
         noThrow(taskRunnerThreadPool::shutdown, "Error closing task runner thread pool");
