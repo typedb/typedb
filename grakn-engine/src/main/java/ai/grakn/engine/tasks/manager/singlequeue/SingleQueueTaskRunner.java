@@ -148,8 +148,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             stopTask(task);
         } else if(shouldDelayTask(task)){
             resubmitTask(task);
-        }
-        else if (shouldExecuteTask(task)) {
+        } else if (shouldExecuteTask(task)) {
             executeTask(task);
 
             if(taskShouldRecur(task)){
@@ -157,6 +156,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 task.schedule(task.schedule().incrementByInterval());
                 resubmitTask(task);
             }
+        } else {
+            LOG.debug("{}\tskipping", task);
         }
     }
 
@@ -194,12 +195,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param task Task to be delayed
      */
     private void resubmitTask(TaskState task){
+        LOG.debug("{}\tresubmitted", task);
         manager.addTask(task);
     }
 
     private void stopTask(TaskState task) {
         task.markStopped();
         putState(task);
+        LOG.debug("{}\t marked as stopped", task);
     }
 
     private boolean shouldExecuteTask(TaskState task) {
