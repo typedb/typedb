@@ -592,6 +592,6 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public T key(ResourceType resourceType) {
-        return hasResource(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, true);
+        return hasResource(resourceType, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_VALUE, Schema.ImplicitType.HAS_KEY_OWNER, true);
     }
 }

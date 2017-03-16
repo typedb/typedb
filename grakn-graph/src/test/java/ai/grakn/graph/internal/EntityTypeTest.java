@@ -37,8 +37,10 @@ import java.util.Set;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -389,6 +391,33 @@ public class EntityTypeTest extends GraphTestBase{
         e1.hasResource(r2);
         e1.hasResource(r3);
         assertThat(e1.resources(), containsInAnyOrder(r1, r2, r3));
+    }
+
+    @Test
+    public void addResourceTypeAsKeyToOneEntityTypeAndAsResourceToAnotherEntityType(){
+        ResourceType<String> resource1 = graknGraph.putResourceType("Shared Resource 1", ResourceType.DataType.STRING);
+        ResourceType<String> resource2 = graknGraph.putResourceType("Shared Resource 2", ResourceType.DataType.STRING);
+
+        EntityType entityType1 = graknGraph.putEntityType("EntityType 1");
+        EntityType entityType2 = graknGraph.putEntityType("EntityType 2");
+
+        assertThat(entityType1.keys(), is(empty()));
+        assertThat(entityType1.resources(), is(empty()));
+        assertThat(entityType2.keys(), is(empty()));
+        assertThat(entityType2.resources(), is(empty()));
+
+        //Link the resources
+        entityType1.hasResource(resource1);
+
+        entityType1.key(resource2);
+        entityType2.key(resource1);
+        entityType2.key(resource2);
+
+        assertThat(entityType1.resources(), containsInAnyOrder(resource1));
+        assertThat(entityType2.resources(), is(empty()));
+
+        assertThat(entityType1.keys(), containsInAnyOrder(resource2));
+        assertThat(entityType2.keys(), containsInAnyOrder(resource1, resource2));
     }
 
 }
