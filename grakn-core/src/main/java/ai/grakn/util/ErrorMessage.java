@@ -75,7 +75,7 @@ public enum ErrorMessage {
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
 
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
-    VALIDATION_REQUIRED_RELATION("The role player [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
+    VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
 

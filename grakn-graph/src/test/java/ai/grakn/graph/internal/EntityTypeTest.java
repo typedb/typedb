@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -395,8 +396,8 @@ public class EntityTypeTest extends GraphTestBase{
 
     @Test
     public void addResourceTypeAsKeyToOneEntityTypeAndAsResourceToAnotherEntityType(){
-        ResourceType<String> resource1 = graknGraph.putResourceType("Shared Resource 1", ResourceType.DataType.STRING);
-        ResourceType<String> resource2 = graknGraph.putResourceType("Shared Resource 2", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType1 = graknGraph.putResourceType("Shared Resource 1", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType2 = graknGraph.putResourceType("Shared Resource 2", ResourceType.DataType.STRING);
 
         EntityType entityType1 = graknGraph.putEntityType("EntityType 1");
         EntityType entityType2 = graknGraph.putEntityType("EntityType 2");
@@ -407,17 +408,34 @@ public class EntityTypeTest extends GraphTestBase{
         assertThat(entityType2.resources(), is(empty()));
 
         //Link the resources
-        entityType1.hasResource(resource1);
+        entityType1.hasResource(resourceType1);
 
-        entityType1.key(resource2);
-        entityType2.key(resource1);
-        entityType2.key(resource2);
+        entityType1.key(resourceType2);
+        entityType2.key(resourceType1);
+        entityType2.key(resourceType2);
 
-        assertThat(entityType1.resources(), containsInAnyOrder(resource1));
+        assertThat(entityType1.resources(), containsInAnyOrder(resourceType1));
         assertThat(entityType2.resources(), is(empty()));
 
-        assertThat(entityType1.keys(), containsInAnyOrder(resource2));
-        assertThat(entityType2.keys(), containsInAnyOrder(resource1, resource2));
+        assertThat(entityType1.keys(), containsInAnyOrder(resourceType2));
+        assertThat(entityType2.keys(), containsInAnyOrder(resourceType1, resourceType2));
+
+        //Add resource which is a key for one entity and a resource for another
+        Entity entity1 = entityType1.addEntity();
+        Entity entity2 = entityType2.addEntity();
+        Resource<String> resource1 = resourceType1.putResource("Test 1");
+        Resource<String> resource2 = resourceType2.putResource("Test 2");
+        Resource<String> resource3 = resourceType2.putResource("Test 3");
+
+        //Resource 1 is a key to one and a resource to another
+        entity1.hasResource(resource1);
+        entity2.key(resource1);
+
+        entity1.key(resource2);
+        entity2.key(resource3);
+
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
 }
