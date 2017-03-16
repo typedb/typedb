@@ -26,18 +26,22 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
+import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -59,6 +63,9 @@ public class GraknEngineFailoverIT {
     @ClassRule
     public static DistributionContext engine2 = DistributionContext.startSingleQueueEngineProcess().port(5678);
 
+    @ClassRule
+    public static DistributionContext engine3 = DistributionContext.startSingleQueueEngineProcess().port(6789);
+
     @BeforeClass
     public static void getStorage() {
         connection = new ZookeeperConnection();
@@ -70,7 +77,7 @@ public class GraknEngineFailoverIT {
         connection.close();
     }
 
-    @Property(trials = 10)
+    @Property(trials=10)
     public void whenSubmittingTasksToOneEngine_TheyComplete(List<@NewTask TaskState> tasks1) throws Exception {
         // Create & Send tasks to rest api
         Set<TaskId> tasks = sendTasks(engine1.port(), tasks1);
@@ -83,7 +90,7 @@ public class GraknEngineFailoverIT {
     }
 
 
-    @Property(trials = 10)
+    @Property(trials=10)
     public void whenSubmittingTasksToTwoEngines_TheyComplete(
             List<@NewTask TaskState> tasks1, List<@NewTask TaskState> tasks2) throws Exception {
         // Create & Send tasks to rest api
@@ -101,9 +108,25 @@ public class GraknEngineFailoverIT {
         assertTasksCompletedWithCorrectStatus(allTasks);
     }
 
-    public void whenSubmittingTasksToTwoEngines_TheyDoNotAllCompleteOnOriginalEngine(
-            List<@NewTask TaskState> tasks1, List<@NewTask TaskState> tasks2) throws Exception {
-        assertTrue(false);
+    @Property(trials=10)
+    public void whenSubmittingTasksToTwoEngines_TheyRunOnThreeEngines(
+            @Size(min=100, max=100) List<@NewTask TaskState> tasks1,
+            @Size(min=100, max=100) List<@NewTask TaskState> tasks2) throws Exception {
+
+        Set<TaskId> taskIds1 = sendTasks(engine1.port(), tasks1);
+        Set<TaskId> taskIds2 = sendTasks(engine2.port(), tasks2);
+
+        Set<TaskId> allTasks = new HashSet<>();
+        allTasks.addAll(taskIds1);
+        allTasks.addAll(taskIds2);
+
+        waitForStatus(allTasks, COMPLETED, FAILED);
+
+        // Assert that all three engines picked up tasks
+        Set<EngineID> engineIDS =
+                allTasks.stream().map(storage::getState).map(TaskState::engineID).collect(toSet());
+
+        assertThat(engineIDS.size(), equalTo(3));
     }
 
     private void assertTasksCompletedWithCorrectStatus(Set<TaskId> tasks) {
