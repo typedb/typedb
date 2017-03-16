@@ -39,6 +39,7 @@ import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.startKafka;
+import static ai.grakn.test.GraknTestEnv.stopKafka;
 import static java.lang.System.currentTimeMillis;
 import static java.nio.file.Files.setPosixFilePermissions;
 import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
@@ -108,6 +109,12 @@ public class DistributionContext extends ExternalResource {
     @Override
     public void after() {
         engineProcess.destroyForcibly();
+
+        try {
+            stopKafka();
+        } catch (Exception e) {
+            throw new RuntimeException("Could not shut down", e);
+        }
     }
 
     private void unzipDistribution() throws ZipException, IOException {
