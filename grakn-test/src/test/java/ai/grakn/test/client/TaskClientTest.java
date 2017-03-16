@@ -27,7 +27,7 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
@@ -76,7 +76,7 @@ public class TaskClientTest {
 
     @Test
     public void whenSendingATask_TheTaskManagerReceivedTheTask(){
-        Class taskClass = ShortExecutionTestTask.class;
+        Class taskClass = ShortExecutionMockTask.class;
         String creator = this.getClass().getName();
         Instant runAt = now();
         Duration interval = Duration.ofSeconds(1);

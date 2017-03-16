@@ -23,8 +23,8 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
-import ai.grakn.test.engine.tasks.LongExecutionTestTask;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import org.json.JSONArray;
@@ -83,7 +83,7 @@ public class TasksControllerTest {
 
     @Test
     public void testTasksByClassName() {
-        Response response = given().queryParam("className", ShortExecutionTestTask.class.getName())
+        Response response = given().queryParam("className", ShortExecutionMockTask.class.getName())
                                    .queryParam("limit", 10)
                                    .get(TASKS);
 
@@ -94,7 +94,7 @@ public class TasksControllerTest {
         JSONArray array = new JSONArray(response.body().asString());
         array.forEach(x -> {
             JSONObject o = (JSONObject)x;
-            assertEquals(ShortExecutionTestTask.class.getName(), o.get("className"));
+            assertEquals(ShortExecutionMockTask.class.getName(), o.get("className"));
         });
     }
 
@@ -135,7 +135,7 @@ public class TasksControllerTest {
 
     @Test
     public void testScheduleWithoutOptional() {
-        given().queryParam("className", ShortExecutionTestTask.class.getName())
+        given().queryParam("className", ShortExecutionMockTask.class.getName())
                .queryParam("creator", this.getClass().getName())
                .queryParam("runAt", new Date())
                .post(TASKS)
@@ -149,7 +149,7 @@ public class TasksControllerTest {
     @Test
     public void testScheduleStopTask() {
         Response response = given()
-                .queryParam("className", LongExecutionTestTask.class.getName())
+                .queryParam("className", LongExecutionMockTask.class.getName())
                 .queryParam("creator", this.getClass().getName())
                 .queryParam("runAt", new Date())
                 .queryParam("interval", 5000)
