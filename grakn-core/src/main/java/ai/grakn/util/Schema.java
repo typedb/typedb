@@ -23,6 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -199,17 +200,32 @@ public final class Schema {
         /**
          * The name of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
          */
-        HAS_RESOURCE("has-%s"),
+        HAS_RESOURCE("has-resource-%s"),
 
         /**
          * The name of a role in has-resource, played by the owner of the resource
          */
-        HAS_RESOURCE_OWNER("has-%s-owner"),
+        HAS_RESOURCE_OWNER("has-resource-%s-owner"),
 
         /**
          * The name of a role in has-resource, played by the resource
          */
-        HAS_RESOURCE_VALUE("has-%s-value");
+        HAS_RESOURCE_VALUE("has-resource-%s-value"),
+
+        /**
+         * The name of the generic has-key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique
+         */
+        HAS_KEY("has-key-%s"),
+
+        /**
+         * The name of a role in has-key, played by the owner of the key
+         */
+        HAS_KEY_OWNER("has-key-%s-owner"),
+
+        /**
+         * The name of a role in has-key, played by the resource
+         */
+        HAS_KEY_VALUE("has-key-%s-value");
 
         private final String name;
 
