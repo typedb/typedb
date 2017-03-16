@@ -528,15 +528,19 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
         Stream<Map<VarName, Concept>> answerStream = atomicQuery.resolve(materialise, cache, dCache);
+        Set<VarName> joinedVars = atomicQuery.getVarNames();
         while (atIt.hasNext()) {
             atomicQuery = new ReasonerAtomicQuery(atIt.next());
             Stream<Map<VarName, Concept>> subAnswerStream = atomicQuery.resolve(materialise, cache, dCache);
-            answerStream = join(answerStream, subAnswerStream);
+            Set<VarName> joinVars = Sets.intersection(joinedVars, atomicQuery.getVarNames());
+            answerStream = join(answerStream, subAnswerStream, ImmutableSet.copyOf(joinVars));
+            joinedVars.addAll(atomicQuery.getVarNames());
         }
 
         Set<NotEquals> filters = this.getFilters();
         Set<VarName> vars = this.getVarNames();
         return answerStream
+                .distinct()
                 .filter(a -> nonEqualsFilter(a, filters))
                 .flatMap(a -> varFilterFunction.apply(a, vars));
     }

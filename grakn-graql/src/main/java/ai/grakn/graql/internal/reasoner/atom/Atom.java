@@ -181,12 +181,7 @@ public abstract class Atom extends AtomBase {
         //ids from indirect types
         ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
-                .forEach(atom -> {
-                    relevantTypes.add(atom);
-                    relevantTypes.addAll(atom.getLinkedAtoms().stream()
-                            .filter(Atom::isType).map(at -> (TypeAtom) at)
-                            .collect(Collectors.toSet()));
-                });
+                .forEach(relevantTypes::add);
         return relevantTypes;
     }
 
