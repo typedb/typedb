@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import mjson.Json;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
@@ -41,8 +42,9 @@ import static java.util.stream.Collectors.joining;
  */
 public class Client {
 
-    protected final ResponseHandler<Json> asJsonHandler = response -> {
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))){
+    final ResponseHandler<Json> asJsonHandler = response -> {
+        try(BufferedReader reader = new BufferedReader(
+                new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
             return Json.read(reader.lines().collect(joining("\n")));
         }
     };
