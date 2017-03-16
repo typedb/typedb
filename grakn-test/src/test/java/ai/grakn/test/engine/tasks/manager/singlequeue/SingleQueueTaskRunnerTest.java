@@ -56,6 +56,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -163,6 +164,8 @@ public class SingleQueueTaskRunnerTest {
         tasks(tasks).forEach(task -> {
             TaskId taskId = task.getId();
 
+            assert task.status() == CREATED; // Generated tasks should be CREATED only
+
             if (appearedTasks.contains(taskId)) {
                 // The second time a task appears it must be in RUNNING state
                 task.markRunning(engineID);
@@ -175,7 +178,7 @@ public class SingleQueueTaskRunnerTest {
 
     private void addTask(TaskState task) {
         Long offset = consumer.endOffsets(ImmutableSet.of(partition)).get(partition);
-        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task));
+        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task.copy()));
         consumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
     }
 
@@ -197,7 +200,7 @@ public class SingleQueueTaskRunnerTest {
         taskRunner.run();
 
         completableTasks(tasks(tasks)).forEach(task ->
-                assertThat(storage.getState(task).status(), is(COMPLETED))
+                assertThat("Task " + task + " should have completed.", storage.getState(task).status(), is(COMPLETED))
         );
     }
 
@@ -208,7 +211,7 @@ public class SingleQueueTaskRunnerTest {
         taskRunner.run();
 
         failingTasks(tasks(tasks)).forEach(task ->
-                assertThat(storage.getState(task).status(), is(FAILED))
+                assertThat("Task " + task + " should have failed.", storage.getState(task).status(), is(FAILED))
         );
     }
 
