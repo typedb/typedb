@@ -19,7 +19,6 @@
 
 package ai.grakn.test.client;
 
-import ai.grakn.Grakn;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
@@ -27,19 +26,24 @@ import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.EngineUnavailableException;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import spark.Service;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -54,9 +58,12 @@ public class TaskClientTest {
     private static TaskManager manager;
     private static Service spark;
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     @BeforeClass
-    public static void setUp() {
-        client = TaskClient.of(Grakn.DEFAULT_URI);
+    public static void setupSpark() {
+        client = TaskClient.of("localhost", 4567);
 
         spark = Service.ignite();
         spark.port(4567);
@@ -70,8 +77,19 @@ public class TaskClientTest {
     }
 
     @AfterClass
-    public static void tearDown() {
+    public static void shutdownSpark() {
         spark.stop();
+
+        // Block until server is truly stopped
+        // This occurs when there is no longer a port assigned to the Spark server
+        boolean running = true;
+        while (running) {
+            try {
+                spark.port();
+            } catch(IllegalStateException e){
+                running = false;
+            }
+        }
     }
 
     @Test
@@ -91,6 +109,49 @@ public class TaskClientTest {
                 && argument.schedule().runAt().equals(runAt)
                 && argument.schedule().interval().get().equals(interval)
                 && argument.creator().equals(creator)));
+    }
+
+    @Test
+    public void whenSendingATaskAndServerIsUnavailable_TheClientThrowsAnUnavailableException(){
+        shutdownSpark();
+
+        try {
+            Class taskClass = ShortExecutionMockTask.class;
+            String creator = this.getClass().getName();
+            Instant runAt = now();
+            Json configuration = Json.nil();
+
+            exception.expect(EngineUnavailableException.class);
+            client.sendTask(taskClass, creator, runAt, null, configuration);
+        } finally {
+            setupSpark();
+        }
+    }
+
+    @Test
+    public void whenGettingStatusOfATaskAndServerIsUnavailable_TheClientThrowsAnUnavailableException(){
+        shutdownSpark();
+
+        try {
+            TaskState task = createTask();
+
+            exception.expect(EngineUnavailableException.class);
+            client.getStatus(task.getId());
+        } finally {
+            setupSpark();
+        }
+    }
+
+    @Test
+    public void whenGettingStatusOfATaskAndSeverHasNotStoredTask_TheClientThrowsStorageException(){
+        TaskState task = createTask();
+        when(manager.storage().getState(task.getId()))
+                .thenThrow(new EngineStorageException(task.getId().getValue()));
+
+        exception.expect(EngineStorageException.class);
+        exception.expectMessage(containsString(task.getId().getValue()));
+
+        client.getStatus(task.getId());
     }
 
     @Test

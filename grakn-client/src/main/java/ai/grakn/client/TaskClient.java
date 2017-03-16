@@ -21,11 +21,22 @@ package ai.grakn.client;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
+import ai.grakn.exception.EngineStorageException;
+import ai.grakn.exception.EngineUnavailableException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import mjson.Json;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
 
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
@@ -35,49 +46,107 @@ import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.STOP;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.String.format;
+import static org.apache.http.HttpHost.DEFAULT_SCHEME_NAME;
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpStatus.SC_NOT_FOUND;
+import static org.apache.http.HttpStatus.SC_OK;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 /**
  * Client for interacting with tasks on engine
  *
- * @author Felix Chapman
+ * @author Felix Chapman, alexandraorth
  */
 public class TaskClient extends Client {
 
-    private final String uri;
+    private final HttpClient httpClient = HttpClients.createDefault();
+    private final String host;
+    private final int port;
 
-    private TaskClient(String uri) {
-        this.uri = uri;
+    private TaskClient(String host, int port) {
+        this.host = host;
+        this.port = port;
     }
     
-    public static TaskClient of(String uri) {
-        return new TaskClient(uri);
+    public static TaskClient of(String host, int port) {
+        return new TaskClient(host, port);
     }
 
+    /**
+     * Submit a task to run on an Grakn Engine server
+     *
+     * @param taskClass Class of the Task to run
+     * @param creator Class creating the task
+     * @param runAt Time at which the task should be executed
+     * @param interval Interval at which the task should recur, can be null
+     * @param configuration Data on which to execute the task
+     * @return Identifier of the submitted task that will be executed on a server
+     */
     public TaskId sendTask(Class<?> taskClass, String creator, Instant runAt, Duration interval, Json configuration){
         try {
-            String idValue = Unirest.post(format("http://%s/%s", uri, TASKS))
-                    .queryString(TASK_CLASS_NAME_PARAMETER, taskClass.getName())
-                    .queryString(TASK_CREATOR_PARAMETER, creator)
-                    .queryString(TASK_RUN_AT_PARAMETER, runAt.toEpochMilli())
-                    .queryString(TASK_RUN_INTERVAL_PARAMETER, interval.toMillis())
-                    .body(configuration.toString())
-                    .asJson().getBody().getObject().getString("id");
+            URIBuilder uri = new URIBuilder(TASKS)
+                    .setScheme(DEFAULT_SCHEME_NAME)
+                    .setHost(host)
+                    .setPort(port)
+                    .setParameter(TASK_CLASS_NAME_PARAMETER, taskClass.getName())
+                    .setParameter(TASK_CREATOR_PARAMETER, creator)
+                    .setParameter(TASK_RUN_AT_PARAMETER, Long.toString(runAt.toEpochMilli()));
 
-            return TaskId.of(idValue);
-        } catch (UnirestException e){
+            if(interval != null){
+                uri = uri.setParameter(TASK_RUN_INTERVAL_PARAMETER, Long.toString(interval.toMillis()));
+            }
+
+            HttpPost httpPost = new HttpPost(uri.build());
+            httpPost.setHeader(CONTENT_TYPE, APPLICATION_JSON.getMimeType());
+            httpPost.setEntity(new StringEntity(configuration.toString()));
+
+            HttpResponse response = httpClient.execute(httpPost);
+
+            assertOk(response);
+
+            Json jsonResponse = asJsonHandler.handleResponse(response);
+
+            return TaskId.of(jsonResponse.at("id").asString());
+        } catch (IOException e){
+            throw new EngineUnavailableException(e);
+        } catch (URISyntaxException e){
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Get the status of a given task on the server
+     *
+     * @param id Identifier of the task to get status of
+     * @return Status of the specified task
+     * @throws EngineStorageException When the specified task has not yet been stored by the server
+     */
     public TaskStatus getStatus(TaskId id){
         try {
-            String statusValue = Unirest.get(format("http://%s/%s", uri, convert(GET)))
-                    .routeParam("id", id.getValue())
-                    .asJson().getBody().getObject().getString("status");
+            URI uri = new URIBuilder(convert(GET, id))
+                    .setScheme(DEFAULT_SCHEME_NAME)
+                    .setPort(port)
+                    .setHost(host)
+                    .build();
 
-            return TaskStatus.valueOf(statusValue);
-        } catch (UnirestException e){
+            HttpGet httpGet = new HttpGet(uri);
+            HttpResponse response = httpClient.execute(httpGet);
+
+            // 404 Not found returned when task not yet stored
+            boolean notFound = response.getStatusLine().getStatusCode() == SC_NOT_FOUND;
+            if(notFound){
+                throw new EngineStorageException(exceptionFrom(response));
+            }
+
+            // 200 Only returned when request successfully completed
+            assertOk(response);
+
+            Json jsonResponse = asJsonHandler.handleResponse(response);
+            return TaskStatus.valueOf(jsonResponse.at("status").asString());
+        } catch (URISyntaxException e){
             throw new RuntimeException(e);
+        } catch (IOException e){
+            throw new EngineUnavailableException(e);
         }
     }
 
@@ -87,11 +156,29 @@ public class TaskClient extends Client {
      */
     public void stopTask(TaskId id) {
         try {
-            Unirest.put(format("http://%s/%s", uri, convert(STOP)))
-                    .routeParam("id", id.getValue())
-                    .asBinary();
-        } catch (UnirestException e) {
+            URI uri = new URIBuilder(convert(STOP, id))
+                    .setScheme(DEFAULT_SCHEME_NAME)
+                    .setPort(port)
+                    .setHost(host)
+                    .build();
+
+            HttpPut httpPut = new HttpPut(uri);
+
+            HttpResponse response = httpClient.execute(httpPut);
+
+            assertOk(response);
+        } catch (URISyntaxException e) {
             throw new RuntimeException(e);
+        } catch (IOException e){
+            throw new EngineUnavailableException(e);
+        }
+    }
+
+    private void assertOk(HttpResponse response){
+        // 200 Only returned when request successfully completed
+        boolean isOk = response.getStatusLine().getStatusCode() == SC_OK;
+        if(!isOk){
+            throw new RuntimeException(format("Status %s returned from server", response.getStatusLine().getStatusCode()));
         }
     }
 }
