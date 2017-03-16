@@ -85,7 +85,6 @@ public class TaskStateInMemoryStoreTest {
         stateStorage.updateState(newState);
 
         newState = stateStorage.getState(id);
-        assertNull(newState.engineID());
         assertEquals(getFullStackTrace(exception), newState.stackTrace());
     }
 

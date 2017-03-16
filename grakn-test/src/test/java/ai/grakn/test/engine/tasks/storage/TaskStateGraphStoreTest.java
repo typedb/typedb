@@ -105,7 +105,6 @@ public class TaskStateGraphStoreTest {
         stateStorage.updateState(newState);
 
         newState = stateStorage.getState(id);
-        assertNull(newState.engineID());
         assertEquals(exception.getClass().getName(), newState.exception());
         assertEquals(getFullStackTrace(exception), newState.stackTrace());
     }
