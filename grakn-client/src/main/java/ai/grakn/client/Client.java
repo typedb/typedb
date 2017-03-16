@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
+
 /**
  * Providing useful methods for the user of the GraknEngine client
  *
@@ -54,4 +56,7 @@ public class Client {
         return true;
     }
 
+    protected String convert(String uri){
+        return uri.replace(ID_PARAMETER, "{id}");
+    }
 }

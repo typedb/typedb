@@ -41,6 +41,7 @@ import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
@@ -815,6 +816,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransaction();
 
+        //TODO: Kill when analytics no longer needs this
+        GraknSparkComputer.refresh();
+
         LOG.trace("Graph committed.");
         getConceptLog().writeToCentralCache(true);
         clearLocalVariables();
@@ -897,10 +901,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             castings.remove(mainCasting);
 
             //Fix the duplicates
-            Set<RelationImpl> duplicateRelations = mergeCastings(mainCasting, castings);
+            Set<Relation> duplicateRelations = mergeCastings(mainCasting, castings);
 
             //Remove Redundant Relations
-            duplicateRelations.forEach(ConceptImpl::deleteNode);
+            duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
 
             return true;
         }
@@ -914,14 +918,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param castings The castings to whose edges will be transferred to the main casting and deleted.
      * @return A set of possible duplicate relations.
      */
-    private Set<RelationImpl> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
+    private Set<Relation> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
         RoleType role = mainCasting.getRole();
-        Set<RelationImpl> relations = mainCasting.getRelations();
-        Set<RelationImpl> relationsToClean = new HashSet<>();
+        Set<Relation> relations = mainCasting.getRelations();
+        Set<Relation> relationsToClean = new HashSet<>();
 
         for (CastingImpl otherCasting : castings) {
             //Transfer assertion edges
-            for(RelationImpl otherRelation : otherCasting.getRelations()){
+            for(Relation otherRelation : otherCasting.getRelations()){
                 boolean transferEdge = true;
 
                 //Check if an equivalent Relation is already connected to this casting. This could be a slow process

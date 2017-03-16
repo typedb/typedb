@@ -33,8 +33,6 @@ import io.swagger.annotations.ApiOperation;
 import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -56,14 +54,11 @@ import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_STOP;
-import static ai.grakn.util.REST.WebPath.ALL_TASKS_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.STOP;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.Long.parseLong;
-import static java.lang.String.format;
 import static java.time.Instant.ofEpochMilli;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * <p>
@@ -75,7 +70,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 @Path("/tasks")
 @Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class TasksController {
-    private final Logger LOG = LoggerFactory.getLogger(TasksController.class);
     private final TaskManager manager;
 
     public TasksController(Service spark, TaskManager manager) {
@@ -84,14 +78,16 @@ public class TasksController {
         }
         this.manager = manager;
 
-        spark.get(ALL_TASKS_URI, this::getTasks);
-        spark.get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
-        spark.put(TASKS_URI + "/" + ID_PARAMETER + TASK_STOP, this::stopTask);
-        spark.post(TASKS_SCHEDULE_URI, this::scheduleTask);
+        spark.get(TASKS,       this::getTasks);
+        spark.get(GET,         this::getTask);
+        spark.put(STOP,        this::stopTask);
+        spark.post(TASKS,      this::scheduleTask);
+
+        spark.exception(EngineStorageException.class, (e, req, res) -> handleNotFoundInStorage(e, res));
     }
 
     @GET
-    @Path("/all")
+    @Path("/")
     @ApiOperation(value = "Get tasks matching a specific TaskStatus.")
     @ApiImplicitParams({
         @ApiImplicitParam(name = "status", value = "TaskStatus as string.", dataType = "string", paramType = "query"),
@@ -129,41 +125,30 @@ public class TasksController {
     }
 
     @GET
-    @Path("/:uuid")
+    @Path("/{id}")
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
-        String id = request.params(ID_PARAMETER);
+        String id = request.params("id");
 
-        try {
-            response.status(200);
-            response.type("application/json");
+        response.status(200);
+        response.type("application/json");
 
-            return serialiseStateFull(manager.storage().getState(TaskId.of(id))).toString();
-        } catch (EngineStorageException e){
-           throw new GraknEngineServerException(404, format("Could not find [%s] in task storage", id));
-        } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
-        }
+        return serialiseStateFull(manager.storage().getState(TaskId.of(id))).toString();
     }
 
     @PUT
-    @Path("/:uuid/stop")
+    @Path("/{id}/stop")
     @ApiOperation(value = "Stop a running or paused task.")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String stopTask(Request request, Response response) {
-        try {
-            String id = request.params(ID_PARAMETER);
-            manager.stopTask(TaskId.of(id), this.getClass().getName());
-            return "";
-        }
-        catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
-        }
+        String id = request.params(ID_PARAMETER);
+        manager.stopTask(TaskId.of(id), this.getClass().getName());
+        return "";
     }
 
     @POST
-    @Path("/schedule")
+    @Path("/")
     @ApiOperation(value = "Schedule a task.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "className", value = "Class name of object implementing the BackgroundTask interface", required = true, dataType = "string", paramType = "query"),
@@ -203,9 +188,18 @@ public class TasksController {
             response.type("application/json");
             return Json.object("id", taskState.getId().getValue()).toString();
         } catch (ClassNotFoundException | RuntimeException e) {
-            LOG.error(getFullStackTrace(e));
             throw new GraknEngineServerException(500, e);
         }
+    }
+
+    /**
+     * Error accessing or retrieving a task from storage. This throws a 404 Task Not Found to the user.
+     * @param exception {@link EngineStorageException} thrown by the server
+     * @param response The response object providing functionality for modifying the response
+     */
+    private void handleNotFoundInStorage(Exception exception, Response response){
+        response.status(404);
+        response.body(Json.object("exception", exception.getMessage()).toString());
     }
 
     // TODO: Return 'schedule' object as its own object

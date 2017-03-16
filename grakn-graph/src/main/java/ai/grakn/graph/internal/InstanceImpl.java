@@ -59,7 +59,7 @@ import java.util.stream.Collectors;
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
     private ComponentCache<TypeName> cachedInternalType = new ComponentCache<>(() -> TypeName.of(getProperty(Schema.ConceptProperty.TYPE)));
-    private ComponentCache<V> cachedType = new ComponentCache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.ISA));
+    private ComponentCache<V> cachedType = new ComponentCache<>(() -> this.<V>getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null));
 
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -79,12 +79,13 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         Set<CastingImpl> castings = parent.castings();
         deleteNode();
         for(CastingImpl casting: castings){
-            Set<RelationImpl> relations = casting.getRelations();
+            Set<Relation> relations = casting.getRelations();
             getGraknGraph().getConceptLog().trackConceptForValidation(casting);
 
-            for(RelationImpl relation : relations) {
-                getGraknGraph().getConceptLog().trackConceptForValidation(relation);
-                relation.cleanUp();
+            for(Relation relation : relations) {
+                RelationImpl rel = (RelationImpl) relation;
+                getGraknGraph().getConceptLog().trackConceptForValidation(rel);
+                rel.cleanUp();
             }
 
             casting.deleteNode();

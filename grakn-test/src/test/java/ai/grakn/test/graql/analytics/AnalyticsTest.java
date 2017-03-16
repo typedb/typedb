@@ -28,14 +28,12 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -67,11 +65,6 @@ public class AnalyticsTest {
 
         logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
         logger.setLevel(Level.DEBUG);
-    }
-
-    @After
-    public void close() {
-        GraknSparkComputer.clear();
     }
 
     @Test

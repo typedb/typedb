@@ -19,10 +19,13 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.exception.GraknBackendException;
+import ai.grakn.exception.GraknLockingException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -74,7 +77,11 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         try {
             super.commitTransaction();
         } catch (TitanException e){
-            throw new GraknBackendException(e);
+            if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
+                throw new GraknLockingException(e);
+            } else {
+                throw new GraknBackendException(e);
+            }
         }
     }
 
