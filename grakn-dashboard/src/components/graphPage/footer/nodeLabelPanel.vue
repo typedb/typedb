@@ -121,6 +121,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <script>
 
 import GraphPageState from '../../../js/state/graphPageState';
+import NodeSettings from '../../../js/NodeSettings';
 
 
 export default {
@@ -133,7 +134,6 @@ export default {
             currentTypeProperties: {},
             nodeType: undefined,
             allNodeProps: [],
-            selectedProps: [],
         };
     },
     created() {
@@ -146,23 +146,21 @@ export default {
     },
     methods: {
       configureNode(p) {
-          if (this.selectedProps[this.nodeType].includes(p)) {
-              this.selectedProps[this.nodeType] = this.selectedProps[this.nodeType].filter(x => x !== p);
+          if (NodeSettings.getLabelProperties(this.nodeType).includes(p)) {
+              NodeSettings.setTypeLabel(this.nodeType, NodeSettings.getLabelProperties(this.nodeType).filter(x => x !== p));
           } else {
-              this.selectedProps[this.nodeType].push(p);
+            const labels = NodeSettings.getLabelProperties(this.nodeType);
+            labels.push(p);
+            NodeSettings.setTypeLabel(this.nodeType, labels);
           }
-          this.currentTypeProperties = this.selectedProps[this.nodeType];
-          this.state.eventHub.$emit('configure-node',this.nodeType, this.selectedProps[this.nodeType]);
+          this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
+          this.state.eventHub.$emit('configure-node',this.nodeType, NodeSettings.getLabelProperties(this.nodeType));
       },
       openNodeLabelPanel(allNodePropsParam,nodeTypeParam){
         this.allNodeProps=allNodePropsParam;
         this.nodeType=nodeTypeParam;
-        this.currentTypeProperties = this.selectedProps[this.nodeType];
+        this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
 
-        if (this.currentTypeProperties === undefined) {
-            this.currentTypeProperties = [];
-            this.selectedProps[this.nodeType] = [];
-        }
         this.showNodeLabelPanel=true;
       },
     }
