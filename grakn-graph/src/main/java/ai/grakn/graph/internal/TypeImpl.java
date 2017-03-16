@@ -154,27 +154,31 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
-       return resources(Schema.ImplicitType.HAS_RESOURCE);
+       return resources(Schema.ImplicitType.HAS_RESOURCE_OWNER);
     }
 
     @Override
     public Collection<ResourceType> keys() {
-        return resources(Schema.ImplicitType.HAS_KEY);
+        return resources(Schema.ImplicitType.HAS_KEY_OWNER);
     }
 
     private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
         boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
+
+        //TODO: Make this less convoluted
+        String [] implicitIdentifiers = implicitType.getName(TypeName.of("")).getValue().split("--");
+        String prefix = implicitIdentifiers[0] + "-";
+        String suffix = "-" + implicitIdentifiers[1];
 
         getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retreived
 
         Set<ResourceType> resourceTypes = new HashSet<>();
         //A traversal is not used in this caching so that ontology caching can be taken advantage of.
         playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            if(relationType.isImplicit()){
-                //This is faster than doing the traversal
-                TypeName prefix = implicitType.getName(TypeName.of(""));
-                TypeName resourceTypeName = TypeName.of(relationType.getName().getValue().replace(prefix.getValue(), ""));
-                resourceTypes.add(getGraknGraph().getType(resourceTypeName));
+            String roleTypeName = roleType.getName().getValue();
+            if(roleTypeName.startsWith(prefix) && roleTypeName.endsWith(suffix)){ //This is the implicit type we want
+                String resourceTypeName = roleTypeName.replace(prefix, "").replace(suffix, "");
+                resourceTypes.add(getGraknGraph().getResourceType(resourceTypeName));
             }
         }));
 

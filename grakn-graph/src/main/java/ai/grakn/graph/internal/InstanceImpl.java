@@ -175,14 +175,23 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     /**
      * Creates a relation from this instance to the provided resource.
      * @param resource The resource to creating a relationship to
-     * @return A relation which contains both the entity and the resource
+     * @return The instance itself
      */
     @Override
     public T hasResource(Resource resource){
+        return resource(resource, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER);
+    }
+
+    @Override
+    public T key(Resource resource){
+        return resource(resource, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_VALUE, Schema.ImplicitType.HAS_KEY_OWNER);
+    }
+
+    private T resource(Resource resource, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner){
         TypeName name = resource.type().getName();
-        RelationType hasResource = getGraknGraph().getType(Schema.ImplicitType.HAS_RESOURCE.getName(name));
-        RoleType hasResourceTarget = getGraknGraph().getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(name));
-        RoleType hasResourceValue = getGraknGraph().getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(name));
+        RelationType hasResource = getGraknGraph().getType(has.getName(name));
+        RoleType hasResourceTarget = getGraknGraph().getType(hasOwner.getName(name));
+        RoleType hasResourceValue = getGraknGraph().getType(hasValue.getName(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
             throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getName(), resource.type().getName()));
