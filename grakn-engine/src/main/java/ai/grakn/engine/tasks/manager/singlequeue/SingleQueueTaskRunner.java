@@ -176,6 +176,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         if (shouldStopTask(task)) {
             stopTask(task);
+            return true;
         } else if(shouldDelayTask(task)){
             resubmitTask(task);
             return false;
@@ -244,12 +245,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param task Task to be delayed
      */
     private void resubmitTask(TaskState task){
+        LOG.debug("{}\tresubmitted", task);
         manager.addTask(task);
     }
 
     private void stopTask(TaskState task) {
         task.markStopped();
         putState(task);
+        LOG.debug("{}\t marked as stopped", task);
     }
 
     private boolean shouldExecuteTask(TaskState task) {
