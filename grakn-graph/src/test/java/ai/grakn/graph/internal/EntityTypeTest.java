@@ -233,14 +233,13 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void checkSuperConceptTypeOverride(){
+    public void overwriteDefaultSuperTypeWithNewSuperType_ReturnNewSuperType(){
         EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("A Thing");
         EntityTypeImpl conceptType2 = (EntityTypeImpl) graknGraph.putEntityType("A Super Thing");
-        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
-        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
+
+        assertEquals(graknGraph.getMetaEntityType(), conceptType.superType());
         conceptType.superType(conceptType2);
-        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
-        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
+        assertEquals(conceptType2, conceptType.superType());
     }
 
     @Test

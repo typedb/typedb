@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -42,7 +43,7 @@ import java.util.Set;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private ComponentCache<Set<RoleType>> cachedHasRoles = new ComponentCache<>(() -> getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+    private ComponentCache<Set<RoleType>> cachedHasRoles = new ComponentCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE).collect(Collectors.toSet()));
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);

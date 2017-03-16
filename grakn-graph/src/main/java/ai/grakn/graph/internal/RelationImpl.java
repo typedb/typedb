@@ -220,13 +220,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         Set<CastingImpl> castings = getMappingCasting();
 
         for (CastingImpl casting: castings) {
-            InstanceImpl<?, ?> instance = casting.getRolePlayer();
+            InstanceImpl<?, ?> instance = (InstanceImpl<?, ?>) casting.getRolePlayer();
             if(instance != null) {
-                for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT)) {
+                instance.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(edge -> {
                     if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId().getValue())){
                         edge.delete();
                     }
-                }
+                });
             }
         }
 
