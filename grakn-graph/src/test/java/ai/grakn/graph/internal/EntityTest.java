@@ -129,9 +129,9 @@ public class EntityTest extends GraphTestBase{
             Instance instance = entry.getValue();
 
             if(instance.equals(entity)){
-                assertEquals(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName), roleType.getName());
+                assertEquals(Schema.ImplicitType.HAS_KEY_OWNER.getName(resourceTypeName), roleType.getName());
             } else {
-                assertEquals(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName), roleType.getName());
+                assertEquals(Schema.ImplicitType.HAS_KEY_VALUE.getName(resourceTypeName), roleType.getName());
             }
         });
     }
@@ -146,7 +146,7 @@ public class EntityTest extends GraphTestBase{
 
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(
-                ErrorMessage.HAS_RESOURCE_INVALID.getMessage(entityType.getName(), resourceType.getName())
+                ErrorMessage.HAS_INVALID.getMessage(entityType.getName(), "resource", resourceType.getName())
         );
 
         entity.hasResource(resource);
