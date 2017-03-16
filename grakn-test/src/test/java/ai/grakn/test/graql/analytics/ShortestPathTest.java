@@ -9,6 +9,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -176,6 +177,19 @@ public class ShortestPathTest {
             for (int i = 0; i < result.size(); i++) {
                 assertEquals(correctPath.get(i), result.get(i));
             }
+
+            int expectedSize = correctPath.size();
+            List<Long> list = new ArrayList<>(2);
+            for (long i = 0L; i < 2L; i++) {
+                list.add(i);
+            }
+            GraknSparkComputer.clear();
+            list.parallelStream().forEach(i -> {
+                int size = factory.getGraph().graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
+                        .execute().get().stream().map(Concept::getId).map(ConceptId::getValue)
+                        .collect(Collectors.toList()).size();
+                assertEquals(expectedSize, size);
+            });
         }
     }
 
