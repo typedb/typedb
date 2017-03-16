@@ -122,16 +122,16 @@ public class EntityTest extends GraphTestBase{
 
         entity.hasResource(resource);
         Relation relation = entity.relations().iterator().next();
-        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
+        assertEquals(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
         relation.rolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
             Instance instance = entry.getValue();
 
             if(instance.equals(entity)){
-                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName), roleType.getName());
+                assertEquals(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName), roleType.getName());
             } else {
-                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName), roleType.getName());
+                assertEquals(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName), roleType.getName());
             }
         });
     }

@@ -138,9 +138,9 @@ public class GraqlTest {
         try (GraknGraph graph = factory.getGraph()) {
             TypeName resourceTypeId = TypeName.of("my-resource");
 
-            RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
-            RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
-            RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
+            RoleType resourceOwner = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+            RoleType resourceValue = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeId))
                     .hasRole(resourceOwner)
                     .hasRole(resourceValue);
 

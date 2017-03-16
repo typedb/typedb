@@ -195,7 +195,7 @@ public final class Schema {
     /**
      * This stores the schema which is required when implicitly creating roles for the has-resource methods
      */
-    public enum Resource {
+    public enum ImplicitType {
         /**
          * The name of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
          */
@@ -213,7 +213,7 @@ public final class Schema {
 
         private final String name;
 
-        Resource(String name) {
+        ImplicitType(String name) {
             this.name = name;
         }
 

@@ -163,7 +163,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
             if(relationType.isImplicit()){
                 //This is faster than doing the traversal
-                TypeName prefix = Schema.Resource.HAS_RESOURCE.getName(TypeName.of(""));
+                TypeName prefix = Schema.ImplicitType.HAS_RESOURCE.getName(TypeName.of(""));
                 TypeName resourceTypeName = TypeName.of(relationType.getName().getValue().replace(prefix.getValue(), ""));
                 resourceTypes.add(getGraknGraph().getType(resourceTypeName));
             }
@@ -529,9 +529,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         TypeName resourceTypeName = resourceType.getName();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
-        RelationType relationType = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName)).
+        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName));
+        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName));
+        RelationType relationType = getGraknGraph().putRelationTypeImplicit(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName)).
                 hasRole(ownerRole).
                 hasRole(valueRole);
 
@@ -539,9 +539,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         ResourceType resourceTypeSuper = resourceType.superType();
         TypeName superName = resourceTypeSuper.getName();
         if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
-            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
-            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
-            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
+            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(superName));
+            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(superName));
+            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.ImplicitType.HAS_RESOURCE.getName(superName)).
                     hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation

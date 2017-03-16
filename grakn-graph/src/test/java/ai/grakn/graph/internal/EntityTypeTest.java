@@ -286,9 +286,9 @@ public class EntityTypeTest extends GraphTestBase{
         RoleType rtSuperRoleOwner = graknGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
         RoleType rtSuperRoleValue = graknGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
 
-        RelationType rtRelation = graknGraph.getType(Schema.Resource.HAS_RESOURCE.getName(rt.getName()));
-        RoleType reRoleOwner = graknGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rt.getName()));
-        RoleType reRoleValue = graknGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rt.getName()));
+        RelationType rtRelation = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(rt.getName()));
+        RoleType reRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(rt.getName()));
+        RoleType reRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(rt.getName()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.superType());
         assertEquals(rtSuperRoleValue, reRoleValue.superType());
