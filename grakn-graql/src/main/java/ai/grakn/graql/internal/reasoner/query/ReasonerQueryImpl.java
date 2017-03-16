@@ -540,7 +540,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<NotEquals> filters = this.getFilters();
         Set<VarName> vars = this.getVarNames();
         return answerStream
-                .distinct()
                 .filter(a -> nonEqualsFilter(a, filters))
                 .flatMap(a -> varFilterFunction.apply(a, vars));
     }
