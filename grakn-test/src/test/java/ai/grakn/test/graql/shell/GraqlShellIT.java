@@ -23,9 +23,13 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
@@ -86,6 +90,9 @@ public class GraqlShellIT {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
+
+        // Disable engine logs so we can test stdout
+        ((Logger) org.slf4j.LoggerFactory.getLogger("ai.grakn.engine")).setLevel(Level.OFF);
     }
 
     @After
@@ -523,6 +530,18 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void whenRunningBatchLoadAndAnErrorOccurs_PrintStatus() throws Exception {
+        testShell("", "-k", "batch", "-f", "src/test/graql/shell test(weird name).gql");
+
+        assertShellMatches(ImmutableList.of("-k", "batch", "-b", "src/test/graql/batch-test-bad.gql"),
+                is("Status of batch [1]: FAILED"),
+                is("Number batches completed: 1"),
+                containsString("Approximate queries executed:"),
+                containsString("All tasks completed")
+        );
+    }
+
+    @Test
     public void testDuplicateRelation() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(
@@ -567,8 +586,12 @@ public class GraqlShellIT {
         String output = testShell(input, arguments.toArray(new String[arguments.size()]));
 
         List<String> outputLines = Lists.newArrayList(output.replace(" \r", "").split("\n"));
-        // Remove first four lines containing license and last line containing prompt
-        outputLines = outputLines.subList(4, outputLines.size() - 1);
+
+        ImmutableSet<String> noPromptArgs = ImmutableSet.of("-e", "-f", "-b", "-v", "-h");
+        if (Sets.intersection(Sets.newHashSet(arguments), noPromptArgs).isEmpty()) {
+            // Remove first four lines containing license and last line containing prompt
+            outputLines = outputLines.subList(4, outputLines.size() - 1);
+        }
 
         assertThat(outputLines, contains(matcherList));
     }

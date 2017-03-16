@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -50,8 +51,8 @@ import java.util.Set;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private ComponentCache<Set<Type>> cachedDirectPlayedByTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE));
-    private ComponentCache<Set<RelationType>> cachedRelationTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE));
+    private ComponentCache<Set<Type>> cachedDirectPlayedByTypes = new ComponentCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).collect(Collectors.toSet()));
+    private ComponentCache<Set<RelationType>> cachedRelationTypes = new ComponentCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE).collect(Collectors.toSet()));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);

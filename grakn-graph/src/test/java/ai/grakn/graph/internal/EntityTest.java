@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -36,6 +37,7 @@ import ai.grakn.util.Schema;
 import org.junit.Test;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,7 +52,7 @@ public class EntityTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("rel type");
         EntityType entityType = graknGraph.putEntityType("entity type");
         InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) entityType.addEntity();
-        assertEquals(0, rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.CASTING).size());
+        assertEquals(0, rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.CASTING).collect(Collectors.toSet()).size());
 
         RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role");
         RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
@@ -59,7 +61,7 @@ public class EntityTest extends GraphTestBase{
         CastingImpl casting1 = graknGraph.addCasting(role, rolePlayer1, (RelationImpl) relation);
         CastingImpl casting2 = graknGraph.addCasting(role2, rolePlayer1, (RelationImpl) relation2);
 
-        Set<ConceptImpl> castings = rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER);
+        Set<Concept> castings = rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).collect(Collectors.toSet());
 
         assertEquals(2, castings.size());
         assertTrue(castings.contains(casting1));

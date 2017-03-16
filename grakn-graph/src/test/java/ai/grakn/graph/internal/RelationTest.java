@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.ROLE_IS_NULL;
 import static ai.grakn.util.ErrorMessage.VALIDATION_RELATION_DUPLICATE;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -418,7 +419,7 @@ public class RelationTest extends GraphTestBase{
 
         assertEquals(Schema.BaseType.ENTITY.name(), pacino.getBaseType());
         for(CastingImpl casting: assertion.getMappingCasting()){
-            assertEquals(casting.getRolePlayer().getBaseType(), Schema.BaseType.ENTITY.name());
+            assertThat(casting.getRolePlayer(), instanceOf(Entity.class));
         }
 
     }

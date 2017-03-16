@@ -87,7 +87,7 @@ class ValidateGlobalRules {
      * @return A specific error if one is found.
      */
     static Optional<String> validatePlaysRoleStructure(CastingImpl casting) {
-        InstanceImpl<?, ?> rolePlayer = casting.getRolePlayer();
+        Instance rolePlayer = casting.getRolePlayer();
         TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
         RoleType roleType = casting.getRole();
 

@@ -48,4 +48,9 @@ public interface ComputeQuery<T> extends Query<T> {
      * @return a ComputeQuery with the subTypeNames set
      */
     ComputeQuery<T> in(Collection<TypeName> subTypeNames);
+
+    /**
+     * kill the compute query, terminate the job
+     */
+    void kill();
 }

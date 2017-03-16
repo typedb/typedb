@@ -50,17 +50,14 @@ import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.WebPath.TASKS_URI;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
-
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Client to load qraql queries into Grakn.
@@ -75,8 +72,8 @@ public class LoaderClient {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoaderClient.class);
 
-    private final String POST = "http://%s" + TASKS_SCHEDULE_URI;
-    private final String GET = "http://%s" + TASKS_URI + "/%s";
+    private final String POST = "http://%s" + TASKS;
+    private final String GET = "http://%s" + TASKS + "/%s";
 
     private final Map<Integer,CompletableFuture> futures;
     private final Collection<InsertQuery> queries;
@@ -197,6 +194,7 @@ public class LoaderClient {
                 LOG.error(e.getMessage());
             }
         }
+        LOG.info("All tasks completed");
     }
 
     /**
@@ -228,13 +226,13 @@ public class LoaderClient {
                 unblock(status);
 
                 if(error != null){
-                    LOG.error(getFullStackTrace(error));
+                    LOG.error("Error", error);
                 }
 
                 onCompletionOfTask.accept(result);
             });
         } catch (Throwable throwable){
-            LOG.error(getFullStackTrace(throwable));
+            LOG.error("Error", throwable);
             blocker.release();
         }
     }

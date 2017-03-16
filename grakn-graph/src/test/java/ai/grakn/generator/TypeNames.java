@@ -50,14 +50,21 @@ public class TypeNames extends FromGraphGenerator<TypeName> {
             return withImplicitConceptsVisible(graph(), graph -> {
                 TypeName name;
 
+                int attempts = 0;
                 do {
-                    name = randomName();
+                    // After a certain number of attempts, generate truly random strings instead
+                    if (attempts < 100) {
+                        name = metaSyntacticName();
+                    } else {
+                        name = trueRandomName();
+                    }
+                    attempts += 1;
                 } while (graph.getType(name) != null);
 
                 return name;
             });
         } else {
-            return randomName();
+            return metaSyntacticName();
         }
     }
 
@@ -70,8 +77,12 @@ public class TypeNames extends FromGraphGenerator<TypeName> {
         return this;
     }
 
-    private TypeName randomName() {
+    private TypeName metaSyntacticName() {
         return TypeName.of(gen().make(MetasyntacticStrings.class).generate(random, status));
+    }
+
+    private TypeName trueRandomName() {
+        return TypeName.of(gen(String.class));
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

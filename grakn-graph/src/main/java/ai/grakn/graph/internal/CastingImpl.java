@@ -18,15 +18,12 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.NoEdgeException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -58,25 +55,15 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      * @return The {@link RoleType} this casting is linked with
      */
     public RoleType getRole() {
-        Concept concept = type();
-        if(concept != null) {
-            return concept.asRoleType();
-        } else {
-            throw new NoEdgeException(toString(), Schema.BaseType.ROLE_TYPE.name());
-        }
+       return type();
     }
 
     /**
      *
      * @return The {@link Instance} which is the roleplayer in this casting
      */
-    public InstanceImpl getRolePlayer() {
-        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.ROLE_PLAYER);
-        if(concept != null) {
-            return (InstanceImpl) concept;
-        } else {
-            return null;
-        }
+    Instance getRolePlayer() {
+        return this.<Instance>getOutgoingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).findFirst().orElse(null);
     }
 
     /**
@@ -110,15 +97,7 @@ class CastingImpl extends InstanceImpl<CastingImpl, RoleType> {
      *
      * @return All the {@link Relation} this casting is linked with.
      */
-    public Set<RelationImpl> getRelations() {
-        ConceptImpl<?> thisRef = this;
-        Set<RelationImpl> relations = new HashSet<>();
-        Set<ConceptImpl> concepts = thisRef.getIncomingNeighbours(Schema.EdgeLabel.CASTING);
-
-        if(concepts.size() > 0){
-            relations.addAll(concepts.stream().map(concept -> (RelationImpl) concept).collect(Collectors.toList()));
-        }
-
-        return relations;
+    public Set<Relation> getRelations() {
+        return this.<Relation>getIncomingNeighbours(Schema.EdgeLabel.CASTING).collect(Collectors.toSet());
     }
 }

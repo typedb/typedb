@@ -58,6 +58,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     static final Logger LOGGER = LoggerFactory.getLogger(ComputeQuery.class);
 
     Optional<GraknGraph> graph = Optional.empty();
+    GraknComputer graknComputer = null;
     String keySpace;
     Set<TypeName> subTypeNames = new HashSet<>();
 
@@ -77,6 +78,13 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     public ComputeQuery<T> in(Collection<TypeName> subTypeNames) {
         this.subTypeNames = Sets.newHashSet(subTypeNames);
         return this;
+    }
+
+    @Override
+    public void kill() {
+        if (graknComputer != null) {
+            graknComputer.killJobs();
+        }
     }
 
     @Override
@@ -135,7 +143,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     GraknComputer getGraphComputer() {
-        return Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
+        if (graknComputer == null) {
+            graknComputer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
+        }
+        return graknComputer;
     }
 
     boolean selectedTypesHaveInstance() {
