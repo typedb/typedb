@@ -116,7 +116,7 @@ public class TaskClientTest {
         shutdownSpark();
 
         try {
-            Class taskClass = ShortExecutionTestTask.class;
+            Class taskClass = ShortExecutionMockTask.class;
             String creator = this.getClass().getName();
             Instant runAt = now();
             Json configuration = Json.nil();
