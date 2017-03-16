@@ -150,4 +150,20 @@ export default {
       url: `/graph/ontology?keyspace=${User.getCurrentKeySpace()}`,
     });
   },
+
+  /**
+    * Get list of queued tasks from Engine
+    */
+  getAllTasks() {
+    return this.request({
+      url: '/tasks/all',
+    });
+  },
+
+  stopTask(uuid) {
+    return this.request({
+      url: `/tasks/${uuid}/stop`,
+      requestType: 'PUT',
+    });
+  },
 };
