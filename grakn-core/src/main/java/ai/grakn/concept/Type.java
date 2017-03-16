@@ -95,6 +95,12 @@ public interface Type extends Concept {
 
     /**
      *
+     * @return The resource types which this type is linked with as a key.
+     */
+    Collection<ResourceType> keys();
+
+    /**
+     *
      * @return The super of this Type
      */
     Type superType();

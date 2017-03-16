@@ -154,8 +154,17 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
+       return resources(Schema.ImplicitType.HAS_RESOURCE);
+    }
+
+    @Override
+    public Collection<ResourceType> keys() {
+        return resources(Schema.ImplicitType.HAS_KEY);
+    }
+
+    private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
         boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
-        
+
         getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retreived
 
         Set<ResourceType> resourceTypes = new HashSet<>();
@@ -163,7 +172,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
             if(relationType.isImplicit()){
                 //This is faster than doing the traversal
-                TypeName prefix = Schema.ImplicitType.HAS_RESOURCE.getName(TypeName.of(""));
+                TypeName prefix = implicitType.getName(TypeName.of(""));
                 TypeName resourceTypeName = TypeName.of(relationType.getName().getValue().replace(prefix.getValue(), ""));
                 resourceTypes.add(getGraknGraph().getType(resourceTypeName));
             }
