@@ -19,9 +19,9 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
@@ -61,6 +61,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
+
+    private static final int NUM_UNHANDLED_TASKS_BEFORE_BACKOFF = 5;
+    private static final int INITIAL_BACKOFF = 1_000;
+    private static final int MAX_BACKOFF = 60_000;
 
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
@@ -94,6 +98,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void run() {
         LOG.debug("started");
 
+        int unhandledTasks = 0;
+        int backOff = INITIAL_BACKOFF;
+
         while (!wakeUp.get()) {
             try {
                 ConsumerRecords<TaskId, TaskState> records = consumer.poll(1000);
@@ -101,13 +108,31 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 // This TskRunner should only ever receive one record
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
-                    handleTask(record.value());
+                    TaskState task = record.value();
+                    boolean handled = handleTask(task);
+
+                    if (!handled) {
+                        unhandledTasks += 1;
+                    } else {
+                        unhandledTasks = 0;
+                    }
 
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
 
                     LOG.trace("{} acknowledged", record.key().getValue());
                 }
+
+                // Exponential back-off: sleep longer and longer when receiving the same tasks
+                if (unhandledTasks >= NUM_UNHANDLED_TASKS_BEFORE_BACKOFF) {
+                    LOG.trace("received " + unhandledTasks + " unhandled tasks in a row, sleeping for " + backOff + "ms");
+                    Thread.sleep(backOff);
+                    backOff *= 2;
+                    if (backOff > MAX_BACKOFF) backOff = MAX_BACKOFF;
+                } else {
+                    backOff = INITIAL_BACKOFF;
+                }
+
             } catch (Throwable throwable){
                 LOG.error("error thrown", throwable);
             }
@@ -139,15 +164,15 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     }
 
     /**
-     * Returns false if cannot handle record because the executor is full
+     * Returns whether the task was succesfully handled, or was just re-submitted.
      */
-    private void handleTask(TaskState task) {
+    private boolean handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
         if(shouldDelayTask(task)){
             resubmitTask(task);
-        }
-        else if (shouldExecuteTask(task)) {
+            return false;
+        } else if (shouldExecuteTask(task)) {
             executeTask(task);
 
             if(taskShouldRecur(task)){
@@ -155,6 +180,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 task.schedule(task.schedule().incrementByInterval());
                 resubmitTask(task);
             }
+
+            return true;
+        } else {
+            return true;
         }
     }
 
