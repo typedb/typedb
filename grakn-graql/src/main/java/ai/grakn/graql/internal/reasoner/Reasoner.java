@@ -108,10 +108,10 @@ public class Reasoner {
 
         Iterator<Conjunction<VarAdmin>> conjIt = query.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise);
+        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise, true);
         while(conjIt.hasNext()) {
             conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise);
+            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise, true);
             answerStream = Stream.concat(answerStream, localStream);
         }
         Set<VarName> selectVars = query.admin().getSelectedNames();
@@ -133,7 +133,7 @@ public class Reasoner {
             Set<ReasonerAtomicQuery> SG;
             do {
                 SG = new HashSet<>(subGoals);
-                Set<Answer> answers = atomicQuery.answerStream(SG, cache, dCache, true, iter != 0).collect(Collectors.toSet());
+                Set<Answer> answers = atomicQuery.answerStream(SG, cache, dCache, true, false, iter != 0).collect(Collectors.toSet());
                 LOG.debug("Atom: " + atomicQuery.getAtom() + " answers: " + answers.size() + " dAns: " + dAns);
                 dAns = cache.answerSize(SG) - dAns;
                 Reasoner.commitGraph(graph);

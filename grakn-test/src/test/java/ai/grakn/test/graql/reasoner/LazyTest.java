@@ -142,7 +142,8 @@ public class LazyTest {
         Stream<Answer> join = join(
                 query.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new),
                 query2.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new),
-                ImmutableSet.copyOf(joinVars)
+                ImmutableSet.copyOf(joinVars),
+                true
         )
                 .flatMap(a -> varFilterFunction.apply(a, rule.getHead().getVarNames()))
                 .distinct()
@@ -150,14 +151,14 @@ public class LazyTest {
 
         cache.record(rule.getHead(), join);
 
-
         Stream<Answer> stream = cache.getAnswerStream(rule.getHead());
         Stream<Answer> stream2 = cache.getAnswerStream(query3);
         joinVars = Sets.intersection(rule.getHead().getVarNames(), query3.getVarNames());
         List<Answer> collect = QueryAnswerStream.join(
                 stream,
                 stream2,
-                ImmutableSet.copyOf(joinVars))
+                ImmutableSet.copyOf(joinVars),
+                true)
                 .collect(Collectors.toList());
         assertEquals(collect.size(), 40);
     }

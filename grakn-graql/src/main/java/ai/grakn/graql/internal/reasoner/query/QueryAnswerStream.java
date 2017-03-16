@@ -158,6 +158,16 @@ public class QueryAnswerStream {
         return s1.flatMap(a1 -> l2.stream().flatMap(a2 -> function.apply(a1,a2)));
     }
 
+    private static Set<Answer> findMatchingAnswers(VarName var, Concept con, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap){
+        Pair<VarName, Concept> key = new Pair<>(var, con);
+        return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
+    }
+
+    private static Set<Answer> findMatchingAnswers(Answer answer, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap, VarName joinVar){
+        Pair<VarName, Concept> key = new Pair<>(joinVar, answer.get(joinVar));
+        return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
+    }
+
     /**
      * lazy stream join
      * @param stream left stream operand
@@ -175,7 +185,7 @@ public class QueryAnswerStream {
      * @param joinVars intersection on variables of two streams
      * @return joined stream
      */
-    public static Stream<Answer> join(Stream<Answer> stream, Stream<Answer> stream2, ImmutableSet<VarName> joinVars) {
+    public static Stream<Answer> join(Stream<Answer> stream, Stream<Answer> stream2, ImmutableSet<VarName> joinVars, boolean explanation) {
         LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
         return stream.flatMap(a1 -> {
             Stream<Answer> answerStream = l2.stream();
@@ -187,18 +197,8 @@ public class QueryAnswerStream {
                 }
                 return true;
             });
-            return answerStream.map(a1::merge);
+            return answerStream.map(a -> a.merge(a1, explanation));
         });
-    }
-
-    private static Set<Answer> findMatchingAnswers(VarName var, Concept con, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap){
-        Pair<VarName, Concept> key = new Pair<>(var, con);
-        return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
-    }
-
-    private static Set<Answer> findMatchingAnswers(Answer answer, Map<Pair<VarName, Concept>, Set<Answer>> inverseMap, VarName joinVar){
-        Pair<VarName, Concept> key = new Pair<>(joinVar, answer.get(joinVar));
-        return inverseMap.containsKey(key)? inverseMap.get(key) : new HashSet<>();
     }
 
     /**
@@ -212,10 +212,11 @@ public class QueryAnswerStream {
     public static Stream<Answer> joinWithInverse(Stream<Answer> stream,
                                                                 Stream<Answer> stream2,
                                                                 Map<Pair<VarName, Concept>, Set<Answer>> stream2InverseMap,
-                                                                ImmutableSet<VarName> joinVars) {
+                                                                ImmutableSet<VarName> joinVars,
+                                                                boolean explanation) {
         if (joinVars.isEmpty()){
             LazyAnswerIterator l2 = new LazyAnswerIterator(stream2);
-            return stream.flatMap(a1 -> l2.stream().map(a1::merge));
+            return stream.flatMap(a1 -> l2.stream().map(a -> a.merge(a1, explanation)));
         }
         return stream.flatMap(a1 -> {
             Iterator<VarName> vit = joinVars.iterator();
@@ -223,8 +224,7 @@ public class QueryAnswerStream {
             while(vit.hasNext()){
                 matchAnswers = Sets.intersection(matchAnswers, findMatchingAnswers(a1, stream2InverseMap, vit.next()));
             }
-
-            return matchAnswers.stream().map(a1::merge);
+            return matchAnswers.stream().map(a -> a.merge(a1, explanation));
         });
     }
 }
