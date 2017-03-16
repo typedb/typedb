@@ -140,6 +140,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             } catch (Throwable throwable){
                 LOG.error("error thrown", throwable);
+                assert false; // This should be unreachable, but in production we still handle it for robustness
             }
         }
 
