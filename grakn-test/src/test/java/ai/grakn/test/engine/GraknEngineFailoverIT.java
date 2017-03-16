@@ -32,6 +32,7 @@ import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.AfterClass;
@@ -42,6 +43,7 @@ import org.junit.runner.RunWith;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
@@ -53,6 +55,9 @@ public class GraknEngineFailoverIT {
 
     @ClassRule
     public static DistributionContext engine1 = DistributionContext.startSingleQueueEngineProcess().port(4567);
+
+    @ClassRule
+    public static DistributionContext engine2 = DistributionContext.startSingleQueueEngineProcess().port(5678);
 
     @BeforeClass
     public static void getStorage() {
@@ -66,7 +71,7 @@ public class GraknEngineFailoverIT {
     }
 
     @Property(trials = 10)
-    public void whenSubmittingTasksToEngine_TheyComplete(List<@NewTask TaskState> tasks1) throws Exception {
+    public void whenSubmittingTasksToOneEngine_TheyComplete(List<@NewTask TaskState> tasks1) throws Exception {
         // Create & Send tasks to rest api
         Set<TaskId> tasks = sendTasks(engine1.port(), tasks1);
 
@@ -75,6 +80,30 @@ public class GraknEngineFailoverIT {
 
         // Assert the tasks have finished with the correct status depending on type
         assertTasksCompletedWithCorrectStatus(tasks);
+    }
+
+
+    @Property(trials = 10)
+    public void whenSubmittingTasksToTwoEngines_TheyComplete(
+            List<@NewTask TaskState> tasks1, List<@NewTask TaskState> tasks2) throws Exception {
+        // Create & Send tasks to rest api
+        Set<TaskId> taskIds1 = sendTasks(engine1.port(), tasks1);
+        Set<TaskId> taskIds2 = sendTasks(engine2.port(), tasks2);
+
+        Set<TaskId> allTasks = new HashSet<>();
+        allTasks.addAll(taskIds1);
+        allTasks.addAll(taskIds2);
+
+        // Wait for those tasks to complete
+        waitForStatus(allTasks, COMPLETED, FAILED);
+
+        // Assert the tasks have finished with the correct status depending on type
+        assertTasksCompletedWithCorrectStatus(allTasks);
+    }
+
+    public void whenSubmittingTasksToTwoEngines_TheyDoNotAllCompleteOnOriginalEngine(
+            List<@NewTask TaskState> tasks1, List<@NewTask TaskState> tasks2) throws Exception {
+        assertTrue(false);
     }
 
     private void assertTasksCompletedWithCorrectStatus(Set<TaskId> tasks) {
