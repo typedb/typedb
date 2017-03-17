@@ -19,17 +19,14 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -37,7 +34,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.Comparator.naturalOrder;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Class for generating greedy traversal plans
@@ -47,6 +43,16 @@ import static java.util.stream.Collectors.toSet;
 public class GreedyTraversalPlan {
 
     private static final long MAX_TRAVERSAL_ATTEMPTS = 1_000;
+
+    /**
+     * Create a traversal plan using the default maxTraersalAttempts.
+     * @see GreedyTraversalPlan#createTraversal(PatternAdmin, long)
+     * @param pattern a pattern to find a query plan for
+     * @return a semi-optimal traversal plan
+     */
+    public static GraqlTraversal createTraversal(PatternAdmin pattern) {
+        return createTraversal(pattern, MAX_TRAVERSAL_ATTEMPTS);
+    }
 
     /**
      * Create a semi-optimal traversal plan using a greedy approach
@@ -63,15 +69,16 @@ public class GreedyTraversalPlan {
      * optimal or nearly-optimal results, so a 'smarter' method may not be necessary.
      *
      * @param pattern a pattern to find a query plan for
+     * @param maxTraversalAttempts number of traversal plans to test
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(PatternAdmin pattern) {
+    public static GraqlTraversal createTraversal(PatternAdmin pattern, long maxTraversalAttempts) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         // Find a semi-optimal way to execute each conjunction
         Set<? extends List<Fragment>> fragments = patterns.stream()
                 .map(ConjunctionQuery::new)
-                .map(GreedyTraversalPlan::semiOptimalConjunction)
+                .map(query -> semiOptimalConjunction(query, maxTraversalAttempts))
                 .collect(toImmutableSet());
 
         return GraqlTraversal.create(fragments);
@@ -82,17 +89,16 @@ public class GreedyTraversalPlan {
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query) {
+    private static List<Fragment> semiOptimalConjunction(ConjunctionQuery query, long maxTraversalAttempts) {
 
         Set<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(query.getEquivalentFragmentSets());
-        Set<VarName> names = new HashSet<>();
 
         long numFragments = fragments(fragmentSets).count();
         long depth = 1;
         long numTraversalAttempts = numFragments;
 
         // Calculate the depth to descend in the tree, based on how many plans we want to evaluate
-        while (numFragments > 0 && numTraversalAttempts < MAX_TRAVERSAL_ATTEMPTS) {
+        while (numFragments > 0 && numTraversalAttempts < maxTraversalAttempts) {
             depth += 1;
             numTraversalAttempts *= numFragments;
             numFragments -= 1;
@@ -101,16 +107,10 @@ public class GreedyTraversalPlan {
         Plan plan = Plan.base();
 
         while (!fragmentSets.isEmpty()) {
-            plan = extendPlan(plan, fragmentSets, names, depth);
-            List<Fragment> newFragments = plan.fragments();
+            plan = extendPlan(plan, fragmentSets, depth);
 
-            if (newFragments.isEmpty()) {
-                throw new RuntimeException(ErrorMessage.FAILED_TO_BUILD_TRAVERSAL.getMessage());
-            }
-
-            newFragments.forEach(fragment -> {
+            plan.fragments().forEach(fragment -> {
                 fragmentSets.remove(fragment.getEquivalentFragmentSet());
-                fragment.getVariableNames().forEach(names::add);
             });
         }
 
@@ -121,11 +121,10 @@ public class GreedyTraversalPlan {
      * Find a traversal plan that will satisfy the given equivalent fragment sets
      * @param plan the plan so far
      * @param fragmentSets a set of equivalent fragment sets that must all be covered by the plan
-     * @param names a set of names that have already been encountered while executing the query
      * @param depth the maximum depth the plan is allowed to descend in the tree
      * @return a new plan that extends the given plan
      */
-    private static Plan extendPlan(Plan plan, Set<EquivalentFragmentSet> fragmentSets, Set<VarName> names, long depth) {
+    private static Plan extendPlan(Plan plan, Set<EquivalentFragmentSet> fragmentSets, long depth) {
 
         // Base case
         if (depth == 0) return plan;
@@ -133,18 +132,17 @@ public class GreedyTraversalPlan {
         // A function that will recursively extend the plan using the given fragment
         Function<Fragment, Plan> extendPlanWithFragment = fragment -> {
             // Create the new plan, fragment sets and variable names when using this fragment
-            Plan newPlan = plan.append(fragment, names);
+            Plan newPlan = plan.append(fragment);
             EquivalentFragmentSet fragmentSet = fragment.getEquivalentFragmentSet();
             Set<EquivalentFragmentSet> newFragmentSets = Sets.difference(fragmentSets, ImmutableSet.of(fragmentSet));
-            Set<VarName> newNames = Sets.union(names, fragment.getVariableNames().collect(toSet()));
 
             // Recursively find a plan
-            return extendPlan(newPlan, newFragmentSets, newNames, depth - 1);
+            return extendPlan(newPlan, newFragmentSets, depth - 1);
         };
 
         // Create a plan for every fragment that has its dependencies met, then select the lowest cost plan
         return fragments(fragmentSets)
-                .filter(fragment -> names.containsAll(fragment.getDependencies()))
+                .filter(fragment -> plan.names().containsAll(fragment.getDependencies()))
                 .map(extendPlanWithFragment)
                 .min(naturalOrder())
                 .orElse(plan);

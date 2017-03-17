@@ -21,13 +21,16 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.gremlin.GraqlTraversal.fragmentCost;
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 
 /**
  * A traversal plan for executing a Graql query, comprised of a list of fragments and a cost
@@ -36,26 +39,28 @@ class Plan implements Comparable<Plan> {
     private double cost;
     private final Fragment fragment;
     private final Plan innerPlan;
+    private final Set<VarName> names;
 
     private Plan() {
         this.cost = 1;
         this.fragment = null;
         this.innerPlan = null;
+        this.names = ImmutableSet.of();
     }
 
-    private Plan(double cost, Fragment fragment, Plan innerPlan) {
-        this.cost = cost + innerPlan.cost();
+    private Plan(Fragment fragment, Plan innerPlan) {
+        this.cost = fragmentCost(fragment, innerPlan.cost, innerPlan.names);
         this.fragment = fragment;
         this.innerPlan = innerPlan;
+        this.names = Sets.union(innerPlan.names, fragment.getVariableNames().collect(toImmutableSet()));
     }
 
     static Plan base() {
         return new Plan();
     }
 
-    Plan append(Fragment newFragment, Set<VarName> names) {
-        double newCost = fragmentCost(newFragment, cost, names);
-        return new Plan(newCost, newFragment, this);
+    Plan append(Fragment newFragment) {
+        return new Plan(newFragment, this);
     }
 
     @Override
@@ -64,7 +69,7 @@ class Plan implements Comparable<Plan> {
     }
 
     public double cost() {
-        return cost;
+        return cost + (innerPlan != null ? innerPlan.cost() : 0);
     }
 
     public List<Fragment> fragments() {
@@ -76,6 +81,10 @@ class Plan implements Comparable<Plan> {
             plan = plan.innerPlan;
         }
         return Lists.reverse(fragments);
+    }
+
+    public Set<VarName> names() {
+        return names;
     }
 
     @Override
