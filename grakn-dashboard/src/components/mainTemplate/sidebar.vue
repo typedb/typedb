@@ -4,24 +4,27 @@
         <nav class="side-vert-flex">
             <ul class="nav">
                 <router-link tag="li" to="/graph" class="link">
-                    <a>Graph</a>
+                    <a class="noselect">Graph</a>
                 </router-link>
                 <router-link tag="li" to="/console" class="link">
-                    <a>Console</a>
+                    <a class="noselect">Console</a>
+                </router-link>
+                <router-link tag="li" to="/tasks" class="link">
+                    <a class="noselect">Tasks</a>
                 </router-link>
                 <router-link tag="li" to="/config" class="link">
-                    <a>Config</a>
+                    <a class="noselect">Config</a>
                 </router-link>
-                <li class="link"><a target="_blank" href="https://grakn.ai/pages/index.html">Documentation</a></li>
+                <li class="link"><a target="_blank" href="https://grakn.ai/pages/index.html" class="noselect">Documentation</a></li>
                 <li v-show="isUserAuth" @click="logout()"><a href="#">Log Out</a></li>
             </ul>
         </nav>
         <div class="divide"></div>
-        <div class="green-link" id="myBtn">
+        <div class="green-link noselect" id="myBtn">
             Join Community
         </div>
         <div class="green-link">
-            <a target="_blank" href="https://github.com/graknlabs/grakn">Star on GitHub</a>
+            <a target="_blank" href="https://github.com/graknlabs/grakn" class="noselect">Star on GitHub</a>
         </div>
     </aside>
 </transition>

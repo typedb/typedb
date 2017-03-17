@@ -20,12 +20,12 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.client.LoaderClient;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
-import ai.grakn.client.LoaderClient;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.QueryBuilderImplMock;
 import ai.grakn.graql.Var;
@@ -38,7 +38,6 @@ import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
 import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -47,7 +46,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -121,10 +119,6 @@ public class ScalingTestIT {
         headers = new ArrayList<>();
         headers.add("Size");
         headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
-
-        // fetch the logger
-        LOGGER = (Logger) LoggerFactory.getLogger(ScalingTestIT.class);
-        LOGGER.setLevel(Level.INFO);
     }
 
     @Ignore

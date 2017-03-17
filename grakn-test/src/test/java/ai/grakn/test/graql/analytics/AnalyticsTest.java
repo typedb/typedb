@@ -28,16 +28,14 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,18 +51,23 @@ public class AnalyticsTest {
     public static final EngineContext context = EngineContext.startInMemoryServer();
     private GraknGraphFactory factory;
 
+    private static final String thing = "thing";
+    private static final String anotherThing = "anotherThing";
+    private static final String related = "related";
+
+    private String entityId1;
+    private String entityId2;
+    private String entityId3;
+    private String entityId4;
+    private String relationId12;
+    private String relationId24;
+
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
-        logger.setLevel(Level.DEBUG);
     }
 
     @Test
@@ -125,6 +128,54 @@ public class AnalyticsTest {
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
+        }
+    }
+
+    @Test
+    public void testConcurrentJobs() {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        addOntologyAndEntities();
+
+        List<String> queryList = new ArrayList<>();
+        queryList.add("compute count;");
+        queryList.add("compute cluster;");
+        queryList.add("compute degrees;");
+        queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
+
+        queryList.parallelStream().forEach(query -> factory.getGraph().graql().parse(query).execute());
+    }
+
+    private void addOntologyAndEntities() throws GraknValidationException {
+        try (GraknGraph graph = factory.getGraph()) {
+            EntityType entityType1 = graph.putEntityType(thing);
+            EntityType entityType2 = graph.putEntityType(anotherThing);
+
+            Entity entity1 = entityType1.addEntity();
+            Entity entity2 = entityType1.addEntity();
+            Entity entity3 = entityType1.addEntity();
+            Entity entity4 = entityType2.addEntity();
+
+            entityId1 = entity1.getId().getValue();
+            entityId2 = entity2.getId().getValue();
+            entityId3 = entity3.getId().getValue();
+            entityId4 = entity4.getId().getValue();
+
+            RoleType role1 = graph.putRoleType("role1");
+            RoleType role2 = graph.putRoleType("role2");
+            entityType1.playsRole(role1).playsRole(role2);
+            entityType2.playsRole(role1).playsRole(role2);
+            RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
+
+            relationId12 = relationType.addRelation()
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId().getValue();
+            relationId24 = relationType.addRelation()
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity4).getId().getValue();
+
+            graph.commitOnClose();
         }
     }
 }

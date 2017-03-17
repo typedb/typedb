@@ -30,18 +30,19 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -67,12 +68,6 @@ public class DegreeTest {
 
         factory = context.factoryWithNewKeyspace();
         graph = factory.getGraph();
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
-        logger.setLevel(Level.DEBUG);
     }
 
     @Test
@@ -122,15 +117,22 @@ public class DegreeTest {
         correctDegrees.put(id3, 2L);
 
         // compute degrees
-        Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
+        List<Long> list = new ArrayList<>(4);
+        for (long i = 0L; i < 4L; i++) {
+            list.add(i);
+        }
+        GraknSparkComputer.clear();
+        list.parallelStream().forEach(i -> {
+            Map<Long, Set<String>> degrees = factory.getGraph().graql().compute().degree().execute();
 
-        assertEquals(3, degrees.size());
-        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                id -> {
-                    assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                    assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                }
-        ));
+            assertEquals(3, degrees.size());
+            degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                    id -> {
+                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                        assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
+                    }
+            ));
+        });
 
         Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
 
