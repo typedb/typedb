@@ -22,6 +22,8 @@ import vis from 'vis';
 
 import Style from './Style';
 import User from '../User';
+import NodeSettings from '../NodeSettings';
+
 
 /*
  * Main class for creating a graph of nodes and edges. See Style class for asthetic customisation.
