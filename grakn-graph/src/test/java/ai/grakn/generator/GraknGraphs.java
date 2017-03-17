@@ -134,7 +134,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> graph.putRelationType(typeName()),
             () -> graph.showImplicitConcepts(gen(Boolean.class)),
             () -> type().playsRole(roleType()),
-            () -> type().hasResource(resourceType()),
+            () -> type().resource(resourceType()),
             () -> type().key(resourceType()),
             () -> type().setAbstract(true),
             () -> entityType().superType(entityType()),
@@ -148,7 +148,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> ruleType().superType(ruleType()),
             () -> ruleType().putRule(var("x"), var("x")), // TODO: generate more complicated rules
-            () -> instance().hasResource(resource()),
+            () -> instance().resource(resource()),
             () -> relation().scope(instance()),
             () -> relation().putRolePlayer(roleType(), instance())
     );

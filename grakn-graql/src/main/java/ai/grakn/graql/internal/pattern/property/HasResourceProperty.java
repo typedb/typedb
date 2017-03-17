@@ -147,7 +147,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
         Instance instance = concept.asInstance();
-        instance.hasResource(resourceConcept);
+        instance.resource(resourceConcept);
     }
 
     @Override

@@ -70,7 +70,7 @@ public interface Type extends Concept {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-     Type hasResource(ResourceType resourceType);
+     Type resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ---------------------------------
 
@@ -131,7 +131,7 @@ public interface Type extends Concept {
      *
      * By default, types are not implicit.
      *
-     * @return returns true if the type was created implicitly through {@link #hasResource}
+     * @return returns true if the type was created implicitly through {@link #resource}
      */
     Boolean isImplicit();
 

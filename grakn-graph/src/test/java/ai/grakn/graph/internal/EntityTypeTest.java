@@ -273,8 +273,8 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType rtSuper = graknGraph.putResourceType(superName, ResourceType.DataType.STRING);
         ResourceType rt = graknGraph.putResourceType(name, ResourceType.DataType.STRING).superType(rtSuper);
 
-        entityType1.hasResource(rtSuper);
-        entityType2.hasResource(rt);
+        entityType1.resource(rtSuper);
+        entityType2.resource(rt);
 
         graknGraph.showImplicitConcepts(true);
 
@@ -390,9 +390,9 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType r3 = graknGraph.putResourceType("r3", ResourceType.DataType.BOOLEAN);
 
         assertTrue("Entity is linked to resources when it shouldn't", e1.resources().isEmpty());
-        e1.hasResource(r1);
-        e1.hasResource(r2);
-        e1.hasResource(r3);
+        e1.resource(r1);
+        e1.resource(r2);
+        e1.resource(r3);
         assertThat(e1.resources(), containsInAnyOrder(r1, r2, r3));
     }
 
@@ -410,7 +410,7 @@ public class EntityTypeTest extends GraphTestBase{
         assertThat(entityType2.resources(), is(empty()));
 
         //Link the resources
-        entityType1.hasResource(resourceType1);
+        entityType1.resource(resourceType1);
 
         entityType1.key(resourceType2);
         entityType2.key(resourceType1);
@@ -430,11 +430,11 @@ public class EntityTypeTest extends GraphTestBase{
         Resource<String> resource3 = resourceType2.putResource("Test 3");
 
         //Resource 1 is a key to one and a resource to another
-        entity1.hasResource(resource1);
-        entity2.hasResource(resource1);
+        entity1.resource(resource1);
+        entity2.resource(resource1);
 
-        entity1.hasResource(resource2);
-        entity2.hasResource(resource3);
+        entity1.resource(resource2);
+        entity2.resource(resource3);
 
         graknGraph.commitOnClose();
         graknGraph.close();
@@ -445,7 +445,7 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
         EntityType entityType = graknGraph.putEntityType("EntityType");
 
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getName(), resourceType.getName()));
@@ -463,7 +463,7 @@ public class EntityTypeTest extends GraphTestBase{
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getName(), resourceType.getName()));
 
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
     }
 
 }

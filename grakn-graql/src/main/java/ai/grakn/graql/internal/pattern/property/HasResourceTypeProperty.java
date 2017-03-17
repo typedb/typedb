@@ -150,7 +150,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         if (required) {
             entityTypeConcept.key(resourceTypeConcept);
         } else {
-            entityTypeConcept.hasResource(resourceTypeConcept);
+            entityTypeConcept.resource(resourceTypeConcept);
         }
     }
 

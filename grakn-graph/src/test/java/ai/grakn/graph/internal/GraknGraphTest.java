@@ -247,7 +247,7 @@ public class GraknGraphTest extends GraphTestBase {
         //Build Implicit structures
         EntityType type = graknGraph.putEntityType("Concept Type ");
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-        type.hasResource(resourceType);
+        type.resource(resourceType);
 
         assertFalse(graknGraph.implicitConceptsVisible());
 

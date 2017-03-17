@@ -115,7 +115,7 @@ public class EntityTest extends GraphTestBase{
         TypeName resourceTypeName = TypeName.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeName, ResourceType.DataType.STRING);
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
 
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
@@ -149,7 +149,7 @@ public class EntityTest extends GraphTestBase{
                 ErrorMessage.HAS_INVALID.getMessage(entityType.getName(), "resource", resourceType.getName())
         );
 
-        entity.hasResource(resource);
+        entity.resource(resource);
     }
 
     @Test
@@ -157,7 +157,7 @@ public class EntityTest extends GraphTestBase{
         String resourceTypeId = "A Resource Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
 
         Entity entity = entityType.addEntity();
         Resource resource1 = resourceType.putResource("A resource thing");

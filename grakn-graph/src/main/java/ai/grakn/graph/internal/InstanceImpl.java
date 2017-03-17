@@ -178,7 +178,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The instance itself
      */
     @Override
-    private T resource(Resource resource, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner){
+    public T resource(Resource resource){
         String type = "resource";
         Schema.ImplicitType has = Schema.ImplicitType.HAS_RESOURCE;
         Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_RESOURCE_VALUE;

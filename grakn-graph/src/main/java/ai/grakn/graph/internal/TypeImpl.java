@@ -593,7 +593,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself
      */
     @Override
-    public T hasResource(ResourceType resourceType){
+    public T resource(ResourceType resourceType){
         checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_KEY_OWNER, resourceType);
         return hasResource(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, false);
     }

@@ -152,11 +152,11 @@ public class ClusteringTest {
         try (GraknGraph graph = factory.getGraph()) {
             ResourceType<String> resourceType =
                     graph.putResourceType(aResourceTypeName, ResourceType.DataType.STRING);
-            graph.getEntityType(thing).hasResource(resourceType);
-            graph.getEntityType(anotherThing).hasResource(resourceType);
+            graph.getEntityType(thing).resource(resourceType);
+            graph.getEntityType(anotherThing).resource(resourceType);
             Resource aResource = resourceType.putResource("blah");
-            graph.getEntityType(thing).instances().forEach(instance -> instance.hasResource(aResource));
-            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.hasResource(aResource));
+            graph.getEntityType(thing).instances().forEach(instance -> instance.resource(aResource));
+            graph.getEntityType(anotherThing).instances().forEach(instance -> instance.resource(aResource));
             graph.commitOnClose();
         }
 

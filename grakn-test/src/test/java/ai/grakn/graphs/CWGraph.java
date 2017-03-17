@@ -90,8 +90,8 @@ public class CWGraph extends TestGraph {
         person = graph.putEntityType("person")
                 .playsRole(seller)
                 .playsRole(payee);
-        person.hasResource(key);
-        person.hasResource(nationality);
+        person.resource(key);
+        person.resource(nationality);
 
         criminal = graph.putEntityType("criminal")
                 .superType(person);
@@ -99,18 +99,18 @@ public class CWGraph extends TestGraph {
         weapon = graph.putEntityType("weapon")
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
-        weapon.hasResource(key);
+        weapon.resource(key);
 
         rocket = graph.putEntityType("rocket")
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
-        rocket.hasResource(key);
-        rocket.hasResource(propulsion);
+        rocket.resource(key);
+        rocket.resource(propulsion);
 
         missile = graph.putEntityType("missile")
                 .superType(weapon)
                 .playsRole(transactionItem);
-        missile.hasResource(key);
+        missile.resource(key);
 
         country = graph.putEntityType("country")
                 .playsRole(buyer)
@@ -118,8 +118,8 @@ public class CWGraph extends TestGraph {
                 .playsRole(enemyTarget)
                 .playsRole(payer)
                 .playsRole(enemySource);
-        country.hasResource(key);
-        country.hasResource(alignment);
+        country.resource(key);
+        country.resource(alignment);
     }
 
     @Override

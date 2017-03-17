@@ -79,11 +79,11 @@ public class AnalyticsTest {
             TypeName resourceTypeName = TypeName.of("degree");
             ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
             EntityType thing = graph.putEntityType("thing");
-            thing.hasResource(degree);
+            thing.resource(degree);
 
             Entity thisThing = thing.addEntity();
             Resource thisResource = degree.putResource(1L);
-            thisThing.hasResource(thisResource);
+            thisThing.resource(thisResource);
             graph.commitOnClose();
         }
 
