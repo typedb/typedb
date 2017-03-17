@@ -14,32 +14,33 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test.engine.tasks;
+package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
 import java.util.function.Consumer;
 
-public class EndlessExecutionTestTask extends MockBackgroundTask {
+/**
+ * Mocked task that will throw exception
+ *
+ * @author alexandraorth, Felix Chapman
+ */
+public class FailingMockTask extends MockBackgroundTask {
 
     @Override
     protected void startInner(TaskId id) {
-        // Never return until stopped
-        if (!cancelled.get()) {
-            synchronized (sync) {
-                try {
-                    sync.wait();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
+        throw new RuntimeException("deliberate test failure");
     }
 
-    public void pause() {}
+    @Override
+    public void pause() {
 
-    public void resume(Consumer<String> c, String s) {}
+    }
+
+    @Override
+    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+
+    }
 }

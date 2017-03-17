@@ -5,6 +5,11 @@
         <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
     </Match>
 
+    <!-- Exclude mocked tasks in engine-->
+    <Match>
+        <Class name="~ai\.grakn\.engine\.tasks\.mock\..*"/>
+    </Match>
+
     <!-- Exclude a lot of bugs we can't be bothered to fix -->
     <!-- TODO: Re-enable these -->
 

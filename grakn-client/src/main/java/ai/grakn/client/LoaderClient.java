@@ -194,6 +194,7 @@ public class LoaderClient {
                 LOG.error(e.getMessage());
             }
         }
+        LOG.info("All tasks completed");
     }
 
     /**

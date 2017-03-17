@@ -968,7 +968,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             castings.remove(mainCasting);
 
             //Fix the duplicates
-            Set<RelationImpl> duplicateRelations = mergeCastings(mainCasting, castings);
+            Set<Relation> duplicateRelations = mergeCastings(mainCasting, castings);
 
             //Remove Redundant Relations
             deleteRelations(duplicateRelations);
@@ -983,8 +983,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @param relations The duplicate relations to be merged
      */
-    private void deleteRelations(Set<RelationImpl> relations){
-        for (RelationImpl relation : relations) {
+    private void deleteRelations(Set<Relation> relations){
+        for (Relation relation : relations) {
             String relationID = relation.getId().getValue();
 
             //Kill Shortcut Edges
@@ -999,7 +999,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 }
             });
 
-            relation.deleteNode();
+            ((RelationImpl) relation).deleteNode();
         }
     }
 
@@ -1009,14 +1009,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param castings The castings to whose edges will be transferred to the main casting and deleted.
      * @return A set of possible duplicate relations.
      */
-    private Set<RelationImpl> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
+    private Set<Relation> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
         RoleType role = mainCasting.getRole();
-        Set<RelationImpl> relations = mainCasting.getRelations();
-        Set<RelationImpl> relationsToClean = new HashSet<>();
+        Set<Relation> relations = mainCasting.getRelations();
+        Set<Relation> relationsToClean = new HashSet<>();
 
         for (CastingImpl otherCasting : castings) {
             //Transfer assertion edges
-            for(RelationImpl otherRelation : otherCasting.getRelations()){
+            for(Relation otherRelation : otherCasting.getRelations()){
                 boolean transferEdge = true;
 
                 //Check if an equivalent Relation is already connected to this casting. This could be a slow process
