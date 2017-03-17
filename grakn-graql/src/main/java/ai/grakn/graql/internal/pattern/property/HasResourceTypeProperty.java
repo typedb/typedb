@@ -77,10 +77,24 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         Var role = name(Schema.MetaSchema.ROLE.getName());
 
-        ownerRole = name(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName)).sub(role).admin();
-        valueRole = name(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName)).sub(role).admin();
+        //Choose the correct implicit type
+        Schema.ImplicitType has;
+        Schema.ImplicitType hasOwner;
+        Schema.ImplicitType hasValue;
+        if(required){
+            has = Schema.ImplicitType.HAS_KEY;
+            hasOwner = Schema.ImplicitType.HAS_KEY_OWNER;
+            hasValue = Schema.ImplicitType.HAS_KEY_VALUE;
+        } else {
+            has = Schema.ImplicitType.HAS_RESOURCE;
+            hasOwner = Schema.ImplicitType.HAS_RESOURCE_OWNER;
+            hasValue = Schema.ImplicitType.HAS_KEY_VALUE;
+        }
 
-        relationType = name(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName))
+        ownerRole = name(hasOwner.getName(resourceTypeName)).sub(role).admin();
+        valueRole = name(hasValue.getName(resourceTypeName)).sub(role).admin();
+
+        relationType = name(has.getName(resourceTypeName))
                 .sub(name(Schema.MetaSchema.RELATION.getName()))
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
