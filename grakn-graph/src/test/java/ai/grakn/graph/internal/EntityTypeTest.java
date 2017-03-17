@@ -35,6 +35,7 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
@@ -437,6 +438,32 @@ public class EntityTypeTest extends GraphTestBase{
 
         graknGraph.commitOnClose();
         graknGraph.close();
+    }
+
+    @Test
+    public void whenAddingResourceTypeAsKeyAfterResource_Throw(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("EntityType");
+
+        entityType.hasResource(resourceType);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getName(), resourceType.getName()));
+
+        entityType.key(resourceType);
+    }
+
+    @Test
+    public void whenAddingResourceTypeAsResourceAfterResource_Throw(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("EntityType");
+
+        entityType.key(resourceType);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getName(), resourceType.getName()));
+
+        entityType.hasResource(resourceType);
     }
 
 }

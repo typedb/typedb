@@ -590,15 +590,31 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     /**
      * Creates a relation type which allows this type and a resource type to be linked.
      * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     * @return The Type itself
      */
     @Override
     public T hasResource(ResourceType resourceType){
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_KEY_OWNER, resourceType);
         return hasResource(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, false);
     }
 
     @Override
     public T key(ResourceType resourceType) {
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_RESOURCE_OWNER, resourceType);
         return hasResource(resourceType, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_VALUE, Schema.ImplicitType.HAS_KEY_OWNER, true);
+    }
+
+    /**
+     * Checks if the provided resource type is already used in an other implicit relation.
+     *
+     * @param implicitType The implicit relation to check against.
+     * @param resourceType The resource type which should not be in that implicit relation
+     *
+     * @throws ConceptException when the resource type is already used in another implicit relation
+     */
+    private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, ResourceType resourceType){
+        if(resources(implicitType).contains(resourceType)) {
+            throw new ConceptException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(getName(), resourceType.getName()));
+        }
     }
 }
