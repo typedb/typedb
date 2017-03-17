@@ -89,7 +89,7 @@ public class GraknEngineFailoverIT {
 
 
     private Set<TaskId> sendTasks(int port, List<TaskState> tasks) {
-        TaskClient engineClient = TaskClient.of("localhost:" + port);
+        TaskClient engineClient = TaskClient.of("localhost", port);
 
         return tasks.stream().map(t -> engineClient.sendTask(
                 t.taskClass(),
