@@ -28,28 +28,26 @@ import * as API from '../util/HALTerms';
 function buildLabel(resource) {
   let label = resource[API.KEY_TYPE];
 
-  // switch (resource[API.KEY_BASE_TYPE]) {
-  //   case API.ENTITY_TYPE:
-  //   case API.ENTITY:
-  //     label = `${resource[API.KEY_TYPE]}: ${resource[API.KEY_ID]}`;
-  //     break;
-  //   case API.RELATION_TYPE:
-  //   case API.RELATION:
-  //     label = `${resource[API.KEY_BASE_TYPE].substring(0, 3)}: ${resource[API.KEY_TYPE]}`;
-  //     break;
-  //   case API.RESOURCE_TYPE:
-  //   case API.RESOURCE:
-  //     label = resource[API.KEY_VALUE];
-  //     break;
-  //   case API.GENERATED_RELATION_TYPE:
-  //     label = resource[API.KEY_TYPE] || '';
-  //     break;
-  //
-  //   default:
-  //     label = resource[API.KEY_TYPE];
-  // }
+  switch (resource[API.KEY_BASE_TYPE]) {
+    case API.ENTITY_TYPE:
+    case API.ENTITY:
+      label = `${resource[API.KEY_TYPE]}: ${resource[API.KEY_ID]}`;
+      break;
+    case API.RELATION_TYPE:
+    case API.RELATION:
+      label = `${resource[API.KEY_BASE_TYPE].substring(0, 3)}: ${resource[API.KEY_TYPE]}`;
+      break;
+    case API.RESOURCE_TYPE:
+    case API.RESOURCE:
+      label = resource[API.KEY_VALUE];
+      break;
+    case API.GENERATED_RELATION_TYPE:
+      label = resource[API.KEY_TYPE] || '';
+      break;
 
-  label = resource[API.KEY_TYPE];
+    default:
+      label = resource[API.KEY_TYPE];
+  }
 
   if (API.KEY_VALUE in resource) { label = resource[API.KEY_VALUE] || label; }
   if (API.KEY_NAME in resource) { label = resource[API.KEY_NAME] || label; }
