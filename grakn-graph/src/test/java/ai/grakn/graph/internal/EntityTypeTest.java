@@ -415,8 +415,8 @@ public class EntityTypeTest extends GraphTestBase{
         entityType2.key(resourceType1);
         entityType2.key(resourceType2);
 
-        assertThat(entityType1.resources(), containsInAnyOrder(resourceType1));
-        assertThat(entityType2.resources(), is(empty()));
+        assertThat(entityType1.resources(), containsInAnyOrder(resourceType1, resourceType2));
+        assertThat(entityType2.resources(), containsInAnyOrder(resourceType1, resourceType2));
 
         assertThat(entityType1.keys(), containsInAnyOrder(resourceType2));
         assertThat(entityType2.keys(), containsInAnyOrder(resourceType1, resourceType2));

@@ -154,7 +154,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
-       return resources(Schema.ImplicitType.HAS_RESOURCE_OWNER);
+        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_RESOURCE_OWNER);
+        resources.addAll(keys());
+        return resources;
     }
 
     @Override

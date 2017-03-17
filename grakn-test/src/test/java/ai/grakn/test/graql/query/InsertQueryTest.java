@@ -487,8 +487,8 @@ public class InsertQueryTest {
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertTrue(qb.match(name("a-new-type").sub("entity").hasResource("a-new-resource-type")).ask().execute());
         assertTrue(qb.match(name("a-new-type").sub("entity").hasKey("a-new-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").sub("entity").hasResource("a-new-resource-type")).ask().execute());
         assertFalse(qb.match(name("a-new-type").sub("entity").hasKey("title")).ask().execute());
         assertFalse(qb.match(name("movie").sub("entity").hasKey("a-new-resource-type")).ask().execute());
 
