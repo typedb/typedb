@@ -140,4 +140,9 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         cache.clear();
         cache.putAll(newCache);
     }
+
+    public void consume() {
+        cache.entrySet().forEach(entry ->
+                entry.getValue().getValue().stream().collect(Collectors.toSet()));
+    }
 }

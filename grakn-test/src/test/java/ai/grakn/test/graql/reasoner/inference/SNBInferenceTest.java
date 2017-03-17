@@ -336,7 +336,7 @@ public class SNBInferenceTest {
         String queryString = "match $x isa person; $y isa tag; ($x, $y) isa tagging;" +
                 "$z isa product;$z has name 'Nocturnes'; ($x, $z) isa recommendation; select $x, $y;";
 
-        
+
         String explicitQuery = "match " +
                 "{$x has name 'Frank';$y has name 'Ludwig van Beethoven';} or" +
                 "{$x has name 'Karl Fischer';" +
