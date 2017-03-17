@@ -136,14 +136,22 @@ export default {
             visualiser.nodes.update({
                 id: previousNode,
                 x: visualiser.rect.startX,
-                y: visualiser.rect.startY
+                y: visualiser.rect.startY,
+                fixed: {
+                  x: true,
+                  y: true,
+                },
             });
             for (let i = 1; i < this.selectedNodes.length; i++) {
                 const nodeId = this.selectedNodes[i];
                 visualiser.nodes.update({
                     id: nodeId,
                     x: this.computeXHorizontal(nodeId, previousNode),
-                    y: visualiser.rect.startY
+                    y: visualiser.rect.startY,
+                    fixed: {
+                      x: true,
+                      y: true,
+                    },
                 });
                 previousNode = nodeId;
             }
@@ -154,7 +162,11 @@ export default {
             visualiser.nodes.update({
                 id: previousNode,
                 x: visualiser.rect.startX,
-                y: visualiser.rect.startY
+                y: visualiser.rect.startY,
+                fixed: {
+                  x: true,
+                  y: true,
+                },
             });
             for (let i = 1; i < this.selectedNodes.length; i++) {
                 const nodeId = this.selectedNodes[i];
@@ -162,6 +174,10 @@ export default {
                     id: nodeId,
                     x: visualiser.rect.startX,
                     y: this.computeYVertical(nodeId, previousNode),
+                    fixed: {
+                      x: true,
+                      y: true,
+                    },
                 });
                 previousNode = nodeId;
             }
