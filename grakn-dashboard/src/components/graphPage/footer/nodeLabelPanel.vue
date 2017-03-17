@@ -32,7 +32,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="properties-list">
                 <ul class="dd-list">
                     <li class="dd-item"  @click="configureNode(prop)" v-for="prop in allNodeProps" v-bind:class="{'li-active':currentTypeProperties.includes(prop)}">
-                        <div class="dd-handle">{{prop}}</div>
+                        <div class="dd-handle noselect">{{prop}}</div>
                     </li>
                 </ul>
             </div>
@@ -121,6 +121,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <script>
 
 import GraphPageState from '../../../js/state/graphPageState';
+import NodeSettings from '../../../js/NodeSettings';
 
 
 export default {
@@ -133,7 +134,6 @@ export default {
             currentTypeProperties: {},
             nodeType: undefined,
             allNodeProps: [],
-            selectedProps: [],
         };
     },
     created() {
@@ -146,23 +146,25 @@ export default {
     },
     methods: {
       configureNode(p) {
-          if (this.selectedProps[this.nodeType].includes(p)) {
-              this.selectedProps[this.nodeType] = this.selectedProps[this.nodeType].filter(x => x !== p);
+          if (NodeSettings.getLabelProperties(this.nodeType).includes(p)){
+              NodeSettings.removeTypeLabel(this.nodeType, p);
           } else {
-              this.selectedProps[this.nodeType].push(p);
+              NodeSettings.addTypeLabel(this.nodeType, p);
           }
-          this.currentTypeProperties = this.selectedProps[this.nodeType];
-          this.state.eventHub.$emit('configure-node',this.nodeType, this.selectedProps[this.nodeType]);
+          this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
+          visualiser.setDisplayProperties(this.nodeType, this.currentTypeProperties);
       },
-      openNodeLabelPanel(allNodePropsParam,nodeTypeParam){
-        this.allNodeProps=allNodePropsParam;
-        this.nodeType=nodeTypeParam;
-        this.currentTypeProperties = this.selectedProps[this.nodeType];
 
-        if (this.currentTypeProperties === undefined) {
-            this.currentTypeProperties = [];
-            this.selectedProps[this.nodeType] = [];
-        }
+      openNodeLabelPanel(allNodePropsParam,nodeTypeParam, nodeId){
+        const node = visualiser.getNode(nodeId);
+
+        this.allNodeProps=allNodePropsParam;
+        
+        if((node.type != "")) this.allNodeProps.push('type');
+
+        this.nodeType=nodeTypeParam;
+        this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
+
         this.showNodeLabelPanel=true;
       },
     }

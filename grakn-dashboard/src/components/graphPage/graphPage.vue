@@ -106,15 +106,12 @@ export default {
         this.state.eventHub.$on('click-submit', this.onClickSubmit);
         this.state.eventHub.$on('load-ontology', this.onLoadOntology);
         this.state.eventHub.$on('clear-page', this.onClear);
-        this.state.eventHub.$on('configure-node', this.configureNode);
-
     },
     beforeDestroy() {
         // Destroy listeners when component is destroyed - although it never gets detroyed for now. [keep-alive]
         this.state.eventHub.$off('click-submit', this.onClickSubmit);
         this.state.eventHub.$off('load-ontology', this.onLoadOntology);
         this.state.eventHub.$off('clear-page', this.onClear);
-        this.state.eventHub.$off('configure-node', this.configureNode);
     },
     mounted() {
         this.$nextTick(function nextTickVisualiser() {
@@ -255,7 +252,7 @@ export default {
             const node = param.nodes[0];
             if (node === undefined) return;
 
-            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node));
+            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node), node);
         },
 
         doubleClick(param) {
