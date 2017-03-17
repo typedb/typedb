@@ -118,10 +118,10 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
-
+        
         traversals.addAll(ownerPlaysRole.match(start));
-
-        PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole, required);
+        //TODO: Get this to use real constraints no just the required flag
+        PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole, false);
         traversals.addAll(valuePlaysRole.match(resourceType.getVarName()));
 
         return traversals;
