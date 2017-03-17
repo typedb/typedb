@@ -121,6 +121,14 @@ public class GraqlTraversalTest {
     }
 
     @Test
+    public void valueFilteringIsBetterThanANonFilteringOperation() {
+        GraqlTraversal valueFilterFirst = traversal(value(x, gt(1).admin()), makeShortcut(x, y), outIsa(y, z));
+        GraqlTraversal shortcutFirst = traversal(outIsa(y, z), makeShortcut(y, x), value(x, gt(1).admin()));
+
+        assertFaster(valueFilterFirst, shortcutFirst);
+    }
+
+    @Test
     public void testCheckDistinctCastingEarlyFaster() {
         VarName c1 = VarName.of("c1");
         VarName c2 = VarName.of("c2");
