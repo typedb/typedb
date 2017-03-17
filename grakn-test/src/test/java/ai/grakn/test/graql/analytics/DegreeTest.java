@@ -34,8 +34,6 @@ import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -70,12 +68,6 @@ public class DegreeTest {
 
         factory = context.factoryWithNewKeyspace();
         graph = factory.getGraph();
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
-        logger.setLevel(Level.DEBUG);
     }
 
     @Test

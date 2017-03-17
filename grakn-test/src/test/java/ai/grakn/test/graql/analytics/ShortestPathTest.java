@@ -12,10 +12,7 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -64,12 +61,6 @@ public class ShortestPathTest {
         assumeFalse(usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-
-        logger = (Logger) org.slf4j.LoggerFactory.getLogger(ComputeQuery.class);
-        logger.setLevel(Level.DEBUG);
     }
 
     @Test(expected = IllegalStateException.class)
