@@ -561,21 +561,6 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testKeyRequiredValue() throws GraknValidationException {
-        assumeTrue(usingTinker());
-
-        qb.insert(
-                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
-                name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
-                var().isa("a-new-resource-type").value("hello")
-        ).execute();
-
-        exception.expect(GraknValidationException.class);
-        movieGraph.graph().commitOnClose();
-        movieGraph.graph().close();
-    }
-
-    @Test
     public void testResourceTypeRegex() {
         qb.insert(name("greeting").sub("resource").datatype(ResourceType.DataType.STRING).regex("hello|good day")).execute();
 
