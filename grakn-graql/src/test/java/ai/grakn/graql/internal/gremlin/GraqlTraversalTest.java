@@ -38,7 +38,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.eq;
+import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
@@ -65,6 +67,9 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalTest {
 
+    private static final VarName a = VarName.of("a");
+    private static final VarName b = VarName.of("b");
+    private static final VarName c = VarName.of("c");
     private static final VarName x = VarName.of("x");
     private static final VarName y = VarName.of("y");
     private static final VarName z = VarName.of("z");
@@ -209,6 +214,16 @@ public class GraqlTraversalTest {
         assertNearlyOptimal(var()
                 .rel(var(x).isa(var(y).id(ConceptId.of("movie"))))
                 .rel(var(z).value("Titanic").isa(var("a").id(ConceptId.of("title")))));
+    }
+
+    @Test
+    public void makeSureTypeIsCheckedBeforeFollowingAShortcut() {
+        assertNearlyOptimal(and(
+                var(x).id(ConceptId.of("xid")),
+                var().rel(var(x)).rel(var(y)),
+                var(y).isa(var(b).name("person")),
+                var().rel(var(y)).rel(var(z))
+        ));
     }
 
     @Test
