@@ -14,29 +14,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package ai.grakn.test.engine.tasks;
+package ai.grakn.exception;
 
-import ai.grakn.engine.TaskId;
+/**
+ * Exception to be thrown when a Grakn Engine server is unavailable
+ *
+ * @author alexandraorth
+ */
+public class EngineUnavailableException extends RuntimeException{
 
-import java.util.function.Consumer;
-
-public class FailingTestTask extends MockBackgroundTask {
-
-    @Override
-    protected void startInner(TaskId id) {
-        throw new RuntimeException("deliberate test failure");
-    }
-
-    @Override
-    public void pause() {
-
-    }
-
-    @Override
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
-
+    public EngineUnavailableException(Exception e){
+        super(e);
     }
 }

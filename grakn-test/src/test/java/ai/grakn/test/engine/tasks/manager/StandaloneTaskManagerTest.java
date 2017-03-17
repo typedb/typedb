@@ -25,7 +25,7 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.junit.Before;
@@ -46,7 +46,6 @@ import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
-import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
 import static org.junit.Assert.assertEquals;
@@ -57,7 +56,6 @@ public class StandaloneTaskManagerTest {
 
     @Before
     public void setUp() {
-        hideLogs();
         taskManager = new StandaloneTaskManager(EngineID.of("hello")) ;
     }
 
@@ -118,12 +116,12 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testRunRecurring() throws Exception {
-        TaskState task = createTask(ShortExecutionTestTask.class, recurring(now().plusSeconds(10), Duration.ofSeconds(100)));
+        TaskState task = createTask(ShortExecutionMockTask.class, recurring(now().plusSeconds(10), Duration.ofSeconds(100)));
         taskManager.addTask(task);
 
         Thread.sleep(2000);
 
-        assertTrue(ShortExecutionTestTask.startedCounter.get() > 1);
+        assertTrue(ShortExecutionMockTask.startedCounter.get() > 1);
 
         // Stop task..
         taskManager.stopTask(task.getId(), null);
@@ -131,7 +129,7 @@ public class StandaloneTaskManagerTest {
 
     @Test
     public void testStopSingle() {
-        TaskState task = createTask(ShortExecutionTestTask.class, at(now().plusSeconds(10)));
+        TaskState task = createTask(ShortExecutionMockTask.class, at(now().plusSeconds(10)));
         taskManager.addTask(task);
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();

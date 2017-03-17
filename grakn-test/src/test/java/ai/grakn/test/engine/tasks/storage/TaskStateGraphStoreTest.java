@@ -25,7 +25,7 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
@@ -62,7 +62,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testTaskStateStoreRetrieve() {
-        ShortExecutionTestTask task = new ShortExecutionTestTask();
+        ShortExecutionMockTask task = new ShortExecutionMockTask();
         Instant runAt = Instant.now();
         Json configuration = Json.object("test key", "test value");
 
@@ -105,7 +105,6 @@ public class TaskStateGraphStoreTest {
         stateStorage.updateState(newState);
 
         newState = stateStorage.getState(id);
-        assertNull(newState.engineID());
         assertEquals(exception.getClass().getName(), newState.exception());
         assertEquals(getFullStackTrace(exception), newState.stackTrace());
     }
@@ -141,7 +140,7 @@ public class TaskStateGraphStoreTest {
         TaskId id = stateStorage.newState(task());
         assertNotNull(id);
 
-        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionTestTask.class.getName(), null, null, 0, 0);
+        Set<TaskState> res = stateStorage.getTasks(null, ShortExecutionMockTask.class.getName(), null, null, 0, 0);
         assertTrue(res.parallelStream()
                 .map(TaskState::getId)
                 .filter(x -> x.equals(id))
@@ -200,6 +199,6 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(TaskSchedule schedule, Json configuration, String creator){
-        return TaskState.of(ShortExecutionTestTask.class, creator, schedule, configuration);
+        return TaskState.of(ShortExecutionMockTask.class, creator, schedule, configuration);
     }
 }

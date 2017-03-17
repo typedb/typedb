@@ -446,7 +446,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         return true;
     }
-    
+
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                     Cache<ReasonerAtomicQuery, ?> cache,
                                     Cache<ReasonerAtomicQuery, ?> dCache,

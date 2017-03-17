@@ -146,6 +146,14 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
         jobGroupId = Integer.toString(ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE));
         String jobDescription = this.vertexProgram == null ? this.mapReducers.toString() :
                 this.vertexProgram + "+" + this.mapReducers;
+
+        this.sparkConfiguration.setProperty(Constants.GREMLIN_HADOOP_OUTPUT_LOCATION,
+                this.sparkConfiguration.getString(Constants.GREMLIN_HADOOP_OUTPUT_LOCATION) + "/" + jobGroupId);
+        this.apacheConfiguration.setProperty(Constants.GREMLIN_HADOOP_OUTPUT_LOCATION,
+                this.sparkConfiguration.getString(Constants.GREMLIN_HADOOP_OUTPUT_LOCATION));
+        this.hadoopConfiguration.set(Constants.GREMLIN_HADOOP_OUTPUT_LOCATION,
+                this.sparkConfiguration.getString(Constants.GREMLIN_HADOOP_OUTPUT_LOCATION));
+
         // create the completable future
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -243,12 +251,13 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                     computedGraphRDD.unpersist();
                 }
                 // delete any file system or rdd data if persist nothing
-                if (null != graknGraphRDD.outputLocation && this.persist.equals(GraphComputer.Persist.NOTHING)) {
+                String outputPath = sparkConfiguration.getString(Constants.GREMLIN_HADOOP_OUTPUT_LOCATION);
+                if (null != outputPath && this.persist.equals(GraphComputer.Persist.NOTHING)) {
                     if (graknGraphRDD.outputToHDFS) {
-                        graknGraphRDD.fileSystemStorage.rm(graknGraphRDD.outputLocation);
+                        graknGraphRDD.fileSystemStorage.rm(outputPath);
                     }
                     if (graknGraphRDD.outputToSpark) {
-                        graknGraphRDD.sparkContextStorage.rm(graknGraphRDD.outputLocation);
+                        graknGraphRDD.sparkContextStorage.rm(outputPath);
                     }
                 }
                 // update runtime and return the newly computed graph
