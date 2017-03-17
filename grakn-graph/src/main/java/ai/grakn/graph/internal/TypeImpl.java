@@ -166,7 +166,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
 
         //TODO: Make this less convoluted
-        String [] implicitIdentifiers = implicitType.getName(TypeName.of("")).getValue().split("--");
+        String [] implicitIdentifiers = implicitType.getName("").getValue().split("--");
         String prefix = implicitIdentifiers[0] + "-";
         String suffix = "-" + implicitIdentifiers[1];
 

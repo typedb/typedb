@@ -236,6 +236,10 @@ public final class Schema {
         public TypeName getName(TypeName resourceType) {
             return resourceType.map(resource -> String.format(name, resource));
         }
+
+        public TypeName getName(String resourceType) {
+            return TypeName.of(String.format(name, resourceType));
+        }
     }
 
     /**

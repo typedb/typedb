@@ -388,10 +388,11 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertReferenceByName() {
+        String roleTypeName = Schema.ImplicitType.HAS_RESOURCE_OWNER.getName("title").getValue();
         qb.insert(
                 name("new-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
                 name("new-type").isAbstract(),
-                name("new-type").playsRole("has-title-owner"),
+                name("new-type").playsRole(roleTypeName),
                 var("x").isa("new-type")
         ).execute();
 
@@ -404,7 +405,7 @@ public class InsertQueryTest {
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
         assertTrue(newType.asEntityType().isAbstract());
-        assertTrue(newType.playsRoles().contains(movieGraph.graph().getRoleType("has-title-owner")));
+        assertTrue(newType.playsRoles().contains(movieGraph.graph().getRoleType(roleTypeName)));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
