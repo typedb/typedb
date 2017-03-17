@@ -337,9 +337,10 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public void setVarName(VarName name) {
+    public VarAdmin setVarName(VarName name) {
         if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
         this.name = name;
+        return this;
     }
 
     @Override

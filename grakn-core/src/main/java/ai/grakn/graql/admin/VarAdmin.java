@@ -23,6 +23,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -51,7 +52,8 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @param name the new variable name of this variable
      */
-    void setVarName(VarName name);
+    @CheckReturnValue
+    VarAdmin setVarName(VarName name);
 
     /**
      * @return whether the user specified a name for this variable
