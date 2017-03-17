@@ -437,9 +437,14 @@ export default class Visualiser {
   }
 
   generateLabel(type, properties, label) {
-    if (type in this.displayProperties) {
-      return this.displayProperties[type].reduce((l, x) => {
-        let value = (properties[x] === undefined) ? '' : properties[x].label;
+    if (NodeSettings.getLabelProperties(type).length) {
+      return NodeSettings.getLabelProperties(type).reduce((l, x) => {
+        let value;
+        if (x === 'type') {
+          value = type;
+          return `${(l.length ? `${l}\n` : l) + value}`;
+        }
+        value = (properties[x] === undefined) ? '' : properties[x].label;
         if (value.length > 40) value = `${value.substring(0, 40)}...`;
         return `${(l.length ? `${l}\n` : l) + x}: ${value}`;
       }, '');
