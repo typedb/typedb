@@ -69,7 +69,7 @@ public abstract class TestGraph {
 
     static <T> void putKey(Instance instance, ResourceType<T> resourceType, T resource) {
         Resource resourceInstance = resourceType.putResource(resource);
-        instance.key(resourceInstance);
+        instance.hasResource(resourceInstance);
     }
 
     static Instance getInstance(GraknGraph graph, String id){

@@ -430,10 +430,10 @@ public class EntityTypeTest extends GraphTestBase{
 
         //Resource 1 is a key to one and a resource to another
         entity1.hasResource(resource1);
-        entity2.key(resource1);
+        entity2.hasResource(resource1);
 
-        entity1.key(resource2);
-        entity2.key(resource3);
+        entity1.hasResource(resource2);
+        entity2.hasResource(resource3);
 
         graknGraph.commitOnClose();
         graknGraph.close();

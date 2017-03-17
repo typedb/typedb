@@ -94,7 +94,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
                 ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
                 Resource<String> resource = keyspaceName.putResource(keyspace);
                 if (resource.owner() == null) {
-                    graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().key(resource);
+                    graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
                 }
                 graph.admin().commitNoLogs();
             } catch (GraknValidationException e) {

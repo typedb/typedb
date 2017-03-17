@@ -178,28 +178,27 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The instance itself
      */
     @Override
-    public T hasResource(Resource resource){
-        return resource(resource, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER);
-    }
-
-    @Override
-    public T key(Resource resource){
-        return resource(resource, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_VALUE, Schema.ImplicitType.HAS_KEY_OWNER);
-    }
-
     private T resource(Resource resource, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner){
+        String type = "resource";
+        Schema.ImplicitType has = Schema.ImplicitType.HAS_RESOURCE;
+        Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_RESOURCE_VALUE;
+        Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_RESOURCE_OWNER;
+
+        //Is this resource a key to me?
+        if(type().keys().contains(resource.type())){
+            type = "key";
+            has = Schema.ImplicitType.HAS_KEY;
+            hasValue = Schema.ImplicitType.HAS_KEY_VALUE;
+            hasOwner  = Schema.ImplicitType.HAS_KEY_OWNER;
+        }
+
+
         TypeName name = resource.type().getName();
         RelationType hasResource = getGraknGraph().getType(has.getName(name));
         RoleType hasResourceTarget = getGraknGraph().getType(hasOwner.getName(name));
         RoleType hasResourceValue = getGraknGraph().getType(hasValue.getName(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            String type;
-            if(Schema.ImplicitType.HAS_KEY.equals(has)){
-                type = "key";
-            } else {
-                type = "resource";
-            }
             throw new ConceptException(ErrorMessage.HAS_INVALID.getMessage(type().getName(), type, resource.type().getName()));
         }
 
