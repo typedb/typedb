@@ -100,7 +100,7 @@ public abstract class AtomBase implements Atomic {
 
     private void setVarName(VarName var){
         varName = var;
-        atomPattern.asVar().setVarName(var);
+        atomPattern = atomPattern.asVar().setVarName(var);
     }
 
     /**

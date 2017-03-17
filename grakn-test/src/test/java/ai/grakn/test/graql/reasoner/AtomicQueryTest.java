@@ -34,18 +34,18 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,6 +56,9 @@ import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assume.assumeTrue;
 
 public class AtomicQueryTest {
@@ -99,6 +102,23 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
         assertEquals(atomicQuery, copy);
         assertEquals(atomicQuery.hashCode(), copy.hashCode());
+    }
+
+    @Test
+    public void testCopyConstructor2(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{(recommended-item: $x, recommended-customer: $y) isa recommendation;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, graph);
+        MatchQuery q1 = atomicQuery.getMatchQuery();
+
+        ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
+        MatchQuery q2 = copy.getMatchQuery();
+
+        atomicQuery.unify(VarName.of("y"), VarName.of("z"));
+
+        assertThat(q1.toString(), not(is(q2.toString())));
+        assertEquals(new ReasonerAtomicQuery(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
     }
 
     @Test

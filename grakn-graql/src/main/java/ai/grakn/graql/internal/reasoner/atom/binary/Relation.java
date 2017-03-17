@@ -142,13 +142,13 @@ public class Relation extends TypeAtom {
         Var var;
         if (!varName.getValue().isEmpty()) var = Graql.var(varName);
         else var = Graql.var();
-        rolePlayerMappings.forEach(mapping -> {
+        for (Pair<VarName, Var> mapping : rolePlayerMappings) {
             VarName rp = mapping.getKey();
             Var role = mapping.getValue();
-            if (role == null) var.rel(Graql.var(rp));
-            else var.rel(role, Graql.var(rp));
-        });
-        var.isa(Graql.var(typeVariable));
+            if (role == null) var = var.rel(Graql.var(rp));
+            else var = var.rel(role, Graql.var(rp));
+        }
+        var = var.isa(Graql.var(typeVariable));
         return var.admin().asVar();
     }
 
