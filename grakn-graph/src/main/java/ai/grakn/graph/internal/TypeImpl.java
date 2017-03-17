@@ -170,7 +170,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         String prefix = implicitIdentifiers[0] + "-";
         String suffix = "-" + implicitIdentifiers[1];
 
-        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retreived
+        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
 
         Set<ResourceType> resourceTypes = new HashSet<>();
         //A traversal is not used in this caching so that ontology caching can be taken advantage of.
@@ -570,7 +570,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         this.playsRole(ownerRole, required);
-        ((ResourceTypeImpl) resourceType).playsRole(valueRole, required);
+        //TODO: Use explicit cardinality of 0-1 rather than just false
+        ((ResourceTypeImpl) resourceType).playsRole(valueRole, false);
 
         return getThis();
     }

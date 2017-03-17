@@ -325,7 +325,8 @@ public class EntityTypeTest extends GraphTestBase{
         EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
         assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
         EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
+        //This is false because of the temporary workaround
+        assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
     @Test

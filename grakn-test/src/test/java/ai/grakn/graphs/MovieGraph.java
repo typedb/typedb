@@ -118,7 +118,6 @@ public class MovieGraph extends TestGraph {
         person.hasResource(realName);
 
         genre = graph.putEntityType("genre").playsRole(genreOfProduction);
-
         genre.key(name);
 
         character = graph.putEntityType("character")
@@ -193,21 +192,21 @@ public class MovieGraph extends TestGraph {
         putResource(sarahJessicaParker, name, "Sarah Jessica Parker");
 
         crime = genre.addEntity();
-        putResource(crime, name, "crime");
+        putKey(crime, name, "crime");
         drama = genre.addEntity();
-        putResource(drama, name, "drama");
+        putKey(drama, name, "drama");
         war = genre.addEntity();
-        putResource(war, name, "war");
+        putKey(war, name, "war");
         action = genre.addEntity();
-        putResource(action, name, "action");
+        putKey(action, name, "action");
         comedy = genre.addEntity();
-        putResource(comedy, name, "comedy");
+        putKey(comedy, name, "comedy");
         family = genre.addEntity();
-        putResource(family, name, "family");
+        putKey(family, name, "family");
         musical = genre.addEntity();
-        putResource(musical, name, "musical");
+        putKey(musical, name, "musical");
         fantasy = genre.addEntity();
-        putResource(fantasy, name, "fantasy");
+        putKey(fantasy, name, "fantasy");
 
         donVitoCorleone = character.addEntity();
         putResource(donVitoCorleone, name, "Don Vito Corleone");
