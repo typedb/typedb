@@ -28,6 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.internal.analytics.GraknVertexProgram;
@@ -435,6 +436,14 @@ public class StatisticsTest {
             result = graph.graql().compute().std().of(resourceType2).in(thing).execute();
             assertEquals(2.5, result.get(), delta);
         }
+
+        List<Long> list = new ArrayList<>();
+        for (long i = 0L; i < 2L; i++) {
+            list.add(i);
+        }
+        GraknSparkComputer.clear();
+        list.parallelStream().forEach(i -> assertEquals(2.5,
+                factory.getGraph().graql().compute().std().of(resourceType2).in(thing).execute().get(), delta));
     }
 
     @Test
@@ -499,6 +508,14 @@ public class StatisticsTest {
             result = Graql.compute().withGraph(graph).median().in(thing).of(resourceType2).execute();
             assertNotEquals(0L, result.get().longValue());
         }
+
+        List<Long> list = new ArrayList<>();
+        for (long i = 0L; i < 2L; i++) {
+            list.add(i);
+        }
+        GraknSparkComputer.clear();
+        list.parallelStream().forEach(i -> assertEquals(1.5D,
+                factory.getGraph().graql().compute().median().of(resourceType1).execute().get()));
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {

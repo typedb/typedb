@@ -34,7 +34,9 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static org.junit.Assume.assumeFalse;
@@ -101,5 +103,18 @@ public class CountTest {
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3L, Graql.compute().count().withGraph(graph).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
+
+        List<Long> list = new ArrayList<>(4);
+        for (long i = 0L; i < 4L; i++) {
+            list.add(i);
+        }
+        GraknSparkComputer.clear();
+        // running 4 jobs at the same time
+        list.parallelStream()
+                .map(i -> factory.getGraph().graql().compute().count().execute())
+                .forEach(i -> Assert.assertEquals(3L, i.longValue()));
+        list.parallelStream()
+                .map(i -> factory.getGraph().graql().compute().count().execute())
+                .forEach(i -> Assert.assertEquals(3L, i.longValue()));
     }
 }
