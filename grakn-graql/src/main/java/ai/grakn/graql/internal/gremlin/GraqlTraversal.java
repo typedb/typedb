@@ -175,8 +175,7 @@ public class GraqlTraversal {
             return fragment.fragmentCost(previousCost);
         } else {
             // Restart traversal, meaning we are navigating from all vertices
-            // The constant '1' cost is to discourage constant restarting, even when indexed
-            return fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost + 1;
+            return fragment.fragmentCost(NUM_VERTICES_ESTIMATE) * previousCost;
         }
     }
 
