@@ -36,7 +36,7 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
  * A traversal plan for executing a Graql query, comprised of a list of fragments and a cost
  */
 class Plan implements Comparable<Plan> {
-    private double cost;
+    private final double cost;
     private final Fragment fragment;
     private final Plan innerPlan;
     private final Set<VarName> names;
