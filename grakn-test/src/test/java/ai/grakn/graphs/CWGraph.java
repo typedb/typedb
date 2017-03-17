@@ -37,14 +37,11 @@ public class CWGraph extends TestGraph {
     private static EntityType person, criminal, weapon, rocket, missile, country;
     
     private static ResourceType<String> alignment;
-    private static RoleType alignmentValue, alignmentTarget;
 
     private static ResourceType<String> propulsion;
-    private static RoleType propulsionValue, propulsionTarget;
 
     private static ResourceType<String> nationality;
-    private static RoleType nationalityValue, nationalityTarget;
-    
+
     private static RelationType isEnemyOf, isPaidBy, owns, transaction;
     
     private static RoleType enemySource, enemyTarget;
@@ -62,20 +59,9 @@ public class CWGraph extends TestGraph {
     protected void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
-        nationalityTarget = graph.putRoleType("has-nationality-owner");
-        nationalityValue = graph.putRoleType("has-nationality-value");
-        nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING)
-                .playsRole(nationalityValue);
-
-        propulsionTarget = graph.putRoleType("has-propulsion-owner");
-        propulsionValue = graph.putRoleType("has-propulsion-value");
-        propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING)
-                .playsRole(propulsionValue);
-
-        alignmentTarget = graph.putRoleType("has-alignment-owner");
-        alignmentValue = graph.putRoleType("has-alignment-value");
-        alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING)
-                .playsRole(alignmentValue);
+        nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING);
+        propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING);
+        alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING);
 
         enemySource = graph.putRoleType("enemy-source");
         enemyTarget = graph.putRoleType("enemy-target");
