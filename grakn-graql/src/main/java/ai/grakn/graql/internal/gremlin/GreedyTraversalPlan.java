@@ -42,7 +42,7 @@ import static java.util.Comparator.naturalOrder;
  */
 public class GreedyTraversalPlan {
 
-    private static final long MAX_TRAVERSAL_ATTEMPTS = 1_000;
+    private static final long MAX_TRAVERSAL_ATTEMPTS = 10_000;
 
     /**
      * Create a traversal plan using the default maxTraersalAttempts.
