@@ -25,6 +25,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.printer.Printers;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.REST.RemoteShell.ACTION;
@@ -82,6 +84,7 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor =
             Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("graql-session-%s").build());
+    private List<Query<?>> queries = null;
 
     GraqlSession(
             Session session, GraknGraphFactory factory, String outputFormat,
@@ -176,6 +179,16 @@ class GraqlSession {
                 throw new RuntimeException(e);
             }
         });
+
+        // Kill any compute queries that might be running
+        // TODO: Avoid this weird cast
+        if (queries != null) {
+            for (Query<?> query : queries) {
+                if (query instanceof ComputeQuery) {
+                    ((ComputeQuery) query).kill();
+                }
+            }
+        }
     }
 
     /**
@@ -191,11 +204,10 @@ class GraqlSession {
     /**
      * Execute the Graql query described in the given JSON request
      */
-    void executeQuery() {
-        queryExecutor.execute(() -> {
+    Future<?> executeQuery() {
+        return queryExecutor.submit(() -> {
 
             String errorMessage = null;
-            List<Query<?>> queries = null;
 
             try {
                 String queryString = queryStringBuilder.toString();
