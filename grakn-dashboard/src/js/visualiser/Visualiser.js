@@ -22,7 +22,6 @@ import vis from 'vis';
 
 import Style from './Style';
 import User from '../User';
-import NodeSettings from '../NodeSettings';
 
 
 /*
