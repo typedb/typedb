@@ -21,9 +21,7 @@ package ai.grakn.graphs;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,51 +37,16 @@ public class AdmissionsGraph extends TestGraph{
     private static EntityType applicant;
 
     private static ResourceType<Long> TOEFL;
-    private static RelationType TOEFLrelation;
-    private static RoleType TOEFLvalue, TOEFLtarget;
-
     private static ResourceType<Double> GPR;
-    private static RelationType GPRrelation;
-    private static RoleType GPRvalue, GPRtarget;
-
     private static ResourceType<Long> GRE;
-    private static RelationType GRErelation;
-    private static RoleType GREvalue, GREtarget;
-
     private static ResourceType<Long> vGRE;
-    private static RelationType vGRErelation;
-    private static RoleType vGREvalue, vGREtarget;
-
     private static ResourceType<String> specialHonours;
-    private static RelationType specialHonoursRelation;
-    private static RoleType specialHonoursValue, specialHonoursTarget;
-
     private static ResourceType<String> degreeOrigin;
-    private static RelationType degreeOriginRelation;
-    private static RoleType degreeOriginValue, degreeOriginTarget;
-
     private static ResourceType<String> transcript;
-    private static RelationType transcriptRelation;
-    private static RoleType transcriptValue, transcriptTarget;
-
     private static ResourceType<String> priorGraduateWork;
-    private static RelationType priorGraduateWorkRelation;
-    private static RoleType priorGraduateWorkValue, priorGraduateWorkTarget;
-
     private static ResourceType<String> languageRequirement;
-    private static RelationType languageRequirementRelation;
-    private static RoleType languageRequirementValue, languageRequirementTarget;
-
     private static ResourceType<String> considerGPR;
-    private static RelationType considerGPRrelation;
-    private static RoleType considerGPRvalue, considerGPRtarget;
-
-    private static RoleType admissionStatusTarget, admissionStatusValue;
-    private static RelationType admissionStatusRelation;
     private static ResourceType<String> admissionStatus;
-
-    private static RoleType decisionTypeTarget,  decisionTypeValue;
-    private static RelationType decisionTypeRelation;
     private static ResourceType<String> decisionType;
 
     public static Consumer<GraknGraph> get() {
@@ -94,98 +57,32 @@ public class AdmissionsGraph extends TestGraph{
     protected void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
-        TOEFLtarget= graph.putRoleType("has-TOEFL-owner");
-        TOEFLvalue = graph.putRoleType("has-TOEFL-value");
-        TOEFLrelation = graph.putRelationType("has-TOEFL")
-                .hasRole(TOEFLtarget).hasRole(TOEFLvalue);
-        TOEFL = graph.putResourceType("TOEFL", ResourceType.DataType.LONG).playsRole(TOEFLvalue);
+        TOEFL = graph.putResourceType("TOEFL", ResourceType.DataType.LONG);
+        GRE = graph.putResourceType("GRE", ResourceType.DataType.LONG);
+        vGRE = graph.putResourceType("vGRE", ResourceType.DataType.LONG);
+        GPR = graph.putResourceType("GPR", ResourceType.DataType.DOUBLE);
+        specialHonours = graph.putResourceType("specialHonours", ResourceType.DataType.STRING);
+        considerGPR = graph.putResourceType("considerGPR", ResourceType.DataType.STRING);
+        transcript = graph.putResourceType("transcript", ResourceType.DataType.STRING);
+        priorGraduateWork = graph.putResourceType("priorGraduateWork", ResourceType.DataType.STRING);
+        languageRequirement= graph.putResourceType("languageRequirement", ResourceType.DataType.STRING);
+        degreeOrigin = graph.putResourceType("degreeOrigin", ResourceType.DataType.STRING);
+        admissionStatus = graph.putResourceType("admissionStatus", ResourceType.DataType.STRING);
+        decisionType = graph.putResourceType("decisionType", ResourceType.DataType.STRING);
 
-        GREtarget= graph.putRoleType("has-GRE-owner");
-        GREvalue = graph.putRoleType("has-GRE-value");
-        GRErelation = graph.putRelationType("has-GRE")
-                .hasRole(GREtarget).hasRole(GREvalue);
-        GRE = graph.putResourceType("GRE", ResourceType.DataType.LONG).playsRole(GREvalue);
-
-        vGREtarget= graph.putRoleType("has-vGRE-owner");
-        vGREvalue = graph.putRoleType("has-vGRE-value");
-        vGRErelation = graph.putRelationType("has-vGRE")
-                .hasRole(vGREtarget).hasRole(vGREvalue);
-        vGRE = graph.putResourceType("vGRE", ResourceType.DataType.LONG).playsRole(vGREvalue);
-
-        GPRtarget= graph.putRoleType("has-GPR-owner");
-        GPRvalue = graph.putRoleType("has-GPR-value");
-        GPRrelation = graph.putRelationType("has-GPR")
-                .hasRole(GPRtarget).hasRole(GPRvalue);
-        GPR = graph.putResourceType("GPR", ResourceType.DataType.DOUBLE).playsRole(GPRvalue);
-
-        specialHonoursTarget= graph.putRoleType("has-specialHonours-owner");
-        specialHonoursValue = graph.putRoleType("has-specialHonours-value");
-        specialHonoursRelation = graph.putRelationType("has-specialHonours")
-                .hasRole(specialHonoursTarget).hasRole(specialHonoursValue);
-        specialHonours = graph.putResourceType("specialHonours", ResourceType.DataType.STRING)
-                .playsRole(specialHonoursValue);
-
-        considerGPRtarget= graph.putRoleType("has-considerGPR-owner");
-        considerGPRvalue = graph.putRoleType("has-considerGPR-value");
-        considerGPRrelation = graph.putRelationType("has-considerGPR")
-                .hasRole(considerGPRtarget).hasRole(considerGPRvalue);
-        considerGPR = graph.putResourceType("considerGPR", ResourceType.DataType.STRING).playsRole(considerGPRvalue);
-
-        transcriptTarget = graph.putRoleType("has-transcript-owner");
-        transcriptValue = graph.putRoleType("has-transcript-value");
-        transcriptRelation = graph.putRelationType("has-transcript")
-                .hasRole(transcriptTarget).hasRole(transcriptValue);
-        transcript = graph.putResourceType("transcript", ResourceType.DataType.STRING)
-                .playsRole(transcriptValue);
-
-        priorGraduateWorkTarget = graph.putRoleType("has-priorGraduateWork-owner");
-        priorGraduateWorkValue = graph.putRoleType("has-priorGraduateWork-value");
-        priorGraduateWorkRelation = graph.putRelationType("has-priorGraduateWork")
-                .hasRole(priorGraduateWorkTarget).hasRole(priorGraduateWorkValue);
-        priorGraduateWork = graph.putResourceType("priorGraduateWork", ResourceType.DataType.STRING)
-                .playsRole(priorGraduateWorkValue);
-
-        languageRequirementTarget = graph.putRoleType("has-languageRequirement-owner");
-        languageRequirementValue = graph.putRoleType("has-languageRequirement-value");
-        languageRequirementRelation = graph.putRelationType("has-languageRequirement")
-                .hasRole(languageRequirementTarget).hasRole(languageRequirementValue);
-        languageRequirement= graph.putResourceType("languageRequirement", ResourceType.DataType.STRING)
-                .playsRole(languageRequirementValue);
-
-        degreeOriginTarget = graph.putRoleType("has-degreeOrigin-owner");
-        degreeOriginValue = graph.putRoleType("has-degreeOrigin-value");
-        degreeOriginRelation = graph.putRelationType("has-degreeOrigin")
-                .hasRole(degreeOriginTarget).hasRole(degreeOriginValue);
-        degreeOrigin = graph.putResourceType("degreeOrigin", ResourceType.DataType.STRING)
-                .playsRole(degreeOriginValue);
-
-        admissionStatusTarget = graph.putRoleType("has-admissionStatus-owner");
-        admissionStatusValue = graph.putRoleType("has-admissionStatus-value");
-        admissionStatusRelation = graph.putRelationType("has-admissionStatus")
-                .hasRole(admissionStatusTarget).hasRole(admissionStatusValue);
-        admissionStatus = graph.putResourceType("admissionStatus", ResourceType.DataType.STRING)
-                .playsRole(admissionStatusValue);
-
-        decisionTypeTarget = graph.putRoleType("has-decisionType-owner");
-        decisionTypeValue = graph.putRoleType("has-decisionType-value");
-        decisionTypeRelation = graph.putRelationType("has-decisionType")
-                .hasRole(decisionTypeTarget).hasRole(decisionTypeValue);
-        decisionType = graph.putResourceType("decisionType", ResourceType.DataType.STRING)
-                .playsRole(decisionTypeValue);
-
-        applicant = graph.putEntityType("applicant")
-                .playsRole(TOEFLtarget)
-                .playsRole(GREtarget)
-                .playsRole(vGREtarget)
-                .playsRole(GPRtarget)
-                .playsRole(specialHonoursTarget)
-                .playsRole(considerGPRtarget)
-                .playsRole(transcriptTarget)
-                .playsRole(priorGraduateWorkTarget)
-                .playsRole(languageRequirementTarget)
-                .playsRole(degreeOriginTarget)
-                .playsRole(decisionTypeTarget)
-                .playsRole(admissionStatusTarget);
+        applicant = graph.putEntityType("applicant");
+        applicant.hasResource(TOEFL);
+        applicant.hasResource(GRE);
+        applicant.hasResource(vGRE);
+        applicant.hasResource(GPR);
+        applicant.hasResource(specialHonours);
+        applicant.hasResource(considerGPR);
+        applicant.hasResource(transcript);
+        applicant.hasResource(priorGraduateWork);
+        applicant.hasResource(languageRequirement);
+        applicant.hasResource(degreeOrigin);
+        applicant.hasResource(admissionStatus);
+        applicant.hasResource(decisionType);
         applicant.hasResource(key);
     }
 

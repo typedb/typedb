@@ -192,21 +192,21 @@ public class MovieGraph extends TestGraph {
         putResource(sarahJessicaParker, name, "Sarah Jessica Parker");
 
         crime = genre.addEntity();
-        putKey(crime, name, "crime");
+        putResource(crime, name, "crime");
         drama = genre.addEntity();
-        putKey(drama, name, "drama");
+        putResource(drama, name, "drama");
         war = genre.addEntity();
-        putKey(war, name, "war");
+        putResource(war, name, "war");
         action = genre.addEntity();
-        putKey(action, name, "action");
+        putResource(action, name, "action");
         comedy = genre.addEntity();
-        putKey(comedy, name, "comedy");
+        putResource(comedy, name, "comedy");
         family = genre.addEntity();
-        putKey(family, name, "family");
+        putResource(family, name, "family");
         musical = genre.addEntity();
-        putKey(musical, name, "musical");
+        putResource(musical, name, "musical");
         fantasy = genre.addEntity();
-        putKey(fantasy, name, "fantasy");
+        putResource(fantasy, name, "fantasy");
 
         donVitoCorleone = character.addEntity();
         putResource(donVitoCorleone, name, "Don Vito Corleone");

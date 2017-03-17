@@ -67,11 +67,6 @@ public abstract class TestGraph {
         instance.hasResource(resourceInstance);
     }
 
-    static <T> void putKey(Instance instance, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = resourceType.putResource(resource);
-        instance.hasResource(resourceInstance);
-    }
-
     static Instance getInstance(GraknGraph graph, String id){
         Set<Instance> instances = graph.getResourcesByValue(id)
                 .stream().flatMap(res -> res.ownerInstances().stream()).collect(toSet());
