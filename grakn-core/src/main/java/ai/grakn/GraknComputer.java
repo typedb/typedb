@@ -63,4 +63,9 @@ public interface GraknComputer {
      * @see ComputerResult
      */
     ComputerResult compute(MapReduce mapReduce);
+
+    /**
+     * Kill all the jobs the graph computer has
+     */
+    void killJobs();
 }

@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.explanation;
 
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
+import java.util.HashSet;
 
 /**
  *
@@ -32,19 +33,14 @@ import ai.grakn.graql.admin.ReasonerQuery;
  */
 public class LookupExplanation extends Explanation {
 
-    private final ReasonerQuery query;
 
-    public LookupExplanation(ReasonerQuery q){ this.query = q;}
+    public LookupExplanation(ReasonerQuery q){ super(q, new HashSet<>());}
     public LookupExplanation(LookupExplanation exp){
-        super(exp);
-        this.query = exp.getQuery().copy();
+        super(exp.getQuery(), exp.getAnswers());
     }
 
     @Override
     public AnswerExplanation copy(){ return new LookupExplanation(this);}
-
-    @Override
-    public ReasonerQuery getQuery(){ return query;}
 
     @Override
     public boolean isLookupExplanation(){ return true;}

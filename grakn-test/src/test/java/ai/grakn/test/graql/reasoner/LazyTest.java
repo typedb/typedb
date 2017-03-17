@@ -29,13 +29,19 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -44,6 +50,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
@@ -128,12 +135,32 @@ public class LazyTest {
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(pattern3, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Answer> stream = query.lookup(cache);
-        Stream<Answer> stream2 = query2.lookup(cache);
-        Stream<Answer> stream3 = query3.lookup(cache);
+        query.lookup(cache);
+        InferenceRule rule = new InferenceRule(Reasoner.getRules(graph).iterator().next(), graph);
 
-        Stream<Answer> join = QueryAnswerStream.join(QueryAnswerStream.join(stream, stream2), stream3);
-        assertEquals(join.collect(toSet()).size(), 10);
+        Set<VarName> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
+        Stream<Answer> join = join(
+                query.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new),
+                query2.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new),
+                ImmutableSet.copyOf(joinVars),
+                true
+        )
+                .flatMap(a -> varFilterFunction.apply(a, rule.getHead().getVarNames()))
+                .distinct()
+                .map(ans -> ans.explain(new RuleExplanation(rule)));
+
+        cache.record(rule.getHead(), join);
+
+        Stream<Answer> stream = cache.getAnswerStream(rule.getHead());
+        Stream<Answer> stream2 = cache.getAnswerStream(query3);
+        joinVars = Sets.intersection(rule.getHead().getVarNames(), query3.getVarNames());
+        List<Answer> collect = QueryAnswerStream.join(
+                stream,
+                stream2,
+                ImmutableSet.copyOf(joinVars),
+                true)
+                .collect(Collectors.toList());
+        assertEquals(collect.size(), 40);
     }
 
     @Test

@@ -28,10 +28,8 @@ package ai.grakn.util;
  */
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
-    NO_EDGE("Concept [%s] does not have any edges to a [%s]"),
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
     LOOP_DETECTED("Concept [%s] loops when following edges of type [%s]"),
-    MORE_THAN_ONE_EDGE("Concept [%s] has more than one edge of type [%s]"),
     ID_NOT_UNIQUE("Failed to change the Id of Concept [%s] due to another concept already having an id of " +
             "type [%s] with value [%s]"),
     ID_ALREADY_TAKEN("The id [%s] is already taken by concept [%s]"),
@@ -43,21 +41,12 @@ public enum ErrorMessage {
     REGEX_INSTANCE_FAILURE("The regex [%s] cannot be applied because instance [%s] with value [%s] of the " +
             "Resource Type [%s] does not conform to the regular expression"),
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
-    ID_RESERVED("The ID [%s] is reserved and cannot be used"),
     ROLE_IS_NULL("The provided role cannot be null with roleplayer [%s]"),
-    RESOURCE_TYPE_CANNOT_BE_UNIQUE("The resource type [%s] cannot be set to unique because it's resources have " +
-            "duplicate values"),
-    INVALID_EDGE("The edge [%s] between concept [%s] and [%s] is invalid"),
-    NOT_SUPPORTED("Not supported with a [%s] backend"),
-    CLOSED_FACTORY("This graph has been closed due to a transaction being committed and invalidating this graph"),
     CLOSED_CLEAR("This graph has been closed due to clearing it"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
-    IMMUTABLE_TYPE("The type of concept [%s] cannot be set to [%s] as it is already set to [%s]"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
-    CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
-    UNSUPPORTED_GRAPH("The graph backend of [%s] does not support an [%s] operation."),
     RESOURCE_TYPE_UNIQUE("The resource [%s] is unique and is already attached to [%s]."),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_RESOURCE_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
@@ -66,8 +55,8 @@ public enum ErrorMessage {
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
     GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
-    CANNOT_FIND_VERTEX("Cannot find vertex using id [%s] on graph [%s] on a already constructed concept. This may be due to the vertex being deleted."),
     TRANSACTIONS_OPEN("Cannot close graph [%s] connecting to keyspace [%s] because there are [%s] open transactions"),
+    LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -79,9 +68,7 @@ public enum ErrorMessage {
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
     VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a has-role connection to any Relation Type. \n"),
-    VALIDATION_ROLE_TYPE_TOO_MANY_RELATION_TYPE("RoleType [%s] has more than one has-role connections to Relation Types. \n"),
-    VALIDATION_RELATION_TYPE("Relation Type [%s] is not abstract and does not have one or more roles \n"),
-    VALIDATION_RULE_PLAYS_ROLES_SCHEMA("The Type [%s] is playing role [%s] which it is not allowed \n"),
+    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have two or more roles \n"),
     VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +
@@ -94,7 +81,6 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
-    CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to [%s]"),
     INVALID_COMPUTER("The graph computer [%s] is not supported"),
     CONFIG_IGNORED("The config parameter [%s] with value [%s] is ignored for this implementation"),
     CANNOT_PRODUCE_GRAPH("Cannot produce a Grakn graph using the backend [%s]"),

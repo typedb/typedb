@@ -31,21 +31,21 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.exception.MoreThanOneEdgeException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ConceptTest extends GraphTestBase{
@@ -56,23 +56,6 @@ public class ConceptTest extends GraphTestBase{
     @Before
     public void setUp(){
         concept = (ConceptImpl) graknGraph.putEntityType("main_concept");
-    }
-
-    @Test(expected=MoreThanOneEdgeException.class)
-    public void testGetEdgeOutgoingOfType(){
-        ConceptImpl<?> concept = (ConceptImpl<?>) graknGraph.putEntityType("Thing");
-        assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
-
-        TypeImpl type1 = (TypeImpl) graknGraph.putEntityType("Type 1");
-        TypeImpl type2 = (TypeImpl) graknGraph.putEntityType("Type 2");
-        TypeImpl type3 = (TypeImpl) graknGraph.putEntityType("Type 3");
-
-        assertNotNull(type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
-
-        Vertex vertexType1 = graknGraph.getTinkerPopGraph().traversal().V(type1.getId().getRawValue()).next();
-        Vertex vertexType3 = graknGraph.getTinkerPopGraph().traversal().V(type3.getId().getRawValue()).next();
-        vertexType1.addEdge(Schema.EdgeLabel.SUB.getLabel(), vertexType3);
-        type1.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB);
     }
 
     @Test
@@ -155,6 +138,33 @@ public class ConceptTest extends GraphTestBase{
         EntityType c1 = graknGraph.putEntityType("c1");
         Entity c2 = c1.addEntity();
         assertEquals(c1, c2.type());
+    }
+
+    @Test
+    public void testGetEdgesIncomingOfType(){
+        EntityType entityType = graknGraph.putEntityType("entity type");
+        InstanceImpl<?, ?> conceptInstance1 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl conceptInstance2 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl conceptInstance3 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl conceptInstance4 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl conceptInstance5 = (InstanceImpl) entityType.addEntity();
+        InstanceImpl conceptInstance6 = (InstanceImpl) entityType.addEntity();
+        Vertex conceptInstance1_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance1.getId().getRawValue()).next();
+        Vertex conceptInstance2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance2.getId().getRawValue()).next();
+        Vertex conceptInstance3_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance3.getId().getRawValue()).next();
+        Vertex conceptInstance4_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance4.getId().getRawValue()).next();
+        Vertex conceptInstance5_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance5.getId().getRawValue()).next();
+        Vertex conceptInstance6_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance6.getId().getRawValue()).next();
+
+        conceptInstance2_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance3_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance4_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance5_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance6_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+
+        Set<EdgeImpl> edges = conceptInstance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet());
+
+        assertEquals(5, edges.size());
     }
 
     @Test

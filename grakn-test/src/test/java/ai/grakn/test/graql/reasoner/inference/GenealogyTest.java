@@ -109,16 +109,18 @@ public class GenealogyTest {
 
     @Test
     public void testFemale() {
-        String queryString = "match $x isa person has identifier $id has gender 'female';";
-        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        String queryString = "match $x isa person has gender 'female';";
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 32);
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
     public void testGender() {
-        String queryString = "match $x isa person has identifier $id has gender $gender;";
-        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        String queryString = "match $x isa person has gender $gender;";
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertEquals(answers.size(), qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }
@@ -307,6 +309,7 @@ public class GenealogyTest {
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
@@ -317,6 +320,7 @@ public class GenealogyTest {
     public void testCousins() {
         String queryString = "match ($x, $y) isa cousins;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 192);
         assertTrue(!hasDuplicates(answers));
@@ -327,6 +331,7 @@ public class GenealogyTest {
     public void testInLaws() {
         String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers requeriedAnswers = queryAnswers(query);
         assertEquals(answers.size(), 50);

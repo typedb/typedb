@@ -38,6 +38,7 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
+import spark.Response;
 import spark.Service;
 
 import java.lang.reflect.InvocationTargetException;
@@ -46,6 +47,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import static ai.grakn.engine.GraknEngineConfig.SERVER_HOST_NAME;
+import static ai.grakn.engine.GraknEngineConfig.STATIC_FILES_PATH;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
@@ -77,7 +80,7 @@ public class GraknEngineServer implements AutoCloseable {
         this.port = port;
         startHTTP();
         startPostprocessing();
-        printStartMessage(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
+        printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
     public static void main(String[] args) {
@@ -120,18 +123,7 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     public void startHTTP() {
-        // Set host name
-        spark.ipAddress(prop.getProperty(GraknEngineConfig.SERVER_HOST_NAME));
-
-        // Set port
-        spark.port(port);
-
-        // Set the external static files folder
-        spark.staticFiles.externalLocation(prop.getPath(GraknEngineConfig.STATIC_FILES_PATH));
-
-        // Start the websocket for Graql
-        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
-        spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
+        configureSpark(spark, port);
 
         // Start all the controllers
         new VisualiserController(spark);
@@ -142,17 +134,31 @@ public class GraknEngineServer implements AutoCloseable {
         new UserController(spark);
         new TasksController(spark, taskManager);
 
-        //Register filter to check authentication token in each request
-        spark.before((req, res) -> checkAuthorization(req));
-
-        //Register Exception Handler
-        spark.exception(GraknEngineServerException.class, (e, request, response) -> {
-            response.status(((GraknEngineServerException) e).getStatus());
-            response.body("New exception: " + e.getMessage() + " - Please refer to grakn.log file for full stack trace.");
-        });
-
         // This method will block until all the controllers are ready to serve requests
         spark.awaitInitialization();
+    }
+
+
+    public static void configureSpark(Service spark, int port){
+        // Set host name
+        spark.ipAddress(prop.getProperty(SERVER_HOST_NAME));
+
+        // Set port
+        spark.port(port);
+
+        // Set the external static files folder
+        spark.staticFiles.externalLocation(prop.getPath(STATIC_FILES_PATH));
+
+        // Start the websocket for Graql
+        spark.webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
+        spark.webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
+
+        //Register filter to check authentication token in each request
+        spark.before((req, res) -> checkAuthorization(spark, req));
+
+        //Register exception handlers
+        spark.exception(GraknEngineServerException.class, (e, req, res) -> handleGraknServerError(e, res));
+        spark.exception(Exception.class,                  (e, req, res) -> handleInternalError(e, res));
     }
 
     private void startPostprocessing(){
@@ -193,7 +199,12 @@ public class GraknEngineServer implements AutoCloseable {
         return taskManager;
     }
 
-    private void checkAuthorization(Request request) {
+    /**
+     * If authorization is enabled, check the client has correct JWT Token before allowing
+     * access to specific endpoints.
+     * @param request request information from the client
+     */
+    private static void checkAuthorization(Service spark, Request request) {
         if(!isPasswordProtected) return;
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones
@@ -215,6 +226,28 @@ public class GraknEngineServer implements AutoCloseable {
                 spark.halt(401, "User not authenticated.");
             }
         }
+    }
+
+    /**
+     * Handle any {@link GraknEngineServerException} that are thrown by the server. Configures and returns
+     * the correct JSON response.
+     *
+     * @param exception exception thrown by the server
+     * @param response response to the client
+     */
+    private static void handleGraknServerError(Exception exception, Response response){
+        response.status(((GraknEngineServerException) exception).getStatus());
+        response.body(Json.object("exception", exception.getMessage()).toString());
+    }
+
+    /**
+     * Handle any exception thrown by the server
+     * @param exception Exception by the server
+     * @param response response to the client
+     */
+    private static void handleInternalError(Exception exception, Response response){
+        response.status(500);
+        response.body(Json.object("exception", exception.getMessage()).toString());
     }
 
 

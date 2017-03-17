@@ -31,9 +31,51 @@ import java.util.Set;
  */
 public interface AnswerExplanation {
 
+    AnswerExplanation copy();
+
+    /**
+     * @return query associated with this explanation
+     */
+    ReasonerQuery getQuery();
+
+    /**
+     * @param q query this explanation should be associated with
+     * @return explanation with provided query
+     */
+    AnswerExplanation setQuery(ReasonerQuery q);
+
+    /**
+     * @param a answer this explanation is dependent on
+     * @return true if added successfully
+     */
     boolean addAnswer(Answer a);
 
+    /**
+     * @return answers this explanation is dependent on
+     */
     Set<Answer> getAnswers();
 
+    /**
+     * @param a2 explanation to be merged with
+     * @return merged explanation
+     */
+    AnswerExplanation merge(AnswerExplanation a2);
+
+    /**
+     *
+     * @return true if this explanation explains the answer on the basis of database lookup
+     */
     boolean isLookupExplanation();
+
+    /**
+     *
+     * @return true if this explanation explains the answer on the basis of rule application
+     */
+    boolean isRuleExplanation();
+
+    /**
+     *
+     * @return true if this explanation explains an intermediate answer being a product of a join operation
+     */
+    boolean isJoinExplanation();
 }

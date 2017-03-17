@@ -35,18 +35,51 @@ import java.util.Set;
  */
 public class Explanation implements AnswerExplanation {
 
+    private ReasonerQuery query;
     private final Set<Answer> answers;
 
     public Explanation(){ answers = new HashSet<>();}
-    public Explanation(Set<Answer> ans){ answers = ans;}
-    public Explanation(Explanation e){ answers = new HashSet<>(e.answers);}
+    Explanation(ReasonerQuery q, Set<Answer> ans){
+        this.query = q.copy();
+        this.answers = new HashSet<>(ans);
+    }
+    Explanation(Explanation e){
+        this.answers = new HashSet<>(e.answers);
+        this.query = query != null? query.copy() : null;
+    }
 
+    @Override
     public AnswerExplanation copy(){ return new Explanation(this);}
 
+    @Override
     public boolean addAnswer(Answer a){ return answers.add(a);}
+
+    @Override
     public Set<Answer> getAnswers(){ return answers;}
 
+    @Override
     public boolean isLookupExplanation(){ return false;}
 
-    public ReasonerQuery getQuery(){ return null;}
+    @Override
+    public boolean isRuleExplanation(){ return false;}
+
+    @Override
+    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation();}
+
+    @Override
+    public ReasonerQuery getQuery(){ return query;}
+
+    @Override
+    public AnswerExplanation setQuery(ReasonerQuery q){
+        this.query = q.copy();
+        return this;
+    }
+
+    @Override
+    public AnswerExplanation merge(AnswerExplanation a2) {
+        AnswerExplanation exp = new Explanation();
+        if (this.isJoinExplanation()) this.getAnswers().forEach(exp::addAnswer);
+        if (a2.isJoinExplanation()) a2.getAnswers().forEach(exp::addAnswer);
+        return exp;
+    }
 }

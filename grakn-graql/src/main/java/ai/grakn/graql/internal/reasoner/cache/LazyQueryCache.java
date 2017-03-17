@@ -45,6 +45,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
 
 
     public LazyQueryCache(){ super();}
+    public LazyQueryCache(boolean explanation){ super(explanation);}
 
     @Override
     public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
@@ -89,11 +90,10 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     public LazyAnswerIterator getAnswers(Q query) {
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
-            AnswerExplanation exp = new LookupExplanation(query.copy());
+            AnswerExplanation exp = new LookupExplanation(query);
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
-            return match.getValue()
-                    .unify(unifiers)
-                    .explain(exp);
+            LazyAnswerIterator unified = match.getValue().unify(unifiers);
+            return explanation? unified.explain(exp) : unified;
         }
         else return new LazyAnswerIterator(Stream.empty());
     }
@@ -103,10 +103,18 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
-            AnswerExplanation exp = new LookupExplanation(query.copy());
-            return match.getValue().stream()
-                    .map(a -> a.unify(unifiers))
-                    .map(a -> a.getExplanation() != null && a.getExplanation().isLookupExplanation()? a.explain(exp) : a);
+            AnswerExplanation exp = new LookupExplanation(query);
+            Stream<Answer> unified = match.getValue().stream().map(a -> a.unify(unifiers));
+            return explanation?
+                    unified.map(a -> {
+                        if (a.getExplanation() == null || a.getExplanation().isLookupExplanation()) {
+                            a.explain(exp);
+                        } else {
+                            a.getExplanation().setQuery(query);
+                        }
+                        return a;
+                    })
+                    : unified;
         }
         else return Stream.empty();
     }
