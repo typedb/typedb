@@ -29,6 +29,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
@@ -442,14 +443,14 @@ class VarImpl implements VarAdmin {
         return builder.toString();
     }
 
-    private Var addCasting(ai.grakn.graql.admin.RelationPlayer relationPlayer) {
+    private Var addCasting(RelationPlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        Stream<ai.grakn.graql.admin.RelationPlayer> oldCastings = relationProperty
+        Stream<RelationPlayer> oldCastings = relationProperty
                 .map(RelationProperty::getRelationPlayers)
                 .orElse(Stream.empty());
 
-        ImmutableMultiset<ai.grakn.graql.admin.RelationPlayer> relationPlayers =
+        ImmutableMultiset<RelationPlayer> relationPlayers =
                 Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
         relationProperty.ifPresent(properties::remove);
