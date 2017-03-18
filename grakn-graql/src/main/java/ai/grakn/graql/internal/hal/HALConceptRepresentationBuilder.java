@@ -163,7 +163,7 @@ public class HALConceptRepresentationBuilder {
         final Map<VarName, Collection<VarAdmin>> linkedNodes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             //if in the current var is expressed some kind of relation (e.g. ($x,$y))
-            if (var.getProperty(RelationProperty.class).isPresent()) {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
                 //collect all the role players in the current var's relations (e.g. 'x' and 'y')
                 final List<VarName> rolePlayersInVar = new ArrayList<>();
                 var.getProperty(RelationProperty.class).get()
