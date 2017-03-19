@@ -229,11 +229,13 @@ public class Relation extends TypeAtom {
     private boolean isRuleApplicableViaType(Relation childAtom) {
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Iterator<Type> it = varTypeMap.entrySet().stream()
-                .filter(entry -> containsVar(entry.getKey()))
+                .filter(entry -> this.containsVar(entry.getKey()))
                 .map(Map.Entry::getValue)
                 .filter(Objects::nonNull)
                 .iterator();
         Set<RoleType> roles = childAtom.getRoleVarTypeMap().keySet();
+
+        Map<Type, Set<RoleType>> mappings = new HashMap<>();
         while (it.hasNext()){
             Type type = it.next();
             if (!Schema.MetaSchema.isMetaName(type.getName())) {
@@ -241,10 +243,21 @@ public class Relation extends TypeAtom {
                 roleIntersection.retainAll(type.playsRoles());
                 if (roleIntersection.isEmpty()){
                     return false;
+                } else {
+                    mappings.put(type, roleIntersection);
                 }
             }
         }
-        return true ;
+
+        for (Map.Entry<Type, Set<RoleType>> entry : mappings.entrySet()) {
+            Set<RoleType> compatibleRoles = entry.getValue();
+            if (compatibleRoles.size() == 1) {
+                RoleType role = entry.getValue().iterator().next();
+                mappings.values().stream().filter(s -> s != compatibleRoles).forEach(s -> s.remove(role));
+            }
+        }
+        //return true if all mappings unique
+        return mappings.values().stream().mapToInt(Collection::size).sum() == mappings.size();
     }
 
     private boolean isRuleApplicableViaAtom(Relation childAtom, InferenceRule child) {
