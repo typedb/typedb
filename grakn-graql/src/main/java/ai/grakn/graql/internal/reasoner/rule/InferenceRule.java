@@ -164,7 +164,7 @@ public class InferenceRule {
     private void unifyViaAtom(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Map<VarName, VarName> unifiers = new HashMap<>();
-        if (!parentAtom.getValueVariable().getValue().isEmpty()){
+        if (parentAtom.getType() != null){
             childAtom.getUnifiers(parentAtom).forEach(unifiers::put);
         }
         //case of match all relation atom
