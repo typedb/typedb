@@ -23,7 +23,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
@@ -48,11 +47,11 @@ public class Patterns {
     }
 
     public static VarAdmin var() {
-        return VarImpl.anon(ImmutableSet.of());
+        return VarImpl.anon();
     }
 
     public static VarAdmin var(VarName name) {
-        return VarImpl.named(name, ImmutableSet.of());
+        return VarImpl.named(name);
     }
 
     public static VarAdmin mergeVars(Collection<VarAdmin> vars) {

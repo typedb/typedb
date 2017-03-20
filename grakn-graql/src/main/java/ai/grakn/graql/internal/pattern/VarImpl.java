@@ -89,16 +89,16 @@ class VarImpl implements VarAdmin {
     /**
      * Create a variable with a random variable name
      */
-    static VarImpl anon(ImmutableSet<VarProperty> properties) {
-        return new VarImpl(VarName.anon(), false, properties);
+    static VarImpl anon() {
+        return new VarImpl(VarName.anon(), false, ImmutableSet.of());
     }
 
     /**
      * Create a variable with a specified name
      * @param name the name of the variable
      */
-    static VarImpl named(VarName name, ImmutableSet<VarProperty> properties) {
-        return new VarImpl(name, true, properties);
+    static VarImpl named(VarName name) {
+        return new VarImpl(name, true, ImmutableSet.of());
     }
 
     /**
