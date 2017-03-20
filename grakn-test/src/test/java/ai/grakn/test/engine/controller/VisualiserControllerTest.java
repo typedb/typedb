@@ -20,7 +20,6 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.test.EngineContext;
@@ -44,6 +43,8 @@ import static ai.grakn.util.REST.Request.QUERY_FIELD;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.with;
 import static junit.framework.TestCase.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -299,8 +300,16 @@ public class VisualiserControllerTest {
 
     @Test
     public void syntacticallyWrongMatchQuery() {
-        Response response = get(REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=" + graph.getKeyspace() + "&query=match ersouiuiwne is ieeui;").then().statusCode(500).extract().response().andReturn();
-        assertEquals(true, response.getBody().asString().contains("syntax error at line 1"));
+        get(REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=" + graph.getKeyspace() + "&query=match ersouiuiwne is ieeui;")
+                .then().statusCode(400).extract().response()
+                .then().assertThat().body(containsString("syntax error at line 1"));
+    }
+
+    @Test
+    public void whenSendingAnInvalidQuery_TheResponseShouldNotContainTheExceptionType() {
+        get(REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=" + graph.getKeyspace() + "&query=match ersouiuiwne is ieeui;")
+                .then().statusCode(400).extract().response()
+                .then().assertThat().body(not(containsString("Exception")));
     }
 
     @Test
