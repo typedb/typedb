@@ -26,6 +26,7 @@ import ai.grakn.graql.VarName;
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
@@ -86,6 +87,16 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return whether this {@link Var} has a {@link VarProperty} of the given type
      */
     <T extends VarProperty> boolean hasProperty(Class<T> type);
+
+    // TODO: If `VarAdmin#setVarName` is removed, this may no longer be necessary
+    /**
+     * Return this {@link Var} with instances of the given {@link VarProperty} modified.
+     * @param type the type of the {@link VarProperty}
+     * @param <T> the type of the {@link VarProperty}
+     * @return whether this {@link Var} has a {@link VarProperty} of the given type
+     */
+    @CheckReturnValue
+    <T extends VarProperty> VarAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper);
 
     /**
      * @return the ID this variable represents, if it represents something with a specific ID

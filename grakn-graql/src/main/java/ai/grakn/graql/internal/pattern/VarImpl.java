@@ -64,8 +64,10 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -74,7 +76,7 @@ import static java.util.stream.Collectors.toSet;
  */
 class VarImpl implements VarAdmin {
 
-    private VarName name;
+    private final VarName name;
     private final boolean userDefinedName;
 
     private final Set<VarProperty> properties;
@@ -148,7 +150,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(Var var) {
-        return addProperty(new HasResourceProperty(var.admin()));
+        return addProperty(HasResourceProperty.of(var.admin()));
     }
 
     @Override
@@ -168,7 +170,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(TypeName type, Var var) {
-        return addProperty(new HasResourceProperty(type, var.admin()));
+        return addProperty(HasResourceProperty.of(type, var.admin()));
     }
 
     @Override
@@ -243,7 +245,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roleplayer) {
-        return addCasting(new RelationPlayerImpl(roleplayer.admin()));
+        return addCasting(RelationPlayerImpl.of(roleplayer.admin()));
     }
 
     @Override
@@ -263,7 +265,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        return addCasting(new RelationPlayerImpl(roletype.admin(), roleplayer.admin()));
+        return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
     }
 
     @Override
@@ -339,8 +341,7 @@ class VarImpl implements VarAdmin {
     @Override
     public VarAdmin setVarName(VarName name) {
         if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
-        this.name = name;
-        return this;
+        return new VarImpl(name, true, properties);
     }
 
     @Override
@@ -370,6 +371,19 @@ class VarImpl implements VarAdmin {
     @Override
     public <T extends VarProperty> boolean hasProperty(Class<T> type) {
         return getProperties(type).findAny().isPresent();
+    }
+
+    @Override
+    public <T extends VarProperty> VarAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
+        ImmutableSet<VarProperty> newProperties = getProperties().map(property -> {
+            if (type.isInstance(property)) {
+                return mapper.apply(type.cast(property));
+            } else {
+                return property;
+            }
+        }).collect(toImmutableSet());
+
+        return new VarImpl(name, userDefinedName, newProperties);
     }
 
     @Override

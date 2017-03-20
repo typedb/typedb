@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.Utility.capture;
@@ -70,6 +71,8 @@ import static ai.grakn.graql.internal.reasoner.Utility.getNonMetaTopRole;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.roleToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
+import static java.util.stream.Collectors.toSet;
 
 
 /**
@@ -105,6 +108,11 @@ public class Relation extends TypeAtom {
         return rps;
     }
 
+    private void modifyRelationPlayers(UnaryOperator<RelationPlayer> mapper) {
+        this.atomPattern = this.atomPattern.asVar().mapProperty(RelationProperty.class,
+                prop -> new RelationProperty(prop.getRelationPlayers().map(mapper).collect(toImmutableMultiset())));
+    }
+
     @Override
     protected VarName extractValueVariableName(VarAdmin var) {
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
@@ -116,7 +124,7 @@ public class Relation extends TypeAtom {
         IsaProperty isaProp = atomPattern.asVar().getProperty(IsaProperty.class).orElse(null);
         if (isaProp != null) {
             super.setValueVariable(var);
-            atomPattern.asVar().getProperties(IsaProperty.class).forEach(prop -> prop.getType().setVarName(var));
+            atomPattern = atomPattern.asVar().mapProperty(IsaProperty.class, prop -> new IsaProperty(prop.getType().setVarName(var)));
         }
     }
 
@@ -360,7 +368,7 @@ public class Relation extends TypeAtom {
             Set<Type> types = getRolePlayers().stream()
                     .filter(varTypeMap::containsKey)
                     .map(varTypeMap::get)
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
 
             Set<RelationType> compatibleTypesFromTypes = getCompatibleRelationTypes(types, typeToRelationTypes);
             if (compatibleTypesFromTypes.size() == 1) type = compatibleTypesFromTypes.iterator().next();
@@ -382,7 +390,7 @@ public class Relation extends TypeAtom {
                 .findFirst().orElse(null);
         if (hrAtom != null) {
             ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
-            QueryAnswers answers = new QueryAnswers(hrQuery.DBlookup().collect(Collectors.toSet()));
+            QueryAnswers answers = new QueryAnswers(hrQuery.DBlookup().collect(toSet()));
             if (answers.size() == 1) {
                 IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
                         answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
@@ -416,13 +424,15 @@ public class Relation extends TypeAtom {
     @Override
     public void unify(Map<VarName, VarName> mappings) {
         super.unify(mappings);
-        getRelationPlayers().forEach(c -> {
+        modifyRelationPlayers(c -> {
             VarName var = c.getRolePlayer().getVarName();
             if (mappings.containsKey(var)) {
                 VarName target = mappings.get(var);
-                c.getRolePlayer().setVarName(target);
+                return c.setRolePlayer(c.getRolePlayer().setVarName(target));
             } else if (mappings.containsValue(var)) {
-                c.getRolePlayer().setVarName(capture(var));
+                return c.setRolePlayer(c.getRolePlayer().setVarName(capture(var)));
+            } else {
+                return c;
             }
         });
     }
@@ -450,7 +460,7 @@ public class Relation extends TypeAtom {
     }
 
     private Set<VarName> getMappedRolePlayers() {
-        return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(Collectors.toSet());
+        return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(toSet());
     }
 
     /**
@@ -468,7 +478,7 @@ public class Relation extends TypeAtom {
         //filter by checking substitutions
         return getIdPredicates().stream()
                 .filter(pred -> unmappedVars.contains(pred.getVarName()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     @Override
@@ -477,7 +487,7 @@ public class Relation extends TypeAtom {
         return getTypeConstraints().stream()
                 .filter(t -> mappedVars.contains(t.getVarName()))
                 .filter(t -> Objects.nonNull(t.getType()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     @Override
@@ -486,7 +496,7 @@ public class Relation extends TypeAtom {
         return getTypeConstraints().stream()
                 .filter(t -> unmappedVars.contains(t.getVarName()))
                 .filter(t -> Objects.nonNull(t.getType()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
     }
 
     //move to relation
