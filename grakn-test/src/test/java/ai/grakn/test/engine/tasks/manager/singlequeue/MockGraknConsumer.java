@@ -19,7 +19,6 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
-import com.google.common.collect.Maps;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -54,8 +53,7 @@ import java.util.regex.Pattern;
 /**
  * This is a mock Kafka consumer, copied from {@link org.apache.kafka.clients.consumer.MockConsumer}.
  *
- * This class had to be copied because it did not certain behaviour that we need to test (such as no auto-committing
- * offsets).
+ * This class has been copied to add extra functionality such as running a task when a poll is empty. 
  */
 public class MockGraknConsumer<K, V> implements Consumer<K, V> {
 
@@ -178,6 +176,9 @@ public class MockGraknConsumer<K, V> implements Consumer<K, V> {
 
         ConsumerRecords<K, V> copy = new ConsumerRecords<K, V>(this.records);
         this.records = new HashMap<TopicPartition, List<ConsumerRecord<K, V>>>();
+
+        if (copy.count() == 0 && emptyPollTask != null) emptyPollTask.run();
+
         return copy;
     }
 
