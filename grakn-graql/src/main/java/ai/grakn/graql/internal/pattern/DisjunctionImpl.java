@@ -36,10 +36,6 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
         this.patterns = patterns;
     }
 
-    private DisjunctionImpl(Disjunction<T> disjunction) {
-        this.patterns = disjunction.getPatterns().stream().map(Patterns::copyOf).collect(toSet());
-    }
-
     @Override
     public Set<T> getPatterns() {
         return patterns;
@@ -63,11 +59,6 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
     @Override
     public Disjunction<?> asDisjunction() {
         return this;
-    }
-
-    @Override
-    public PatternAdmin cloneMe() {
-        return new DisjunctionImpl<>(this);
     }
 
     @Override

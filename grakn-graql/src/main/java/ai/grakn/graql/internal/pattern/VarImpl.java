@@ -28,7 +28,6 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
@@ -505,11 +504,6 @@ class VarImpl implements VarAdmin {
         // a disjunction containing only one option
         Conjunction<VarAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
         return Patterns.disjunction(Collections.singleton(conjunction));
-    }
-
-    @Override
-    public PatternAdmin cloneMe() {
-        return new VarImpl(name, userDefinedName, properties);
     }
 
     @Override
