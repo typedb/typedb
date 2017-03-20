@@ -165,7 +165,7 @@ public class AtomicTest {
         ImmutableMap<RoleType, VarName> correctRoleMap = ImmutableMap.of(
                 graph.getRoleType("transaction-item"), VarName.of("x"),
                 graph.getRoleType("seller"), VarName.of("y"),
-                graph.getRoleType("buyer"), VarName.of("z"));
+                graph.getRoleType("buyer"), VarName.of("y"));
         assertEquals(correctRoleMap, roleMap);
         assertEquals(correctRoleMap, roleMap2);
         assertEquals(correctRoleMap, roleMap3);
