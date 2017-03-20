@@ -30,6 +30,11 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.PARTITION_PATH;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
 import static org.apache.commons.lang.SerializationUtils.serialize;
 
+/**
+ * Store Kakfa offsets externally in Zookeeper for exactly once processing
+ *
+ * @author alexandraorth
+ */
 public class ExternalOffsetStorage {
 
     private final static Logger LOG = LoggerFactory.getLogger(ExternalOffsetStorage.class);
