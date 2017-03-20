@@ -201,7 +201,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var isa(Var type) {
-        return addProperty(new IsaProperty(type.admin()));
+        return addPropertyImmutable(new IsaProperty(type.admin()));
     }
 
     @Override
