@@ -58,7 +58,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
-import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
@@ -461,13 +460,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             childAtomicQuery = qit.next();
             Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, explanation, false);
-            join = joinWithInverse(
-                    join,
-                    localSubs,
-                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
-                    ImmutableSet.copyOf(joinVars),
-                    explanation);
-
+            join = join(join, localSubs, ImmutableSet.copyOf(joinVars), explanation);
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
         return join;
@@ -490,12 +483,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
                     Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    subs = joinWithInverse(
-                            subs,
-                            cache.getAnswerStream(qj),
-                            cache.getInverseAnswerMap(qj, joinVars),
-                            ImmutableSet.copyOf(joinVars),
-                            explanation);
+                    subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars), explanation);
                     joinedVars.addAll(qj.getVarNames());
                 }
             }
