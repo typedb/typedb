@@ -147,8 +147,9 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             if (this.deleteUnattached ) {
                 try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
                     Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
-                    if (res.ownerInstances().isEmpty() && res.relations().isEmpty())
+                    if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();
+                    }
                 }
             }
         }

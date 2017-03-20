@@ -41,6 +41,7 @@ import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.admin.GraknAdmin;
+import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
 import ai.grakn.util.EngineCommunicator;
@@ -63,6 +64,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -550,6 +552,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public <V> Collection<Resource<V>> getResourcesByValue(V value) {
+        if(value == null) return Collections.emptySet();
+
+        //Make sure you trying to retreive supported data type
+        if(!ResourceType.DataType.SUPPORTED_TYPES.containsKey(value.getClass().getName())){
+            String supported = ResourceType.DataType.SUPPORTED_TYPES.keySet().stream().collect(Collectors.joining(","));
+            throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value.getClass().getName(), supported));
+        }
+
         HashSet<Resource<V>> resources = new HashSet<>();
         ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
@@ -866,6 +876,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         LOG.trace("Graph is valid. Committing graph . . . ");
         commitTransaction();
 
+        //TODO: Kill when analytics no longer needs this
+        GraknSparkComputer.refresh();
+
         LOG.trace("Graph committed.");
         getConceptLog().writeToCentralCache(true);
         clearLocalVariables();
@@ -955,7 +968,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             castings.remove(mainCasting);
 
             //Fix the duplicates
-            Set<RelationImpl> duplicateRelations = mergeCastings(mainCasting, castings);
+            Set<Relation> duplicateRelations = mergeCastings(mainCasting, castings);
 
             //Remove Redundant Relations
             deleteRelations(duplicateRelations);
@@ -970,8 +983,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @param relations The duplicate relations to be merged
      */
-    private void deleteRelations(Set<RelationImpl> relations){
-        for (RelationImpl relation : relations) {
+    private void deleteRelations(Set<Relation> relations){
+        for (Relation relation : relations) {
             String relationID = relation.getId().getValue();
 
             //Kill Shortcut Edges
@@ -986,7 +999,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 }
             });
 
-            relation.deleteNode();
+            ((RelationImpl) relation).deleteNode();
         }
     }
 
@@ -996,14 +1009,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param castings The castings to whose edges will be transferred to the main casting and deleted.
      * @return A set of possible duplicate relations.
      */
-    private Set<RelationImpl> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
+    private Set<Relation> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
         RoleType role = mainCasting.getRole();
-        Set<RelationImpl> relations = mainCasting.getRelations();
-        Set<RelationImpl> relationsToClean = new HashSet<>();
+        Set<Relation> relations = mainCasting.getRelations();
+        Set<Relation> relationsToClean = new HashSet<>();
 
         for (CastingImpl otherCasting : castings) {
             //Transfer assertion edges
-            for(RelationImpl otherRelation : otherCasting.getRelations()){
+            for(Relation otherRelation : otherCasting.getRelations()){
                 boolean transferEdge = true;
 
                 //Check if an equivalent Relation is already connected to this casting. This could be a slow process

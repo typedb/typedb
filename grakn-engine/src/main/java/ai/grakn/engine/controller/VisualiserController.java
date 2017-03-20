@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
@@ -58,7 +57,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
-import static ai.grakn.engine.util.ConfigProperties.HAL_DEGREE_PROPERTY;
 import static ai.grakn.factory.EngineGraknGraphFactory.getInstance;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
@@ -86,9 +84,7 @@ import static java.util.stream.Collectors.toList;
 @Produces({"application/json", "text/plain"})
 public class VisualiserController {
 
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
-
-    private final static int separationDegree = properties.getPropertyAsInt(HAL_DEGREE_PROPERTY);
+    private final static int separationDegree = 1;
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
 
@@ -124,7 +120,7 @@ public class VisualiserController {
             }
 
             return renderHALConceptData(concept, separationDegree, keyspace, offset, limit);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -143,7 +139,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
             return renderHALConceptOntology(concept, keyspace);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -165,7 +161,7 @@ public class VisualiserController {
             responseObj.put(RELATIONS_JSON_FIELD, instances(graph.admin().getMetaRelationType()));
             responseObj.put(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
             return responseObj.toString();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -202,7 +198,7 @@ public class VisualiserController {
             } else {
                 throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
             }
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -241,7 +237,7 @@ public class VisualiserController {
                 response.put(COMPUTE_RESPONSE_FIELD, formatAsGraql(computeQuery));
             }
             return response.toString();
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }
@@ -255,7 +251,7 @@ public class VisualiserController {
             //TODO: Fix ugly casting here
             Reasoner.precomputeInferences(graph);
             return "Done.";
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }
     }

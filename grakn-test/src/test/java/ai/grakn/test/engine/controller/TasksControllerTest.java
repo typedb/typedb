@@ -18,13 +18,13 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
-import ai.grakn.test.engine.tasks.LongExecutionTestTask;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
 import org.json.JSONArray;
@@ -40,7 +40,9 @@ import java.util.Date;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.util.REST.WebPath.TASKS_SCHEDULE_URI;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.RestAssured.put;
@@ -53,11 +55,11 @@ public class TasksControllerTest {
     private TaskId singleTask;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() throws Exception {
-        MultiQueueTaskManager manager = (MultiQueueTaskManager) engine.getTaskManager();
+        TaskManager manager = engine.getTaskManager();
         TaskState status = createTask();
         singleTask = manager.storage().newState(status);
     }
@@ -66,7 +68,7 @@ public class TasksControllerTest {
     public void testTasksByStatus() throws Exception{
         Response response = given().queryParam("status", COMPLETED.toString())
                                    .queryParam("limit", 10)
-                                   .get("/tasks/all");
+                                   .get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -81,9 +83,9 @@ public class TasksControllerTest {
 
     @Test
     public void testTasksByClassName() {
-        Response response = given().queryParam("className", ShortExecutionTestTask.class.getName())
+        Response response = given().queryParam("className", ShortExecutionMockTask.class.getName())
                                    .queryParam("limit", 10)
-                                   .get("/tasks/all");
+                                   .get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -92,7 +94,7 @@ public class TasksControllerTest {
         JSONArray array = new JSONArray(response.body().asString());
         array.forEach(x -> {
             JSONObject o = (JSONObject)x;
-            assertEquals(ShortExecutionTestTask.class.getName(), o.get("className"));
+            assertEquals(ShortExecutionMockTask.class.getName(), o.get("className"));
         });
     }
 
@@ -100,7 +102,7 @@ public class TasksControllerTest {
     public void testTasksByCreator() {
         Response response = given().queryParam("creator", BackgroundTaskTestUtils.class.getName())
                                    .queryParam("limit", 10)
-                                   .get("/tasks/all");
+                                   .get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -115,7 +117,7 @@ public class TasksControllerTest {
 
     @Test
     public void testGetAllTasks() {
-        Response response = given().queryParam("limit", 10).get("/tasks/all");
+        Response response = given().queryParam("limit", 10).get(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
@@ -124,18 +126,19 @@ public class TasksControllerTest {
 
     @Test
     public void testGetTask() throws Exception {
-        get("/tasks/"+singleTask)
-                .then().statusCode(200)
+        Response response = get(GET.replace(ID_PARAMETER, singleTask.getValue()));
+
+        response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(singleTask.getValue()));
     }
 
     @Test
     public void testScheduleWithoutOptional() {
-        given().queryParam("className", ShortExecutionTestTask.class.getName())
+        given().queryParam("className", ShortExecutionMockTask.class.getName())
                .queryParam("creator", this.getClass().getName())
                .queryParam("runAt", new Date())
-               .post(TASKS_SCHEDULE_URI)
+               .post(TASKS)
                .then().statusCode(200)
                .and().contentType(ContentType.JSON)
                .and().body("id", notNullValue());
@@ -146,26 +149,24 @@ public class TasksControllerTest {
     @Test
     public void testScheduleStopTask() {
         Response response = given()
-                .queryParam("className", LongExecutionTestTask.class.getName())
+                .queryParam("className", LongExecutionMockTask.class.getName())
                 .queryParam("creator", this.getClass().getName())
                 .queryParam("runAt", new Date())
                 .queryParam("interval", 5000)
-                .post(TASKS_SCHEDULE_URI);
-        System.out.println(response.body().asString());
+                .post(TASKS);
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON);
 
         String id = new JSONObject(response.body().asString()).getString("id");
-        System.out.println(id);
 
         // Stop task
-        put("/tasks/"+id+"/stop")
+        put(TASKS+id+"/stop")
                 .then().statusCode(200)
                 .and().contentType("text/html");
 
         // Check state
-        get("/tasks/"+id)
+        get(TASKS+id)
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(id))

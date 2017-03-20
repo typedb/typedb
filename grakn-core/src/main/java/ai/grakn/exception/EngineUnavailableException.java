@@ -18,18 +18,14 @@
 
 package ai.grakn.exception;
 
-import ai.grakn.util.Schema;
-import ai.grakn.util.ErrorMessage;
-import ai.grakn.concept.Concept;
-
 /**
- * Thrown when more than one edge appears between two oncepts when it should not be the case.
- * For example if 2 isa edges appear between the same concepts.
+ * Exception to be thrown when a Grakn Engine server is unavailable
  *
- * @author Filipe Teixeira
+ * @author alexandraorth
  */
-public class MoreThanOneEdgeException extends GraphRuntimeException {
-    public MoreThanOneEdgeException(Concept concept, Schema.EdgeLabel edgeType) {
-        super(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(concept, edgeType.name()));
+public class EngineUnavailableException extends RuntimeException{
+
+    public EngineUnavailableException(Exception e){
+        super(e);
     }
 }

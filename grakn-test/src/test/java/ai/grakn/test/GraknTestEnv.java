@@ -1,14 +1,11 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
@@ -33,7 +30,7 @@ public abstract class GraknTestEnv {
 
     private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(GraknTestEnv.class);
 
-    private static final ConfigProperties properties = ConfigProperties.getInstance();
+    private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
 
     private static String CONFIG = System.getProperty("grakn.test-profile");
     private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
@@ -43,8 +40,9 @@ public abstract class GraknTestEnv {
 
     public static void ensureCassandraRunning() throws Exception {
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
+            LOG.info("starting cassandra...");
             startEmbeddedCassandra();
-            LOG.info("CASSANDRA RUNNING.");
+            LOG.info("cassandra started.");
         }
     }
 
@@ -54,14 +52,14 @@ public abstract class GraknTestEnv {
     static GraknEngineServer startEngine(String taskManagerClass, int port) throws Exception {
     	// To ensure consistency b/w test profiles and configuration files, when not using Titan
     	// for a unit tests in an IDE, add the following option:
-    	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
+    	// -Dgrakn.conf=../conf/test/tinker/grakn.properties
     	//
     	// When using titan, add -Dgrakn.test-profile=titan
     	//
     	// The reason is that the default configuration of Grakn uses the Titan factory while the default
     	// test profile is tinker: so when running a unit test within an IDE without any extra parameters,
     	// we end up wanting to use the TitanFactory but without starting Cassandra first.
-        LOG.info("STARTING ENGINE...");
+        LOG.info("starting engine...");
 
         ensureCassandraRunning();
 
@@ -69,33 +67,42 @@ public abstract class GraknTestEnv {
         RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
         GraknEngineServer server = GraknEngineServer.start(taskManagerClass, port);
 
-        LOG.info("ENGINE STARTED.");
+        LOG.info("engine started.");
 
         return server;
     }
 
     static void startKafka() throws Exception {
+        // Kafka is using log4j, which is super annoying. We make sure it only logs error here
+        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
+
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
+            LOG.info("starting kafka...");
+
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
             kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads() * 4);
+
+            LOG.info("kafka started.");
         }
     }
 
     static void stopKafka() throws Exception {
         if (KAFKA_COUNTER.decrementAndGet() == 0) {
+            LOG.info("stopping kafka...");
             kafkaUnit.shutdown();
+            LOG.info("kafka stopped.");
         }
     }
 
     static void stopEngine(GraknEngineServer server) throws Exception {
-        LOG.info("STOPPING ENGINE...");
+        LOG.info("stopping engine...");
 
         server.close();
         clearGraphs();
 
-        LOG.info("ENGINE STOPPED.");
+        LOG.info("engine stopped.");
 
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
@@ -120,11 +127,9 @@ public abstract class GraknTestEnv {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
             Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-            hideLogs();
 
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
-            hideLogs();
 
             try {Thread.sleep(5000);} catch(InterruptedException ex) { LOG.info("Thread sleep interrupted."); }
         }
@@ -136,13 +141,6 @@ public abstract class GraknTestEnv {
     static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    public static void hideLogs() {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).setLevel(Level.OFF);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknTestEnv.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(BackgroundTaskTestUtils.class)).setLevel(Level.DEBUG);
-        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
     }
 
     public static boolean usingTinker() {

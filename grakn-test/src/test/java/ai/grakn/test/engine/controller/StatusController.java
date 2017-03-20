@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import com.jayway.restassured.response.Response;
@@ -41,6 +41,6 @@ public class StatusController {
 
         Json resultObject = Json.read(response.getBody().asString());
 
-        assertFalse(resultObject.has(ConfigProperties.JWT_SECRET_PROPERTY));
+        assertFalse(resultObject.has(GraknEngineConfig.JWT_SECRET_PROPERTY));
     }
 }

@@ -29,4 +29,8 @@ public class GraknBackendException extends GraphRuntimeException {
     public GraknBackendException(Exception e) {
         super(ErrorMessage.BACKEND_EXCEPTION.getMessage(), e);
     }
+
+    public GraknBackendException(String message, Exception e) {
+        super(message, e);
+    }
 }

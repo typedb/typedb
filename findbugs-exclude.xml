@@ -1,6 +1,28 @@
 <FindBugsFilter>
+
     <!-- Exclude generated ANTLR classes -->
     <Match>
         <Class name="~ai\.grakn\.graql\.internal\.antlr\..*"/>
     </Match>
+
+    <!-- Exclude mocked tasks in engine-->
+    <Match>
+        <Class name="~ai\.grakn\.engine\.tasks\.mock\..*"/>
+    </Match>
+
+    <!-- Exclude a lot of bugs we can't be bothered to fix -->
+    <!-- TODO: Re-enable these -->
+
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="DM_CONVERT_CASE"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="UR_UNINIT_READ_CALLED_FROM_SUPER_CONSTRUCTOR"/>
+    </Match>
+
 </FindBugsFilter>

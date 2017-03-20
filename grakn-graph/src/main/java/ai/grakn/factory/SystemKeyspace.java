@@ -92,10 +92,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
         openSpaces.computeIfAbsent(keyspace, name -> {
             try (GraknGraph graph = factory.getGraph(false)) {
                 ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
-                Resource<String> resource = keyspaceName.getResource(keyspace);
-                if (resource == null) {
-                    resource = keyspaceName.putResource(keyspace);
-                }
+                Resource<String> resource = keyspaceName.putResource(keyspace);
                 if (resource.owner() == null) {
                     graph.<EntityType>getType(KEYSPACE_ENTITY).addEntity().hasResource(resource);
                 }
@@ -123,7 +120,6 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
             try (BufferedReader buffer = new BufferedReader(new InputStreamReader(loader.getResourceAsStream(SYSTEM_ONTOLOGY_FILE), StandardCharsets.UTF_8))) {
                 query = buffer.lines().collect(Collectors.joining("\n"));
             }
-            LOG.info("System ontology is " + query);
             graph.graql().parse(query).execute();
             graph.getResourceType("system-version").putResource(GraknVersion.VERSION);
             graph.admin().commitNoLogs();

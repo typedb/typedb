@@ -67,8 +67,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private TypeName cachedTypeName;
     private ComponentCache<Boolean> cachedIsImplicit = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
-    private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> getOutgoingNeighbour(Schema.EdgeLabel.SUB));
-    private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> getIncomingNeighbours(Schema.EdgeLabel.SUB));
+    private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays roles are required
     private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlaysRoles = new ComponentCache<>(() -> {
@@ -529,7 +529,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         //Check if resource type is the meta
         if(Schema.MetaSchema.RESOURCE.getName().equals(resourceType.getName())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resourceType.getName()));
         }
 
         TypeName resourceTypeName = resourceType.getName();

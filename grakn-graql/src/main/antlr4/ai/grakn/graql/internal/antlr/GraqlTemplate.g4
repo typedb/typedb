@@ -77,8 +77,6 @@ keyword
 | IF
 | ELSEIF
 | ELSE
-| TRUE
-| FALSE
 | DO
 | IN
 | BOOLEAN

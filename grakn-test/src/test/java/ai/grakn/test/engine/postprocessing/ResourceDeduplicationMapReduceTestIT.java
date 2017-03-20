@@ -135,7 +135,7 @@ public class ResourceDeduplicationMapReduceTestIT {
             t.printStackTrace(System.err);
             throw t;
         }        
-        transact(graph -> miniOntology(graph));
+        transact(graph -> { miniOntology(graph); });
     }
     
     @After
@@ -148,7 +148,7 @@ public class ResourceDeduplicationMapReduceTestIT {
      * Simple sanity test that nothing bad happens if the graph has no resources whatsoever.
      */
     @Test
-    @Ignore
+    //@Ignore
     public void testNoResources() {
         ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
         task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); }, 

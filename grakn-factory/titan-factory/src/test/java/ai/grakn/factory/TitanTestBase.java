@@ -2,8 +2,6 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.util.ErrorMessage;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -27,9 +25,7 @@ public abstract class TitanTestBase {
     @BeforeClass
     public static void setupMain(){
         try {
-            hideLogs();
             EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-            hideLogs();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -41,10 +37,5 @@ public abstract class TitanTestBase {
         }
 
         titanGraphFactory = new TitanInternalFactory(TEST_SHARED, Grakn.IN_MEMORY, TEST_PROPERTIES);
-    }
-
-    private static void hideLogs() {
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
     }
 }

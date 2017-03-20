@@ -20,12 +20,13 @@ package ai.grakn.test.engine.tasks;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.FailingMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
@@ -38,7 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
@@ -55,65 +55,20 @@ import static org.junit.Assert.fail;
  */
 public class BackgroundTaskTestUtils {
 
-    private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
-
-    private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
-    private static Consumer<TaskId> onTaskStart;
-    private static Consumer<TaskId> onTaskFinish;
-
-    static void addCompletedTask(TaskId taskId) {
-        COMPLETED_TASKS.add(taskId);
-    }
-
-    public static ImmutableMultiset<TaskId> completedTasks() {
-        return ImmutableMultiset.copyOf(COMPLETED_TASKS);
-    }
-
-    static void addCancelledTask(TaskId taskId) {
-        CANCELLED_TASKS.add(taskId);
-    }
-
-    public static ImmutableMultiset<TaskId> cancelledTasks() {
-        return ImmutableMultiset.copyOf(CANCELLED_TASKS);
-    }
-
-    public static void whenTaskStarts(Consumer<TaskId> beforeTaskStarts) {
-        BackgroundTaskTestUtils.onTaskStart = beforeTaskStarts;
-    }
-
-    static void onTaskStart(TaskId taskId) {
-        if (onTaskStart != null) onTaskStart.accept(taskId);
-    }
-
-    public static void whenTaskFinishes(Consumer<TaskId> onTaskFinish) {
-        BackgroundTaskTestUtils.onTaskFinish = onTaskFinish;
-    }
-
-    static void onTaskFinish(TaskId taskId) {
-        if (onTaskFinish != null) onTaskFinish.accept(taskId);
-    }
-
-    public static void clearTasks() {
-        COMPLETED_TASKS.clear();
-        CANCELLED_TASKS.clear();
-        onTaskStart = null;
-        onTaskFinish = null;
-    }
-
     public static Set<TaskState> createTasks(int n) {
-        return generate(() -> createTask(ShortExecutionTestTask.class)).limit(n).collect(toSet());
+        return generate(() -> createTask(ShortExecutionMockTask.class)).limit(n).collect(toSet());
     }
 
     public static Set<TaskState> createScheduledTasks(int n) {
-        return generate(() -> createTask(ShortExecutionTestTask.class).markScheduled()).limit(n).collect(toSet());
+        return generate(() -> createTask(ShortExecutionMockTask.class).markScheduled()).limit(n).collect(toSet());
     }
 
     public static Set<TaskState> createRunningTasks(int n, EngineID engineID) {
-        return generate(() -> createTask(ShortExecutionTestTask.class).markRunning(engineID)).limit(n).collect(toSet());
+        return generate(() -> createTask(ShortExecutionMockTask.class).markRunning(engineID)).limit(n).collect(toSet());
     }
 
     public static TaskState createTask() {
-        return createTask(ShortExecutionTestTask.class);
+        return createTask(ShortExecutionMockTask.class);
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz) {
@@ -178,7 +133,7 @@ public class BackgroundTaskTestUtils {
             // 3. it is RUNNING or not being retried
             TaskId id = task.getId();
             boolean visited = visitedTasks.contains(id);
-            boolean willFail = task.taskClass().equals(FailingTestTask.class);
+            boolean willFail = task.taskClass().equals(FailingMockTask.class);
             boolean isRunning = appearedTasks.contains(id);
             boolean isRetried = retriedTasks.contains(id);
             if (!visited && (isRunning || !isRetried)) {

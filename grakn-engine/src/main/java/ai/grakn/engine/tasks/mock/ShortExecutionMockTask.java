@@ -16,8 +16,30 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-/**
- *  Provides various implementations of engine task management.
- */
+package ai.grakn.engine.tasks.mock;
 
-package ai.grakn.engine.backgroundtasks;
+import ai.grakn.engine.TaskId;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
+/**
+ * Mocked task that will finish nearly instantaneously
+ *
+ * @author alexandraorth, Felix Chapman
+ */
+public class ShortExecutionMockTask extends MockBackgroundTask {
+    public static final AtomicInteger startedCounter = new AtomicInteger(0);
+    public static final AtomicInteger resumedCounter = new AtomicInteger(0);
+
+    @Override
+    protected void startInner(TaskId id) {
+        startedCounter.incrementAndGet();
+    }
+
+    public void pause() {}
+
+    public void resume(Consumer<String> c, String s) {
+        resumedCounter.incrementAndGet();
+    }
+}

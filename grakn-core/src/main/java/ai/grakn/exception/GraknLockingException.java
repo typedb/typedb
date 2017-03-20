@@ -21,12 +21,13 @@ package ai.grakn.exception;
 import ai.grakn.util.ErrorMessage;
 
 /**
- * The exception thrown when an edge is expected between two concepts.
+ * A locking exception which may occur in a multi threaded environment.
+ * Catching this exception, clearing the transaction, and retrying may allow the commit to execute successfully.
  *
  * @author Filipe Teixeira
  */
-public class NoEdgeException extends GraphRuntimeException {
-    public NoEdgeException(String id, String target) {
-        super(ErrorMessage.NO_EDGE.getMessage(id, target));
+public class GraknLockingException extends GraknBackendException {
+    public GraknLockingException(Exception e) {
+        super(ErrorMessage.LOCKING_EXCEPTION.getMessage(), e);
     }
 }

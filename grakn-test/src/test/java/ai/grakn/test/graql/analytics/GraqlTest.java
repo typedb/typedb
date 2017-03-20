@@ -29,7 +29,6 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
 import ai.grakn.graql.analytics.MaxQuery;
@@ -38,13 +37,9 @@ import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.analytics.SumQuery;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Lists;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -90,14 +85,6 @@ public class GraqlTest {
         assumeFalse(usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
-        logger.setLevel(Level.DEBUG);
-    }
-
-    @After
-    public void close() {
-        GraknSparkComputer.clear();
     }
 
     @Test
@@ -307,6 +294,5 @@ public class GraqlTest {
 
             graph.commitOnClose();
         }
-        GraknSparkComputer.clear();
     }
 }

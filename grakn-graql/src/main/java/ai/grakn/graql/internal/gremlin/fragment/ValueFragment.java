@@ -53,7 +53,8 @@ class ValueFragment extends AbstractFragment {
         if (predicate.isSpecific()) {
             return NUM_RESOURCES_PER_VALUE;
         } else {
-            return previousCost;
+            // Assume approximately half of values will satisfy a filter
+            return previousCost / 2.0;
         }
     }
 

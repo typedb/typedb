@@ -106,6 +106,8 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
             LOG.debug("Offset {} read for partition %{}", partitionPath, partitionPath);
 
             return offset;
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e){
             throw new EngineStorageException("Error retrieving offset");
         }
@@ -125,6 +127,8 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
             zookeeper.connection().create()
                     .creatingParentContainersIfNeeded()
                     .forPath(partitionPath, serialize(currentOffset));
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e){
             throw new EngineStorageException("Error saving offset");
         }
@@ -142,7 +146,9 @@ public class ExternalStorageRebalancer implements ConsumerRebalanceListener {
             LOG.debug("Offset at {} deleting", partitionPath);
             zookeeper.connection().delete()
                     .forPath(partitionPath);
-        } catch (Exception e){
+        } catch (RuntimeException e){
+            throw e;
+        } catch (Exception e) {
             throw new EngineStorageException("Error deleting offset");
         }
     }

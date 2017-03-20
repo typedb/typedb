@@ -34,6 +34,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class TaskSchedule implements Serializable {
 
+    private static final long serialVersionUID = 8220146809708041152L;
+
     /**
      * When this task should be executed.
      */
@@ -96,5 +98,13 @@ public class TaskSchedule implements Serializable {
      */
     public boolean isRecurring() {
         return interval != null;
+    }
+
+    /**
+     * Returns a copy of this Schedule that will start a task after the given interval
+     * @return a Schedule with the given amount added
+     */
+    public TaskSchedule incrementByInterval(){
+        return new TaskSchedule(runAt.plus(interval), interval);
     }
 }

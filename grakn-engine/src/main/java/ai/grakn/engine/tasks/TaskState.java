@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.tasks;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.util.EngineID;
 import mjson.Json;
@@ -41,6 +42,8 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov
  */
 public class TaskState implements Serializable {
+
+    private static final long serialVersionUID = -7301340972479426653L;
 
     /**
      * Id of this task.
@@ -69,7 +72,7 @@ public class TaskState implements Serializable {
     /**
      * Schedule for when this task should execute
      */
-    private final TaskSchedule schedule;
+    private TaskSchedule schedule;
     /**
      * Used to store any executing failures for the given task.
      */
@@ -136,7 +139,6 @@ public class TaskState implements Serializable {
 
     public TaskState markCompleted(){
         this.status = COMPLETED;
-        this.engineID = null;
         this.statusChangeTime = now();
         return this;
     }
@@ -149,14 +151,12 @@ public class TaskState implements Serializable {
 
     public TaskState markStopped(){
         this.status = STOPPED;
-        this.engineID = null;
         this.statusChangeTime = now();
         return this;
     }
 
     public TaskState markFailed(Throwable exception){
         this.status = FAILED;
-        this.engineID = null;
         this.exception = exception.getClass().getName();
         this.stackTrace = getFullStackTrace(exception);
         this.statusChangeTime = now();
@@ -189,6 +189,11 @@ public class TaskState implements Serializable {
 
     public TaskSchedule schedule() {
         return schedule;
+    }
+
+    public TaskState schedule(TaskSchedule schedule){
+        this.schedule = schedule;
+        return this;
     }
 
     public String stackTrace() {

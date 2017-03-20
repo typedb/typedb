@@ -72,7 +72,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Felix Chapman
  */
-public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
+public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty {
 
     private final ImmutableMultiset<RelationPlayer> relationPlayers;
 

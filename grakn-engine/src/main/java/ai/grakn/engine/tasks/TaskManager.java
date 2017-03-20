@@ -21,9 +21,11 @@ package ai.grakn.engine.tasks;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 
-import static ai.grakn.engine.util.ConfigProperties.USE_ZOOKEEPER_STORAGE;
+import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
+
+import ai.grakn.engine.TaskId;
 
 /**
  * <p>
@@ -59,7 +61,7 @@ public interface TaskManager extends AutoCloseable {
 
     // TODO: Add 'pause' and 'restart' methods
 
-    default TaskStateStorage chooseStorage(ConfigProperties properties, ZookeeperConnection zookeeper){
+    default TaskStateStorage chooseStorage(GraknEngineConfig properties, ZookeeperConnection zookeeper){
         if(properties.getPropertyAsBool(USE_ZOOKEEPER_STORAGE)){
             return new TaskStateZookeeperStore(zookeeper);
         } else {

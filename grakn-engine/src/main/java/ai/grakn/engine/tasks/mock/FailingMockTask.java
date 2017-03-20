@@ -16,8 +16,31 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-/**
- * Package implementing standalone in-memory engine task management.
- */
+package ai.grakn.engine.tasks.mock;
 
-package ai.grakn.engine.backgroundtasks.standalone;
+import ai.grakn.engine.TaskId;
+
+import java.util.function.Consumer;
+
+/**
+ * Mocked task that will throw exception
+ *
+ * @author alexandraorth, Felix Chapman
+ */
+public class FailingMockTask extends MockBackgroundTask {
+
+    @Override
+    protected void startInner(TaskId id) {
+        throw new RuntimeException("deliberate test failure");
+    }
+
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+
+    }
+}

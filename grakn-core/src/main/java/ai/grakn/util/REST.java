@@ -44,9 +44,14 @@ public class REST {
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
-        public static final String ALL_TASKS_URI = "/tasks/all";
-        public static final String TASKS_URI = "/tasks";
-        public static final String TASKS_SCHEDULE_URI ="/tasks/schedule";
+        /**
+         * URIs to Tasks Controller endpoints
+         */
+        public static class Tasks {
+            public static final String TASKS = "/tasks";
+            public static final String GET = "/tasks/:id";
+            public static final String STOP = "/tasks/:id/stop";
+        }
 
         public static final String NEW_SESSION_URI="/auth/session/";
         public static final String IS_PASSWORD_PROTECTED_URI="/auth/enabled/";
@@ -59,22 +64,16 @@ public class REST {
      * Class containing request fields and content types.
      */
     public static class Request {
-        public static final String PATH_FIELD = "path";
-        public static final String HOSTS_FIELD = "hosts";
         public static final String QUERY_FIELD = "query";
         public static final String ID_PARAMETER = ":id";
         public static final String KEYSPACE_PARAM = "keyspace";
-        public static final String URI_PARAM = "uri";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
-        public static final String UUID_PARAMETER = ":uuid";
         public static final String TASK_STATUS_PARAMETER = "status";
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
         public static final String TASK_CREATOR_PARAMETER = "creator";
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
-        public static final String TASK_CONFIGURATION_PARAMETER = "configuration";
         public static final String TASK_LOADER_INSERTS = "inserts";
-        public static final String TASK_STOP = "/stop";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
         public static final String HAL_CONTENTTYPE = "application/hal+json";
@@ -127,7 +126,6 @@ public class REST {
         public static final String ACTION_QUERY = "query";
         public static final String ACTION_END = "end";
         public static final String ACTION_ERROR = "error";
-        public static final String ACTION_QUERY_ABORT = "queryAbort";
         public static final String ACTION_COMMIT = "commit";
         public static final String ACTION_ROLLBACK = "rollback";
         public static final String ACTION_CLEAN = "clean";

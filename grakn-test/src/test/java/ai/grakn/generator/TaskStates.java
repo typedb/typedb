@@ -20,12 +20,12 @@
 package ai.grakn.generator;
 
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.test.engine.tasks.FailingTestTask;
-import ai.grakn.test.engine.tasks.LongExecutionTestTask;
-import ai.grakn.test.engine.tasks.ShortExecutionTestTask;
+import ai.grakn.engine.tasks.mock.FailingMockTask;
+import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
@@ -37,7 +37,6 @@ import mjson.Json;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
@@ -55,7 +54,7 @@ public class TaskStates extends Generator<TaskState> {
     @Override
     public TaskState generate(SourceOfRandomness random, GenerationStatus status) {
         // TODO: make this generate more classes
-        Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionTestTask.class, ShortExecutionTestTask.class, FailingTestTask.class));
+        Class<? extends BackgroundTask> taskClass = random.choose(ImmutableList.of(LongExecutionMockTask.class, ShortExecutionMockTask.class, FailingMockTask.class));
 
         TaskId taskId;
 

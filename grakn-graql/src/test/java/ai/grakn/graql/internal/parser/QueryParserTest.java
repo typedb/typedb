@@ -575,7 +575,7 @@ public class QueryParserTest {
         //noinspection OptionalGetWithoutIsPresent
         DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
 
-        Assert.assertEquals(ResourceType.DataType.BOOLEAN, property.getDatatype());
+        Assert.assertEquals(ResourceType.DataType.BOOLEAN, property.getDataType());
     }
 
     @Test

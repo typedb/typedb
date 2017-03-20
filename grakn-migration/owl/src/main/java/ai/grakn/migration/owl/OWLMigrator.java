@@ -63,7 +63,7 @@ public class OWLMigrator {
     }
     
     public OWLMigrator() {
-        this.namer = new Namer(){};
+        this.namer = new DefaultNamer();
     }
 
     public OWLMigrator namer(Namer namer) {
@@ -238,5 +238,8 @@ public class OWLMigrator {
         ResourceType.DataType<?> graknType = propertyType == null ? ResourceType.DataType.STRING : owlBuiltInToGraknDatatype(propertyType);
         ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), graknType);
         return resourceType;        
-    }   
+    }
+
+    private static class DefaultNamer implements Namer {
+    }
 }

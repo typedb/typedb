@@ -19,14 +19,16 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
-import ai.grakn.engine.tasks.TaskId;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
@@ -37,8 +39,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
+import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.stream.Collectors.toSet;
@@ -53,9 +58,9 @@ import static java.util.stream.Stream.generate;
 public class SingleQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskManager.class);
-    private final static ConfigProperties properties = ConfigProperties.getInstance();
+    private final static GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
-    private final static int CAPACITY = ConfigProperties.getInstance().getAvailableThreads();
+    private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
 
     private final Producer<TaskId, TaskState> producer;
     private final ZookeeperConnection zookeeper;
@@ -99,19 +104,18 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Close the {@link SingleQueueTaskRunner} and . Any errors that occur should not prevent the
      * subsequent ones from executing.
-     * @throws Exception
      */
     @Override
-    public void close() throws Exception {
+    public void close() {
         LOG.debug("Closing SingleQueueTaskManager");
-
-        // close kafka producer
-        noThrow(producer::close, "Error shutting down producer in TaskManager");
 
         // Close all the task runners
         for(SingleQueueTaskRunner taskRunner:taskRunners) {
             noThrow(taskRunner::close, "Error shutting down TaskRunner");
         }
+
+        // close kafka producer
+        noThrow(producer::close, "Error shutting down producer in TaskManager");
 
         // close the thread pool and wait for shutdown
         noThrow(taskRunnerThreadPool::shutdown, "Error closing task runner thread pool");
@@ -161,12 +165,21 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
+     * Get a new kafka consumer listening on the new tasks topic
+     */
+    public Consumer<TaskId, TaskState> newConsumer(){
+        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
+        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
+        return consumer;
+    }
+
+    /**
      * Create a new instance of {@link SingleQueueTaskRunner} with the configured {@link #storage}}
      * and {@link #zookeeper} connection.
      * @param engineId Identifier of the engine on which this taskrunner is running
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
-        return new SingleQueueTaskRunner(engineId, storage, zookeeper);
+        return new SingleQueueTaskRunner(this, engineId);
     }
 }

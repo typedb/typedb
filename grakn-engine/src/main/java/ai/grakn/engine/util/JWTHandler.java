@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.util;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknEngineServerException;
 import com.auth0.jwt.JWTSigner;
 import com.auth0.jwt.JWTVerifier;
@@ -40,7 +41,7 @@ import java.util.Map;
 public class JWTHandler {
 
     static private final String issuer = "https://grakn.ai/";
-    static private final String secret = ConfigProperties.getInstance().getProperty(ConfigProperties.JWT_SECRET_PROPERTY);
+    static private final String secret = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.JWT_SECRET_PROPERTY);
 
     static public String signJWT(String username) {
         long iat = System.currentTimeMillis() / 1000L; // issued at claim

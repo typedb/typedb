@@ -33,6 +33,8 @@ import java.io.Serializable;
  * @author fppt
  */
 public class ConceptId implements Comparable<ConceptId>, Serializable {
+    private static final long serialVersionUID = -1723590529071614152L;
+
     private Object conceptId;
     private int hashCode = 0;
 
