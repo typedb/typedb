@@ -18,11 +18,12 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Set;
@@ -47,11 +48,11 @@ public class Patterns {
     }
 
     public static VarAdmin var() {
-        return new VarImpl();
+        return VarImpl.anon(ImmutableSet.of());
     }
 
     public static VarAdmin var(VarName name) {
-        return new VarImpl(name);
+        return VarImpl.named(name, ImmutableSet.of());
     }
 
     // These clone methods will always return the right type
@@ -61,7 +62,7 @@ public class Patterns {
     }
 
     public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
-        return new VarImpl(vars);
+        return VarImpl.merge(vars);
     }
 
 }
