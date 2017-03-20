@@ -39,7 +39,10 @@ import mjson.Json;
 
 /**
  * <p>
- * This is a task meant to be run periodically to eliminate resource duplication.
+ * This is a task meant to be run periodically to eliminate resource duplication. The task performs a map-reduce job using 
+ * the {@link ai.grakn.GraknComputer} where each resource index key, i.e. the resource value+type combination, is mapped 
+ * to all its corresponding resource instances. The reduction steps, delete superfluous duplicates and forces instances
+ * referring to them to point to the unique remaining resource instance for that key.
  * </p>
  * 
  * @author borislav
@@ -71,12 +74,15 @@ public class ResourceDeduplicationTask implements BackgroundTask {
         private boolean deleteUnattached = false;
         private String keyspace;
         
+        /**
+         * Specify the keyspace to use for the deduplication job.
+         */
         public Job keyspace(String keyspace) {
             this.keyspace = keyspace;
             return this;
         }
         
-        /*
+        /**
          * Specify whether resources that are not associated with any entity or relationship should be
          * deleted from the database.
          */
@@ -93,51 +99,51 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             return this.deleteUnattached;
         }
         
+        /**
+         * Emit the resoucre index (value + type) mapped to the concept ID of the resource instance.
+         */
         public final void map(Vertex vertex, MapEmitter<String, ConceptId> emitter) {
             if (Schema.BaseType.valueOf(vertex.label()) != Schema.BaseType.RESOURCE) {
                 return;
             }
             // We form the key from the resource type name and the value, and the value of the map-reduce is the concept ID
             // of the resource instance itself
-            System.out.println("Resource index: " + vertex.property(Schema.ConceptProperty.INDEX.name()).value());            
+            LOG.debug("Resource index: " + vertex.property(Schema.ConceptProperty.INDEX.name()).value());            
             Object key = vertex.property(Schema.ConceptProperty.INDEX.name()).value();
-//                    (String)vertex.property(Schema.BaseType.TYPE.name()).value() + ":"; 
-//            VertexProperty<?> valueProperty =  null;
-//            for (Schema.ConceptProperty prop : possibleValues) {
-//                valueProperty = vertex.property(prop.name());
-//                if (valueProperty.isPresent()) {
-//                    break;
-//                }
-//            }            
             if (key != null) {
-//                key += valueProperty.value().toString();
-                System.out.println("Emit " + key + " -- "  +  ConceptId.of(vertex.property(Schema.ConceptProperty.ID.name())));
+                LOG.debug("Emit " + key + " -- "  +  ConceptId.of(vertex.property(Schema.ConceptProperty.ID.name())));
                 emitter.emit(key.toString(), ConceptId.of(vertex.property(Schema.ConceptProperty.ID.name()).value()));
             }
             else {
-                LOG.warn("Resource " + vertex.property(Schema.ConceptProperty.ID.name()) + " has not value?!");
+                LOG.warn("Resource " + vertex.property(Schema.ConceptProperty.ID.name()) + " has no value?!");
             }
         }
 
+        /**
+         * We skip the combine stage and do only MAP and REDUCE. There is no optimization worth doing 
+         * in a combine. The number of duplicates is not expected to be unmanageably large.
+         */
         @Override
-        public boolean doStage(org.apache.tinkerpop.gremlin.process.computer.MapReduce.Stage stage) {
-            // we skip the combine (a.k.a. "local reduce") stage because 
+        public boolean doStage(org.apache.tinkerpop.gremlin.process.computer.MapReduce.Stage stage) { 
             return stage == Stage.MAP || stage == Stage.REDUCE;
         }
         
+        /**
+         * Here we simply collect all concepts for a key and ask our concept fixer to do its thing.
+         */
         @Override
         public void reduce(String key, 
                            Iterator<ConceptId> values,
                            ReduceEmitter<String, Long> emitter) {
-            System.out.println("Reduce on " + key);
+            LOG.debug("Reduce on " + key);
             HashSet<ConceptId> conceptIds = new HashSet<ConceptId>();
             while (values.hasNext()) {
                 ConceptId current = values.next();
                 conceptIds.add(current);
-                System.out.print("\t" + current);
             }
-            System.out.println();
+            LOG.debug("Concepts: " + conceptIds);
             if (conceptIds.size() > 1) {
+                // TODO: what if we fail here due to some read-write conflict? 
                 try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
                     ConceptFixer.runResourceFix(graph, key, conceptIds);
                 }
@@ -145,6 +151,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             }
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
+                // TODO: what if we fail here due to some read-write conflict?
                 try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
                     Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
@@ -173,7 +180,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     
     @Override
     public boolean start(Consumer<String> saveCheckpoint, Json configuration) {
-        System.out.println("Starting ResourceDeduplicationTask : " + configuration);
+        LOG.info("Starting ResourceDeduplicationTask : " + configuration);
         
         String keyspace = configuration.at("keyspace", KEYSPACE_DEFAULT).asString();
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphComputer();

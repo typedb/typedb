@@ -118,8 +118,6 @@ public class ResourceDeduplicationMapReduceTestIT {
         related.hasResource(doubleResource);
         thing.playsRole(near1).playsRole(near2).playsRole(near3).playsRole(related1)
             .playsRole(related2).playsRole(related3).playsRole(related4).playsRole(related5);
-//        thing.hasResource(stringResource).hasResource(longResource).hasResource(integerResource)
-//            .hasResource(booleanResource).hasResource(floatResource).hasResource(doubleResource);
         idea.playsRole(related1).playsRole(related2).playsRole(related3).playsRole(related4).playsRole(related5);
         stringResource.playsRole(related1).playsRole(related2).playsRole(related3)
                 .playsRole(related4).playsRole(related5);
@@ -160,7 +158,7 @@ public class ResourceDeduplicationMapReduceTestIT {
      * Test that the normal case with no duplicates on various resources doesn't screw things up.
      */
     @Test
-    @Ignore
+    //@Ignore
     public void testNoDuplicates() {
         transact(graph ->  {
             Entity e1 = thing.addEntity();
@@ -185,7 +183,7 @@ public class ResourceDeduplicationMapReduceTestIT {
      * relationships.
      */
     @Test
-    @Ignore
+    //@Ignore
     public void testManyUnattachedResources() {
         String stringIndex = transact(graph -> { 
             Resource<String> res = stringResource.putResource("value_dup");
@@ -228,7 +226,7 @@ public class ResourceDeduplicationMapReduceTestIT {
      * Test when a few instances of the same resource get attached to the same entity.
      */
     @Test
-    @Ignore
+    //@Ignore
     public void testDuplicatesOnSameEntity() {
         String resourceIndex = transact(graph -> {
            Entity something = thing.addEntity();
@@ -249,6 +247,34 @@ public class ResourceDeduplicationMapReduceTestIT {
         });        
     }
 
+    @Test
+    //@Ignore
+    public void testDuplicatesOnDifferentEntity() {
+        String resourceIndex = transact(graph -> {
+           Entity something = thing.addEntity();
+           Entity anotherthing = thing.addEntity();
+           Entity onemorething = thing.addEntity();
+           Resource<String> res = stringResource.putResource("This is something!");
+           something.hasResource(res);
+           something.hasResource(createDuplicateResource(graph, res));
+           anotherthing.hasResource(createDuplicateResource(graph, res));
+           onemorething.hasResource(createDuplicateResource(graph, res));
+           return indexOf(graph, res);
+        });        
+        transact(graph -> {
+            Assert.assertFalse(checkUnique(graph, resourceIndex));
+        });        
+        ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
+        task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); }, 
+                    Json.object(ResourceDeduplicationTask.KEYSPACE_CONFIG, keyspace()));        
+        Assert.assertEquals(new Long(3), task.totalElimintated());
+        transact(graph -> {
+            Assert.assertTrue(checkUnique(graph, resourceIndex));
+            Resource<String> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, resourceIndex);
+            Assert.assertEquals(3, res.ownerInstances().size());
+        });        
+    }
+    
     /**
      * Test when duplicate resources are the components of the same relation. 
      */
