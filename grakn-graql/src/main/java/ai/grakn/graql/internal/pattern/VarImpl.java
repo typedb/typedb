@@ -121,9 +121,32 @@ class VarImpl implements VarAdmin {
         var.getProperties().forEach(this::addProperty);
     }
 
+    /**
+     * Create a variable by adding a property to an existing variable
+     * @param var a variable to clone
+     */
+    private VarImpl(VarAdmin var, VarProperty property) {
+        this.name = var.getVarName();
+        this.userDefinedName = var.isUserDefinedName();
+        var.getProperties().forEach(this::addProperty);
+        addProperty(property);
+    }
+
+    /**
+     * Create a variable by replacing a property on an existing variable
+     * @param var a variable to clone
+     */
+    private VarImpl(VarAdmin var, VarProperty oldProperty, VarProperty newProperty) {
+        this.name = var.getVarName();
+        this.userDefinedName = var.isUserDefinedName();
+        var.getProperties().forEach(this::addProperty);
+        properties.remove(oldProperty);
+        addProperty(property);
+    }
+
     @Override
     public Var id(ConceptId id) {
-        return addProperty(new IdProperty(id));
+        return addPropertyImmutable(new IdProperty(id));
     }
 
     @Override
@@ -133,7 +156,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var name(TypeName name) {
-        return addProperty(new NameProperty(name));
+        return addPropertyImmutable(new NameProperty(name));
     }
 
     @Override
@@ -143,12 +166,12 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var value(ValuePredicate predicate) {
-        return addProperty(new ValueProperty(predicate.admin()));
+        return addPropertyImmutable(new ValueProperty(predicate.admin()));
     }
 
     @Override
     public Var has(Var var) {
-        return addProperty(new HasResourceProperty(var.admin()));
+        return addPropertyImmutable(new HasResourceProperty(var.admin()));
     }
 
     @Override
@@ -168,7 +191,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(TypeName type, Var var) {
-        return addProperty(new HasResourceProperty(type, var.admin()));
+        return addPropertyImmutable(new HasResourceProperty(type, var.admin()));
     }
 
     @Override
@@ -188,7 +211,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var sub(Var type) {
-        return addProperty(new SubProperty(type.admin()));
+        return addPropertyImmutable(new SubProperty(type.admin()));
     }
 
     @Override
@@ -198,7 +221,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasRole(Var type) {
-        return addProperty(new HasRoleProperty(type.admin()));
+        return addPropertyImmutable(new HasRoleProperty(type.admin()));
     }
 
     @Override
@@ -208,12 +231,12 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var playsRole(Var type) {
-        return addProperty(new PlaysRoleProperty(type.admin(), false));
+        return addPropertyImmutable(new PlaysRoleProperty(type.admin(), false));
     }
 
     @Override
     public Var hasScope(Var type) {
-        return addProperty(new HasScopeProperty(type.admin()));
+        return addPropertyImmutable(new HasScopeProperty(type.admin()));
     }
 
     @Override
@@ -223,7 +246,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasResource(Var type) {
-        return addProperty(new HasResourceTypeProperty(type.admin(), false));
+        return addPropertyImmutable(new HasResourceTypeProperty(type.admin(), false));
     }
 
     @Override
@@ -233,7 +256,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasKey(Var type) {
-        return addProperty(new HasResourceTypeProperty(type.admin(), true));
+        return addPropertyImmutable(new HasResourceTypeProperty(type.admin(), true));
     }
 
     @Override
@@ -273,32 +296,32 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var plays(Var roleType) {
-        return addProperty(new PlaysProperty(roleType.admin()));
+        return addPropertyImmutable(new PlaysProperty(roleType.admin()));
     }
 
     @Override
     public Var isAbstract() {
-        return addProperty(new IsAbstractProperty());
+        return addPropertyImmutable(new IsAbstractProperty());
     }
 
     @Override
     public Var datatype(ResourceType.DataType<?> datatype) {
-        return addProperty(new DataTypeProperty(requireNonNull(datatype)));
+        return addPropertyImmutable(new DataTypeProperty(requireNonNull(datatype)));
     }
 
     @Override
     public Var regex(String regex) {
-        return addProperty(new RegexProperty(regex));
+        return addPropertyImmutable(new RegexProperty(regex));
     }
 
     @Override
     public Var lhs(Pattern lhs) {
-        return addProperty(new LhsProperty(lhs));
+        return addPropertyImmutable(new LhsProperty(lhs));
     }
 
     @Override
     public Var rhs(Pattern rhs) {
-        return addProperty(new RhsProperty(rhs));
+        return addPropertyImmutable(new RhsProperty(rhs));
     }
 
     @Override
@@ -308,7 +331,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var neq(Var var) {
-        return addProperty(new NeqProperty(var.admin()));
+        return addPropertyImmutable(new NeqProperty(var.admin()));
     }
 
     @Override
@@ -474,6 +497,13 @@ class VarImpl implements VarAdmin {
         }
         properties.add(property);
         return this;
+    }
+
+    private Var addPropertyImmutable(VarProperty property) {
+        if (property.isUnique()) {
+            testUniqueProperty((UniqueVarProperty) property);
+        }
+        return new VarImpl(this, property);
     }
 
     /**
