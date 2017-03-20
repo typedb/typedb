@@ -183,6 +183,6 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
-        return new SingleQueueTaskRunner(this, engineId);
+        return new SingleQueueTaskRunner(this, engineId, offsetStorage);
     }
 }

@@ -37,7 +37,6 @@ import org.junit.rules.ExternalResource;
 
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
-import static ai.grakn.test.GraknTestEnv.hideLogs;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
 import static java.lang.System.currentTimeMillis;
@@ -95,8 +94,6 @@ public class DistributionContext extends ExternalResource {
 
     @Override
     public void before() throws Throwable {
-        hideLogs();
-
         unzipDistribution();
 
         startKafka();
