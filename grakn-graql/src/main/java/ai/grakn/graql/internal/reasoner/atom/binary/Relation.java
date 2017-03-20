@@ -567,7 +567,7 @@ public class Relation extends TypeAtom {
         });
 
         //remaining roles
-        //NB assume role uniqueness within the relation
+        //NB: assumes role uniqueness within the relation
         Set<RoleType> possibleRoles = roles.stream()
                 .filter(rt -> Sets.intersection(new HashSet<>(Utility.getNonMetaTopRole(rt).subTypes()), allocatedRoles).isEmpty())
                 .collect(Collectors.toSet());

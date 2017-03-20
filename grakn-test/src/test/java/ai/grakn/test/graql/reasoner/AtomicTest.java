@@ -112,16 +112,18 @@ public class AtomicTest {
         String patternString = "{($z, $y) isa owns; $z isa country; $y isa rocket;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
         Atom atom = query.getAtom();
-        Map<RoleType, Pair<VarName, Type>> roleMap = atom.getRoleVarTypeMap();
+        Map<RoleType, VarName> roleMap = roleMap(atom.getRoleVarTypeMap());
 
         String patternString2 = "{isa owns, ($z, $y); $z isa country;}";
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
         Atom atom2 = query2.getAtom();
 
-        Map<RoleType, Pair<VarName, Type>> roleMap2 = atom2.getRoleVarTypeMap();
-        assertEquals(2, roleMap.size());
-        assertEquals(2, roleMap2.size());
-        assertEquals(roleMap.keySet(), roleMap2.keySet());
+        Map<RoleType, VarName> roleMap2 = roleMap(atom2.getRoleVarTypeMap());
+        ImmutableMap<RoleType, VarName> correctRoleMap = ImmutableMap.of(
+                graph.getRoleType("item-owner"), VarName.of("z"),
+                graph.getRoleType("owned-item"), VarName.of("y"));
+        assertEquals(correctRoleMap, roleMap);
+        assertEquals(correctRoleMap, roleMap2);
     }
 
     @Test
@@ -130,15 +132,19 @@ public class AtomicTest {
         String patternString = "{($z, $y, $x), isa transaction;$z isa country;$x isa person;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
         Atom atom = query.getAtom();
-        Map<RoleType, Pair<VarName, Type>> roleMap = atom.getRoleVarTypeMap();
+        Map<RoleType, VarName> roleMap = roleMap(atom.getRoleVarTypeMap());
 
         String patternString2 = "{($z, $y, seller: $x), isa transaction;$z isa country;$y isa rocket;}";
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
         Atom atom2 = query2.getAtom();
-        Map<RoleType, Pair<VarName, Type>> roleMap2 = atom2.getRoleVarTypeMap();
-        assertEquals(3, roleMap.size());
-        assertEquals(3, roleMap2.size());
-        assertEquals(roleMap.keySet(), roleMap2.keySet());
+        Map<RoleType, VarName> roleMap2 = roleMap(atom2.getRoleVarTypeMap());
+
+        ImmutableMap<RoleType, VarName> correctRoleMap = ImmutableMap.of(
+                graph.getRoleType("seller"), VarName.of("x"),
+                graph.getRoleType("transaction-item"), VarName.of("y"),
+                graph.getRoleType("buyer"), VarName.of("z"));
+        assertEquals(correctRoleMap, roleMap);
+        assertEquals(correctRoleMap, roleMap2);
     }
 
     @Test
@@ -146,21 +152,23 @@ public class AtomicTest {
         GraknGraph graph = cwGraph.graph();
         String patternString = "{(buyer: $y, seller: $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
-        Map<RoleType, Pair<VarName, Type>> roleMap = query.getAtom().getRoleVarTypeMap();
+        Map<RoleType, VarName> roleMap = roleMap(query.getAtom().getRoleVarTypeMap());
 
         String patternString2 = "{(buyer: $y, seller: $y, $x), isa transaction;}";
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
-        Map<RoleType, Pair<VarName, Type>> roleMap2 = query2.getAtom().getRoleVarTypeMap();
+        Map<RoleType, VarName> roleMap2 = roleMap(query2.getAtom().getRoleVarTypeMap());
 
         String patternString3 = "{(buyer: $y, $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query3 = new ReasonerAtomicQuery(conjunction(patternString3, graph), graph);
-        Map<RoleType, Pair<VarName, Type>> roleMap3 = query3.getAtom().getRoleVarTypeMap();
+        Map<RoleType, VarName> roleMap3 = roleMap(query3.getAtom().getRoleVarTypeMap());
 
-        assertEquals(3, roleMap.size());
-        assertEquals(3, roleMap2.size());
-        assertEquals(3, roleMap3.size());
-        assertEquals(roleMap, roleMap2);
-        assertEquals(roleMap2, roleMap3);
+        ImmutableMap<RoleType, VarName> correctRoleMap = ImmutableMap.of(
+                graph.getRoleType("transaction-item"), VarName.of("x"),
+                graph.getRoleType("seller"), VarName.of("y"),
+                graph.getRoleType("buyer"), VarName.of("z"));
+        assertEquals(correctRoleMap, roleMap);
+        assertEquals(correctRoleMap, roleMap2);
+        assertEquals(correctRoleMap, roleMap3);
     }
 
     @Test
@@ -185,11 +193,11 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
-        ImmutableMap<VarName, RoleType> roleMap = ImmutableMap.of(
-                VarName.of("x"), graph.getRoleType("role1"),
-                VarName.of("y"), graph.getRoleType("role2"),
-                VarName.of("z"), graph.getRoleType("role3"));
-        assertEquals(roleMap, relation.getRoleVarTypeMap().entrySet().stream().collect(Collectors.toMap( e -> e.getValue().getKey() , Map.Entry::getKey)));
+        ImmutableMap<RoleType, VarName> roleMap = ImmutableMap.of(
+                graph.getRoleType("role1"), VarName.of("x"),
+                graph.getRoleType("role2"), VarName.of("y"),
+                graph.getRoleType("role3"), VarName.of("z"));
+        assertEquals(roleMap, roleMap(relation.getRoleVarTypeMap()));
     }
 
     //test ambiguous role mapping
@@ -437,6 +445,10 @@ public class AtomicTest {
         String patternString = "{$x isa someType;}";
         exception.expect(IllegalArgumentException.class);
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
+    }
+
+    private Map<RoleType, VarName> roleMap(Map<RoleType, Pair<VarName, Type>> roleVarTypeMap) {
+        return roleVarTypeMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getKey()));
     }
 
     private Conjunction<VarAdmin> conjunction(String patternString, GraknGraph graph){
