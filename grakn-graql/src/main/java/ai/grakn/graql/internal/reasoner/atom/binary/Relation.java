@@ -714,17 +714,19 @@ public class Relation extends TypeAtom {
 
     @Override
     public Atom rewriteToUserDefined(){
-        Var relVar = Graql.var(VarName.anon());
-        getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
-        getRelationPlayers()
-                .forEach(c -> {
-                    VarAdmin roleType = c.getRoleType().orElse(null);
-                    if (roleType != null) {
-                        relVar.rel(roleType, c.getRolePlayer());
-                    } else {
-                        relVar.rel(c.getRolePlayer());
-                    }
-                });
+        Var newVar = Graql.var(VarName.anon());
+        Var relVar = getPattern().asVar().getProperty(IsaProperty.class)
+                .map(prop -> newVar.isa(prop.getType()))
+                .orElse(newVar);
+
+        for (RelationPlayer c: getRelationPlayers()) {
+            VarAdmin roleType = c.getRoleType().orElse(null);
+            if (roleType != null) {
+                relVar = relVar.rel(roleType, c.getRolePlayer());
+            } else {
+                relVar = relVar.rel(c.getRolePlayer());
+            }
+        }
         return new Relation(relVar.admin(), getPredicate(), getParentQuery());
     }
 
@@ -736,21 +738,22 @@ public class Relation extends TypeAtom {
     @Override
     public Pair<Atom, Map<VarName, VarName>> rewriteToUserDefinedWithUnifiers() {
         Map<VarName, VarName> unifiers = new HashMap<>();
-        Var relVar = Graql.var(VarName.anon());
-        getPattern().asVar().getProperty(IsaProperty.class).ifPresent(prop -> relVar.isa(prop.getType()));
+        Var newVar = Graql.var(VarName.anon());
+        Var relVar = getPattern().asVar().getProperty(IsaProperty.class)
+                .map(prop -> newVar.isa(prop.getType()))
+                .orElse(newVar);
 
-        getRelationPlayers()
-                .forEach(c -> {
-                    VarAdmin rolePlayer = c.getRolePlayer();
-                    VarName rolePlayerVarName = VarName.anon();
-                    unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
-                    VarAdmin roleType = c.getRoleType().orElse(null);
-                    if (roleType != null) {
-                        relVar.rel(roleType, Graql.var(rolePlayerVarName));
-                    } else {
-                        relVar.rel(Graql.var(rolePlayerVarName));
-                    }
-                });
+        for (RelationPlayer c: getRelationPlayers()) {
+            VarAdmin rolePlayer = c.getRolePlayer();
+            VarName rolePlayerVarName = VarName.anon();
+            unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
+            VarAdmin roleType = c.getRoleType().orElse(null);
+            if (roleType != null) {
+                relVar = relVar.rel(roleType, Graql.var(rolePlayerVarName));
+            } else {
+                relVar = relVar.rel(Graql.var(rolePlayerVarName));
+            }
+        }
         return new Pair<>(new Relation(relVar.admin(), getPredicate(), getParentQuery()), unifiers);
     }
 }

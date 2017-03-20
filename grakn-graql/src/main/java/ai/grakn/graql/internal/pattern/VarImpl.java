@@ -141,7 +141,7 @@ class VarImpl implements VarAdmin {
         this.userDefinedName = var.isUserDefinedName();
         var.getProperties().forEach(this::addProperty);
         properties.remove(oldProperty);
-        addProperty(property);
+        addProperty(newProperty);
     }
 
     @Override
@@ -477,11 +477,13 @@ class VarImpl implements VarAdmin {
         ImmutableMultiset<RelationPlayer> relationPlayers =
                 Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        relationProperty.ifPresent(properties::remove);
+        RelationProperty newProperty = new RelationProperty(relationPlayers);
 
-        properties.add(new RelationProperty(relationPlayers));
-
-        return this;
+        return relationProperty.map(oldProperty ->
+                new VarImpl(this, oldProperty, newProperty)
+        ).orElseGet(() ->
+                new VarImpl(this, newProperty)
+        );
     }
 
     private static boolean invalidInnerVariable(VarAdmin var) {

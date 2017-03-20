@@ -41,15 +41,15 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import javafx.util.Pair;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -346,15 +346,15 @@ public class Utility {
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
         }
-        Var parentVar = var().isa(name(parent.getName()));
-        Var childVar = var().isa(name(child.getName()));
+        final Var[] parentVar = {var().isa(name(parent.getName()))};
+        final Var[] childVar = {var().isa(name(child.getName()))};
 
         roleMappings.forEach( (parentRoleName, childRoleName) -> {
             VarName varName = VarName.anon();
-            parentVar.rel(name(parentRoleName), var(varName));
-            childVar.rel(name(childRoleName), var(varName));
+            parentVar[0] = parentVar[0].rel(name(parentRoleName), var(varName));
+            childVar[0] = childVar[0].rel(name(childRoleName), var(varName));
         });
-        return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
+        return graph.admin().getMetaRuleInference().addRule(childVar[0], parentVar[0]);
     }
 
     /**
