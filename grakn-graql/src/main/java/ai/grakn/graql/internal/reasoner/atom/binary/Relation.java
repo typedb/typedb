@@ -571,11 +571,10 @@ public class Relation extends TypeAtom {
         Set<RoleType> possibleRoles = roles.stream()
                 .filter(rt -> Sets.intersection(new HashSet<>(Utility.getNonMetaTopRole(rt).subTypes()), allocatedRoles).isEmpty())
                 .collect(Collectors.toSet());
-        Set<RelationPlayer> relationPlayersToAllocate = Sets.difference(getRelationPlayers(), allocatedRelationPlayers);
 
         //possible role types for each casting based on its type
         Map<RelationPlayer, Set<RoleType>> mappings = new HashMap<>();
-        relationPlayersToAllocate
+        Sets.difference(getRelationPlayers(), allocatedRelationPlayers)
                 .forEach(casting -> {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
@@ -599,6 +598,7 @@ public class Relation extends TypeAtom {
                     mappings.values().forEach(s -> s.remove(roleType));
                     roleVarMap.put(roleVar, new Pair<>(varName, type));
                     roleVarTypeMap.put(roleType, new Pair<>(varName, type));
+                    allocatedRelationPlayers.add(casting);
                 }
             }
         }
@@ -606,7 +606,8 @@ public class Relation extends TypeAtom {
         //update pattern and castings
         List<Pair<VarName, Var>> rolePlayerMappings = new ArrayList<>();
         roleVarMap.forEach((r, tp) -> rolePlayerMappings.add(new Pair<>(tp.getKey(), r)));
-        relationPlayersToAllocate.forEach(casting -> rolePlayerMappings.add(new Pair<>(casting.getRolePlayer().getVarName(), null)));
+        Sets.difference(getRelationPlayers(), allocatedRelationPlayers)
+                .forEach(casting -> rolePlayerMappings.add(new Pair<>(casting.getRolePlayer().getVarName(), null)));
 
         //pattern mutation!
         atomPattern = constructRelationVar(isUserDefinedName() ? varName : VarName.of(""), getValueVariable(), rolePlayerMappings);
