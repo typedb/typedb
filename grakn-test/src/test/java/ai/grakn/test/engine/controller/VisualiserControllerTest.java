@@ -52,7 +52,7 @@ public class VisualiserControllerTest {
     private static GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @BeforeClass
     public static void setUp() throws Exception {

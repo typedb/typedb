@@ -28,10 +28,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.test.EngineContext;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
@@ -54,8 +51,8 @@ public class LoaderClientTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @Rule
-    public final EngineContext engine = EngineContext.startMultiQueueServer();
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup() {
@@ -63,6 +60,12 @@ public class LoaderClientTest {
         graph = factory.getGraph();
         loader = new LoaderClient(graph.getKeyspace(), Grakn.DEFAULT_URI);
         loadOntology(graph.getKeyspace());
+    }
+
+    @After
+    public void teardown(){
+        graph.close();
+        factory.close();
     }
 
     @Test
