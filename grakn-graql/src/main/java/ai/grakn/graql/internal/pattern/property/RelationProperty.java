@@ -291,12 +291,13 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .count() > 0;
         Var relVar = (var.isUserDefinedName() || isReified)? Graql.var(var.getVarName()) : Graql.var();
         Set<RelationPlayer> relationPlayers = this.getRelationPlayers().collect(toSet());
-        relationPlayers.forEach(rp -> {
+
+        for (RelationPlayer rp : relationPlayers) {
             VarAdmin role = rp.getRoleType().orElse(null);
             VarAdmin rolePlayer = rp.getRolePlayer();
-            if (role != null) relVar.rel(role, rolePlayer);
-            else relVar.rel(rolePlayer);
-        });
+            if (role != null) relVar = relVar.rel(role, rolePlayer);
+            else relVar = relVar.rel(rolePlayer);
+        }
 
         //id part
         IsaProperty isaProp = var.getProperty(IsaProperty.class).orElse(null);
@@ -306,7 +307,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             VarAdmin isaVar = isaProp.getType();
             TypeName typeName = isaVar.getTypeName().orElse(null);
             VarName typeVariable = typeName == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
-            relVar.isa(Graql.var(typeVariable));
+            relVar = relVar.isa(Graql.var(typeVariable));
             if (typeName != null) {
                 GraknGraph graph = parent.graph();
                 VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();

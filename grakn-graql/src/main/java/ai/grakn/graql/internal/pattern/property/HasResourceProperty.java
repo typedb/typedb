@@ -41,6 +41,7 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 
+import javax.annotation.CheckReturnValue;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -71,14 +72,19 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     private final Optional<TypeName> resourceType;
     private final VarAdmin resource;
 
-    public HasResourceProperty(VarAdmin resource) {
-        this.resourceType = Optional.empty();
-        this.resource = resource.isa(name(Schema.MetaSchema.RESOURCE.getName())).admin();
+    private HasResourceProperty(Optional<TypeName> resourceType, VarAdmin resource) {
+        this.resourceType = resourceType;
+        this.resource = resource;
     }
 
-    public HasResourceProperty(TypeName resourceType, VarAdmin resource) {
-        this.resourceType = Optional.of(resourceType);
-        this.resource = resource.isa(name(resourceType)).admin();
+    public static HasResourceProperty of(VarAdmin resource) {
+        resource = resource.isa(name(Schema.MetaSchema.RESOURCE.getName())).admin();
+        return new HasResourceProperty(Optional.empty(), resource);
+    }
+
+    public static HasResourceProperty of(TypeName resourceType, VarAdmin resource) {
+        resource = resource.isa(name(resourceType)).admin();
+        return new HasResourceProperty(Optional.of(resourceType), resource);
     }
 
     public Optional<TypeName> getType() {
@@ -87,6 +93,12 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     public VarAdmin getResource() {
         return resource;
+    }
+
+    // TODO: If `VarAdmin#setVarName` is removed, this may no longer be necessary
+    @CheckReturnValue
+    public HasResourceProperty setResource(VarAdmin resource) {
+        return new HasResourceProperty(resourceType, resource);
     }
 
     @Override

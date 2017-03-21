@@ -41,15 +41,15 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import javafx.util.Pair;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -349,11 +349,11 @@ public class Utility {
         Var parentVar = var().isa(name(parent.getName()));
         Var childVar = var().isa(name(child.getName()));
 
-        roleMappings.forEach( (parentRoleName, childRoleName) -> {
+        for (Map.Entry<TypeName, TypeName> entry : roleMappings.entrySet()) {
             VarName varName = VarName.anon();
-            parentVar.rel(name(parentRoleName), var(varName));
-            childVar.rel(name(childRoleName), var(varName));
-        });
+            parentVar = parentVar.rel(name(entry.getKey()), var(varName));
+            childVar = childVar.rel(name(entry.getValue()), var(varName));
+        }
         return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
     }
 
