@@ -101,6 +101,22 @@ public interface ResourceType<D> extends Type {
      */
     Resource<D> putResource(D value);
 
+    /**
+     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     *
+     * @param scope The category of this Type
+     * @return The Type itself.
+     */
+    ResourceType<D> scope(Instance scope);
+
+    /**
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Type.
+     * @return The Type itself
+     */
+    ResourceType<D> deleteScope(Instance scope);
+
     //------------------------------------- Accessors ---------------------------------
     /**
      * Returns the supertype of this ResourceType.

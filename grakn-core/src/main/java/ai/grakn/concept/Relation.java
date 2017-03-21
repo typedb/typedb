@@ -19,10 +19,11 @@
 package ai.grakn.concept;
 
 
-import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>
@@ -39,17 +40,6 @@ import java.util.Map;
  *
  */
 public interface Relation extends Instance {
-    //------------------------------------- Modifiers ----------------------------------
-    /**
-     * Sets the Instance that can scope this Relation to a specific domain.
-     * For example, if a relation is only valid for a particular language you can scope
-     * the relation to an Instance representing that language.
-     *
-     * @param instance A new instance which scopes this Relation
-     * @return The Relation itself
-     */
-    Relation scope(Instance instance);
-
     //------------------------------------- Accessors ----------------------------------
 
     /**
@@ -64,16 +54,17 @@ public interface Relation extends Instance {
      * Retrieve a list of all Instances involved in the Relation, and the Role Types they play.
      * @see RoleType
      *
-     * @return A list of all the Instances and their Role Types.
+     * @return A list of all the role types and the instances playing them in this relation.
      */
-    Map<RoleType, Instance> rolePlayers();
+    Map<RoleType, Set<Instance>> allRolePlayers();
 
     /**
-     * Retrieve a list of the Instances that scope this Relation.
-     *
-     * @return A list of the Instances that scope this Relation.
+     * Retrieves a list of every {@link Instance} involved in the {@link Relation}, filtered by {@link RoleType} played.
+     * @param roleTypes used to filter the returned instances only to ones that play any of the role types.
+     *                  If blank, returns all role players.
+     * @return a list of every {@link Instance} involved in the {@link Relation}.
      */
-    Collection<Instance> scopes();
+    Collection<Instance> rolePlayers(RoleType... roleTypes);
 
     /**
      * Expands this Relation to include a new role player which is playing a specific role.
@@ -81,16 +72,8 @@ public interface Relation extends Instance {
      * @param roleType The Role Type of the new role player.
      * @param instance The new role player.
      * @return The Relation itself.
-     */
-    Relation putRolePlayer(RoleType roleType, Instance instance);
-
-    //------------------------------------- Other ----------------------------------
-
-    /**
-     * Delete the scope specified.
      *
-     * @param scope The Instances that is currently scoping this Relation.
-     * @return The Relation itself
+     * @throws ConceptNotUniqueException if the concept is only allowed to play this role once.
      */
-    Relation deleteScope(Instance scope) throws ConceptException;
+    Relation addRolePlayer(RoleType roleType, Instance instance);
 }

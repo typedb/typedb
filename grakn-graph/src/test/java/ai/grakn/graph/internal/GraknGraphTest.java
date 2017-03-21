@@ -90,7 +90,7 @@ public class GraknGraphTest extends GraphTestBase {
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(ErrorMessage.TOO_MANY_CASTINGS.getMessage(role, rolePlayer));
 
-        graknGraph.putCasting(role, rolePlayer, relation);
+        graknGraph.addCasting(role, rolePlayer, relation);
     }
     private void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
         Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
@@ -101,9 +101,9 @@ public class GraknGraphTest extends GraphTestBase {
 
         CastingImpl casting = graknGraph.getConcept(ConceptId.of(id));
         EdgeImpl edge = casting.addEdge(role, Schema.EdgeLabel.ISA); // Casting to Role
-        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         edge = casting.addEdge(rolePlayer, Schema.EdgeLabel.ROLE_PLAYER);// Casting to Roleplayer
-        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         relation.addEdge(casting, Schema.EdgeLabel.CASTING);// Assertion to Casting
     }
 

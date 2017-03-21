@@ -116,14 +116,14 @@ public class GraphFactoryController {
                 Collection<Resource<?>> names = keyspace.resources(keyspaceName);
                 if (names.size() != 1) {
                     throw new GraknEngineServerException(500,
-                            ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " hos no unique name."));
+                            ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
                 }
                 result.add(names.iterator().next().getValue());
             }
             return result.toString();
         } catch (Exception e) {
             LOG.error("While retrieving keyspace list:", e);
-            throw new RuntimeException("Error while retrieving key spaces", e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 }

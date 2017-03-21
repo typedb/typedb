@@ -17,10 +17,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 -->
 
 <template>
-<div id="tool-tip" class="node-panel z-depth-1-half" v-show="showToolTip">
-    <span class="panel-body">
+<div id="tool-tip" class="node-panel z-depth-1-half noselect" v-show="showToolTip">
         <div class="dd-item"><span class="list-key"><font>{{nodeType}}</font></span></div>
-</span>
 </div>
 </template>
 

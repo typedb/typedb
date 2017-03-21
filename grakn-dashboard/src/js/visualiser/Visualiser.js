@@ -21,6 +21,9 @@ import _ from 'underscore';
 import vis from 'vis';
 
 import Style from './Style';
+import User from '../User';
+import NodeSettings from '../NodeSettings';
+
 
 /*
  * Main class for creating a graph of nodes and edges. See Style class for asthetic customisation.
@@ -64,9 +67,6 @@ export default class Visualiser {
         hoverWidth: 2,
         selectionWidth: 2,
         arrowStrikethrough: false,
-        arrows: {
-          to: true,
-        },
         smooth: {
           enabled: false,
           forceDirection: 'none',
@@ -78,6 +78,7 @@ export default class Visualiser {
       },
       layout: {
         improvedLayout: false,
+        randomSeed: 10,
       },
     };
 
@@ -114,7 +115,7 @@ export default class Visualiser {
     }
 
     this.network.on('stabilized', (params) => {
-      if (this.draggingNode === false) {
+      if (this.draggingNode === false && User.getFreezeNodes()) {
         this.fixNodes();
       }
     });
@@ -205,6 +206,13 @@ export default class Visualiser {
 
     //  ----------------------------------------------  //
 
+  fixAllNodes() {
+    this.fixNodes(this.nodes.getIds());
+  }
+
+  releaseAllNodes() {
+    this.releaseNodes(this.nodes.getIds());
+  }
 
     // Methods used to fix and release nodes when one or more are dragged //
 
@@ -258,7 +266,7 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-  addNode(href, bp, ap, ls) {
+  addNode(href, bp, ap, ls, cn) {
     if (!this.nodeExists(bp.id)) {
       const colorObj = this.style.getNodeColour(bp.type, bp.baseType);
       const highlightObj = {
@@ -282,10 +290,19 @@ export default class Visualiser {
         }, highlightObj, hoverObj),
         font: this.style.getNodeFont(bp.type, bp.baseType),
         shape: this.style.getNodeShape(bp.baseType),
+        size: this.style.getNodeSize(bp.baseType),
         selected: false,
         ontology: bp.ontology,
         properties: ap,
         links: ls,
+      });
+    } else if (bp.id !== cn && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
+      this.nodes.update({
+        id: bp.id,
+        fixed: {
+          x: false,
+          y: false,
+        },
       });
     }
 
@@ -311,8 +328,11 @@ export default class Visualiser {
         from: fromNode,
         to: toNode,
         label,
-        color: this.style.getEdgeColour(),
-        font: this.style.getEdgeFont(),
+        color: this.style.getEdgeColour(label),
+        font: this.style.getEdgeFont(label),
+        arrows: {
+          to: (label !== 'has-role'),
+        },
       });
     }
     return this;
@@ -417,9 +437,14 @@ export default class Visualiser {
   }
 
   generateLabel(type, properties, label) {
-    if (type in this.displayProperties) {
-      return this.displayProperties[type].reduce((l, x) => {
-        let value = (properties[x] === undefined) ? '' : properties[x].label;
+    if (NodeSettings.getLabelProperties(type).length) {
+      return NodeSettings.getLabelProperties(type).reduce((l, x) => {
+        let value;
+        if (x === 'type') {
+          value = type;
+          return `${(l.length ? `${l}\n` : l) + value}`;
+        }
+        value = (properties[x] === undefined) ? '' : properties[x].label;
         if (value.length > 40) value = `${value.substring(0, 40)}...`;
         return `${(l.length ? `${l}\n` : l) + x}: ${value}`;
       }, '');

@@ -26,6 +26,9 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.Var;
 
+import java.util.Map;
+import java.util.Set;
+
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
@@ -132,8 +135,11 @@ public class InstanceMapper {
      * @return var pattern with roleplayers
      */
     private static  Var roleplayers(Var var, Relation relation){
-        for(RoleType role:relation.rolePlayers().keySet()){
-            var = var.rel(name(role.getName()), relation.rolePlayers().get(role).getId().getValue());
+        for(Map.Entry<RoleType, Set<Instance>> entry:relation.allRolePlayers().entrySet()){
+            RoleType role = entry.getKey();
+            for (Instance instance : entry.getValue()) {
+                var = var.rel(name(role.getName()), instance.getId().getValue());
+            }
         }
         return var;
     }

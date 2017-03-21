@@ -176,7 +176,9 @@ class HALConceptData {
 
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
         final TypeName roleType = conceptResource.type().getName();
-        conceptResource.ownerInstances().forEach(instance -> {
+        Stream<Instance> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
+        if (limit >= 0) ownersStream = ownersStream.limit(limit);
+        ownersStream.forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(instanceResource, instance, separationDegree - 1);
@@ -232,23 +234,7 @@ class HALConceptData {
         Stream<Relation> relationStream = entity.relations().stream().skip(offset);
         if (limit >= 0) relationStream = relationStream.limit(limit);
         relationStream.forEach(rel -> {
-
-            //find the role played by the current instance in the current relation and use the role type as key in the embedded
-            TypeName rolePlayedByCurrentConcept = null;
-            boolean isResource = false;
-            for (Map.Entry<RoleType, Instance> entry : rel.rolePlayers().entrySet()) {
-                //Some role players can be null
-                if (entry.getValue() != null) {
-                    if (entry.getValue().isResource()) {
-                        isResource = true;
-                    } else if (entry.getValue().getId().equals(entity.getId())) {
-                        rolePlayedByCurrentConcept = entry.getKey().getName();
-                    }
-                }
-            }
-            if (!isResource) {
-                attachRelation(halResource, rel, rolePlayedByCurrentConcept, separationDegree);
-            }
+            embedRelationsNotConnectedToResources(halResource,entity,rel,separationDegree);
         });
     }
 
@@ -262,23 +248,44 @@ class HALConceptData {
 
     private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
 
-        rel.rolePlayers().forEach((roleType, instance) -> {
-            if (instance != null) {
-                Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
-                        .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                handleConcept(roleResource, instance, separationDegree - 1);
-                halResource.withRepresentation(roleType.getName().getValue(), roleResource);
-            }
+        rel.allRolePlayers().forEach((roleType, instanceSet) -> {
+            instanceSet.forEach(instance -> {
+                // Relations attached to relations are handled in embedRelationsPlaysRole method. che e' dove devo filtrare risorse
+                // We filter out relations to resources.
+                if (instance != null && !instance.isRelation()) {
+                    Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
+                            .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+                    handleConcept(roleResource, instance, separationDegree - 1);
+                    halResource.withRepresentation(roleType.getName().getValue(), roleResource);
+                }
+            });
         });
+    }
+
+    private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree){
+        TypeName rolePlayedByCurrentConcept = null;
+        boolean isResource = false;
+        for (Map.Entry<RoleType, Set<Instance>> entry : relation.allRolePlayers().entrySet()) {
+            for (Instance instance : entry.getValue()) {
+                //Some role players can be null
+                if (instance != null) {
+                    if (instance.isResource()) {
+                        isResource = true;
+                    } else if (instance.getId().equals(concept.getId())) {
+                        rolePlayedByCurrentConcept = entry.getKey().getName();
+                    }
+                }
+            }
+        }
+        if (!isResource) {
+            attachRelation(halResource, relation, rolePlayedByCurrentConcept, separationDegree);
+        }
     }
 
     private void embedRelationsPlaysRole(Representation halResource, Relation rel) {
         rel.playsRoles().forEach(roleTypeRel -> {
             rel.relations(roleTypeRel).forEach(relation -> {
-                Representation relationRepresentation = factory.newRepresentation(resourceLinkPrefix + relation.getId() + getURIParams(0))
-                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-                handleConcept(relationRepresentation, relation, 0);
-                halResource.withRepresentation(roleTypeRel.getName().getValue(), relationRepresentation);
+               embedRelationsNotConnectedToResources(halResource,rel,relation,1);
             });
         });
     }

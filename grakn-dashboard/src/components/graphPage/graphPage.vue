@@ -98,7 +98,7 @@ export default {
 
         this.halParser = new HALParser();
 
-        this.halParser.setNewResource((id, p, a, l) => visualiser.addNode(id, p, a, l));
+        this.halParser.setNewResource((id, p, a, l, cn) => visualiser.addNode(id, p, a, l, cn));
         this.halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
         this.halParser.setNodeAlreadyInGraph(id => visualiser.nodeExists(id));
 
@@ -106,15 +106,12 @@ export default {
         this.state.eventHub.$on('click-submit', this.onClickSubmit);
         this.state.eventHub.$on('load-ontology', this.onLoadOntology);
         this.state.eventHub.$on('clear-page', this.onClear);
-        this.state.eventHub.$on('configure-node', this.configureNode);
-
     },
     beforeDestroy() {
         // Destroy listeners when component is destroyed - although it never gets detroyed for now. [keep-alive]
         this.state.eventHub.$off('click-submit', this.onClickSubmit);
         this.state.eventHub.$off('load-ontology', this.onLoadOntology);
         this.state.eventHub.$off('clear-page', this.onClear);
-        this.state.eventHub.$off('configure-node', this.configureNode);
     },
     mounted() {
         this.$nextTick(function nextTickVisualiser() {
@@ -155,7 +152,7 @@ export default {
                 if (!(query.includes('offset')) && !(query.includes('delete')))
                     queryToExecute = queryToExecute + ' offset 0;';
                 if (!(query.includes('limit')) && !(query.includes('delete')))
-                    queryToExecute = queryToExecute + ' limit '+User.getQueryLimit()+';';
+                    queryToExecute = queryToExecute + ' limit ' + User.getQueryLimit() + ';';
                 this.emitInjectQuery(queryToExecute);
                 EngineClient.graqlHAL(queryToExecute).then(this.onGraphResponse, (err) => {
                     this.state.eventHub.$emit('error-message', err.message);
@@ -207,17 +204,18 @@ export default {
             visualiser.setDisplayProperties(nodeType, selectedProps);
         },
         onGraphResponseAnalytics(resp) {
-            if (resp.type === 'string') {
-                this.state.eventHub.$emit('analytics-string-response', resp.response);
+          const responseObject = JSON.parse(resp);
+            if (responseObject.type === 'string') {
+                this.state.eventHub.$emit('analytics-string-response', responseObject.response);
             } else {
-                this.halParser.parseResponse(resp.response, false);
+                this.halParser.parseResponse(responseObject.response, false, false);
                 visualiser.fitGraphToWindow();
             }
         },
 
         onGraphResponse(resp, nodeId) {
             const responseObject = JSON.parse(resp);
-            if (!this.halParser.parseResponse(responseObject, false)) {
+            if (!this.halParser.parseResponse(responseObject, false, false, nodeId)) {
                 this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
             } else {
                 // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
@@ -232,8 +230,8 @@ export default {
             visualiser.fitGraphToWindow();
         },
 
-        onGraphResponseOntology(resp, err) {
-            if (!this.halParser.parseResponse(JSON.parse(resp),true)) {
+        onGraphResponseOntology(resp, nodeId) {
+            if (!this.halParser.parseResponse(JSON.parse(resp), true, true, nodeId)) {
                 this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
             }
             visualiser.fitGraphToWindow();
@@ -254,7 +252,7 @@ export default {
             const node = param.nodes[0];
             if (node === undefined) return;
 
-            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node));
+            this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node), node);
         },
 
         doubleClick(param) {
@@ -265,24 +263,19 @@ export default {
             }
 
             const eventKeys = param.event.srcEvent;
+            const nodeObj = visualiser.getNode(node);
 
-            if (eventKeys.altKey) {
-                if (visualiser.nodes._data[node].ontology) {
-                    EngineClient.request({
-                        url: visualiser.nodes._data[node].ontology,
-                    }).then(this.onGraphResponseOntology, (err) => {
-                        this.state.eventHub.$emit('error-message', err.message);
-                    });
-                }
+            if (eventKeys.shiftKey) {
+                this.requestOntology(nodeObj);
             } else {
                 let generatedNode = false;
                 //If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
-                if (visualiser.getNode(node).baseType === API.GENERATED_RELATION_TYPE) {
+                if (nodeObj.baseType === API.GENERATED_RELATION_TYPE) {
                     generatedNode = true;
                 }
 
                 EngineClient.request({
-                    url: visualiser.getNode(node).href,
+                    url: nodeObj.href,
                     appendReasonerParams: generatedNode,
                 }).then((resp) => this.onGraphResponse(resp, node), (err) => {
                     this.state.eventHub.$emit('error-message', err.message);
@@ -313,6 +306,16 @@ export default {
         blurNode() {
             this.showToolTip = false;
         },
+        requestOntology(nodeObj) {
+            // If alt key is pressed we load ontology related to the current node
+            if (nodeObj.ontology) {
+                EngineClient.request({
+                    url: nodeObj.ontology,
+                }).then((resp) => this.onGraphResponseOntology(resp, nodeObj.id), (err) => {
+                    this.state.eventHub.$emit('error-message', err.message);
+                });
+            }
+        },
         leftClick(param) {
 
             // TODO: handle multiselect properly now that is enabled.
@@ -334,15 +337,8 @@ export default {
 
             const nodeObj = visualiser.getNode(node);
 
-            if (eventKeys.altKey) {
-                // If alt key is pressed we load ontology related to the current node
-                if (nodeObj.ontology) {
-                    EngineClient.request({
-                        url: visualiser.nodes._data[node].ontology,
-                    }).then(this.onGraphResponseOntology, (err) => {
-                        this.state.eventHub.$emit('error-message', err.message);
-                    });
-                }
+            if (eventKeys.shiftKey) {
+                this.requestOntology(nodeObj);
             } else {
 
                 // Show node properties on node panel.
@@ -386,22 +382,22 @@ export default {
         },
 
         onDragStart(params) {
-           const eventKeys = params.event.srcEvent;
-           visualiser.draggingNode = true;
-           this.showToolTip = false;
-           //If ctrl key is pressed while dragging node/nodes we also unlock and drag the connected nodes
-           if(eventKeys.ctrlKey){
-             let neighbours = [];
-             params.nodes.forEach(node=>{
-               neighbours.push.apply(neighbours,visualiser.network.getConnectedNodes(node));
-               neighbours.push(node);
-             });
-             visualiser.network.selectNodes(neighbours);
-             visualiser.releaseNodes(neighbours);
-           }else{
-             visualiser.releaseNodes(params.nodes);
-           }
-       },
+            const eventKeys = params.event.srcEvent;
+            visualiser.draggingNode = true;
+            this.showToolTip = false;
+            //If ctrl key is pressed while dragging node/nodes we also unlock and drag the connected nodes
+            if (eventKeys.ctrlKey) {
+                let neighbours = [];
+                params.nodes.forEach(node => {
+                    neighbours.push.apply(neighbours, visualiser.network.getConnectedNodes(node));
+                    neighbours.push(node);
+                });
+                visualiser.network.selectNodes(neighbours);
+                visualiser.releaseNodes(neighbours);
+            } else {
+                visualiser.releaseNodes(params.nodes);
+            }
+        },
 
         // ----- End of graph interactions ------- //
     },

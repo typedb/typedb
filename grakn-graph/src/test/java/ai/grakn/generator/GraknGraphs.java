@@ -137,6 +137,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> type().hasResource(resourceType()),
             () -> type().key(resourceType()),
             () -> type().setAbstract(true),
+            () -> type().scope(instance()),
             () -> entityType().superType(entityType()),
             () -> entityType().addEntity(),
             () -> roleType().superType(roleType()),
@@ -149,8 +150,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> ruleType().superType(ruleType()),
             () -> ruleType().addRule(var("x"), var("x")), // TODO: generate more complicated rules
             () -> instance().hasResource(resource()),
-            () -> relation().scope(instance()),
-            () -> relation().putRolePlayer(roleType(), instance()),
+            () -> relation().addRolePlayer(roleType(), instance()),
             () -> rule().addHypothesis(type()),
             () -> rule().addConclusion(type())
     );

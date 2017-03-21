@@ -74,7 +74,7 @@ export default class HALParser {
      * Start parsing HAL response in @data.
      * Will call functions set by setNewResource() and setNewRelationship().
      */
-  parseResponse(data, showIsa) {
+  parseResponse(data, showIsa, showResources, nodeId) {
     if (Array.isArray(data)) {
       const hashSet = {};
       const objLength = data.length;
@@ -83,17 +83,17 @@ export default class HALParser {
         hashSet[data[i]._id] = true;
       }
       _.map(data, (x) => {
-        this.parseHalObject(x, hashSet, showIsa);
+        this.parseHalObject(x, hashSet, showIsa, showResources, nodeId);
       });
       return data.length;
     }
 
-    this.parseHalObject(data, {}, showIsa);
+    this.parseHalObject(data, {}, showIsa, showResources, nodeId);
     return 1;
   }
 
 
-  parseHalObject(obj, hashSet, showIsa) {
+  parseHalObject(obj, hashSet, showIsa, showResources, nodeId) {
     if (obj !== null) {
             // The response from Analytics will be a string instead of object. That's why we need this check.
             // we need this because when we loop through embedded we want to draw the edge that points to all the first order nodes.
@@ -101,12 +101,12 @@ export default class HALParser {
 
       const links = Utils.nodeLinks(objResponse);
 
-      this.newResource(HALParser.getHref(objResponse), Utils.defaultProperties(objResponse), Utils.extractResources(objResponse), links);
+      this.newResource(HALParser.getHref(objResponse), Utils.defaultProperties(objResponse), Utils.extractResources(objResponse), links, nodeId);
             // Add assertions from _embedded
       if (API.KEY_EMBEDDED in objResponse) {
         _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), (key) => {
           if ((key !== 'isa') || showIsa === true || objResponse._baseType in this.metaTypesSet) {
-            this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet);
+            this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet, showIsa, showResources, nodeId);
           }
         });
       }
@@ -119,15 +119,15 @@ export default class HALParser {
     /**
      * Parse resources from _embedded field of parent
      */
-  parseEmbedded(objs, parent, roleName, hashSet) {
+  parseEmbedded(objs, parent, roleName, hashSet, showIsa, showResources, nodeId) {
     _.map(objs, (child) => {
             // Add embedded object to the graph only if one of the following is satisfied:
-            // - the current node is not a RESOURCE_TYPE
+            // - the current node is not a RESOURCE_TYPE || showResources is set to true
             // - the current node is already drawn in the graph
             // - the current node is contained in the response as first level object (not embdedded)
             //    if it's contained in the hashset it means it MUST be draw and so all the adges pointing to it.
 
-      if (((child[API.KEY_BASE_TYPE] !== API.RESOURCE_TYPE) && (child[API.KEY_BASE_TYPE] !== API.RESOURCE)) ||
+      if (((child[API.KEY_BASE_TYPE] !== API.RESOURCE_TYPE) && (child[API.KEY_BASE_TYPE] !== API.RESOURCE) || showResources) ||
                 (hashSet !== undefined && hashSet[child._id]) ||
                 this.nodeAlreadyInGraph(HALParser.getHref(child))) {
         const links = Utils.nodeLinks(child);
@@ -137,7 +137,7 @@ export default class HALParser {
 
         this.newResource(HALParser.getHref(child),
                     Utils.defaultProperties(child),
-                    Utils.extractResources(child), links);
+                    Utils.extractResources(child), links, nodeId);
 
         const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
 
@@ -147,7 +147,7 @@ export default class HALParser {
           this.newRelationship(idP, idC, edgeLabel);
         }
 
-        this.parseHalObject(child);
+        this.parseHalObject(child, hashSet, showIsa, showResources, nodeId);
       }
     });
   }

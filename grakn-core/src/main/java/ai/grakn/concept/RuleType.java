@@ -48,6 +48,22 @@ public interface RuleType extends Type {
      */
     Rule addRule(Pattern lhs, Pattern rhs);
 
+    /**
+     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     *
+     * @param scope The category of this Type
+     * @return The Type itself.
+     */
+    RuleType scope(Instance scope);
+
+    /**
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Type.
+     * @return The Type itself
+     */
+    RuleType deleteScope(Instance scope);
+
     //---- Inherited Methods
     /**
      *

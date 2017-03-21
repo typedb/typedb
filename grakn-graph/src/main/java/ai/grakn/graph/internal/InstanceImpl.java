@@ -108,14 +108,15 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         Set<ConceptId> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
 
         Set<Resource<?>> resources = new HashSet<>();
-        this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
-            if(concept.isResource()) {
+        getShortcutNeighbours().forEach(concept -> {
+            if(concept.isResource() && !equals(concept)) {
                 Resource<?> resource = concept.asResource();
                 if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.type().getId())) {
                     resources.add(resource);
                 }
             }
         });
+
         return resources;
     }
 
@@ -127,6 +128,16 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         Set<CastingImpl> castings = new HashSet<>();
         getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(casting -> castings.add((CastingImpl) casting));
         return castings;
+    }
+
+    <X extends Instance> Set<X> getShortcutNeighbours(){
+        Set<X> foundNeighbours = new HashSet<X>();
+        getGraknGraph().getTinkerTraversal().
+                has(Schema.ConceptProperty.ID.name(), getId().getValue()).
+                in(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                out(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                forEachRemaining(vertex -> foundNeighbours.add(getGraknGraph().buildConcept(vertex)));
+        return foundNeighbours;
     }
 
     /**
@@ -185,8 +196,8 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         }
 
         Relation relation = hasResource.addRelation();
-        relation.putRolePlayer(hasResourceTarget, this);
-        relation.putRolePlayer(hasResourceValue, resource);
+        relation.addRolePlayer(hasResourceTarget, this);
+        relation.addRolePlayer(hasResourceValue, resource);
 
         return relation;
     }

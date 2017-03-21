@@ -319,8 +319,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         Entity object = migrator.entity(axiom.getObject().asOWLNamedIndividual());
         RelationType relationType = migrator.relation(axiom.getProperty().asOWLObjectProperty());       
         return relationType.addRelation()
-                 .putRolePlayer(migrator.subjectRole(relationType), subject)
-                 .putRolePlayer(migrator.objectRole(relationType), object);
+                 .addRolePlayer(migrator.subjectRole(relationType), subject)
+                 .addRolePlayer(migrator.objectRole(relationType), object);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -346,8 +346,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         RoleType resourceRole = migrator.resourceRole(resource.type());
         try {       
             return propertyRelation.addRelation()
-                     .putRolePlayer(entityRole, entity)
-                     .putRolePlayer(resourceRole, resource);
+                     .addRolePlayer(entityRole, entity)
+                     .addRolePlayer(resourceRole, resource);
         }
         catch (ConceptException ex) {
             if (ex.getMessage().contains("The Relation with the provided role players already exists")) {
@@ -374,8 +374,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         Resource<String> resource = resourceType.putResource(value.get().getLiteral());
         RelationType propertyRelation = migrator.relation(axiom.getProperty());
         return propertyRelation.addRelation()
-                 .putRolePlayer(migrator.entityRole(entity.type(), resource.type()), entity)
-                 .putRolePlayer(migrator.resourceRole(resource.type()), resource);
+                 .addRolePlayer(migrator.entityRole(entity.type(), resource.type()), entity)
+                 .addRolePlayer(migrator.resourceRole(resource.type()), resource);
     }
 
     @Override

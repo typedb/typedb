@@ -79,11 +79,11 @@ public class AbstractGraph extends TestGraph {
     @Override
     protected void  buildRelations(GraknGraph graph) {
         rel.addRelation()
-                .putRolePlayer(relRoleA, instanceU)
-                .putRolePlayer(relRoleB, instanceT);
+                .addRolePlayer(relRoleA, instanceU)
+                .addRolePlayer(relRoleB, instanceT);
         REL.addRelation()
-                .putRolePlayer(RELRoleA, instanceU)
-                .putRolePlayer(RELRoleB, instanceP);
+                .addRolePlayer(RELRoleA, instanceU)
+                .addRolePlayer(RELRoleB, instanceP);
 
     }
     @Override

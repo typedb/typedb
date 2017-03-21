@@ -274,14 +274,14 @@ public class ClusteringTest {
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             ConceptId relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId();
             ConceptId relationId23 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity3).getId();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity3).getId();
             ConceptId relationId24 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity4).getId();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity4).getId();
             instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
                     relationId12, relationId23, relationId24);
 
@@ -377,47 +377,47 @@ public class ClusteringTest {
 
             RelationType relationType1 = graph.getType(Schema.Resource.HAS_RESOURCE.getName(TypeName.of(resourceType1)));
             relationType1.addRelation()
-                    .putRolePlayer(resourceOwner1, entity1)
-                    .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.2));
+                    .addRolePlayer(resourceOwner1, entity1)
+                    .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.2));
             relationType1.addRelation()
-                    .putRolePlayer(resourceOwner1, entity1)
-                    .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.5));
+                    .addRolePlayer(resourceOwner1, entity1)
+                    .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.5));
             relationType1.addRelation()
-                    .putRolePlayer(resourceOwner1, entity3)
-                    .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.8));
+                    .addRolePlayer(resourceOwner1, entity3)
+                    .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.8));
 
             RelationType relationType2 = graph.getType(Schema.Resource.HAS_RESOURCE.getName(TypeName.of(resourceType2)));
             relationType2.addRelation()
-                    .putRolePlayer(resourceOwner2, entity1)
-                    .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(4L));
+                    .addRolePlayer(resourceOwner2, entity1)
+                    .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(4L));
             relationType2.addRelation()
-                    .putRolePlayer(resourceOwner2, entity1)
-                    .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(-1L));
+                    .addRolePlayer(resourceOwner2, entity1)
+                    .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(-1L));
             relationType2.addRelation()
-                    .putRolePlayer(resourceOwner2, entity4)
-                    .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(0L));
+                    .addRolePlayer(resourceOwner2, entity4)
+                    .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(0L));
 
             RelationType relationType5 = graph.getType(Schema.Resource.HAS_RESOURCE.getName(TypeName.of(resourceType5)));
             relationType5.addRelation()
-                    .putRolePlayer(resourceOwner5, entity1)
-                    .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+                    .addRolePlayer(resourceOwner5, entity1)
+                    .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
             relationType5.addRelation()
-                    .putRolePlayer(resourceOwner5, entity2)
-                    .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+                    .addRolePlayer(resourceOwner5, entity2)
+                    .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
             relationType5.addRelation()
-                    .putRolePlayer(resourceOwner5, entity4)
-                    .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+                    .addRolePlayer(resourceOwner5, entity4)
+                    .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
 
             RelationType relationType6 = graph.getType(Schema.Resource.HAS_RESOURCE.getName(TypeName.of(resourceType6)));
             relationType6.addRelation()
-                    .putRolePlayer(resourceOwner6, entity1)
-                    .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+                    .addRolePlayer(resourceOwner6, entity1)
+                    .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
             relationType6.addRelation()
-                    .putRolePlayer(resourceOwner6, entity2)
-                    .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+                    .addRolePlayer(resourceOwner6, entity2)
+                    .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
             relationType6.addRelation()
-                    .putRolePlayer(resourceOwner6, entity4)
-                    .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+                    .addRolePlayer(resourceOwner6, entity4)
+                    .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
 
             // some resources in, but not connect them to any instances
             graph.getResourceType(resourceType1).putResource(2.8);

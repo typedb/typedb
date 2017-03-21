@@ -23,20 +23,15 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
@@ -44,8 +39,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -57,19 +50,10 @@ import static org.junit.Assert.assertTrue;
 
 public class TitanInternalFactoryTest extends TitanTestBase{
     private static TitanGraph sharedGraph;
-    private static TitanGraph noIndexGraph;
-    private static TitanGraph indexGraph;
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
         sharedGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING).getTinkerPopGraph();
-
-        int max = 1000;
-        noIndexGraph = getGraph();
-        createGraphTestNoIndex("", noIndexGraph, max);
-
-        indexGraph = getGraph();
-        createGraphTestVertexCentricIndex("", indexGraph, max);
     }
 
     @Test
@@ -146,40 +130,6 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     }
 
     @Test
-    public void confirmPagingOfResultsHasCorrectBehaviour() throws InterruptedException {
-        Integer max = 100; // set size of test graph
-        int nTimes = 10; // number of times to run specific traversal
-
-        // Gremlin Indexed Lookup ////////////////////////////////////////////////////
-        Graph graph = getGraph();
-        createGraphTestVertexCentricIndex("rand",graph, max);
-
-        Vertex first = graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
-        List<Object> result, oldResult = new ArrayList<>();
-        for (int i=0; i<nTimes; i++) {
-            // confirm every iteration fetches exactly the same results
-            result = graph.traversal().V(first).
-                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr).range(0, 10)).
-                    inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
-            if (i>0) assertEquals(result,oldResult);
-            oldResult = result;
-
-            // confirm paging works
-            List allNodes = graph.traversal().V(first).
-                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr)).
-                    inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
-
-            for (int j=0;j<max-1;j++) {
-                List currentNode = graph.traversal().V(first).
-                        local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE_NAME.name(), Order.decr).range(j, j + 1)).
-                        inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
-                assertEquals(currentNode.get(0),allNodes.get(j));
-            }
-        }
-
-    }
-
-    @Test
     public void testMultithreadedRetrievalOfGraphs(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
@@ -247,58 +197,5 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     private void assertIndexCorrect(Graph graph) {
         assertEquals(2, graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
         assertFalse(graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
-    }
-
-    private static void createGraphTestNoIndex(String indexProp,Graph graph, int max) throws InterruptedException {
-        createGraphGeneric(indexProp, graph, max, "ITEM_IDENTIFIER", Schema.EdgeLabel.ISA.getLabel(), "TYPE");
-    }
-
-    private static void createGraphTestVertexCentricIndex(String indexProp,Graph graph, int max) throws InterruptedException {
-        createGraphGeneric(indexProp,graph,max, Schema.ConceptProperty.VALUE_STRING.name(), Schema.EdgeLabel.SHORTCUT.getLabel(), Schema.EdgeProperty.TO_ROLE_NAME.name());
-    }
-
-    private static void createGraphGeneric(String indexProp,Graph graph,int max,String nodeProp,String edgeLabel,String edgeProp) throws InterruptedException {
-        ExecutorService pLoad = Executors.newFixedThreadPool(1000);
-        int commitSize = 10;
-
-        graph.addVertex(nodeProp, String.valueOf(0));
-        graph.tx().commit();
-
-        // get the list of start and end points
-        int x=1;
-        List<Integer> start = new ArrayList<>();
-        List<Integer> end = new ArrayList<>();
-        while (x<max) {
-            start.add(x);
-            if (x+commitSize<max) {
-                end.add(x+commitSize);
-            } else {
-                end.add(max);
-            }
-            x += commitSize;
-        }
-
-        for (int i=0;i < start.size();i++) {
-            final int j = i;
-            pLoad.submit(() -> addSpecificNodes(indexProp, graph, start.get(j), end.get(j), nodeProp, edgeLabel, edgeProp));
-        }
-        pLoad.shutdown();
-        pLoad.awaitTermination(100, TimeUnit.SECONDS);
-    }
-
-    private static void addSpecificNodes(String indexProp, Graph graph, int start, int end,String nodeProp,String edgeLabel,String edgeProp) {
-        TitanTransaction transaction = ((TitanGraph) graph).newTransaction();
-        Vertex first = transaction.traversal().V().has(nodeProp, String.valueOf("0")).next();
-        Integer edgePropValue;
-        for (Integer i=start; i<end; i++) {
-            Vertex current = transaction.addVertex(nodeProp, i.toString());
-            if (indexProp.equals("rand")) {
-                edgePropValue = ThreadLocalRandom.current().nextInt(1, 11);
-            } else {
-                edgePropValue = i;
-            }
-            first.addEdge(edgeLabel, current, edgeProp, edgePropValue.toString());
-        }
-        transaction.commit();
     }
 }

@@ -18,8 +18,8 @@
 
 package ai.grakn.graql.internal.reasoner.query;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import com.google.common.collect.Maps;
 import java.util.Collection;
@@ -40,14 +40,14 @@ import java.util.stream.Stream;
  * @author Kasper Piskorski
  *
  */
-public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
+public class QueryAnswers implements Iterable<Answer>{
 
     private static final long serialVersionUID = -8092703897236995422L;
 
-    private final HashSet<Map<VarName, Concept>> set = new HashSet<>();
+    private final HashSet<Answer> set = new HashSet<>();
 
     @Override
-    public Iterator<Map<VarName, Concept>> iterator() { return set.iterator();}
+    public Iterator<Answer> iterator() { return set.iterator();}
 
     @Override
     public boolean equals(Object obj){
@@ -60,16 +60,17 @@ public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
     @Override
     public int hashCode(){return set.hashCode();}
 
-    public Stream<Map<VarName, Concept>> stream(){ return set.stream();}
+    public Stream<Answer> stream(){ return set.stream();}
 
     public QueryAnswers(){}
-    public QueryAnswers(Collection<Map<VarName, Concept>> ans){ ans.forEach(set::add);}
+    public QueryAnswers(Collection<Answer> ans){ ans.forEach(set::add);}
     public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 
-    public boolean add(Map<VarName, Concept> a){ return set.add(a);}
+    public boolean add(Answer a){ return set.add(a);}
     public boolean addAll(QueryAnswers ans){ return set.addAll(ans.set);}
-    public boolean remove(Map<VarName, Concept> a){ return set.remove(a);}
+    public boolean remove(Answer a){ return set.remove(a);}
     public boolean removeAll(QueryAnswers ans){ return set.removeAll(ans.set);}
+
     public boolean containsAll(QueryAnswers ans){ return set.containsAll(ans.set);}
 
     public int size(){ return set.size();}
@@ -81,7 +82,9 @@ public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
      * @return filtered answers
      */
     public QueryAnswers filterVars(Set<VarName> vars) {
-        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result, vars::contains)).collect(Collectors.toSet()));
+        return new QueryAnswers(this.stream().map(result -> Maps.filterKeys(result.map(), vars::contains))
+                .map(QueryAnswer::new)
+                .collect(Collectors.toSet()));
     }
 
     /**
@@ -93,17 +96,11 @@ public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
         if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(answer -> {
-            Map<VarName, Concept> unifiedAnswer = unify(answer, unifiers);
+            Answer unifiedAnswer = answer.unify(unifiers);
             unifiedAnswers.add(unifiedAnswer);
         });
 
         return unifiedAnswers;
-    }
-
-    public static Map<VarName, Concept> unify(Map<VarName, Concept> answer, Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return answer;
-        return answer.entrySet().stream()
-                .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())?  unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
     }
 
     /**
