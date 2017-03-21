@@ -348,7 +348,10 @@ public class AtomicTest {
         Map<VarName, VarName> reverseUnifiers = parentAtom.getUnifiers(childAtom);
         Map<VarName, VarName> correctReverseUnifiers = new HashMap<>();
         correctReverseUnifiers.put(VarName.of("x"), VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"));
-        assertTrue(reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet()));
+        assertTrue(
+                "Unifiers not in subset relation:\n" + correctReverseUnifiers.toString() + "\n" + reverseUnifiers.toString(),
+                reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet())
+        );
     }
 
     @Test
@@ -381,7 +384,10 @@ public class AtomicTest {
         Map<VarName, VarName> unifiers = rewrite.getValue();
         Set<VarName> unifiedVariables = Sets.newHashSet(VarName.of("x1"), VarName.of("x2"));
         assertTrue(rewrittenAtom.isUserDefinedName());
-        assertTrue(unifiedVariables.containsAll(unifiers.keySet()));
+        assertTrue(
+                "Variables not in subset relation:\n" + unifiers.keySet().toString() + "\n" + unifiedVariables.toString(),
+                unifiedVariables.containsAll(unifiers.keySet())
+        );
     }
 
     @Test
@@ -398,7 +404,10 @@ public class AtomicTest {
         correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
         correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
         correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
-        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+        assertTrue(
+                "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
+                unifiers.entrySet().containsAll(correctUnifiers.entrySet())
+        );
     }
 
     @Test
@@ -415,7 +424,10 @@ public class AtomicTest {
         correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
         correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
         correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
-        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+        assertTrue(
+                "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
+                unifiers.entrySet().containsAll(correctUnifiers.entrySet())
+        );
     }
 
     @Test
@@ -452,7 +464,10 @@ public class AtomicTest {
         correctVars.add(VarName.of("a"));
         correctVars.add(VarName.of("x"));
         assertTrue(!vars.contains(VarName.of("")));
-        assertTrue(vars.toString(), vars.containsAll(correctVars));
+        assertTrue(
+                "Variables not in subset relation:\n" + correctVars.toString() + "\n" + vars.toString(),
+                vars.containsAll(correctVars)
+        );
     }
 
     @Test
