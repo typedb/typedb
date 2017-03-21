@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Var;
@@ -285,20 +284,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     /**
      * attempt query resolution via application of a specific rule
-     * @param rl rule through which to resolve the query
+     * @param rule rule to apply to resolve the query
      * @param subGoals set of visited subqueries
      * @param cache collection of performed query resolutions
      * @param materialise materialisation flag
      * @return answers from rule resolution
      */
-    private Stream<Map<VarName, Concept>> resolveViaRule(Rule rl,
+    private Stream<Map<VarName, Concept>> resolveViaRule(InferenceRule rule,
                                                          Set<ReasonerAtomicQuery> subGoals,
                                                          Cache<ReasonerAtomicQuery, ?> cache,
                                                          Cache<ReasonerAtomicQuery, ?> dCache,
                                                          boolean materialise,
                                                          boolean differentialJoin){
         Atom atom = this.getAtom();
-        InferenceRule rule = new InferenceRule(rl, graph());
         rule.unify(atom);
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
@@ -345,10 +343,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         Stream<Map<VarName, Concept>> answerStream = cache.contains(this)? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
-            Set<Rule> rules = getAtom().getApplicableRules();
-            Iterator<Rule> rIt = rules.iterator();
-            while(rIt.hasNext()){
-                Rule rule = rIt.next();
+            Set<InferenceRule> rules = getAtom().getApplicableRules();
+            for (InferenceRule rule : rules) {
                 Stream<Map<VarName, Concept>> localStream = resolveViaRule(rule, subGoals, cache, dCache, materialise, differentialJoin);
                 answerStream = Stream.concat(answerStream, localStream);
             }

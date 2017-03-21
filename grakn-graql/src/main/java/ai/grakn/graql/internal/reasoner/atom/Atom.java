@@ -17,7 +17,6 @@
  */
 package ai.grakn.graql.internal.reasoner.atom;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
@@ -84,16 +83,12 @@ public abstract class Atom extends AtomBase {
 
     protected abstract boolean isRuleApplicable(InferenceRule child);
 
-    public Set<Rule> getApplicableRules() {
-        Set<Rule> children = new HashSet<>();
-        GraknGraph graph = getParentQuery().graph();
-        Collection<Rule> rulesFromType = getType() != null? getType().getRulesOfConclusion() : Reasoner.getRules(graph);
-        rulesFromType.forEach(rule -> {
-            InferenceRule child = new InferenceRule(rule, graph);
-            boolean ruleRelevant = isRuleApplicable(child);
-            if (ruleRelevant) children.add(rule);
-        });
-        return children;
+    public Set<InferenceRule> getApplicableRules() {
+        Collection<Rule> rulesFromType = getType() != null? getType().getRulesOfConclusion() : Reasoner.getRules(graph());
+        return rulesFromType.stream()
+                .map(rule -> new InferenceRule(rule, graph()))
+                .filter(this::isRuleApplicable)
+                .collect(Collectors.toSet());
     }
 
     @Override
