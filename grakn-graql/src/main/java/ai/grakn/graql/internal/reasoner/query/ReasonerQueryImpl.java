@@ -118,7 +118,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public String toString() { return getMatchQuery().toString();}
+    public String toString() { return getPattern().toString();}
 
     private void inferTypes(){
         getAtoms().stream()

@@ -325,8 +325,8 @@ public class AtomicTest {
         GraknGraph graph = snbGraph.graph();
         String parentString = "{$r($a, $x);}";
         Relation parent = (Relation) new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
-        PatternAdmin body = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
-        PatternAdmin head = graph.graql().parsePattern("($z, $b) isa recommendation").admin();
+        PatternAdmin body = graph.graql().parsePattern("(recommended-customer: $z, recommended-product: $b) isa recommendation").admin();
+        PatternAdmin head = graph.graql().parsePattern("(recommended-customer: $z, recommended-product: $b) isa recommendation").admin();
         InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
 
         rule.unify(parent);

@@ -32,6 +32,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
@@ -63,13 +64,17 @@ public class InferenceRule {
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
 
         //if head query is a relation query, require roles to be specified
-
         if (head.getAtom().isRelation()){
             Relation headAtom = (Relation) head.getAtom();
-            if (headAtom.getRoleVarTypeMap().keySet().size() < headAtom.getRolePlayers().size()) {
-                throw new IllegalArgumentException("Rule head " + head.toString() + " contains missing role types.");
+            if (headAtom.getRoleVarTypeMap().keySet().size() < headAtom.getRelationPlayers().size()) {
+                throw new IllegalArgumentException(ErrorMessage.HEAD_ROLES_MISSING.getMessage(this.toString()));
             }
         }
+    }
+
+    @Override
+    public String toString(){
+        return  "\n" + this.body.toString() + "\n->\n" + this.head.toString() + "\n";
     }
 
     private static Conjunction<VarAdmin> conjunction(PatternAdmin pattern){

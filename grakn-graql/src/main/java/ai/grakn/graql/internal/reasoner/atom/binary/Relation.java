@@ -47,6 +47,7 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
 import java.util.AbstractMap;
@@ -101,7 +102,7 @@ public class Relation extends TypeAtom {
         super(a);
     }
 
-    private Set<RelationPlayer> getRelationPlayers() {
+    public Set<RelationPlayer> getRelationPlayers() {
         Set<RelationPlayer> rps = new HashSet<>();
         this.atomPattern.asVar().getProperty(RelationProperty.class)
                 .ifPresent(prop -> prop.getRelationPlayers().forEach(rps::add));
@@ -275,7 +276,10 @@ public class Relation extends TypeAtom {
             Type chType = entry.getValue().getValue();
             RoleType parentRole = unificationMappings.getValue().get(childRole);
             //check type compatibility by looking at matched role types
-            if (chType != null && parentRole != null && childRoleMap.containsKey(parentRole)) {
+            if (chType != null
+                    && parentRole != null
+                    && childRoleMap.containsKey(parentRole)
+                    && parentRoleMap.containsKey(parentRole)){
                 Type pType = parentRoleMap.get(parentRole).getValue();
                 //check type compatibility
                 if (pType != null) {
@@ -628,51 +632,36 @@ public class Relation extends TypeAtom {
                                               List<VarName> childVars, List<VarName> parentVars) {
         Map<VarName, VarName> unifiers = new HashMap<>();
         Map<RoleType, RoleType> roleMappings = new HashMap<>();
-        List<VarName> allocatedVars = new ArrayList<>();
-        List<VarName> varsToMap = new ArrayList<>(childVars);
         List<VarName> varsToAllocate = new ArrayList<>(parentVars);
 
-        childMap.entrySet().forEach(entry -> {
-            VarName chVar = entry.getValue();
-            if (varsToAllocate.isEmpty()) {
-                //assign trivial mapping
-                unifiers.put(chVar, chVar);
-                roleMappings.put(entry.getKey(), null);
-            }
-            else{
-                //map to empty if no var matching
-                VarName pVar = VarName.of("");
-                RoleType parentRole = entry.getKey();
-                //go up in role hierarchy to find matching parent variable name
-                while (parentRole != null && pVar.getValue().isEmpty()
-                        && !Schema.MetaSchema.isMetaName(parentRole.getName())) {
-                    pVar = parentMap.getOrDefault(parentRole, VarName.of(""));
-                    if (pVar.getValue().isEmpty()) parentRole = parentRole.superType();
-                }
-                if (!pVar.getValue().isEmpty()){
-                    unifiers.put(chVar, pVar);
-                    roleMappings.put(entry.getKey(), parentRole);
-                    allocatedVars.add(chVar);
-                    varsToAllocate.remove(pVar);
-                }
-            }
-        });
+        //roles satisfy P >= C in terms of generality
+        parentMap.entrySet()
+                .forEach(entry -> {
+                    VarName pVar = entry.getValue();
 
-        varsToMap.removeAll(allocatedVars);
-        //assign unallocated vars if parent or child unspecified
-        if (parentMap.isEmpty() || childMap.isEmpty()) {
+                    //map to empty if no var matching
+                    RoleType parentRole = entry.getKey();
+                    Set<RoleType> compatibleChildRoles = Sets.intersection(new HashSet<>(parentRole.subTypes()), childMap.keySet());
+                    if (compatibleChildRoles.size() == 1){
+                        RoleType childRole = compatibleChildRoles.iterator().next();
+                        VarName chVar = childMap.get(childRole);
+                        unifiers.put(chVar, pVar);
+                        roleMappings.put(childRole, parentRole);
+                        varsToAllocate.remove(pVar);
+                    }
+                });
+
+        //assign unallocated vars if parent empty
+        if (parentMap.isEmpty()) {
             Map<VarName, RoleType> childInverseMap = childMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
             Map<VarName, RoleType> parentInverseMap = childMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-            Iterator<VarName> cit = varsToMap.iterator();
-            Iterator<VarName> pit = varsToMap.equals(varsToAllocate)? varsToMap.iterator() : varsToAllocate.iterator();
-            while (cit.hasNext()){
+            Iterator<VarName> cit = childVars.iterator();
+            for (VarName pVar : varsToAllocate) {
                 VarName chVar = cit.next();
-                VarName pVar = pit.next();
                 RoleType chRole = childInverseMap.get(chVar);
                 RoleType pRole = parentInverseMap.get(pVar);
                 unifiers.put(chVar, pVar);
-                if (chRole != null) roleMappings.put(chRole, pRole);
-                allocatedVars.add(chVar);
+                if (pRole != null) roleMappings.put(chRole, pRole);
             }
         }
         return new Pair<>(unifiers, roleMappings);

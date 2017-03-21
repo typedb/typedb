@@ -173,6 +173,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     GRAPH_MISSING("Provided query does not have an associated graph"),
     NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
+    HEAD_ROLES_MISSING("The specified rule [%s] is ambiguous - it does not specify all role types in the head."),
     PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
     MULTIPLE_RESOURCES("Multiple resource types found during data extraction in atom [%s]"),

@@ -30,6 +30,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -51,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -81,6 +83,9 @@ public class ReasonerTest {
 
     @ClassRule
     public static final GraphContext geoGraph3 = GraphContext.preLoad(GeoGraph.get());
+
+    @org.junit.Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -157,6 +162,15 @@ public class ReasonerTest {
         InferenceRule R2 = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
+    }
+
+    @Test
+    public void testAddingRuleWithHeadWithoutRolePlayersNotAllowed(){
+        GraknGraph graph = snbGraph.graph();
+        PatternAdmin body = graph.graql().parsePattern("(moderator: $x, moderated: $y) isa moderates").admin();
+        PatternAdmin head = graph.graql().parsePattern("($x, $y) isa membership").admin();
+        exception.expect(IllegalArgumentException.class);
+        InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
     }
 
     @Test
