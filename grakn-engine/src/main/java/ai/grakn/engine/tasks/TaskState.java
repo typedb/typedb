@@ -139,7 +139,6 @@ public class TaskState implements Serializable {
 
     public TaskState markCompleted(){
         this.status = COMPLETED;
-        this.engineID = null;
         this.statusChangeTime = now();
         return this;
     }
@@ -152,14 +151,12 @@ public class TaskState implements Serializable {
 
     public TaskState markStopped(){
         this.status = STOPPED;
-        this.engineID = null;
         this.statusChangeTime = now();
         return this;
     }
 
     public TaskState markFailed(Throwable exception){
         this.status = FAILED;
-        this.engineID = null;
         this.exception = exception.getClass().getName();
         this.stackTrace = getFullStackTrace(exception);
         this.statusChangeTime = now();

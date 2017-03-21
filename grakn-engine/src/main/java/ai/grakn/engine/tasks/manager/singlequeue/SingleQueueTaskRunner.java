@@ -19,9 +19,9 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
@@ -62,6 +62,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
 
+    private static final int NUM_UNHANDLED_TASKS_BEFORE_BACKOFF = 5;
+    private static final int INITIAL_BACKOFF = 1_000;
+    private static final int MAX_BACKOFF = 60_000;
+
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
      * {@param storage} to store and retrieve information about tasks.
@@ -94,6 +98,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void run() {
         LOG.debug("started");
 
+        int unhandledTasks = 0;
+        int backOff = INITIAL_BACKOFF;
+
         while (!wakeUp.get()) {
             try {
                 ConsumerRecords<TaskId, TaskState> records = consumer.poll(1000);
@@ -101,13 +108,31 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 // This TskRunner should only ever receive one record
                 for (ConsumerRecord<TaskId, TaskState> record : records) {
-                    handleTask(record.value());
+                    TaskState task = record.value();
+                    boolean handled = handleTask(task);
+
+                    if (!handled) {
+                        unhandledTasks += 1;
+                    } else {
+                        unhandledTasks = 0;
+                    }
 
                     consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
                     consumer.commitSync();
 
                     LOG.trace("{} acknowledged", record.key().getValue());
                 }
+
+                // Exponential back-off: sleep longer and longer when receiving the same tasks
+                if (unhandledTasks >= NUM_UNHANDLED_TASKS_BEFORE_BACKOFF) {
+                    LOG.trace("received " + unhandledTasks + " unhandled tasks in a row, sleeping for " + backOff + "ms");
+                    Thread.sleep(backOff);
+                    backOff *= 2;
+                    if (backOff > MAX_BACKOFF) backOff = MAX_BACKOFF;
+                } else {
+                    backOff = INITIAL_BACKOFF;
+                }
+
             } catch (Throwable throwable){
                 LOG.error("error thrown", throwable);
                 assert false; // This should be unreachable, but in production we still handle it for robustness
@@ -140,15 +165,17 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     }
 
     /**
-     * Returns false if cannot handle record because the executor is full
+     * Returns whether the task was succesfully handled, or was just re-submitted.
      */
-    private void handleTask(TaskState task) {
+    private boolean handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
         if (shouldStopTask(task)) {
             stopTask(task);
+            return true;
         } else if(shouldDelayTask(task)){
             resubmitTask(task);
+            return false;
         } else if (shouldExecuteTask(task)) {
             executeTask(task);
 
@@ -157,8 +184,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 task.schedule(task.schedule().incrementByInterval());
                 resubmitTask(task);
             }
+
+            return true;
         } else {
             LOG.debug("{}\tskipping", task);
+            return true;
         }
     }
 

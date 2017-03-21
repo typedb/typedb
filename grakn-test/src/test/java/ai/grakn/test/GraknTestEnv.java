@@ -1,13 +1,11 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
@@ -18,7 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.graql.Graql.var;
-import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 /**
  * <p>
@@ -76,6 +73,9 @@ public abstract class GraknTestEnv {
     }
 
     static void startKafka() throws Exception {
+        // Kafka is using log4j, which is super annoying. We make sure it only logs error here
+        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
+
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("starting kafka...");
@@ -127,11 +127,9 @@ public abstract class GraknTestEnv {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
             Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-            hideLogs();
 
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
-            hideLogs();
 
             try {Thread.sleep(5000);} catch(InterruptedException ex) { LOG.info("Thread sleep interrupted."); }
         }
@@ -143,15 +141,6 @@ public abstract class GraknTestEnv {
     static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
-    }
-
-    public static void hideLogs() {
-        ((Logger) org.slf4j.LoggerFactory.getLogger(ROOT_LOGGER_NAME)).setLevel(Level.ERROR);
-
-        // Some dependencies are using log4j, so must be managed separately
-        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
-
-        ((Logger) org.slf4j.LoggerFactory.getLogger("ai.grakn")).setLevel(Level.INFO);
     }
 
     public static boolean usingTinker() {

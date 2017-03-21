@@ -95,11 +95,15 @@ public class BackgroundTaskTestUtils {
     }
 
     private static void waitForStatus(TaskStateStorage storage, TaskState task, Set<TaskStatus> status) {
+        waitForStatus(storage, task.getId(), status);
+    }
+
+    public static void waitForStatus(TaskStateStorage storage, TaskId task, Set<TaskStatus> status) {
         final long initial = new Date().getTime();
 
         while((new Date().getTime())-initial < 60000) {
-            if (storage.containsTask(task.getId())) {
-                TaskStatus currentStatus = storage.getState(task.getId()).status();
+            if (storage.containsTask(task)) {
+                TaskStatus currentStatus = storage.getState(task).status();
                 if (status.contains(currentStatus)) {
                     return;
                 }
@@ -112,7 +116,7 @@ public class BackgroundTaskTestUtils {
             }
         }
 
-        TaskStatus finalStatus = storage.containsTask(task.getId()) ? storage.getState(task.getId()).status() : null;
+        TaskStatus finalStatus = storage.containsTask(task) ? storage.getState(task).status() : null;
 
         fail("Timeout waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
     }
