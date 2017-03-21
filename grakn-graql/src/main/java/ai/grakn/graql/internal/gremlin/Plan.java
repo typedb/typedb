@@ -21,11 +21,8 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -37,27 +34,26 @@ import static ai.grakn.graql.internal.gremlin.GraqlTraversal.fragmentListCost;
  */
 class Plan implements Comparable<Plan> {
     private final Stack<Fragment> fragments;
-    private final Multiset<VarName> names;
     private final Set<EquivalentFragmentSet> fragmentSets;
+    private double cost = -1;
 
-    private Plan(Stack<Fragment> fragments, Multiset<VarName> names, Set<EquivalentFragmentSet> fragmentSets) {
+    private Plan(Stack<Fragment> fragments, Set<EquivalentFragmentSet> fragmentSets) {
         this.fragments = fragments;
-        this.names = names;
         this.fragmentSets = fragmentSets;
     }
 
     static Plan base() {
-        return new Plan(new Stack<>(), HashMultiset.create(), Sets.newHashSet());
+        return new Plan(new Stack<>(), Sets.newHashSet());
     }
 
     public Plan copy() {
         Stack<Fragment> fragmentsCopy = new Stack<>();
         fragmentsCopy.addAll(fragments);
-        return new Plan(fragmentsCopy, HashMultiset.create(names), Sets.newHashSet(fragmentSets));
+        return new Plan(fragmentsCopy, Sets.newHashSet(fragmentSets));
     }
 
     boolean tryPush(Fragment newFragment) {
-        if (!names.containsAll(newFragment.getDependencies())) {
+        if (!hasNames(newFragment.getDependencies())) {
             return false;
         }
 
@@ -66,13 +62,11 @@ class Plan implements Comparable<Plan> {
         }
 
         fragments.push(newFragment);
-        names.addAll(newFragment.getVariableNames());
         return true;
     }
 
     Fragment pop() {
         Fragment fragment = fragments.pop();
-        names.removeAll(fragment.getVariableNames());
         fragmentSets.remove(fragment.getEquivalentFragmentSet());
         return fragment;
     }
@@ -83,14 +77,30 @@ class Plan implements Comparable<Plan> {
     }
 
     public double cost() {
-        return fragmentListCost(fragments);
+        if (cost == -1) {
+            cost = fragmentListCost(fragments);
+        }
+        return cost;
     }
 
     public List<Fragment> fragments() {
         return fragments;
     }
 
-    public Collection<VarName> names() {
-        return names;
+    private boolean hasNames(Set<VarName> names) {
+        if (names.isEmpty()) {
+            return true;
+        }
+
+        // Create mutable copy
+        names = Sets.newHashSet(names);
+
+        for (Fragment fragment : fragments) {
+            if (names.removeAll(fragment.getVariableNames()) && names.isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

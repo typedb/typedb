@@ -41,9 +41,15 @@ public class PlanTest {
         VarName y = VarName.of("y");
         VarName z = VarName.of("z");
 
+        Fragment outIsa = outIsa(y, a);
+        outIsa.setEquivalentFragmentSet(EquivalentFragmentSet.create());
+
+        Fragment shortcut = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, z);
+        shortcut.setEquivalentFragmentSet(EquivalentFragmentSet.create());
+
         Plan plan = Plan.base();
-        plan.tryPush(outIsa(y, a));
-        plan.tryPush(shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, z));
+        plan.tryPush(outIsa);
+        plan.tryPush(shortcut);
 
         List<Fragment> fragments = plan.fragments();
 
