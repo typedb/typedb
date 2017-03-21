@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.Pattern;
@@ -67,7 +68,17 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
         }
 
+        Rule foundRule = getRule(lhs, rhs);
+        if(foundRule != null){
+            throw new ConceptNotUniqueException(ErrorMessage.DUPLICATE_RULES.getMessage(foundRule, lhs, rhs));
+        }
+
         return addInstance(Schema.BaseType.RULE, (vertex, type) ->
                 getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
+    }
+
+    private Rule getRule(Pattern lhs, Pattern rhs) {
+        String index = RuleImpl.generateRuleIndex(this, lhs, rhs);
+        return getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
     }
 }
