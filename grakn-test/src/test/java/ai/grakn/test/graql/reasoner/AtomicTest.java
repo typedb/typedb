@@ -126,7 +126,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testRoleInference2(){
+    public void testRoleInferenceWithWildcard(){
         GraknGraph graph = cwGraph.graph();
         String patternString = "{($z, $y, $x), isa transaction;$z isa country;$x isa person;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
@@ -147,7 +147,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testRoleInference3(){
+    public void testRoleInferenceWithSingleRoleAbsent(){
         GraknGraph graph = cwGraph.graph();
         String patternString = "{(buyer: $y, seller: $y, transaction-item: $x), isa transaction;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
@@ -171,7 +171,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testRoleInference4(){
+    public void testRoleInferenceWithRoleHierarchy(){
         GraknGraph graph = genealogyOntology.graph();
         String relationString = "{($p, son: $gc) isa parentship;}";
         String fullRelationString = "{(parent: $p, son: $gc) isa parentship;}";
@@ -188,7 +188,7 @@ public class AtomicTest {
 
     //tests unambiguous role mapping
     @Test
-    public void testRoleInference5(){
+    public void testRoleInferenceWithUnambiguousRoleMapping(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -201,7 +201,7 @@ public class AtomicTest {
 
     //test ambiguous role mapping
     @Test
-    public void testRoleInference6(){
+    public void testRoleInferenceWithAmbiguousRoleMapping(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity2; $y isa entity3; $z isa entity4;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -211,7 +211,7 @@ public class AtomicTest {
 
     //test ambiguous role mapping
     @Test
-    public void testRoleInference7(){
+    public void testRoleInferenceWithAmbiguousRoleMapping2(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y) isa relation1;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -221,7 +221,7 @@ public class AtomicTest {
 
     //test rule applicability for atom with unspecified roles but with possible unambiguous role mapping
     @Test
-    public void testRuleApplicability(){
+    public void testRuleApplicabilityViaTypeWithUnambiguousRoleMapping(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -230,7 +230,7 @@ public class AtomicTest {
 
     //test rule applicability for atom with unspecified roles but with possible unambiguous role mapping
     @Test
-    public void testRuleApplicability2(){
+    public void testRuleApplicabilityViaTypeWithUnambiguousRoleMapping2(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity1; $y isa entity2; $z isa entity4;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -239,16 +239,25 @@ public class AtomicTest {
 
     //test rule applicability for atom with unspecified roles but with possible ambiguous role mapping
     @Test
-    public void testRuleApplicability3(){
+    public void testRuleApplicabilityViaTypeWithAmbiguousRoleMapping(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity2; $y isa entity3; $z isa entity4;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(1, relation.getApplicableRules().size());
     }
 
+    //test rule applicability for match-all atom
+    @Test
+    public void testRuleApplicabilityViaTypeMatchAll(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{($x, $y);}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(1, relation.getApplicableRules().size());
+    }
+
     //test rule applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping
     @Test
-    public void testRuleApplicability4(){
+    public void testRuleApplicabilityViaTypeMissingRelationPlayers(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y);$x isa entity2; $y isa entity4;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -257,20 +266,29 @@ public class AtomicTest {
 
     //test rule applicability for atom with unspecified roles with missing relation players without possible role mapping
     @Test
-    public void testRuleApplicability5(){
+    public void testRuleApplicabilityViaTypeMissingRelationPlayers2(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y);$x isa entity1; $y isa entity5;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(0, relation.getApplicableRules().size());
     }
 
-    //test rule applicability for match-all atom
+    //test rule applicability for atom with unspecified roles with conflicting roles inferred from types with a wildcard
     @Test
-    public void testRuleApplicability6(){
+    public void testRuleApplicabilityViaTypeWithWildcard(){
         GraknGraph graph = ruleApplicabilitySet.graph();
-        String relationString = "{($x, $y);}";
+        String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity2;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(1, relation.getApplicableRules().size());
+    }
+
+    //test rule applicability for atom with unspecified roles with conflicting roles inferred from types with a wildcard
+    @Test
+    public void testRuleApplicabilityViaTypeWithWildcardMissingMappings(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity5;}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(0, relation.getApplicableRules().size());
     }
 
     @Test

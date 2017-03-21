@@ -237,21 +237,27 @@ public class Relation extends TypeAtom {
         Set<RoleType> roles = childAtom.getRoleVarTypeMap().keySet();
 
         //rule not applicable if there's an empty role intersection
+        //each role player without a role or type correpsonds to role metatype - role wildcard
         Set<RoleType> mappedRoles = new HashSet<>();
+        int roleWildcards = 0;
         for (VarName rolePlayer : getRolePlayers()){
             Type type = varTypeMap.get(rolePlayer);
-            Set<RoleType> roleIntersection = new HashSet<>(roles);
             if (type != null && !Schema.MetaSchema.isMetaName(type.getName())) {
+                Set<RoleType> roleIntersection = new HashSet<>(roles);
                 roleIntersection.retainAll(type.playsRoles());
                 if (roleIntersection.isEmpty()){
                     return false;
+                } else {
+                    mappedRoles.addAll(roleIntersection);
                 }
+            } else {
+                roleWildcards++;
             }
-            mappedRoles.addAll(roleIntersection);
         }
 
         //rule not applicable if not a single mapping between all relation players and role types can be found
-        return mappedRoles.containsAll(roles);
+        //>= takes into account the case when the parent has less relation players than child (rule head)
+        return mappedRoles.size() + roleWildcards >= getRolePlayers().size();
     }
 
     private boolean isRuleApplicableViaAtom(Relation childAtom, InferenceRule child) {
