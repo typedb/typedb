@@ -73,7 +73,6 @@ import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
 
-
 /**
  *
  * <p>
