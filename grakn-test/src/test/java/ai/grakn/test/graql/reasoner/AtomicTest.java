@@ -79,7 +79,7 @@ public class AtomicTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void testRecursive(){
+    public void testAtomRecursive(){
         GraknGraph graph = snbGraph.graph();
         String recRelString = "{($x, $y) isa resides;}";
         String nrecRelString = "{($x, $y) isa recommendation;}";
@@ -90,7 +90,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testFactory(){
+    public void testAtomFactory(){
         GraknGraph graph = snbGraph.graph();
         String atomString = "{$x isa person;}";
         String relString = "{($x, $y) isa recommendation;}";
