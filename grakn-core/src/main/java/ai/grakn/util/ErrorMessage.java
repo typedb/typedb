@@ -159,6 +159,10 @@ public enum ErrorMessage {
     NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
     NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
 
+    //Server Errors
+    UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
+    MISSING_MANDATORY_PARAMETERS("Missing mandatory parameters"),
+
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
     POSTPROCESSING_ERROR("Unexpected error during post processing on Job [%s] fix due to [%s]"),

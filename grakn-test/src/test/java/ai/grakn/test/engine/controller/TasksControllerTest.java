@@ -18,158 +18,238 @@
 
 package ai.grakn.test.engine.controller;
 
-import ai.grakn.engine.TaskId;
+import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
-import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
+import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import com.jayway.restassured.http.ContentType;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import com.google.common.collect.ImmutableMap;
+import com.jayway.restassured.mapper.ObjectMapper;
+import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
+import com.jayway.restassured.mapper.ObjectMapperSerializationContext;
 import com.jayway.restassured.response.Response;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
+import com.jayway.restassured.specification.RequestSpecification;
+import mjson.Json;
+import org.apache.http.entity.ContentType;
+import org.junit.*;
+import spark.Service;
 
-import java.util.Date;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static ai.grakn.util.REST.WebPath.Tasks.GET;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
+import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
+
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
-import static com.jayway.restassured.RestAssured.get;
-import static com.jayway.restassured.RestAssured.given;
-import static com.jayway.restassured.RestAssured.put;
+import static com.jayway.restassured.RestAssured.with;
+import static java.time.Instant.now;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.*;
 
 public class TasksControllerTest {
-    private TaskId singleTask;
+    private static final int PORT = 4567;
+    private static final String URI = "localhost:" + PORT;
+    private static Service spark;
+    private static TaskManager manager;
+    private final JsonMapper jsonMapper = new JsonMapper();
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    @BeforeClass
+    public static void setUp() throws Exception {
+        spark = Service.ignite();
+        configureSpark(spark, PORT);
 
-    @Before
-    public void setUp() throws Exception {
-        TaskManager manager = engine.getTaskManager();
-        TaskState status = createTask();
-        singleTask = manager.storage().newState(status);
+        TaskStateStorage storage = new TaskStateInMemoryStore();
+        manager = mock(TaskManager.class);
+        when(manager.storage()).thenReturn(storage);
+
+        new TasksController(spark, manager);
+
+        spark.awaitInitialization();
+    }
+
+    @AfterClass
+    public static void stopSpark() throws IOException {
+        spark.stop();
     }
 
     @Test
-    public void testTasksByStatus() throws Exception{
-        Response response = given().queryParam("status", COMPLETED.toString())
-                                   .queryParam("limit", 10)
-                                   .get(TASKS);
+    public void afterSendingTask_ItReceivedByStorage(){
+        send();
 
-        response.then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("list.size()", greaterThanOrEqualTo(1));
-
-        JSONArray array = new JSONArray(response.body().asString());
-        array.forEach(x -> {
-            JSONObject o = (JSONObject)x;
-            assertEquals(COMPLETED.toString(), o.get("status"));
-        });
+        verify(manager, atLeastOnce()).addTask(
+                argThat(argument -> argument.taskClass().equals(ShortExecutionMockTask.class)));
     }
 
     @Test
-    public void testTasksByClassName() {
-        Response response = given().queryParam("className", ShortExecutionMockTask.class.getName())
-                                   .queryParam("limit", 10)
-                                   .get(TASKS);
+    public void afterSendingTask_TheResponseContainsTheCorrectIdentifier(){
+        Response response = send();
 
-        response.then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("list.size()", greaterThanOrEqualTo(1));
-
-        JSONArray array = new JSONArray(response.body().asString());
-        array.forEach(x -> {
-            JSONObject o = (JSONObject)x;
-            assertEquals(ShortExecutionMockTask.class.getName(), o.get("className"));
-        });
+        assertThat(response.getBody().as(Json.class, jsonMapper).at("id"), notNullValue());
     }
 
     @Test
-    public void testTasksByCreator() {
-        Response response = given().queryParam("creator", BackgroundTaskTestUtils.class.getName())
-                                   .queryParam("limit", 10)
-                                   .get(TASKS);
+    public void afterSendingTask_TheResponseTypeIsJson(){
+        Response response = send();
 
-        response.then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("list.size()", greaterThanOrEqualTo(1));
-
-        JSONArray array = new JSONArray(response.body().asString());
-        array.forEach(x -> {
-            JSONObject o = (JSONObject)x;
-            Assert.assertEquals(BackgroundTaskTestUtils.class.getName(), o.get("creator"));
-        });
+        assertThat(response.contentType(), equalTo(ContentType.APPLICATION_JSON.getMimeType()));
     }
 
     @Test
-    public void testGetAllTasks() {
-        Response response = given().queryParam("limit", 10).get(TASKS);
+    public void afterSendingTaskWithRunAt_ItIsDelayedInStorage(){
+        Instant runAt = now();
+        send(Json.object().toString(), defaultParams());
 
-        response.then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("list.size()", greaterThanOrEqualTo(1));
+        verify(manager).addTask(argThat(argument -> argument.schedule().runAt().equals(runAt)));
     }
 
     @Test
-    public void testGetTask() throws Exception {
-        Response response = get(GET.replace(ID_PARAMETER, singleTask.getValue()));
+    public void afterSendingTaskWithInterval_ItIsRecurringInStorage(){
+        Duration interval = Duration.ofSeconds(1);
+        send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                        TASK_CREATOR_PARAMETER, this.getClass().getName(),
+                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli()),
+                        TASK_RUN_INTERVAL_PARAMETER, Long.toString(interval.toMillis())
+                )
+        );
 
-        response.then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("id", equalTo(singleTask.getValue()));
+        verify(manager).addTask(argThat(argument -> argument.schedule().interval().isPresent()));
+        verify(manager).addTask(argThat(argument -> argument.schedule().isRecurring()));
     }
 
     @Test
-    public void testScheduleWithoutOptional() {
-        given().queryParam("className", ShortExecutionMockTask.class.getName())
-               .queryParam("creator", this.getClass().getName())
-               .queryParam("runAt", new Date())
-               .post(TASKS)
-               .then().statusCode(200)
-               .and().contentType(ContentType.JSON)
-               .and().body("id", notNullValue());
+    public void afterSendingTaskWithMissingClassName_Grakn400IsThrown(){
+        Response response = send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CREATOR_PARAMETER, this.getClass().getName(),
+                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli())
+                )
+        );
+
+        String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
+        assertThat(exception, containsString(MISSING_MANDATORY_PARAMETERS.getMessage(TASK_CLASS_NAME_PARAMETER)));
+        assertThat(response.statusCode(), equalTo(400));
     }
 
-    // Stopping tasks is not currently implemented in MultiQueueTaskManager
-    @Ignore
     @Test
-    public void testScheduleStopTask() {
-        Response response = given()
-                .queryParam("className", LongExecutionMockTask.class.getName())
-                .queryParam("creator", this.getClass().getName())
-                .queryParam("runAt", new Date())
-                .queryParam("interval", 5000)
-                .post(TASKS);
+    public void afterSendingTaskWithMissingCreatedBy_Grakn400IsThrown(){
+        Response response = send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli())
+                )
+        );
 
-        response.then().statusCode(200)
-                .and().contentType(ContentType.JSON);
+        String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
+        assertThat(exception, containsString(MISSING_MANDATORY_PARAMETERS.getMessage(TASK_CREATOR_PARAMETER)));
+        assertThat(response.statusCode(), equalTo(400));
+    }
 
-        String id = new JSONObject(response.body().asString()).getString("id");
+    @Test
+    public void afterSendingTaskWithMissingRunAt_Grakn400IsThrown(){
+        Response response = send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                        TASK_CREATOR_PARAMETER, this.getClass().getName()
+                )
+        );
 
-        // Stop task
-        put(TASKS+id+"/stop")
-                .then().statusCode(200)
-                .and().contentType("text/html");
+        String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
+        assertThat(exception, containsString(MISSING_MANDATORY_PARAMETERS.getMessage(TASK_RUN_AT_PARAMETER)));
+        assertThat(response.statusCode(), equalTo(400));
+    }
 
-        // Check state
-        get(TASKS+id)
-                .then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("id", equalTo(id))
-                .and().body("status", equalTo(STOPPED.toString()));
+    @Test
+    public void afterSendingTaskWithInvalidBackgroundTaskClassName_Grakn400IsThrown(){
+        Response response = send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, this.getClass().getName(),
+                        TASK_CREATOR_PARAMETER, this.getClass().getName(),
+                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli())
+                )
+        );
+
+        String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
+        assertThat(exception, containsString(UNAVAILABLE_TASK_CLASS.getMessage(this.getClass().getName())));
+        assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void afterSendingTaskWithMalformedInterval_Grakn400IsThrown(){
+        Response response = send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                        TASK_CREATOR_PARAMETER, this.getClass().getName(),
+                        TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli()),
+                        TASK_RUN_INTERVAL_PARAMETER, "malformed"
+                )
+        );
+
+        assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void afterSendingTaskWithMalformedConfiguration_Grakn400IsThrown(){
+        Response response = send("non-json configuration");
+        assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void afterSendingTaskWithMalformedRunAt_Grakn400IsThrown(){
+        Response response = send(Json.object().toString(),
+                ImmutableMap.of(
+                        TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                        TASK_CREATOR_PARAMETER, this.getClass().getName(),
+                        TASK_RUN_AT_PARAMETER, ""
+                )
+        );
+
+        assertThat(response.statusCode(), equalTo(400));
+    }
+
+    private Map<String, String> defaultParams(){
+        return ImmutableMap.of(
+                TASK_CLASS_NAME_PARAMETER, ShortExecutionMockTask.class.getName(),
+                TASK_CREATOR_PARAMETER, this.getClass().getName(),
+                TASK_RUN_AT_PARAMETER, Long.toString(now().toEpochMilli())
+        );
+    }
+
+    private Response send(){
+        return send(Json.object().toString(), defaultParams());
+    }
+
+    private Response send(String configuration){
+        return send(configuration, defaultParams());
+    }
+
+    private Response send(String configuration, Map<String, String> params){
+        RequestSpecification request = with().queryParams(params).body(configuration);
+        return request.post(String.format("http://%s%s", URI, TASKS));
+    }
+
+    private class JsonMapper implements ObjectMapper{
+
+        @Override
+        public Object deserialize(ObjectMapperDeserializationContext objectMapperDeserializationContext) {
+            return Json.read(objectMapperDeserializationContext.getDataToDeserialize().asString());
+        }
+
+        @Override
+        public Object serialize(ObjectMapperSerializationContext objectMapperSerializationContext) {
+            return objectMapperSerializationContext.getObjectToSerialize().toString();
+        }
     }
 }
