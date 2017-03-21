@@ -21,11 +21,14 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Type;
+import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
@@ -113,5 +116,34 @@ public class RuleTest extends GraphTestBase{
 
         assertThat(rule.getHypothesisTypes(), containsInAnyOrder(t1));
         assertThat(rule.getConclusionTypes(), containsInAnyOrder(t2));
+    }
+
+    @Test
+    public void whenAddingDuplicateRulesOfTheSameTypeWithTheSamePattern_Throw(){
+        graknGraph.putEntityType("type1");
+        lhs = graknGraph.graql().parsePattern("$x isa type1");
+        rhs = graknGraph.graql().parsePattern("$x isa type1");
+
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+
+        expectedException.expect(ConceptNotUniqueException.class);
+        expectedException.expectMessage(ErrorMessage.DUPLICATE_RULES.getMessage(rule, lhs, rhs));
+
+        graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+    }
+
+    @Ignore //This is ignored because we currently have no way to determine if patterns with different variables name are equivalent
+    @Test
+    public void whenAddingDuplicateRulesOfTheSameTypeWithDifferentPatternVariables_Throw(){
+        graknGraph.putEntityType("type1");
+        lhs = graknGraph.graql().parsePattern("$x isa type1");
+        rhs = graknGraph.graql().parsePattern("$y isa type1");
+
+        Rule rule = graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
+
+        expectedException.expect(ConceptNotUniqueException.class);
+        expectedException.expectMessage(ErrorMessage.DUPLICATE_RULES.getMessage(rule, lhs, rhs));
+
+        graknGraph.admin().getMetaRuleInference().addRule(lhs, rhs);
     }
 }
