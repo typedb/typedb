@@ -245,17 +245,17 @@ public class TasksController {
     // TODO: Return 'schedule' object as its own object
     private Json serialiseStateSubset(TaskState state) {
         return Json.object()
-                .set("id", state.getId())
+                .set("id", state.getId().getValue())
                 .set("status", state.status().name())
                 .set("creator", state.creator())
                 .set("className", state.taskClass().getName())
-                .set("runAt", state.schedule().runAt())
+                .set("runAt", state.schedule().runAt().toEpochMilli())
                 .set("recurring", state.schedule().isRecurring());
     }
 
     private Json serialiseStateFull(TaskState state) {
         return serialiseStateSubset(state)
-                .set("interval", state.schedule().interval())
+                .set("interval", state.schedule().interval().map(Duration::toMillis).orElse(null))
                 .set("recurring", state.schedule().isRecurring())
                 .set("exception", state.exception())
                 .set("stackTrace", state.stackTrace())
