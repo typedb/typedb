@@ -74,14 +74,14 @@ class ConjunctionQuery {
 
         // Get all variable names mentioned in non-starting fragments
         Set<VarName> names = fragmentSets.stream()
-                .flatMap(EquivalentFragmentSet::getFragments)
+                .flatMap(EquivalentFragmentSet::streamFragments)
                 .filter(fragment -> !fragment.isStartingFragment())
-                .flatMap(Fragment::getVariableNames)
+                .flatMap(fragment -> fragment.getVariableNames().stream())
                 .collect(toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
         Set<VarName> dependencies = fragmentSets.stream()
-                .flatMap(EquivalentFragmentSet::getFragments)
+                .flatMap(EquivalentFragmentSet::streamFragments)
                 .flatMap(fragment -> fragment.getDependencies().stream())
                 .collect(toImmutableSet());
 
@@ -89,7 +89,7 @@ class ConjunctionQuery {
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         this.equivalentFragmentSets = fragmentSets.stream()
-                .filter(set -> set.getFragments().anyMatch(
+                .filter(set -> set.streamFragments().anyMatch(
                         fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.getStart())
                 ))
                 .collect(toImmutableSet());
@@ -111,7 +111,7 @@ class ConjunctionQuery {
     private static Stream<List<Fragment>> cartesianProduct(List<EquivalentFragmentSet> fragmentSets) {
         // Get fragments in each set
         List<Set<Fragment>> fragments = fragmentSets.stream()
-                .map(set -> set.getFragments().collect(toSet()))
+                .map(EquivalentFragmentSet::fragments)
                 .collect(toList());
         return Sets.cartesianProduct(fragments).stream();
     }

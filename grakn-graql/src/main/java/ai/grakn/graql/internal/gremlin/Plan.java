@@ -21,46 +21,60 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
-import static ai.grakn.graql.internal.gremlin.GraqlTraversal.fragmentCost;
-import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static ai.grakn.graql.internal.gremlin.GraqlTraversal.fragmentListCost;
 
 /**
  * A traversal plan for executing a Graql query, comprised of a list of fragments and a cost
  */
 class Plan implements Comparable<Plan> {
-    private final double cost;
-    private final Fragment fragment;
-    private final Plan innerPlan;
-    private final Set<VarName> names;
+    private final Stack<Fragment> fragments;
+    private final Multiset<VarName> names;
+    private final Set<EquivalentFragmentSet> fragmentSets;
 
-    private Plan() {
-        this.cost = 1;
-        this.fragment = null;
-        this.innerPlan = null;
-        this.names = ImmutableSet.of();
-    }
-
-    private Plan(Fragment fragment, Plan innerPlan) {
-        this.cost = fragmentCost(fragment, innerPlan.cost, innerPlan.names);
-        this.fragment = fragment;
-        this.innerPlan = innerPlan;
-        this.names = Sets.union(innerPlan.names, fragment.getVariableNames().collect(toImmutableSet()));
+    private Plan(Stack<Fragment> fragments, Multiset<VarName> names, Set<EquivalentFragmentSet> fragmentSets) {
+        this.fragments = fragments;
+        this.names = names;
+        this.fragmentSets = fragmentSets;
     }
 
     static Plan base() {
-        return new Plan();
+        return new Plan(new Stack<>(), HashMultiset.create(), Sets.newHashSet());
     }
 
-    Plan append(Fragment newFragment) {
-        return new Plan(newFragment, this);
+    public Plan copy() {
+        Stack<Fragment> fragmentsCopy = new Stack<>();
+        fragmentsCopy.addAll(fragments);
+        return new Plan(fragmentsCopy, HashMultiset.create(names), Sets.newHashSet(fragmentSets));
+    }
+
+    boolean tryPush(Fragment newFragment) {
+        if (!names.containsAll(newFragment.getDependencies())) {
+            return false;
+        }
+
+        if (!fragmentSets.add(newFragment.getEquivalentFragmentSet())) {
+            return false;
+        }
+
+        fragments.push(newFragment);
+        names.addAll(newFragment.getVariableNames());
+        return true;
+    }
+
+    Fragment pop() {
+        Fragment fragment = fragments.pop();
+        names.removeAll(fragment.getVariableNames());
+        fragmentSets.remove(fragment.getEquivalentFragmentSet());
+        return fragment;
     }
 
     @Override
@@ -69,44 +83,14 @@ class Plan implements Comparable<Plan> {
     }
 
     public double cost() {
-        return cost + (innerPlan != null ? innerPlan.cost() : 0);
+        return fragmentListCost(fragments);
     }
 
     public List<Fragment> fragments() {
-        List<Fragment> fragments = new ArrayList<>();
-        Plan plan = this;
-        while (plan != null && plan.fragment != null) {
-            assert innerPlan != null; // These are always either both null or both non-null
-            fragments.add(plan.fragment);
-            plan = plan.innerPlan;
-        }
-        return Lists.reverse(fragments);
+        return fragments;
     }
 
-    public Set<VarName> names() {
+    public Collection<VarName> names() {
         return names;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Plan plan = (Plan) o;
-
-        if (Double.compare(plan.cost, cost) != 0) return false;
-        if (fragment != null ? !fragment.equals(plan.fragment) : plan.fragment != null) return false;
-        return innerPlan != null ? innerPlan.equals(plan.innerPlan) : plan.innerPlan == null;
-    }
-
-    @Override
-    public int hashCode() {
-        int result;
-        long temp;
-        temp = Double.doubleToLongBits(cost);
-        result = (int) (temp ^ (temp >>> 32));
-        result = 31 * result + (fragment != null ? fragment.hashCode() : 0);
-        result = 31 * result + (innerPlan != null ? innerPlan.hashCode() : 0);
-        return result;
     }
 }

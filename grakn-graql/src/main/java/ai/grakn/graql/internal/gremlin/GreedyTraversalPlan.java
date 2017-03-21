@@ -23,17 +23,14 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
-import static java.util.Comparator.naturalOrder;
 
 /**
  * Class for generating greedy traversal plans
@@ -42,7 +39,7 @@ import static java.util.Comparator.naturalOrder;
  */
 public class GreedyTraversalPlan {
 
-    private static final long MAX_TRAVERSAL_ATTEMPTS = 10_000;
+    private static final long MAX_TRAVERSAL_ATTEMPTS = 15_000;
 
     /**
      * Create a traversal plan using the default maxTraersalAttempts.
@@ -129,26 +126,32 @@ public class GreedyTraversalPlan {
         // Base case
         if (depth == 0) return plan;
 
-        // A function that will recursively extend the plan using the given fragment
-        Function<Fragment, Plan> extendPlanWithFragment = fragment -> {
-            // Create the new plan, fragment sets and variable names when using this fragment
-            Plan newPlan = plan.append(fragment);
-            EquivalentFragmentSet fragmentSet = fragment.getEquivalentFragmentSet();
-            Set<EquivalentFragmentSet> newFragmentSets = Sets.difference(fragmentSets, ImmutableSet.of(fragmentSet));
+        Plan bestPlan = null;
 
-            // Recursively find a plan
-            return extendPlan(newPlan, newFragmentSets, depth - 1);
-        };
+        for (EquivalentFragmentSet fragmentSet : fragmentSets) {
+            for (Fragment fragment : fragmentSet.fragments()) {
 
-        // Create a plan for every fragment that has its dependencies met, then select the lowest cost plan
-        return fragments(fragmentSets)
-                .filter(fragment -> plan.names().containsAll(fragment.getDependencies()))
-                .map(extendPlanWithFragment)
-                .min(naturalOrder())
-                .orElse(plan);
+                // Skip fragments that don't have their dependencies met or are in sets that have already been visited
+                if (!plan.tryPush(fragment)) {
+                    continue;
+                }
+
+                // Recursively find a plan
+                Plan extendedPlan = extendPlan(plan, fragmentSets, depth - 1);
+
+                plan.pop();
+
+                // Select the lowest-cost plan
+                if (bestPlan == null || extendedPlan.compareTo(bestPlan) < 0) {
+                    bestPlan = extendedPlan.copy();
+                }
+            }
+        }
+
+        return bestPlan != null ? bestPlan : plan.copy();
     }
 
     private static Stream<Fragment> fragments(Set<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSets.stream().flatMap(EquivalentFragmentSet::getFragments);
+        return fragmentSets.stream().flatMap(EquivalentFragmentSet::streamFragments);
     }
 }
