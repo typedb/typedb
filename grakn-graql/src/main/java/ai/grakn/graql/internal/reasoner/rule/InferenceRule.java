@@ -61,6 +61,15 @@ public class InferenceRule {
         //TODO simplify once changes propagated to rule objects
         body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
+
+        //if head query is a relation query, require roles to be specified
+
+        if (head.getAtom().isRelation()){
+            Relation headAtom = (Relation) head.getAtom();
+            if (headAtom.getRoleVarTypeMap().keySet().size() < headAtom.getRolePlayers().size()) {
+                throw new IllegalArgumentException("Rule head " + head.toString() + " contains missing role types.");
+            }
+        }
     }
 
     private static Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
