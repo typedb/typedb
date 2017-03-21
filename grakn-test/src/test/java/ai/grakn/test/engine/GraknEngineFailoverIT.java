@@ -27,27 +27,28 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
@@ -129,6 +130,28 @@ public class GraknEngineFailoverIT {
         assertThat(engineIDS.size(), equalTo(3));
     }
 
+    @Property(trials=1)
+    public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
+            @Size(min=500, max=500) List<@NewTask TaskState> tasks) throws Exception {
+
+        Set<TaskId> taskIds = sendTasks(engine1.port(), tasks);
+        System.out.println(taskIds);
+
+        // Randomly restart one of the other engines until all of the tasks are done
+        List<DistributionContext> enginesToKill = ImmutableList.of(engine2, engine3);
+        do{
+            DistributionContext engineToKill = enginesToKill.get(new Random().nextInt(2));
+
+            engineToKill.restart();
+
+            Thread.sleep(3000);
+        } while (!taskIds.stream().allMatch(GraknEngineFailoverIT::isDone));
+
+        waitForStatus(taskIds, COMPLETED, FAILED);
+
+        assertTasksCompletedWithCorrectStatus(taskIds);
+    }
+
     private void assertTasksCompletedWithCorrectStatus(Set<TaskId> tasks) {
         tasks.stream().map(storage::getState).forEach(t -> {
             if(t.taskClass() == FailingMockTask.class){
@@ -154,5 +177,17 @@ public class GraknEngineFailoverIT {
     private static void waitForStatus(Set<TaskId> taskIds, TaskStatus... status) {
         Set<TaskStatus> statusSet = Sets.newHashSet(status);
         taskIds.forEach(t -> BackgroundTaskTestUtils.waitForStatus(storage, t, statusSet));
+    }
+
+    private static boolean isDone(TaskId taskId){
+        try {
+            TaskStatus status = storage.getState(taskId).status();
+//            if(status == RUNNING || status == CREATED){
+                System.out.println(taskId + " --- " + status);
+//            }
+            return status == FAILED || status == COMPLETED || status == STOPPED;
+        } catch (EngineStorageException e){
+            return false;
+        }
     }
 }
