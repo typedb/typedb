@@ -89,19 +89,20 @@ public class ReasonerTest {
 
     @Test
     public void testSubPropertyRuleCreation() {
+        GraknGraph graph = snbGraph.graph();
         Map<TypeName, TypeName> roleMap = new HashMap<>();
-        RelationType parent = snbGraph.graph().getRelationType("sublocate");
-        RelationType child = snbGraph.graph().getRelationType("resides");
+        RelationType parent = graph.getRelationType("sublocate");
+        RelationType child = graph.getRelationType("resides");
 
-        roleMap.put(snbGraph.graph().getRoleType("member-location").getName(), snbGraph.graph().getRoleType("subject-location").getName());
-        roleMap.put(snbGraph.graph().getRoleType("container-location").getName(), snbGraph.graph().getRoleType("located-subject").getName());
+        roleMap.put(graph.getRoleType("member-location").getName(), graph.getRoleType("subject-location").getName());
+        roleMap.put(graph.getRoleType("container-location").getName(), graph.getRoleType("located-subject").getName());
 
-        Pattern body = and(snbGraph.graph().graql().parsePatterns("(subject-location: $x, located-subject: $x1) isa resides;"));
-        Pattern head = and(snbGraph.graph().graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
+        Pattern body = and(graph.graql().parsePatterns("(subject-location: $x, located-subject: $x1) isa resides;"));
+        Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
 
-        InferenceRule R2 = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
-        Rule rule = Utility.createSubPropertyRule(parent, child, roleMap, snbGraph.graph());
-        InferenceRule R = new InferenceRule(rule, snbGraph.graph());
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
+        Rule rule = Utility.createSubPropertyRule(parent, child, roleMap, graph);
+        InferenceRule R = new InferenceRule(rule, graph);
 
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
@@ -109,52 +110,58 @@ public class ReasonerTest {
 
     @Test
     public void testTransitiveRuleCreation() {
-        Rule rule = Utility.createTransitiveRule(snbGraph.graph().getRelationType("sublocate"),
-                snbGraph.graph().getRoleType("member-location").getName(), snbGraph.graph().getRoleType("container-location").getName(), snbGraph.graph());
+        GraknGraph graph = snbGraph.graph();
+        Rule rule = Utility.createTransitiveRule(
+                graph.getRelationType("sublocate"),
+                graph.getRoleType("member-location").getName(),
+                graph.getRoleType("container-location").getName(), graph);
 
-        InferenceRule R = new InferenceRule(rule, snbGraph.graph());
+        InferenceRule R = new InferenceRule(rule, graph);
 
-        Pattern body = and(snbGraph.graph().graql().parsePatterns("(member-location: $x, container-location: $z) isa sublocate;" +
+        Pattern body = and(graph.graql().parsePatterns(
+                "(member-location: $x, container-location: $z) isa sublocate;" +
                 "(member-location: $z, container-location: $y) isa sublocate;"));
-        Pattern head = and(snbGraph.graph().graql().parsePatterns("(member-location: $x, container-location: $y) isa sublocate;"));
+        Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $y) isa sublocate;"));
 
-        InferenceRule R2 = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
 
     @Test
     public void testReflexiveRuleCreation() {
-        Rule rule = Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
-        InferenceRule R = new InferenceRule(rule, snbGraph.graph());
+        GraknGraph graph = snbGraph.graph();
+        Rule rule = Utility.createReflexiveRule(graph.getRelationType("knows"), graph);
+        InferenceRule R = new InferenceRule(rule, graph);
 
-        Pattern body = and(snbGraph.graph().graql().parsePatterns("($x, $y) isa knows;"));
-        Pattern head = and(snbGraph.graph().graql().parsePatterns("($x, $x) isa knows;"));
+        Pattern body = and(graph.graql().parsePatterns("($x, $y) isa knows;"));
+        Pattern head = and(graph.graql().parsePatterns("($x, $x) isa knows;"));
 
-        InferenceRule R2 = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
 
     @Test
     public void testPropertyChainRuleCreation() {
-        RelationType resides = snbGraph.graph().getRelationType("resides");
-        RelationType sublocate = snbGraph.graph().getRelationType("sublocate");
+        GraknGraph graph = snbGraph.graph();
+        RelationType resides = graph.getRelationType("resides");
+        RelationType sublocate = graph.getRelationType("sublocate");
 
         LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain = new LinkedHashMap<>();
 
-        chain.put(resides, new Pair<>(snbGraph.graph().getRoleType("located-subject").getName(), snbGraph.graph().getRoleType("subject-location").getName()));
-        chain.put(sublocate, new Pair<>(snbGraph.graph().getRoleType("member-location").getName(), snbGraph.graph().getRoleType("container-location").getName()));
+        chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getName(), graph.getRoleType("subject-location").getName()));
+        chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getName(), graph.getRoleType("container-location").getName()));
 
-        Rule rule = Utility.createPropertyChainRule(resides, snbGraph.graph().getRoleType("located-subject").getName(),
-                snbGraph.graph().getRoleType("subject-location").getName(), chain, snbGraph.graph());
-        InferenceRule R = new InferenceRule(rule, snbGraph.graph());
+        Rule rule = Utility.createPropertyChainRule(resides, graph.getRoleType("located-subject").getName(),
+                graph.getRoleType("subject-location").getName(), chain, graph);
+        InferenceRule R = new InferenceRule(rule, graph);
 
-        Pattern body = and(snbGraph.graph().graql().parsePatterns("(located-subject: $x, subject-location: $y) isa resides;" +
+        Pattern body = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $y) isa resides;" +
                 "(member-location: $z, container-location: $y) isa sublocate;"));
-        Pattern head = and(snbGraph.graph().graql().parsePatterns("(located-subject: $x, subject-location: $z) isa resides;"));
+        Pattern head = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $z) isa resides;"));
 
-        InferenceRule R2 = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
+        InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -191,14 +198,15 @@ public class ReasonerTest {
     @Test
     public void testParsingQueryWithResourceVariable2(){
         String queryString = "match $x has firstname $y;";
-        QueryBuilder qb = snbGraph.graph().graql().infer(true).materialise(false);
-        MatchQuery query = qb.parse(queryString);
         Pattern body = and(snbGraph.graph().graql().parsePatterns("$x isa person;$x has name 'Bob';"));
         Pattern head = and(snbGraph.graph().graql().parsePatterns("$x has firstname 'Bob';"));
         snbGraph.graph().admin().getMetaRuleInference().addRule(body, head);
-        Reasoner.commitGraph(snbGraph.graph());
 
+        Reasoner.commitGraph(snbGraph.graph());
         snbGraph.graph(); //Reopen transaction
+
+        QueryBuilder qb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = qb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         assertTrue(!answers.isEmpty());
     }
