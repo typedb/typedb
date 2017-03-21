@@ -346,15 +346,15 @@ public class Utility {
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
         }
-        final Var[] parentVar = {var().isa(name(parent.getName()))};
-        final Var[] childVar = {var().isa(name(child.getName()))};
+        Var parentVar = var().isa(name(parent.getName()));
+        Var childVar = var().isa(name(child.getName()));
 
-        roleMappings.forEach( (parentRoleName, childRoleName) -> {
+        for (Map.Entry<TypeName, TypeName> entry : roleMappings.entrySet()) {
             VarName varName = VarName.anon();
-            parentVar[0] = parentVar[0].rel(name(parentRoleName), var(varName));
-            childVar[0] = childVar[0].rel(name(childRoleName), var(varName));
-        });
-        return graph.admin().getMetaRuleInference().addRule(childVar[0], parentVar[0]);
+            parentVar = parentVar.rel(name(entry.getKey()), var(varName));
+            childVar = childVar.rel(name(entry.getValue()), var(varName));
+        }
+        return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
     }
 
     /**
