@@ -57,7 +57,6 @@ import static org.junit.Assert.assertThat;
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
 
-    private static final String host = "localhost";
     private static final int PORT1 = 4567;
     private static final int PORT2 = 5678;
 
@@ -101,8 +100,7 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
-        String uri1 = "localhost:" + PORT1;
-        TaskClient.of(uri1).stopTask(task.getId());
+        TaskClient.of("localhost", PORT1).stopTask(task.getId());
 
         engine1.getTaskManager().addTask(task);
 
@@ -113,8 +111,7 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
-        String uri2 = "localhost:" + PORT2;
-        TaskClient.of(uri2).stopTask(task.getId());
+        TaskClient.of("localhost", PORT2).stopTask(task.getId());
 
         engine1.getTaskManager().addTask(task);
 
@@ -126,7 +123,7 @@ public class GraknEngineServerIT {
     @Property(trials=10)
     public void whenEngine1StopsATaskDuringExecution_TheTaskIsStopped(
             @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(id -> TaskClient.of(host, PORT1).stopTask(task.getId()));
+        whenTaskStarts(id -> TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
@@ -138,7 +135,7 @@ public class GraknEngineServerIT {
     @Property(trials=10)
     public void whenEngine2StopsATaskDuringExecution_TheTaskIsStopped(
             @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
-        whenTaskStarts(id -> TaskClient.of(host, PORT2).stopTask(task.getId()));
+        whenTaskStarts(id -> TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
