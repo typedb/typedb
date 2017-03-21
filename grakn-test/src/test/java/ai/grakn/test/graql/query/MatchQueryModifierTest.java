@@ -21,11 +21,15 @@ package ai.grakn.test.graql.query;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.matcher.MovieMatchers;
+import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,8 +39,9 @@ import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.Order.asc;
 import static ai.grakn.graql.Order.desc;
-import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
 import static ai.grakn.test.matcher.GraknMatchers.variable;
+import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
+import static ai.grakn.util.ErrorMessage.SELECT_VAR_NOT_IN_MATCH;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -46,6 +51,9 @@ import static org.junit.Assert.assertTrue;
 public class MatchQueryModifierTest {
 
     private QueryBuilder qb;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @ClassRule
     public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
@@ -153,6 +161,16 @@ public class MatchQueryModifierTest {
         ).distinct().select("x");
 
         assertThat(query, variable("x", containsInAnyOrder(MovieMatchers.kermitTheFrog, MovieMatchers.missPiggy)));
+    }
+
+    @Test
+    public void testSelectVariableNotInQuery() {
+        MatchQuery query = qb.match(var("x").isa("movie"));
+
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(SELECT_VAR_NOT_IN_MATCH.getMessage(ImmutableSet.of(VarName.of("y"))));
+
+        query.select("y");
     }
 
     private <T extends Comparable<T>> void assertResultsOrderedByValue(MatchQuery query, String var, boolean asc) {
