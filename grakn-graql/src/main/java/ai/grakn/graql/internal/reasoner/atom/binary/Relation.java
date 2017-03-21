@@ -638,8 +638,6 @@ public class Relation extends TypeAtom {
         parentMap.entrySet()
                 .forEach(entry -> {
                     VarName pVar = entry.getValue();
-
-                    //map to empty if no var matching
                     RoleType parentRole = entry.getKey();
                     Set<RoleType> compatibleChildRoles = Sets.intersection(new HashSet<>(parentRole.subTypes()), childMap.keySet());
                     if (compatibleChildRoles.size() == 1){
