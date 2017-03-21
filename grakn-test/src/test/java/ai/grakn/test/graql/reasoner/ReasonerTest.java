@@ -160,7 +160,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testQueryParsingWithComma(){
+    public void testParsingQueryWithComma(){
         String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', value 'Bob', has age <21;";
         String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x value 'Bob';$x has age <21;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
@@ -170,7 +170,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testQueryParsingWithComma2(){
+    public void testParsingQueryWithComma2(){
         String queryString = "match $x isa person, value <21, value >18;";
         String queryString2 = "match $x isa person;$x value <21;$x value >18;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
@@ -180,7 +180,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testQueryParsingWithResourceVariable(){
+    public void testParsingQueryWithResourceVariable(){
         String patternString = "{$x isa person, has firstname $y;}";
         String patternString2 = "{$x isa person;$x has firstname $y;}";
         ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
@@ -189,7 +189,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testQueryParsingWithResourceVariable2(){
+    public void testParsingQueryWithResourceVariable2(){
         String queryString = "match $x has firstname $y;";
         QueryBuilder qb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = qb.parse(queryString);
@@ -204,7 +204,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testQueryParsingWithResourceVariable3(){
+    public void testParsingQueryWithResourceVariable3(){
         String patternString = "{$x isa person;$x has age <10;}";
         String patternString2 = "{$x isa person;$x has age $y;$y value <10;}";
         ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
@@ -213,7 +213,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testQueryParsingWithResourceVariable4(){
+    public void testParsingQueryWithResourceVariable4(){
         String patternString = "{$x has firstname 'Bob';}";
         String patternString2 = "{$x has firstname $y;$y value 'Bob';}";
         ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
@@ -222,7 +222,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testQueryParsingWithResourceVariable5(){
+    public void testParsingQueryWithResourceVariable5(){
         GraknGraph graph = snbGraph.graph();
         String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
         String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
@@ -237,6 +237,36 @@ public class ReasonerTest {
         assertTrue(query.equals(query4));
         assertTrue(query2.equals(query3));
         assertTrue(query2.equals(query4));
+    }
+
+    @Test
+    public void testParsingQueryContainingScope(){
+        String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+    }
+
+    @Test
+    public void testParsingQueryContainingIsAbstract(){
+        String queryString = "match $x is-abstract;";
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
+        assertEquals(answers, expAnswers);
+    }
+
+    @Test
+    public void testParsingQueryContainingTypeRegex(){
+        String queryString = " match $x sub resource, regex /name/;";
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
+        assertEquals(answers, expAnswers);
+    }
+
+    @Test
+    public void testParsingQueryContainingDataType(){
+        String queryString = " match $x sub resource, datatype string;";
+        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
+        assertEquals(answers, expAnswers);
     }
 
     @Test
@@ -654,30 +684,6 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testParsingQueryContainingIsAbstract(){
-        String queryString = "match $x is-abstract;";
-        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
-        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
-        assertEquals(answers, expAnswers);
-    }
-
-    @Test
-    public void testParsingQueryContainingTypeRegex(){
-        String queryString = " match $x sub resource, regex /name/;";
-        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
-        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
-        assertEquals(answers, expAnswers);
-    }
-
-    @Test
-    public void testParsingQueryContainingDataType(){
-        String queryString = " match $x sub resource, datatype string;";
-        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
-        QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
-        assertEquals(answers, expAnswers);
-    }
-
-    @Test
     public void testReasoningWithQueryContainingHasRole() {
         String queryString = "match ($x, $y) isa $rel-type;$rel-type has-role geo-entity;" +
             "$y isa country;$y has name 'Poland';select $x;";
@@ -700,12 +706,6 @@ public class ReasonerTest {
         MatchQuery query3 = iqb.parse(queryString);
         query.execute();
         assertQueriesEqual(query2, query3);
-    }
-
-    @Test
-    public void testQueryParsingContainingScope(){
-        String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
-        QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
     }
 
     @Test
