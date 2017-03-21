@@ -21,7 +21,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="graqlEditor-container">
         <div class="left-side">
             <fav-queries-list v-on:type-query="typeFavQuery" ref="savedQueries"></fav-queries-list>
-            <button @click="toggleTypeInstances" class="btn types-button"><span>Types</span><i style="padding-left:3px;" v-bind:class="[showTypeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
+            <button @click="toggleTypeInstances" class="btn types-button"><span>Types</span><i style="padding-left:3px;" :class="[showTypeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
                       </button>
         </div>
         <div class="center">
@@ -34,7 +34,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
         </div>
         <div class="right-side">
-            <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
+          <scroll-button :editorLinesNumber="editorLinesNumber"></scroll-button>
+          <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
             <button @click="runQuery" class="btn"><i
                           class="pe-7s-angle-right-circle"></i></button>
             <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-close-circle"></i>
@@ -114,7 +115,7 @@ const FavQueriesList = require('./favQueriesList.vue');
 const TypesPanel = require('./typesPanel.vue');
 const MessagePanel = require('./messagePanel.vue');
 const QuerySettings = require('./querySettings.vue');
-
+const ScrollButton = require('./scrollButton.vue');
 
 export default {
     name: "GraqlEditor",
@@ -124,6 +125,7 @@ export default {
         TypesPanel,
         MessagePanel,
         QuerySettings,
+        ScrollButton,
     },
     props: ['errorMessage', 'errorPanelClass'],
     data: function() {
@@ -169,6 +171,7 @@ export default {
 
             this.codeMirror.on("change", (codeMirrorObj, changeObj) => {
                 this.currentQuery = codeMirrorObj.getValue();
+                this.editorLinesNumber = codeMirrorObj.lineCount();
             });
         });
     },
