@@ -23,9 +23,11 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -91,7 +93,7 @@ public class GreedyTraversalPlan {
         Set<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(query.getEquivalentFragmentSets());
 
         long numFragments = fragments(fragmentSets).count();
-        long depth = 1;
+        long depth = 0;
         long numTraversalAttempts = numFragments;
 
         // Calculate the depth to descend in the tree, based on how many plans we want to evaluate
@@ -104,7 +106,10 @@ public class GreedyTraversalPlan {
         Plan plan = Plan.base();
 
         while (!fragmentSets.isEmpty()) {
-            plan = extendPlan(plan, fragmentSets, depth);
+            List<Plan> allPlans = Lists.newArrayListWithCapacity((int) numTraversalAttempts);
+            extendPlan(plan, allPlans, fragmentSets, depth);
+
+            plan = Collections.min(allPlans);
 
             plan.fragments().forEach(fragment -> {
                 fragmentSets.remove(fragment.getEquivalentFragmentSet());
@@ -121,12 +126,15 @@ public class GreedyTraversalPlan {
      * @param depth the maximum depth the plan is allowed to descend in the tree
      * @return a new plan that extends the given plan
      */
-    private static Plan extendPlan(Plan plan, Set<EquivalentFragmentSet> fragmentSets, long depth) {
+    private static void extendPlan(Plan plan, List<Plan> allPlans, Set<EquivalentFragmentSet> fragmentSets, long depth) {
 
         // Base case
-        if (depth == 0) return plan;
+        if (depth == 0) {
+            allPlans.add(plan.copy());
+            return;
+        }
 
-        Plan bestPlan = null;
+        boolean addedPlan = false;
 
         for (EquivalentFragmentSet fragmentSet : fragmentSets) {
             for (Fragment fragment : fragmentSet.fragments()) {
@@ -136,19 +144,18 @@ public class GreedyTraversalPlan {
                     continue;
                 }
 
+                addedPlan = true;
+
                 // Recursively find a plan
-                Plan extendedPlan = extendPlan(plan, fragmentSets, depth - 1);
+                extendPlan(plan, allPlans, fragmentSets, depth - 1);
 
                 plan.pop();
-
-                // Select the lowest-cost plan
-                if (bestPlan == null || extendedPlan.compareTo(bestPlan) < 0) {
-                    bestPlan = extendedPlan.copy();
-                }
             }
         }
 
-        return bestPlan != null ? bestPlan : plan.copy();
+        if (!addedPlan) {
+            allPlans.add(plan.copy());
+        }
     }
 
     private static Stream<Fragment> fragments(Set<EquivalentFragmentSet> fragmentSets) {
