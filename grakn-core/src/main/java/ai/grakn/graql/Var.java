@@ -23,6 +23,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.admin.VarAdmin;
 
+import javax.annotation.CheckReturnValue;
+
 /**
  * A wildcard variable to refers to a concept in a query.
  * <p>
@@ -43,36 +45,42 @@ public interface Var extends Pattern {
      * @param id a ConceptId that this variable's ID must match
      * @return this
      */
+    @CheckReturnValue
     Var id(ConceptId id);
 
     /**
      * @param name a string that this variable's name must match
      * @return this
      */
+    @CheckReturnValue
     Var name(String name);
 
     /**
      * @param name a type name that this variable's name must match
      * @return this
      */
+    @CheckReturnValue
     Var name(TypeName name);
 
     /**
      * @param value a value that this variable's value must exactly match
      * @return this
      */
+    @CheckReturnValue
     Var value(Object value);
 
     /**
      * @param predicate a atom this variable's value must match
      * @return this
      */
+    @CheckReturnValue
     Var value(ValuePredicate predicate);
 
     /**
      * @param var a variable representing a resource
      * @return this
      */
+    @CheckReturnValue
     Var has(Var var);
 
     /**
@@ -82,6 +90,7 @@ public interface Var extends Pattern {
      * @param value a value of a resource
      * @return this
      */
+    @CheckReturnValue
     Var has(String type, Object value);
 
     /**
@@ -91,6 +100,7 @@ public interface Var extends Pattern {
      * @param predicate a atom on the value of a resource
      * @return this
      */
+    @CheckReturnValue
     Var has(String type, ValuePredicate predicate);
 
     /**
@@ -100,6 +110,7 @@ public interface Var extends Pattern {
      * @param var a variable representing a resource
      * @return this
      */
+    @CheckReturnValue
     Var has(String type, Var var);
 
     /**
@@ -109,84 +120,98 @@ public interface Var extends Pattern {
      * @param var a variable representing a resource
      * @return this
      */
+    @CheckReturnValue
     Var has(TypeName type, Var var);
 
     /**
      * @param type a concept type id that the variable must be of this type
      * @return this
      */
+    @CheckReturnValue
     Var isa(String type);
 
     /**
      * @param type a concept type that this variable must be an instance of
      * @return this
      */
+    @CheckReturnValue
     Var isa(Var type);
 
     /**
      * @param type a concept type id that this variable must be a kind of
      * @return this
      */
+    @CheckReturnValue
     Var sub(String type);
 
     /**
      * @param type a concept type that this variable must be a kind of
      * @return this
      */
+    @CheckReturnValue
     Var sub(Var type);
 
     /**
      * @param type a role type id that this relation type variable must have
      * @return this
      */
+    @CheckReturnValue
     Var hasRole(String type);
 
     /**
      * @param type a role type that this relation type variable must have
      * @return this
      */
+    @CheckReturnValue
     Var hasRole(Var type);
 
     /**
      * @param type a role type id that this concept type variable must play
      * @return this
      */
+    @CheckReturnValue
     Var playsRole(String type);
 
     /**
      * @param type a role type that this concept type variable must play
      * @return this
      */
+    @CheckReturnValue
     Var playsRole(Var type);
 
     /**
      * @param type a scope that this variable must have
      * @return this
      */
+    @CheckReturnValue
     Var hasScope(Var type);
 
     /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
+    @CheckReturnValue
     Var hasResource(String type);
 
     /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
+    @CheckReturnValue
     Var hasResource(Var type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to
      * @return this
      */
+    @CheckReturnValue
     Var hasKey(String type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to
      * @return this
      */
+    @CheckReturnValue
     Var hasKey(Var type);
 
     /**
@@ -195,6 +220,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
+    @CheckReturnValue
     Var rel(String roleplayer);
 
     /**
@@ -203,6 +229,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
+    @CheckReturnValue
     Var rel(Var roleplayer);
 
     /**
@@ -212,6 +239,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
+    @CheckReturnValue
     Var rel(String roletype, String roleplayer);
 
     /**
@@ -221,6 +249,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
+    @CheckReturnValue
     Var rel(Var roletype, String roleplayer);
 
     /**
@@ -230,6 +259,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
+    @CheckReturnValue
     Var rel(String roletype, Var roleplayer);
 
     /**
@@ -239,6 +269,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
+    @CheckReturnValue
     Var rel(Var roletype, Var roleplayer);
 
     /**
@@ -247,6 +278,7 @@ public interface Var extends Pattern {
      * @param roleType the role type the variable must play
      * @return this
      */
+    @CheckReturnValue
     Var plays(String roleType);
 
     /**
@@ -255,18 +287,21 @@ public interface Var extends Pattern {
      * @param roleType the role type the variable must play
      * @return this
      */
+    @CheckReturnValue
     Var plays(Var roleType);
 
     /**
      * set this concept type variable as abstract, meaning it cannot have direct instances
      * @return this
      */
+    @CheckReturnValue
     Var isAbstract();
 
     /**
      * @param datatype the datatype to set for this resource type variable
      * @return this
      */
+    @CheckReturnValue
     Var datatype(ResourceType.DataType<?> datatype);
 
     /**
@@ -274,18 +309,21 @@ public interface Var extends Pattern {
      * @param regex the regex to set for this resource type variable
      * @return this
      */
+    @CheckReturnValue
     Var regex(String regex);
 
     /**
      * @param lhs the left-hand side of this rule
      * @return this
      */
+    @CheckReturnValue
     Var lhs(Pattern lhs);
 
     /**
      * @param rhs the right-hand side of this rule
      * @return this
      */
+    @CheckReturnValue
     Var rhs(Pattern rhs);
 
     /**
@@ -293,6 +331,7 @@ public interface Var extends Pattern {
      * @param varName the variable name that this variable should not be equal to
      * @return this
      */
+    @CheckReturnValue
     Var neq(String varName);
 
     /**
@@ -300,6 +339,7 @@ public interface Var extends Pattern {
      * @param var the variable that this variable should not be equal to
      * @return this
      */
+    @CheckReturnValue
     Var neq(Var var);
 
     /**

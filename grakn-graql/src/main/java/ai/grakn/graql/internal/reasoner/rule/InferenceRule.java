@@ -131,7 +131,7 @@ public class InferenceRule {
 
             //resolve captures
             Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
-            varIntersection.removeAll(rewriteUnifiers.keySet());
+            varIntersection = Sets.difference(varIntersection, rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
     }
