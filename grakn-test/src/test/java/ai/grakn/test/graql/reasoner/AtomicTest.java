@@ -67,9 +67,6 @@ public class AtomicTest {
     @ClassRule
     public static final GraphContext genealogyOntology = GraphContext.preLoad("genealogy/ontology.gql");
 
-    @ClassRule
-    public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql");
-
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
