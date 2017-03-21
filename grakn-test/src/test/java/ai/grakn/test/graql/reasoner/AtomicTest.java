@@ -209,6 +209,16 @@ public class AtomicTest {
         assertTrue(roleVarTypeMap.toString(), relation.getRoleVarTypeMap().isEmpty());
     }
 
+    //test ambiguous role mapping
+    @Test
+    public void testRoleInference7(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{($x, $y) isa relation1;}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = relation.getRoleVarTypeMap();
+        assertTrue(roleVarTypeMap.toString(), relation.getRoleVarTypeMap().isEmpty());
+    }
+
     //test rule applicability for atom with unspecified roles but with possible unambiguous role mapping
     @Test
     public void testRuleApplicability(){
@@ -252,6 +262,15 @@ public class AtomicTest {
         String relationString = "{($x, $y);$x isa entity1; $y isa entity5;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(0, relation.getApplicableRules().size());
+    }
+
+    //test rule applicability for match-all atom
+    @Test
+    public void testRuleApplicability6(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{($x, $y);}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(1, relation.getApplicableRules().size());
     }
 
     @Test

@@ -234,26 +234,20 @@ public class Relation extends TypeAtom {
 
     private boolean isRuleApplicableViaType(Relation childAtom) {
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
-        Iterator<Type> it = varTypeMap.entrySet().stream()
-                .filter(entry -> this.containsVar(entry.getKey()))
-                .map(Map.Entry::getValue)
-                .filter(Objects::nonNull)
-                .iterator();
         Set<RoleType> roles = childAtom.getRoleVarTypeMap().keySet();
 
         //rule not applicable if there's an empty role intersection
         Set<RoleType> mappedRoles = new HashSet<>();
-        while (it.hasNext()){
-            Type type = it.next();
-            if (!Schema.MetaSchema.isMetaName(type.getName())) {
-                Set<RoleType> roleIntersection = new HashSet<>(roles);
+        for (VarName rolePlayer : getRolePlayers()){
+            Type type = varTypeMap.get(rolePlayer);
+            Set<RoleType> roleIntersection = new HashSet<>(roles);
+            if (type != null && !Schema.MetaSchema.isMetaName(type.getName())) {
                 roleIntersection.retainAll(type.playsRoles());
                 if (roleIntersection.isEmpty()){
                     return false;
-                } else {
-                    mappedRoles.addAll(roleIntersection);
                 }
             }
+            mappedRoles.addAll(roleIntersection);
         }
 
         //rule not applicable if not a single mapping between all relation players and role types can be found
