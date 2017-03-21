@@ -35,6 +35,7 @@ import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import org.junit.rules.ExternalResource;
 
+import static ai.grakn.engine.GraknEngineConfig.LOGGING_LEVEL;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
 import static ai.grakn.test.GraknTestEnv.startKafka;
@@ -84,8 +85,16 @@ public class DistributionContext extends ExternalResource {
         return this;
     }
 
-    public Process process(){
-        return engineProcess;
+    public boolean restart() throws IOException {
+        boolean isStarted = engineProcess != null && engineProcess.isAlive();
+        if(!isStarted){
+            return false;
+        }
+
+        engineProcess.destroyForcibly();
+        engineProcess = newEngineProcess(port);
+        waitForEngine(port);
+        return true;
     }
 
     public int port(){
@@ -99,7 +108,6 @@ public class DistributionContext extends ExternalResource {
         startKafka();
 
         engineProcess = newEngineProcess(port);
-
         waitForEngine(port);
     }
 
@@ -125,6 +133,7 @@ public class DistributionContext extends ExternalResource {
     private Process newEngineProcess(Integer port) throws IOException {
         // Set correct port & task manager
         Properties properties = GraknEngineConfig.getInstance().getProperties();
+        properties.setProperty(LOGGING_LEVEL, "DEBUG");
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 
