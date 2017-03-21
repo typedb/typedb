@@ -162,7 +162,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testRuleEquivalence() {
+    public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
         GraknGraph graph = geoGraph.graph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
