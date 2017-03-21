@@ -57,7 +57,7 @@ public class HALConceptRepresentationBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
-    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;";
+    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;&limit=%s";
     private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
     // - State properties
@@ -101,14 +101,14 @@ public class HALConceptRepresentationBuilder {
             LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId().getValue());
             Representation currentHal = new HALConceptData(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
                     typesAskedInQuery, keyspace, offset, limit).getRepresentation();
-            attachGeneratedRelations(currentHal, current, linkedNodes, resultLine, roleTypes, keyspace);
+            attachGeneratedRelations(currentHal, current, linkedNodes, resultLine, roleTypes, keyspace, limit);
             lines.add(Json.read(currentHal.toString(RepresentationFactory.HAL_JSON)));
 
         }));
         return lines;
     }
 
-    static void attachGeneratedRelations(Representation currentHal, Map.Entry<VarName, Concept> current, Map<VarName, Collection<VarAdmin>> linkedNodes, Map<VarName, Concept> resultLine, Map<String,Map<VarName, String>> roleTypes, String keyspace) {
+    static void attachGeneratedRelations(Representation currentHal, Map.Entry<VarName, Concept> current, Map<VarName, Collection<VarAdmin>> linkedNodes, Map<VarName, Concept> resultLine, Map<String,Map<VarName, String>> roleTypes, String keyspace, int limit) {
         if (linkedNodes.containsKey(current.getKey())) {
             linkedNodes.get(current.getKey())
                     .forEach(currentRelation -> {
@@ -124,7 +124,7 @@ public class HALConceptRepresentationBuilder {
                                     .map(RelationPlayer::getRolePlayer).forEach(otherVar -> {
 
                                 if(resultLine.get(otherVar.getVarName())!=null) {
-                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(currentRelation.toString()), currentVarName, otherVar.getVarName(), relationType, keyspace);
+                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(currentRelation.toString()), currentVarName, otherVar.getVarName(), relationType, keyspace, limit);
                                 }
                             });
 
@@ -133,7 +133,7 @@ public class HALConceptRepresentationBuilder {
         }
     }
 
-    private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, Optional<TypeName> relationType, String keyspace) {
+    private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, Optional<TypeName> relationType, String keyspace, int limit) {
         ConceptId currentID = currentVar.getId();
 
         ConceptId firstID;
@@ -155,7 +155,7 @@ public class HALConceptRepresentationBuilder {
 
         String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeNameToString(relationType.get()) : "";
 
-        String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString);
+        String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString, limit);
         currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(firstID,secondID,assertionID, relationType));
     }
 
