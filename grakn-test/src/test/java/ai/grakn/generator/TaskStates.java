@@ -50,7 +50,7 @@ public class TaskStates extends Generator<TaskState> {
     // TODO: make this generate more classes
     @SuppressWarnings("unchecked")
     private Class<? extends BackgroundTask>[] classes = new Class[] {
-            LongExecutionTestTask.class, ShortExecutionTestTask.class, FailingTestTask.class
+            LongExecutionMockTask.class, ShortExecutionMockTask.class, FailingMockTask.class
     };
 
     public TaskStates() {

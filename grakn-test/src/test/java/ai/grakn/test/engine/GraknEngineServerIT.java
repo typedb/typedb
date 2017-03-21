@@ -22,10 +22,10 @@ package ai.grakn.test.engine;
 import ai.grakn.client.TaskClient;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.EndlessExecutionTestTask;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pholser.junit.quickcheck.Property;
@@ -43,11 +43,11 @@ import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.whenTaskStarts;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -98,8 +98,7 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
-        String uri1 = "localhost:" + PORT1;
-        TaskClient.of(uri1).stopTask(task.getId());
+        TaskClient.of("localhost", PORT1).stopTask(task.getId());
 
         engine1.getTaskManager().addTask(task);
 
@@ -110,8 +109,7 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
-        String uri2 = "localhost:" + PORT2;
-        TaskClient.of(uri2).stopTask(task.getId());
+        TaskClient.of("localhost", PORT2).stopTask(task.getId());
 
         engine1.getTaskManager().addTask(task);
 
@@ -122,9 +120,8 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine1StopsATaskDuringExecution_TheTaskIsStopped(
-            @NewTask @WithClass(EndlessExecutionTestTask.class) TaskState task) {
-        String uri1 = "localhost:" + PORT1;
-        whenTaskStarts(id -> TaskClient.of(uri1).stopTask(task.getId()));
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+        whenTaskStarts(id -> TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
@@ -135,9 +132,8 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine2StopsATaskDuringExecution_TheTaskIsStopped(
-            @NewTask @WithClass(EndlessExecutionTestTask.class) TaskState task) {
-        String uri2 = "localhost:" + PORT2;
-        whenTaskStarts(id -> TaskClient.of(uri2).stopTask(task.getId()));
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+        whenTaskStarts(id -> TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
