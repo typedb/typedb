@@ -37,6 +37,8 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
@@ -58,6 +60,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
  * @author Felix Chapman, alexandraorth
  */
 public class TaskClient extends Client {
+    private final Logger LOG = LoggerFactory.getLogger(TaskClient.class);
 
     private final HttpClient httpClient = HttpClients.createDefault();
     private final String host;
@@ -154,7 +157,7 @@ public class TaskClient extends Client {
      * Stop a task using the given ID.
      * @param id the ID of the task to stop
      */
-    public void stopTask(TaskId id) {
+    public boolean stopTask(TaskId id) {
         try {
             URI uri = new URIBuilder(convert(STOP, id))
                     .setScheme(DEFAULT_SCHEME_NAME)
@@ -166,7 +169,13 @@ public class TaskClient extends Client {
 
             HttpResponse response = httpClient.execute(httpPut);
 
-            assertOk(response);
+            boolean isOk = isOk(response);
+
+            if(!isOk){
+                LOG.error("Failed to stop task: " + asJsonHandler.handleResponse(response));
+            }
+
+            return isOk;
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         } catch (IOException e){
@@ -174,10 +183,13 @@ public class TaskClient extends Client {
         }
     }
 
+    private boolean isOk(HttpResponse response){
+        return response.getStatusLine().getStatusCode() == SC_OK;
+    }
+
     private void assertOk(HttpResponse response){
         // 200 Only returned when request successfully completed
-        boolean isOk = response.getStatusLine().getStatusCode() == SC_OK;
-        if(!isOk){
+        if(!isOk(response)){
             throw new RuntimeException(format("Status %s returned from server", response.getStatusLine().getStatusCode()));
         }
     }
