@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
 public class PlanTest {
@@ -51,7 +52,7 @@ public class PlanTest {
         plan.tryPush(outIsa);
         plan.tryPush(shortcut);
 
-        List<Fragment> fragments = plan.fragments();
+        List<Fragment> fragments = plan.fragments().collect(toList());
 
         double traversalComplexity = GraqlTraversal.create(ImmutableSet.of(fragments)).getComplexity();
         double planCost = plan.cost();

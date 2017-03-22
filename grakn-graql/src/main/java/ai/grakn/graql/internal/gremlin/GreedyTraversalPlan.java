@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Class for generating greedy traversal plans
@@ -117,7 +118,7 @@ public class GreedyTraversalPlan {
 
             // Only retain one new fragment
             // TODO: Find a more elegant way to do this?
-            while (newPlan.fragments().size() > plan.fragments().size() + 1) {
+            while (newPlan.size() > plan.size() + 1) {
                 newPlan.pop();
             }
 
@@ -128,7 +129,7 @@ public class GreedyTraversalPlan {
             });
         }
 
-        return plan.fragments();
+        return plan.fragments().collect(toList());
     }
 
     /**

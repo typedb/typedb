@@ -24,22 +24,22 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.gremlin.GraqlTraversal.fragmentListCost;
+import static ai.grakn.graql.internal.gremlin.GraqlTraversal.fragmentCost;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A traversal plan for executing a Graql query, comprised of a list of fragments and a cost
  */
 class Plan implements Comparable<Plan> {
-    private final Stack<Fragment> fragments;
+    private final Stack<PlanElement> elements;
     private final Set<EquivalentFragmentSet> fragmentSets;
-    private double cost = -1;
 
-    private Plan(Stack<Fragment> fragments, Set<EquivalentFragmentSet> fragmentSets) {
-        this.fragments = fragments;
+    private Plan(Stack<PlanElement> elements, Set<EquivalentFragmentSet> fragmentSets) {
+        this.elements = elements;
         this.fragmentSets = fragmentSets;
     }
 
@@ -48,8 +48,8 @@ class Plan implements Comparable<Plan> {
     }
 
     public Plan copy() {
-        Stack<Fragment> fragmentsCopy = new Stack<>();
-        fragmentsCopy.addAll(fragments);
+        Stack<PlanElement> fragmentsCopy = new Stack<>();
+        fragmentsCopy.addAll(elements);
         return new Plan(fragmentsCopy, Sets.newHashSet(fragmentSets));
     }
 
@@ -62,19 +62,29 @@ class Plan implements Comparable<Plan> {
             return false;
         }
 
-        fragments.push(newFragment);
+        double cost = 1;
+        double totalCost = 0;
+        Set<VarName> names = ImmutableSet.of();
 
-        // TODO: Calculate cost incrementally
-        cost = -1;
+        if (!elements.isEmpty()) {
+            PlanElement current = elements.peek();
+            cost = current.cost;
+            totalCost = current.totalCost;
+            names = current.names;
+        }
 
+        double newCost = fragmentCost(newFragment, cost, names);
+        double newTotalCost = totalCost + newCost;
+        Set<VarName> newNames = Sets.union(names, newFragment.getVariableNames());
+
+        elements.push(new PlanElement(newFragment, newNames, newCost, newTotalCost));
         return true;
     }
 
     Fragment pop() {
-        Fragment fragment = fragments.pop();
-        fragmentSets.remove(fragment.getEquivalentFragmentSet());
-        cost = -1;
-        return fragment;
+        PlanElement element = elements.pop();
+        fragmentSets.remove(element.fragment.getEquivalentFragmentSet());
+        return element.fragment;
     }
 
     @Override
@@ -83,14 +93,15 @@ class Plan implements Comparable<Plan> {
     }
 
     public double cost() {
-        if (cost == -1) {
-            cost = fragmentListCost(fragments);
-        }
-        return cost;
+        return elements.peek().cost;
     }
 
-    public List<Fragment> fragments() {
-        return fragments;
+    public Stream<Fragment> fragments() {
+        return elements.stream().map(element -> element.fragment);
+    }
+
+    public int size() {
+        return elements.size();
     }
 
     private boolean hasNames(Set<VarName> names) {
@@ -101,8 +112,8 @@ class Plan implements Comparable<Plan> {
         // Create mutable copy
         names = Sets.newHashSet(names);
 
-        for (Fragment fragment : fragments) {
-            if (names.removeAll(fragment.getVariableNames()) && names.isEmpty()) {
+        for (PlanElement element : elements) {
+            if (names.removeAll(element.fragment.getVariableNames()) && names.isEmpty()) {
                 return true;
             }
         }
@@ -112,6 +123,20 @@ class Plan implements Comparable<Plan> {
 
     @Override
     public String toString() {
-        return "Plan(" + GraqlTraversal.create(ImmutableSet.of(fragments)) + ")";
+        return "Plan(" + GraqlTraversal.create(ImmutableSet.of(fragments().collect(toList()))) + ")";
+    }
+
+    private class PlanElement {
+        private final Fragment fragment;
+        private final Set<VarName> names;
+        private final double cost;
+        private final double totalCost;
+
+        private PlanElement(Fragment fragment, Set<VarName> names, double cost, double totalCost) {
+            this.fragment = fragment;
+            this.names = names;
+            this.cost = cost;
+            this.totalCost = cost;
+        }
     }
 }
