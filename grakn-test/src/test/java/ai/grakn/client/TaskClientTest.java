@@ -38,15 +38,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import spark.Service;
 
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static java.time.Instant.now;
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -65,7 +68,7 @@ public class TaskClientTest {
         client = TaskClient.of("localhost", 4567);
 
         spark = Service.ignite();
-        spark.port(4567);
+        configureSpark(spark, 4567);
 
         manager = mock(TaskManager.class);
         when(manager.storage()).thenReturn(mock(TaskStateStorage.class));
@@ -180,5 +183,14 @@ public class TaskClientTest {
         client.stopTask(taskId);
 
         verify(manager).stopTask(eq(taskId), any());
+    }
+
+    @Test
+    public void whenStoppingATaskAndThereIsAnError_ReturnFalse() {
+        TaskId taskId = TaskId.generate();
+
+        doThrow(new RuntimeException("out of cheese error")).when(manager).stopTask(any(), any());
+
+        assertFalse(client.stopTask(taskId));
     }
 }
