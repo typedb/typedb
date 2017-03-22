@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
+import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
@@ -32,71 +33,55 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 public class PokemonGraphFactoryTest {
     private GraknGraph graknGraph;
-    private GraknGraphFactory factory;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setup() {
-        factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
+    public void setupPokemonGraph() {
+        GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
         PokemonGraphFactory.loadGraph(factory.getGraph());
         factory.getGraph().commitOnClose();
         factory.getGraph().close();
         graknGraph = factory.getGraph();
     }
 
-    @Test(expected=InvocationTargetException.class)
-    public void testConstructorIsPrivate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Constructor<PokemonGraphFactory> c = PokemonGraphFactory.class.getDeclaredConstructor();
-        c.setAccessible(true);
-        c.newInstance();
-    }
-
     @Test
-    public void testGraphExists() {
-        assertNotNull(graknGraph);
-    }
-
-    @Test
-    public void testGraphHasPokemon() {
+    public void whenQueryingPokemonByName_ReturnPokemon() {
         Entity bulbasaur = graknGraph.getResourcesByValue("Bulbasaur").iterator().next().ownerInstances().iterator().next().asEntity();
-        assertTrue(bulbasaur.type().equals(graknGraph.getEntityType("pokemon")));
+        assertEquals(bulbasaur.type(), graknGraph.getEntityType("pokemon"));
     }
 
     @Test
-    public void testGraphHasPokemonType() {
+    public void whenQueryingPokemonTypeByName_ReturnPokemonType() {
         Entity poison = graknGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
-        assertTrue(poison.type().equals(graknGraph.getEntityType("pokemon-type")));
+        assertEquals(poison.type(), graknGraph.getEntityType("pokemon-type"));
     }
 
     @Test
-    public void testBulbasaurHasResource() {
+    public void whenQueryingResourceOfPokemonForSpecificResourceType_ReturnResource() {
         ResourceType<Long> pokedexNo = graknGraph.getResourceType("pokedex-no");
-        Entity bulbasaur = graknGraph.getResourcesByValue("Bulbasaur").iterator().next().ownerInstances().iterator().next().asEntity();
+        Instance bulbasaur = graknGraph.getResourcesByValue("Bulbasaur").iterator().next().owner();
         Stream<Resource<?>> resources = bulbasaur.resources().stream();
-        assertTrue(resources.anyMatch(r -> r.type().equals(pokedexNo) && r.getValue().equals(1L)));
+        assertTrue("Pokemon [" + bulbasaur + "] does not have the resource type [" + pokedexNo + "]", resources.anyMatch(r -> r.type().equals(pokedexNo) && r.getValue().equals(1L)));
     }
 
     @Test
-    public void testTypeIsSuperEffective() {
+    public void checkThatPokemonTypeIsEffectiveAgainstAnotherPokeminTypeViaRelation() {
         RelationType relationType = graknGraph.getRelationType("super-effective");
         RoleType role = graknGraph.getRoleType("defending-type");
         Entity poison = graknGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
         Entity grass = graknGraph.getResourcesByValue("grass").iterator().next().ownerInstances().iterator().next().asEntity();
         Stream<Relation> relations = poison.relations().stream();
-        assertTrue(relations.anyMatch(r -> r.type().equals(relationType)
-                && r.rolePlayers().get(role).equals(grass)));
+        assertTrue(relations.anyMatch(r -> r.type().equals(relationType) && r.rolePlayers().get(role).equals(grass)));
     }
 
 }

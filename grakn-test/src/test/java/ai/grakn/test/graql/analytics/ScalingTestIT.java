@@ -79,7 +79,7 @@ import static org.junit.Assert.assertEquals;
 public class ScalingTestIT {
 
     @ClassRule
-    public static final EngineContext context = EngineContext.startMultiQueueServer();
+    public static final EngineContext context = EngineContext.startSingleQueueServer();
 
     private static final String[] HOST_NAME =
             {Grakn.DEFAULT_URI};

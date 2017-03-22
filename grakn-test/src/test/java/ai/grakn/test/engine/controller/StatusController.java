@@ -31,7 +31,7 @@ import static junit.framework.TestCase.assertFalse;
 
 public class StatusController {
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Test
     public void testNoJWTSecretInConfig() {

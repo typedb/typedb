@@ -63,7 +63,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Utiliy class providing useful
+ * Utiliy class providing useful facilities.
  * </p>
  *
  * @author Kasper Piskorski

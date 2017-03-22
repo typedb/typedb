@@ -50,7 +50,7 @@ public class CommitLogControllerTest {
     private final EngineCache cache = EngineCache.getInstance();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() throws Exception {

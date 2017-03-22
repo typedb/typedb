@@ -32,7 +32,7 @@ public class UserControllerTest {
     private UsersHandler users = UsersHandler.getInstance();
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Test
     public void testAddNewUser(){

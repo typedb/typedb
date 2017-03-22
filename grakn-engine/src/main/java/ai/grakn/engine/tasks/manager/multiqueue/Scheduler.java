@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -93,7 +94,7 @@ public class Scheduler implements Runnable, AutoCloseable {
             consumer = kafkaConsumer(SCHEDULERS_GROUP);
 
             // Configure callback for a Kafka rebalance
-            consumer.subscribe(singletonList(NEW_TASKS_TOPIC), rebalanceListener(consumer, connection));
+            consumer.subscribe(singletonList(NEW_TASKS_TOPIC), rebalanceListener(consumer, new ExternalOffsetStorage(connection)));
 
             // Kafka writer
             producer = kafkaProducer();

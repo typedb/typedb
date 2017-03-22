@@ -44,7 +44,7 @@ import static org.junit.Assume.assumeTrue;
 public class GraphFactoryControllerTest {
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
 	@Test
 	public void testKeyspaceList() throws GraknValidationException {

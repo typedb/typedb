@@ -206,7 +206,7 @@ public class LoaderClient {
      *
      * @param queries Queries to be inserted
      */
-    private void sendQueriesToLoader(Collection<InsertQuery> queries){
+    void sendQueriesToLoader(Collection<InsertQuery> queries){
         try {
             blocker.acquire();
         } catch (InterruptedException e) {
