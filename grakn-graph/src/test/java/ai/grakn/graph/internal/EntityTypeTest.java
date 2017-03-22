@@ -71,6 +71,18 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
+    public void whenDeletingEntityTypeWithSubTypes_Throw() throws ConceptException{
+        EntityType c1 = graknGraph.putEntityType("C1");
+        EntityType c2 = graknGraph.putEntityType("C2");
+        c1.superType(c2);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(c2.getName()));
+
+        c2.delete();
+    }
+
+    @Test
     public void testItemName(){
         Type test = graknGraph.putEntityType("test");
         assertEquals(TypeName.of("test"), test.getName());
