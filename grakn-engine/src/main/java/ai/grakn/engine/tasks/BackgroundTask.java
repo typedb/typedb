@@ -60,6 +60,6 @@ public interface BackgroundTask {
      *                       the task to resume from this point should it crash.
      * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
      */
-    void resume(Consumer<String> saveCheckpoint, String lastCheckpoint);
+    boolean resume(Consumer<String> saveCheckpoint, String lastCheckpoint);
 
 }

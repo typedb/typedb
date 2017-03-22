@@ -32,12 +32,11 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, Felix Chapman
  */
-public abstract class MockBackgroundTask implements BackgroundTask {
-
-    private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
+public abstract class MockBackgroundTask implements BackgroundTask {    private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
     private static Consumer<TaskId> onTaskStart;
     private static Consumer<TaskId> onTaskFinish;
+    private static Consumer<String> onTaskResume;
 
     protected final AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final Object sync = new Object();
@@ -74,6 +73,14 @@ public abstract class MockBackgroundTask implements BackgroundTask {
         if (onTaskFinish != null) onTaskFinish.accept(taskId);
     }
 
+    public static void whenTaskResumes(Consumer<String> onTaskResume) {
+        MockBackgroundTask.onTaskResume = onTaskResume;
+    }
+
+    static void onTaskResume(String checkpoint) {
+        if (onTaskResume != null) onTaskResume.accept(checkpoint);
+    }
+
     public static void clearTasks() {
         COMPLETED_TASKS.clear();
         CANCELLED_TASKS.clear();
@@ -86,10 +93,12 @@ public abstract class MockBackgroundTask implements BackgroundTask {
         TaskId id = TaskId.of(configuration.at("id").asString());
         onTaskStart(id);
 
+        saveCheckpoint.accept(configuration.toString());
+
         boolean wasCancelled = cancelled.get();
 
         if (!wasCancelled) {
-            startInner(id);
+            executeStartInner(id);
             addCompletedTask(id);
         } else {
             addCancelledTask(id);
@@ -109,5 +118,17 @@ public abstract class MockBackgroundTask implements BackgroundTask {
         return true;
     }
 
-    protected abstract void startInner(TaskId id);
+    @Override
+    public final boolean resume(Consumer<String> saveCheckpoint, String lastCheckpoint){
+        onTaskResume(lastCheckpoint);
+
+        executeResumeInner(lastCheckpoint);
+
+        return true;
+    }
+
+    protected abstract void executeStartInner(TaskId id);
+    protected abstract void executeResumeInner(String checkpoint);
+
+
 }

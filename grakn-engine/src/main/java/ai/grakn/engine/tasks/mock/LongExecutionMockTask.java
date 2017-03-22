@@ -33,7 +33,7 @@ public class LongExecutionMockTask extends MockBackgroundTask {
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     @Override
-    protected void startInner(TaskId id) {
+    protected void executeStartInner(TaskId id) {
         // A short sleep to allow tasks to step on each other's toes
         try {
             Thread.sleep(10);
@@ -44,9 +44,10 @@ public class LongExecutionMockTask extends MockBackgroundTask {
         startedCounter.incrementAndGet();
     }
 
-    public void pause() {}
-
-    public void resume(Consumer<String> c, String s) {
+    @Override
+    protected void executeResumeInner(String checkpoint) {
         resumedCounter.incrementAndGet();
     }
+
+    public void pause() {}
 }

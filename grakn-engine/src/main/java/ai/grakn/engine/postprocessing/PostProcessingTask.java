@@ -70,6 +70,7 @@ public class PostProcessingTask implements BackgroundTask {
     public void pause() {
     }
 
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+    public boolean resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+        return false;
     }
 }

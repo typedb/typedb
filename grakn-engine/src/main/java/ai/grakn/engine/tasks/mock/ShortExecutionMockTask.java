@@ -33,13 +33,15 @@ public class ShortExecutionMockTask extends MockBackgroundTask {
     public static final AtomicInteger resumedCounter = new AtomicInteger(0);
 
     @Override
-    protected void startInner(TaskId id) {
+    protected void executeStartInner(TaskId id) {
         startedCounter.incrementAndGet();
     }
 
-    public void pause() {}
-
-    public void resume(Consumer<String> c, String s) {
+    @Override
+    protected void executeResumeInner(String checkpoint) {
         resumedCounter.incrementAndGet();
+    }
+
+    public void pause() {
     }
 }
