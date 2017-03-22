@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.rule;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
@@ -54,13 +55,31 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InferenceRule {
 
+    private final ConceptId ruleId;
     private final ReasonerQueryImpl body;
     private final ReasonerAtomicQuery head;
 
     public InferenceRule(Rule rule, GraknGraph graph){
+        ruleId = rule.getId();
         //TODO simplify once changes propagated to rule objects
         body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        InferenceRule rule = (InferenceRule) obj;
+        return this.getBody().equals(rule.getBody())
+                && this.getHead().equals(rule.getHead());
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + getBody().hashCode();
+        hashCode = hashCode * 37 + getHead().hashCode();
+        return hashCode;
     }
 
     private static Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
@@ -69,6 +88,8 @@ public class InferenceRule {
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Patterns.conjunction(vars);
     }
+
+    public ConceptId getRuleId(){ return ruleId;}
 
     /**
      * @return true if head and body do not share any variables
@@ -159,7 +180,7 @@ public class InferenceRule {
     private void unifyViaAtom(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Map<VarName, VarName> unifiers = new HashMap<>();
-        if (!parentAtom.getValueVariable().getValue().isEmpty()){
+        if (parentAtom.getType() != null){
             childAtom.getUnifiers(parentAtom).forEach(unifiers::put);
         }
         //case of match all relation atom
