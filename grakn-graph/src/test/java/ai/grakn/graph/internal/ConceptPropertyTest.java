@@ -97,7 +97,6 @@ public class ConceptPropertyTest {
         method.invoke(concept, params);
     }
 
-    @Ignore // TODO: Fix case where relation has shortcut edge to itself
     @Property
     public void whenCallingToStringOnADeletedConcept_TheStringContainsTheId(
             @Open GraknGraph graph, @FromGraph @NotMeta Concept concept) {

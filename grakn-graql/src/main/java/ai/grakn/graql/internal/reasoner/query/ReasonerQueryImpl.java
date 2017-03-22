@@ -51,6 +51,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -320,7 +321,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     public Map<VarName, Type> getVarTypeMap() {
         Map<VarName, Type> map = new HashMap<>();
-        getTypeConstraints().forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
+        getTypeConstraints().stream()
+                .filter(at -> Objects.nonNull(at.getType()))
+                .forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
         return map;
     }
 
