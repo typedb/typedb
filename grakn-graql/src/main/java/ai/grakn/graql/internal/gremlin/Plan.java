@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import java.util.List;
@@ -111,6 +112,6 @@ class Plan implements Comparable<Plan> {
 
     @Override
     public String toString() {
-        return "Plan(" + fragments + ")";
+        return "Plan(" + GraqlTraversal.create(ImmutableSet.of(fragments)) + ")";
     }
 }

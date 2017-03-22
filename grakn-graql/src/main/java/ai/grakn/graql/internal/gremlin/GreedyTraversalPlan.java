@@ -41,11 +41,11 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
  */
 public class GreedyTraversalPlan {
 
-    private static final long MAX_TRAVERSAL_ATTEMPTS = 15_000;
+    private static final long MAX_TRAVERSAL_ATTEMPTS = 2_000_000;
 
     // The degree to prune plans - 0.0 means never prune plans, 1.0 means always prune everything except the fastest
     // estimated plan (this is equivalent to a naive greedy algorithm that does not look ahead).
-    private static final double PRUNE_FACTOR = 0.1;
+    private static final double PRUNE_FACTOR = 0.6;
 
     /**
      * Create a traversal plan using the default maxTraersalAttempts.
@@ -113,13 +113,7 @@ public class GreedyTraversalPlan {
             List<Plan> allPlans = Lists.newArrayListWithCapacity((int) numTraversalAttempts);
             extendPlan(plan, allPlans, fragmentSets, depth);
 
-            System.out.println("All plans:");
-            allPlans.forEach(System.out::println);
-
             Plan newPlan = Collections.min(allPlans);
-
-            System.out.println("Chose:");
-            System.out.println(newPlan);
 
             // Only retain one new fragment
             // TODO: Find a more elegant way to do this?
