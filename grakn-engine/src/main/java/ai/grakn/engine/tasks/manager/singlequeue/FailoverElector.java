@@ -22,11 +22,10 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.util.EngineID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
-import org.apache.curator.framework.state.ConnectionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +45,7 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
     private final LeaderSelector leaderSelector;
     private final EngineID identifier;
     private final TaskStateStorage storage;
+    private final AtomicBoolean requeue = new AtomicBoolean(true);
     private TaskFailover failover;
 
     /**
@@ -57,18 +57,23 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
 
         leaderSelector = new LeaderSelector(zookeeper.connection(), FAILOVER, this);
         leaderSelector.setId(identifier.value());
-        leaderSelector.autoRequeue();
 
         // the selection for this instance doesn't start until the leader selector is started
         // leader selection is done in the background so this call to leaderSelector.start() returns immediately
         leaderSelector.start();
-        awaitLeader();
+
+        // Add yourself to the queue if you are not the leader
+        EngineID leader = awaitLeader();
+        if(!leader.equals(identifier)){
+            leaderSelector.requeue();
+        }
     }
 
     /**
      *
      */
     public void renounce(){
+        requeue.set(false);
         noThrow(leaderSelector::interruptLeadership, "Error interrupting leadership");
         noThrow(leaderSelector::close, "Error closing leadership elector");
     }
@@ -76,12 +81,21 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
     /**
      * Return the identifier of the current leader. Block until there is a leader.
      */
-    public String awaitLeader(){
+    public EngineID awaitLeader(){
         try {
             while (!leaderSelector.getLeader().isLeader()) {
                 Thread.sleep(1000);
             }
-            return leaderSelector.getLeader().getId();
+
+            // TODO Write a test for this block
+            // If you are the leader, wait for failover to have started up
+            if(leaderSelector.getLeader().getId().equals(identifier.value())){
+                while(failover != null && !failover.isAlive()){
+                    Thread.sleep(1000);
+                }
+            }
+
+            return EngineID.of(leaderSelector.getLeader().getId());
         } catch (Exception e){
             throw new RuntimeException("There were errors electing a leader", e);
         }
@@ -95,31 +109,15 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
     public void takeLeadership(CuratorFramework client) throws Exception {
         LOG.debug("Leadership taken by: " + identifier);
 
-        failover = new TaskFailover(client, storage, kafkaProducer());
-        failover.await();
-    }
+        try {
+            failover = new TaskFailover(client, storage, kafkaProducer());
+            failover.await();
+        } finally {
+            failover.close();
+        }
 
-    /**
-     * Called when this instance of {@link FailoverElector} is leader and the state has changes in any way.
-     * If leadership is suspended or lost the {@link TaskFailover} should be closed.
-     */
-    @Override
-    public void stateChanged(CuratorFramework client, ConnectionState newState)
-    {
-        switch (newState) {
-            case LOST:
-                noThrow(failover::close, "Error closing task failover");
-                throw new CancelLeadershipException();
-            case CONNECTED:
-                break;
-            case SUSPENDED:
-                LOG.debug("Leadership suspended");
-                break;
-            case RECONNECTED:
-                LOG.debug("Leadership regained");
-                break;
-            default:
-                break;
+        if(requeue.get()){
+            leaderSelector.requeue();
         }
     }
 }

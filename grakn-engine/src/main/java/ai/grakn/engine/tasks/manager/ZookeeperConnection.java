@@ -82,26 +82,6 @@ public class ZookeeperConnection {
         return zookeeperConnection;
     }
 
-    public InterProcessMutex mutex(String id){
-        return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
-    }
-
-    public void acquire(InterProcessMutex mutex){
-        try {
-            mutex.acquire();
-        } catch (Exception e) {
-            throw new EngineStorageException("Error acquiring mutex from zookeeper.");
-        }
-    }
-
-    public void release(InterProcessMutex mutex){
-        try {
-            mutex.release();
-        } catch (Exception e) {
-            throw new EngineStorageException("Error releasing mutex from zookeeper.");
-        }
-    }
-
     private void createZKPaths() throws Exception {
         if(zookeeperConnection.checkExists().forPath(SCHEDULER) == null) {
             zookeeperConnection.create().creatingParentContainersIfNeeded().forPath(SCHEDULER);

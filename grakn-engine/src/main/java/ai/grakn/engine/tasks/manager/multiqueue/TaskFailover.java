@@ -45,6 +45,7 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * <p>
@@ -60,8 +61,9 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private final TaskStateStorage stateStorage;
     private final CountDownLatch blocker;
     private final TreeCache cache;
+    private final Producer<TaskId, TaskState> producer;
 
-    private Producer<TaskId, TaskState> producer;
+    private boolean isAlive = false;
 
     public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage, Producer<TaskId, TaskState> producer) throws Exception {
         this.stateStorage = stateStorage;
@@ -69,11 +71,15 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         this.cache = new TreeCache(client, ALL_ENGINE_WATCH_PATH);
 
         this.cache.getListenable().addListener(this);
-        this.cache.getUnhandledErrorListenable().addListener((message, e) -> blocker.countDown());
+        this.cache.getUnhandledErrorListenable().addListener((message, e) -> {
+            LOG.error("error", e);
+            blocker.countDown();
+        });
         this.cache.start();
 
         this.producer = producer;
-        scanStaleStates(client);
+
+        isAlive = true;
     }
 
     @Override
@@ -81,6 +87,15 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         noThrow(producer::flush, "Could not flush Kafka Producer.");
         noThrow(producer::close, "Could not close Kafka Producer.");
         noThrow(cache::close, "Error closing zookeeper cache");
+
+        isAlive = false;
+    }
+
+    /**
+     * The TaskRunners should only start/add themselves once a failover is alive
+     */
+    public boolean isAlive(){
+        return isAlive;
     }
 
     /**
@@ -90,7 +105,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         try {
             blocker.await();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            LOG.debug("Awaiting failover interrupted");
         }
     }
 
@@ -100,13 +115,13 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     @Override
     public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
         Map<String, ChildData> nodes = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
-        Set<EngineID> engines = nodes.keySet().stream().map(EngineID::of).collect(toSet());
 
         switch (event.getType()) {
             case NODE_ADDED:
-                LOG.debug("New engine joined pool. Current engines: " + engines);
+                LOG.debug("New engine joined pool. Current engines: " + nodes.keySet());
                 break;
             case NODE_REMOVED:
+                Set<EngineID> engines = nodes.keySet().stream().map(EngineID::of).collect(toSet());
                 LOG.debug("Engine failure detected. Requeueing anything not on: {}", engines);
                 reQueue(engines);
                 break;
@@ -136,39 +151,5 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
                 producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, task.getId(), task));
             }
         }
-    }
-
-    /**
-     * Go through all the task states and check for any marked RUNNING with engineIDs that no longer exist in our watch
-     * path (i.e. dead engines).
-     * @param client CuratorFramework
-     */
-    private void scanStaleStates(CuratorFramework client) throws Exception {
-        Set<EngineID> deadRunners = new HashSet<>();
-
-        for(String id: client.getChildren().forPath(TASKS_PATH_PREFIX)) {
-            TaskState state = stateStorage.getState(TaskId.of(id));
-
-            if(state.status() != RUNNING) {
-                break;
-            }
-
-            EngineID engineId = state.engineID();
-            if(engineId == null) {
-                throw new IllegalStateException("ZK Task SynchronizedState - " + id + " - has no engineID - status " + state.status().toString());
-            }
-
-            // Avoid further calls to ZK if we already know about this one.
-            if(deadRunners.contains(engineId)) {
-                break;
-            }
-
-            // Check if assigned engine is still alive
-            if(client.checkExists().forPath(String.format(SINGLE_ENGINE_PATH, engineId.value())) == null) {
-                deadRunners.add(engineId);
-            }
-        }
-
-        reQueue(deadRunners);
     }
 }

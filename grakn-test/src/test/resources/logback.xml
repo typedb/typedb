@@ -14,9 +14,7 @@
   ~
   ~ You should have received a copy of the GNU General Public License
   ~ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
-  ~
   -->
-
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

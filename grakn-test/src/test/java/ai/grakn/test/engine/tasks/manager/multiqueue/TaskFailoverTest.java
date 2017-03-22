@@ -28,6 +28,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import com.google.common.collect.Sets;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import mjson.Json;
 import org.apache.kafka.clients.producer.Producer;
@@ -113,7 +114,7 @@ public class TaskFailoverTest {
         Set<TaskId> taskIds = tasks.stream().map(TaskState::getId).collect(Collectors.toSet());
 
         // Verify tasks was sent to the queue
-        verify(producer, timeout(5000).times(1))
+        verify(producer, timeout(5000).times(5))
                 .send(argThat(argument -> taskIds.contains(argument.key())));
     }
 
