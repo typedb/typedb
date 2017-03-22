@@ -41,15 +41,15 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import javafx.util.Pair;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -233,29 +233,63 @@ public class Utility {
     }
 
     /**
+     * @param role input role type
+     * @return set of all non-meta super types of the role
+     */
+    public static Set<RoleType> getSuperTypes(RoleType role){
+        Set<RoleType> superTypes = new HashSet<>();
+        RoleType superRole = role.superType();
+        while(!Schema.MetaSchema.isMetaName(superRole.getName())) {
+            superTypes.add(superRole);
+            superRole = superRole.superType();
+        }
+        return superTypes;
+    }
+
+    /**
+     * @param roleTypes entry role type set
+     * @return non-meta role types from within the provided set of role types
+     */
+    public static Set<RoleType> getTopRoles(Set<RoleType> roleTypes) {
+        return roleTypes.stream()
+                .filter(rt -> Sets.intersection(getSuperTypes(rt), roleTypes).isEmpty())
+                .collect(toSet());
+    }
+
+    /**
      * Gets roletypes a given type can play in the provided relType relation type by performing
      * type intersection between type's playedRoles and relation's hasRoles.
      * @param type for which we want to obtain compatible roles it plays
-     * @param relType relation type of interest
+     * @param relRoles relation type of interest
      * @return set of role types the type can play in relType
      */
-    public static Set<RoleType> getCompatibleRoleTypes(Type type, Type relType) {
-        Set<RoleType> cRoles = new HashSet<>();
+    public static Set<RoleType> getCompatibleRoleTypes(Type type, Set<RoleType> relRoles) {
         Collection<RoleType> typeRoles = type.playsRoles();
-        Collection<RoleType> relRoles = ((RelationType) relType).hasRoles();
-        relRoles.stream().filter(typeRoles::contains).forEach(cRoles::add);
-        return cRoles;
+        return relRoles.stream().filter(typeRoles::contains).collect(toSet());
     }
 
+    /**
+     * convert given role type to a set of relation types in which it can appear
+     */
     public static final Function<RoleType, Set<RelationType>> roleToRelationTypes =
             role -> role.relationTypes().stream().filter(rt -> !rt.isImplicit()).collect(toSet());
 
+    /**
+     * convert given entity type to a set of relation types in which it can play roles
+     */
     public static final Function<Type, Set<RelationType>> typeToRelationTypes =
             type -> type.playsRoles().stream()
                     .flatMap(roleType -> roleType.relationTypes().stream())
                     .filter(rt -> !rt.isImplicit())
                     .collect(toSet());
 
+    /**
+     * compute the set of compatible relation types for given types (intersection of allowed sets of relation types for each entry type)
+     * @param types for which the set of compatible relation types is to be computed
+     * @param typeMapper function mapping a type to the set of compatible relation types
+     * @param <T> type generic
+     * @return set of compatible relation types
+     */
     public static <T extends Type> Set<RelationType> getCompatibleRelationTypes(Set<T> types, Function<T, Set<RelationType>> typeMapper) {
         Set<RelationType> compatibleTypes = new HashSet<>();
         if (types.isEmpty()) return compatibleTypes;
@@ -349,11 +383,11 @@ public class Utility {
         Var parentVar = var().isa(name(parent.getName()));
         Var childVar = var().isa(name(child.getName()));
 
-        roleMappings.forEach( (parentRoleName, childRoleName) -> {
+        for (Map.Entry<TypeName, TypeName> entry : roleMappings.entrySet()) {
             VarName varName = VarName.anon();
-            parentVar.rel(name(parentRoleName), var(varName));
-            childVar.rel(name(childRoleName), var(varName));
-        });
+            parentVar = parentVar.rel(name(entry.getKey()), var(varName));
+            childVar = childVar.rel(name(entry.getValue()), var(varName));
+        }
         return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
     }
 

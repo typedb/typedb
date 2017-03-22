@@ -337,4 +337,37 @@ public class EntityTest extends GraphTestBase{
         });
     }
 
+    @Test
+    public void whenDeletingEntityInRelations_DeleteAllImplicitRelations(){
+        RoleType role1 = graknGraph.putRoleType("Role 1");
+        RoleType role2 = graknGraph.putRoleType("Role 2");
+        RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").hasRole(role1).hasRole(role2);
+        EntityType entityType = graknGraph.putEntityType("A Thing").playsRole(role1).playsRole(role2);
+        ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
+        entityType.hasResource(resourceType);
+
+        Entity entityToDelete = entityType.addEntity();
+        Entity entityOther = entityType.addEntity();
+        Resource<String> resource1 = resourceType.putResource("1");
+        Resource<String> resource2 = resourceType.putResource("2");
+        Resource<String> resource3 = resourceType.putResource("3");
+
+        //Create Implicit Relations
+        entityToDelete.hasResource(resource1);
+        entityToDelete.hasResource(resource2);
+        entityToDelete.hasResource(resource3);
+
+        //Create Explicit Relation
+        relationType.addRelation().addRolePlayer(role1, entityToDelete).addRolePlayer(role2, entityOther);
+
+        //Check Relation Counts
+        RelationType implicitRelationType = graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName()).getValue());
+        assertEquals(1, relationType.instances().size());
+        assertEquals(3, implicitRelationType.instances().size());
+
+        entityToDelete.delete();
+
+        assertEquals(1, relationType.instances().size());
+        assertEquals(0, implicitRelationType.instances().size());
+    }
 }

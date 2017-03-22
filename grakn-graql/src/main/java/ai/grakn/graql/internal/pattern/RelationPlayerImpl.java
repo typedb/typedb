@@ -27,26 +27,34 @@ import java.util.Optional;
  * A pair of role type and role player (where the role type may not be present)
  */
 class RelationPlayerImpl implements RelationPlayer {
-    private int hashCode = 0;
+    private final int hashCode;
     private final Optional<VarAdmin> roleType;
     private final VarAdmin rolePlayer;
-
-    /**
-     * A casting without a role type specified
-     * @param rolePlayer the role player of the casting
-     */
-    RelationPlayerImpl(VarAdmin rolePlayer) {
-        this.roleType = Optional.empty();
-        this.rolePlayer = rolePlayer;
-    }
 
     /**
      * @param roletype the role type of the casting
      * @param rolePlayer the role player of the casting
      */
-    RelationPlayerImpl(VarAdmin roletype, VarAdmin rolePlayer) {
-        this.roleType = Optional.of(roletype);
+    private RelationPlayerImpl(Optional<VarAdmin> roletype, VarAdmin rolePlayer) {
+        this.roleType = roletype;
         this.rolePlayer = rolePlayer;
+        hashCode = 31 * roleType.hashCode() + rolePlayer.hashCode();
+    }
+
+    /**
+     * A casting without a role type specified
+     * @param rolePlayer the role player of the casting
+     */
+    static RelationPlayerImpl of(VarAdmin rolePlayer) {
+        return new RelationPlayerImpl(Optional.empty(), rolePlayer);
+    }
+
+    /**
+     * @param roleType the role type of the casting
+     * @param rolePlayer the role player of the casting
+     */
+    static RelationPlayerImpl of(VarAdmin roleType, VarAdmin rolePlayer) {
+        return new RelationPlayerImpl(Optional.of(roleType), rolePlayer);
     }
 
     @Override
@@ -57,6 +65,11 @@ class RelationPlayerImpl implements RelationPlayer {
     @Override
     public VarAdmin getRolePlayer() {
         return rolePlayer;
+    }
+
+    @Override
+    public RelationPlayer setRolePlayer(VarAdmin rolePlayer) {
+        return new RelationPlayerImpl(roleType, rolePlayer);
     }
 
     @Override
@@ -77,10 +90,6 @@ class RelationPlayerImpl implements RelationPlayer {
 
     @Override
     public int hashCode() {
-        if (hashCode == 0) {
-            hashCode = roleType.hashCode();
-            hashCode = 31 * hashCode + rolePlayer.hashCode();
-        }
         return hashCode;
     }
 }

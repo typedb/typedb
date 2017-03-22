@@ -78,7 +78,7 @@ public class TypeMapper {
 
         Type superType = type.superType();
         if (type.superType() != null) {
-            var.sub(name(superType.getName()));
+            var = var.sub(name(superType.getName()));
         }
 
         var = playsRoles(var, type);

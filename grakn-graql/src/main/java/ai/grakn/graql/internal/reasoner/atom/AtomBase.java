@@ -24,7 +24,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -57,7 +56,7 @@ public abstract class AtomBase implements Atomic {
     }
 
     protected AtomBase(AtomBase a) {
-        this.atomPattern = Patterns.copyOf(a.atomPattern.asVar());
+        this.atomPattern = a.atomPattern;
         this.varName = atomPattern.asVar().getVarName();
     }
 
@@ -100,7 +99,7 @@ public abstract class AtomBase implements Atomic {
 
     private void setVarName(VarName var){
         varName = var;
-        atomPattern.asVar().setVarName(var);
+        atomPattern = atomPattern.asVar().setVarName(var);
     }
 
     /**

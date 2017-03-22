@@ -28,7 +28,7 @@ import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
-import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.admin.VarProperty;
@@ -54,6 +54,8 @@ import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMultiset;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,8 +65,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toSet;
 
@@ -73,53 +77,51 @@ import static java.util.stream.Collectors.toSet;
  */
 class VarImpl implements VarAdmin {
 
-    private final Set<VarProperty> properties = new HashSet<>();
-
-    private VarName name;
+    private final VarName name;
     private final boolean userDefinedName;
+
+    private final Set<VarProperty> properties;
+
+    private VarImpl(VarName name, boolean userDefinedName, Set<VarProperty> properties) {
+        this.name = name;
+        this.userDefinedName = userDefinedName;
+        this.properties = properties;
+    }
 
     /**
      * Create a variable with a random variable name
      */
-    VarImpl() {
-        this.name = VarName.anon();
-        this.userDefinedName = false;
+    static VarImpl anon() {
+        return new VarImpl(VarName.anon(), false, ImmutableSet.of());
     }
 
     /**
-     * @param name the variable name of the variable
+     * Create a variable with a specified name
+     * @param name the name of the variable
      */
-    VarImpl(VarName name) {
-        this.name = name;
-        this.userDefinedName = true;
+    static VarImpl named(VarName name) {
+        return new VarImpl(name, true, ImmutableSet.of());
     }
 
     /**
      * Create a variable by combining a collection of other variables
      * @param vars a collection of variables to combine
      */
-    VarImpl(Collection<VarAdmin> vars) {
+    static VarImpl merge(Collection<VarAdmin> vars) {
         VarAdmin first = vars.iterator().next();
-        this.name = first.getVarName();
-        this.userDefinedName = first.isUserDefinedName();
+        VarName name = first.getVarName();
+        boolean userDefinedName = first.isUserDefinedName();
+        ImmutableSet.Builder<VarProperty> properties = ImmutableSet.builder();
 
         for (VarAdmin var : vars) {
             if (var.isUserDefinedName()) {
-                this.name = var.getVarName();
+                name = var.getVarName();
             }
 
-            var.getProperties().forEach(this::addProperty);
+            properties.addAll(var.getProperties().iterator());
         }
-    }
 
-    /**
-     * Create a variable by cloning an existing variable
-     * @param var a variable to clone
-     */
-    private VarImpl(VarAdmin var) {
-        this.name = var.getVarName();
-        this.userDefinedName = var.isUserDefinedName();
-        var.getProperties().forEach(this::addProperty);
+        return new VarImpl(name, userDefinedName, properties.build());
     }
 
     @Override
@@ -149,7 +151,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(Var var) {
-        return addProperty(new HasResourceProperty(var.admin()));
+        return addProperty(HasResourceProperty.of(var.admin()));
     }
 
     @Override
@@ -169,7 +171,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(TypeName type, Var var) {
-        return addProperty(new HasResourceProperty(type, var.admin()));
+        return addProperty(HasResourceProperty.of(type, var.admin()));
     }
 
     @Override
@@ -244,7 +246,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roleplayer) {
-        return addCasting(new RelationPlayerImpl(roleplayer.admin()));
+        return addCasting(RelationPlayerImpl.of(roleplayer.admin()));
     }
 
     @Override
@@ -264,7 +266,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        return addCasting(new RelationPlayerImpl(roletype.admin(), roleplayer.admin()));
+        return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
     }
 
     @Override
@@ -338,9 +340,9 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public void setVarName(VarName name) {
+    public VarAdmin setVarName(VarName name) {
         if (!userDefinedName) throw new RuntimeException(ErrorMessage.SET_GENERATED_VARIABLE_NAME.getMessage(name));
-        this.name = name;
+        return new VarImpl(name, true, properties);
     }
 
     @Override
@@ -370,6 +372,19 @@ class VarImpl implements VarAdmin {
     @Override
     public <T extends VarProperty> boolean hasProperty(Class<T> type) {
         return getProperties(type).findAny().isPresent();
+    }
+
+    @Override
+    public <T extends VarProperty> VarAdmin mapProperty(Class<T> type, UnaryOperator<T> mapper) {
+        ImmutableSet<VarProperty> newProperties = getProperties().map(property -> {
+            if (type.isInstance(property)) {
+                return mapper.apply(type.cast(property));
+            } else {
+                return property;
+            }
+        }).collect(toImmutableSet());
+
+        return new VarImpl(name, userDefinedName, newProperties);
     }
 
     @Override
@@ -444,36 +459,34 @@ class VarImpl implements VarAdmin {
         return builder.toString();
     }
 
-    private Var addCasting(ai.grakn.graql.admin.RelationPlayer relationPlayer) {
+    private Var addCasting(RelationPlayer relationPlayer) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        Stream<ai.grakn.graql.admin.RelationPlayer> oldCastings = relationProperty
+        Stream<RelationPlayer> oldCastings = relationProperty
                 .map(RelationProperty::getRelationPlayers)
                 .orElse(Stream.empty());
 
-        ImmutableMultiset<ai.grakn.graql.admin.RelationPlayer> relationPlayers =
+        ImmutableMultiset<RelationPlayer> relationPlayers =
                 Stream.concat(oldCastings, Stream.of(relationPlayer)).collect(CommonUtil.toImmutableMultiset());
 
-        relationProperty.ifPresent(properties::remove);
+        RelationProperty newProperty = new RelationProperty(relationPlayers);
 
-        properties.add(new RelationProperty(relationPlayers));
-
-        return this;
+        return relationProperty.map(this::removeProperty).orElse(this).addProperty(newProperty);
     }
 
     private static boolean invalidInnerVariable(VarAdmin var) {
         return var.getProperties().anyMatch(p -> !(p instanceof NameProperty));
     }
 
-    /**
-     * Add a non-unique property
-     */
-    private Var addProperty(VarProperty property) {
+    private VarImpl addProperty(VarProperty property) {
         if (property.isUnique()) {
             testUniqueProperty((UniqueVarProperty) property);
         }
-        properties.add(property);
-        return this;
+        return new VarImpl(name, userDefinedName, Sets.union(properties, ImmutableSet.of(property)));
+    }
+
+    private VarImpl removeProperty(VarProperty property) {
+        return new VarImpl(name, userDefinedName, Sets.difference(properties, ImmutableSet.of(property)));
     }
 
     /**
@@ -493,11 +506,6 @@ class VarImpl implements VarAdmin {
         // a disjunction containing only one option
         Conjunction<VarAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
         return Patterns.disjunction(Collections.singleton(conjunction));
-    }
-
-    @Override
-    public PatternAdmin cloneMe() {
-        return new VarImpl(this);
     }
 
     @Override

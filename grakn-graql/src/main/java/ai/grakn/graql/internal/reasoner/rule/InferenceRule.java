@@ -66,6 +66,22 @@ public class InferenceRule {
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        InferenceRule rule = (InferenceRule) obj;
+        return this.getBody().equals(rule.getBody())
+                && this.getHead().equals(rule.getHead());
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + getBody().hashCode();
+        hashCode = hashCode * 37 + getHead().hashCode();
+        return hashCode;
+    }
+
     private static Conjunction<VarAdmin> conjunction(PatternAdmin pattern){
         Set<VarAdmin> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
@@ -136,7 +152,7 @@ public class InferenceRule {
 
             //resolve captures
             Set<VarName> varIntersection = Sets.intersection(body.getVarNames(), parentAtom.getVarNames());
-            varIntersection.removeAll(rewriteUnifiers.keySet());
+            varIntersection = Sets.difference(varIntersection, rewriteUnifiers.keySet());
             varIntersection.forEach(var -> body.unify(var, VarName.anon()));
         }
     }

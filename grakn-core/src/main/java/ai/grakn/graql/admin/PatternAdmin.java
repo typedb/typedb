@@ -92,10 +92,4 @@ public interface PatternAdmin extends Pattern {
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());
     }
-
-    /**
-     * Create a deep copy of this pattern
-     * @return a copy of this pattern
-     */
-    PatternAdmin cloneMe();
 }

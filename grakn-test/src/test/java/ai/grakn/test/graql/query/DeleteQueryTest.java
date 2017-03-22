@@ -244,7 +244,7 @@ public class DeleteQueryTest {
         qb.match(var("x").value(1000L).isa("tmdb-vote-count")).delete("x").execute();
 
         assertTrue(exists(godfather));
-        assertTrue(exists(relation));
+        assertFalse(exists(relation)); //Relation is implicit it was deleted
         assertFalse(exists(voteCount));
     }
 

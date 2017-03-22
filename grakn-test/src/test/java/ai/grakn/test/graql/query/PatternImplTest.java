@@ -31,8 +31,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotSame;
 
 @SuppressWarnings("unchecked")
 public class PatternImplTest {
@@ -105,63 +103,6 @@ public class PatternImplTest {
         );
 
         assertHasDNF(dnf, cnf);
-    }
-
-    @Test
-    public void testCloneVar() {
-        VarAdmin var1 = Graql.var("x").isa("person").admin();
-        VarAdmin var2 = Patterns.copyOf(var1);
-
-        assertEquals(var1, var2);
-        assertNotSame(var1, var2);
-    }
-
-    @Test
-    public void testCloneDisjunction() {
-        VarAdmin inner = Graql.var("abc").admin();
-
-        Disjunction dis1 = disjunction(x, x, y, conjunction(z, x, inner));
-        Disjunction dis2 = Patterns.copyOf(dis1);
-
-        assertEquals(dis1, dis2);
-        assertNotSame(dis1, dis2);
-
-        // Mutate original
-        inner.isa("person");
-
-        assertNotEquals(dis1, dis2);
-    }
-
-    @Test
-    public void testCloneConjunction() {
-        VarAdmin inner = Graql.var("abc").admin();
-
-        Conjunction con1 = conjunction(x, x, conjunction(y, y), disjunction(z, inner));
-        Conjunction con2 = Patterns.copyOf(con1);
-
-        assertEquals(con1, con2);
-        assertNotSame(con1, con2);
-
-        // Mutate original
-        inner.isa("person");
-
-        assertNotEquals(con1, con2);
-    }
-
-    @Test
-    public void testClonePattern() {
-        VarAdmin inner = Graql.var("abc").admin();
-
-        PatternAdmin con1 = conjunction(x, x, inner, conjunction(y, y), disjunction(z));
-        PatternAdmin con2 = Patterns.copyOf(con1);
-
-        assertEquals(con1, con2);
-        assertNotSame(con1, con2);
-
-        // Mutate original
-        inner.isa("person");
-
-        assertNotEquals(con1, con2);
     }
 
     private <T extends PatternAdmin> Conjunction<T> conjunction(T... patterns) {
