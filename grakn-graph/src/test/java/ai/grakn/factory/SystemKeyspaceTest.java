@@ -13,9 +13,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
@@ -38,11 +36,15 @@ public class SystemKeyspaceTest {
     	Collection<String> spaces = graph.getEntityType("keyspace").instances()
     		.stream().map(e -> 
     			e.resources(keyspaceName).iterator().next().getValue().toString()).collect(Collectors.toList());
-        assertThat(spaces, containsInAnyOrder(space1, space2.toLowerCase(), space3.toLowerCase()));
+
+        assertTrue("Keyspace [" + space1 + "] is missing from system graph", spaces.contains(space1));
+        assertTrue("Keyspace [" + space2 + "] is missing from system graph", spaces.contains(space2.toLowerCase()));
+        assertTrue("Keyspace [" + space3 + "] is missing from system graph", spaces.contains(space3.toLowerCase()));
 
         assertEquals(GraknVersion.VERSION,
                 graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
-    	gf2.close();
+
+        gf2.close();
     	gf3.close();
     	graph.close();
     }
