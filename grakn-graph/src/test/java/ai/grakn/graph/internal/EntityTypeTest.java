@@ -236,9 +236,9 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Implicit Names
-        TypeName hasResourceOwnerName = Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName);
-        TypeName hasResourceValueName = Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName);
-        TypeName hasResourceName = Schema.Resource.HAS_RESOURCE.getName(resourceTypeName);
+        TypeName hasResourceOwnerName = Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName);
+        TypeName hasResourceValueName = Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName);
+        TypeName hasResourceName = Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName);
 
         entityType.hasResource(resourceType);
 
@@ -280,15 +280,15 @@ public class EntityTypeTest extends GraphTestBase{
 
         //Check role types are only built explicitly
         assertThat(entityType1.playsRoles(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName).getValue())));
+                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(superName).getValue())));
 
         assertThat(entityType2.playsRoles(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name).getValue())));
+                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(name).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType rtSuperRelation = graknGraph.getType(Schema.Resource.HAS_RESOURCE.getName(rtSuper.getName()));
-        RoleType rtSuperRoleOwner = graknGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
-        RoleType rtSuperRoleValue = graknGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
+        RelationType rtSuperRelation = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(rtSuper.getName()));
+        RoleType rtSuperRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
+        RoleType rtSuperRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
 
         RelationType rtRelation = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(rt.getName()));
         RoleType reRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(rt.getName()));
@@ -297,37 +297,6 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(rtSuperRoleOwner, reRoleOwner.superType());
         assertEquals(rtSuperRoleValue, reRoleValue.superType());
         assertEquals(rtSuperRelation, rtRelation.superType());
-    }
-
-    @Test
-    public void testHasResourceThenKey(){
-        EntityType entityType = graknGraph.putEntityType("Entity1");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-
-        entityType.hasResource(resourceType);
-        entityType.key(resourceType);
-
-        // Check that resource is required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-    }
-
-    @Test
-    public void testKeyThenHasResource(){
-        EntityType entityType = graknGraph.putEntityType("Entity1");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-
-        entityType.key(resourceType);
-        entityType.hasResource(resourceType);
-
-        // Check that resource is required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        //This is false because of the temporary workaround
-        assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
     @Test
