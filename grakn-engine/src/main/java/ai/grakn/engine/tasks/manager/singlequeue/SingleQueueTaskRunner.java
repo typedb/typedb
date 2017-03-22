@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
@@ -54,6 +55,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final Consumer<TaskId, TaskState> consumer;
     private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
+    private final ExternalOffsetStorage offsetStorage;
 
     private final AtomicBoolean wakeUp = new AtomicBoolean(false);
     private final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -72,12 +74,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      *
      * @param engineID identifier of the engine this task runner is on
      * @param manager a place to control the lifecycle of tasks
+     * @param offsetStorage a place to externally store kafka offsets
      */
-    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID){
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage){
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = manager.newConsumer();
         this.engineID = engineID;
+        this.offsetStorage = offsetStorage;
     }
 
     /**
@@ -117,8 +121,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                         unhandledTasks = 0;
                     }
 
-                    consumer.seek(new TopicPartition(record.topic(), record.partition()), record.offset() + 1);
-                    consumer.commitSync();
+                    offsetStorage.saveOffset(consumer, new TopicPartition(record.topic(), record.partition()));
 
                     LOG.trace("{} acknowledged", record.key().getValue());
                 }

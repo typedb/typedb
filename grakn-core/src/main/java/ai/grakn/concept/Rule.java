@@ -54,22 +54,6 @@ public interface Rule extends Instance{
 
     //------------------------------------- Edge Handling ----------------------------------
     /**
-     * Add a hypothesis of the specified Type to the Rule.
-     *
-     * @param type The Type which this Rule applies to.
-     * @return The Rule itself
-     */
-    Rule addHypothesis(Type type);
-    /**
-     *
-     * Add a conclusion of the specified Type to the Rule.
-     *
-     * @param type The Type which is the conclusion of this Rule.
-     * @return The Rule itself
-     */
-    Rule addConclusion(Type type);
-
-    /**
      * Retrieve a set of Types that constitute a part of the hypothesis of this Rule.
      *
      * @return A collection of Concept Types that constitute a part of the hypothesis of the Rule

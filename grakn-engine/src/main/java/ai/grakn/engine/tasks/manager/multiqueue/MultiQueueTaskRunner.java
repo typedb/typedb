@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
@@ -96,7 +97,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
         consumer = kafkaConsumer(TASK_RUNNER_GROUP);
 
         // Configure callback for a Kafka rebalance
-        consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), rebalanceListener(consumer, connection));
+        consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), rebalanceListener(consumer, new ExternalOffsetStorage(connection)));
 
         // Create initial entries in ZK for TaskFailover to watch.
         registerAsRunning();

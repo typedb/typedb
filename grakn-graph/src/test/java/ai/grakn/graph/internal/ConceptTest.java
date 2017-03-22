@@ -22,20 +22,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
-import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.exception.ConceptException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -43,229 +32,93 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.collection.IsEmptyCollection.empty;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ConceptTest extends GraphTestBase{
 
-    private ConceptImpl concept;
-
-
-    @Before
-    public void setUp(){
-        concept = (ConceptImpl) graknGraph.putEntityType("main_concept");
-    }
-
     @Test
-    public void testEquality() {
-        ConceptImpl c1= (ConceptImpl) graknGraph.putEntityType("Value_1");
-        Concept c1_copy = graknGraph.getEntityType("Value_1");
-        Concept c1_copy_copy = graknGraph.putEntityType("Value_1");
+    public void whenComparingConcepts_EnsureEqualityIsBasedOnConceptID() {
+        Concept v1_1 = graknGraph.putEntityType("Value_1");
+        Concept v1_2 = graknGraph.getEntityType("Value_1");
+        Concept v1_3 = graknGraph.putEntityType("Value_1");
 
-        Concept c2 = graknGraph.putEntityType("Value_2");
+        Concept v2_1 = graknGraph.putEntityType("Value_2");
 
-        assertEquals(c1, c1_copy);
-        assertNotEquals(c1, c2);
-        assertNotEquals(c1.getId().getRawValue(), concept.getId().getRawValue());
+        assertEquals(v1_1, v1_2);
+        assertNotEquals(v1_1, v2_1);
+        assertNotEquals(v1_1.getId().getRawValue(), v2_1.getId().getRawValue());
 
         HashSet<Concept> concepts = new HashSet<>();
-
-        concepts.add(c1);
-        concepts.add(c1_copy);
-        concepts.add(c1_copy_copy);
+        concepts.add(v1_1);
+        concepts.add(v1_2);
+        concepts.add(v1_3);
         assertEquals(1, concepts.size());
 
-        concepts.add(c2);
+        concepts.add(v2_1);
         assertEquals(2, concepts.size());
-        Vertex conceptVertex = graknGraph.getTinkerPopGraph().traversal().V(concept.getId().getRawValue()).next();
-        assertNotEquals(concept, conceptVertex);
     }
 
     @Test
-    public void testGetParentIsa(){
-        EntityType entityType = graknGraph.putEntityType("Entiy Type");
-        Entity entity = entityType.addEntity();
-        assertEquals(entityType, entity.type());
-    }
-
-    @Test
-    public void testToString() {
+    public void checkToStringHasMinimalInformation() {
         EntityType concept = graknGraph.putEntityType("a");
-        Instance concept2 = concept.addEntity();
+        Instance entity = concept.addEntity();
 
-        assertFalse(concept2.toString().contains("ConceptType"));
-        assertFalse(concept2.toString().contains("Subject Identifier"));
-        assertFalse(concept2.toString().contains("Subject Locator"));
+        assertTrue(entity.toString().contains(Schema.BaseType.ENTITY.name()));
+        assertTrue(entity.toString().contains(entity.getId().getValue()));
     }
 
     @Test
-    public void testToStringOnDeletedConceptDoesntThrow() {
+    public void whenCallingToStringOnDeleteConcept_ReturnOnlyConceptID() {
         EntityType concept = graknGraph.putEntityType("a");
-        Instance concept2 = concept.addEntity();
-        concept2.delete();
+        Instance entity = concept.addEntity();
+        entity.delete();
 
-        assertFalse(concept2.toString().contains("ConceptType"));
-        assertFalse(concept2.toString().contains("Subject Identifier"));
-        assertFalse(concept2.toString().contains("Subject Locator"));
+        assertFalse(entity.toString().contains(Schema.BaseType.ENTITY.name()));
+        assertTrue(entity.toString().contains(entity.getId().getValue()));
     }
 
     @Test
-    public void testDelete() throws ConceptException{
-        assertEquals(9, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
-        Concept c1 = graknGraph.putEntityType("1");
-        assertEquals(10, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
-        c1.delete();
-        assertEquals(9, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
+    public void whenGettingEdgesFromAConcept_EdgesFilteredByLabelAreReturned(){
+        EntityType entityType1 = graknGraph.putEntityType("entity type");
+        EntityTypeImpl entityType2 = (EntityTypeImpl) graknGraph.putEntityType("entity type 1").superType(entityType1);
+        EntityType entityType3 = graknGraph.putEntityType("entity type 2").superType(entityType2);
 
-        Concept c2 = graknGraph.putEntityType("blab");
-        assertEquals(10, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
-        c2.delete();
-        assertEquals(9, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
-    }
+        Entity entity1 = entityType2.addEntity();
+        Entity entity2 = entityType2.addEntity();
 
-    @Test(expected = ConceptException.class)
-    public void testDeleteFail() throws ConceptException{
-        EntityType c1 = graknGraph.putEntityType("C1");
-        EntityType c2 = graknGraph.putEntityType("C2");
-        c1.superType(c2);
-        c2.delete();
-    }
+        Set<EdgeImpl> superType = entityType2.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
+        Set<EdgeImpl> subs = entityType2.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
+        Set<EdgeImpl> instances = entityType2.getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).collect(Collectors.toSet());
 
-    @Test
-    public void testGetConceptType(){
-        EntityType c1 = graknGraph.putEntityType("c1");
-        Entity c2 = c1.addEntity();
-        assertEquals(c1, c2.type());
+        assertThat(superType, is(not(empty())));
+        assertThat(subs, is(not(empty())));
+        assertThat(instances, is(not(empty())));
+
+        superType.forEach(edge -> assertEquals(entityType1, edge.getTarget()));
+        subs.forEach(edge -> assertEquals(entityType3, edge.getSource()));
+        assertThat(instances.stream().map(EdgeImpl::getSource).collect(Collectors.toSet()),
+                containsInAnyOrder(entity1, entity2));
     }
 
     @Test
-    public void testGetEdgesIncomingOfType(){
-        EntityType entityType = graknGraph.putEntityType("entity type");
-        InstanceImpl<?, ?> conceptInstance1 = (InstanceImpl) entityType.addEntity();
-        InstanceImpl conceptInstance2 = (InstanceImpl) entityType.addEntity();
-        InstanceImpl conceptInstance3 = (InstanceImpl) entityType.addEntity();
-        InstanceImpl conceptInstance4 = (InstanceImpl) entityType.addEntity();
-        InstanceImpl conceptInstance5 = (InstanceImpl) entityType.addEntity();
-        InstanceImpl conceptInstance6 = (InstanceImpl) entityType.addEntity();
-        Vertex conceptInstance1_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance1.getId().getRawValue()).next();
-        Vertex conceptInstance2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance2.getId().getRawValue()).next();
-        Vertex conceptInstance3_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance3.getId().getRawValue()).next();
-        Vertex conceptInstance4_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance4.getId().getRawValue()).next();
-        Vertex conceptInstance5_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance5.getId().getRawValue()).next();
-        Vertex conceptInstance6_Vertex = graknGraph.getTinkerPopGraph().traversal().V(conceptInstance6.getId().getRawValue()).next();
-
-        conceptInstance2_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance3_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance4_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance5_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance6_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-
-        Set<EdgeImpl> edges = conceptInstance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).collect(Collectors.toSet());
-
-        assertEquals(5, edges.size());
-    }
-
-    @Test
-    public void testAsConceptType() {
+    public void whenCastingToCorrectType_ReturnCorrectType(){
         Concept concept = graknGraph.putEntityType("Test");
-        assertTrue(concept.isEntityType());
-        Type type = concept.asEntityType();
+        assertTrue("Concept is not of type [" + EntityType.class.getName() + "]", concept.isEntityType());
+        EntityType type = concept.asEntityType();
         assertEquals(type, concept);
     }
 
-    @Test
-    public void  testAsRoleType() {
-        Concept concept = graknGraph.putRoleType("Test");
-        assertTrue(concept.isRoleType());
-        RoleType concept2 = concept.asRoleType();
-        assertEquals(concept2, concept);
-    }
 
     @Test
-    public void  testAsRelationType() {
-        Concept concept = graknGraph.putRelationType("Test");
-        assertTrue(concept.isRelationType());
-        RelationType concept2 = concept.asRelationType();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsResourceType() {
-        Concept concept = graknGraph.putResourceType("Test", ResourceType.DataType.STRING);
-        assertTrue(concept.isResourceType());
-        ResourceType concept2 = concept.asResourceType();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsRuleType() {
-        Concept concept = graknGraph.putRuleType("Test");
-        assertTrue(concept.isRuleType());
-        RuleType concept2 = concept.asRuleType();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsEntity() {
-        EntityType entityType = graknGraph.putEntityType("entity type");
-        Concept concept = entityType.addEntity();
-        assertTrue(concept.isEntity());
-        Instance concept2 = concept.asEntity();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsRelation() {
-        RelationType type = graknGraph.putRelationType("a type");
-        Concept concept = type.addRelation();
-        assertTrue(concept.isRelation());
-        Relation concept2 = concept.asRelation();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsResource() {
-        ResourceType<String> type = graknGraph.putResourceType("a type", ResourceType.DataType.STRING);
-        Concept concept = type.putResource("Test");
-        assertTrue(concept.isResource());
-        Resource concept2 = concept.asResource();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsRule() {
-        Pattern lhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        Pattern rhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        RuleType type = graknGraph.putRuleType("a type");
-        Concept concept = type.addRule(lhs, rhs);
-        assertTrue(concept.isRule());
-        Rule concept2 = concept.asRule();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsType() {
-        Concept concept = graknGraph.getMetaConcept();
-        assertTrue(concept.isType());
-        Type concept2 = concept.asType();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void  testAsInstance() {
-        Pattern lhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        Pattern rhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        RuleType type = graknGraph.putRuleType("a type");
-        Concept concept = type.addRule(lhs, rhs);
-        assertTrue(concept.isInstance());
-        Instance concept2 = concept.asInstance();
-        assertEquals(concept2, concept);
-    }
-
-    @Test
-    public void incorrectConversion(){
+    public void whenCastingToInCorrectType_Throw(){
         EntityType thingType = graknGraph.putEntityType("thing type");
         Entity thing = thingType.addEntity();
 

@@ -84,8 +84,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @param type The concept type which this rules applies to.
      * @return The Rule itself
      */
-    @Override
-    public Rule addHypothesis(Type type) {
+    Rule addHypothesis(Type type) {
         putEdge(type, Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
@@ -95,8 +94,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @param type The concept type which is the conclusion of this Rule.
      * @return The Rule itself
      */
-    @Override
-    public Rule addConclusion(Type type) {
+    Rule addConclusion(Type type) {
         putEdge(type, Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
