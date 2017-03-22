@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 public class AuthControllerTest{
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     //Ignoring a couple of randomly failing tests. I will probably need to create a new config file with password protection enabled.
     //Or maybe find alternative to singleton.
