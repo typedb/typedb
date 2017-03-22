@@ -179,13 +179,13 @@ public class ReasonerTest {
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                         "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
         Pattern R1_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        Rule rule1 = inferenceRule.addRule(R1_LHS, R1_RHS);
+        Rule rule1 = inferenceRule.putRule(R1_LHS, R1_RHS);
 
         Pattern R2_LHS = Graql.and(graph.graql().parsePatterns(
                         "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +
                         "(geo-entity: $l2, entity-location: $l3) isa is-located-in;"));
         Pattern R2_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
-        Rule rule2 = inferenceRule.addRule(R2_LHS, R2_RHS);
+        Rule rule2 = inferenceRule.putRule(R2_LHS, R2_RHS);
 
         InferenceRule R1 = new InferenceRule(rule1, graph);
         InferenceRule R2 = new InferenceRule(rule2, graph);
