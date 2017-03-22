@@ -43,6 +43,10 @@ public class GreedyTraversalPlan {
 
     private static final long MAX_TRAVERSAL_ATTEMPTS = 15_000;
 
+    // The degree to prune plans - 0.0 means never prune plans, 1.0 means always prune everything except the fastest
+    // estimated plan (this is equivalent to a naive greedy algorithm that does not look ahead).
+    private static final double PRUNE_FACTOR = 0.1;
+
     /**
      * Create a traversal plan using the default maxTraersalAttempts.
      * @see GreedyTraversalPlan#createTraversal(PatternAdmin, long)
@@ -109,7 +113,21 @@ public class GreedyTraversalPlan {
             List<Plan> allPlans = Lists.newArrayListWithCapacity((int) numTraversalAttempts);
             extendPlan(plan, allPlans, fragmentSets, depth);
 
-            plan = Collections.min(allPlans);
+            System.out.println("All plans:");
+            allPlans.forEach(System.out::println);
+
+            Plan newPlan = Collections.min(allPlans);
+
+            System.out.println("Chose:");
+            System.out.println(newPlan);
+
+            // Only retain one new fragment
+            // TODO: Find a more elegant way to do this?
+            while (newPlan.fragments().size() > plan.fragments().size() + 1) {
+                newPlan.pop();
+            }
+
+            plan = newPlan;
 
             plan.fragments().forEach(fragment -> {
                 fragmentSets.remove(fragment.getEquivalentFragmentSet());
@@ -134,6 +152,19 @@ public class GreedyTraversalPlan {
             return;
         }
 
+        // The minimum cost of all plan with only one additional fragment. Used for deciding which branches to prune.
+        double minPartialPlanCost = Double.MAX_VALUE;
+
+        for (EquivalentFragmentSet fragmentSet : fragmentSets) {
+            for (Fragment fragment : fragmentSet.fragments()) {
+
+                if (plan.tryPush(fragment)) {
+                    minPartialPlanCost = Math.min(plan.cost(), minPartialPlanCost);
+                    plan.pop();
+                }
+            }
+        }
+
         boolean addedPlan = false;
 
         for (EquivalentFragmentSet fragmentSet : fragmentSets) {
@@ -144,10 +175,13 @@ public class GreedyTraversalPlan {
                     continue;
                 }
 
-                addedPlan = true;
+                // Prune any plans that are much more expensive than the cheapest partial plan
+                if (plan.cost() * PRUNE_FACTOR <= minPartialPlanCost) {
+                    addedPlan = true;
 
-                // Recursively find a plan
-                extendPlan(plan, allPlans, fragmentSets, depth - 1);
+                    // Recursively find a plan
+                    extendPlan(plan, allPlans, fragmentSets, depth - 1);
+                }
 
                 plan.pop();
             }

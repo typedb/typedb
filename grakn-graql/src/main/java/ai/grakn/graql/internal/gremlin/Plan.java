@@ -62,12 +62,17 @@ class Plan implements Comparable<Plan> {
         }
 
         fragments.push(newFragment);
+
+        // TODO: Calculate cost incrementally
+        cost = -1;
+
         return true;
     }
 
     Fragment pop() {
         Fragment fragment = fragments.pop();
         fragmentSets.remove(fragment.getEquivalentFragmentSet());
+        cost = -1;
         return fragment;
     }
 
@@ -102,5 +107,10 @@ class Plan implements Comparable<Plan> {
         }
 
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return "Plan(" + fragments + ")";
     }
 }
