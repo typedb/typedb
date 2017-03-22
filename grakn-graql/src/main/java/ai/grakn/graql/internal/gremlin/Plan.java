@@ -122,11 +122,29 @@ class Plan implements Comparable<Plan> {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Plan plan = (Plan) o;
+
+        if (!elements.equals(plan.elements)) return false;
+        return fragmentSets.equals(plan.fragmentSets);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = elements.hashCode();
+        result = 31 * result + fragmentSets.hashCode();
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "Plan(" + GraqlTraversal.create(ImmutableSet.of(fragments().collect(toList()))) + ")";
     }
 
-    private class PlanElement {
+    private static class PlanElement {
         private final Fragment fragment;
         private final Set<VarName> names;
         private final double cost;
@@ -137,6 +155,32 @@ class Plan implements Comparable<Plan> {
             this.names = names;
             this.cost = cost;
             this.totalCost = totalCost;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            PlanElement that = (PlanElement) o;
+
+            if (Double.compare(that.cost, cost) != 0) return false;
+            if (Double.compare(that.totalCost, totalCost) != 0) return false;
+            if (!fragment.equals(that.fragment)) return false;
+            return names.equals(that.names);
+        }
+
+        @Override
+        public int hashCode() {
+            int result;
+            long temp;
+            result = fragment.hashCode();
+            result = 31 * result + names.hashCode();
+            temp = Double.doubleToLongBits(cost);
+            result = 31 * result + (int) (temp ^ (temp >>> 32));
+            temp = Double.doubleToLongBits(totalCost);
+            result = 31 * result + (int) (temp ^ (temp >>> 32));
+            return result;
         }
     }
 }
