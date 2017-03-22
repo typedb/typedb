@@ -111,7 +111,7 @@ public class GreedyTraversalPlan {
         Plan plan = Plan.base();
 
         while (!fragmentSets.isEmpty()) {
-            List<Plan> allPlans = Lists.newArrayListWithCapacity((int) numTraversalAttempts);
+            List<Plan> allPlans = Lists.newArrayList();
             extendPlan(plan, allPlans, fragmentSets, depth);
 
             Plan newPlan = Collections.min(allPlans);
