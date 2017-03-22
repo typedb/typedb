@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,7 @@ public class PostProcessingTask implements BackgroundTask {
      * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
      * @param configuration
      */
-    public boolean start(Consumer<String> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
         long lastJob = cache.getLastTimeJobAdded();
         long currentTime = System.currentTimeMillis();
         LOG.info("Checking post processing should run: " + ((currentTime - lastJob) >= timeLapse));
@@ -70,7 +71,7 @@ public class PostProcessingTask implements BackgroundTask {
     public void pause() {
     }
 
-    public boolean resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         return false;
     }
 }

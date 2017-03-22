@@ -21,6 +21,7 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
@@ -37,9 +38,11 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -514,7 +517,8 @@ public class SingleQueueTaskRunnerTest {
     public void whenATaskIsRestartedAfterExecution_ItIsResumed(){
         ShortExecutionMockTask.resumedCounter.set(0);
 
-        TaskState task = createRunningTasks(1, engineID).iterator().next().checkpoint("checkpoint");
+        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
+        TaskState task = createRunningTasks(1, engineID).iterator().next().checkpoint(checkpoint);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
@@ -527,13 +531,13 @@ public class SingleQueueTaskRunnerTest {
     public void whenATaskIsRestartedAfterExecution_ItIsResumedFromLastCheckpoint(){
         ShortExecutionMockTask.resumedCounter.set(0);
 
-        String checkpoint = "checkpoint";
+        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
         TaskState task = createRunningTasks(1, engineID).iterator().next().checkpoint(checkpoint);
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
         whenTaskResumes((c) -> {
-            assertThat(c, is(checkpoint));
+            assertThat(c, equalTo(checkpoint));
         });
 
         taskRunner.run();

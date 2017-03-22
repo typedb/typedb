@@ -20,6 +20,7 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import java.util.function.Consumer;
 import scala.util.parsing.combinator.testing.Str;
 
@@ -45,7 +46,7 @@ public class EndlessExecutionMockTask extends MockBackgroundTask {
     }
 
     @Override
-    protected void executeResumeInner(String checkpoint) {}
+    protected void executeResumeInner(TaskCheckpoint checkpoint) {}
 
     public void pause() {}
 }
