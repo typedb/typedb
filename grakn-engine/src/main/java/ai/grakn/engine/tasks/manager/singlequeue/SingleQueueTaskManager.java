@@ -20,6 +20,7 @@
 package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -66,6 +67,7 @@ public class SingleQueueTaskManager implements TaskManager {
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
     private final FailoverElector failover;
+    private final ExternalOffsetStorage offsetStorage;
 
     private Set<SingleQueueTaskRunner> taskRunners;
     private ExecutorService taskRunnerThreadPool;
@@ -82,6 +84,7 @@ public class SingleQueueTaskManager implements TaskManager {
     public SingleQueueTaskManager(EngineID engineId){
         this.zookeeper = new ZookeeperConnection();
         this.storage = chooseStorage(properties, zookeeper);
+        this.offsetStorage = new ExternalOffsetStorage(zookeeper);
 
         //TODO check that the number of partitions is at least the capacity
         //TODO Single queue task manager should have its own impl of failover
@@ -169,7 +172,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     public Consumer<TaskId, TaskState> newConsumer(){
         Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, zookeeper));
+        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, offsetStorage));
         return consumer;
     }
 
@@ -180,6 +183,6 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
-        return new SingleQueueTaskRunner(this, engineId);
+        return new SingleQueueTaskRunner(this, engineId, offsetStorage);
     }
 }
