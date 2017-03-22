@@ -63,7 +63,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Utiliy class providing useful
+ * Utiliy class providing useful functionalities.
  * </p>
  *
  * @author Kasper Piskorski
@@ -353,15 +353,17 @@ public class Utility {
     /**
      * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
      * @param relType reflexive relation type
+     *                * @param fromRoleName  from directional role type type name
+     * @param toRoleName to directional role type type name
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createReflexiveRule(RelationType relType, GraknGraph graph){
+    public static Rule createReflexiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var body = var().isa(name(relType.getName())).rel("x").rel("y");
-        Var head = var().isa(name(relType.getName())).rel("x").rel("x");
+        Var body = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "y");
+        Var head = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "x");
         return graph.admin().getMetaRuleInference().addRule(body, head);
     }
 

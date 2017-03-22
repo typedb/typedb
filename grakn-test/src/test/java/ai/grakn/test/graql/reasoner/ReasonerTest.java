@@ -116,12 +116,16 @@ public class ReasonerTest {
 
     @Test
     public void testTransitiveRule() {
-        Rule rule = Utility.createTransitiveRule(snbGraph.graph().getRelationType("sublocate"),
-                snbGraph.graph().getRoleType("member-location").getName(), snbGraph.graph().getRoleType("container-location").getName(), snbGraph.graph());
+        Rule rule = Utility.createTransitiveRule(
+                snbGraph.graph().getRelationType("sublocate"),
+                snbGraph.graph().getRoleType("member-location").getName(),
+                snbGraph.graph().getRoleType("container-location").getName(),
+                snbGraph.graph());
 
         InferenceRule R = new InferenceRule(rule, snbGraph.graph());
 
-        Pattern body = and(snbGraph.graph().graql().parsePatterns("(member-location: $x, container-location: $z) isa sublocate;" +
+        Pattern body = and(snbGraph.graph().graql().parsePatterns("" +
+                "(member-location: $x, container-location: $z) isa sublocate;" +
                 "(member-location: $z, container-location: $y) isa sublocate;"));
         Pattern head = and(snbGraph.graph().graql().parsePatterns("(member-location: $x, container-location: $y) isa sublocate;"));
 
@@ -132,11 +136,15 @@ public class ReasonerTest {
 
     @Test
     public void testReflexiveRule() {
-        Rule rule = Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
+        Rule rule = Utility.createReflexiveRule(
+                snbGraph.graph().getRelationType("knows"),
+                snbGraph.graph().getRoleType("acquaintance1").getName(),
+                snbGraph.graph().getRoleType("acquaintance2").getName(),
+                snbGraph.graph());
         InferenceRule R = new InferenceRule(rule, snbGraph.graph());
 
-        Pattern body = and(snbGraph.graph().graql().parsePatterns("($x, $y) isa knows;"));
-        Pattern head = and(snbGraph.graph().graql().parsePatterns("($x, $x) isa knows;"));
+        Pattern body = and(snbGraph.graph().graql().parsePatterns("(acquaintance1: $x, acquaintance2: $y) isa knows;"));
+        Pattern head = and(snbGraph.graph().graql().parsePatterns("(acquaintance1: $x, acquaintance2: $x) isa knows;"));
 
         InferenceRule R2 = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -555,7 +563,11 @@ public class ReasonerTest {
 
     @Test
     public void testVarContraction(){
-        Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
+        Utility.createReflexiveRule(
+                snbGraph.graph().getRelationType("knows"),
+                snbGraph.graph().getRoleType("acquaintance1").getName(),
+                snbGraph.graph().getRoleType("acquaintance2").getName(),
+                snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
@@ -567,7 +579,11 @@ public class ReasonerTest {
     @Test
     //propagated sub [x/Bob] prevents from capturing the right inference
     public void testVarContraction2(){
-        Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
+        Utility.createReflexiveRule(
+                snbGraph.graph().getRelationType("knows"),
+                snbGraph.graph().getRoleType("acquaintance1").getName(),
+                snbGraph.graph().getRoleType("acquaintance2").getName(),
+                snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
@@ -580,7 +596,7 @@ public class ReasonerTest {
     //Bug with unification, perhaps should unify select vars not atom vars
     public void testVarContraction3(){
         Pattern body = snbGraph.graph().graql().parsePattern("$x isa person");
-        Pattern head = snbGraph.graph().graql().parsePattern("($x, $x) isa knows");
+        Pattern head = snbGraph.graph().graql().parsePattern("(acquaintance1: $x, acquaintance2: $x) isa knows");
         snbGraph.graph().admin().getMetaRuleInference().addRule(body, head);
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
