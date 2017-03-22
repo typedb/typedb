@@ -22,7 +22,6 @@ import ai.grakn.engine.TaskId;
 
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 /**
  * Mock task that will run for 10 ms

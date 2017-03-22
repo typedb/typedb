@@ -30,7 +30,6 @@ import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
 import javafx.util.Pair;
-import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
