@@ -31,6 +31,8 @@ import static java.time.Instant.now;
  */
 public class TaskCheckpoint implements Serializable {
 
+    private static final long serialVersionUID = -7301340972479426643L;
+
     private final Json checkpoint;
     private final Instant createdAt;
 
