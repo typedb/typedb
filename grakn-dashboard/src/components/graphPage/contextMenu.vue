@@ -92,7 +92,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </style>
 
 <script>
-import QueryBuilder from '../../js/QueryBuilder';
+import QueryBuilder from './modules/QueryBuilder';
 
 
 export default {

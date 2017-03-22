@@ -33,7 +33,6 @@ import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -206,24 +205,7 @@ class HALConceptData {
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
         resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + getURIParams(0));
-
         generateConceptState(resource, concept);
-
-        //Resources and links
-        if (concept.isInstance()) {
-            generateResources(resource, concept.asInstance().resources());
-        }
-    }
-
-    // ================================ resources as HAL state properties ========================= //
-
-    private void generateResources(Representation resource, Collection<Resource<?>> resourcesCollection) {
-        resourcesCollection.forEach(currentResource -> {
-            Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId() + getURIParams(0))
-                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-            generateStateAndLinks(embeddedResource, currentResource);
-            resource.withRepresentation(currentResource.type().getName().getValue(), embeddedResource);
-        });
     }
 
     // ======================================= _embedded ================================================//

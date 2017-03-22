@@ -309,16 +309,12 @@ export default class Visualiser {
     return this;
   }
 
-  disablePhysicsOnNode(id) {
-    if (this.nodeExists(id)) {
-      this.nodes.update({
-        id,
-        physics: false,
-      });
-    }
-    return this;
+  updateNodeResources(id, properties) {
+    this.nodes.update({
+      id,
+      properties,
+    });
   }
-
     /**
      * Add edge between two nodes with @label. This can be called at any time *after* render().
      */

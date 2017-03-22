@@ -20,6 +20,7 @@ import _ from 'underscore';
 
 import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
+import EngineClient from '../EngineClient';
 
 /*
  * Parses HAL responses with callbacks (for found HAL resources & relationships).
@@ -50,6 +51,8 @@ export default class HALParser {
       RELATION_TYPE: true,
       RULE_TYPE: true,
     };
+
+    this.instances = [];
   }
 
     /**
@@ -75,21 +78,27 @@ export default class HALParser {
      * Will call functions set by setNewResource() and setNewRelationship().
      */
   parseResponse(data, showIsa, showResources, nodeId) {
+    let responseLength;
+
     if (Array.isArray(data)) {
       const hashSet = {};
       const objLength = data.length;
-            // Populate hashSet containing all the first level objects returned in the response, they MUST be added to the graph.
+
+      // Populate hashSet containing all the first level objects returned in the response, they MUST be added to the graph.
       for (let i = 0; i < objLength; i++) {
         hashSet[data[i]._id] = true;
       }
-      _.map(data, (x) => {
+
+      data.forEach((x) => {
         this.parseHalObject(x, hashSet, showIsa, showResources, nodeId);
       });
-      return data.length;
+
+      responseLength = data.length;
+    } else {
+      this.parseHalObject(data, {}, showIsa, showResources, nodeId);
     }
 
-    this.parseHalObject(data, {}, showIsa, showResources, nodeId);
-    return 1;
+    return responseLength;
   }
 
 
@@ -99,9 +108,8 @@ export default class HALParser {
             // we need this because when we loop through embedded we want to draw the edge that points to all the first order nodes.
       const objResponse = (typeof obj === 'string') ? JSON.parse(obj) : obj;
 
-      const links = Utils.nodeLinks(objResponse);
+      this.newNode(objResponse, nodeId);
 
-      this.newResource(HALParser.getHref(objResponse), Utils.defaultProperties(objResponse), Utils.extractResources(objResponse), links, nodeId);
             // Add assertions from _embedded
       if (API.KEY_EMBEDDED in objResponse) {
         _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), (key) => {
@@ -120,24 +128,24 @@ export default class HALParser {
      * Parse resources from _embedded field of parent
      */
   parseEmbedded(objs, parent, roleName, hashSet, showIsa, showResources, nodeId) {
-    _.map(objs, (child) => {
+    objs.forEach((child) => {
             // Add embedded object to the graph only if one of the following is satisfied:
             // - the current node is not a RESOURCE_TYPE || showResources is set to true
             // - the current node is already drawn in the graph
             // - the current node is contained in the response as first level object (not embdedded)
-            //    if it's contained in the hashset it means it MUST be draw and so all the adges pointing to it.
+            //    if it's contained in the hashset it means it MUST be drawn and so all the edges pointing to it.
 
-      if (((child[API.KEY_BASE_TYPE] !== API.RESOURCE_TYPE) && (child[API.KEY_BASE_TYPE] !== API.RESOURCE) || showResources) ||
-                (hashSet !== undefined && hashSet[child._id]) ||
-                this.nodeAlreadyInGraph(HALParser.getHref(child))) {
-        const links = Utils.nodeLinks(child);
+      if (((child[API.KEY_BASE_TYPE] !== API.RESOURCE_TYPE)
+          && (child[API.KEY_BASE_TYPE] !== API.RESOURCE)
+          || showResources)
+          || (hashSet !== undefined && hashSet[child._id])
+          || this.nodeAlreadyInGraph(HALParser.getHref(child))) {
+
                 // Add resource and iterate its _embedded field
         const idC = child[API.KEY_ID];
         const idP = parent[API.KEY_ID];
 
-        this.newResource(HALParser.getHref(child),
-                    Utils.defaultProperties(child),
-                    Utils.extractResources(child), links, nodeId);
+        this.newNode(child, nodeId);
 
         const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
 
@@ -152,6 +160,18 @@ export default class HALParser {
     });
   }
 
+  newNode(nodeObj, nodeId) {
+    const links = Utils.nodeLinks(nodeObj);
+  // Load instance resouces if the node is not already in the graph
+    if (nodeObj[API.KEY_BASE_TYPE] === API.ENTITY || nodeObj[API.KEY_BASE_TYPE] === API.RELATION || nodeObj[API.KEY_BASE_TYPE] === API.RULE) {
+      if (!visualiser.nodeExists(nodeObj[API.KEY_ID])) {
+        this.instances.push(nodeObj[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF]);
+      }
+    }
+    this.newResource(HALParser.getHref(nodeObj),
+              Utils.defaultProperties(nodeObj),
+              Utils.extractResources(nodeObj), links, nodeId);
+  }
 
     /**
      * Returns href of current resource.

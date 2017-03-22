@@ -95,6 +95,7 @@ export default {
         visualiser.setCallbackOnEvent('hoverNode', this.hoverNode);
         visualiser.setCallbackOnEvent('blurNode', this.blurNode);
         visualiser.setCallbackOnEvent('dragStart', this.onDragStart);
+        visualiser.setCallbackOnEvent('stabilized', this.onStabilized);
 
         this.halParser = new HALParser();
 
@@ -125,6 +126,21 @@ export default {
     },
 
     methods: {
+
+        onStabilized(){
+          console.log("stabilizzato");
+          this.halParser.instances.forEach((uri) => {
+            EngineClient.request({
+              url: uri,
+            }).then((resp) => {
+              const respObj = JSON.parse(resp);
+              visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
+            }, (err) => {
+              console.log(err);
+            });
+          });
+        },
+
         updateRectangle(e) {
             visualiser.updateRectangle(e.pageX, e.pageY - this.graphOffsetTop);
         },
@@ -159,10 +175,7 @@ export default {
                 });
             }
         },
-        emitInjectQuery(query) {
-            this.showContextMenu = false;
-            this.state.eventHub.$emit('inject-query', query);
-        },
+
         checkSelectionRectangleStatus(node, eventKeys, param) {
             // If we were drawing rectangle and we click again we stop the drawing and compute selected nodes
             if (visualiser.draggingRect) {
@@ -177,29 +190,7 @@ export default {
             }
 
         },
-        /**
-         * Prepare the list of resources to be shown in the right div panel
-         * It sorts them alphabetically and then check if a resource value is a URL
-         */
-        prepareResources(originalObject) {
-            if (originalObject == null) return {};
-            return Object.keys(originalObject).sort().reduce(
-                // sortedObject is the accumulator variable, i.e. new object with sorted keys
-                // k is the current key
-                (sortedObject, k) => {
-                    // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
-                    const currentResourceWithHref = Object.assign({}, originalObject[k], {
-                        href: this.validURL(originalObject[k].label)
-                    });
-                    return Object.assign({}, sortedObject, {
-                        [k]: currentResourceWithHref
-                    });
-                }, {});
-        },
-        validURL(str) {
-            const pattern = new RegExp(URL_REGEX, 'i');
-            return pattern.test(str);
-        },
+
         configureNode(nodeType, selectedProps) {
             visualiser.setDisplayProperties(nodeType, selectedProps);
         },
@@ -244,6 +235,35 @@ export default {
 
             // And clear the graph
             visualiser.clearGraph();
+        },
+        ////// Emits and page elements related methods  ///////
+
+        /**
+         * Prepare the list of resources to be shown in the right div panel
+         * It sorts them alphabetically and then check if a resource value is a URL
+         */
+        prepareResources(originalObject) {
+            if (originalObject == null) return {};
+            return Object.keys(originalObject).sort().reduce(
+                // sortedObject is the accumulator variable, i.e. new object with sorted keys
+                // k is the current key
+                (sortedObject, k) => {
+                    // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
+                    const currentResourceWithHref = Object.assign({}, originalObject[k], {
+                        href: this.validURL(originalObject[k].label)
+                    });
+                    return Object.assign({}, sortedObject, {
+                        [k]: currentResourceWithHref
+                    });
+                }, {});
+        },
+        validURL(str) {
+            const pattern = new RegExp(URL_REGEX, 'i');
+            return pattern.test(str);
+        },
+        emitInjectQuery(query) {
+            this.showContextMenu = false;
+            this.state.eventHub.$emit('inject-query', query);
         },
 
         ////////////////////////////////////////////////////// ----------- Graph mouse interactions ------------ ///////////////////////////////////////////////////////////

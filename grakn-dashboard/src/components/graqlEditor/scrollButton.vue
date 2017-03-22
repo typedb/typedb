@@ -27,7 +27,6 @@ span{
   cursor: pointer;
   margin: auto;
   display: inline-flex;
-
 }
 </style>
 
