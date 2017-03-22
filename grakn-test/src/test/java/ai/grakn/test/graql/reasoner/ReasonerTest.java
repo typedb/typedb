@@ -190,8 +190,6 @@ public class ReasonerTest {
         InferenceRule R1 = new InferenceRule(rule1, graph);
         InferenceRule R2 = new InferenceRule(rule2, graph);
         assertEquals(R1, R2);
-        rule1.delete();
-        rule2.delete();
     }
 
     @Test
