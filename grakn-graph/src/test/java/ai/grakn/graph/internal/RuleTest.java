@@ -21,7 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.Type;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.graql.Pattern;
