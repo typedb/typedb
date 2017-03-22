@@ -18,59 +18,69 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
+
 
 public class CastingTest extends GraphTestBase{
-
-    private CastingImpl casting;
-    private RoleTypeImpl role;
-    private RelationImpl relation;
-    private InstanceImpl rolePlayer;
-
+    private CastingImpl casting1;
+    private CastingImpl casting2;
+    private Entity entity1;
+    private Entity entity2;
+    private RoleType role1;
+    private RoleType role2;
+    private Relation relation;
 
     @Before
-    public void setUp() {
-        role = (RoleTypeImpl) graknGraph.putRoleType("Role");
-        EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("A thing");
-        rolePlayer = (InstanceImpl) conceptType.addEntity();
-        RelationTypeImpl relationType = (RelationTypeImpl) graknGraph.putRelationType("A type");
-        relation = (RelationImpl) relationType.addRelation();
-        casting = graknGraph.putCasting(role, rolePlayer, relation);
+    public void crateRelation() {
+        role1 = graknGraph.putRoleType("role 1");
+        role2 = graknGraph.putRoleType("role 2");
+        RelationType relationType = graknGraph.putRelationType("Relation Type").hasRole(role1).hasRole(role2);
+        EntityType entityType = graknGraph.putEntityType("An Entity Type").playsRole(role1).playsRole(role2);
+
+        entity1 = entityType.addEntity();
+        entity2 = entityType.addEntity();
+
+        relation = relationType.addRelation().putRolePlayer(role1, entity1).putRolePlayer(role2, entity2);
+
+        //Get castings via internal index
+        casting1 = graknGraph.getConcept(Schema.ConceptProperty.INDEX,
+                CastingImpl.generateNewHash((RoleTypeImpl) role1, (InstanceImpl) entity1));
+        casting2 = graknGraph.getConcept(Schema.ConceptProperty.INDEX,
+                CastingImpl.generateNewHash((RoleTypeImpl) role2, (InstanceImpl) entity2));
+
+        assertNotNull(casting1);
+        assertNotNull(casting2);
+        assertNotEquals(casting1, casting2);
     }
 
     @Test
-    public void testEquals() throws Exception {
-        Graph graph = graknGraph.getTinkerPopGraph();
-        Vertex v = graph.traversal().V(relation.getId().getRawValue()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
-        CastingImpl castingCopy = graknGraph.getConcept(ConceptId.of(v.id().toString()));
-        assertEquals(casting, castingCopy);
-
-        EntityType type = graknGraph.putEntityType("Another entity type");
-        RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
-        InstanceImpl rolePlayer = (InstanceImpl) type.addEntity();
-        CastingImpl casting2 = graknGraph.putCasting(role, rolePlayer, relation);
-        assertNotEquals(casting, casting2);
+    public void whenGettingRolePlayerViaCasting_ReturnRolePlayer() {
+        assertEquals(entity1, casting1.getRolePlayer());
+        assertEquals(entity2, casting2.getRolePlayer());
     }
 
     @Test
-    public void testGetRolePlayer() throws Exception {
-        assertEquals(rolePlayer, casting.getRolePlayer());
+    public void whenGettingRoleViaCasting_ReturnRole(){
+        assertEquals(role1, casting1.getRole());
+        assertEquals(role2, casting2.getRole());
     }
 
-    @Test (expected = RuntimeException.class)
-    public void testGetRolePlayerFail() throws Exception {
-        Concept anotherConcept = graknGraph.putEntityType("ac'");
-        casting.addEdge((ConceptImpl) anotherConcept, Schema.EdgeLabel.ROLE_PLAYER);
-        casting.getRolePlayer();
+    @Test
+    public void whenGettingRelationViaCasting_ReturnRelation(){
+        assertThat(casting1.getRelations(), containsInAnyOrder(relation));
+        assertThat(casting2.getRelations(), containsInAnyOrder(relation));
     }
 }

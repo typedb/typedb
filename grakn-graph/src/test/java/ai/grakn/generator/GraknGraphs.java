@@ -150,9 +150,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> ruleType().addRule(var("x"), var("x")), // TODO: generate more complicated rules
             () -> instance().hasResource(resource()),
             () -> relation().scope(instance()),
-            () -> relation().putRolePlayer(roleType(), instance()),
-            () -> rule().addHypothesis(type()),
-            () -> rule().addConclusion(type())
+            () -> relation().putRolePlayer(roleType(), instance())
     );
 
     private TypeName typeName() {
