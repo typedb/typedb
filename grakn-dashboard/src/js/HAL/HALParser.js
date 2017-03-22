@@ -20,7 +20,6 @@ import _ from 'underscore';
 
 import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
-import EngineClient from '../EngineClient';
 
 /*
  * Parses HAL responses with callbacks (for found HAL resources & relationships).
@@ -96,6 +95,7 @@ export default class HALParser {
       responseLength = data.length;
     } else {
       this.parseHalObject(data, {}, showIsa, showResources, nodeId);
+      responseLength = 1;
     }
 
     return responseLength;
@@ -121,6 +121,9 @@ export default class HALParser {
     }
   }
 
+  emptyInstances() {
+    this.instances = [];
+  }
     /*
     Internal Methods
      */

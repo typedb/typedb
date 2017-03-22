@@ -156,7 +156,7 @@ export default {
     */
   getAllTasks() {
     return this.request({
-      url: '/tasks/all',
+      url: '/tasks',
     });
   },
 
