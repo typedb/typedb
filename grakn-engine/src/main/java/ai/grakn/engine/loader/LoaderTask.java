@@ -77,7 +77,7 @@ public class LoaderTask implements BackgroundTask {
     }
 
     @Override
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+    public boolean resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
         throw new UnsupportedOperationException("Loader task cannot be resumed");
     }
 

@@ -61,8 +61,10 @@ import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
@@ -152,6 +154,8 @@ public class SingleQueueTaskRunnerTest {
             if (appearedTasks.contains(taskId)) {
                 // The second time a task appears it must be in RUNNING state
                 task.markRunning(engineID);
+                storage.updateState(task);
+            } else if(task.status().equals(RUNNING)){
                 storage.updateState(task);
             }
 
@@ -504,5 +508,49 @@ public class SingleQueueTaskRunnerTest {
 
         assertThat(storage.getState(task.getId()).status(), is(FAILED));
         assertThat(startedCounter.get(), equalTo(expectedExecutionsBeforeFailure));
+    }
+
+    @Test
+    public void whenATaskIsRestartedAfterExecution_ItIsResumed(){
+        ShortExecutionMockTask.resumedCounter.set(0);
+
+        TaskState task = createRunningTasks(1, engineID).iterator().next().checkpoint("checkpoint");
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        taskRunner.run();
+
+        assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
+    }
+
+    @Test
+    public void whenATaskIsRestartedAfterExecution_ItIsResumedFromLastCheckpoint(){
+        ShortExecutionMockTask.resumedCounter.set(0);
+
+        String checkpoint = "checkpoint";
+        TaskState task = createRunningTasks(1, engineID).iterator().next().checkpoint(checkpoint);
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        whenTaskResumes((c) -> {
+            assertThat(c, is(checkpoint));
+        });
+
+        taskRunner.run();
+
+        assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
+    }
+
+    @Test
+    public void whenATaskIsStoppedDuringExecution_ItSavesItsLastCheckpoint(){
+        TaskState task = createTask(EndlessExecutionMockTask.class);
+
+        setUpTasks(ImmutableList.of(ImmutableList.of(task)));
+
+        whenTaskStarts(taskRunner::stopTask);
+
+        taskRunner.run();
+
+        assertThat(storage.getState(task.getId()).checkpoint(), notNullValue());
     }
 }

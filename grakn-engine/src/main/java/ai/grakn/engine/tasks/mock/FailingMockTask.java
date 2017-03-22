@@ -30,17 +30,15 @@ import java.util.function.Consumer;
 public class FailingMockTask extends MockBackgroundTask {
 
     @Override
-    protected void startInner(TaskId id) {
+    protected void executeStartInner(TaskId id) {
         throw new RuntimeException("deliberate test failure");
     }
 
     @Override
-    public void pause() {
-
-    }
+    protected void executeResumeInner(String checkpoint) {}
 
     @Override
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+    public void pause() {
 
     }
 }
