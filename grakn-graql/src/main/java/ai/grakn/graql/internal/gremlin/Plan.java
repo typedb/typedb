@@ -75,7 +75,7 @@ class Plan implements Comparable<Plan> {
 
         double newCost = fragmentCost(newFragment, cost, names);
         double newTotalCost = totalCost + newCost;
-        Set<VarName> newNames = Sets.union(names, newFragment.getVariableNames());
+        Set<VarName> newNames = Sets.union(newFragment.getVariableNames(), names);
 
         elements.push(new PlanElement(newFragment, newNames, newCost, newTotalCost));
         return true;
