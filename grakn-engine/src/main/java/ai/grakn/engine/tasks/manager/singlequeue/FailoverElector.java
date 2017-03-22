@@ -30,6 +30,7 @@ import org.apache.curator.framework.state.ConnectionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.FAILOVER;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
@@ -94,7 +95,7 @@ public class FailoverElector extends LeaderSelectorListenerAdapter {
     public void takeLeadership(CuratorFramework client) throws Exception {
         LOG.debug("Leadership taken by: " + identifier);
 
-        failover = new TaskFailover(client, storage);
+        failover = new TaskFailover(client, storage, kafkaProducer());
         failover.await();
     }
 

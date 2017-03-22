@@ -27,6 +27,7 @@ import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
 import org.apache.curator.framework.state.ConnectionState;
 
+import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
@@ -127,6 +128,6 @@ public class SchedulerElector extends LeaderSelectorListenerAdapter {
     }
 
     private void registerFailover(CuratorFramework client) throws Exception {
-        failover = new TaskFailover(client, storage);
+        failover = new TaskFailover(client, storage, kafkaProducer());
     }
 }

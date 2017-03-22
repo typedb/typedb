@@ -64,7 +64,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
 
     private Producer<TaskId, TaskState> producer;
 
-    public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage) throws Exception {
+    public TaskFailover(CuratorFramework client, TaskStateStorage stateStorage, Producer<TaskId, TaskState> producer) throws Exception {
         this.stateStorage = stateStorage;
         this.blocker = new CountDownLatch(1);
         this.cache = new TreeCache(client, ALL_ENGINE_WATCH_PATH);
@@ -73,7 +73,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         this.cache.getUnhandledErrorListenable().addListener((message, e) -> blocker.countDown());
         this.cache.start();
 
-        producer = kafkaProducer();
+        this.producer = producer;
         scanStaleStates(client);
     }
 
@@ -95,6 +95,9 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         }
     }
 
+    /**
+     * We want to requeue anything that is not on one of the currently running engines
+     */
     @Override
     public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
         Map<String, ChildData> nodes = cache.getCurrentChildren(ALL_ENGINE_WATCH_PATH);
@@ -114,13 +117,12 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     }
 
     /**
-     * GO through all of the children of the engine not, re-submitting
-     * all tasks to the work queue that the dead was working on.
+     * Request all RUNNING tasks from storage and re-submit any that
+     * were running on an engine that is no longer alive
      *
      * @param engineIds Set of engines that are currently running
-     * @throws Exception
      */
-    private void reQueue(Set<EngineID> engineIds) throws Exception {
+    private void reQueue(Set<EngineID> engineIds) {
         // Get list of tasks that were being processed
         Set<TaskState> runningTasks = stateStorage
                 .getTasks(RUNNING, null, null, null, Integer.MAX_VALUE, 0);
@@ -128,9 +130,9 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
         LOG.debug("Found {} RUNNING TASKS ", runningTasks.size());
 
         // Re-queue all of the IDs.
-        for(TaskState task:runningTasks){
+        for (TaskState task : runningTasks) {
 
-            if(!engineIds.contains(task.engineID())) {
+            if (!engineIds.contains(task.engineID())) {
                 LOG.debug("Engine {} stopped, task {} requeued", task.engineID(), task.getId());
                 producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, task.getId(), task));
             }
