@@ -58,7 +58,7 @@ public class ExternalOffsetStorage {
 
             return offset;
         } catch (RuntimeException e) {
-            throw e;
+            throw new EngineStorageException(e);
         } catch (Exception e){
             throw new EngineStorageException("Error retrieving offset");
         }
@@ -84,7 +84,7 @@ public class ExternalOffsetStorage {
                         .forPath(partitionPath, serialize(currentOffset));
             }
         } catch (RuntimeException e) {
-            throw e;
+            throw new EngineStorageException(e);
         } catch (Exception e){
             throw new EngineStorageException("Error saving offset");
         }
