@@ -79,7 +79,7 @@ export default class CanvasHandler {
       this.requestOntology(nodeObj);
     } else {
       let generatedNode = false;
-          // If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
+      // If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
       if (nodeObj.baseType === API.GENERATED_RELATION_TYPE) {
         generatedNode = true;
       }
@@ -230,7 +230,7 @@ export default class CanvasHandler {
 
       if (!(query.includes('offset')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} offset 0;`; }
       if (!(query.includes('limit')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} limit ${User.getQueryLimit()};`; }
-      this.emitInjectQuery(queryToExecute);
+      this.state.eventHub.$emit('inject-query', queryToExecute);
       EngineClient.graqlHAL(queryToExecute).then((resp, nodeId) => this.onGraphResponse(resp, nodeId), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
@@ -276,11 +276,6 @@ export default class CanvasHandler {
       this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
     }
     visualiser.fitGraphToWindow();
-  }
-
-  emitInjectQuery(query) {
-      // this.showContextMenu = false;
-    this.state.eventHub.$emit('inject-query', query);
   }
 
   checkSelectionRectangleStatus(node, eventKeys, param) {

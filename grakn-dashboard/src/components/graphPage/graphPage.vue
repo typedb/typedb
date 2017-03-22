@@ -82,14 +82,13 @@ export default {
         this.canvasHandler = new CanvasHandler(this.state);
 
         // Register listened on State events
-        this.state.eventHub.$on('click-submit', query=>this.canvasHandler.onClickSubmit(query));
-        this.state.eventHub.$on('load-ontology', type=>this.canvasHandler.onLoadOntology(type));
+        this.state.eventHub.$on('click-submit', query => this.canvasHandler.onClickSubmit(query));
+        this.state.eventHub.$on('load-ontology', type => this.canvasHandler.onLoadOntology(type));
         this.state.eventHub.$on('clear-page', this.onClear);
         //Events from canvasHandler
         this.state.eventHub.$on('show-node-panel', this.onShowNodePanel);
         this.state.eventHub.$on('hover-node', this.onHoverNode);
         this.state.eventHub.$on('blur-node', this.onBlurNode);
-
 
     },
     beforeDestroy() {
