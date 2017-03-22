@@ -259,7 +259,7 @@ public class TasksController {
                 .set("recurring", state.schedule().isRecurring())
                 .set("exception", state.exception())
                 .set("stackTrace", state.stackTrace())
-                .set("engineID", state.engineID().value())
+                .set("engineID", state.engineID() != null ? state.engineID().value() : null)
                 .set("configuration", state.configuration());
     }
 }

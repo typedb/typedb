@@ -25,6 +25,7 @@ import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.engine.util.EngineID;
 import com.google.common.collect.ImmutableMap;
 import com.jayway.restassured.mapper.ObjectMapper;
 import com.jayway.restassured.mapper.ObjectMapperDeserializationContext;
@@ -285,6 +286,20 @@ public class TasksControllerTest {
 
         assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
         assertThat(json.at(TASK_RUN_INTERVAL_PARAMETER).asLong(), equalTo(task.schedule().interval().get().toMillis()));
+    }
+
+    @Test
+    public void whenGettingTaskByIdRunning_TaskIsReturned(){
+        EngineID engineId = EngineID.me();
+        TaskState task = createTask().markRunning(engineId);
+
+        when(manager.storage().getState(task.getId())).thenReturn(task);
+
+        Response response = get(task.getId());
+        Json json = response.as(Json.class, jsonMapper);
+
+        assertThat(json.at("id").asString(), equalTo(task.getId().getValue()));
+        assertThat(json.at("engineID").asString(), equalTo(engineId.value()));
     }
 
     @Test
