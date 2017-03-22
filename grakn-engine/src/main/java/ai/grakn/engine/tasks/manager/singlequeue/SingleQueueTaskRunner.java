@@ -135,6 +135,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             } catch (Throwable throwable){
                 LOG.error("error thrown", throwable);
+                assert false; // This should be unreachable, but in production we still handle it for robustness
             }
         }
 
@@ -169,7 +170,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private boolean handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
-        if(shouldDelayTask(task)){
+        if (shouldStopTask(task)) {
+            stopTask(task);
+            return true;
+        } else if(shouldDelayTask(task)){
             resubmitTask(task);
             return false;
         } else if (shouldExecuteTask(task)) {
@@ -183,6 +187,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             return true;
         } else {
+            LOG.debug("{}\tskipping", task);
             return true;
         }
     }
@@ -190,13 +195,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private void executeTask(TaskState task){
         // Mark as running
         task.markRunning(engineID);
-
-        //TODO Make this a put within state storage
-        if(storage.containsTask(task.getId())) {
-            storage.updateState(task);
-        } else {
-            storage.newState(task);
-        }
+        putState(task);
 
         LOG.debug("{}\tmarked as running", task);
 
@@ -227,7 +226,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param task Task to be delayed
      */
     private void resubmitTask(TaskState task){
+        LOG.debug("{}\tresubmitted", task);
         manager.addTask(task);
+    }
+
+    private void stopTask(TaskState task) {
+        task.markStopped();
+        putState(task);
+        LOG.debug("{}\t marked as stopped", task);
     }
 
     private boolean shouldExecuteTask(TaskState task) {
@@ -260,6 +266,19 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private boolean taskShouldRecur(TaskState task){
         return task.schedule().isRecurring() && !task.status().equals(FAILED)&& !task.status().equals(STOPPED);
+    }
+
+    private boolean shouldStopTask(TaskState task) {
+        return manager.isTaskMarkedStopped(task.getId());
+    }
+
+    private void putState(TaskState taskState) {
+        //TODO Make this a put within state storage
+        if(storage.containsTask(taskState.getId())) {
+            storage.updateState(taskState);
+        } else {
+            storage.newState(taskState);
+        }
     }
 
     /**

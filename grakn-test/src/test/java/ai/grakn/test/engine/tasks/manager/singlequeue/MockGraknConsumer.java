@@ -19,6 +19,8 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
@@ -170,11 +172,11 @@ public class MockGraknConsumer<K, V> implements Consumer<K, V> {
         // CHANGED: Do not update the consumed offset automatically
 
         // CHANGED: Retrieve partition only beyond the current offset
-        Map<TopicPartition, List<ConsumerRecord<K, V>>> recordOffset = Maps.transformEntries(records, (partition, recordList) -> {
+        Map<TopicPartition, List<ConsumerRecord<K, V>>> recordOffset = ImmutableMap.copyOf(Maps.transformEntries(records, (partition, recordList) -> {
             assert recordList != null;
             long offset = subscriptions.position(partition);
-            return recordList.subList((int) offset, recordList.size());
-        });
+            return ImmutableList.copyOf(recordList.subList((int) offset, recordList.size()));
+        }));
 
         ConsumerRecords<K, V> copy = new ConsumerRecords<K, V>(recordOffset);
 
