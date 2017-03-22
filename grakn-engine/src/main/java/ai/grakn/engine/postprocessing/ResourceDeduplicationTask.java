@@ -147,7 +147,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
                 try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
                     ConceptFixer.runResourceFix(graph, key, conceptIds);
                 }
-                emitter.emit(key, new Long(conceptIds.size() - 1));
+                emitter.emit(key, (long) (conceptIds.size() - 1));
             }
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
