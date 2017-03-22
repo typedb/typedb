@@ -20,6 +20,7 @@
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
@@ -88,6 +89,7 @@ public class SingleQueueTaskRunnerTest {
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
     private SingleQueueTaskManager mockedTM;
+    private ExternalOffsetStorage offsetStorage;
 
     private MockGraknConsumer<TaskId, TaskState> consumer;
     private TopicPartition partition;
@@ -97,6 +99,7 @@ public class SingleQueueTaskRunnerTest {
         clearTasks();
 
         storage = new TaskStateInMemoryStore();
+        offsetStorage = mock(ExternalOffsetStorage.class);
         
         consumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
@@ -116,7 +119,7 @@ public class SingleQueueTaskRunnerTest {
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage);
 
         createValidQueue(tasks);
 

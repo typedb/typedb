@@ -117,5 +117,4 @@ public class ExplanationTest {
         a.getExplanation().getAnswers().forEach(ans -> getAnswers(ans, false).forEach(answers::add));
         return answers;
     }
-
 }

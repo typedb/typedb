@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 
 import java.util.Collection;
 import java.util.Set;
@@ -47,21 +47,15 @@ public class Patterns {
     }
 
     public static VarAdmin var() {
-        return new VarImpl();
+        return VarImpl.anon();
     }
 
     public static VarAdmin var(VarName name) {
-        return new VarImpl(name);
-    }
-
-    // These clone methods will always return the right type
-    @SuppressWarnings("unchecked")
-    public static <T extends PatternAdmin> T copyOf(T pattern) {
-        return (T) pattern.cloneMe();
+        return VarImpl.named(name);
     }
 
     public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
-        return new VarImpl(vars);
+        return VarImpl.merge(vars);
     }
 
 }
