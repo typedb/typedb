@@ -21,36 +21,46 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multisets;
 import com.google.common.collect.Sets;
 
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.GraqlTraversal.fragmentCost;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A traversal plan for executing a Graql query, comprised of a list of fragments and a cost
  */
 class Plan implements Comparable<Plan> {
-    private final Stack<PlanElement> elements;
+    private final Stack<Fragment> fragments;
+    private final Stack<Double> costs;
     private final Set<EquivalentFragmentSet> fragmentSets;
+    private final Multiset<VarName> names;
+    private double totalCost;
 
-    private Plan(Stack<PlanElement> elements, Set<EquivalentFragmentSet> fragmentSets) {
-        this.elements = elements;
+    private Plan(Stack<Fragment> fragments, Stack<Double> costs, Set<EquivalentFragmentSet> fragmentSets, Multiset<VarName> names, double totalCost) {
+        this.fragments = fragments;
+        this.costs = costs;
         this.fragmentSets = fragmentSets;
+        this.names = names;
+        this.totalCost = totalCost;
     }
 
     static Plan base() {
-        return new Plan(new Stack<>(), Sets.newHashSet());
+        return new Plan(new Stack<>(), new Stack<>(), Sets.newHashSet(), HashMultiset.create(), 0);
     }
 
     public Plan copy() {
-        Stack<PlanElement> fragmentsCopy = new Stack<>();
-        fragmentsCopy.addAll(elements);
-        return new Plan(fragmentsCopy, Sets.newHashSet(fragmentSets));
+        Stack<Fragment> fragmentsCopy = new Stack<>();
+        fragmentsCopy.addAll(fragments);
+        Stack<Double> costsCopy = new Stack<>();
+        costsCopy.addAll(costs);
+        return new Plan(fragmentsCopy, costsCopy, Sets.newHashSet(fragmentSets), HashMultiset.create(names), totalCost);
     }
 
     boolean tryPush(Fragment newFragment) {
@@ -62,29 +72,24 @@ class Plan implements Comparable<Plan> {
             return false;
         }
 
-        double cost = 1;
-        double totalCost = 0;
-        Set<VarName> names = ImmutableSet.of();
-
-        if (!elements.isEmpty()) {
-            PlanElement current = elements.peek();
-            cost = current.cost;
-            totalCost = current.totalCost;
-            names = current.names;
-        }
+        double cost = !costs.isEmpty() ? costs.peek() : 1;
 
         double newCost = fragmentCost(newFragment, cost, names);
-        double newTotalCost = totalCost + newCost;
-        Set<VarName> newNames = Sets.union(newFragment.getVariableNames(), names);
+        totalCost += newCost;
 
-        elements.push(new PlanElement(newFragment, newNames, newCost, newTotalCost));
+        names.addAll(newFragment.getVariableNames());
+
+        fragments.push(newFragment);
+        costs.push(newCost);
         return true;
     }
 
     Fragment pop() {
-        PlanElement element = elements.pop();
-        fragmentSets.remove(element.fragment.getEquivalentFragmentSet());
-        return element.fragment;
+        Fragment fragment = fragments.pop();
+        fragmentSets.remove(fragment.getEquivalentFragmentSet());
+        Multisets.removeOccurrences(names, fragment.getVariableNames());
+        totalCost -= costs.pop();
+        return fragment;
     }
 
     @Override
@@ -93,15 +98,15 @@ class Plan implements Comparable<Plan> {
     }
 
     public double cost() {
-        return elements.peek().totalCost;
+        return totalCost;
     }
 
-    public Stream<Fragment> fragments() {
-        return elements.stream().map(element -> element.fragment);
+    public List<Fragment> fragments() {
+        return fragments;
     }
 
     public int size() {
-        return elements.size();
+        return fragments.size();
     }
 
     private boolean hasNames(Set<VarName> names) {
@@ -112,8 +117,8 @@ class Plan implements Comparable<Plan> {
         // Create mutable copy
         names = Sets.newHashSet(names);
 
-        for (PlanElement element : elements) {
-            if (names.removeAll(element.fragment.getVariableNames()) && names.isEmpty()) {
+        for (Fragment fragment : fragments) {
+            if (names.removeAll(fragment.getVariableNames()) && names.isEmpty()) {
                 return true;
             }
         }
@@ -128,59 +133,19 @@ class Plan implements Comparable<Plan> {
 
         Plan plan = (Plan) o;
 
-        if (!elements.equals(plan.elements)) return false;
+        if (!fragments.equals(plan.fragments)) return false;
         return fragmentSets.equals(plan.fragmentSets);
     }
 
     @Override
     public int hashCode() {
-        int result = elements.hashCode();
+        int result = fragments.hashCode();
         result = 31 * result + fragmentSets.hashCode();
         return result;
     }
 
     @Override
     public String toString() {
-        return "Plan(" + GraqlTraversal.create(ImmutableSet.of(fragments().collect(toList()))) + ")";
-    }
-
-    private static class PlanElement {
-        private final Fragment fragment;
-        private final Set<VarName> names;
-        private final double cost;
-        private final double totalCost;
-
-        private PlanElement(Fragment fragment, Set<VarName> names, double cost, double totalCost) {
-            this.fragment = fragment;
-            this.names = names;
-            this.cost = cost;
-            this.totalCost = totalCost;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            PlanElement that = (PlanElement) o;
-
-            if (Double.compare(that.cost, cost) != 0) return false;
-            if (Double.compare(that.totalCost, totalCost) != 0) return false;
-            if (!fragment.equals(that.fragment)) return false;
-            return names.equals(that.names);
-        }
-
-        @Override
-        public int hashCode() {
-            int result;
-            long temp;
-            result = fragment.hashCode();
-            result = 31 * result + names.hashCode();
-            temp = Double.doubleToLongBits(cost);
-            result = 31 * result + (int) (temp ^ (temp >>> 32));
-            temp = Double.doubleToLongBits(totalCost);
-            result = 31 * result + (int) (temp ^ (temp >>> 32));
-            return result;
-        }
+        return "Plan(" + GraqlTraversal.create(ImmutableSet.of(fragments())) + ", " + totalCost + ")";
     }
 }

@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Class for generating greedy traversal plans
@@ -129,7 +128,7 @@ public class GreedyTraversalPlan {
             });
         }
 
-        return plan.fragments().collect(toList());
+        return plan.fragments();
     }
 
     /**

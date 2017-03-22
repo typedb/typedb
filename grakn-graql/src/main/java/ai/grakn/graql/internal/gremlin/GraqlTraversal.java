@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -174,7 +175,7 @@ public class GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, double previousCost, Set<VarName> names) {
+    static double fragmentCost(Fragment fragment, double previousCost, Collection<VarName> names) {
         if (names.contains(fragment.getStart())) {
             return fragment.fragmentCost(previousCost);
         } else {
