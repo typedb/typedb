@@ -29,7 +29,7 @@ package ai.grakn.util;
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------
     CANNOT_DELETE("Type [%s] cannot be deleted as it still has incoming edges"),
-    LOOP_DETECTED("Concept [%s] loops when following edges of type [%s]"),
+    SUPER_TYPE_LOOP_DETECTED("By setting the super type of concept [%s] to [%s]. You will be creating a loop. This is prohibited"),
     ID_NOT_UNIQUE("Failed to change the Id of Concept [%s] due to another concept already having an id of " +
             "type [%s] with value [%s]"),
     ID_ALREADY_TAKEN("The id [%s] is already taken by concept [%s]"),
