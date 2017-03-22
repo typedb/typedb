@@ -625,7 +625,7 @@ public class ReasonerTest {
     public void testReasoningWithRuleContainingVarContraction3(){
         Pattern body = snbGraph.graph().graql().parsePattern("$x isa person");
         Pattern head = snbGraph.graph().graql().parsePattern("($x, $x) isa knows");
-        snbGraph.graph().admin().getMetaRuleInference().addRule(body, head);
+        snbGraph.graph().admin().getMetaRuleInference().putRule(body, head);
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";

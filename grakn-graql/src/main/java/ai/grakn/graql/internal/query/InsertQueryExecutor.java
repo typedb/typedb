@@ -262,7 +262,7 @@ public class InsertQueryExecutor {
                         .orElseThrow(() -> new IllegalStateException(INSERT_RULE_WITHOUT_LHS.getMessage(var)));
                 RhsProperty rhs = var.getProperty(RhsProperty.class)
                         .orElseThrow(() -> new IllegalStateException(INSERT_RULE_WITHOUT_RHS.getMessage(var)));
-                return type.asRuleType().addRule(lhs.getPattern(), rhs.getPattern());
+                return type.asRuleType().putRule(lhs.getPattern(), rhs.getPattern());
             });
         } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
             throw new IllegalStateException(var + " cannot be an instance of meta-type " + type.getName());
