@@ -22,7 +22,6 @@ import ai.grakn.engine.TaskId;
 
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 /**
  * Mocked task that will finish nearly instantaneously
