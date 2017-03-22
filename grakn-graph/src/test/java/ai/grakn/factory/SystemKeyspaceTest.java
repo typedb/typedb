@@ -13,7 +13,9 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class SystemKeyspaceTest {
@@ -21,9 +23,9 @@ public class SystemKeyspaceTest {
 	private final String space1 = "SystemKeyspaceTest.space1".toLowerCase();
 	private final String space2 = "SystemKeyspaceTest.space2";
 	private final String space3 = "SystemKeyspaceTest.space3";
-	
+
     @Test
-    public void testCollectKeyspaces() throws GraknValidationException {
+    public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws GraknValidationException {
     	GraknGraphFactory f1 = Grakn.factory(Grakn.IN_MEMORY, space1);
     	f1.getGraph().close();
     	GraknGraphFactory f2 = Grakn.factory(Grakn.IN_MEMORY, space2);
@@ -36,9 +38,8 @@ public class SystemKeyspaceTest {
     	Collection<String> spaces = graph.getEntityType("keyspace").instances()
     		.stream().map(e -> 
     			e.resources(keyspaceName).iterator().next().getValue().toString()).collect(Collectors.toList());
-    	assertTrue(spaces.contains(space1));
-    	assertTrue(spaces.contains(space2.toLowerCase()));
-    	assertTrue(spaces.contains(space3.toLowerCase()));
+        assertThat(spaces, containsInAnyOrder(space1, space2.toLowerCase(), space3.toLowerCase()));
+
         assertEquals(GraknVersion.VERSION,
                 graph.getResourceType("system-version").instances().iterator().next().getValue().toString());
     	gf2.close();
@@ -46,8 +47,10 @@ public class SystemKeyspaceTest {
     	graph.close();
     }
 
+
+
     @Test
-    public void testUserOntology(){
+    public void ensureUserOntologyIsLoadedIntoSystemGraph(){
         GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph();
         graph.showImplicitConcepts(true);
 

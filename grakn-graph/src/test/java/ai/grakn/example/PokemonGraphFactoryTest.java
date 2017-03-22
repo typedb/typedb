@@ -46,7 +46,7 @@ public class PokemonGraphFactoryTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setup() {
+    public void setupPokemonGraph() {
         GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
         PokemonGraphFactory.loadGraph(factory.getGraph());
         factory.getGraph().commitOnClose();
