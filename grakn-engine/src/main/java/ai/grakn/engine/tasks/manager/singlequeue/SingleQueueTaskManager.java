@@ -32,6 +32,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.concurrent.Executors.newFixedThreadPool;
@@ -81,7 +83,7 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(EngineID engineId){
+    public SingleQueueTaskManager(EngineID engineId) throws Exception {
         this.zookeeper = new ZookeeperConnection();
         this.storage = chooseStorage(properties, zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
@@ -90,6 +92,8 @@ public class SingleQueueTaskManager implements TaskManager {
         //TODO Single queue task manager should have its own impl of failover
         this.failover = new FailoverElector(engineId, zookeeper, storage);
         this.producer = kafkaProducer();
+
+        registerSelfForFailover(engineId, zookeeper);
 
         // Create thread pool for the task runners
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
@@ -184,5 +188,20 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
         return new SingleQueueTaskRunner(this, engineId, offsetStorage);
+    }
+
+    /**
+     * Register this instance of Engine in Zookeeper to monitor its status
+     *
+     * @param engineId identifier of this instance of engine, which will be registered in Zookeeper
+     * @param zookeeper connection to zookeeper
+     * @throws Exception when there is an issue contacting or writing to zookeeper
+     */
+    private void registerSelfForFailover(EngineID engineId, ZookeeperConnection zookeeper) throws Exception {
+        zookeeper.connection()
+                .create()
+                .creatingParentContainersIfNeeded()
+                .withMode(CreateMode.EPHEMERAL)
+                .forPath(String.format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
     }
 }
