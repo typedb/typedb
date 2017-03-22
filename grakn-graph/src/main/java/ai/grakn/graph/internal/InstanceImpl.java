@@ -83,9 +83,13 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
             getGraknGraph().getConceptLog().trackConceptForValidation(casting);
 
             for(Relation relation : relations) {
-                RelationImpl rel = (RelationImpl) relation;
-                getGraknGraph().getConceptLog().trackConceptForValidation(rel);
-                rel.cleanUp();
+                if(relation.type().isImplicit()){//For now implicit relations die
+                    relation.delete();
+                } else {
+                    RelationImpl rel = (RelationImpl) relation;
+                    getGraknGraph().getConceptLog().trackConceptForValidation(rel);
+                    rel.cleanUp();
+                }
             }
 
             casting.deleteNode();

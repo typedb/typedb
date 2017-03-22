@@ -115,7 +115,7 @@ public enum ErrorMessage {
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
-    SELECT_VAR_NOT_IN_MATCH("$%s does not appear in match query"),
+    SELECT_VAR_NOT_IN_MATCH("%s does not appear in match query"),
     NO_NAME_SPECIFIED_FOR_HAS_RESOURCE("no name was specified for a resource type in a 'has-resource' property"),
     MULTIPLE_GRAPH("a graph has been specified twice for this query"),
     MULTIPLE_ORDER("an ordering has been specified twice for this query"),
@@ -158,6 +158,10 @@ public enum ErrorMessage {
     FAILED_VALIDATION("Caught exception during validation: %s"),
     NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
     NO_CONCEPT_IN_KEYSPACE("No concept with ID [%s] exists in keyspace [%s]"),
+
+    //Server Errors
+    UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
+    MISSING_MANDATORY_PARAMETERS("Missing mandatory parameters"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),

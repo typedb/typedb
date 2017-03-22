@@ -18,6 +18,7 @@
 
 package ai.grakn.exception;
 
+import ai.grakn.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,13 @@ public class GraknEngineServerException extends RuntimeException {
 
     final int status;
 
+    public GraknEngineServerException(int status, ErrorMessage message, String... args) {
+        super(message.getMessage(args));
+        log(status, message);
+        this.status = status;
+    }
+
+    //TODO remove this method
     public GraknEngineServerException(int status, String message) {
         super(message);
         log(status, message);

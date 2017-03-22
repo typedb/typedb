@@ -40,6 +40,7 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
+import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import spark.Request;
@@ -188,7 +189,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
-            int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
+            int limit = (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
 
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
                 switch (getAcceptType(req)) {
@@ -202,6 +203,8 @@ public class VisualiserController {
             } else {
                 throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
             }
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw new GraknEngineServerException(HttpStatus.BAD_REQUEST_400, e.getMessage());
         } catch (RuntimeException e) {
             throw new GraknEngineServerException(500, e);
         }

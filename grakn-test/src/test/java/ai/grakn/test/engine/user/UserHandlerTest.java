@@ -45,7 +45,7 @@ public class UserHandlerTest {
     private static String password = "witcher";
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void addUser(){

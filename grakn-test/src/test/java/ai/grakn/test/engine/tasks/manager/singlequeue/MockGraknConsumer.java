@@ -19,7 +19,6 @@
 
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
-import com.google.common.collect.Maps;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -54,8 +53,7 @@ import java.util.regex.Pattern;
 /**
  * This is a mock Kafka consumer, copied from {@link org.apache.kafka.clients.consumer.MockConsumer}.
  *
- * This class had to be copied because it did not certain behaviour that we need to test (such as no auto-committing
- * offsets).
+ * This class has been copied to add extra functionality such as running a task when a poll is empty. 
  */
 public class MockGraknConsumer<K, V> implements Consumer<K, V> {
 
@@ -167,16 +165,17 @@ public class MockGraknConsumer<K, V> implements Consumer<K, V> {
         for (TopicPartition tp : subscriptions.missingFetchPositions())
             updateFetchPosition(tp);
 
-        // CHANGED: Do not update the consumed offset automatically
+        // update the consumed offset
+        for (Map.Entry<TopicPartition, List<ConsumerRecord<K, V>>> entry : this.records.entrySet()) {
+            if (!subscriptions.isPaused(entry.getKey())) {
+                List<ConsumerRecord<K, V>> recs = entry.getValue();
+                if (!recs.isEmpty())
+                    this.subscriptions.position(entry.getKey(), recs.get(recs.size() - 1).offset() + 1);
+            }
+        }
 
-        // CHANGED: Retrieve partition only beyond the current offset
-        Map<TopicPartition, List<ConsumerRecord<K, V>>> recordOffset = Maps.transformEntries(records, (partition, recordList) -> {
-            assert recordList != null;
-            long offset = subscriptions.position(partition);
-            return recordList.subList((int) offset, recordList.size());
-        });
-
-        ConsumerRecords<K, V> copy = new ConsumerRecords<K, V>(recordOffset);
+        ConsumerRecords<K, V> copy = new ConsumerRecords<K, V>(this.records);
+        this.records = new HashMap<TopicPartition, List<ConsumerRecord<K, V>>>();
 
         if (copy.count() == 0 && emptyPollTask != null) emptyPollTask.run();
 

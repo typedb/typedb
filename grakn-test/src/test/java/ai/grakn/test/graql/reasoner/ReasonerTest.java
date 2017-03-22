@@ -22,9 +22,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -159,6 +161,30 @@ public class ReasonerTest {
         InferenceRule R2 = new InferenceRule(snbGraph.graph().admin().getMetaRuleInference().addRule(body, head), snbGraph.graph());
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
+    }
+
+    @Test
+    public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
+        GraknGraph graph = geoGraph.graph();
+        RuleType inferenceRule = graph.admin().getMetaRuleInference();
+
+        Pattern R1_LHS = Graql.and(graph.graql().parsePatterns(
+                        "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                        "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
+        Pattern R1_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
+        Rule rule1 = inferenceRule.addRule(R1_LHS, R1_RHS);
+
+        Pattern R2_LHS = Graql.and(graph.graql().parsePatterns(
+                        "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +
+                        "(geo-entity: $l2, entity-location: $l3) isa is-located-in;"));
+        Pattern R2_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
+        Rule rule2 = inferenceRule.addRule(R2_LHS, R2_RHS);
+
+        InferenceRule R1 = new InferenceRule(rule1, graph);
+        InferenceRule R2 = new InferenceRule(rule2, graph);
+        assertEquals(R1, R2);
+        rule1.delete();
+        rule2.delete();
     }
 
     @Test
