@@ -93,7 +93,7 @@ class Plan implements Comparable<Plan> {
     }
 
     public double cost() {
-        return elements.peek().cost;
+        return elements.peek().totalCost;
     }
 
     public Stream<Fragment> fragments() {
@@ -136,7 +136,7 @@ class Plan implements Comparable<Plan> {
             this.fragment = fragment;
             this.names = names;
             this.cost = cost;
-            this.totalCost = cost;
+            this.totalCost = totalCost;
         }
     }
 }
