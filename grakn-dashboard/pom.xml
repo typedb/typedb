@@ -85,8 +85,8 @@
                         </goals>
                         <phase>compile</phase>
                         <configuration>
-                            <executable>node_modules/.bin/browserify</executable>
-                            <commandlineArgs>-e src/main.js -o static/dashboard.js</commandlineArgs>
+                            <executable>npm</executable>
+                            <commandlineArgs>run browserify-production</commandlineArgs>
                         </configuration>
                     </execution>
                 </executions>

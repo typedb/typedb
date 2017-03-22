@@ -13,6 +13,7 @@
   "homepage": "https://github.com/graknlabs/grakn",
   "dependencies": {
     "codemirror": "^5.19.0",
+    "envify": "^4.0.0",
     "jquery": "^3.1.0",
     "pace-progress": "^1.0.2",
     "prismjs": "^1.5.1",
@@ -48,6 +49,7 @@
   },
   "scripts": {
     "browserify": "browserify -e src/main.js -o static/dashboard.js",
+    "browserify-production": "NODE_ENV=production browserify -g envify -e src/main.js -o static/dashboard.js",
     "watchify": "watchify src/main.js -o static/dashboard.js -v",
     "preinstall": "npm install browserify vueify babelify",
     "test": "nyc ava",
