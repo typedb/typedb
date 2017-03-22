@@ -25,12 +25,9 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
-import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
-import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -38,7 +35,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
@@ -48,7 +44,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -83,165 +78,72 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void testItemName(){
+    public void whenGettingTheNameOfType_TheTypeNameIsReturned(){
         Type test = graknGraph.putEntityType("test");
         assertEquals(TypeName.of("test"), test.getName());
     }
 
     @Test
-    public void testGetRoleTypeAsConceptType(){
+    public void whenGettingARoleTypeAsType_TheTypeIsReturned(){
         RoleType test1 = graknGraph.putRoleType("test");
-        Type test2 = graknGraph.getEntityType("test");
-        assertNull(test2);
+        Type test2 = graknGraph.getType(TypeName.of("test"));
+        assertEquals(test1, test2);
     }
 
     @Test
-    public void testGetPlayedRole() throws Exception{
+    public void whenGettingTheRolesPlayedByType_ReturnTheRoles() throws Exception{
         RoleType monster = graknGraph.putRoleType("monster");
         RoleType animal = graknGraph.putRoleType("animal");
-        RoleType monsterSub = graknGraph.putRoleType("monsterSub");
+        RoleType monsterEvil = graknGraph.putRoleType("evil monster").superType(monster);
 
-        EntityType creature = graknGraph.putEntityType("creature");
-        EntityType creatureSub = graknGraph.putEntityType("creatureSub").superType(creature);
+        EntityType creature = graknGraph.putEntityType("creature").playsRole(monster).playsRole(animal);
+        EntityType creatureMysterious = graknGraph.putEntityType("mysterious creature").superType(creature).playsRole(monsterEvil);
 
-        assertEquals(0, creature.playsRoles().size());
-        assertEquals(0, creatureSub.playsRoles().size());
-
-        creature.playsRole(monster);
-        creature.playsRole(animal);
-        monsterSub.superType(monster);
-
-        creatureSub.playsRole(monsterSub);
-
-        assertEquals(2, creature.playsRoles().size());
-        assertTrue(creature.playsRoles().contains(monster));
-        assertTrue(creature.playsRoles().contains(animal));
-
-        assertEquals(3, creatureSub.playsRoles().size());
-        assertTrue(creatureSub.playsRoles().contains(monster));
-        assertTrue(creatureSub.playsRoles().contains(animal));
-        assertTrue(creatureSub.playsRoles().contains(monsterSub));
+        assertThat(creature.playsRoles(), containsInAnyOrder(monster, animal));
+        assertThat(creatureMysterious.playsRoles(), containsInAnyOrder(monster, animal, monsterEvil));
     }
 
     @Test
-    public void testGetSubHierarchySuperSet() throws Exception{
-        TypeImpl c1 = (TypeImpl) graknGraph.putEntityType("c1");
-        TypeImpl c2 = (TypeImpl) graknGraph.putEntityType("c2");
-        TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3'");
-        TypeImpl c4 = (TypeImpl) graknGraph.putEntityType("c4");
+    public void whenGettingTheSuperSet_ReturnAllOfItsSuperTypes() throws Exception{
+        EntityType entityType = graknGraph.admin().getMetaEntityType();
+        EntityType c1 = graknGraph.putEntityType("c1");
+        EntityType c2 = graknGraph.putEntityType("c2").superType(c1);
+        EntityType c3 = graknGraph.putEntityType("c3").superType(c2);
+        EntityType c4 = graknGraph.putEntityType("c4").superType(c1);
 
-        assertTrue(c1.superTypeSet().contains(c1));
-        assertFalse(c1.superTypeSet().contains(c2));
-        assertFalse(c1.superTypeSet().contains(c3));
-        assertFalse(c1.superTypeSet().contains(c4));
+        Set<EntityType> c1SuperTypes = ((TypeImpl) c1).superTypeSet();
+        Set<EntityType> c2SuperTypes = ((TypeImpl) c2).superTypeSet();
+        Set<EntityType> c3SuperTypes = ((TypeImpl) c3).superTypeSet();
+        Set<EntityType> c4SuperTypes = ((TypeImpl) c4).superTypeSet();
 
-        c1.superType(c2);
-        assertTrue(c1.superTypeSet().contains(c1));
-        assertTrue(c1.superTypeSet().contains(c2));
-        assertFalse(c1.superTypeSet().contains(c3));
-        assertFalse(c1.superTypeSet().contains(c4));
-
-        c2.superType(c3);
-        assertTrue(c1.superTypeSet().contains(c1));
-        assertTrue(c1.superTypeSet().contains(c2));
-        assertTrue(c1.superTypeSet().contains(c3));
-        assertFalse(c1.superTypeSet().contains(c4));
+        assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
+        assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
+        assertThat(c3SuperTypes, containsInAnyOrder(entityType, c3, c2, c1));
+        assertThat(c4SuperTypes, containsInAnyOrder(entityType, c4, c1));
     }
 
     @Test
-    public void testGetSubChildrenSet(){
+    public void whenGettingTheSubTypesOfaType_ReturnAllSubTypes(){
         EntityType parent = graknGraph.putEntityType("parent");
-        EntityType child1 = graknGraph.putEntityType("c1");
-        EntityType child2 = graknGraph.putEntityType("c2");
-        EntityType child3 = graknGraph.putEntityType("c3");
+        EntityType c1 = graknGraph.putEntityType("c1").superType(parent);
+        EntityType c2 = graknGraph.putEntityType("c2").superType(parent);
+        EntityType c3 = graknGraph.putEntityType("c3").superType(c1);
 
-        assertEquals(1, parent.subTypes().size());
-
-        child1.superType(parent);
-        child2.superType(parent);
-        child3.superType(parent);
-
-        assertEquals(4, parent.subTypes().size());
-        assertTrue(parent.subTypes().contains(child3));
-        assertTrue(parent.subTypes().contains(child2));
-        assertTrue(parent.subTypes().contains(child1));
+        assertThat(parent.subTypes(), containsInAnyOrder(parent, c1, c2, c3));
+        assertThat(c1.subTypes(), containsInAnyOrder(c1, c3));
+        assertThat(c2.subTypes(), containsInAnyOrder(c2));
+        assertThat(c3.subTypes(), containsInAnyOrder(c3));
     }
 
     @Test
-    public void testGetSubHierarchySubSet(){
-        EntityType parent = graknGraph.putEntityType("p");
-        EntityType superParent = graknGraph.putEntityType("sp");
-        EntityType child1 = graknGraph.putEntityType("c1");
-        EntityType child2 = graknGraph.putEntityType("c2");
-        EntityType child3 = graknGraph.putEntityType("c3");
-        EntityType child3a = graknGraph.putEntityType("3a");
-        EntityType child3b = graknGraph.putEntityType("3b");
-        EntityType child3b1 = graknGraph.putEntityType("3b1");
-        EntityType child3b2 = graknGraph.putEntityType("3b2");
-        EntityType child3b3 = graknGraph.putEntityType("3b3");
+    public void whenGettingTheSuperTypeOfType_ReturnSuperType(){
+        EntityType c1 = graknGraph.putEntityType("c1");
+        EntityType c2 = graknGraph.putEntityType("c2").superType(c1);
+        EntityType c3 = graknGraph.putEntityType("c3").superType(c2);
 
-        assertEquals(1, ((TypeImpl) parent).subTypes().size());
-
-        parent.superType(superParent);
-        child1.superType(parent);
-        child2.superType(parent);
-        child3.superType(parent);
-        child3a.superType(child3);
-        child3b.superType(child3a);
-        child3b1.superType(child3b);
-        child3b2.superType(child3b);
-        child3b3.superType(child3b);
-
-        assertEquals(9, ((TypeImpl) parent).subTypes().size());
-        assertTrue(((TypeImpl) parent).subTypes().contains(parent));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child3));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child2));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child1));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child3a));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child3b));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child3b1));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child3b2));
-        assertTrue(((TypeImpl) parent).subTypes().contains(child3b3));
-        assertFalse(((TypeImpl) parent).subTypes().contains(superParent));
-
-    }
-
-    @Test
-    public void testDuplicateConceptType(){
-        Type movie = graknGraph.putEntityType("movie");
-        Type moive2 = graknGraph.putEntityType("movie");
-        assertEquals(movie, moive2);
-    }
-
-    @Test
-    public void testSuperConceptType(){
-        EntityType parent = graknGraph.putEntityType("p");
-        EntityType superParent = graknGraph.putEntityType("sp");
-        EntityType superParent2 = graknGraph.putEntityType("sp2");
-
-        parent.superType(superParent);
-        assertNotEquals(superParent2, parent.superType());
-        assertEquals(superParent, parent.superType());
-
-        parent.superType(superParent2);
-        assertNotEquals(superParent, parent.superType());
-        assertEquals(superParent2, parent.superType());
-    }
-
-    @Test
-    public void allowsRoleType(){
-        EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("ct");
-        RoleType roleType1 = graknGraph.putRoleType("rt1'");
-        RoleType roleType2 = graknGraph.putRoleType("rt2");
-
-        conceptType.playsRole(roleType1).playsRole(roleType2);
-        Set<RoleType> foundRoles = new HashSet<>();
-        graknGraph.getTinkerPopGraph().traversal().V(conceptType.getId().getRawValue()).
-                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(graknGraph.getRoleType(r.value(Schema.ConceptProperty.NAME.name()))));
-
-        assertEquals(2, foundRoles.size());
-        assertTrue(foundRoles.contains(roleType1));
-        assertTrue(foundRoles.contains(roleType2));
+        assertEquals(graknGraph.admin().getMetaEntityType(), c1.superType());
+        assertEquals(c1, c2.superType());
+        assertEquals(c2, c3.superType());
     }
 
     @Test
@@ -252,34 +154,6 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(graknGraph.getMetaEntityType(), conceptType.superType());
         conceptType.superType(conceptType2);
         assertEquals(conceptType2, conceptType.superType());
-    }
-
-    @Test
-    public void testRulesOfHypothesis(){
-        Pattern lhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        Pattern rhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        Type type = graknGraph.putEntityType("A Concept Type");
-        RuleType ruleType = graknGraph.putRuleType("A Rule Type");
-        assertEquals(0, type.getRulesOfHypothesis().size());
-        Rule rule1 = ruleType.addRule(lhs, rhs).addHypothesis(type);
-        Rule rule2 = ruleType.addRule(lhs, rhs).addHypothesis(type);
-        assertEquals(2, type.getRulesOfHypothesis().size());
-        assertTrue(type.getRulesOfHypothesis().contains(rule1));
-        assertTrue(type.getRulesOfHypothesis().contains(rule2));
-    }
-
-    @Test
-    public void getRulesOfConclusion(){
-        Pattern lhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        Pattern rhs = graknGraph.graql().parsePattern("$x isa entity-type");
-        Type type = graknGraph.putEntityType("A Concept Type");
-        RuleType ruleType = graknGraph.putRuleType("A Rule Type");
-        assertEquals(0, type.getRulesOfConclusion().size());
-        Rule rule1 = ruleType.addRule(lhs, rhs).addConclusion(type);
-        Rule rule2 = ruleType.addRule(lhs, rhs).addConclusion(type);
-        assertEquals(2, type.getRulesOfConclusion().size());
-        assertTrue(type.getRulesOfConclusion().contains(rule1));
-        assertTrue(type.getRulesOfConclusion().contains(rule2));
     }
 
     @Test
