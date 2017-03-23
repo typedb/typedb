@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
+import java.time.Instant;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -43,6 +44,7 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.time.Duration.between;
 import static java.time.Instant.now;
 
 /**
@@ -66,7 +68,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
 
-    private static final int NUM_UNHANDLED_TASKS_BEFORE_BACKOFF = 5;
+    private static final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = 60_000;
     private static final int INITIAL_BACKOFF = 1_000;
     private static final int MAX_BACKOFF = 60_000;
 
@@ -104,7 +106,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void run() {
         LOG.debug("started");
 
-        int unhandledTasks = 0;
+        Instant timeTaskLastHandled = now();
         int backOff = INITIAL_BACKOFF;
 
         while (!wakeUp.get()) {
@@ -117,10 +119,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                     TaskState task = record.value();
                     boolean handled = handleTask(task);
 
-                    if (!handled) {
-                        unhandledTasks += 1;
-                    } else {
-                        unhandledTasks = 0;
+                    if (handled) {
+                        timeTaskLastHandled = now();
                     }
 
                     offsetStorage.saveOffset(consumer, new TopicPartition(record.topic(), record.partition()));
@@ -129,8 +129,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 }
 
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
-                if (unhandledTasks >= NUM_UNHANDLED_TASKS_BEFORE_BACKOFF) {
-                    LOG.trace("received " + unhandledTasks + " unhandled tasks in a row, sleeping for " + backOff + "ms");
+                long timeSinceLastHandledTask = between(now(), timeTaskLastHandled).toMillis();
+                if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
+                    LOG.trace("has been  " + timeSinceLastHandledTask + " ms since handeled task, sleeping for " + backOff + "ms");
                     Thread.sleep(backOff);
                     backOff *= 2;
                     if (backOff > MAX_BACKOFF) backOff = MAX_BACKOFF;
