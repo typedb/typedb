@@ -20,6 +20,8 @@ import _ from 'underscore';
 
 import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
+import EngineClient from '../EngineClient';
+
 
 /*
  * Parses HAL responses with callbacks (for found HAL resources & relationships).
@@ -98,10 +100,50 @@ export default class HALParser {
       responseLength = 1;
     }
 
+    // Load all the resources of the new instances added to the graph
+    this.loadInstancesResources(0, this.instances);
+    this.emptyInstances();
+
     return responseLength;
   }
 
+  loadInstancesResources(start, instances) {
+    const batchSize = 50;
+    const promises = [];
 
+    // Add a batchSize number of requests to the promises array
+    for (let i = start; i < start + batchSize; i++) {
+      if (i >= instances.length) {
+        // When all the requests are loaded in promises flush the remaining ones and update labels on nodes
+        HALParser.flushPromisesAndRefreshLabels(promises, instances);
+        return;
+      }
+      promises.push(EngineClient.request({
+        url: instances[i].href,
+      }));
+    }
+
+    // Execute all the promises and once they are all done recursively call this function again
+    Promise.all(promises).then((responses) => {
+      responses.forEach((resp) => {
+        const respObj = JSON.parse(resp);
+        visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
+      });
+      visualiser.flushUpdates();
+      this.loadInstancesResources(start + batchSize, instances);
+    });
+  }
+
+  static flushPromisesAndRefreshLabels(promises, instances) {
+    Promise.all(promises).then((responses) => {
+      responses.forEach((resp) => {
+        const respObj = JSON.parse(resp);
+        visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
+      });
+      visualiser.flushUpdates();
+      visualiser.refreshLabels(instances);
+    });
+  }
   parseHalObject(obj, hashSet, showIsa, showResources, nodeId) {
     if (obj !== null) {
             // The response from Analytics will be a string instead of object. That's why we need this check.
@@ -143,7 +185,6 @@ export default class HALParser {
           || showResources)
           || (hashSet !== undefined && hashSet[child._id])
           || this.nodeAlreadyInGraph(HALParser.getHref(child))) {
-
                 // Add resource and iterate its _embedded field
         const idC = child[API.KEY_ID];
         const idP = parent[API.KEY_ID];
@@ -168,7 +209,7 @@ export default class HALParser {
   // Load instance resouces if the node is not already in the graph
     if (nodeObj[API.KEY_BASE_TYPE] === API.ENTITY || nodeObj[API.KEY_BASE_TYPE] === API.RELATION || nodeObj[API.KEY_BASE_TYPE] === API.RULE) {
       if (!visualiser.nodeExists(nodeObj[API.KEY_ID])) {
-        this.instances.push(nodeObj[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF]);
+        this.instances.push({ id: nodeObj[API.KEY_ID], href: nodeObj[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF] });
       }
     }
     this.newResource(HALParser.getHref(nodeObj),

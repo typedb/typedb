@@ -133,7 +133,7 @@ export default {
         alignHorizontally() {
             this.$emit('close-context');
             let previousNode = this.selectedNodes[0];
-            visualiser.nodes.update({
+            visualiser.updateNode({
                 id: previousNode,
                 x: visualiser.rect.startX,
                 y: visualiser.rect.startY,
@@ -144,7 +144,7 @@ export default {
             });
             for (let i = 1; i < this.selectedNodes.length; i++) {
                 const nodeId = this.selectedNodes[i];
-                visualiser.nodes.update({
+                visualiser.updateNode({
                     id: nodeId,
                     x: this.computeXHorizontal(nodeId, previousNode),
                     y: visualiser.rect.startY,
@@ -159,7 +159,7 @@ export default {
         alignVertically() {
             this.$emit('close-context');
             let previousNode = this.selectedNodes[0];
-            visualiser.nodes.update({
+            visualiser.updateNode({
                 id: previousNode,
                 x: visualiser.rect.startX,
                 y: visualiser.rect.startY,
@@ -170,7 +170,7 @@ export default {
             });
             for (let i = 1; i < this.selectedNodes.length; i++) {
                 const nodeId = this.selectedNodes[i];
-                visualiser.nodes.update({
+                visualiser.updateNode({
                     id: nodeId,
                     x: visualiser.rect.startX,
                     y: this.computeYVertical(nodeId, previousNode),

@@ -37,7 +37,6 @@ export default class CanvasHandler {
     visualiser.setCallbackOnEvent('hoverNode', param => this.hoverNode(param));
     visualiser.setCallbackOnEvent('blurNode', param => this.blurNode(param));
     visualiser.setCallbackOnEvent('dragStart', param => this.onDragStart(param));
-    visualiser.setCallbackOnEvent('stabilized', param => this.onStabilized(param));
 
     this.halParser = new HALParser();
 
@@ -198,21 +197,6 @@ export default class CanvasHandler {
     }
   }
 
-  onStabilized() {
-    console.log('stabilizzato');
-    this.halParser.instances.forEach((uri) => {
-      EngineClient.request({
-        url: uri,
-      }).then((resp) => {
-        const respObj = JSON.parse(resp);
-        visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
-      }, (err) => {
-        console.log(err);
-      });
-    });
-    this.halParser.emptyInstances();
-  }
-
   // ----- End of graph interactions ------- //
 
   onClickSubmit(query) {
@@ -262,12 +246,15 @@ export default class CanvasHandler {
     if (!this.halParser.parseResponse(responseObject, false, false, nodeId)) {
       this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
     } else if (nodeId) {
-          // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
-          // which will contain a new value for offset
-      visualiser.nodes.update({
-        id: nodeId,
-        href: responseObject._links.self.href,
-      });
+      // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
+      // which will contain a new value for offset
+      // Check if the node still in the Dataset, if not (generated relation), don't update href
+      if (visualiser.getNode(nodeId)) {
+        visualiser.updateNode({
+          id: nodeId,
+          href: responseObject._links.self.href,
+        });
+      }
     }
     visualiser.fitGraphToWindow();
   }
