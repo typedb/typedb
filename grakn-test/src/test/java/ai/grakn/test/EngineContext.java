@@ -25,8 +25,10 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import org.junit.rules.ExternalResource;
 
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
@@ -112,15 +114,15 @@ public class EngineContext extends ExternalResource {
 
     @Override
     public void after() {
-        clearTasks();
+        noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
             if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
-                stopEngine(server);
+                noThrow(() -> stopEngine(server), "Error closing engine");
             }
 
             if(startKafka){
-                stopKafka();
+                noThrow(GraknTestEnv::stopKafka, "Error stopping kafka");
             }
         } catch (Exception e){
             throw new RuntimeException("Could not shut down ", e);

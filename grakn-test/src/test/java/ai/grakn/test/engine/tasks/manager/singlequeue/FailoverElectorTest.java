@@ -55,20 +55,26 @@ public class FailoverElectorTest {
 
     @Test
     public void whenFailoverElectorIsInstantiated_ThisEngineBecomesLeader(){
-        FailoverElector elector = new FailoverElector(EngineID.of("Engine1"), zookeeper, storage);
-        assertEquals("Engine1", elector.awaitLeader());
+        EngineID engineId = EngineID.of("Engine1");
+        FailoverElector elector = new FailoverElector(engineId, zookeeper, storage);
+        assertEquals(engineId, elector.awaitLeader());
         elector.renounce();
     }
 
     @Test
     public void whenFailoverElectorIsKilled_AnotherFailoverElectorBecomesLeader() throws Exception {
-        FailoverElector elector1 = new FailoverElector(EngineID.of("Engine1"), zookeeper, storage);
-        FailoverElector elector2 = new FailoverElector(EngineID.of("Engine2"), zookeeper, storage);
+        EngineID engine1 = EngineID.of("Engine1");
+        EngineID engine2 = EngineID.of("Engine2");
 
-        assertEquals(elector1.awaitLeader(), elector2.awaitLeader());
+        FailoverElector elector1 = new FailoverElector(engine1, zookeeper, storage);
+        FailoverElector elector2 = new FailoverElector(engine2, zookeeper, storage);
 
-        String currentLeader = elector1.awaitLeader();
-        if(Objects.equals(currentLeader, "Engine1")){
+        EngineID leader1 = elector1.awaitLeader();
+        EngineID leader2 = elector2.awaitLeader();
+
+        assertEquals(leader1, leader2);
+
+        if(Objects.equals(leader1, engine1)){
             elector1.renounce();
         } else {
             elector2.renounce();
@@ -76,10 +82,22 @@ public class FailoverElectorTest {
 
         Thread.sleep(1000);
 
-        assertEquals(elector1.awaitLeader(), elector2.awaitLeader());
-        assertNotEquals(currentLeader, elector1.awaitLeader());
+        System.out.println("whale");
+        EngineID currentLeader;
+        if(Objects.equals(leader1, engine1)) {
+            currentLeader = elector2.awaitLeader();
+        } else {
+            currentLeader = elector1.awaitLeader();
+        }
 
-        elector1.renounce();
-        elector2.renounce();
+        System.out.println("starfish");
+        assertNotEquals(leader1, currentLeader);
+
+        System.out.println("should renounce soon");
+        if(Objects.equals(leader1, engine1)) {
+            elector2.renounce();
+        } else {
+            elector1.renounce();
+        }
     }
 }

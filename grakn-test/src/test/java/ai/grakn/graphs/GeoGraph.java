@@ -194,6 +194,6 @@ public class GeoGraph extends TestGraph {
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
         Pattern transitivity_RHS = and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        inferenceRule.addRule(transitivity_LHS, transitivity_RHS);
+        inferenceRule.putRule(transitivity_LHS, transitivity_RHS);
     }
 }

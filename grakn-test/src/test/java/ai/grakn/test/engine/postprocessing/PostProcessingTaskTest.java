@@ -41,7 +41,7 @@ public class PostProcessingTaskTest {
     private StandaloneTaskManager taskManager = new StandaloneTaskManager(EngineID.of("hello"));
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startMultiQueueServer();
+    public static final EngineContext engine = EngineContext.startSingleQueueServer();
 
     @Test
     public void testStart() throws Exception {

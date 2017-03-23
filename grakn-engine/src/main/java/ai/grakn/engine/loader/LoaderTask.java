@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.Graql;
@@ -59,7 +60,7 @@ public class LoaderTask implements BackgroundTask {
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<String> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
         attemptInsertions(
                 getKeyspace(configuration),
                 getInserts(configuration));
@@ -77,7 +78,7 @@ public class LoaderTask implements BackgroundTask {
     }
 
     @Override
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
+    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         throw new UnsupportedOperationException("Loader task cannot be resumed");
     }
 

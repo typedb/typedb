@@ -66,7 +66,7 @@ public class SingleQueueTaskManagerTest {
     public static final EngineContext kafkaServer = EngineContext.startKafkaServer();
 
     @BeforeClass
-    public static void setup(){
+    public static void setup() throws Exception{
         taskManager = new SingleQueueTaskManager(EngineID.me());
     }
 

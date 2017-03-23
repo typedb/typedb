@@ -35,7 +35,7 @@ public class EdgeTest extends GraphTestBase{
     private EdgeImpl edge;
 
     @Before
-    public void setUp(){
+    public void createEdge(){
         entityType = graknGraph.putEntityType("My Entity Type");
         entity = entityType.addEntity();
         Edge tinkerEdge = graknGraph.getTinkerTraversal().hasId(entity.getId().getValue()).outE().next();
@@ -43,7 +43,7 @@ public class EdgeTest extends GraphTestBase{
     }
 
     @Test
-    public void testEquals(){
+    public void checkEqualityBetweenEdgesBasedOnID(){
         Entity entity2 = entityType.addEntity();
         Edge tinkerEdge = graknGraph.getTinkerTraversal().hasId(entity2.getId().getValue()).outE().next();
         EdgeImpl edge2 = new EdgeImpl(tinkerEdge, graknGraph);
@@ -53,17 +53,17 @@ public class EdgeTest extends GraphTestBase{
     }
 
     @Test
-    public void testGetSource() throws Exception {
+    public void whenGettingTheSourceOfAnEdge_ReturnTheConceptTheEdgeComesFrom() throws Exception {
         assertEquals(entity, edge.getSource());
     }
 
     @Test
-    public void testGetTarget() throws Exception {
+    public void whenGettingTheTargetOfAnEdge_ReturnTheConceptTheEdgePointsTowards() throws Exception {
         assertEquals(entityType, edge.getTarget());
     }
 
     @Test
-    public void testGetType() throws Exception {
+    public void whenGettingTheLabelOfAnEdge_ReturnExpectedType() throws Exception {
         assertEquals(Schema.EdgeLabel.ISA, edge.getType());
     }
 }

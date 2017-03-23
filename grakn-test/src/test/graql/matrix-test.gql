@@ -82,9 +82,3 @@ lhs {
 (Q1-from: $x, Q1-to: $y) isa Q1;},
 rhs {
 (P-from: $x, P-to: $y) isa P;};
-
-isa inference-rule,
-lhs {
-(Q1-from: $x, Q1-to: $y) isa Q1;},
-rhs {
-(P-from: $x, P-to: $y) isa P;};
