@@ -68,9 +68,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
 
-    private static final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = 60_000;
     private static final int INITIAL_BACKOFF = 1_000;
     private static final int MAX_BACKOFF = 60_000;
+    private final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF;
 
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
@@ -80,12 +80,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param manager a place to control the lifecycle of tasks
      * @param offsetStorage a place to externally store kafka offsets
      */
-    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage){
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff){
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = manager.newConsumer();
         this.engineID = engineID;
         this.offsetStorage = offsetStorage;
+        this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
     }
 
     /**
@@ -129,9 +130,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 }
 
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
-                long timeSinceLastHandledTask = between(now(), timeTaskLastHandled).toMillis();
+                long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
                 if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
-                    LOG.trace("has been  " + timeSinceLastHandledTask + " ms since handeled task, sleeping for " + backOff + "ms");
+                    LOG.debug("has been  " + timeSinceLastHandledTask + " ms since handeled task, sleeping for " + backOff + "ms");
                     Thread.sleep(backOff);
                     backOff *= 2;
                     if (backOff > MAX_BACKOFF) backOff = MAX_BACKOFF;

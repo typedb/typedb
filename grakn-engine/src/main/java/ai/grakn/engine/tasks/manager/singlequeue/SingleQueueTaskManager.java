@@ -64,6 +64,7 @@ public class SingleQueueTaskManager implements TaskManager {
     private final static GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
+    private final static int TIME_UNTIL_BACKOFF = 30_000;
 
     private final Producer<TaskId, TaskState> producer;
     private final ZookeeperConnection zookeeper;
@@ -187,7 +188,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
-        return new SingleQueueTaskRunner(this, engineId, offsetStorage);
+        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF);
     }
 
     /**
