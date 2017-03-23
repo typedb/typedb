@@ -39,7 +39,6 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -121,7 +120,8 @@ public class EntityTest extends GraphTestBase{
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
-        Relation relation = entity.hasResource(resource);
+        entity.hasResource(resource);
+        Relation relation = entity.relations().iterator().next();
         assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
         relation.rolePlayers().entrySet().forEach(entry -> {
@@ -163,10 +163,11 @@ public class EntityTest extends GraphTestBase{
         Resource resource1 = resourceType.putResource("A resource thing");
         Resource resource2 = resourceType.putResource("Another resource thing");
 
-        Relation relation1 = entity.hasResource(resource1);
-        Relation relation2 = entity.hasResource(resource2);
-
-        assertNotEquals(relation1, relation2);
+        assertEquals(0, entity.relations().size());
+        entity.hasResource(resource1);
+        assertEquals(1, entity.relations().size());
+        entity.hasResource(resource2);
+        assertEquals(2, entity.relations().size());
 
         graknGraph.validateGraph();
     }
