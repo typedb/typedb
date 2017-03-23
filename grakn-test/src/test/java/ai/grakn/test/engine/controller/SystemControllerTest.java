@@ -32,14 +32,14 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
-import static ai.grakn.util.REST.WebPath.Graph.CONFIGURATION;
-import static ai.grakn.util.REST.WebPath.Graph.KEYSPACES;
+import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GraphFactoryControllerTest {
+public class SystemControllerTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();

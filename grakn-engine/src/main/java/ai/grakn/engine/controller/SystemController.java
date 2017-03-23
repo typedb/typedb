@@ -49,8 +49,8 @@ import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
 import static ai.grakn.util.REST.GraphConfig.COMPUTER;
 import static ai.grakn.util.REST.GraphConfig.DEFAULT;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
-import static ai.grakn.util.REST.WebPath.Graph.CONFIGURATION;
-import static ai.grakn.util.REST.WebPath.Graph.KEYSPACES;
+import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 
 
 /**
@@ -67,10 +67,10 @@ import static ai.grakn.util.REST.WebPath.Graph.KEYSPACES;
  *
  * @author fppt
  */
-public class GraphFactoryController {
-    private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
+public class SystemController {
+    private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
 
-    public GraphFactoryController(Service spark) {
+    public SystemController(Service spark) {
         spark.get(KEYSPACES,     this::getKeyspaces);
         spark.get(CONFIGURATION, this::getConfiguration);
     }

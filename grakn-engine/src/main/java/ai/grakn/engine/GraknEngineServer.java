@@ -19,7 +19,7 @@ package ai.grakn.engine;
 
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
-import ai.grakn.engine.controller.GraphFactoryController;
+import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.controller.VisualiserController;
@@ -65,7 +65,7 @@ public class GraknEngineServer implements AutoCloseable {
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
             REST.WebPath.REMOTE_SHELL_URI,
-            REST.WebPath.Graph.CONFIGURATION,
+            REST.WebPath.System.CONFIGURATION,
             REST.WebPath.IS_PASSWORD_PROTECTED_URI));
     public static final boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
 
@@ -126,7 +126,7 @@ public class GraknEngineServer implements AutoCloseable {
 
         // Start all the controllers
         new VisualiserController(spark);
-        new GraphFactoryController(spark);
+        new SystemController(spark);
         new CommitLogController(spark);
         new AuthController(spark);
         new UserController(spark);

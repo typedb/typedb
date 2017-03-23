@@ -50,9 +50,9 @@ public class REST {
         }
 
         /**
-         * URIs to Graph Controller endpoints
+         * URIs to System Controller endpoints
          */
-        public static class Graph {
+        public static class System {
             public static final String CONFIGURATION = "/configuration";
             public static final String KEYSPACES = "/keyspaces";
         }

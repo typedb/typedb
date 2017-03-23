@@ -58,7 +58,7 @@ public class Client {
     public static boolean serverIsRunning(String uri) {
         try {
             HttpURLConnection connection = (HttpURLConnection)
-                    new URL("http://" + uri + REST.WebPath.Graph.CONFIGURATION).openConnection();
+                    new URL("http://" + uri + REST.WebPath.System.CONFIGURATION).openConnection();
             connection.setRequestMethod("GET");
             connection.connect();
 
