@@ -32,8 +32,10 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.REST;
 import mjson.Json;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -125,7 +127,7 @@ public class GraknEngineServer implements AutoCloseable {
         configureSpark(spark, port);
 
         // Start all the controllers
-        new VisualiserController(spark);
+        new VisualiserController(EngineGraknGraphFactory.getInstance(), spark);
         new SystemController(spark);
         new CommitLogController(spark);
         new AuthController(spark);
@@ -236,6 +238,7 @@ public class GraknEngineServer implements AutoCloseable {
     private static void handleGraknServerError(Exception exception, Response response){
         response.status(((GraknEngineServerException) exception).getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
     /**
@@ -246,6 +249,7 @@ public class GraknEngineServer implements AutoCloseable {
     private static void handleInternalError(Exception exception, Response response){
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
 

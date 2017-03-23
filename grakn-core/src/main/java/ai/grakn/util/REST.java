@@ -41,6 +41,13 @@ public class REST {
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
         /**
+         * URIs to visualiser controller
+         */
+        public static class Graph {
+            public static final String GRAQL = "/graql";
+        }
+
+        /**
          * URIs to Tasks Controller endpoints
          */
         public static class Tasks {
@@ -113,10 +120,15 @@ public class REST {
      * Class listing various strings found in responses from the REST API.
      */
     public static class Response{
-        public static final String ENTITIES_JSON_FIELD = "entities";
-        public static final String ROLES_JSON_FIELD = "roles";
-        public static final String RELATIONS_JSON_FIELD = "relations";
-        public static final String RESOURCES_JSON_FIELD = "resources";
+
+        /**
+         * Response content types
+         */
+        public static class ContentType {
+            public static final String APPLICATION_GRAQL = "application/graql";
+            public static final String APPLICATION_HAL ="application/hal+json";
+        }
+
     }
 
     /**

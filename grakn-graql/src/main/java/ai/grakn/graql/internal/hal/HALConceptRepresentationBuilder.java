@@ -48,6 +48,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+
 /**
  * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
  *
@@ -69,7 +71,9 @@ public class HALConceptRepresentationBuilder {
     private final static String NAME_PROPERTY = "_name";
 
 
-    public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace, int offset, int limit) {
+    public static Json renderHALArrayData(MatchQuery matchQuery, int offset, int limit) {
+        Collection<Map<VarName, Concept>> results = matchQuery.admin().streamWithVarNames().collect(toList());
+        String keyspace = matchQuery.admin().getGraph().get().getKeyspace();
 
         //Stores connections between variables in Graql result [varName:List<VarAdmin> (only VarAdmins that contain a relation)]
         Map<VarName, Collection<VarAdmin>> linkedNodes =  computeLinkedNodesFromQuery(matchQuery);
@@ -81,7 +85,7 @@ public class HALConceptRepresentationBuilder {
         Set<TypeName> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
 
 
-        return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, roleTypes, keyspace, offset, limit);
+        return buildHALRepresentations(results, linkedNodes, typesAskedInQuery, roleTypes, keyspace, offset, limit);
     }
 
     public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace, int offset, int limit) {

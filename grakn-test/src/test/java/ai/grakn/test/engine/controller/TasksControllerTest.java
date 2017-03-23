@@ -357,7 +357,7 @@ public class TasksControllerTest {
         return with().get(String.format("http://%s%s", URI, GET.replace(ID_PARAMETER, taskId.getValue())));
     }
 
-    private class JsonMapper implements ObjectMapper{
+    public static class JsonMapper implements ObjectMapper{
 
         @Override
         public Object deserialize(ObjectMapperDeserializationContext objectMapperDeserializationContext) {
