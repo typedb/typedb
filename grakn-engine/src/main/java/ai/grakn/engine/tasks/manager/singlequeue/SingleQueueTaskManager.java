@@ -235,6 +235,6 @@ public class SingleQueueTaskManager implements TaskManager {
                 .create()
                 .creatingParentContainersIfNeeded()
                 .withMode(CreateMode.EPHEMERAL)
-                .forPath(String.format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
+                .forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
     }
 }
