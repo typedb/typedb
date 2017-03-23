@@ -51,6 +51,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
         super(graknGraph, v, type);
         setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
         setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
+        setUniqueProperty(Schema.ConceptProperty.INDEX, generateRuleIndex(type, lhs, rhs));
     }
 
     /**
@@ -84,8 +85,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @param type The concept type which this rules applies to.
      * @return The Rule itself
      */
-    @Override
-    public Rule addHypothesis(Type type) {
+    Rule addHypothesis(Type type) {
         putEdge(type, Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
@@ -95,8 +95,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @param type The concept type which is the conclusion of this Rule.
      * @return The Rule itself
      */
-    @Override
-    public Rule addConclusion(Type type) {
+    Rule addConclusion(Type type) {
         putEdge(type, Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
@@ -121,5 +120,12 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
         Collection<Type> types = new HashSet<>();
         getOutgoingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> types.add(concept.asType()));
         return types;
+    }
+
+    /**
+     * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
+     */
+    public static String generateRuleIndex(RuleType type, Pattern lhs, Pattern rhs){
+        return "RuleType_" + type.getName().getValue() + "_LHS:" + lhs.hashCode() + "_RHS:" + rhs.hashCode();
     }
 }

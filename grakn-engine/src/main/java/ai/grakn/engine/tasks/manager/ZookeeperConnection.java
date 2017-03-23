@@ -21,11 +21,9 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 
 import java.util.concurrent.TimeUnit;
@@ -34,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.FAILOVER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SCHEDULER;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
 import static ai.grakn.engine.GraknEngineConfig.ZK_BACKOFF_BASE_SLEEP_TIME;
 import static ai.grakn.engine.GraknEngineConfig.ZK_BACKOFF_MAX_RETRIES;
 import static ai.grakn.engine.GraknEngineConfig.ZK_CONNECTION_TIMEOUT;
@@ -80,26 +77,6 @@ public class ZookeeperConnection {
      */
     public CuratorFramework connection(){
         return zookeeperConnection;
-    }
-
-    public InterProcessMutex mutex(String id){
-        return new InterProcessMutex(zookeeperConnection, TASKS_PATH_PREFIX + id + TASK_LOCK_SUFFIX);
-    }
-
-    public void acquire(InterProcessMutex mutex){
-        try {
-            mutex.acquire();
-        } catch (Exception e) {
-            throw new EngineStorageException("Error acquiring mutex from zookeeper.");
-        }
-    }
-
-    public void release(InterProcessMutex mutex){
-        try {
-            mutex.release();
-        } catch (Exception e) {
-            throw new EngineStorageException("Error releasing mutex from zookeeper.");
-        }
     }
 
     private void createZKPaths() throws Exception {

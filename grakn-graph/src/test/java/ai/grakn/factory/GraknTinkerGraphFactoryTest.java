@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,25 +43,19 @@ public class GraknTinkerGraphFactoryTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setTinkerGraphFactory(){
+    public void setupTinkerGraphFactory(){
         tinkerGraphFactory = new TinkerInternalFactory("test", Grakn.IN_MEMORY, null);
     }
 
     @Test
-    public void testBuildTinkerGraph() throws Exception {
+    public void whenBuildingGraphUsingTinkerFactory_ReturnGraknTinkerGraph() throws Exception {
         GraknGraph graph = tinkerGraphFactory.getGraph(false);
         assertThat(graph, instanceOf(GraknTinkerGraph.class));
         assertThat(graph, instanceOf(AbstractGraknGraph.class));
-
-        try {
-            graph.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Test
-    public void testFactorySingleton(){
+    public void whenBuildingGraphFromTheSameFactory_ReturnSingletonGraphs(){
         GraknGraph graph1 = tinkerGraphFactory.getGraph(false);
         GraknGraph graph1_copy = tinkerGraphFactory.getGraph(false);
 
@@ -76,7 +69,6 @@ public class GraknTinkerGraphFactoryTest {
 
         TinkerGraph tinkerGraph1 = ((GraknTinkerGraph) graph1).getTinkerPopGraph();
         TinkerGraph tinkerGraph2 = ((GraknTinkerGraph) graph2).getTinkerPopGraph();
-
         assertEquals(tinkerGraph1, tinkerGraph2);
     }
 
@@ -92,18 +84,15 @@ public class GraknTinkerGraphFactoryTest {
     }
 
     @Test
-    public void testGetTinkerPopGraph(){
-        Graph mg1 = tinkerGraphFactory.getTinkerPopGraph(false);
-        assertThat(mg1, instanceOf(TinkerGraph.class));
+    public void whenRetrievingGraphFromGraknTinkerGraph_ReturnTinkerGraph(){
+        assertThat(tinkerGraphFactory.getTinkerPopGraph(false), instanceOf(TinkerGraph.class));
     }
 
     @Test
-    public void testGetNullKeySpace(){
+    public void whenCreatingFactoryWithNullKeyspace_Throw(){
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(NULL_VALUE.getMessage("keyspace"));
-
         tinkerGraphFactory = new TinkerInternalFactory(null, null, null);
-        tinkerGraphFactory.getGraph(false);
     }
 
 }

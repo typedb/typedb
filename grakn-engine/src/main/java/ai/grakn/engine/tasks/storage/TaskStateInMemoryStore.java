@@ -25,7 +25,6 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 
-import java.lang.ref.SoftReference;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -42,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Denis Lobanov, alexandraorth
  */
 public class TaskStateInMemoryStore implements TaskStateStorage {
-    private final Map<TaskId, SoftReference<TaskState>> storage;
+    private final Map<TaskId, TaskState> storage;
 
     public TaskStateInMemoryStore() {
         storage = new ConcurrentHashMap<>();
@@ -50,19 +49,19 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
 
     @Override
     public TaskId newState(TaskState state) {
-        storage.put(state.getId(), new SoftReference<>(state.copy()));
+        storage.put(state.getId(), state.copy());
         return state.getId();
     }
 
     @Override
     public Boolean updateState(TaskState state) {
-        storage.put(state.getId(), new SoftReference<>(state.copy()));
+        storage.put(state.getId(), state.copy());
         return true;
     }
 
     @Override
     public TaskState getState(TaskId id) {
-        Optional<TaskState> taskState = Optional.ofNullable(storage.get(id)).map(SoftReference::get);
+        Optional<TaskState> taskState = Optional.ofNullable(storage.get(id));
 
         if(!taskState.isPresent()) {
             throw new EngineStorageException("Could not retrieve id " + id);
@@ -81,8 +80,8 @@ public class TaskStateInMemoryStore implements TaskStateStorage {
         Set<TaskState> res = new HashSet<>();
 
         int count = 0;
-        for(Map.Entry<TaskId, SoftReference<TaskState>> x: storage.entrySet()) {
-            TaskState state = x.getValue().get();
+        for(Map.Entry<TaskId, TaskState> x: storage.entrySet()) {
+            TaskState state = x.getValue();
             if(state == null) {
                 continue;
             }

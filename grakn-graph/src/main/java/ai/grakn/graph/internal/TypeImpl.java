@@ -237,11 +237,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         T superParent = superType();
 
         while(superParent != null && !Schema.MetaSchema.CONCEPT.getName().equals(superParent.getName())){
-            if(superSet.contains(superParent)) {
-                throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
-            } else {
-                superSet.add(superParent);
-            }
+            superSet.add(superParent);
             //noinspection unchecked
             superParent = (T) superParent.superType();
         }
@@ -407,7 +403,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Note the check before the actual construction
             if(superTypeLoops()){
                 cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
-                throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(getName(), Schema.EdgeLabel.SUB.getLabel()));
+                throw new ConceptException(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(getName(), newSuperType.getName()));
             }
 
             //Modify the graph once we have checked no loop occurs

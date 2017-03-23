@@ -71,13 +71,13 @@ public class DiagonalGraph extends TestGraph {
         for(int i = 0 ; i < n ; i++) {
             for (int j = 0; j < m; j++) {
                 if ( i < n - 1 ) {
-                    horizontal.addRelation()
+                    vertical.addRelation()
                             .addRolePlayer(relFrom, graph.getConcept(instanceIds[i][j]))
                             .addRolePlayer(relTo, graph.getConcept(instanceIds[i+1][j]));
                     inserts++;
                 }
                 if ( j < m - 1){
-                    vertical.addRelation()
+                    horizontal.addRelation()
                             .addRolePlayer(relFrom, graph.getConcept(instanceIds[i][j]))
                             .addRolePlayer(relTo, graph.getConcept(instanceIds[i][j+1]));
                     inserts++;
