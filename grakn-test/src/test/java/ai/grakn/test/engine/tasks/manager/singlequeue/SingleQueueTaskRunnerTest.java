@@ -86,6 +86,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -168,8 +169,6 @@ public class SingleQueueTaskRunnerTest {
 
         tasks(tasks).forEach(task -> {
             TaskId taskId = task.getId();
-
-            assert task.status() == CREATED; // Generated tasks should be CREATED only
 
             if (appearedTasks.contains(taskId)) {
                 // The second time a task appears it must be in RUNNING state

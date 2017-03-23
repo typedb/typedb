@@ -229,14 +229,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             } else {
                 task.markStopped();
             }
-            LOG.debug("{}\tmarked as completed", task);
         } catch (Throwable throwable) {
             task.markFailed(throwable);
-            LOG.debug("{}\tmarked as failed", task);
         } finally {
             runningTask = null;
             runningTaskId = null;
             storage.updateState(task);
+            LOG.debug("{}\tmarked as {}", task, task.status());
         }
     }
 
@@ -246,8 +245,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param task Task to be delayed
      */
     private void resubmitTask(TaskState task){
-        LOG.debug("{}\tresubmitted", task);
         manager.addTask(task);
+        LOG.debug("{}\tresubmitted", task);
     }
 
     private void stopTask(TaskState task) {
