@@ -109,42 +109,23 @@ public class GraknEngineFailoverIT {
         assertTasksCompletedWithCorrectStatus(allTasks);
     }
 
-    @Property(trials=10)
-    public void whenSubmittingTasksToTwoEngines_TheyRunOnThreeEngines(
-            @Size(min=100, max=100) List<@NewTask TaskState> tasks1,
-            @Size(min=100, max=100) List<@NewTask TaskState> tasks2) throws Exception {
-
-        Set<TaskId> taskIds1 = sendTasks(engine1.port(), tasks1);
-        Set<TaskId> taskIds2 = sendTasks(engine2.port(), tasks2);
-
-        Set<TaskId> allTasks = new HashSet<>();
-        allTasks.addAll(taskIds1);
-        allTasks.addAll(taskIds2);
-
-        waitForStatus(allTasks, COMPLETED, FAILED);
-
-        // Assert that all three engines picked up tasks
-        Set<EngineID> engineIDS =
-                allTasks.stream().map(storage::getState).map(TaskState::engineID).collect(toSet());
-
-        assertThat(engineIDS.size(), equalTo(3));
-    }
-
     @Property(trials=1)
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
-            @Size(min=500, max=500) List<@NewTask TaskState> tasks) throws Exception {
+            @Size(min=1000, max=10000) List<@NewTask TaskState> tasks) throws Exception {
 
         Set<TaskId> taskIds = sendTasks(engine1.port(), tasks);
-        System.out.println(taskIds);
 
         // Randomly restart one of the other engines until all of the tasks are done
+        int lowerBoundMs = 3000;
+        Random random = new Random();
         List<DistributionContext> enginesToKill = ImmutableList.of(engine2, engine3);
         do{
-            DistributionContext engineToKill = enginesToKill.get(new Random().nextInt(2));
+            DistributionContext engineToKill = enginesToKill.get(random.nextInt(2));
 
             engineToKill.restart();
 
-            Thread.sleep(3000);
+            int timeToSleep = random.nextInt(3000) + lowerBoundMs;
+            Thread.sleep(timeToSleep);
         } while (!taskIds.stream().allMatch(GraknEngineFailoverIT::isDone));
 
         waitForStatus(taskIds, COMPLETED, FAILED);

@@ -166,7 +166,7 @@ public class GraknEngineServer implements AutoCloseable {
         Duration interval = Duration.ofMillis(prop.getPropertyAsInt(GraknEngineConfig.TIME_LAPSE));
         String creator = GraknEngineServer.class.getName();
         TaskState postprocessing = TaskState.of(PostProcessingTask.class, creator, TaskSchedule.recurring(interval), Json.object());
-        taskManager.addTask(postprocessing);
+//        taskManager.addTask(postprocessing);
     }
 
     public void stopHTTP() {
