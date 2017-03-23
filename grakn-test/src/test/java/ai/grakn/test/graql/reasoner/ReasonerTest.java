@@ -955,7 +955,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithMatchAllQuery(){
-        String queryString = "match $y isa product;$r($x, $y);$x isa entity2;";
+        String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
         String queryString2 = "match $y isa product;$x isa entity2;{" +
                 "$r($x, $y) isa recommendation or " +
                 "$r($x, $y) isa typing or " +

@@ -202,6 +202,18 @@ public class AtomicTest {
         assertEquals(roleMap, roleMap(relation.getRoleVarTypeMap()));
     }
 
+    @Test
+    public void testRoleInference_WithMetaType(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity;}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        ImmutableMap<RoleType, VarName> roleMap = ImmutableMap.of(
+                graph.getRoleType("role1"), VarName.of("x"),
+                graph.getRoleType("role2"), VarName.of("y"),
+                graph.getRoleType("role3"), VarName.of("z"));
+        assertEquals(roleMap, roleMap(relation.getRoleVarTypeMap()));
+    }
+    
     //test ambiguous role mapping
     @Test
     public void testRoleInference_AmbiguousRoleMapping(){
@@ -221,7 +233,6 @@ public class AtomicTest {
         Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = relation.getRoleVarTypeMap();
         assertTrue(roleVarTypeMap.toString(), relation.getRoleVarTypeMap().isEmpty());
     }
-
     //test rule applicability for atom with unspecified roles but with possible unambiguous role mapping
     @Test
     public void testRuleApplicabilityViaType_UnambiguousRoleMapping(){

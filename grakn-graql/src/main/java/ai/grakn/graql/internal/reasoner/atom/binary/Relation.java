@@ -591,14 +591,14 @@ public class Relation extends TypeAtom {
                 .forEach(casting -> {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
-                    if (type != null) {
+                    if (type != null && !Schema.MetaSchema.isMetaName(type.getName())) {
                         mappings.put(casting, Utility.getCompatibleRoleTypes(type, possibleRoles));
                     } else {
                         mappings.put(casting, Utility.getTopRoles(possibleRoles));
                     }
                 });
 
-        //resolve ambiguities until no unambiguous mapping exist
+        //resolve ambiguities until no  unambiguous mapping exist
         while( mappings.values().stream().filter(s -> s.size() == 1).count() != 0) {
             for (Map.Entry<RelationPlayer, Set<RoleType>> entry : mappings.entrySet()) {
                 Set<RoleType> compatibleRoles = entry.getValue();
