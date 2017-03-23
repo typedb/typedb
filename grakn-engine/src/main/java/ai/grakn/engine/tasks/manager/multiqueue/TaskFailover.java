@@ -39,7 +39,6 @@ import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ALL_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.stream.Collectors.toSet;
