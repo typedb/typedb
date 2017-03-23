@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -62,8 +63,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov, alexandraorth
  */
 public class StandaloneTaskManager implements TaskManager {
-    private static final String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
-
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
     private final Map<TaskId, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
@@ -200,10 +199,10 @@ public class StandaloneTaskManager implements TaskManager {
         };
     }
 
-    private Consumer<String> saveCheckpoint(TaskState state) {
+    private Consumer<TaskCheckpoint> saveCheckpoint(TaskState state) {
         return s -> {
             stateUpdateLock.lock();
-            stateStorage.updateState(state.checkpoint(SAVE_CHECKPOINT_NAME));
+            stateStorage.updateState(state.checkpoint(s));
             stateUpdateLock.unlock();
         };
     }

@@ -81,7 +81,7 @@ public class TaskState implements Serializable {
     /**
      * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
      */
-    private String taskCheckpoint;
+    private TaskCheckpoint taskCheckpoint;
     /**
      * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
      */
@@ -204,12 +204,12 @@ public class TaskState implements Serializable {
         return exception;
     }
 
-    public TaskState checkpoint(String taskCheckpoint) {
+    public TaskState checkpoint(TaskCheckpoint taskCheckpoint) {
         this.taskCheckpoint = taskCheckpoint;
         return this;
     }
 
-    public String checkpoint() {
+    public TaskCheckpoint checkpoint() {
         return taskCheckpoint;
     }
 

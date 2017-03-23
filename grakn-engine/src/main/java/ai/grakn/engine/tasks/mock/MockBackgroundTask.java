@@ -20,6 +20,7 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.ImmutableMultiset;
 import mjson.Json;
@@ -32,12 +33,11 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, Felix Chapman
  */
-public abstract class MockBackgroundTask implements BackgroundTask {
-
-    private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
+public abstract class MockBackgroundTask implements BackgroundTask {    private static final ConcurrentHashMultiset<TaskId> COMPLETED_TASKS = ConcurrentHashMultiset.create();
     private static final ConcurrentHashMultiset<TaskId> CANCELLED_TASKS = ConcurrentHashMultiset.create();
     private static Consumer<TaskId> onTaskStart;
     private static Consumer<TaskId> onTaskFinish;
+    private static Consumer<TaskCheckpoint> onTaskResume;
 
     protected final AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final Object sync = new Object();
@@ -74,22 +74,33 @@ public abstract class MockBackgroundTask implements BackgroundTask {
         if (onTaskFinish != null) onTaskFinish.accept(taskId);
     }
 
+    public static void whenTaskResumes(Consumer<TaskCheckpoint> onTaskResume) {
+        MockBackgroundTask.onTaskResume = onTaskResume;
+    }
+
+    static void onTaskResume(TaskCheckpoint checkpoint) {
+        if (onTaskResume != null) onTaskResume.accept(checkpoint);
+    }
+
     public static void clearTasks() {
         COMPLETED_TASKS.clear();
         CANCELLED_TASKS.clear();
         onTaskStart = null;
         onTaskFinish = null;
+        onTaskResume = null;
     }
 
     @Override
-    public final boolean start(Consumer<String> saveCheckpoint, Json configuration) {
+    public final boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
         TaskId id = TaskId.of(configuration.at("id").asString());
         onTaskStart(id);
+
+        saveCheckpoint.accept(TaskCheckpoint.of(configuration));
 
         boolean wasCancelled = cancelled.get();
 
         if (!wasCancelled) {
-            startInner(id);
+            executeStartInner(id);
             addCompletedTask(id);
         } else {
             addCancelledTask(id);
@@ -109,5 +120,17 @@ public abstract class MockBackgroundTask implements BackgroundTask {
         return true;
     }
 
-    protected abstract void startInner(TaskId id);
+    @Override
+    public final boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint){
+        onTaskResume(lastCheckpoint);
+
+        executeResumeInner(lastCheckpoint);
+
+        return true;
+    }
+
+    protected abstract void executeStartInner(TaskId id);
+    protected abstract void executeResumeInner(TaskCheckpoint checkpoint);
+
+
 }
