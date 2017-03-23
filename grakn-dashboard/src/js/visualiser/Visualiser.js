@@ -33,7 +33,9 @@ import NodeSettings from '../NodeSettings';
  */
 export default class Visualiser {
   constructor() {
-    this.nodes = new vis.DataSet([]);
+    this.nodes = new vis.DataSet([], {
+      queue: { delay: 800 },
+    });
     this.edges = new vis.DataSet([]);
 
     this.callbacks = {};
@@ -232,7 +234,7 @@ export default class Visualiser {
 
   fixSingleNode(nodeId) {
     if (nodeId === undefined) return;
-    this.nodes.update({
+    this.updateNode({
       id: nodeId,
       fixed: {
         x: true,
@@ -243,7 +245,7 @@ export default class Visualiser {
 
   releaseNodes(nodeIds) {
     if (nodeIds === undefined) return;
-    nodeIds.forEach(nodeId => this.nodes.update({
+    nodeIds.forEach(nodeId => this.updateNode({
       id: nodeId,
       fixed: {
         x: false,
@@ -296,8 +298,9 @@ export default class Visualiser {
         properties: ap,
         links: ls,
       });
+      this.nodes.flush();
     } else if (bp.id !== cn && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
-      this.nodes.update({
+      this.updateNode({
         id: bp.id,
         fixed: {
           x: false,
@@ -309,16 +312,23 @@ export default class Visualiser {
     return this;
   }
 
-  disablePhysicsOnNode(id) {
-    if (this.nodeExists(id)) {
-      this.nodes.update({
-        id,
-        physics: false,
+  // Given an array of instances refresh all their labels with new resources
+  refreshLabels(instances) {
+    instances.forEach((instance) => {
+      const node = this.getNode(instance.id);
+      this.updateNode({
+        id: node.id,
+        label: this.generateLabel(node.type, node.properties, node.baseLabel),
       });
-    }
-    return this;
+    });
   }
 
+  updateNodeResources(id, properties) {
+    this.updateNode({
+      id,
+      properties,
+    });
+  }
     /**
      * Add edge between two nodes with @label. This can be called at any time *after* render().
      */
@@ -455,13 +465,22 @@ export default class Visualiser {
   updateNodeLabels(type) {
     this.nodes._data = _.mapObject(this.nodes._data, (v, k) => {
       if (v.type === type) {
-        this.nodes.update({
+        this.updateNode({
           id: k,
           label: this.generateLabel(type, v.properties, v.baseLabel),
         });
       }
       return v;
     });
+  }
+
+  flushUpdates() {
+    this.nodes.flush();
+  }
+
+  updateNode(obj) {
+    this.nodes.update(obj);
+    this.nodes.flush();
   }
 
 }
