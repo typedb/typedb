@@ -207,7 +207,7 @@ export default class CanvasHandler {
     }
 
     if (query.trim().startsWith('compute')) {
-      EngineClient.graqlAnalytics(query).then(this.onGraphResponseAnalytics, (err) => {
+      EngineClient.graqlAnalytics(query).then(resp => this.onGraphResponseAnalytics(resp), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
     } else {
