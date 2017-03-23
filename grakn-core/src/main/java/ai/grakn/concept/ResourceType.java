@@ -22,7 +22,11 @@ package ai.grakn.concept;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Collection;
+import java.util.Date;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -169,12 +173,66 @@ public interface ResourceType<D> extends Type {
      * @param <D> The data type.
      */
     class DataType<D> {
-        public static final DataType<String> STRING = new DataType<>(String.class.getName(), Schema.ConceptProperty.VALUE_STRING);
-        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class.getName(), Schema.ConceptProperty.VALUE_BOOLEAN);
-        public static final DataType<Integer> INTEGER = new DataType<>(Integer.class.getName(), Schema.ConceptProperty.VALUE_INTEGER);
-        public static final DataType<Long> LONG = new DataType<>(Long.class.getName(), Schema.ConceptProperty.VALUE_LONG);
-        public static final DataType<Double> DOUBLE = new DataType<>(Double.class.getName(), Schema.ConceptProperty.VALUE_DOUBLE);
-        public static final DataType<Float> FLOAT = new DataType<>(Float.class.getName(), Schema.ConceptProperty.VALUE_FLOAT);
+        public static final DataType<String> STRING = new DataType<>(
+                String.class.getName(),
+                Schema.ConceptProperty.VALUE_STRING,
+                (v) -> v,
+                o -> defaultConverter(o, String.class, Object::toString));
+
+        public static final DataType<Boolean> BOOLEAN = new DataType<>(
+                Boolean.class.getName(),
+                Schema.ConceptProperty.VALUE_BOOLEAN,
+                (v) -> v,
+                o -> defaultConverter(o, Boolean.class, (v) -> Boolean.parseBoolean(v.toString())));
+
+        public static final DataType<Integer> INTEGER = new DataType<>(
+                Integer.class.getName(),
+                Schema.ConceptProperty.VALUE_INTEGER,
+                (v) -> v,
+                o -> defaultConverter(o, Integer.class, (v) -> Integer.parseInt(v.toString())));
+
+        public static final DataType<Long> LONG = new DataType<>(
+                Long.class.getName(),
+                Schema.ConceptProperty.VALUE_LONG,
+                (v) -> v,
+                o -> defaultConverter(o, Long.class, (v) -> Long.parseLong(v.toString())));
+
+        public static final DataType<Double> DOUBLE = new DataType<>(
+                Double.class.getName(),
+                Schema.ConceptProperty.VALUE_DOUBLE,
+                (v) -> v,
+                o -> defaultConverter(o, Double.class, (v) -> Double.parseDouble(v.toString())));
+
+        public static final DataType<Float> FLOAT = new DataType<>(
+                Float.class.getName(),
+                Schema.ConceptProperty.VALUE_FLOAT,
+                (v) -> v,
+                o -> defaultConverter(o, Float.class, (v) -> Float.parseFloat(v.toString())));
+
+        private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter){
+            if(o == null){
+                return null;
+            } else if(clazz.isInstance(o)){
+                //noinspection unchecked
+                return (X) o;
+            } else {
+                return converter.apply(o);
+            }
+        }
+
+        public static final DataType<Date> DATE = new DataType<>(
+                Date.class.getName(),
+                Schema.ConceptProperty.VALUE_DATE,
+                (d) -> {SimpleDateFormat sdf = new SimpleDateFormat("yy-MM-dd-hh:mm:ss"); return sdf.format(d);},
+                (o) -> {SimpleDateFormat sdf = new SimpleDateFormat("yy-MM-dd-hh:mm:ss");
+                    if(o == null) return null;
+
+                    try {
+                        return sdf.parse(o.toString());
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
 
         public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
                     .put(STRING.getName(), STRING)
@@ -183,14 +241,19 @@ public interface ResourceType<D> extends Type {
                     .put(DOUBLE.getName(), DOUBLE)
                     .put(INTEGER.getName(), INTEGER)
                     .put(FLOAT.getName(), FLOAT)
+                    .put(DATE.getName(), DATE)
                     .build();
 
         private final String dataType;
         private final Schema.ConceptProperty conceptProperty;
+        private final Function<D, Object> persistenceValueSupplier;
+        private final Function<Object, D> valueSupplier;
 
-        private DataType(String dataType, Schema.ConceptProperty conceptProperty){
+        private DataType(String dataType, Schema.ConceptProperty conceptProperty, Function<D, Object> savedValueProvider, Function<Object, D> valueSupplier){
             this.dataType = dataType;
             this.conceptProperty = conceptProperty;
+            this.persistenceValueSupplier = savedValueProvider;
+            this.valueSupplier = valueSupplier;
         }
 
         public String getName(){
@@ -204,6 +267,26 @@ public interface ResourceType<D> extends Type {
         @Override
         public String toString(){
             return getName();
+        }
+
+        /**
+         * Converts the provided value into the data type and format which it will be saved in.
+         *
+         * @param value The value to be converted
+         * @return The String representation of the value
+         */
+        public Object getPersistenceValue(D value){
+            return persistenceValueSupplier.apply(value);
+        }
+
+        /**
+         * Converts the provided value into it's correct data type
+         *
+         * @param object The object to be converted into the value
+         * @return The value of the string
+         */
+        public D getValue(Object object){
+            return valueSupplier.apply(object);
         }
     }
 }
