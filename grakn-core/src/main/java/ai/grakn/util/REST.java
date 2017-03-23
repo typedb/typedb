@@ -29,9 +29,6 @@ public class REST {
      * Class containing URIs to REST endpoints.
      */
     public static class WebPath{
-        public static final String GRAPH_FACTORY_URI = "/graph_factory";
-        public static final String KEYSPACE_LIST = "/keyspaces";
-        
         public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
         public static final String GRAPH_ANALYTICS_QUERY_URI = "/graph/analytics";
         public static final String GRAPH_PRE_MATERIALISE_QUERY_URI = "/graph/preMaterialiseAll";
@@ -40,7 +37,6 @@ public class REST {
         public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
 
         public static final String COMMIT_LOG_URI = "/commit_log";
-        public static final String GET_STATUS_CONFIG_URI = "/status/config";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
 
@@ -51,6 +47,14 @@ public class REST {
             public static final String TASKS = "/tasks";
             public static final String GET = "/tasks/:id";
             public static final String STOP = "/tasks/:id/stop";
+        }
+
+        /**
+         * URIs to Graph Controller endpoints
+         */
+        public static class Graph {
+            public static final String CONFIGURATION = "/configuration";
+            public static final String KEYSPACES = "/keyspaces";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";
@@ -109,12 +113,10 @@ public class REST {
      * Class listing various strings found in responses from the REST API.
      */
     public static class Response{
-
         public static final String ENTITIES_JSON_FIELD = "entities";
         public static final String ROLES_JSON_FIELD = "roles";
         public static final String RELATIONS_JSON_FIELD = "relations";
         public static final String RESOURCES_JSON_FIELD = "resources";
-
     }
 
     /**

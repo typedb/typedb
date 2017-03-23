@@ -65,7 +65,7 @@ public class GraknEngineServer implements AutoCloseable {
     private static final Set<String> unauthenticatedEndPoints = new HashSet<>(Arrays.asList(
             REST.WebPath.NEW_SESSION_URI,
             REST.WebPath.REMOTE_SHELL_URI,
-            REST.WebPath.GRAPH_FACTORY_URI,
+            REST.WebPath.Graph.CONFIGURATION,
             REST.WebPath.IS_PASSWORD_PROTECTED_URI));
     public static final boolean isPasswordProtected = prop.getPropertyAsBool(GraknEngineConfig.PASSWORD_PROTECTED_PROPERTY);
 
