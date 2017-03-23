@@ -234,10 +234,13 @@ public class Relation extends TypeAtom {
 
     private boolean isRuleApplicableViaType(Relation childAtom) {
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
-        Set<RoleType> roles = childAtom.getRoleVarTypeMap().keySet();
+        Map<RoleType, Pair<VarName, Type>> childRoleMap = childAtom.getRoleVarTypeMap();
+        Set<RoleType> roles = childRoleMap.keySet();
+
+        //TODO consider adding type and reusing ViaAtom applicability
 
         //rule not applicable if there's an empty role intersection
-        //each role player without a role or type correpsonds to role metatype - role wildcard
+        //each role player without a role or type corresponds to role metatype - role wildcard
         Set<RoleType> mappedRoles = new HashSet<>();
         int roleWildcards = 0;
         for (VarName rolePlayer : getRolePlayers()){
@@ -248,6 +251,18 @@ public class Relation extends TypeAtom {
                 if (roleIntersection.isEmpty()){
                     return false;
                 } else {
+                    //child types corresponding to matched role types
+                    Set<Type> childTypes = roleIntersection.stream()
+                            .filter(childRoleMap::containsKey)
+                            .map(childRoleMap::get)
+                            .map(Pair::getValue)
+                            .filter(Objects::nonNull)
+                            .collect(toSet());
+                    //check if from all possible mappings at least one doesn't lead to type contradiction
+                    if (!childTypes.isEmpty()
+                            && childTypes.stream().filter(t -> checkTypesCompatible(type, t)).count() == 0){
+                        return false;
+                    }
                     mappedRoles.addAll(roleIntersection);
                 }
             } else {

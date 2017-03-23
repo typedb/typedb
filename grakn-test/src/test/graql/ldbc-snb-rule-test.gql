@@ -23,5 +23,5 @@ $y isa product;$y has min-age >=18;
 $z isa country;$z has name 'Italy';
 ($y, $z) isa made-in;
 },
-rhs {($x, $y) isa recommendation;};
+rhs {(recommended-customer: $x, recommended-product: $y) isa recommendation;};
 

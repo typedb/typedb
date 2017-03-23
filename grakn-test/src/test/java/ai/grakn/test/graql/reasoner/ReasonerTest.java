@@ -32,7 +32,6 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
-import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -76,6 +75,9 @@ public class ReasonerTest {
 
     @ClassRule
     public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get());
+
+    @ClassRule
+    public static final GraphContext testGraph = GraphContext.preLoad(GeoGraph.get());
 
     @ClassRule
     public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get());
@@ -187,29 +189,32 @@ public class ReasonerTest {
 
     @Test
     public void testAddingRuleWithHeadWithoutRoleTypesNotAllowed() {
-        GraknGraph graph = snbGraph.graph();
-        PatternAdmin body = graph.graql().parsePattern("(moderator: $x, moderated: $y) isa moderates").admin();
-        PatternAdmin head = graph.graql().parsePattern("($x, $y) isa membership").admin();
+        GraknGraph graph = testGraph.graph();
+        Pattern body = Graql.and(graph.graql().parsePatterns(
+                        "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                        "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
+        Pattern head = Graql.and(graph.graql().parsePatterns("($x, $z) isa is-located-in;"));
         exception.expect(IllegalArgumentException.class);
-        InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
+        Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
+        InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
     }
 
     @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
-        GraknGraph graph = geoGraph.graph();
+        GraknGraph graph = testGraph.graph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
-        Pattern R1_LHS = Graql.and(graph.graql().parsePatterns(
+        Pattern body1 = Graql.and(graph.graql().parsePatterns(
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                         "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
-        Pattern R1_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        Rule rule1 = inferenceRule.putRule(R1_LHS, R1_RHS);
+        Pattern head1 = Graql.and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
+        Rule rule1 = inferenceRule.putRule(body1, head1);
 
-        Pattern R2_LHS = Graql.and(graph.graql().parsePatterns(
+        Pattern body2 = Graql.and(graph.graql().parsePatterns(
                         "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +
                         "(geo-entity: $l2, entity-location: $l3) isa is-located-in;"));
-        Pattern R2_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
-        Rule rule2 = inferenceRule.putRule(R2_LHS, R2_RHS);
+        Pattern head2 = Graql.and(graph.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
+        Rule rule2 = inferenceRule.putRule(body2, head2);
 
         InferenceRule R1 = new InferenceRule(rule1, graph);
         InferenceRule R2 = new InferenceRule(rule2, graph);
@@ -950,9 +955,11 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithMatchAllQuery(){
-        String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
-        String queryString2 = "match $y isa product;{$r(recommended-customer: $x, recommended-product: $y) or " +
-                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};";
+        String queryString = "match $y isa product;$r($x, $y);$x isa entity2;";
+        String queryString2 = "match $y isa product;$x isa entity2;{" +
+                "$r($x, $y) isa recommendation or " +
+                "$r($x, $y) isa typing or " +
+                "$r($x, $y) isa made-in;};";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);

@@ -199,7 +199,8 @@ public class InferenceRule {
         }
         //case of match all relation atom
         else{
-            Relation extendedParent = ((Relation) AtomicFactory.create(parentAtom, parentAtom.getParentQuery()))
+            Relation extendedParent = ((Relation) AtomicFactory
+                    .create(parentAtom, parentAtom.getParentQuery()))
                     .addType(childAtom.getType());
             childAtom.getUnifiers(extendedParent).forEach(unifiers::put);
         }
