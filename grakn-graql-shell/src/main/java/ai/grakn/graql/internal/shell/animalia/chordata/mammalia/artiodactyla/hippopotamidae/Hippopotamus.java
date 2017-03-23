@@ -19,6 +19,19 @@
 
 package ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae;
 
+/**
+ * The common hippopotamus (Hippopotamus amphibius), or hippo, is a large, mostly herbivorous mammal in sub-Saharan
+ * Africa, and one of only two extant species in the family Hippopotamidae, the other being the pygmy hippopotamus
+ * (Choeropsis liberiensis or Hexaprotodon liberiensis). The name comes from the ancient Greek for "river horse"
+ * (ἱπποπόταμος). After the elephant and rhinoceros, the common hippopotamus is the third-largest type of land mammal
+ * and the heaviest extant artiodactyl. Despite their physical resemblance to pigs and other terrestrial even-toed
+ * ungulates, the closest living relatives of the Hippopotamidae are cetaceans (whales, porpoises, etc.) from which
+ * they diverged about 55 million years ago. The common ancestor of whales and hippos split from other even-toed
+ * ungulates around 60 million years ago. The earliest known hippopotamus fossils, belonging to the genus Kenyapotamus
+ * in Africa, date to around 16 million years ago.
+ *
+ * @author Felix Chapman, Wikipedia
+ */
 public interface Hippopotamus {
 
     void submerge();

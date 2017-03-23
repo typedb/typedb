@@ -24,6 +24,16 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 
+/**
+ * A factory for building a {@link Hippopotamus}, providing an integer size. The resulting hippopotamus will vary based
+ * on the size provided. Namely, the size will impact the representation of the hippo and also whether the hippo is
+ * hungry hungry. A hungry hungry hippo does not behave differently to a normal hippo, but can be an indication of its
+ * size and ferocity.
+ *
+ * @see Hippopotamus#isHungryHungry()
+ *
+ * @author Felix Chapman
+ */
 public class HippopotamusFactory {
 
     private int size = 10;

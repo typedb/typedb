@@ -19,6 +19,11 @@
 
 package ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae;
 
+/**
+ * A huge hippo. Its hunger is immeasurable. Master of disguise.
+ *
+ * @author Felix Chapman
+ */
 public class TitanicHippopotamusImpl implements Hippopotamus {
 
     private String me =

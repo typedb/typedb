@@ -19,6 +19,11 @@
 
 package ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae;
 
+/**
+ * A tiny hippo! Isn't it cute?
+ *
+ * @author Felix Chapman
+ */
 public class SmallHippopotamusImpl implements Hippopotamus {
 
     private String me =

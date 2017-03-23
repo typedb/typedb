@@ -19,6 +19,11 @@
 
 package ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae;
 
+/**
+ * A common, large hippopotamus. Always hungry.
+ *
+ * @author Felix Chapman
+ */
 public class LargeHippopotamusImpl implements Hippopotamus {
 
     private String me =
