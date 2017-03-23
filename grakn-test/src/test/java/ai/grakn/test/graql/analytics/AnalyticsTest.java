@@ -144,7 +144,11 @@ public class AnalyticsTest {
         queryList.add("compute degrees;");
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
-        queryList.parallelStream().forEach(query -> factory.getGraph().graql().parse(query).execute());
+        queryList.parallelStream().forEach(query -> {
+            try (GraknGraph graph = factory.getGraph()) {
+                graph.graql().parse(query).execute();
+            }
+        });
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {

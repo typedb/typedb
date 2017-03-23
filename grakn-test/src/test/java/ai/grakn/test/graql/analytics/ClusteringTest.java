@@ -30,7 +30,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -200,11 +199,11 @@ public class ClusteringTest {
         }
         GraknSparkComputer.clear();
         list.parallelStream().forEach(i -> {
-            GraknGraph graph = factory.getGraph();
-            Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();
-            assertEquals(1, sizeMap1.size());
-            assertEquals(7L, sizeMap1.values().iterator().next().longValue());
-            graph.close();
+            try (GraknGraph graph = factory.getGraph()) {
+                Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();
+                assertEquals(1, sizeMap1.size());
+                assertEquals(7L, sizeMap1.values().iterator().next().longValue());
+            }
         });
 
         // add different resources. This may change existing cluster labels.
