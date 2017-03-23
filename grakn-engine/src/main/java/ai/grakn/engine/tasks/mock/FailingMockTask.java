@@ -20,7 +20,7 @@ package ai.grakn.engine.tasks.mock;
 
 import ai.grakn.engine.TaskId;
 
-import java.util.function.Consumer;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 
 /**
  * Mocked task that will throw exception
@@ -30,17 +30,13 @@ import java.util.function.Consumer;
 public class FailingMockTask extends MockBackgroundTask {
 
     @Override
-    protected void startInner(TaskId id) {
+    protected void executeStartInner(TaskId id) {
         throw new RuntimeException("deliberate test failure");
     }
 
     @Override
-    public void pause() {
-
-    }
+    protected void executeResumeInner(TaskCheckpoint checkpoint) {}
 
     @Override
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
-
-    }
+    public void pause() {}
 }

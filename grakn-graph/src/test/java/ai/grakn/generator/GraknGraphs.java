@@ -148,11 +148,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
             () -> resourceType().putResource(gen().make(ResourceValues.class).generate(random, status)),
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
             () -> ruleType().superType(ruleType()),
-            () -> ruleType().addRule(var("x"), var("x")), // TODO: generate more complicated rules
+            () -> ruleType().putRule(var("x"), var("x")), // TODO: generate more complicated rules
             () -> instance().hasResource(resource()),
-            () -> relation().addRolePlayer(roleType(), instance()),
-            () -> rule().addHypothesis(type()),
-            () -> rule().addConclusion(type())
+            () -> relation().addRolePlayer(roleType(), instance())
     );
 
     private TypeName typeName() {

@@ -22,6 +22,7 @@ package ai.grakn.engine.tasks.manager.multiqueue;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
@@ -252,7 +253,7 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
      * @param taskState task to update in storage
      * @return A Consumer<String> function that can be called by the background task on demand to save its checkpoint.
      */
-    private java.util.function.Consumer<String> saveCheckpoint(TaskState taskState) {
+    private java.util.function.Consumer<TaskCheckpoint> saveCheckpoint(TaskState taskState) {
         return checkpoint -> storage.updateState(taskState.checkpoint(checkpoint));
     }
 

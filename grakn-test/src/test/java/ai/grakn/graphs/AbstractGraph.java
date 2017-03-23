@@ -92,22 +92,22 @@ public class AbstractGraph extends TestGraph {
 
         Pattern R1_LHS = and(graph.graql().parsePatterns("$x isa p;$y isa q;($x, $y) isa rel;"));
         Pattern R1_RHS = and(graph.graql().parsePatterns("$x isa Q;"));
-        inferenceRule.addRule(R1_LHS, R1_RHS);
+        inferenceRule.putRule(R1_LHS, R1_RHS);
 
         Pattern R2_LHS = and(graph.graql().parsePatterns("$x isa r;"));
         Pattern R2_RHS = and(graph.graql().parsePatterns("$x isa p;"));
-        inferenceRule.addRule(R2_LHS, R2_RHS);
+        inferenceRule.putRule(R2_LHS, R2_RHS);
 
         Pattern R3_LHS = and(graph.graql().parsePatterns("$x isa s;"));
         Pattern R3_RHS = and(graph.graql().parsePatterns("$x isa p;"));
-        inferenceRule.addRule(R3_LHS, R3_RHS);
+        inferenceRule.putRule(R3_LHS, R3_RHS);
 
         Pattern R4_LHS = and(graph.graql().parsePatterns("$x isa t;"));
         Pattern R4_RHS = and(graph.graql().parsePatterns("$x isa q;"));
-        inferenceRule.addRule(R4_LHS, R4_RHS);
+        inferenceRule.putRule(R4_LHS, R4_RHS);
 
         Pattern R5_LHS = and(graph.graql().parsePatterns("$x isa u;"));
         Pattern R5_RHS = and(graph.graql().parsePatterns("$x isa r;"));
-        inferenceRule.addRule(R5_LHS, R5_RHS);
+        inferenceRule.putRule(R5_LHS, R5_RHS);
     }
 }
