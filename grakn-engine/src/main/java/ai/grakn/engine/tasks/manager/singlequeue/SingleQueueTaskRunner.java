@@ -23,6 +23,7 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
+import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.time.Instant.now;
@@ -190,24 +192,39 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         }
     }
 
+    /**
+     * Execute a task.
+     *
+     * If a task is resuming, it should not be re-marked as running and should be started from it's checkpoint.
+     * If a task is seen for the first time, it should be marked as running and started with it's original configuration.
+     *
+     * @param task the task to execute
+     */
     private void executeTask(TaskState task){
-        // Mark as running
-        task.markRunning(engineID);
-
-        //TODO Make this a put within state storage
-        if(storage.containsTask(task.getId())) {
-            storage.updateState(task);
-        } else {
-            storage.newState(task);
-        }
-
-        LOG.debug("{}\tmarked as running", task);
-
         // Execute task
         try {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
-            boolean completed = runningTask.start(null, task.configuration());
+
+            boolean completed;
+            if(taskShouldResume(task)){
+                completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+            } else {
+                // Mark as running
+                task.markRunning(engineID);
+
+                //TODO Make this a put within state storage
+                if(storage.containsTask(task.getId())) {
+                    storage.updateState(task);
+                } else {
+                    storage.newState(task);
+                }
+
+                LOG.debug("{}\tmarked as running", task);
+
+                completed = runningTask.start(saveCheckpoint(task), task.configuration());
+            }
+
             if (completed) {
                 task.markCompleted();
             } else {
@@ -266,6 +283,18 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     }
 
     /**
+     * Tasks should resume from the last checkpoint when their checkpoint is
+     * non null and they are in the RUNNING state.
+     *
+     * Recurring tasks should
+     * @param task Task that should be checked
+     * @return If the given task can resume
+     */
+    private boolean taskShouldResume(TaskState task){
+        return task.checkpoint() != null && task.status().equals(RUNNING);
+    }
+
+    /**
      * Log debug information about the given set of {@param records} polled from Kafka
      * @param records Polled-for records to return information about
      */
@@ -274,5 +303,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             LOG.debug("Partition {}{} has offset {} after receiving {} records",
                     partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
         }
+    }
+
+    /**
+     * Persists a Background Task's checkpoint to ZK and graph.
+     * @param taskState task to update in storage
+     * @return A Consumer<String> function that can be called by the background task on demand to save its checkpoint.
+     */
+    private java.util.function.Consumer<TaskCheckpoint> saveCheckpoint(TaskState taskState) {
+        return checkpoint -> storage.updateState(taskState.checkpoint(checkpoint));
     }
 }

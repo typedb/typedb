@@ -35,7 +35,7 @@ public interface BackgroundTask {
      *
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    boolean start(Consumer<String> saveCheckpoint, Json configuration);
+    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.
@@ -60,6 +60,6 @@ public interface BackgroundTask {
      *                       the task to resume from this point should it crash.
      * @param lastCheckpoint The last checkpoint as sent to saveCheckpoint.
      */
-    void resume(Consumer<String> saveCheckpoint, String lastCheckpoint);
+    boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint);
 
 }
