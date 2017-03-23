@@ -29,7 +29,7 @@ public class SmallHippopotamusImpl implements Hippopotamus {
 
     @Override
     public void submerge() {
-        me = "~~~~~~~~~~~~~";
+        me = "~~~~~~~~~~~~~ > ";
     }
 
     @Override

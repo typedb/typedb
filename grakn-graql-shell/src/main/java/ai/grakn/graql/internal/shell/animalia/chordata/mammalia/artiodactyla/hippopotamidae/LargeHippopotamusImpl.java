@@ -33,7 +33,7 @@ public class LargeHippopotamusImpl implements Hippopotamus {
         me =
                 "   ,_,                 \n" +
                 "  (0_0)_----------_    \n" +
-                "~~~~~~~~~~~~~~~~~~~~~~~";
+                "~~~~~~~~~~~~~~~~~~~~~~~ > ";
     }
 
     @Override
