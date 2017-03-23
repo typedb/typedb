@@ -91,18 +91,13 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
             }
 
             if (concept.isRelation()) {
-                String relationString = concept.asRelation().allRolePlayers().entrySet().stream().map(entry -> {
+                String relationString = concept.asRelation().allRolePlayers().entrySet().stream().flatMap(entry -> {
                     RoleType roleType = entry.getKey();
                     Set<Instance> instances = entry.getValue();
 
-                    if(instances.isEmpty()){
-                        return Optional.<String>empty();
-                    } else {
-                        StringBuilder innerSb = new StringBuilder();
-                        instances.forEach(rolePlayer ->
-                                innerSb.append(colorType(roleType)).append(": id ").append(idToString(rolePlayer.getId())).append(","));
-                        return Optional.of(innerSb.toString());
-                    }
+                    return instances.stream().map(instance ->
+                        Optional.of(colorType(roleType) + ": id " + idToString(instance.getId()))
+                    );
                 }).flatMap(CommonUtil::optionalToStream).collect(Collectors.joining(", "));
 
                 sb.append(" (").append(relationString).append(")");
