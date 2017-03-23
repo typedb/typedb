@@ -223,7 +223,10 @@ public interface ResourceType<D> extends Type {
         public static final DataType<Date> DATE = new DataType<>(
                 Date.class.getName(),
                 Schema.ConceptProperty.VALUE_DATE,
-                (d) -> {SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss"); return sdf.format(d);},
+                (d) -> {
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss");
+                    return sdf.format(d);
+                },
                 (o) -> {SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss");
                     if(o == null) return null;
 
