@@ -21,12 +21,13 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -145,12 +146,12 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
+    public Unifier getUnifier(Atomic parentAtom) {
         if (!(parentAtom instanceof BinaryBase)) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
         }
 
-        Map<VarName, VarName> unifiers = new HashMap<>();
+        Unifier unifier = new UnifierImpl();
         VarName childValVarName = this.getValueVariable();
         VarName parentValVarName = ((BinaryBase) parentAtom).getValueVariable();
 
@@ -158,13 +159,13 @@ public abstract class BinaryBase extends Atom {
             VarName childVarName = this.getVarName();
             VarName parentVarName = parentAtom.getVarName();
             if (!childVarName.equals(parentVarName)) {
-                unifiers.put(childVarName, parentVarName);
+                unifier.put(childVarName, parentVarName);
             }
         }
         if (!parentValVarName.getValue().isEmpty()
                 && !childValVarName.equals(parentValVarName)) {
-            unifiers.put(childValVarName, parentValVarName);
+            unifier.put(childValVarName, parentValVarName);
         }
-        return unifiers;
+        return unifier;
     }
 }

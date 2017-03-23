@@ -29,6 +29,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.RelationPlayer;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -42,6 +43,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -635,9 +637,9 @@ public class Relation extends TypeAtom {
     }
 
     //varsToAllocate <= childBVs
-    private Pair<Map<VarName, VarName>, Map<RoleType, RoleType>> getRelationPlayerMappings(Map<RoleType, VarName> childMap, Map<RoleType, VarName> parentMap,
-                                              List<VarName> childVars, List<VarName> parentVars) {
-        Map<VarName, VarName> unifiers = new HashMap<>();
+    private Pair<Unifier, Map<RoleType, RoleType>> getRelationPlayerMappings(Map<RoleType, VarName> childMap, Map<RoleType, VarName> parentMap,
+                                                                             List<VarName> childVars, List<VarName> parentVars) {
+        Unifier unifier = new UnifierImpl();
         Map<RoleType, RoleType> roleMappings = new HashMap<>();
         List<VarName> allocatedVars = new ArrayList<>();
         List<VarName> varsToMap = new ArrayList<>(childVars);
@@ -647,7 +649,7 @@ public class Relation extends TypeAtom {
             VarName chVar = entry.getValue();
             if (varsToAllocate.isEmpty()) {
                 //assign trivial mapping
-                unifiers.put(chVar, chVar);
+                unifier.put(chVar, chVar);
                 roleMappings.put(entry.getKey(), null);
             }
             else{
@@ -661,7 +663,7 @@ public class Relation extends TypeAtom {
                     if (pVar.getValue().isEmpty()) parentRole = parentRole.superType();
                 }
                 if (!pVar.getValue().isEmpty()){
-                    unifiers.put(chVar, pVar);
+                    unifier.put(chVar, pVar);
                     roleMappings.put(entry.getKey(), parentRole);
                     allocatedVars.add(chVar);
                     varsToAllocate.remove(pVar);
@@ -681,16 +683,16 @@ public class Relation extends TypeAtom {
                 VarName pVar = pit.next();
                 RoleType chRole = childInverseMap.get(chVar);
                 RoleType pRole = parentInverseMap.get(pVar);
-                unifiers.put(chVar, pVar);
+                unifier.put(chVar, pVar);
                 if (chRole != null && pRole != null) roleMappings.put(chRole, pRole);
                 allocatedVars.add(chVar);
             }
         }
-        return new Pair<>(unifiers, roleMappings);
+        return new Pair<>(unifier, roleMappings);
     }
 
 
-    private Map<VarName, VarName> getRoleTypeUnifiers(Relation parentAtom) {
+    private Unifier getRoleTypeUnifier(Relation parentAtom) {
         Map<RoleType, VarName> childMap = getIndirectRoleMap();
         Map<RoleType, VarName> parentMap = parentAtom.getIndirectRoleMap();
         return getRelationPlayerMappings(
@@ -701,7 +703,7 @@ public class Relation extends TypeAtom {
                 .getKey();
     }
 
-    private Map<VarName, VarName> getRolePlayerUnifiers(Relation parentAtom) {
+    private Unifier getRolePlayerUnifier(Relation parentAtom) {
         Map<RoleType, VarName> childMap = getRoleMap();
         Map<RoleType, VarName> parentMap = parentAtom.getRoleMap();
         return getRelationPlayerMappings(
@@ -713,22 +715,22 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public Map<VarName, VarName> getUnifiers(Atomic pAtom) {
+    public Unifier getUnifier(Atomic pAtom) {
         if (!(pAtom instanceof TypeAtom)) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
         }
 
-        Map<VarName, VarName> unifiers = super.getUnifiers(pAtom);
+        Unifier unifier = super.getUnifier(pAtom);
         if (((Atom) pAtom).isRelation()) {
             Relation parentAtom = (Relation) pAtom;
             //get role player unifiers
-            unifiers.putAll(getRolePlayerUnifiers(parentAtom));
+            unifier.merge(getRolePlayerUnifiers(parentAtom));
             //get role type unifiers
-            unifiers.putAll(getRoleTypeUnifiers(parentAtom));
+            unifier.merge(getRoleTypeUnifiers(parentAtom));
         }
 
         //remove trivial unifiers
-        return unifiers.entrySet().stream()
+        return unifier.entrySet().stream()
                 .filter(e -> e.getKey() != e.getValue())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
@@ -757,8 +759,8 @@ public class Relation extends TypeAtom {
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
     @Override
-    public Pair<Atom, Map<VarName, VarName>> rewriteToUserDefinedWithUnifiers() {
-        Map<VarName, VarName> unifiers = new HashMap<>();
+    public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers() {
+        Unifier unifier = new UnifierImpl();
         Var newVar = Graql.var(VarName.anon());
         Var relVar = getPattern().asVar().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.getType()))
@@ -767,7 +769,7 @@ public class Relation extends TypeAtom {
         for (RelationPlayer c: getRelationPlayers()) {
             VarAdmin rolePlayer = c.getRolePlayer();
             VarName rolePlayerVarName = VarName.anon();
-            unifiers.put(rolePlayer.getVarName(), rolePlayerVarName);
+            unifier.put(rolePlayer.getVarName(), rolePlayerVarName);
             VarAdmin roleType = c.getRoleType().orElse(null);
             if (roleType != null) {
                 relVar = relVar.rel(roleType, Graql.var(rolePlayerVarName));
@@ -775,6 +777,6 @@ public class Relation extends TypeAtom {
                 relVar = relVar.rel(Graql.var(rolePlayerVarName));
             }
         }
-        return new Pair<>(new Relation(relVar.admin(), getPredicate(), getParentQuery()), unifiers);
+        return new Pair<>(new Relation(relVar.admin(), getPredicate(), getParentQuery()), unifier);
     }
 }
