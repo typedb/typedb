@@ -159,7 +159,6 @@ public class GraknGraphPropertyTest {
         RoleType roleType = graph.getType(typeName);
     }
 
-    //TODO: This sometimes fails because of the new date. Look into it dumbass!
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
