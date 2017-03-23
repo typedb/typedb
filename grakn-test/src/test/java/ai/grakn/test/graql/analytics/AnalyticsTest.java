@@ -132,7 +132,7 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testConcurrentJobs() {
+    public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
