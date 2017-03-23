@@ -186,7 +186,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testAddingRuleWithHeadWithoutRolePlayersNotAllowed() {
+    public void testAddingRuleWithHeadWithoutRoleTypesNotAllowed() {
         GraknGraph graph = snbGraph.graph();
         PatternAdmin body = graph.graql().parsePattern("(moderator: $x, moderated: $y) isa moderates").admin();
         PatternAdmin head = graph.graql().parsePattern("($x, $y) isa membership").admin();
