@@ -164,8 +164,8 @@ export default class CanvasHandler {
 
   singleClick(param) {
       // Everytime the user clicks on canvas we clear the context-menu and tooltip
-    // this.showContextMenu = false;
-    // this.showToolTip = false;
+    this.state.eventHub.$emit('close-context');
+    this.state.eventHub.$emit('close-tooltip');
 
     const t0 = new Date();
     const threshold = 200;
@@ -182,7 +182,7 @@ export default class CanvasHandler {
   onDragStart(params) {
     const eventKeys = params.event.srcEvent;
     visualiser.draggingNode = true;
-    this.showToolTip = false;
+    this.state.eventHub.$emit('close-tooltip');
       // If ctrl key is pressed while dragging node/nodes we also unlock and drag the connected nodes
     if (eventKeys.ctrlKey) {
       const neighbours = [];

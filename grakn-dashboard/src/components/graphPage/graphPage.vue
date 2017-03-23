@@ -89,6 +89,9 @@ export default {
         this.state.eventHub.$on('show-node-panel', this.onShowNodePanel);
         this.state.eventHub.$on('hover-node', this.onHoverNode);
         this.state.eventHub.$on('blur-node', this.onBlurNode);
+        this.state.eventHub.$on('close-context', () => this.showContextMenu = false);
+        this.state.eventHub.$on('close-tooltip', () => this.showToolTip = false);
+
 
     },
     beforeDestroy() {
@@ -109,11 +112,11 @@ export default {
     },
 
     methods: {
-        onShowNodePanel(ontologyProps,resources,label) {
-          this.allNodeOntologyProps = ontologyProps;
-          this.allNodeResources = resources;
-          this.selectedNodeLabel = label;
-          this.showNodePanel = true;
+        onShowNodePanel(ontologyProps, resources, label) {
+            this.allNodeOntologyProps = ontologyProps;
+            this.allNodeResources = resources;
+            this.selectedNodeLabel = label;
+            this.showNodePanel = true;
         },
 
         customContextMenu(e) {
@@ -126,11 +129,11 @@ export default {
 
         onHoverNode(param) {
             // Mouse event becomes position of hovered node
-          this.mouseEvent = param;
-          this.showToolTip = true;
+            this.mouseEvent = param;
+            this.showToolTip = true;
         },
-        onBlurNode(){
-          this.showToolTip = false;
+        onBlurNode() {
+            this.showToolTip = false;
         },
 
         updateRectangle(e) {
@@ -158,8 +161,8 @@ export default {
             this.state.eventHub.$emit('inject-query', query);
         },
 
-        onGraphResponse(resp){
-          this.canvasHandler.onGraphResponse(resp);
+        onGraphResponse(resp) {
+            this.canvasHandler.onGraphResponse(resp);
         }
 
     },
