@@ -22,8 +22,10 @@ import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.NewTask;
+import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
@@ -111,7 +113,8 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(@NewTask TaskState task, String requester) {
+    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task, String requester) {
         whenTaskStarts(id -> taskManager.stopTask(id, requester));
 
         taskManager.addTask(task);
@@ -123,7 +126,8 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(@NewTask TaskState task, String requester) {
+    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task, String requester) {
         whenTaskStarts(id -> taskManager.stopTask(id, requester));
 
         taskManager.addTask(task);
