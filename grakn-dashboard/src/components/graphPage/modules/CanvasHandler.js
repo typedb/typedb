@@ -26,7 +26,8 @@ export default class CanvasHandler {
 
   constructor(graphPageState) {
     this.state = graphPageState;
-
+    // TODO: make a more clear division of functions used to draw selection rectangle
+    this.graphOffsetTop = undefined;
     window.visualiser = new Visualiser();
 
     visualiser.setCallbackOnEvent('click', param => this.singleClick(param));
@@ -48,7 +49,8 @@ export default class CanvasHandler {
     this.doubleClickTime = 0;
   }
 
-  renderGraph(graphElement) {
+  renderGraph(graphElement, graphOffsetTop) {
+    this.graphOffsetTop = graphOffsetTop;
     visualiser.render(graphElement);
   }
 
@@ -61,7 +63,6 @@ export default class CanvasHandler {
   holdOnNode(param) {
     const node = param.nodes[0];
     if (node === undefined) return;
-
     this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node), node);
   }
 
@@ -302,14 +303,14 @@ export default class CanvasHandler {
           (sortedObject, k) => {
               // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
             const currentResourceWithHref = Object.assign({}, originalObject[k], {
-              href: this.validURL(originalObject[k].label),
+              href: CanvasHandler.validURL(originalObject[k].label),
             });
             return Object.assign({}, sortedObject, {
               [k]: currentResourceWithHref,
             });
           }, {});
   }
-  validURL(str) {
+  static validURL(str) {
     const pattern = new RegExp(URL_REGEX, 'i');
     return pattern.test(str);
   }

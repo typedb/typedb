@@ -98,24 +98,24 @@ span {
 </style>
 
 <script>
+//Third party libs
 import CodeMirror from 'codemirror';
 import placeholder from 'codemirror/addon/display/placeholder.js';
 import simpleMode from 'codemirror/addon/mode/simple.js';
-
-import EngineClient from '../../js/EngineClient.js';
 import simpleGraql from '../../js/codemirrorGraql.js';
+
+//Modules
+import EngineClient from '../../js/EngineClient.js';
 import GraphPageState from '../../js/state/graphPageState';
 import ConsolePageState from '../../js/state/consolePageState';
 
-
-
 //Sub-components
-const AddCurrentQuery = require('./addCurrentQuery.vue');
-const FavQueriesList = require('./favQueriesList.vue');
-const TypesPanel = require('./typesPanel.vue');
-const MessagePanel = require('./messagePanel.vue');
-const QuerySettings = require('./querySettings.vue');
-const ScrollButton = require('./scrollButton.vue');
+import AddCurrentQuery from './addCurrentQuery.vue';
+import FavQueriesList from './favQueriesList.vue';
+import TypesPanel from './typesPanel.vue';
+import MessagePanel from './messagePanel.vue';
+import QuerySettings from './querySettings.vue';
+import ScrollButton from './scrollButton.vue';
 
 export default {
     name: "GraqlEditor",

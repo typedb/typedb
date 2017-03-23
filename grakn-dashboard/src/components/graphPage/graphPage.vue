@@ -43,15 +43,14 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <script>
 // Modules
-import HALParser from '../../js/HAL/HALParser';
 import GraphPageState from '../../js/state/graphPageState';
 import CanvasHandler from './modules/CanvasHandler';
 
 // Sub-components
-const NodePanel = require('./nodePanel.vue');
-const FooterBar = require('./footer/footerBar.vue');
-const ContextMenu = require('./contextMenu.vue');
-const NodeToolTip = require('./nodeToolTip.vue');
+import NodePanel from './nodePanel.vue';
+import FooterBar from './footer/footerBar.vue';
+import ContextMenu from './contextMenu.vue';
+import NodeToolTip from './nodeToolTip.vue';
 
 export default {
     name: 'GraphPage',
@@ -95,7 +94,7 @@ export default {
 
     },
     beforeDestroy() {
-        // Destroy listeners when component is destroyed - although it never gets detroyed for now. [keep-alive]
+        // Destroy listeners when component is destroyed - although it never gets destroyed for now. [keep-alive]
         this.state.eventHub.$off('click-submit', this.onClickSubmit);
         this.state.eventHub.$off('load-ontology', this.onLoadOntology);
         this.state.eventHub.$off('clear-page', this.onClear);
@@ -103,11 +102,9 @@ export default {
     mounted() {
         this.$nextTick(function nextTickVisualiser() {
             const graph = this.$refs.graph;
-
             // TODO: find a way to compute this without jQuery:
             this.graphOffsetTop = $('#graph-div').offset().top;
-
-            this.canvasHandler.renderGraph(graph);
+            this.canvasHandler.renderGraph(graph, this.graphOffsetTop);
         });
     },
 
