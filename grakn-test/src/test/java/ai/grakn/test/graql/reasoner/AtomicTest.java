@@ -361,7 +361,7 @@ public class AtomicTest {
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
 
         String childPatternString = "(wife: $x, husband: $y) isa marriage";
-        InferenceRule testRule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(
+        InferenceRule testRule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(
                 graph.graql().parsePattern(childPatternString),
                 graph.graql().parsePattern(childPatternString)),
                 graph);
@@ -453,9 +453,10 @@ public class AtomicTest {
         GraknGraph graph = snbGraph.graph();
         String parentString = "{$r($a, $x);}";
         Relation parent = (Relation) new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
+
         PatternAdmin body = graph.graql().parsePattern("(recommended-customer: $z, recommended-product: $b) isa recommendation").admin();
         PatternAdmin head = graph.graql().parsePattern("(recommended-customer: $z, recommended-product: $b) isa recommendation").admin();
-        InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().addRule(body, head), graph);
+        InferenceRule rule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
 
         rule.unify(parent);
         Set<VarName> vars = rule.getHead().getAtom().getVarNames();

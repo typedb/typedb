@@ -153,31 +153,6 @@ public class TaskFailoverTest {
                 .send(argThat(argument -> argument.key().equals(running.getId())));
     }
 
-    @Test
-    @Ignore
-    public void failoverTasksRestartedFromCorrectCheckpoints() throws Exception {
-        // On failover, tasks should be restarted from where they left off execution
-        EngineID fakeEngineID = EngineID.of(UUID.randomUUID().toString());
-        registerFakeEngine(fakeEngineID);
-
-        // Add some tasks to a storage with a specific checkpoint
-        Json configuration = Json.object("configuration", true);
-        Json checkpoint = Json.object("configuration", false);
-
-        TaskState running = createTask(ShortExecutionMockTask.class, TaskSchedule.now(), configuration).markRunning(fakeEngineID);
-        running.checkpoint(checkpoint.toString());
-        storage.newState(running);
-
-        // Mock killing that engine
-        killFakeEngine(fakeEngineID);
-
-        // Check the tasks end up in the work queue with the correct checkpoints
-        waitForStatus(storage, singleton(running), SCHEDULED);
-
-        assertEquals(SCHEDULED, storage.getState(running.getId()).status());
-        assertEquals(checkpoint.toString(), storage.getState(running.getId()).checkpoint());
-    }
-
     private void registerFakeEngine(EngineID id) throws Exception{
         if (connection.connection().checkExists().forPath(format(SINGLE_ENGINE_WATCH_PATH, id.value())) == null) {
             connection.connection().create()

@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.tasks.storage;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -27,6 +28,7 @@ import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -82,7 +84,7 @@ public class TaskStateZookeeperStoreTest {
         EngineID me = EngineID.me();
 
         // Change
-        String checkpoint = "test checkpoint";
+        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
         TaskState state = stateStorage.getState(id)
                 .markRunning(me)
                 .checkpoint(checkpoint);
@@ -158,7 +160,7 @@ public class TaskStateZookeeperStoreTest {
 
         // update
         EngineID engineID = EngineID.of(UUID.randomUUID().toString());
-        String checkpoint = "test checkpoint";
+        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
 
         TaskState state = stateStorage.getState(id);
         stateStorage.updateState(state.markRunning(engineID).checkpoint(checkpoint));

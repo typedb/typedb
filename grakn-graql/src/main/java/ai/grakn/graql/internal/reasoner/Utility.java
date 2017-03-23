@@ -347,7 +347,7 @@ public class Utility {
         VarAdmin endVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "z").rel(name(toRoleName), "y").admin();
         VarAdmin headVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
-        return graph.admin().getMetaRuleInference().addRule(body, headVar);
+        return graph.admin().getMetaRuleInference().putRule(body, headVar);
     }
 
     /**
@@ -364,7 +364,7 @@ public class Utility {
 
         Var body = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "y");
         Var head = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "x");
-        return graph.admin().getMetaRuleInference().addRule(body, head);
+        return graph.admin().getMetaRuleInference().putRule(body, head);
     }
 
     /**
@@ -390,7 +390,7 @@ public class Utility {
             parentVar = parentVar.rel(name(entry.getKey()), var(varName));
             childVar = childVar.rel(name(entry.getValue()), var(varName));
         }
-        return graph.admin().getMetaRuleInference().addRule(childVar, parentVar);
+        return graph.admin().getMetaRuleInference().putRule(childVar, parentVar);
     }
 
     /**
@@ -417,7 +417,7 @@ public class Utility {
         });
 
         Var headVar = var().isa(name(relation.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), var(varNames.peek()));
-        return graph.admin().getMetaRuleInference().addRule(Patterns.conjunction(bodyVars), headVar);
+        return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
     }
     
     /**
