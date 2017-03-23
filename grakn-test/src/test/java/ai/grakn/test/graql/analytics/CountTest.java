@@ -101,10 +101,18 @@ public class CountTest {
         GraknSparkComputer.clear();
         // running 4 jobs at the same time
         list.parallelStream()
-                .map(i -> factory.getGraph().graql().compute().count().execute())
+                .map(i -> {
+                    try (GraknGraph graph = factory.getGraph()) {
+                        return graph.graql().compute().count().execute();
+                    }
+                })
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
         list.parallelStream()
-                .map(i -> factory.getGraph().graql().compute().count().execute())
+                .map(i -> {
+                    try (GraknGraph graph = factory.getGraph()) {
+                        return graph.graql().compute().count().execute();
+                    }
+                })
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
     }
 }

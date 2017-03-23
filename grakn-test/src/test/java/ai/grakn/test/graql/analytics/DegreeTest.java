@@ -31,8 +31,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
-import ai.grakn.graql.ComputeQuery;
-import ai.grakn.graql.internal.analytics.GraknVertexProgram;
 import ai.grakn.test.EngineContext;
 import com.google.common.collect.Sets;
 import org.junit.Before;
@@ -123,15 +121,17 @@ public class DegreeTest {
         }
         GraknSparkComputer.clear();
         list.parallelStream().forEach(i -> {
-            Map<Long, Set<String>> degrees = factory.getGraph().graql().compute().degree().execute();
+            try (GraknGraph graph = factory.getGraph()) {
+                Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
 
-            assertEquals(3, degrees.size());
-            degrees.entrySet().forEach(entry -> entry.getValue().forEach(
-                    id -> {
-                        assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
-                        assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
-                    }
-            ));
+                assertEquals(3, degrees.size());
+                degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                        id -> {
+                            assertTrue(correctDegrees.containsKey(ConceptId.of(id)));
+                            assertEquals(correctDegrees.get(ConceptId.of(id)), entry.getKey());
+                        }
+                ));
+            }
         });
 
         Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
