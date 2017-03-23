@@ -39,14 +39,14 @@ import java.util.Collection;
 public interface RuleType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Add a new Rule, given Patterns for the Left Hand Side and Right Hand Side.
+     * Adds a new Rule if it does not exist otherwise returns the existing rule.
      * @see Pattern
      *
      * @param lhs A string representing the left hand side Graql query.
      * @param rhs A string representing the right hand side Graql query.
      * @return a new Rule
      */
-    Rule addRule(Pattern lhs, Pattern rhs);
+    Rule putRule(Pattern lhs, Pattern rhs);
 
     //---- Inherited Methods
     /**
