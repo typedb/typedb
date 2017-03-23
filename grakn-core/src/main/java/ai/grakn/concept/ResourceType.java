@@ -101,6 +101,22 @@ public interface ResourceType<D> extends Type {
      */
     Resource<D> putResource(D value);
 
+    /**
+     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     *
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    ResourceType<D> key(ResourceType resourceType);
+
+    /**
+     * Creates a RelationType which allows this type and a resource type to be linked.
+     *
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    ResourceType<D> hasResource(ResourceType resourceType);
+
     //------------------------------------- Accessors ---------------------------------
     /**
      * Returns the supertype of this ResourceType.

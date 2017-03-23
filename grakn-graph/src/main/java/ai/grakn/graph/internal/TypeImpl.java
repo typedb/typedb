@@ -519,7 +519,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param required Indicates if the resource is required on the entity
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
-    public RelationType hasResource(ResourceType resourceType, boolean required){
+    public T hasResource(ResourceType resourceType, boolean required){
         //Check if this is a met type
         checkTypeMutation();
 
@@ -556,7 +556,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         this.playsRole(ownerRole, required);
         ((ResourceTypeImpl) resourceType).playsRole(valueRole, required);
 
-        return relationType;
+        return getThis();
     }
 
     /**
@@ -574,12 +574,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
      */
     @Override
-    public RelationType hasResource(ResourceType resourceType){
+    public T hasResource(ResourceType resourceType){
         return hasResource(resourceType, false);
     }
 
     @Override
-    public RelationType key(ResourceType resourceType) {
+    public T key(ResourceType resourceType) {
         return hasResource(resourceType, true);
     }
 }
