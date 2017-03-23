@@ -178,7 +178,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return A relation which contains both the entity and the resource
      */
     @Override
-    public Relation hasResource(Resource resource){
+    public T hasResource(Resource resource){
         TypeName name = resource.type().getName();
         RelationType hasResource = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE.getName(name));
         RoleType hasResourceTarget = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
@@ -192,7 +192,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         relation.putRolePlayer(hasResourceTarget, this);
         relation.putRolePlayer(hasResourceValue, resource);
 
-        return relation;
+        return getThis();
     }
 
     /**
