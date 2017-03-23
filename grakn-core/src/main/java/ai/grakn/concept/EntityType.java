@@ -98,7 +98,7 @@ public interface EntityType extends Type{
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    EntityType hasResource(ResourceType resourceType);
+    EntityType resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ----------------------------------
     /**

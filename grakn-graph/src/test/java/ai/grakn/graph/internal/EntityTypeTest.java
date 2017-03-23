@@ -240,7 +240,7 @@ public class EntityTypeTest extends GraphTestBase{
         TypeName hasResourceValueName = Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName);
         TypeName hasResourceName = Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName);
 
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
 
         RelationType relationType = graknGraph.getRelationType(hasResourceName.getValue());
         assertEquals(hasResourceName, relationType.getName());

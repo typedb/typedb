@@ -44,7 +44,7 @@ public interface Rule extends Instance{
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
-    Rule hasResource(Resource resource);
+    Rule resource(Resource resource);
 
     //------------------------------------- Accessors ----------------------------------
     /**

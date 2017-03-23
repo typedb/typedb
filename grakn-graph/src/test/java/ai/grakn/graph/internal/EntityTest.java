@@ -120,7 +120,7 @@ public class EntityTest extends GraphTestBase{
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
-        entity.hasResource(resource);
+        entity.resource(resource);
         Relation relation = entity.relations().iterator().next();
         assertEquals(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
@@ -164,9 +164,9 @@ public class EntityTest extends GraphTestBase{
         Resource resource2 = resourceType.putResource("Another resource thing");
 
         assertEquals(0, entity.relations().size());
-        entity.hasResource(resource1);
+        entity.resource(resource1);
         assertEquals(1, entity.relations().size());
-        entity.hasResource(resource2);
+        entity.resource(resource2);
         assertEquals(2, entity.relations().size());
 
         graknGraph.validateGraph();

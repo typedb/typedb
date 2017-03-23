@@ -93,7 +93,7 @@ public interface RoleType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    RoleType hasResource(ResourceType resourceType);
+    RoleType resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ----------------------------------
     /**
