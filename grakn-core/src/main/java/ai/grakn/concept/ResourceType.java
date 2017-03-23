@@ -19,13 +19,15 @@
 package ai.grakn.concept;
 
 
+import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
-import java.util.Date;
 import java.util.function.Function;
 
 /**
@@ -209,32 +211,16 @@ public interface ResourceType<D> extends Type {
                 (v) -> v,
                 o -> defaultConverter(o, Float.class, (v) -> Float.parseFloat(v.toString())));
 
-        private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter){
-            if(o == null){
-                return null;
-            } else if(clazz.isInstance(o)){
-                //noinspection unchecked
-                return (X) o;
-            } else {
-                return converter.apply(o);
-            }
-        }
-
-        public static final DataType<Date> DATE = new DataType<>(
-                Date.class.getName(),
+        public static final DataType<LocalDateTime> DATE = new DataType<>(
+                LocalDateTime.class.getName(),
                 Schema.ConceptProperty.VALUE_DATE,
-                (d) -> {
-                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss");
-                    return sdf.format(d);
-                },
-                (o) -> {SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss");
-                    if(o == null) return null;
-
-                    try {
-                        return sdf.parse(o.toString());
-                    } catch (ParseException e) {
-                        throw new RuntimeException(e);
+                (d) -> d.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                (o) -> {
+                    if (o == null) return null;
+                    if (!(o instanceof Long)) {
+                        throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(o, Long.class.getName()));
                     }
+                    return LocalDateTime.ofInstant(Instant.ofEpochMilli((long) o), ZoneId.systemDefault());
                 });
 
         public static final ImmutableMap<String, DataType<?>> SUPPORTED_TYPES = ImmutableMap.<String, DataType<?>>builder()
@@ -252,11 +238,23 @@ public interface ResourceType<D> extends Type {
         private final Function<D, Object> persistenceValueSupplier;
         private final Function<Object, D> valueSupplier;
 
+
         private DataType(String dataType, Schema.ConceptProperty conceptProperty, Function<D, Object> savedValueProvider, Function<Object, D> valueSupplier){
             this.dataType = dataType;
             this.conceptProperty = conceptProperty;
             this.persistenceValueSupplier = savedValueProvider;
             this.valueSupplier = valueSupplier;
+        }
+
+        private static <X> X defaultConverter(Object o, Class clazz, Function<Object, X> converter){
+            if(o == null){
+                return null;
+            } else if(clazz.isInstance(o)){
+                //noinspection unchecked
+                return (X) o;
+            } else {
+                return converter.apply(o);
+            }
         }
 
         public String getName(){

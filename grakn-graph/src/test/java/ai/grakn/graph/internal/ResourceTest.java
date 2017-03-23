@@ -28,8 +28,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.exception.ConceptNotUniqueException;
 import org.junit.Test;
 
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.time.LocalDateTime;
 
 import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 import static ai.grakn.util.ErrorMessage.RESOURCE_TYPE_UNIQUE;
@@ -188,9 +187,9 @@ public class ResourceTest extends GraphTestBase{
 
     @Test
     public void whenSavingDateIntoResource_DateIsReturnedInSameFormat(){
-        Date date = new GregorianCalendar(1988, 9, 9, 2, 33, 44).getTime();
-        ResourceType<Date> resourceType = graknGraph.putResourceType("My Birthday", ResourceType.DataType.DATE);
-        Resource<Date> myBirthday = resourceType.putResource(date);
+        LocalDateTime date = LocalDateTime.now();
+        ResourceType<LocalDateTime> resourceType = graknGraph.putResourceType("My Birthday", ResourceType.DataType.DATE);
+        Resource<LocalDateTime> myBirthday = resourceType.putResource(date);
 
         assertEquals(date, myBirthday.getValue());
         assertEquals(myBirthday, resourceType.getResource(date));
