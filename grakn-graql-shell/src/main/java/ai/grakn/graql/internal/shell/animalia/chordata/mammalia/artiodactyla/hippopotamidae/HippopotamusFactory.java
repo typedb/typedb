@@ -19,6 +19,11 @@
 
 package ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae;
 
+import jline.console.ConsoleReader;
+import org.apache.commons.lang.StringUtils;
+
+import java.io.IOException;
+
 public class HippopotamusFactory {
 
     private int size = 10;
@@ -40,5 +45,34 @@ public class HippopotamusFactory {
         } else {
             return new TitanicHippopotamusImpl();
         }
+    }
+
+    /**
+     * Raise population of hippopotamus amphibius within console.
+     * @param console
+     */
+    public static void increasePop(ConsoleReader console) {
+        HippopotamusFactory builder = HippopotamusFactory.builder();
+
+        if (System.getenv("HIPPO_SIZE") != null) {
+            int hippoSize = Integer.parseInt(System.getenv("HIPPO_SIZE"));
+            builder.size(hippoSize);
+        }
+
+        Hippopotamus hippo = builder.build();
+
+        try {
+            for (double i = 0; i < Math.PI; i += 0.1) {
+                console.println(hippo.toString().replaceAll("^|\n", "\n" + StringUtils.repeat(" ", (int) (Math.sin(i) * 100))));
+                console.flush();
+                Thread.sleep(100);
+            }
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Supercalafrajilistichippopotamusexception");
+        }
+
+        hippo.submerge();
+
+        console.setPrompt(hippo.toString());
     }
 }
