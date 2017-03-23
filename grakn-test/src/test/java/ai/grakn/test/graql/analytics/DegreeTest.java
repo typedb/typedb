@@ -134,6 +134,7 @@ public class DegreeTest {
             }
         });
 
+        graph = factory.getGraph();
         Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
 
         assertEquals(2, degrees2.size());
