@@ -38,7 +38,7 @@ public class HippopotamusFactory {
         } else if (size < Integer.MAX_VALUE) {
             return new LargeHippopotamusImpl();
         } else {
-            return new MassiveHippopotamusImpl();
+            return new TitanicHippopotamusImpl();
         }
     }
 }

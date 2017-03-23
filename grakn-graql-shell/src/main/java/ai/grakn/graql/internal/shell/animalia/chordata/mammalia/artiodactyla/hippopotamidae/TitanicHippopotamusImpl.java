@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae;
 
-public class MassiveHippopotamusImpl implements Hippopotamus {
+public class TitanicHippopotamusImpl implements Hippopotamus {
 
     private String me =
             "                     .^.,*.\n" +
