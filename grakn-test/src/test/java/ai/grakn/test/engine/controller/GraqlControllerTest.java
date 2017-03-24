@@ -23,9 +23,7 @@ import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.QueryBuilder;
-import ai.grakn.graql.analytics.CountQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
@@ -42,14 +40,13 @@ import spark.Service;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.test.GraknTestEnv.usingTitan;
-import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
 import static com.jayway.restassured.RestAssured.with;
-import static java.util.stream.Collectors.joining;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -57,8 +54,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -117,7 +112,6 @@ public class GraqlControllerTest {
     //TODO compute
     //TODO concept api
     //TODO ontology api
-    //TODO json printing functionality
     //TODO string constants
     //TODO documentation
     //TODO Remove Utilities
@@ -300,10 +294,7 @@ public class GraqlControllerTest {
         String query = "match $x isa person;";
         Response response = sendMatch(APPLICATION_TEXT);
 
-        String expectedResponse = graphContext.graph().graql().parse(query)
-                .resultsString(Printers.graql())
-                .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
-                .collect(joining("\n"));
+        String expectedResponse = Printers.graql().graqlString(graphContext.graph().graql().parse(query).execute());
         assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
@@ -320,6 +311,38 @@ public class GraqlControllerTest {
         Response response = sendMatch("match $x isa \"runtime\";", APPLICATION_TEXT);
 
         assertThat(stringResponse(response), isEmptyString());
+    }
+
+    @Test
+    public void sendingGraqlMatchWithGraqlJsonType_ResponseContentTypeIsGraqlJson(){
+        Response response = sendMatch(APPLICATION_JSON_GRAQL);
+
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
+    }
+
+    @Test
+    public void sendingGraqlMatchWithGraqlJsonType_ResponseIsCorrectGraql(){
+        String query = "match $x isa person;";
+        Response response = sendMatch(APPLICATION_JSON_GRAQL);
+
+        Json expectedResponse = Json.read(
+                Printers.json().graqlString(graphContext.graph().graql().parse(query).execute()));
+        assertThat(jsonResponse(response), equalTo(expectedResponse));
+    }
+
+    @Test
+    public void sendingGraqlMatchWithGraqlJsonType_ResponseContainsOriginalQuery(){
+        String query = "match $x isa person;";
+        Response response = sendMatch(APPLICATION_JSON_GRAQL);
+
+        assertThat(originalQuery(response), equalTo(query));
+    }
+
+    @Test
+    public void sendingGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject(){
+        Response response = sendMatch("match $x isa \"runtime\";", APPLICATION_JSON_GRAQL);
+
+        assertThat(jsonResponse(response), equalTo(Json.array()));
     }
 
     @Test
@@ -506,6 +529,7 @@ public class GraqlControllerTest {
     }
 
     private static Json jsonResponse(Response response){
+        System.out.println(response.getBody().as(Json.class, jsonMapper).at("response"));
         return response.getBody().as(Json.class, jsonMapper).at("response");
     }
 

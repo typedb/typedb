@@ -26,6 +26,7 @@ import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Printer;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
@@ -49,13 +50,14 @@ import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.render
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static java.lang.Boolean.parseBoolean;
 
 /**
  * <p>
- * Endpoints used to query the graph by ID or Graql match query and build a HAL or Graql response.
+ * Endpoints used to query the graph using Graql and build a HAL, Graql or Json response.
  * </p>
  *
  * @author Marco Scoppetta, alexandraorth
@@ -179,7 +181,10 @@ public class GraqlController {
 
         switch (acceptType){
             case APPLICATION_TEXT:
-                body.set("response", formatAsGraql(query));
+                body.set("response", formatAsGraql(Printers.graql(), query));
+                break;
+            case APPLICATION_JSON_GRAQL:
+                body.set("response", Json.read(formatAsGraql(Printers.json(), query)));
                 break;
             case APPLICATION_HAL:
                 // Extract extra information needed by HAL renderer
@@ -228,15 +233,13 @@ public class GraqlController {
     }
 
     /**
-     * Format query results as Graql
+     * Format query results as Graql based on the provided printer
      *
      * @param query query to format
      * @return Graql representation
      */
-    private String formatAsGraql(Query<?> query) {
-        return query.resultsString(Printers.graql())
-                .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
-                .collect(Collectors.joining("\n"));
+    private String formatAsGraql(Printer printer, Query<?> query) {
+        return printer.graqlString( query.execute());
     }
 
     private static String getAcceptType(Request request){
