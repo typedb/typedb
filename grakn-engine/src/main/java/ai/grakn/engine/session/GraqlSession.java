@@ -224,16 +224,16 @@ class GraqlSession {
                 errorMessage = "An unexpected error occurred";
                 LOG.error(errorMessage,e);
             } finally {
-                // Refresh the graph, in case it has been closed by analytics
-                // TODO: Handle this elsewhere (analytics or graph factory?)
-                attemptRefresh();
-
                 if (errorMessage != null) {
                     if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
                         graph.close();
                     }
                     sendQueryError(errorMessage);
                 }
+
+                // Refresh the graph, in case it has been closed by analytics
+                // TODO: Handle this elsewhere (analytics or graph factory?)
+                attemptRefresh();
 
                 sendEnd();
             }
