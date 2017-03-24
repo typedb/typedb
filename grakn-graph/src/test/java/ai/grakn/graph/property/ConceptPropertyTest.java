@@ -238,7 +238,6 @@ public class ConceptPropertyTest {
         withImplicitConceptsVisible(graph, g -> {
             if (concept.isType()) {
                 Type type = concept.asType();
-                assumeThat(type.playsRoles(), empty());
                 assumeThat(type.subTypes(), contains(type));
                 assumeThat(type.instances(), empty());
                 assumeThat(type.getRulesOfHypothesis(), empty());
