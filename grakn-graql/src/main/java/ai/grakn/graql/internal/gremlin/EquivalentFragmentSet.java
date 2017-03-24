@@ -18,9 +18,10 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import com.google.common.collect.ImmutableSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.common.collect.ImmutableSet;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -52,9 +53,16 @@ public class EquivalentFragmentSet {
     }
 
     /**
+     * @return a set of fragments that this EquivalentFragmentSet contains
+     */
+    Set<Fragment> fragments() {
+        return fragments;
+    }
+
+    /**
      * @return a stream of fragments that this EquivalentFragmentSet contains
      */
-    Stream<Fragment> getFragments() {
+    Stream<Fragment> streamFragments() {
         return fragments.stream();
     }
 

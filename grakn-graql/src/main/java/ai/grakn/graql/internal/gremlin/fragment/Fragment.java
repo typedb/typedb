@@ -25,7 +25,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -89,7 +88,7 @@ public interface Fragment {
     /**
      * Get all variable names in the fragment - the start and end (if present)
      */
-    Stream<VarName> getVariableNames();
+    Set<VarName> getVariableNames();
 
     /**
      * A starting fragment is a fragment that can start a traversal.
