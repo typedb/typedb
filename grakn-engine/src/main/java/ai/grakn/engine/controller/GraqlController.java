@@ -86,7 +86,7 @@ public class GraqlController {
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
             if(!readOnly(query)){
-                throw new IllegalArgumentException("Only \"read-only\" queries are allowed.");
+                throw new GraknEngineServerException(405, "Only \"read-only\" queries are allowed.");
             }
 
             return respond(request, query, response);
