@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.shell.GraqlCompleter;
 import ai.grakn.graql.internal.shell.ShellCommandCompleter;
 import ai.grakn.util.GraknVersion;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import jline.console.ConsoleReader;
@@ -58,6 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.shell.animalia.chordata.mammalia.artiodactyla.hippopotamidae.HippopotamusFactory.increasePop;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_CLEAN;
 import static ai.grakn.util.REST.RemoteShell.ACTION_COMMIT;
@@ -82,6 +84,9 @@ import static ai.grakn.util.REST.RemoteShell.QUERY_RESULT;
 import static ai.grakn.util.REST.RemoteShell.TYPES;
 import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
+import static ai.grakn.util.Schema.BaseType.TYPE;
+import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
+import static ai.grakn.util.Schema.Resource.HAS_RESOURCE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -116,6 +121,9 @@ public class GraqlShell {
     private static final String EXIT_COMMAND = "exit";
     private static final String LICENSE_COMMAND = "license";
     private static final String CLEAN_COMMAND = "clean";
+    private static final String HI_POP_COMMAND =
+            HAS_RESOURCE.name().substring(0, 1) + INFERENCE_RULE.name().substring(0, 1) +
+            Strings.repeat(TYPE.name().substring(2, 3), 2) + Object.class.getSimpleName().substring(0, 1);
 
     private static final int QUERY_CHUNK_SIZE = 1000;
 
@@ -395,6 +403,11 @@ public class GraqlShell {
                         // Ignore empty command
                         continue;
                 }
+            }
+
+            if (queryString.equals(HI_POP_COMMAND)) {
+                increasePop(console);
+                continue;
             }
 
             // Load from a file if load command used
