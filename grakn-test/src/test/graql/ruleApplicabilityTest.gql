@@ -41,13 +41,16 @@ relation2 sub relation
     has-role role2
     has-role role3;
 
+binary sub relation
+    has-role role1
+    has-role role2;
+
 #Rules
 
 isa inference-rule
 	lhs {
-		$x isa entity1;
-		$y isa entity2;
-		$z isa entity3;
+		(role1: $x, role2: $y) isa binary;
+		(role1: $y, role2: $z) isa binary;
 	}
 	rhs {
 		(role1:$x, role2:$y, role3: $z) isa relation1;

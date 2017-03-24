@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
+import java.time.Instant;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -43,6 +44,7 @@ import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.time.Duration.between;
 import static java.time.Instant.now;
 
 /**
@@ -66,9 +68,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
 
-    private static final int NUM_UNHANDLED_TASKS_BEFORE_BACKOFF = 5;
     private static final int INITIAL_BACKOFF = 1_000;
     private static final int MAX_BACKOFF = 60_000;
+    private final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF;
 
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
@@ -78,12 +80,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param manager a place to control the lifecycle of tasks
      * @param offsetStorage a place to externally store kafka offsets
      */
-    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage){
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff){
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = manager.newConsumer();
         this.engineID = engineID;
         this.offsetStorage = offsetStorage;
+        this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
     }
 
     /**
@@ -104,7 +107,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void run() {
         LOG.debug("started");
 
-        int unhandledTasks = 0;
+        Instant timeTaskLastHandled = now();
         int backOff = INITIAL_BACKOFF;
 
         while (!wakeUp.get()) {
@@ -117,10 +120,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                     TaskState task = record.value();
                     boolean handled = handleTask(task);
 
-                    if (!handled) {
-                        unhandledTasks += 1;
-                    } else {
-                        unhandledTasks = 0;
+                    if (handled) {
+                        timeTaskLastHandled = now();
                     }
 
                     offsetStorage.saveOffset(consumer, new TopicPartition(record.topic(), record.partition()));
@@ -129,8 +130,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 }
 
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
-                if (unhandledTasks >= NUM_UNHANDLED_TASKS_BEFORE_BACKOFF) {
-                    LOG.trace("received " + unhandledTasks + " unhandled tasks in a row, sleeping for " + backOff + "ms");
+                long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
+                if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
+                    LOG.debug("has been  " + timeSinceLastHandledTask + " ms since handeled task, sleeping for " + backOff + "ms");
                     Thread.sleep(backOff);
                     backOff *= 2;
                     if (backOff > MAX_BACKOFF) backOff = MAX_BACKOFF;
@@ -140,6 +142,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
             } catch (Throwable throwable){
                 LOG.error("error thrown", throwable);
+                assert false; // This should be unreachable, but in production we still handle it for robustness
             }
         }
 
@@ -174,7 +177,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private boolean handleTask(TaskState task) {
         LOG.debug("{}\treceived", task);
 
-        if(shouldDelayTask(task)){
+        if (shouldStopTask(task)) {
+            stopTask(task);
+            return true;
+        } else if(shouldDelayTask(task)){
             resubmitTask(task);
             return false;
         } else if (shouldExecuteTask(task)) {
@@ -210,15 +216,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             if(taskShouldResume(task)){
                 completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
             } else {
-                // Mark as running
+                //Mark as running
                 task.markRunning(engineID);
 
-                //TODO Make this a put within state storage
-                if(storage.containsTask(task.getId())) {
-                    storage.updateState(task);
-                } else {
-                    storage.newState(task);
-                }
+                putState(task);
 
                 LOG.debug("{}\tmarked as running", task);
 
@@ -230,14 +231,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             } else {
                 task.markStopped();
             }
-            LOG.debug("{}\tmarked as completed", task);
         } catch (Throwable throwable) {
             task.markFailed(throwable);
-            LOG.debug("{}\tmarked as failed", task);
         } finally {
             runningTask = null;
             runningTaskId = null;
             storage.updateState(task);
+            LOG.debug("{}\tmarked as {}", task, task.status());
         }
     }
 
@@ -248,6 +248,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private void resubmitTask(TaskState task){
         manager.addTask(task);
+        LOG.debug("{}\tresubmitted", task);
+    }
+
+    private void stopTask(TaskState task) {
+        task.markStopped();
+        putState(task);
+        LOG.debug("{}\t marked as stopped", task);
     }
 
     private boolean shouldExecuteTask(TaskState task) {
@@ -292,6 +299,19 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private boolean taskShouldResume(TaskState task){
         return task.checkpoint() != null && task.status().equals(RUNNING);
+    }
+
+    private boolean shouldStopTask(TaskState task) {
+        return manager.isTaskMarkedStopped(task.getId());
+    }
+
+    private void putState(TaskState taskState) {
+        //TODO Make this a put within state storage
+        if(storage.containsTask(taskState.getId())) {
+            storage.updateState(taskState);
+        } else {
+            storage.newState(taskState);
+        }
     }
 
     /**

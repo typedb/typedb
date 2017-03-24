@@ -63,65 +63,65 @@ public class Fragments {
         return new OutHasRoleFragment(start, end);
     }
 
-    public static InIsaFragment inIsa(VarName start, VarName end) {
+    public static Fragment inIsa(VarName start, VarName end) {
         return new InIsaFragment(start, end, false);
     }
 
-    public static OutIsaFragment outIsa(VarName start, VarName end) {
+    public static Fragment outIsa(VarName start, VarName end) {
         return new OutIsaFragment(start, end, false);
     }
 
     // This method is a special case that allows getting the instances of role-types (castings)
-    public static InIsaFragment inIsaCastings(VarName start, VarName end) {
+    public static Fragment inIsaCastings(VarName start, VarName end) {
         return new InIsaFragment(start, end, true);
     }
 
     // This method is a special case that allows getting the instances of role-types (castings)
-    public static OutIsaFragment outIsaCastings(VarName start, VarName end) {
+    public static Fragment outIsaCastings(VarName start, VarName end) {
         return new OutIsaFragment(start, end, true);
     }
 
-    public static InHasScopeFragment inHasScope(VarName start, VarName end) {
+    public static Fragment inHasScope(VarName start, VarName end) {
         return new InHasScopeFragment(start, end);
     }
 
-    public static OutHasScopeFragment outHasScope(VarName start, VarName end) {
+    public static Fragment outHasScope(VarName start, VarName end) {
         return new OutHasScopeFragment(start, end);
     }
 
-    public static DataTypeFragment dataType(VarName start, ResourceType.DataType dataType) {
+    public static Fragment dataType(VarName start, ResourceType.DataType dataType) {
         return new DataTypeFragment(start, dataType);
     }
 
-    public static InPlaysRoleFragment inPlaysRole(VarName start, VarName end, boolean required) {
+    public static Fragment inPlaysRole(VarName start, VarName end, boolean required) {
         return new InPlaysRoleFragment(start, end, required);
     }
 
-    public static OutPlaysRoleFragment outPlaysRole(VarName start, VarName end, boolean required) {
+    public static Fragment outPlaysRole(VarName start, VarName end, boolean required) {
         return new OutPlaysRoleFragment(start, end, required);
     }
 
-    public static InCastingFragment inCasting(VarName start, VarName end) {
+    public static Fragment inCasting(VarName start, VarName end) {
         return new InCastingFragment(start, end);
     }
 
-    public static OutCastingFragment outCasting(VarName start, VarName end) {
+    public static Fragment outCasting(VarName start, VarName end) {
         return new OutCastingFragment(start, end);
     }
 
-    public static InRolePlayerFragment inRolePlayer(VarName start, VarName end) {
+    public static Fragment inRolePlayer(VarName start, VarName end) {
         return new InRolePlayerFragment(start, end);
     }
 
-    public static OutRolePlayerFragment outRolePlayer(VarName start, VarName end) {
+    public static Fragment outRolePlayer(VarName start, VarName end) {
         return new OutRolePlayerFragment(start, end);
     }
 
-    public static DistinctCastingFragment distinctCasting(VarName start, VarName otherCastingName) {
+    public static Fragment distinctCasting(VarName start, VarName otherCastingName) {
         return new DistinctCastingFragment(start, otherCastingName);
     }
 
-    public static IdFragment id(VarName start, ConceptId id) {
+    public static Fragment id(VarName start, ConceptId id) {
         return new IdFragment(start, id);
     }
 
@@ -129,23 +129,23 @@ public class Fragments {
         return new NameFragment(start, name);
     }
 
-    public static ValueFragment value(VarName start, ValuePredicateAdmin predicate) {
+    public static Fragment value(VarName start, ValuePredicateAdmin predicate) {
         return new ValueFragment(start, predicate);
     }
 
-    public static IsAbstractFragment isAbstract(VarName start) {
+    public static Fragment isAbstract(VarName start) {
         return new IsAbstractFragment(start);
     }
 
-    public static RegexFragment regex(VarName start, String regex) {
+    public static Fragment regex(VarName start, String regex) {
         return new RegexFragment(start, regex);
     }
 
-    public static ValueFlagFragment value(VarName start) {
+    public static Fragment value(VarName start) {
         return new ValueFlagFragment(start);
     }
 
-    public static NotCastingFragment notCasting(VarName start) {
+    public static Fragment notCasting(VarName start) {
         return new NotCastingFragment(start);
     }
 

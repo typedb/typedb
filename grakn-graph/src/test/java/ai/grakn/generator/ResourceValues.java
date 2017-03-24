@@ -21,6 +21,10 @@ package ai.grakn.generator;
 
 import ai.grakn.concept.ResourceType;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 /**
  * Generator that generates random valid resource values.
  */
@@ -47,6 +51,10 @@ public class ResourceValues extends AbstractGenerator<Object> {
             clazz = Class.forName(className);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Unrecognised class " + className);
+        }
+
+        if(clazz.equals(LocalDateTime.class)){
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(random.nextLong()), ZoneId.systemDefault());
         }
 
         return gen(clazz);

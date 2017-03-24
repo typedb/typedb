@@ -19,10 +19,8 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -43,15 +41,15 @@ public class PlanTest {
         VarName y = VarName.of("y");
         VarName z = VarName.of("z");
 
-        Plan plan = Plan.base()
-                .append(outIsa(y, a))
-                .append(shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, z));
+        Fragment outIsa = outIsa(y, a);
+        outIsa.setEquivalentFragmentSet(EquivalentFragmentSet.create());
 
-        Plan plan2 = Plan.base()
-                .append(shortcut(Optional.empty(), Optional.empty(), Optional.empty(), x, y))
-                .append(outIsa(y, a))
-                .append(Fragments.name(a, TypeName.of("person")))
-                .append(shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, z));
+        Fragment shortcut = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, z);
+        shortcut.setEquivalentFragmentSet(EquivalentFragmentSet.create());
+
+        Plan plan = Plan.base();
+        plan.tryPush(outIsa);
+        plan.tryPush(shortcut);
 
         List<Fragment> fragments = plan.fragments();
 

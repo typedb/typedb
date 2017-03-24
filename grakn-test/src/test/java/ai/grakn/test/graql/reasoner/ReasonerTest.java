@@ -53,6 +53,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -76,6 +77,9 @@ public class ReasonerTest {
     public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get());
 
     @ClassRule
+    public static final GraphContext testGraph = GraphContext.preLoad(GeoGraph.get());
+
+    @ClassRule
     public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get());
 
     @ClassRule
@@ -86,6 +90,9 @@ public class ReasonerTest {
 
     @ClassRule
     public static final GraphContext geoGraph3 = GraphContext.preLoad(GeoGraph.get());
+
+    @org.junit.Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -119,7 +126,8 @@ public class ReasonerTest {
         Rule rule = Utility.createTransitiveRule(
                 graph.getRelationType("sublocate"),
                 graph.getRoleType("member-location").getName(),
-                graph.getRoleType("container-location").getName(), graph);
+                graph.getRoleType("container-location").getName(), 
+                graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
         Pattern body = and(graph.graql().parsePatterns(
@@ -135,11 +143,15 @@ public class ReasonerTest {
     @Test
     public void testReflexiveRuleCreation() {
         GraknGraph graph = snbGraph.graph();
-        Rule rule = Utility.createReflexiveRule(graph.getRelationType("knows"), graph);
+        Rule rule = Utility.createReflexiveRule(
+                graph.getRelationType("knows"),
+                graph.getRoleType("acquaintance1").getName(),
+                graph.getRoleType("acquaintance2").getName(),
+                graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
-        Pattern body = and(graph.graql().parsePatterns("($x, $y) isa knows;"));
-        Pattern head = and(graph.graql().parsePatterns("($x, $x) isa knows;"));
+        Pattern body = and(graph.graql().parsePatterns("(acquaintance1: $x, acquaintance2: $y) isa knows;"));
+        Pattern head = and(graph.graql().parsePatterns("(acquaintance1: $x, acquaintance2: $x) isa knows;"));
 
         InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -157,11 +169,16 @@ public class ReasonerTest {
         chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getName(), graph.getRoleType("subject-location").getName()));
         chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getName(), graph.getRoleType("container-location").getName()));
 
-        Rule rule = Utility.createPropertyChainRule(resides, graph.getRoleType("located-subject").getName(),
-                graph.getRoleType("subject-location").getName(), chain, graph);
+        Rule rule = Utility.createPropertyChainRule(
+                resides,
+                graph.getRoleType("located-subject").getName(),
+                graph.getRoleType("subject-location").getName(),
+                chain,
+                graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
-        Pattern body = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $y) isa resides;" +
+        Pattern body = and(graph.graql().parsePatterns(
+                "(located-subject: $x, subject-location: $y) isa resides;" +
                 "(member-location: $z, container-location: $y) isa sublocate;"));
         Pattern head = and(graph.graql().parsePatterns("(located-subject: $x, subject-location: $z) isa resides;"));
 
@@ -171,21 +188,33 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
-        GraknGraph graph = geoGraph.graph();
-        RuleType inferenceRule = graph.admin().getMetaRuleInference();
-
-        Pattern R1_LHS = Graql.and(graph.graql().parsePatterns(
+    public void testAddingRuleWithHeadWithoutRoleTypesNotAllowed() {
+        GraknGraph graph = testGraph.graph();
+        Pattern body = Graql.and(graph.graql().parsePatterns(
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                         "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
-        Pattern R1_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
-        Rule rule1 = inferenceRule.putRule(R1_LHS, R1_RHS);
+        Pattern head = Graql.and(graph.graql().parsePatterns("($x, $z) isa is-located-in;"));
+        exception.expect(IllegalArgumentException.class);
+        Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
+        InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
+    }
 
-        Pattern R2_LHS = Graql.and(graph.graql().parsePatterns(
+    @Test
+    public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
+        GraknGraph graph = testGraph.graph();
+        RuleType inferenceRule = graph.admin().getMetaRuleInference();
+
+        Pattern body1 = Graql.and(graph.graql().parsePatterns(
+                        "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                        "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
+        Pattern head1 = Graql.and(graph.graql().parsePatterns("(geo-entity: $x, entity-location: $z) isa is-located-in;"));
+        Rule rule1 = inferenceRule.putRule(body1, head1);
+
+        Pattern body2 = Graql.and(graph.graql().parsePatterns(
                         "(geo-entity: $l1, entity-location: $l2) isa is-located-in;" +
                         "(geo-entity: $l2, entity-location: $l3) isa is-located-in;"));
-        Pattern R2_RHS = Graql.and(graph.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
-        Rule rule2 = inferenceRule.putRule(R2_LHS, R2_RHS);
+        Pattern head2 = Graql.and(graph.graql().parsePatterns("(geo-entity: $l1, entity-location: $l3) isa is-located-in;"));
+        Rule rule2 = inferenceRule.putRule(body2, head2);
 
         InferenceRule R1 = new InferenceRule(rule1, graph);
         InferenceRule R2 = new InferenceRule(rule2, graph);
@@ -597,7 +626,11 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithRuleContainingVarContraction(){
-        Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
+            Utility.createReflexiveRule(
+                    snbGraph.graph().getRelationType("knows"),
+                    snbGraph.graph().getRoleType("acquaintance1").getName(),
+                    snbGraph.graph().getRoleType("acquaintance2").getName(),
+                    snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
@@ -609,7 +642,11 @@ public class ReasonerTest {
     @Test
     //propagated sub [x/Bob] prevents from capturing the right inference
     public void testReasoningWithRuleContainingVarContraction2(){
-        Utility.createReflexiveRule(snbGraph.graph().getRelationType("knows"), snbGraph.graph());
+            Utility.createReflexiveRule(
+                    snbGraph.graph().getRelationType("knows"),
+                    snbGraph.graph().getRoleType("acquaintance1").getName(),
+                    snbGraph.graph().getRoleType("acquaintance2").getName(),
+                    snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
@@ -622,7 +659,7 @@ public class ReasonerTest {
     //Bug with unification, perhaps should unify select vars not atom vars
     public void testReasoningWithRuleContainingVarContraction3(){
         Pattern body = snbGraph.graph().graql().parsePattern("$x isa person");
-        Pattern head = snbGraph.graph().graql().parsePattern("($x, $x) isa knows");
+        Pattern head = snbGraph.graph().graql().parsePattern("(acquaintance1: $x, acquaintance2: $x) isa knows");
         snbGraph.graph().admin().getMetaRuleInference().putRule(body, head);
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';";
@@ -919,8 +956,10 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithMatchAllQuery(){
         String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
-        String queryString2 = "match $y isa product;{$r(recommended-customer: $x, recommended-product: $y) or " +
-                "$r($x, $y) isa typing or $r($x, $y) isa made-in;};";
+        String queryString2 = "match $y isa product;$x isa entity2;{" +
+                "$r($x, $y) isa recommendation or " +
+                "$r($x, $y) isa typing or " +
+                "$r($x, $y) isa made-in;};";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);

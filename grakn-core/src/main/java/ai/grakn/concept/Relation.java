@@ -56,7 +56,7 @@ public interface Relation extends Instance {
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
-    Relation hasResource(Resource resource);
+    Relation resource(Resource resource);
 
     //------------------------------------- Accessors ----------------------------------
 

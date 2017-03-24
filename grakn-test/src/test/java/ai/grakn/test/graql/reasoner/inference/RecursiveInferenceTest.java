@@ -272,6 +272,7 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
+    //TODO remodel when repeating roles allowed
     @Test
     public void testReachabilitySymmetric(){
         QueryBuilder qb = reachabilitySymmetricContext.graph().graql().infer(false);

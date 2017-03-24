@@ -247,7 +247,7 @@ public class GraknGraphTest extends GraphTestBase {
         //Build Implicit structures
         EntityType type = graknGraph.putEntityType("Concept Type ");
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-        type.hasResource(resourceType);
+        type.resource(resourceType);
 
         assertFalse(graknGraph.implicitConceptsVisible());
 
@@ -258,9 +258,9 @@ public class GraknGraphTest extends GraphTestBase {
         assertEquals(1, graknGraph.getMetaRoleType().subTypes().size());
 
         //Check things are still returned when explicitly asking for them
-        assertNotNull(graknGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
-        assertNotNull(graknGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType.getName())));
-        assertNotNull(graknGraph.getType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceType.getName())));
+        assertNotNull(graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceType.getName())));
 
         //Switch on flag
         graknGraph.showImplicitConcepts(true);

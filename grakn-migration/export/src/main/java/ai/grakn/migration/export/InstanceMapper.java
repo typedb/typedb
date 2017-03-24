@@ -29,7 +29,7 @@ import ai.grakn.graql.Var;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.Resource.HAS_RESOURCE_VALUE;
+import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_VALUE;
 
 /**
  * Map Grakn Core instance to Graql representation

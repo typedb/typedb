@@ -16,8 +16,8 @@ lhs {
 rhs {(member-location: $x, container-location: $z) isa sublocate;};
 
 isa inference-rule,
-lhs {($x, $y) isa moderates;},
-rhs {($x, $y) isa membership;};
+lhs {(moderator: $x, moderated: $y) isa moderates;},
+rhs {(forum-member: $x, membered-forum: $y) isa membership;};
 
 isa inference-rule,
 lhs {$x isa person;
