@@ -20,7 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.controller.GraphFactoryController;
-import ai.grakn.engine.controller.VisualiserController;
+import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.ComputeQuery;
@@ -65,7 +65,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class VisualiserControllerTest {
+public class GraqlControllerTest {
 
     private static final String HOST = "localhost";
     private static final int PORT = 4567;
@@ -88,7 +88,7 @@ public class VisualiserControllerTest {
         mockFactory = mock(EngineGraknGraphFactory.class);
 
         new GraphFactoryController(spark);
-        new VisualiserController(mockFactory, spark);
+        new GraqlController(mockFactory, spark);
 
         spark.awaitInitialization();
     }
@@ -453,6 +453,8 @@ public class VisualiserControllerTest {
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("Kermit The Frog").iterator().next().owner().getId().getValue();
 
+        System.out.println("FROM: " + fromId);
+        System.out.println("TO: " + toId);
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
         Response response = sendMatch(query, APPLICATION_HAL);
 

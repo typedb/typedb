@@ -63,11 +63,11 @@ import static java.lang.Boolean.parseBoolean;
 @Path("/graph")
 @Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
 @Produces({"application/json", "text/plain"})
-public class VisualiserController {
+public class GraqlController {
 
     private final EngineGraknGraphFactory factory;
 
-    public VisualiserController(EngineGraknGraphFactory factory, Service spark) {
+    public GraqlController(EngineGraknGraphFactory factory, Service spark) {
         this.factory = factory;
 
         spark.get(REST.WebPath.Graph.GRAQL, this::executeGraql);
