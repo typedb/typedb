@@ -87,8 +87,6 @@ public class REST {
         public static final String TASK_LOADER_INSERTS = "inserts";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
-        public static final String HAL_CONTENTTYPE = "application/hal+json";
-        public static final String GRAQL_CONTENTTYPE = "application/graql";
         public static final String COMMIT_LOG_TYPE = "concept-base-type";
         public static final String COMMIT_LOG_ID = "concept-vertex-id";
         public static final String COMMIT_LOG_INDEX = "concept-index";
@@ -125,7 +123,7 @@ public class REST {
          * Response content types
          */
         public static class ContentType {
-            public static final String APPLICATION_GRAQL = "application/graql";
+            public static final String APPLICATION_TEXT = "application/text";
             public static final String APPLICATION_HAL ="application/hal+json";
         }
 

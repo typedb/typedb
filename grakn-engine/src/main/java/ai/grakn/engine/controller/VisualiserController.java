@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_GRAQL;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static java.lang.Boolean.parseBoolean;
 
@@ -160,8 +160,8 @@ public class VisualiserController {
         Json body = Json.object("originalQuery", query.toString());
 
         switch (getAcceptType(request)){
-            case APPLICATION_GRAQL:
-                response.type(APPLICATION_GRAQL);
+            case APPLICATION_TEXT:
+                response.type(APPLICATION_TEXT);
                 body.set("response", formatAsGraql(query, limit));
                 break;
             case APPLICATION_HAL:
