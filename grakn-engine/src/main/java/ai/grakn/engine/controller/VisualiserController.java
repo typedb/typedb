@@ -31,6 +31,7 @@ import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
+import java.util.ArrayList;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import spark.Request;
@@ -44,6 +45,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
@@ -91,40 +93,6 @@ public class VisualiserController {
         }
     }
 
-
-//    @GET
-//    @Path("/concept/:uuid")
-//    @ApiOperation(
-//            value = "Return the HAL representation of a given concept.")
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
-//            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-//    })
-//    private Json conceptById(Request request, Response response) {
-//        String keyspace = getMandatoryParameter(request, "keyspace");
-//        int offsetComponents = getParameter(request, "offset").map(Integer::parseInt).orElse(0);
-//        int numEmbeddedComponents = getParameter(request, "offset").map(Integer::parseInt).orElse(-1);
-//
-//        validateContentType(request);
-//
-//        try (GraknGraph graph = factory.getGraph(keyspace)) {
-
-
-
-//            Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
-//
-//            if (concept == null) {
-//                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
-//            }
-//
-//            return renderHALConceptData(concept, separationDegree, keyspace, offset, limit);
-//        } catch (RuntimeException e) {
-//            throw new GraknEngineServerException(500, e);
-//        }
-//
-//        return null;
-//    }
-
     /**
      * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
      * in the request, return a 404 to the client.
@@ -162,15 +130,16 @@ public class VisualiserController {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
+    /**
+     * Check if the supported combinations of query type and content type are true
+     * @param acceptType provided accept type of the request
+     * @param query provided query from the request
+     * @return if the combination of query and accept type is valid
+     */
     private boolean validContentType(String acceptType, Query<?> query){
 
-        // If compute query and NOT HAL invalid
-        if(query instanceof PathQuery && acceptType.equals(APPLICATION_HAL)){
-             return false;
-        }
-
         // If compute other than path and not TEXT invalid
-        else if (query instanceof ComputeQuery && !acceptType.equals(APPLICATION_TEXT)){
+        if (query instanceof ComputeQuery && !(query instanceof PathQuery) && acceptType.equals(APPLICATION_HAL)){
             return false;
         }
 
@@ -211,128 +180,51 @@ public class VisualiserController {
         switch (acceptType){
             case APPLICATION_TEXT:
                 body.set("response", formatAsGraql(query));
-
-                response.type(APPLICATION_TEXT);
                 break;
             case APPLICATION_HAL:
-                int numberEmbeddedComponents = getParameter(request, "offset").map(Integer::parseInt).orElse(-1);
-                body.set("response", formatAsHAL(query, numberEmbeddedComponents));
+                // Extract extra information needed by HAL renderer
+                String keyspace = getMandatoryParameter(request, "keyspace");
+                int numberEmbeddedComponents = getParameter(request, "numberEmbeddedComponents").map(Integer::parseInt).orElse(-1);
 
-                response.type(APPLICATION_HAL);
+                body.set("response", formatAsHAL(query, keyspace, numberEmbeddedComponents));
                 break;
             default:
                 throw new GraknEngineServerException(406, UNSUPPORTED_CONTENT_TYPE, acceptType);
         }
 
+        response.type(acceptType);
         response.body(body.toString());
         response.status(200);
 
         return body;
     }
 
-//
-//    @GET
-//    @Path("/concept/ontology/:uuid")
-//    @ApiOperation(
-//            value = "Return the HAL representation of a given concept.")
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
-//            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-//    })
-//    private String conceptByIdOntology(Request req, Response res) {
-//        String keyspace = getKeyspace(req);
-//
-//        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-//            Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
-//            return renderHALConceptOntology(concept, keyspace);
-//        } catch (RuntimeException e) {
-//            throw new GraknEngineServerException(500, e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/ontology")
-//    @ApiOperation(
-//            value = "Produces a JSONObject containing meta-ontology types instances.",
-//            notes = "The built JSONObject will contain ontology nodes divided in roles, entities, relations and resources.",
-//            response = JSONObject.class)
-//    @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-//    private String ontology(Request req, Response res) {
-//        String keyspace = getKeyspace(req);
-//
-//        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-//            JSONObject responseObj = new JSONObject();
-//            responseObj.put(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
-//            responseObj.put(ENTITIES_JSON_FIELD, instances(graph.admin().getMetaEntityType()));
-//            responseObj.put(RELATIONS_JSON_FIELD, instances(graph.admin().getMetaRelationType()));
-//            responseObj.put(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
-//            return responseObj.toString();
-//        } catch (RuntimeException e) {
-//            throw new GraknEngineServerException(500, e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/analytics")
-//    @ApiOperation(
-//            value = "Executes compute query on the server and build HAL representation of result or returns string containing statistics.")
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "query", value = "Compute query to execute", required = true, dataType = "string", paramType = "query")
-//    })
-//    private String compute(Request req, Response res) {
-//        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
-//
-//            ComputeQuery computeQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
-//            JSONObject response = new JSONObject();
-//            if (computeQuery instanceof PathQuery) {
-//                PathQuery pathQuery = (PathQuery) computeQuery;
-//
-//                Optional<List<Concept>> result = pathQuery.execute();
-//
-//                if (result.isPresent()) {
-//                    response.put(COMPUTE_RESPONSE_TYPE, "HAL");
-//                    JSONArray array = new JSONArray();
-//                    result.get().forEach(concept ->
-//                            array.put(renderHALConceptData(concept, 0, getKeyspace(req), 0, 100))
-//                    );
-//                    response.put(COMPUTE_RESPONSE_FIELD, array);
-//                } else {
-//                    response.put(COMPUTE_RESPONSE_TYPE, "string");
-//                    response.put(COMPUTE_RESPONSE_FIELD, "No path found");
-//                }
-//            } else {
-//                response.put(COMPUTE_RESPONSE_TYPE, "string");
-//                response.put(COMPUTE_RESPONSE_FIELD, formatAsGraql(computeQuery));
-//            }
-//            return response.toString();
-//        } catch (RuntimeException e) {
-//            throw new GraknEngineServerException(500, e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/preMaterialiseAll")
-//    @ApiOperation(value = "Pre materialise all the rules on the graph.")
-//    @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-//    private String preMaterialiseAll(Request req, Response res) {
-//        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
-//            //TODO: Fix ugly casting here
-//            Reasoner.precomputeInferences(graph);
-//            return "Done.";
-//        } catch (RuntimeException e) {
-//            throw new GraknEngineServerException(500, e);
-//        }
-//    }
-//
     /**
      * Format a match query as HAL
      *
      * @param query query to format
+     * @param numberEmbeddedComponents the number of embedded components for the HAL format, taken from the request
+     * @param keyspace the keyspace from the request //TODO only needed because HAL does not support admin interface
      * @return HAL representation
      */
-    private Json formatAsHAL(Query<?> query, int numberEmbeddedComponents) {
-        return renderHALArrayData((MatchQuery) query, 0, numberEmbeddedComponents);
+    private Json formatAsHAL(Query<?> query, String keyspace, int numberEmbeddedComponents) {
+        // This ugly instanceof business needs to be done because the HAL array renderer does not
+        // support Compute queries and because Compute queries do not have the "admin" interface
+
+        if(query instanceof MatchQuery) {
+            return renderHALArrayData((MatchQuery) query, 0, numberEmbeddedComponents);
+        } else if(query instanceof PathQuery) {
+            Json array = Json.array();
+            // The below was taken line-for-line from previous way of rendering
+            ((PathQuery) query).execute()
+                    .orElse(new ArrayList<>())
+                    .forEach(c -> array.add(
+                            renderHALConceptData(c, 0, keyspace, 0, numberEmbeddedComponents)));
+
+            return array;
+        }
+
+        throw new RuntimeException("Unsupported query type in HAL formatter");
     }
 
     /**

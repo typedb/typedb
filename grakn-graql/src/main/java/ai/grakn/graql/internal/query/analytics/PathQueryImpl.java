@@ -72,7 +72,7 @@ class PathQueryImpl extends AbstractComputeQuery<Optional<List<Concept>>> implem
                     new ClusterMemberMapReduce(subTypeNames, ShortestPathVertexProgram.FOUND_IN_ITERATION));
         } catch (RuntimeException e) {
             if ((e instanceof IllegalStateException && e.getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage())) ||
-            (e.getCause() instanceof IllegalStateException && e.getCause().getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage()))) {
+                    (e.getCause() instanceof IllegalStateException && e.getCause().getMessage().equals(ErrorMessage.NO_PATH_EXIST.getMessage()))) {
                 LOGGER.info("ShortestPathVertexProgram is done in " + (System.currentTimeMillis() - startTime) + " ms");
                 return Optional.empty();
             }
