@@ -52,7 +52,7 @@ public class GraknGraphConceptLogTest extends GraphTestBase{
     }
 
     @Test
-    public void testAddConcept () {
+    public void whenAddingTypes () {
         // add concepts to rootGraph in as many ways as possible
         newConcepts.push(graknGraph.putEntityType("test item id"));
         newConcepts.push(graknGraph.putRelationType("test subject id"));
