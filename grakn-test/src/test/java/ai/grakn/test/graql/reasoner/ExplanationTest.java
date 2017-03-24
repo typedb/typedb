@@ -1,3 +1,21 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
@@ -13,8 +31,6 @@ import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -70,15 +86,36 @@ public class ExplanationTest {
 
         assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
         assertEquals(2, getLookupExplanations(queryAnswer2).size());
-        assertEquals(2, getExplicitAnswers(queryAnswer2).size());
+        assertEquals(2, queryAnswer2.getExplicitPath().size());
 
         assertTrue(queryAnswer3.getExplanation().isRuleExplanation());
         assertEquals(2, getRuleExplanations(queryAnswer3).size());
-        assertEquals(3, getExplicitAnswers(queryAnswer3).size());
+        assertEquals(3, queryAnswer3.getExplicitPath().size());
 
         assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
-        assertEquals(4, getExplicitAnswers(queryAnswer4).size());
+        assertEquals(4, queryAnswer4.getExplicitPath().size());
+    }
+
+    @Test
+    public void testExplainingSpecificAnswer(){
+        GraknGraph graph = geoGraph.graph();
+        Concept polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
+        Concept europe = getConcept(graph, "name", "Europe");
+
+        String queryString = "match " +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "$x id '" + polibuda.getId() + "';" +
+                "$y id '" + europe.getId() + "';";
+
+        MatchQuery query = graph.graql().parse(queryString);
+        List<Answer> answers = Reasoner.resolveWithExplanation(query, false).collect(Collectors.toList());
+        assertEquals(answers.size(), 1);
+
+        Answer answer = answers.iterator().next();
+        assertTrue(answer.getExplanation().isRuleExplanation());
+        assertEquals(3, getRuleExplanations(answer).size());
+        assertEquals(4, answer.getExplicitPath().size());
     }
 
     private Concept getConcept(GraknGraph graph, String typeName, Object val){
@@ -93,28 +130,11 @@ public class ExplanationTest {
     }
 
     private Set<AnswerExplanation> getRuleExplanations(Answer a){
-        return getExplanations(a).stream().filter(AnswerExplanation::isRuleExplanation).collect(Collectors.toSet());
+        return a.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).collect(Collectors.toSet());
     }
 
     private Set<AnswerExplanation> getLookupExplanations(Answer a){
-        return getExplanations(a).stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
+        return a.getExplanations().stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
     }
 
-    private Set<AnswerExplanation> getExplanations(Answer a){
-        Set<AnswerExplanation> explanations = Sets.newHashSet(a.getExplanation());
-        a.getExplanation().getAnswers().forEach(ans -> getExplanations(ans).forEach(explanations::add));
-        return explanations;
-    }
-
-    private Set<Answer> getExplicitAnswers(Answer a){
-        return getAnswers(a).stream().filter(ans -> ans.getExplanation().isLookupExplanation()).collect(Collectors.toSet());
-    }
-
-    private Set<Answer> getAnswers(Answer a){return getAnswers(a, true);}
-
-    private Set<Answer> getAnswers(Answer a, boolean top){
-        Set<Answer> answers = top? new HashSet<>() : Sets.newHashSet(a);
-        a.getExplanation().getAnswers().forEach(ans -> getAnswers(ans, false).forEach(answers::add));
-        return answers;
-    }
 }
