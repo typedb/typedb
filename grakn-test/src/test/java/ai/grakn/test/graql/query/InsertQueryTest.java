@@ -42,6 +42,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -547,6 +548,7 @@ public class InsertQueryTest {
         movieGraph.graph().close();
     }
 
+    @Ignore // TODO: Un-ignore this when constraints are designed and implemented
     @Test
     public void testKeyUniqueValue() throws GraknValidationException {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
