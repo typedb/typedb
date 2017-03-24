@@ -29,8 +29,10 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
 public class ShortestPathTest {
@@ -85,7 +87,7 @@ public class ShortestPathTest {
         }
     }
 
-    @Test//(expected = RuntimeException.class)
+    @Test
     public void testShortestPathExceptionPathNotFound() throws Exception {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
