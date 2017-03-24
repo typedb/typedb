@@ -110,7 +110,7 @@ public class GraknEngineFailoverIT {
 
     @Property(trials=1)
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
-            @Size(min=1000, max=10000) List<@NewTask TaskState> tasks) throws Exception {
+            @Size(min=1000, max=5000) List<@NewTask TaskState> tasks) throws Exception {
 
         Set<TaskId> taskIds = sendTasks(engine1.port(), tasks);
 
