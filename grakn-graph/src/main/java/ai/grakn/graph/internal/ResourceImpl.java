@@ -27,7 +27,6 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -102,7 +101,9 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             }
 
             Schema.ConceptProperty property = dataType().getConceptProperty();
-            setImmutableProperty(property, castValue(value), getProperty(property), Function.identity());
+
+            //noinspection unchecked
+            setImmutableProperty(property, castValue(value), getProperty(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
 
             return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type(), value.toString()));
         } catch (ClassCastException e) {
@@ -149,7 +150,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      */
     @Override
     public D getValue(){
-        return getProperty(dataType().getConceptProperty());
+        return dataType().getValue(getProperty(dataType().getConceptProperty()));
     }
 
     @Override

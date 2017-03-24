@@ -559,7 +559,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         HashSet<Resource<V>> resources = new HashSet<>();
         ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
-        getConcepts(dataType.getConceptProperty(), value).forEach(concept -> {
+        //noinspection unchecked
+        getConcepts(dataType.getConceptProperty(), dataType.getPersistenceValue(value)).forEach(concept -> {
             if(concept != null && concept.isResource()) {
                 //noinspection unchecked
                 resources.add(concept.asResource());

@@ -37,6 +37,15 @@ import java.util.Collection;
  *
  */
 public interface Rule extends Instance{
+    //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Creates a relation from this instance to the provided resource.
+     *
+     * @param resource The resource to which a relationship is created
+     * @return The instance itself
+     */
+    Rule hasResource(Resource resource);
+
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves the Left Hand Side of a Graql query.

@@ -60,17 +60,17 @@ public interface Type extends Concept {
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     * @return The Type itself.
      */
-    RelationType key(ResourceType resourceType);
+    Type key(ResourceType resourceType);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     * @return The Type itself.
      */
-    RelationType hasResource(ResourceType resourceType);
+     Type hasResource(ResourceType resourceType);
 
     /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.

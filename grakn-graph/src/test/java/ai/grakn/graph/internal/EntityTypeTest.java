@@ -259,7 +259,9 @@ public class EntityTypeTest extends GraphTestBase{
         TypeName hasResourceValueName = Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName);
         TypeName hasResourceName = Schema.Resource.HAS_RESOURCE.getName(resourceTypeName);
 
-        RelationType relationType = entityType.hasResource(resourceType);
+        entityType.hasResource(resourceType);
+
+        RelationType relationType = graknGraph.getRelationType(hasResourceName.getValue());
         assertEquals(hasResourceName, relationType.getName());
 
         Set<TypeName> roleNames = relationType.hasRoles().stream().map(Type::getName).collect(toSet());
@@ -321,10 +323,8 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("Entity1");
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
-        RelationType relationTypeHasResource = entityType.hasResource(resourceType);
-        RelationType relationTypeKey = entityType.key(resourceType);
-
-        assertEquals(relationTypeHasResource, relationTypeKey);
+        entityType.hasResource(resourceType);
+        entityType.key(resourceType);
 
         // Check that resource is required
         EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
@@ -338,10 +338,8 @@ public class EntityTypeTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("Entity1");
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
-        RelationType relationTypeKey = entityType.key(resourceType);
-        RelationType relationTypeHasResource = entityType.hasResource(resourceType);
-
-        assertEquals(relationTypeHasResource, relationTypeKey);
+        entityType.key(resourceType);
+        entityType.hasResource(resourceType);
 
         // Check that resource is required
         EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();

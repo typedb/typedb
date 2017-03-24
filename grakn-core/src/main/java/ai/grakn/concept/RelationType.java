@@ -59,6 +59,22 @@ public interface RelationType extends Type {
      */
     RelationType deleteScope(Instance scope);
 
+    /**
+     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     *
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    RelationType key(ResourceType resourceType);
+
+    /**
+     * Creates a RelationType which allows this type and a resource type to be linked.
+     *
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    RelationType hasResource(ResourceType resourceType);
+
     //------------------------------------- Accessors ----------------------------------
     /**
      * Retrieves a list of the RoleTypes that make up this RelationType.

@@ -33,6 +33,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
@@ -64,6 +65,19 @@ public class InferenceRule {
         //TODO simplify once changes propagated to rule objects
         body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
+
+        //if head query is a relation query, require roles to be specified
+        if (head.getAtom().isRelation()){
+            Relation headAtom = (Relation) head.getAtom();
+            if (headAtom.getRoleVarTypeMap().keySet().size() < headAtom.getRelationPlayers().size()) {
+                throw new IllegalArgumentException(ErrorMessage.HEAD_ROLES_MISSING.getMessage(this.toString()));
+            }
+        }
+    }
+
+    @Override
+    public String toString(){
+        return  "\n" + this.body.toString() + "\n->\n" + this.head.toString() + "\n";
     }
 
     @Override
@@ -185,7 +199,8 @@ public class InferenceRule {
         }
         //case of match all relation atom
         else{
-            Relation extendedParent = ((Relation) AtomicFactory.create(parentAtom, parentAtom.getParentQuery()))
+            Relation extendedParent = ((Relation) AtomicFactory
+                    .create(parentAtom, parentAtom.getParentQuery()))
                     .addType(childAtom.getType());
             childAtom.getUnifiers(extendedParent).forEach(unifiers::put);
         }
