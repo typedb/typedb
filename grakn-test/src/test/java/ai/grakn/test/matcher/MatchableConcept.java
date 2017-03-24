@@ -34,7 +34,7 @@ import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
  * Wraps a {@link Concept} in order to provide a prettier {@link Object#toString()} representation. This is done using
  * {@link MatchableConcept#NAME_TYPES}, a hard-coded set of common 'name' variables such as "name" and "title'.
  */
-class MatchableConcept {
+public class MatchableConcept {
 
     static final ImmutableSet<TypeName> NAME_TYPES = ImmutableSet.of(TypeName.of("name"), TypeName.of("title"));
 
