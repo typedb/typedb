@@ -20,7 +20,7 @@ package ai.grakn.engine.postprocessing;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.function.Consumer;
-
+import java.util.function.Function;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,9 +31,12 @@ import org.slf4j.LoggerFactory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.exception.GraknLockingException;
 import ai.grakn.util.Schema;
 import mjson.Json;
 
@@ -57,6 +60,21 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     
     private static final Logger LOG = LoggerFactory.getLogger(ResourceDeduplicationTask.class);
     private Long totalEliminated = null;
+    
+    static <T> T transact(GraknGraphFactory factory, Function<GraknGraph, T> work, String description) {
+        while (true) {
+            try (GraknGraph graph = factory.getGraph()) {
+                return work.apply(graph);
+            }
+            catch (GraknLockingException ex) {
+                // Ignore - this exception means we must eventually succeed.
+            }
+            catch (Throwable t) {
+                LOG.error("ResourceDeduplicationTask, while " + description, t);
+                return null;
+            }
+        }
+    }
     
     /**
      * The map-reduce job submitted to the GraknGraphComputer that scan the whole set of resources in the graph and
@@ -143,10 +161,10 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             }
             LOG.debug("Concepts: " + conceptIds);
             if (conceptIds.size() > 1) {
-                // TODO: what if we fail here due to some read-write conflict? 
-                try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
-                    ConceptFixer.runResourceFix(graph, key, conceptIds);
-                }
+                // TODO: what if we fail here due to some read-write conflict?
+                transact(Grakn.factory(Grakn.DEFAULT_URI, keyspace),
+                         (graph) -> ConceptFixer.runResourceFix(graph, key, conceptIds),
+                         "Reducing resource duplicate set " + conceptIds);
                 emitter.emit(key, (long) (conceptIds.size() - 1));
             }
             // Check and maybe delete resource if it's not attached to anything
@@ -179,7 +197,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     }
     
     @Override
-    public boolean start(Consumer<String> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoin, Json configuration) {
         LOG.info("Starting ResourceDeduplicationTask : " + configuration);
         
         String keyspace = configuration.at("keyspace", KEYSPACE_DEFAULT).asString();
@@ -191,17 +209,17 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     }
 
     @Override
+    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
     public boolean stop() {
         return true;
     }
 
     @Override
     public void pause() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void resume(Consumer<String> saveCheckpoint, String lastCheckpoint) {
         throw new UnsupportedOperationException();
     }
 

@@ -248,7 +248,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     }
 
     @Test
-    //@Ignore
+    @Ignore
     public void testDuplicatesOnDifferentEntity() {
         String resourceIndex = transact(graph -> {
            Entity something = thing.addEntity();
