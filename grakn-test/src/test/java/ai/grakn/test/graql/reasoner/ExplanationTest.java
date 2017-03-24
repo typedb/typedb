@@ -14,7 +14,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -70,15 +69,15 @@ public class ExplanationTest {
 
         assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
         assertEquals(2, getLookupExplanations(queryAnswer2).size());
-        assertEquals(2, getExplicitAnswers(queryAnswer2).size());
+        assertEquals(2, queryAnswer2.getExplicitPath().size());
 
         assertTrue(queryAnswer3.getExplanation().isRuleExplanation());
         assertEquals(2, getRuleExplanations(queryAnswer3).size());
-        assertEquals(3, getExplicitAnswers(queryAnswer3).size());
+        assertEquals(3, queryAnswer3.getExplicitPath().size());
 
         assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
-        assertEquals(4, getExplicitAnswers(queryAnswer4).size());
+        assertEquals(4, queryAnswer4.getExplicitPath().size());
     }
 
     private Concept getConcept(GraknGraph graph, String typeName, Object val){
@@ -93,28 +92,11 @@ public class ExplanationTest {
     }
 
     private Set<AnswerExplanation> getRuleExplanations(Answer a){
-        return getExplanations(a).stream().filter(AnswerExplanation::isRuleExplanation).collect(Collectors.toSet());
+        return a.getExplanations().stream().filter(AnswerExplanation::isRuleExplanation).collect(Collectors.toSet());
     }
 
     private Set<AnswerExplanation> getLookupExplanations(Answer a){
-        return getExplanations(a).stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
+        return a.getExplanations().stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
     }
 
-    private Set<AnswerExplanation> getExplanations(Answer a){
-        Set<AnswerExplanation> explanations = Sets.newHashSet(a.getExplanation());
-        a.getExplanation().getAnswers().forEach(ans -> getExplanations(ans).forEach(explanations::add));
-        return explanations;
-    }
-
-    private Set<Answer> getExplicitAnswers(Answer a){
-        return getAnswers(a).stream().filter(ans -> ans.getExplanation().isLookupExplanation()).collect(Collectors.toSet());
-    }
-
-    private Set<Answer> getAnswers(Answer a){return getAnswers(a, true);}
-
-    private Set<Answer> getAnswers(Answer a, boolean top){
-        Set<Answer> answers = top? new HashSet<>() : Sets.newHashSet(a);
-        a.getExplanation().getAnswers().forEach(ans -> getAnswers(ans, false).forEach(answers::add));
-        return answers;
-    }
 }

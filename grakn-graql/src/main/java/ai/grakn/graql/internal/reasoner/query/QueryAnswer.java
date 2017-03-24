@@ -161,4 +161,24 @@ public class QueryAnswer implements Answer {
         this.explanation = e;
         return this;
     }
+
+    @Override
+    public Set<Answer> getExplicitPath(){
+        return getAnswers().stream().filter(ans -> ans.getExplanation().isLookupExplanation()).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<Answer> getAnswers(){
+        Set<Answer> answers = Sets.newHashSet(this);
+        this.getExplanation().getAnswers().forEach(ans -> ans.getAnswers().forEach(answers::add));
+        return answers;
+    }
+
+    @Override
+    public Set<AnswerExplanation> getExplanations(){
+        Set<AnswerExplanation> explanations = Sets.newHashSet(this.getExplanation());
+        this.getExplanation().getAnswers().forEach(ans -> ans.getExplanations().forEach(explanations::add));
+        return explanations;
+    }
+
 }

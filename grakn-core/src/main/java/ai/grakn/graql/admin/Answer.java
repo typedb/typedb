@@ -66,6 +66,7 @@ public interface Answer {
     /**
      * perform an answer merge without explanation
      * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
+     *
      * @param a2 answer to be merged with
      * @return merged answer
      */
@@ -75,7 +76,8 @@ public interface Answer {
     /**
      * perform an answer merge with optional explanation
      * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
-     * @param a2 answer to be merged with
+     *
+     * @param a2          answer to be merged with
      * @param explanation flag for providing explanation
      * @return merged answer
      */
@@ -83,6 +85,7 @@ public interface Answer {
 
     /**
      * explain this answer by providing explanation with preserving the structure of dependent answers
+     *
      * @param exp explanation for this answer
      * @return explained answer
      */
@@ -99,4 +102,19 @@ public interface Answer {
      * @return answer with provided explanation
      */
     Answer setExplanation(AnswerExplanation e);
+
+    /**
+     * @return set of answers corresponding to the explicit path
+     */
+    Set<Answer> getExplicitPath();
+
+    /**
+     * @return all answers taking part in the derivation of this answer
+     */
+    Set<Answer> getAnswers();
+
+    /**
+     * @return all explanations taking part in the derivation of this answer
+     */
+    Set<AnswerExplanation> getExplanations();
 }
