@@ -25,6 +25,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -166,7 +167,7 @@ public class QueryTest {
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 
-        Map<VarName, VarName> unifiers = childAtom.getUnifiers(parentAtom);
+        Unifier unifiers = childAtom.getUnifier(parentAtom);
 
         ReasonerAtomicQuery childCopy = new ReasonerAtomicQuery(childQuery);
         childCopy.unify(unifiers);

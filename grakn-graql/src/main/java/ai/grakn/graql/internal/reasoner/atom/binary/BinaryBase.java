@@ -135,12 +135,12 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public void unify (Map<VarName, VarName> unifiers) {
-        super.unify(unifiers);
+    public void unify (Unifier unifier) {
+        super.unify(unifier);
         VarName var = valueVariable;
-        if (unifiers.containsKey(var)) {
-            setValueVariable(unifiers.get(var));
-        } else if (unifiers.containsValue(var)) {
+        if (unifier.containsKey(var)) {
+            setValueVariable(unifier.get(var));
+        } else if (unifier.containsValue(var)) {
             setValueVariable(capture(var));
         }
     }

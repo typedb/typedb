@@ -19,16 +19,30 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.VarName;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
-public interface Unifier {
+public interface Unifier{
 
+    VarName get(VarName key);
+    VarName put(VarName key, VarName value);
 
-    Set<VarName> get(VarName key);
-    Set<VarName> put(VarName key, VarName value);
+    boolean isEmpty();
+
+    Map<VarName, VarName> map();
+
+    Set<VarName> keySet();
+    Collection<VarName> values();
+    Set<Map.Entry<VarName, VarName>> entrySet();
 
     boolean containsKey(VarName key);
     boolean containsValue(VarName value);
 
     Unifier merge(Unifier d);
+
+
+    Unifier removeTrivialEntries();
+
+    int size();
 }

@@ -70,14 +70,14 @@ public interface ReasonerQuery{
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
-     * @param unifiers contain unifiers (variable mappings) to be applied
+     * @param unifier (variable mappings) to be applied
      */
-    void unify(Map<VarName, VarName> unifiers);
+    void unify(Unifier unifier);
 
     /**
      * @return
      */
-    Map<VarName, VarName> getUnifiers(ReasonerQuery parent);
+    Unifier getUnifier(ReasonerQuery parent);
 
     /**
      * resolves the query

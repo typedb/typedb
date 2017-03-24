@@ -267,7 +267,7 @@ public class Relation extends TypeAtom {
         Map<RoleType, Pair<VarName, Type>> childRoleMap = childAtom.getRoleVarTypeMap();
         Map<RoleType, Pair<VarName, Type>> parentRoleMap = getRoleVarTypeMap();
 
-        Pair<Map<VarName, VarName>, Map<RoleType, RoleType>> unificationMappings = getRelationPlayerMappings(
+        Pair<Unifier, Map<RoleType, RoleType>> unificationMappings = getRelationPlayerMappings(
                 childAtom.getRoleMap(),
                 getRoleMap(),
                 childAtom.getRelationPlayers().stream().map(rp -> rp.getRolePlayer().getVarName()).collect(Collectors.toList()),
@@ -434,7 +434,7 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public void unify(Map<VarName, VarName> mappings) {
+    public void unify(Unifier mappings) {
         super.unify(mappings);
         modifyRelationPlayers(c -> {
             VarName var = c.getRolePlayer().getVarName();
@@ -513,7 +513,7 @@ public class Relation extends TypeAtom {
 
     //move to relation
     @Override
-    public Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom) {
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom) {
         if (!headAtom.isRelation()) return new HashSet<>();
         List<VarName> permuteVars = new ArrayList<>();
         //if atom is match all atom, add type from rule head and find unmapped roles
@@ -724,15 +724,12 @@ public class Relation extends TypeAtom {
         if (((Atom) pAtom).isRelation()) {
             Relation parentAtom = (Relation) pAtom;
             //get role player unifiers
-            unifier.merge(getRolePlayerUnifiers(parentAtom));
+            unifier.merge(getRolePlayerUnifier(parentAtom));
             //get role type unifiers
-            unifier.merge(getRoleTypeUnifiers(parentAtom));
+            unifier.merge(getRoleTypeUnifier(parentAtom));
         }
 
-        //remove trivial unifiers
-        return unifier.entrySet().stream()
-                .filter(e -> e.getKey() != e.getValue())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return unifier.removeTrivialEntries();
     }
 
     @Override

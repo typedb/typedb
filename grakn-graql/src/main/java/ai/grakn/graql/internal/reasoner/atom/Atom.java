@@ -22,6 +22,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
@@ -30,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
@@ -183,7 +185,7 @@ public abstract class Atom extends AtomBase {
     public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}
     public Set<TypeAtom> getUnmappedTypeConstraints(){ return new HashSet<>();}
     public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
-    public Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
+    public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
 
     /**
      * @return map of role type- (var name, var type) pairs
@@ -206,5 +208,5 @@ public abstract class Atom extends AtomBase {
      * between the relation variable and relation players
      * @return pair of (rewritten atom, unifiers required to unify child with rewritten atom)
      */
-    public Pair<Atom, Map<VarName, VarName>> rewriteToUserDefinedWithUnifiers(){ return new Pair<>(this, new HashMap<>());}
+    public Pair<Atom, Unifier> rewriteToUserDefinedWithUnifiers(){ return new Pair<>(this, new UnifierImpl());}
 }

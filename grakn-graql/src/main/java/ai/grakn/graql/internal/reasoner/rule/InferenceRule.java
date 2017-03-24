@@ -25,6 +25,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -33,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
@@ -142,8 +144,8 @@ public class InferenceRule {
 
     private void rewriteHead(Atom parentAtom){
         Atom childAtom = head.getAtom();
-        Pair<Atom, Map<VarName, VarName>> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
-        Map<VarName, VarName> rewriteUnifiers = rewrite.getValue();
+        Pair<Atom, Unifier> rewrite = childAtom.rewriteToUserDefinedWithUnifiers();
+        Unifier rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
             head.removeAtom(childAtom);
@@ -171,25 +173,25 @@ public class InferenceRule {
                     });
     }
 
-    private void unify(Map<VarName, VarName> unifiers){
+    private void unify(Unifier unifier){
         //do alpha-conversion
-        head.unify(unifiers);
-        body.unify(unifiers);
+        head.unify(unifier);
+        body.unify(unifier);
     }
 
     private void unifyViaAtom(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
-        Map<VarName, VarName> unifiers = new HashMap<>();
+        Unifier unifier = new UnifierImpl();
         if (parentAtom.getType() != null){
-            childAtom.getUnifiers(parentAtom).forEach(unifiers::put);
+            unifier.merge(childAtom.getUnifier(parentAtom));
         }
         //case of match all relation atom
         else{
             Relation extendedParent = ((Relation) AtomicFactory.create(parentAtom, parentAtom.getParentQuery()))
                     .addType(childAtom.getType());
-            childAtom.getUnifiers(extendedParent).forEach(unifiers::put);
+            unifier.merge(childAtom.getUnifier(extendedParent));
         }
-        unify(unifiers);
+        unify(unifier);
     }
 
     /**
