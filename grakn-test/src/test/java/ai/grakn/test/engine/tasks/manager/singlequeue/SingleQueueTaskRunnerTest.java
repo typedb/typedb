@@ -91,6 +91,8 @@ import static org.mockito.Mockito.*;
 public class SingleQueueTaskRunnerTest {
 
     private static final EngineID engineID = EngineID.me();
+    private static final int TIME_UNTIL_BACKOFF = 10;
+
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
     private SingleQueueTaskManager mockedTM;
@@ -124,7 +126,7 @@ public class SingleQueueTaskRunnerTest {
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF);
 
         createValidQueue(tasks);
 
