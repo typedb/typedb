@@ -1,3 +1,21 @@
+/*
+ * Grakn - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Labs Limited
+ *
+ * Grakn is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Grakn is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
@@ -13,7 +31,6 @@ import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -78,6 +95,27 @@ public class ExplanationTest {
         assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
         assertEquals(4, queryAnswer4.getExplicitPath().size());
+    }
+
+    @Test
+    public void testExplainingSpecificAnswer(){
+        GraknGraph graph = geoGraph.graph();
+        Concept polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
+        Concept europe = getConcept(graph, "name", "Europe");
+
+        String queryString = "match " +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "$x id '" + polibuda.getId() + "';" +
+                "$y id '" + europe.getId() + "';";
+
+        MatchQuery query = graph.graql().parse(queryString);
+        List<Answer> answers = Reasoner.resolveWithExplanation(query, false).collect(Collectors.toList());
+        assertEquals(answers.size(), 1);
+
+        Answer answer = answers.iterator().next();
+        assertTrue(answer.getExplanation().isRuleExplanation());
+        assertEquals(3, getRuleExplanations(answer).size());
+        assertEquals(4, answer.getExplicitPath().size());
     }
 
     private Concept getConcept(GraknGraph graph, String typeName, Object val){
