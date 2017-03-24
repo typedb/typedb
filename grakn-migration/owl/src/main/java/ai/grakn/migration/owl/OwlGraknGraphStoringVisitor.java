@@ -265,8 +265,11 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
-        Utility.createTransitiveRule(relation, migrator.namer().subjectRole(relation.getName()),
-                migrator.namer().objectRole(relation.getName()), migrator.graph());
+        Utility.createTransitiveRule(
+                relation,
+                migrator.namer().subjectRole(relation.getName()),
+                migrator.namer().objectRole(relation.getName()),
+                migrator.graph());
         return null;
     }
 
@@ -276,7 +279,11 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             return null;
         }
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
-        Utility.createReflexiveRule(relation, migrator.graph());
+        Utility.createReflexiveRule(
+                relation,
+                migrator.namer().subjectRole(relation.getName()),
+                migrator.namer().objectRole(relation.getName()),
+                migrator.graph());
         return null;
     }
 
