@@ -682,17 +682,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private CastingImpl getCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        try {
-            String hash = CastingImpl.generateNewHash(role, rolePlayer);
-            ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, hash);
-            if (concept != null) {
-                return concept.asCasting();
-            } else {
-                return null;
-            }
-        } catch(GraphRuntimeException e){
-            throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CASTINGS.getMessage(role, rolePlayer));
-        }
+        return getConcept(Schema.ConceptProperty.INDEX, CastingImpl.generateNewHash(role, rolePlayer));
     }
 
     private void putShortcutEdges(Relation relation, RelationType relationType, CastingImpl newCasting){
