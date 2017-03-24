@@ -207,8 +207,8 @@ public class LoaderClientTest {
             ResourceType<String> nameTagString = graph.putResourceType("name_tag_string", ResourceType.DataType.STRING);
             ResourceType<String> nameTagId = graph.putResourceType("name_tag_id", ResourceType.DataType.STRING);
 
-            nameTag.hasResource(nameTagString);
-            nameTag.hasResource(nameTagId);
+            nameTag.resource(nameTagString);
+            nameTag.resource(nameTagId);
             graph.commitOnClose();
         }
 

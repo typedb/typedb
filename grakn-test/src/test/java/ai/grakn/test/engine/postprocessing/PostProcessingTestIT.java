@@ -104,7 +104,7 @@ public class PostProcessingTestIT {
         for(int i = 0; i < numResTypes; i ++){
             ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
             for(int j = 0; j < numEntTypes; j ++){
-                graph.getEntityType("ent" + j).hasResource(rt);
+                graph.getEntityType("ent" + j).resource(rt);
             }
         }
         graph.commitOnClose();
@@ -181,7 +181,7 @@ public class PostProcessingTestIT {
     private void forceDuplicateResources(GraknGraph graph, int resourceTypeNum, int resourceValueNum, int entityTypeNum, int entityNum){
         Resource resource = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
         Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
-        entity.hasResource(resource);
+        entity.resource(resource);
     }
 
     private void waitForCache(String keyspace, int value) throws InterruptedException {

@@ -47,5 +47,5 @@ public interface Entity extends Instance{
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
-    Entity hasResource(Resource resource);
+    Entity resource(Resource resource);
 }
