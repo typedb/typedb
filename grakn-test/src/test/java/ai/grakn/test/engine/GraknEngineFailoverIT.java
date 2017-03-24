@@ -26,7 +26,6 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
-import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.DistributionContext;
@@ -135,7 +134,7 @@ public class GraknEngineFailoverIT {
 
     private void assertTasksCompletedWithCorrectStatus(Set<TaskId> tasks) {
         tasks.stream().map(storage::getState).forEach(t -> {
-            if(t.taskClass() == FailingMockTask.class){
+            if(t.taskClass().equals(FailingMockTask.class)){
                 assertThat(t.status(), equalTo(FAILED));
             } else {
                 assertThat(t.status(), equalTo(COMPLETED));
