@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import mjson.Json;
+import org.apache.http.entity.ContentType;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -43,7 +44,7 @@ import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.render
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
-import static org.apache.http.HttpStatus.SC_OK;
+import static java.lang.Boolean.parseBoolean;
 
 /**
  * <p>
@@ -68,22 +69,22 @@ public class VisualiserController {
     }
 
     @GET
-    private Response executeGraql(Request request, Response response){
+    private Json executeGraql(Request request, Response response){
         String keyspace = getMandatoryParameter(request, "keyspace");
         String queryString = getMandatoryParameter(request, "query");
+        boolean infer = parseBoolean(getMandatoryParameter(request, "infer"));
+        boolean materialise = parseBoolean(getMandatoryParameter(request, "materialise"));
+        int limit = validLimit(getParameter(request, "limit"));
 
-        try(GraknGraph graph = factory.getGraph(keyspace, GraknTxType.WRITE)){
-            Query<?> query = graph.graql().parse(queryString);
+        try(GraknGraph graph = factory.getGraph(keyspace, GraknTxType.READ)){
+            Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
             if(!readOnly(query)){
                 throw new IllegalArgumentException("Only \"read-only\" queries are allowed.");
             }
 
-            respond(request, response, query);
+            return respond(request, query, response, limit);
         }
-
-        response.status(SC_OK);
-        return response;
     }
 
     /**
@@ -96,8 +97,18 @@ public class VisualiserController {
      */
     //TODO Merge this with the one in TasksController
     private String getMandatoryParameter(Request request, String parameter){
-        return Optional.ofNullable(request.queryParams(parameter)).orElseThrow(() ->
+        return getParameter(request, parameter).orElseThrow(() ->
                 new GraknEngineServerException(400, MISSING_MANDATORY_PARAMETERS, parameter));
+    }
+
+    /**
+     * Given a {@link Request}, retrieve the value of the {@param parameter}
+     * @param request information about the HTTP request
+     * @param parameter value to retrieve from the HTTP request
+     * @return value of the given parameter
+     */
+    private Optional<String> getParameter(Request request, String parameter){
+        return Optional.ofNullable(request.queryParams(parameter));
     }
 
     /**
@@ -110,6 +121,7 @@ public class VisualiserController {
     private static void handleGraqlSyntaxError(Exception exception, Response response){
         response.status(400);
         response.body(Json.object("exception", exception.getMessage()).toString());
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
     /**
@@ -122,30 +134,48 @@ public class VisualiserController {
     }
 
     /**
-     * Format the response with the correct content type and the results of executing the
-     * query in the correct format, based on the request.
+     * Validates a parameter as a valid limit
+     * @param optionalLimit the limit argument to validate
+     * @return the valid limit
+     */
+    private int validLimit(Optional<String> optionalLimit){
+        int limit = optionalLimit.map(Integer::parseInt).orElse(Integer.MAX_VALUE);
+        if(limit < 0){
+            throw new IllegalArgumentException("Invalid limit");
+        }
+        return limit;
+    }
+
+    /**
+     * Format the response with the correct content type based on the request.
      *
      * @param request
-     * @param response
      * @param query
+     * @param response
+     * @param limit
      * @return
      */
-    private Response respond(Request request, Response response, Query<?> query){
+    private Json respond(Request request, Query<?> query, Response response, int limit){
+
+        Json body = Json.object("originalQuery", query.toString());
 
         switch (getAcceptType(request)){
             case APPLICATION_GRAQL:
                 response.type(APPLICATION_GRAQL);
-                response.body(formatAsGraql(query));
+                body.set("response", formatAsGraql(query, limit));
                 break;
             case APPLICATION_HAL:
                 response.type(APPLICATION_HAL);
-                response.body(formatAsHAL(query, null, 0));
+                body.set("response", formatAsHAL(query, limit));
                 break;
             default:
-                throw new GraknEngineServerException(406, "Unsupported Content-Type requested");
+                throw new GraknEngineServerException(406, "Unsupported Content-Type requested.");
         }
 
-        return response;
+        response.body(body.toString());
+        response.status(200);
+
+        return body;
     }
 
 //    @GET
@@ -315,9 +345,8 @@ public class VisualiserController {
      * @param query query to format
      * @return HAL representation
      */
-    private String formatAsHAL(Query<?> query, String keyspace, int limit) {
-        Json resultobj = renderHALArrayData((MatchQuery) query, keyspace, 0, limit);
-        return resultobj.toString();
+    private Json formatAsHAL(Query<?> query, int limit) {
+        return renderHALArrayData((MatchQuery) query, 0, limit);
     }
 
     /**
@@ -326,24 +355,14 @@ public class VisualiserController {
      * @param query query to format
      * @return Graql representation
      */
-    private String formatAsGraql(Query<?> query) {
+    private String formatAsGraql(Query<?> query, int limit) {
         return query.resultsString(Printers.graql())
                 .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
+                .limit(limit)
                 .collect(Collectors.joining("\n"));
     }
 
     private static String getAcceptType(Request request){
         return request.headers("Accept").split(",")[0];
     }
-//
-//    /**
-//     * Return all of the instances of the given type
-//     *
-//     * @param type type to find instances of
-//     * @return JSONArray with IDs of instances
-//     */
-//    private JSONArray instances(Type type) {
-//        List<String> list = type.subTypes().stream().map(Type::getName).map(TypeName::getValue).collect(toList());
-//        return new JSONArray(list);
-//    }
 }

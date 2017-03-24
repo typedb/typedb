@@ -22,12 +22,14 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.controller.VisualiserController;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -38,6 +40,7 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
+import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
@@ -48,11 +51,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -62,7 +65,11 @@ public class VisualiserControllerTest {
     private static final String HOST = "localhost";
     private static final int PORT = 4567;
     private static Service spark;
+
     private static GraknGraph mockGraph;
+    private static QueryBuilder mockQueryBuilder;
+    private static EngineGraknGraphFactory mockFactory;
+
     private static final JsonMapper jsonMapper = new JsonMapper();
 
     @ClassRule
@@ -73,18 +80,34 @@ public class VisualiserControllerTest {
         spark = Service.ignite();
         configureSpark(spark, PORT);
 
-        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+        mockFactory = mock(EngineGraknGraphFactory.class);
 
-        when(mockGraph.getKeyspace()).thenReturn("keyspace");
-        when(mockGraph.graql().parse(any())).thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
-
-        EngineGraknGraphFactory factory = mock(EngineGraknGraphFactory.class);
-        when(factory.getGraph(mockGraph.getKeyspace())).thenReturn(mockGraph);
-
-        new VisualiserController(factory, spark);
+        new VisualiserController(mockFactory, spark);
 
         spark.awaitInitialization();
     }
+
+    @Before
+    public void setupMock(){
+        mockQueryBuilder = mock(QueryBuilder.class);
+
+        when(mockQueryBuilder.materialise(anyBoolean())).thenReturn(mockQueryBuilder);
+        when(mockQueryBuilder.infer(anyBoolean())).thenReturn(mockQueryBuilder);
+        when(mockQueryBuilder.parse(any()))
+                .thenAnswer(invocation -> graphContext.graph().graql().parse(invocation.getArgument(0)));
+
+        mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
+
+        when(mockGraph.getKeyspace()).thenReturn("keyspace");
+        when(mockGraph.graql()).thenReturn(mockQueryBuilder);
+
+        when(mockFactory.getGraph(mockGraph.getKeyspace())).thenReturn(mockGraph);
+    }
+
+    //TODO application/text
+    //TODO concept api
+    //TODO ontology api
+    //TODO materialise api
 
     @AfterClass
     public static void shutdown(){
@@ -96,7 +119,8 @@ public class VisualiserControllerTest {
         String query = "match $x isa person;";
         sendMatch(query, APPLICATION_GRAQL);
 
-        verify(mockGraph.graql(), atLeastOnce()).parse(argThat(argument -> argument.equals(query)));
+        verify(mockGraph.graql().materialise(anyBoolean()).infer(anyBoolean()))
+                .parse(argThat(argument -> argument.equals(query)));
     }
 
     @Test
@@ -133,8 +157,63 @@ public class VisualiserControllerTest {
     }
 
     @Test
+    public void whenSendingGraqlMatchWithReasonerMissing_ResponseStatusIs400(){
+        Response response = with().queryParam("keyspace", mockGraph.getKeyspace())
+                .queryParam("query", "match $x isa person;")
+                .queryParam("materialise", true)
+                .accept(GRAQL_CONTENTTYPE)
+                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+
+        assertThat(response.statusCode(), equalTo(400));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage("materialise")));
+    }
+
+    @Test
+    public void whenSendingGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting(){
+        sendMatch("match $x isa person;", GRAQL_CONTENTTYPE, true, true, 0);
+
+        verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
+    }
+
+    @Test
+    public void whenSendingGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting(){
+        sendMatch("match $x isa person;", GRAQL_CONTENTTYPE, false, true, 0);
+
+        verify(mockQueryBuilder).infer(booleanThat(arg -> !arg));
+    }
+
+    @Test
+    public void whenSendingGraqlMatchWithMaterialiseMissing_ResponseStatusIs400(){
+        Response response = with().queryParam("keyspace", mockGraph.getKeyspace())
+                .queryParam("query", "match $x isa person;")
+                .accept(GRAQL_CONTENTTYPE)
+                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+
+        assertThat(response.statusCode(), equalTo(400));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage("infer")));
+    }
+
+    @Test
+    public void whenSendingGraqlMatchWithMaterialiseFalse_MaterialiseIsOffWhenExecuting(){
+        sendMatch("match $x isa person;", GRAQL_CONTENTTYPE, false, false, 0);
+
+        verify(mockQueryBuilder).materialise(booleanThat(arg -> !arg));
+    }
+
+    @Test
+    public void whenSendingGraqlMatchWithMaterialiseTrue_MaterialiseIsOnWhenExecuting(){
+        sendMatch("match $x isa person;", GRAQL_CONTENTTYPE, false, true, 0);
+
+        verify(mockQueryBuilder).materialise(booleanThat(arg -> arg));
+    }
+
+    @Test
     public void whenSendingGraqlMatchWithHALTypeAndLimit5_ResponseContains5Results(){
-        assertTrue(false);
+        Response response =
+                sendMatch("match $x isa person;", HAL_CONTENTTYPE, false, true, 5);
+
+        System.out.println(jsonResponse(response));
+        assertThat(jsonResponse(response).asJsonMap().size(), equalTo(5));
     }
 
     @Test
@@ -143,8 +222,8 @@ public class VisualiserControllerTest {
         Response response = sendMatch(queryString, APPLICATION_HAL);
 
         Json expectedResponse = renderHALArrayData(
-                graphContext.graph().graql().parse(queryString), 0, 0);
-        assertThat(response(response), equalTo(expectedResponse.toString()));
+                graphContext.graph().graql().parse(queryString), 0, Integer.MAX_VALUE);
+        assertThat(jsonResponse(response), equalTo(expectedResponse));
     }
 
     @Test
@@ -158,7 +237,7 @@ public class VisualiserControllerTest {
     public void whenSendingGraqlMatchWithHALTypeAndEmptyResponse_ResponseIsEmptyJsonArray(){
         Response response = sendMatch("match $x isa runtime;", APPLICATION_HAL);
 
-        assertThat(response(response), equalTo(Json.array().toString()));
+        assertThat(jsonResponse(response), equalTo(Json.array()));
     }
 
     @Test
@@ -170,29 +249,44 @@ public class VisualiserControllerTest {
     }
 
     @Test
-    public void whenSendingGraqlMatchWithGraqlType_ResponseContentTypeIsGraql(){
+    public void whenSendingGraqlMatchWithTextType_ResponseContentTypeIsGraql(){
         Response response = sendMatch(APPLICATION_GRAQL);
 
         assertThat(response.contentType(), equalTo(APPLICATION_GRAQL));
     }
 
     @Test
-    public void whenSendingGraqlMatchWithGraqlTypeAndLimit5_ResponseContains5Results(){
-        assertTrue(false);
+    public void whenSendingGraqlMatchWithTextTypeAndLimit5_ResponseContains5Results(){
+        Response response =
+                sendMatch("match $x isa person;", GRAQL_CONTENTTYPE, false, false, 5);
+
+        assertThat(stringResponse(response).split("\n").length, equalTo(5));
     }
 
     @Test
-    public void whenSendingGraqlMatchWithGraqlTypeAndLimitNegative_ResponseStatusIs404(){
-        assertTrue(false);
+    public void whenSendingGraqlMatchWithTextTypeAndLimitNegative_ResponseStatusIs400(){
+        Response response =
+                sendMatch("match $x isa person;", GRAQL_CONTENTTYPE, false, false, -100);
+
+        assertThat(response.statusCode(), equalTo(400));
+        assertThat(exception(response), containsString("Invalid limit"));
     }
 
     @Test
-    public void whenSendingGraqlMatchWithGraqlTypeAndLimitMissing_ResponseContainsAllResults(){
-        assertTrue(false);
+    public void whenSendingGraqlMatchWithTextTypeAndLimitMissing_ResponseContainsAllResults(){
+        Response response = with().queryParam("keyspace", mockGraph.getKeyspace())
+                .queryParam("query", "match $x isa person;")
+                .queryParam("infer", false)
+                .queryParam("materialise", false)
+                .accept(GRAQL_CONTENTTYPE)
+                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+
+        int numberPeopleInGraph = graphContext.graph().getEntityType("person").instances().size();
+        assertThat(stringResponse(response).split("\n").length, equalTo(numberPeopleInGraph));
     }
 
     @Test
-    public void whenSendingGraqlMatchWithGraqlType_ResponseIsCorrectGraql(){
+    public void whenSendingGraqlMatchWithTextType_ResponseIsCorrectGraql(){
         String query = "match $x isa person;";
         Response response = sendMatch(APPLICATION_GRAQL);
 
@@ -200,11 +294,11 @@ public class VisualiserControllerTest {
                 .resultsString(Printers.graql())
                 .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                 .collect(joining("\n"));
-        assertThat(response(response), equalTo(expectedResponse));
+        assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
     @Test
-    public void whenSendingGraqlMatchWithGraqlType_ResponseContainsOriginalQuery(){
+    public void whenSendingGraqlMatchWithTextType_ResponseContainsOriginalQuery(){
         String query = "match $x isa person;";
         Response response = sendMatch(APPLICATION_GRAQL);
 
@@ -212,10 +306,10 @@ public class VisualiserControllerTest {
     }
 
     @Test
-    public void whenSendingGraqlMatchWithGraqlTypeAndEmptyResponse_ResponseIsEmptyString(){
+    public void whenSendingGraqlMatchWithTextTypeAndEmptyResponse_ResponseIsEmptyString(){
         Response response = sendMatch("match $x isa \"runtime\";", APPLICATION_GRAQL);
 
-        assertThat(response(response), isEmptyString());
+        assertThat(stringResponse(response), isEmptyString());
     }
 
     @Test
@@ -260,12 +354,19 @@ public class VisualiserControllerTest {
     }
 
     private Response sendMatch(String acceptType){
-        return sendMatch("match $x isa person;", acceptType);
+        return sendMatch("match $x isa person;", acceptType, false, false, Integer.MAX_VALUE);
     }
 
     private Response sendMatch(String match, String acceptType){
+        return sendMatch(match, acceptType, false, false, Integer.MAX_VALUE);
+    }
+
+    private Response sendMatch(String match, String acceptType, boolean reasonser, boolean materialise, int limit){
         return with().queryParam("keyspace", mockGraph.getKeyspace())
                 .queryParam("query", match)
+                .queryParam("infer", reasonser)
+                .queryParam("materialise", materialise)
+                .queryParam("limit", limit)
                 .accept(acceptType)
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
     }
@@ -274,8 +375,12 @@ public class VisualiserControllerTest {
         return response.getBody().as(Json.class, jsonMapper).at("exception").asString();
     }
 
-    private static String response(Response response){
-        return response.getBody().as(Json.class, jsonMapper).at("response").toString();
+    private static String stringResponse(Response response){
+        return response.getBody().as(Json.class, jsonMapper).at("response").asString();
+    }
+
+    private static Json jsonResponse(Response response){
+        return response.getBody().as(Json.class, jsonMapper).at("response");
     }
 
     private static String originalQuery(Response response){
