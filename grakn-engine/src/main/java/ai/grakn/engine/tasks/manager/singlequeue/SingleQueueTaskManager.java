@@ -175,7 +175,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * Stop a task from running.
      */
     @Override
-    public void stopTask(TaskId id, String requesterName) {
+    public void stopTask(TaskId id) {
         byte[] serializedId = id.getValue().getBytes(zkCharset);
         try {
             zookeeper.connection().create().creatingParentsIfNeeded().forPath(format(TASKS_STOPPED, id), serializedId);

@@ -42,7 +42,7 @@ public abstract class MockBackgroundTask implements BackgroundTask {    private 
     protected final AtomicBoolean cancelled = new AtomicBoolean(false);
     protected final Object sync = new Object();
 
-    static void addCompletedTask(TaskId taskId) {
+    private static void addCompletedTask(TaskId taskId) {
         COMPLETED_TASKS.add(taskId);
     }
 
@@ -50,7 +50,7 @@ public abstract class MockBackgroundTask implements BackgroundTask {    private 
         return ImmutableMultiset.copyOf(COMPLETED_TASKS);
     }
 
-    static void addCancelledTask(TaskId taskId) {
+    private static void addCancelledTask(TaskId taskId) {
         CANCELLED_TASKS.add(taskId);
     }
 
@@ -62,7 +62,7 @@ public abstract class MockBackgroundTask implements BackgroundTask {    private 
         MockBackgroundTask.onTaskStart = beforeTaskStarts;
     }
 
-    static void onTaskStart(TaskId taskId) {
+    private static void onTaskStart(TaskId taskId) {
         if (onTaskStart != null) onTaskStart.accept(taskId);
     }
 
@@ -70,7 +70,7 @@ public abstract class MockBackgroundTask implements BackgroundTask {    private 
         MockBackgroundTask.onTaskFinish = onTaskFinish;
     }
 
-    static void onTaskFinish(TaskId taskId) {
+    private static void onTaskFinish(TaskId taskId) {
         if (onTaskFinish != null) onTaskFinish.accept(taskId);
     }
 
@@ -78,7 +78,7 @@ public abstract class MockBackgroundTask implements BackgroundTask {    private 
         MockBackgroundTask.onTaskResume = onTaskResume;
     }
 
-    static void onTaskResume(TaskCheckpoint checkpoint) {
+    private static void onTaskResume(TaskCheckpoint checkpoint) {
         if (onTaskResume != null) onTaskResume.accept(checkpoint);
     }
 

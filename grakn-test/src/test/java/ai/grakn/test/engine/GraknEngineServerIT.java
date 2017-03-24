@@ -53,6 +53,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(JUnitQuickcheck.class)
 public class GraknEngineServerIT {
@@ -100,7 +101,7 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
-        TaskClient.of("localhost", PORT1).stopTask(task.getId());
+        assertTrue(TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
@@ -111,7 +112,7 @@ public class GraknEngineServerIT {
 
     @Property(trials=10)
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(@NewTask TaskState task) {
-        TaskClient.of("localhost", PORT2).stopTask(task.getId());
+        assertTrue(TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
         engine1.getTaskManager().addTask(task);
 
