@@ -83,7 +83,7 @@ public interface Type extends Concept {
 
     /**
      *
-     * @return A list of Role Types which instances of this Type can play.
+     * @return A list of Role Types which instances of this Type can indirectly play.
      */
     Collection<RoleType> playsRoles();
 
@@ -95,19 +95,21 @@ public interface Type extends Concept {
 
     /**
      *
-     * @return The super of this Type
+     * @return The direct super of this Type
      */
     Type superType();
 
     /**
+     * Get all indirect sub-types of this type. The indirect sub-types are and all indirect
+     * sub-types of direct sub-types.
      *
-     * @return All the sub classes of this Type
+     * @return All the indirect sub classes of this Type
      */
     Collection<? extends Type> subTypes();
 
     /**
      *
-     * @return All the instances of this type.
+     * @return All the indirect instances of this type.
      */
     Collection<? extends Instance> instances();
 
