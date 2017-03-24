@@ -40,19 +40,11 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTest extends GraphTestBase {
-    @Test
-    public void testPutConcept() throws Exception {
-        int numVerticies = 14;
-        for(int i = 0; i < numVerticies; i ++)
-            graknGraph.putEntityType("c" + i);
-        assertEquals(22, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
-    }
 
     @Test
-    public void testGetConceptByBaseIdentifier() throws Exception {
-        assertNull(graknGraph.getConceptByBaseIdentifier(1000L));
+    public void whenGettingConceptByRawID_ReturnTheConcept() throws Exception {
         EntityType c1 = graknGraph.putEntityType("c1");
-        Concept c2 = graknGraph.getConceptByBaseIdentifier(c1.getId());
+        Concept c2 = graknGraph.getConceptRawId(c1.getId());
         assertEquals(c1, c2);
     }
 

@@ -63,9 +63,9 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     }
 
     @Override
-    public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
+    public <T extends Concept> T getConceptRawId(Object id) {
         try {
-            return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
+            return super.getConceptRawId(Long.valueOf(id.toString()));
         } catch (NumberFormatException e){
             return null;
         }

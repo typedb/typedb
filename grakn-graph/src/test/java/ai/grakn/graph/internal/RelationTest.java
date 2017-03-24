@@ -248,7 +248,7 @@ public class RelationTest extends GraphTestBase{
     @Test
     public void testDelete() throws ConceptException{
         relation.delete();
-        assertNull(graknGraph.getConceptByBaseIdentifier(relation.getId().getRawValue()));
+        assertNull(graknGraph.getConceptRawId(relation.getId().getRawValue()));
     }
 
     @Test
