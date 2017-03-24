@@ -102,6 +102,7 @@ public class SingleQueueTaskManager implements TaskManager {
         stoppedTasks.getListenable().addListener((client, event) -> {
             if (event.getType() == CHILD_ADDED) {
                 TaskId id = TaskId.of(new String(event.getData().getData(), zkCharset));
+                LOG.debug("Attempting to stop task {}", id);
                 taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
             }
         });
@@ -138,6 +139,8 @@ public class SingleQueueTaskManager implements TaskManager {
     @Override
     public void close() {
         LOG.debug("Closing SingleQueueTaskManager");
+
+        noThrow(stoppedTasks::close, "Error closing down stop tasks listener");
 
         // Close all the task runners
         for(SingleQueueTaskRunner taskRunner:taskRunners) {
