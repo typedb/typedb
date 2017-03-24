@@ -24,12 +24,11 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
-import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -42,6 +41,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.Schema.ImplicitType.HAS_KEY;
+import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_VALUE;
 
 /**
  * Represents the {@code has-resource} and {@code has-key} properties on a {@link Type}.
@@ -53,6 +56,9 @@ import static ai.grakn.graql.Graql.name;
  * including one implicit {@link RelationType} and two implicit {@link RoleType}s. The names of these types are derived
  * from the name of the {@link ResourceType}.
  *
+ * Like {@link HasResourceProperty}, if this is not a key and is used in a match query it will not use the implicit
+ * structure - instead, it will match if there is any kind of relation type connecting the two types.
+ *
  * @author Felix Chapman
  */
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
@@ -61,9 +67,8 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     private final VarAdmin ownerRole;
     private final VarAdmin valueRole;
-    private final VarAdmin relationType;
-
-    private final PlaysRoleProperty ownerPlaysRole;
+    private final VarAdmin relationOwner;
+    private final VarAdmin relationValue;
 
     private final boolean required;
 
@@ -77,28 +82,22 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         Var role = name(Schema.MetaSchema.ROLE.getName());
 
-        //Choose the correct implicit type
-        Schema.ImplicitType has;
-        Schema.ImplicitType hasOwner;
-        Schema.ImplicitType hasValue;
+        Var ownerRole = var().sub(role);
+        Var valueRole = var().sub(role);
+        Var relationType = var().sub(name(Schema.MetaSchema.RELATION.getName()));
+
+        // If a key, limit only to the implicit key type
         if(required){
-            has = Schema.ImplicitType.HAS_KEY;
-            hasOwner = Schema.ImplicitType.HAS_KEY_OWNER;
-            hasValue = Schema.ImplicitType.HAS_KEY_VALUE;
-        } else {
-            has = Schema.ImplicitType.HAS_RESOURCE;
-            hasOwner = Schema.ImplicitType.HAS_RESOURCE_OWNER;
-            hasValue = Schema.ImplicitType.HAS_KEY_VALUE;
+            ownerRole = ownerRole.name(HAS_KEY_OWNER.getName(resourceTypeName));
+            valueRole = valueRole.name(HAS_KEY_VALUE.getName(resourceTypeName));
+            relationType = relationType.name(HAS_KEY.getName(resourceTypeName));
         }
 
-        ownerRole = name(hasOwner.getName(resourceTypeName)).sub(role).admin();
-        valueRole = name(hasValue.getName(resourceTypeName)).sub(role).admin();
+        this.ownerRole = ownerRole.admin();
+        this.valueRole = valueRole.admin();
+        this.relationOwner = relationType.hasRole(this.ownerRole).admin();
+        this.relationValue = var(relationType.admin().getVarName()).hasRole(this.valueRole).admin();
 
-        relationType = name(has.getName(resourceTypeName))
-                .sub(name(Schema.MetaSchema.RELATION.getName()))
-                .hasRole(ownerRole).hasRole(valueRole).admin();
-
-        ownerPlaysRole = new PlaysRoleProperty(ownerRole, required);
     }
 
     public VarAdmin getResourceType() {
@@ -119,10 +118,10 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public Collection<EquivalentFragmentSet> match(VarName start) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
-        traversals.addAll(ownerPlaysRole.match(start));
+        traversals.addAll(new PlaysRoleProperty(ownerRole, required).match(start));
         //TODO: Get this to use real constraints no just the required flag
-        PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole, false);
-        traversals.addAll(valuePlaysRole.match(resourceType.getVarName()));
+        traversals.addAll(new PlaysRoleProperty(valueRole, false).match(resourceType.getVarName()));
+        traversals.addAll(new NeqProperty(ownerRole).match(valueRole.getVarName()));
 
         return traversals;
     }
@@ -139,7 +138,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public Stream<VarAdmin> getImplicitInnerVars() {
-        return Stream.of(resourceType, ownerRole, valueRole, relationType);
+        return Stream.of(resourceType, ownerRole, valueRole, relationOwner, relationValue);
     }
 
     @Override
@@ -176,7 +175,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         VarName varName = var.getVarName();
         TypeName typeName = this.getResourceType().getTypeName().orElse(null);
         //isa part
-        VarAdmin resVar = Graql.var(varName).hasResource(name(typeName)).admin();
+        VarAdmin resVar = var(varName).hasResource(name(typeName)).admin();
         return new TypeAtom(resVar, parent);
     }
 }
