@@ -53,7 +53,7 @@ import java.util.regex.Pattern;
 /**
  * This is a mock Kafka consumer, copied from {@link org.apache.kafka.clients.consumer.MockConsumer}.
  *
- * This class has been copied to add extra functionality such as running a task when a poll is empty. 
+ * This class has been copied to add extra functionality such as running a task when a poll is empty.
  */
 public class MockGraknConsumer<K, V> implements Consumer<K, V> {
 

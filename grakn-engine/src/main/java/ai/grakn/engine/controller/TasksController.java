@@ -147,7 +147,7 @@ public class TasksController {
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
         String id = request.params(ID_PARAMETER);
-        manager.stopTask(TaskId.of(id), this.getClass().getName());
+        manager.stopTask(TaskId.of(id));
         return Json.object();
     }
 

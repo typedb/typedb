@@ -31,6 +31,8 @@ public interface ZookeeperPaths {
     String SCHEDULER = "/scheduler";
     String FAILOVER = "/failover";
     String TASKS_PATH_PREFIX = "/tasks";
+    String TASKS_STOPPED_PREFIX = "/stopped";
+    String TASKS_STOPPED = "/stopped/%s";
     String TASK_LOCK_SUFFIX = "/lock";
     String PARTITION_PATH = "/partition/%s";
     String ALL_ENGINE_PATH = "/engine";

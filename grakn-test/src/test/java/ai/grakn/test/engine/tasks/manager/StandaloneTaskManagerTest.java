@@ -124,7 +124,7 @@ public class StandaloneTaskManagerTest {
         assertTrue(ShortExecutionMockTask.startedCounter.get() > 1);
 
         // Stop task..
-        taskManager.stopTask(task.getId(), null);
+        taskManager.stopTask(task.getId());
     }
 
     @Test
@@ -135,7 +135,7 @@ public class StandaloneTaskManagerTest {
         TaskStatus status = taskManager.storage().getState(task.getId()).status();
         assertTrue(status == SCHEDULED || status == RUNNING);
 
-        taskManager.stopTask(task.getId(), this.getClass().getName());
+        taskManager.stopTask(task.getId());
 
         status = taskManager.storage().getState(task.getId()).status();
         assertEquals(STOPPED, status);
