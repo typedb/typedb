@@ -40,6 +40,15 @@ import java.util.Set;
  *
  */
 public interface Relation extends Instance {
+    //------------------------------------- Modifiers ----------------------------------
+    /**
+     * Creates a relation from this instance to the provided resource.
+     *
+     * @param resource The resource to which a relationship is created
+     * @return The instance itself
+     */
+    Relation hasResource(Resource resource);
+
     //------------------------------------- Accessors ----------------------------------
 
     /**

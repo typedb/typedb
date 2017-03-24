@@ -29,10 +29,13 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.exception.ConceptNotUniqueException;
 import org.junit.Test;
 
+import java.time.LocalDateTime;
+
 import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 import static ai.grakn.util.ErrorMessage.RESOURCE_TYPE_UNIQUE;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -181,5 +184,16 @@ public class ResourceTest extends GraphTestBase{
         ResourceType<String> resourceType = graknGraph.putResourceType("A resourceType", ResourceType.DataType.STRING);
         Resource resource = resourceType.putResource("A Thing");
         assertNull(resource.owner());
+    }
+
+    @Test
+    public void whenSavingDateIntoResource_DateIsReturnedInSameFormat(){
+        LocalDateTime date = LocalDateTime.now();
+        ResourceType<LocalDateTime> resourceType = graknGraph.putResourceType("My Birthday", ResourceType.DataType.DATE);
+        Resource<LocalDateTime> myBirthday = resourceType.putResource(date);
+
+        assertEquals(date, myBirthday.getValue());
+        assertEquals(myBirthday, resourceType.getResource(date));
+        assertThat(graknGraph.getResourcesByValue(date), containsInAnyOrder(myBirthday));
     }
 }
