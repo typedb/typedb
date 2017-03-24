@@ -39,6 +39,7 @@ import spark.Service;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
@@ -48,11 +49,13 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.isEmptyString;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.booleanThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -102,10 +105,13 @@ public class VisualiserControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace())).thenReturn(mockGraph);
     }
 
-    //TODO application/text
+    //TODO aggregate
+    //TODO compute
     //TODO concept api
     //TODO ontology api
-    //TODO materialise api
+    //TODO json printing functionality
+    //TODO string constants
+    //TODO documentation
 
     @AfterClass
     public static void shutdown(){
@@ -133,7 +139,7 @@ public class VisualiserControllerTest {
         Response response = sendMatch("invalid");
 
         assertThat(response.statusCode(), equalTo(406));
-        assertThat(exception(response), containsString("Unsupported Content-Type requested."));
+        assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("invalid")));
     }
 
     @Test
@@ -206,12 +212,13 @@ public class VisualiserControllerTest {
     }
 
     @Test
-    public void whenSendingGraqlMatchWithHALTypeAndLimit5_ResponseContains5Results(){
+    public void whenSendingGraqlMatchWithHALTypeAndNumberEmbedded1_ResponsesContainAtMost1Concept(){
         Response response =
-                sendMatch("match $x isa person;", APPLICATION_HAL, false, true, 5);
+                sendMatch("match $x isa person;", APPLICATION_HAL, false, true,1);
 
-        System.out.println(jsonResponse(response));
-        assertThat(jsonResponse(response).asJsonMap().size(), equalTo(5));
+        jsonResponse(response).asJsonList().forEach(e -> {
+             assertThat(e.asJsonMap().get("_embedded").asJsonMap().size(), lessThanOrEqualTo(1));
+        });
     }
 
     @Test
@@ -220,7 +227,7 @@ public class VisualiserControllerTest {
         Response response = sendMatch(queryString, APPLICATION_HAL);
 
         Json expectedResponse = renderHALArrayData(
-                graphContext.graph().graql().parse(queryString), 0, Integer.MAX_VALUE);
+                graphContext.graph().graql().parse(queryString), 0, -1);
         assertThat(jsonResponse(response), equalTo(expectedResponse));
     }
 
@@ -251,36 +258,6 @@ public class VisualiserControllerTest {
         Response response = sendMatch(APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
-    }
-
-    @Test
-    public void whenSendingGraqlMatchWithTextTypeAndLimit5_ResponseContains5Results(){
-        Response response =
-                sendMatch("match $x isa person;", APPLICATION_TEXT, false, false, 5);
-
-        assertThat(stringResponse(response).split("\n").length, equalTo(5));
-    }
-
-    @Test
-    public void whenSendingGraqlMatchWithTextTypeAndLimitNegative_ResponseStatusIs400(){
-        Response response =
-                sendMatch("match $x isa person;", APPLICATION_TEXT, false, false, -100);
-
-        assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString("Invalid limit"));
-    }
-
-    @Test
-    public void whenSendingGraqlMatchWithTextTypeAndLimitMissing_ResponseContainsAllResults(){
-        Response response = with().queryParam("keyspace", mockGraph.getKeyspace())
-                .queryParam("query", "match $x isa person;")
-                .queryParam("infer", false)
-                .queryParam("materialise", false)
-                .accept(APPLICATION_TEXT)
-                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
-
-        int numberPeopleInGraph = graphContext.graph().getEntityType("person").instances().size();
-        assertThat(stringResponse(response).split("\n").length, equalTo(numberPeopleInGraph));
     }
 
     @Test
@@ -344,11 +321,44 @@ public class VisualiserControllerTest {
     }
 
     @Test
-    public void whenSendingGraqlInsert_ResponseStatusCodeIs400(){
+    public void whenSendingGraqlInsert_ResponseStatusCodeIs405NotSupported(){
         String query = "insert $x isa person;";
         Response response = sendMatch(query, APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void whenSendingGraqlAggregateWithHalType_ResponseStatusCodeIs406(){
+        String query = "match $x isa person; aggregate count;";
+        Response response = sendMatch(query, APPLICATION_HAL);
+
+        assertThat(response.statusCode(), equalTo(406));
+    }
+
+    @Test
+    public void whenSendingGraqlAggregateWithTextType_ResponseStatusIs200(){
+        String query = "match $x isa person; aggregate count;";
+        Response response = sendMatch(query, APPLICATION_TEXT);
+
+        assertThat(response.statusCode(), equalTo(200));
+    }
+
+    @Test
+    public void whenSendingGraqlAggregateWithTextType_ResponseIsCorrect(){
+        String query = "match $x isa person; aggregate count;";
+        Response response = sendMatch(query, APPLICATION_TEXT);
+
+        int numberPeople = graphContext.graph().getEntityType("person").instances().size();
+        assertThat(stringResponse(response), equalTo(Integer.toString(numberPeople)));
+    }
+
+    @Test
+    public void whenSendingGraqlAggregateWithTextType_ResponseTypeIsTextType(){
+        String query = "match $x isa person; aggregate count;";
+        Response response = sendMatch(query, APPLICATION_TEXT);
+
+        assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
 
     private Response sendMatch(String acceptType){
@@ -359,12 +369,13 @@ public class VisualiserControllerTest {
         return sendMatch(match, acceptType, false, false, Integer.MAX_VALUE);
     }
 
-    private Response sendMatch(String match, String acceptType, boolean reasonser, boolean materialise, int limit){
+    private Response sendMatch(String match, String acceptType, boolean reasonser,
+                               boolean materialise, int numberEmbeddedComponents){
         return with().queryParam("keyspace", mockGraph.getKeyspace())
                 .queryParam("query", match)
                 .queryParam("infer", reasonser)
                 .queryParam("materialise", materialise)
-                .queryParam("limit", limit)
+                .queryParam("numberEmbeddedComponents", numberEmbeddedComponents)
                 .accept(acceptType)
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
     }

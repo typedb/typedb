@@ -22,9 +22,12 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
@@ -41,7 +44,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
+import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static java.lang.Boolean.parseBoolean;
@@ -74,7 +79,6 @@ public class VisualiserController {
         String queryString = getMandatoryParameter(request, "query");
         boolean infer = parseBoolean(getMandatoryParameter(request, "infer"));
         boolean materialise = parseBoolean(getMandatoryParameter(request, "materialise"));
-        int limit = validLimit(getParameter(request, "limit"));
 
         try(GraknGraph graph = factory.getGraph(keyspace, GraknTxType.READ)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
@@ -83,9 +87,43 @@ public class VisualiserController {
                 throw new IllegalArgumentException("Only \"read-only\" queries are allowed.");
             }
 
-            return respond(request, query, response, limit);
+            return respond(request, query, response);
         }
     }
+
+
+//    @GET
+//    @Path("/concept/:uuid")
+//    @ApiOperation(
+//            value = "Return the HAL representation of a given concept.")
+//    @ApiImplicitParams({
+//            @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
+//            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
+//    })
+//    private Json conceptById(Request request, Response response) {
+//        String keyspace = getMandatoryParameter(request, "keyspace");
+//        int offsetComponents = getParameter(request, "offset").map(Integer::parseInt).orElse(0);
+//        int numEmbeddedComponents = getParameter(request, "offset").map(Integer::parseInt).orElse(-1);
+//
+//        validateContentType(request);
+//
+//        try (GraknGraph graph = factory.getGraph(keyspace)) {
+
+
+
+//            Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
+//
+//            if (concept == null) {
+//                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
+//            }
+//
+//            return renderHALConceptData(concept, separationDegree, keyspace, offset, limit);
+//        } catch (RuntimeException e) {
+//            throw new GraknEngineServerException(500, e);
+//        }
+//
+//        return null;
+//    }
 
     /**
      * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
@@ -124,6 +162,26 @@ public class VisualiserController {
         response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
+    private boolean validContentType(String acceptType, Query<?> query){
+
+        // If compute query and NOT HAL invalid
+        if(query instanceof PathQuery && acceptType.equals(APPLICATION_HAL)){
+             return false;
+        }
+
+        // If compute other than path and not TEXT invalid
+        else if (query instanceof ComputeQuery && !acceptType.equals(APPLICATION_TEXT)){
+            return false;
+        }
+
+        // If aggregate and HAL invalid
+        else if(query instanceof AggregateQuery && acceptType.equals(APPLICATION_HAL)){
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * This API only supports read-only queries, or non-insert queries.
      * @param query the query to check
@@ -134,42 +192,36 @@ public class VisualiserController {
     }
 
     /**
-     * Validates a parameter as a valid limit
-     * @param optionalLimit the limit argument to validate
-     * @return the valid limit
-     */
-    private int validLimit(Optional<String> optionalLimit){
-        int limit = optionalLimit.map(Integer::parseInt).orElse(Integer.MAX_VALUE);
-        if(limit < 0){
-            throw new IllegalArgumentException("Invalid limit");
-        }
-        return limit;
-    }
-
-    /**
      * Format the response with the correct content type based on the request.
      *
      * @param request
      * @param query
      * @param response
-     * @param limit
      * @return
      */
-    private Json respond(Request request, Query<?> query, Response response, int limit){
+    private Json respond(Request request, Query<?> query, Response response){
 
         Json body = Json.object("originalQuery", query.toString());
 
-        switch (getAcceptType(request)){
+        String acceptType = getAcceptType(request);
+        if(!validContentType(acceptType, query)){
+            throw new GraknEngineServerException(406, INVALID_CONTENT_TYPE, query.getClass().getName(), acceptType);
+        }
+
+        switch (acceptType){
             case APPLICATION_TEXT:
+                body.set("response", formatAsGraql(query));
+
                 response.type(APPLICATION_TEXT);
-                body.set("response", formatAsGraql(query, limit));
                 break;
             case APPLICATION_HAL:
+                int numberEmbeddedComponents = getParameter(request, "offset").map(Integer::parseInt).orElse(-1);
+                body.set("response", formatAsHAL(query, numberEmbeddedComponents));
+
                 response.type(APPLICATION_HAL);
-                body.set("response", formatAsHAL(query, limit));
                 break;
             default:
-                throw new GraknEngineServerException(406, "Unsupported Content-Type requested.");
+                throw new GraknEngineServerException(406, UNSUPPORTED_CONTENT_TYPE, acceptType);
         }
 
         response.body(body.toString());
@@ -178,33 +230,6 @@ public class VisualiserController {
         return body;
     }
 
-//    @GET
-//    @Path("/concept/:uuid")
-//    @ApiOperation(
-//            value = "Return the HAL representation of a given concept.")
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
-//            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-//    })
-//    private String conceptById(Request req, Response res) {
-//        String keyspace = getKeyspace(req);
-//
-//        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-//
-//            int offset = (req.queryParams().contains("offset")) ? Integer.parseInt(req.queryParams("offset")) : 0;
-//            int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
-//
-//            Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
-//
-//            if (concept == null) {
-//                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
-//            }
-//
-//            return renderHALConceptData(concept, separationDegree, keyspace, offset, limit);
-//        } catch (RuntimeException e) {
-//            throw new GraknEngineServerException(500, e);
-//        }
-//    }
 //
 //    @GET
 //    @Path("/concept/ontology/:uuid")
@@ -242,45 +267,6 @@ public class VisualiserController {
 //            responseObj.put(RELATIONS_JSON_FIELD, instances(graph.admin().getMetaRelationType()));
 //            responseObj.put(RESOURCES_JSON_FIELD, instances(graph.admin().getMetaResourceType()));
 //            return responseObj.toString();
-//        } catch (RuntimeException e) {
-//            throw new GraknEngineServerException(500, e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/match")
-//    @ApiOperation(
-//            value = "Executes match query on the server and build a representation for each concept in the query result. " +
-//                    "Return type is determined by the content type. Either application/graql or application/json/hal")
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
-//            @ApiImplicitParam(name = "reasoner", value = "Boolean used to decide whether run reasoner together with the current query.", required = true, dataType = "sting/boolean", paramType = "query")
-//    })
-//    private String match(Request req, Response res) {
-//        String keyspace = getKeyspace(req);
-//        boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
-//        boolean materialise = parseBoolean(req.queryParams("materialise"));
-//
-//        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
-//            QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
-//            Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
-//            int limit = (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
-//
-//            if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
-//                switch (getAcceptType(req)) {
-//                    case HAL_CONTENTTYPE:
-//                        return formatAsHAL((MatchQuery) parsedQuery, keyspace, limit);
-//                    case GRAQL_CONTENTTYPE:
-//                        return formatAsGraql(parsedQuery);
-//                    default:
-//                        return formatAsHAL((MatchQuery) parsedQuery, keyspace, limit);
-//                }
-//            } else {
-//                throw new GraknEngineServerException(500, "Only \"read-only\" queries are allowed from Grakn web-dashboard.");
-//            }
-//        } catch (IllegalArgumentException | IllegalStateException e) {
-//            throw new GraknEngineServerException(HttpStatus.BAD_REQUEST_400, e.getMessage());
 //        } catch (RuntimeException e) {
 //            throw new GraknEngineServerException(500, e);
 //        }
@@ -345,8 +331,8 @@ public class VisualiserController {
      * @param query query to format
      * @return HAL representation
      */
-    private Json formatAsHAL(Query<?> query, int limit) {
-        return renderHALArrayData((MatchQuery) query, 0, limit);
+    private Json formatAsHAL(Query<?> query, int numberEmbeddedComponents) {
+        return renderHALArrayData((MatchQuery) query, 0, numberEmbeddedComponents);
     }
 
     /**
@@ -355,10 +341,9 @@ public class VisualiserController {
      * @param query query to format
      * @return Graql representation
      */
-    private String formatAsGraql(Query<?> query, int limit) {
+    private String formatAsGraql(Query<?> query) {
         return query.resultsString(Printers.graql())
                 .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
-                .limit(limit)
                 .collect(Collectors.joining("\n"));
     }
 
