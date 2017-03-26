@@ -86,7 +86,7 @@ import static ai.grakn.util.REST.RemoteShell.USERNAME;
 import static ai.grakn.util.REST.WebPath.REMOTE_SHELL_URI;
 import static ai.grakn.util.Schema.BaseType.TYPE;
 import static ai.grakn.util.Schema.MetaSchema.INFERENCE_RULE;
-import static ai.grakn.util.Schema.Resource.HAS_RESOURCE;
+import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
