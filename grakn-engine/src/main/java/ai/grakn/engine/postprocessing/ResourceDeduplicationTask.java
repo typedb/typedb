@@ -142,7 +142,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
          * in a combine. The number of duplicates is not expected to be unmanageably large.
          */
         @Override
-        public boolean doStage(org.apache.tinkerpop.gremlin.process.computer.MapReduce.Stage stage) { 
+        public boolean doStage(Stage stage) { 
             return stage == Stage.MAP || stage == Stage.REDUCE;
         }
         

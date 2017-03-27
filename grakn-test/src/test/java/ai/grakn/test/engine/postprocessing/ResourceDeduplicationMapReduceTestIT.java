@@ -89,8 +89,8 @@ public class ResourceDeduplicationMapReduceTestIT {
         near2 = graph.putRoleType("near2");
         near3 = graph.putRoleType("near3");        
         nearby.hasRole(near1).hasRole(near2).hasRole(near3);
-        nearby.hasResource(stringResource).hasResource(longResource).hasResource(integerResource)
-              .hasResource(booleanResource).hasResource(floatResource).hasResource(doubleResource);
+        nearby.resource(stringResource).resource(longResource).resource(integerResource)
+              .resource(booleanResource).resource(floatResource).resource(doubleResource);
         related = graph.putRelationType("related");
         related1 = graph.putRoleType("related1");
         related2 = graph.putRoleType("related2");
@@ -98,24 +98,24 @@ public class ResourceDeduplicationMapReduceTestIT {
         related4 = graph.putRoleType("related4");
         related5 = graph.putRoleType("related5");
         related.hasRole(related1).hasRole(related2).hasRole(related3).hasRole(related4).hasRole(related5);
-        thing.hasResource(stringResource);
-        thing.hasResource(longResource);
-        thing.hasResource(integerResource);
-        thing.hasResource(booleanResource);
-        thing.hasResource(floatResource);
-        thing.hasResource(doubleResource);
-        idea.hasResource(stringResource);
-        idea.hasResource(longResource);
-        idea.hasResource(integerResource);
-        idea.hasResource(booleanResource);
-        idea.hasResource(floatResource);
-        idea.hasResource(doubleResource);
-        related.hasResource(stringResource);
-        related.hasResource(longResource);
-        related.hasResource(integerResource);
-        related.hasResource(booleanResource);
-        related.hasResource(floatResource);
-        related.hasResource(doubleResource);
+        thing.resource(stringResource);
+        thing.resource(longResource);
+        thing.resource(integerResource);
+        thing.resource(booleanResource);
+        thing.resource(floatResource);
+        thing.resource(doubleResource);
+        idea.resource(stringResource);
+        idea.resource(longResource);
+        idea.resource(integerResource);
+        idea.resource(booleanResource);
+        idea.resource(floatResource);
+        idea.resource(doubleResource);
+        related.resource(stringResource);
+        related.resource(longResource);
+        related.resource(integerResource);
+        related.resource(booleanResource);
+        related.resource(floatResource);
+        related.resource(doubleResource);
         thing.playsRole(near1).playsRole(near2).playsRole(near3).playsRole(related1)
             .playsRole(related2).playsRole(related3).playsRole(related4).playsRole(related5);
         idea.playsRole(related1).playsRole(related2).playsRole(related3).playsRole(related4).playsRole(related5);
@@ -164,12 +164,12 @@ public class ResourceDeduplicationMapReduceTestIT {
             Entity e1 = thing.addEntity();
             Entity e2 = thing.addEntity();
             Relation r1 = related.addRelation().putRolePlayer(related1, e1).putRolePlayer(related2, e2);
-            e1.hasResource(stringResource.putResource("value_1"));            
-            e1.hasResource(longResource.putResource(24234l));
-            e2.hasResource(integerResource.putResource(42));
-            r1.hasResource(booleanResource.putResource(true));
-            r1.hasResource(floatResource.putResource(56.43f));
-            r1.hasResource(doubleResource.putResource(2342.546));            
+            e1.resource(stringResource.putResource("value_1"));            
+            e1.resource(longResource.putResource(24234l));
+            e2.resource(integerResource.putResource(42));
+            r1.resource(booleanResource.putResource(true));
+            r1.resource(floatResource.putResource(56.43f));
+            r1.resource(doubleResource.putResource(2342.546));            
             graph.commitOnClose();
         });
         ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
@@ -231,8 +231,8 @@ public class ResourceDeduplicationMapReduceTestIT {
         String resourceIndex = transact(graph -> {
            Entity something = thing.addEntity();
            Resource<String> res = stringResource.putResource("This is something!");
-           something.hasResource(res);
-           something.hasResource(createDuplicateResource(graph, res));
+           something.resource(res);
+           something.resource(createDuplicateResource(graph, res));
            return indexOf(graph, res);
         });        
         transact(graph -> {
@@ -255,10 +255,10 @@ public class ResourceDeduplicationMapReduceTestIT {
            Entity anotherthing = thing.addEntity();
            Entity onemorething = thing.addEntity();
            Resource<String> res = stringResource.putResource("This is something!");
-           something.hasResource(res);
-           something.hasResource(createDuplicateResource(graph, res));
-           anotherthing.hasResource(createDuplicateResource(graph, res));
-           onemorething.hasResource(createDuplicateResource(graph, res));
+           something.resource(res);
+           something.resource(createDuplicateResource(graph, res));
+           anotherthing.resource(createDuplicateResource(graph, res));
+           onemorething.resource(createDuplicateResource(graph, res));
            return indexOf(graph, res);
         });        
         transact(graph -> {
@@ -319,10 +319,10 @@ public class ResourceDeduplicationMapReduceTestIT {
                     r2 = related.addRelation();
            
            Resource<String> sres = stringResource.putResource("string-1");          
-           t1.hasResource(sres);
-           t3.hasResource(createDuplicateResource(graph, sres));
-           r1.hasResource(createDuplicateResource(graph, sres));
-           r2.hasResource(sres);
+           t1.resource(sres);
+           t3.resource(createDuplicateResource(graph, sres));
+           r1.resource(createDuplicateResource(graph, sres));
+           r2.resource(sres);
            r2.putRolePlayer(related1, sres);
            r1.putRolePlayer(related2, createDuplicateResource(graph, sres));
            
@@ -330,11 +330,11 @@ public class ResourceDeduplicationMapReduceTestIT {
            createDuplicateResource(graph, sres); // another free floating
            
            Resource<Float> fres = floatResource.putResource(1.69f);
-           r1.hasResource(fres);
-           r2.hasResource(createDuplicateResource(graph, fres));
-           t2.hasResource(createDuplicateResource(graph, fres));
-           t3.hasResource(createDuplicateResource(graph, fres));
-           t1.hasResource(fres);
+           r1.resource(fres);
+           r2.resource(createDuplicateResource(graph, fres));
+           t2.resource(createDuplicateResource(graph, fres));
+           t3.resource(createDuplicateResource(graph, fres));
+           t1.resource(fres);
            r2.putRolePlayer(related2, fres);
            r1.putRolePlayer(related1, createDuplicateResource(graph, fres));
            return new String[] { indexOf(graph, sres), indexOf(graph, fres) };
@@ -369,13 +369,13 @@ public class ResourceDeduplicationMapReduceTestIT {
         String [] resourceKeys = transact(graph -> {
             
             Resource<String> sres = stringResource.putResource("string-1");          
-            entities[0].hasResource(sres);
-            entities[2].hasResource(createDuplicateResource(graph, sres));
+            entities[0].resource(sres);
+            entities[2].resource(createDuplicateResource(graph, sres));
             
             Resource<Float> fres = floatResource.putResource(1.69f);
-            entities[1].hasResource(createDuplicateResource(graph, fres));
-            entities[2].hasResource(createDuplicateResource(graph, fres));
-            entities[0].hasResource(fres);
+            entities[1].resource(createDuplicateResource(graph, fres));
+            entities[2].resource(createDuplicateResource(graph, fres));
+            entities[0].resource(fres);
             
             return new String[] { indexOf(graph, sres), indexOf(graph, fres) };
         });                
