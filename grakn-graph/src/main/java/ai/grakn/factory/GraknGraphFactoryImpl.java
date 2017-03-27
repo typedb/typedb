@@ -58,9 +58,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private final String location;
     private final String keyspace;
 
-    //Flags so we don't have to open a graph just to check the count of the transactions
-    //private boolean graphOpen = false;
-    //private boolean graphBatchOpen = false;
+    //References so we don't have to open a graph just to check the count of the transactions
     private GraknGraph graph = null;
     private GraknGraph graphBatch = null;
 
