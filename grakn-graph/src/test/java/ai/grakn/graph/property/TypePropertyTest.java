@@ -28,7 +28,9 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.Ignore;
@@ -39,9 +41,11 @@ import org.junit.runner.RunWith;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
+import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -229,6 +233,49 @@ public class TypePropertyTest {
         assertThat(type.playsRoles(), hasItem(roleType));
     }
 
+    @Property
+    public void whenAddingAPlaysRole_TheTypePlaysThatRoleAndNoOtherNewRoles(
+            @Meta(false) Type type, @FromGraph RoleType roleType) {
+        assumeThat(type, not(is(roleType)));  // A role-type cannot play itself, TODO: is this sensible?
+
+        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.playsRoles());
+        type.playsRole(roleType);
+        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.playsRoles());
+
+        assertEquals(newPlaysRoles, Sets.union(previousPlaysRoles, ImmutableSet.of(roleType)));
+    }
+
+    @Property
+    public void whenAddingAPlaysRoleToATypesIndirectSuperType_TheTypePlaysThatRole(
+            Type type, @FromGraph RoleType roleType, long seed) {
+        Type superType = choose(indirectSuperTypes(type), seed);
+
+        assumeFalse(isMetaName(superType.getName()));
+        assumeThat(superType, not(is(roleType)));
+
+        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.playsRoles());
+        superType.playsRole(roleType);
+        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.playsRoles());
+
+        assertEquals(newPlaysRoles, Sets.union(previousPlaysRoles, ImmutableSet.of(roleType)));
+    }
+
+    @Property
+    public void whenDeletingAPlaysRoleAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
+            @Meta(false) Type type, @FromGraph RoleType roleType) {
+        assumeThat(type.superType().playsRoles(), not(hasItem(roleType)));
+        type.deletePlaysRole(roleType);
+        assertThat(type.playsRoles(), not(hasItem(roleType)));
+    }
+
+    @Property
+    public void whenDeletingAPlaysRoleAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
+            @Meta(false) Type type, long seed) {
+        RoleType roleType = choose(type.superType() + " plays no roles", type.superType().playsRoles(), seed);
+        type.deletePlaysRole(roleType);
+        assertThat(type.playsRoles(), hasItem(roleType));
+    }
+
     private Collection<Type> directSubTypes(GraknGraph graph, Type type) {
         return withImplicitConceptsVisible(graph, g ->
             type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList())
@@ -253,6 +300,15 @@ public class TypePropertyTest {
 
     private <T> T choose(Collection<? extends T> collection, long seed) {
         assumeThat(collection, not(empty()));
+        return chooseWithoutCheck(collection, seed);
+    }
+
+    private <T> T choose(String message, Collection<? extends T> collection, long seed) {
+        assumeThat(message, collection, not(empty()));
+        return chooseWithoutCheck(collection, seed);
+    }
+
+    private <T> T chooseWithoutCheck(Collection<? extends T> collection, long seed) {
         int index = new Random(seed).nextInt(collection.size());
         Optional<? extends T> result = collection.stream().skip(index).findFirst();
         assert result.isPresent();
