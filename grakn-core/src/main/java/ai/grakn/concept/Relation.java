@@ -50,6 +50,14 @@ public interface Relation extends Instance {
      */
     Relation scope(Instance instance);
 
+    /**
+     * Creates a relation from this instance to the provided resource.
+     *
+     * @param resource The resource to which a relationship is created
+     * @return The instance itself
+     */
+    Relation resource(Resource resource);
+
     //------------------------------------- Accessors ----------------------------------
 
     /**

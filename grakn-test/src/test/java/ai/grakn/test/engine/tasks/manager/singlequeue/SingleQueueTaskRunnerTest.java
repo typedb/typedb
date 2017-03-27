@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.test.EngineContext;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
@@ -44,19 +45,22 @@ import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -76,7 +80,13 @@ import static java.time.Duration.between;
 import static java.time.Duration.ofMillis;
 import static java.time.Instant.now;
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -85,12 +95,21 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 @RunWith(JUnitQuickcheck.class)
 public class SingleQueueTaskRunnerTest {
 
+    @ClassRule
+    public static final EngineContext zookeeperRunning = EngineContext.startKafkaServer();
+
     private static final EngineID engineID = EngineID.me();
+    private static final int TIME_UNTIL_BACKOFF = 10;
+
     private SingleQueueTaskRunner taskRunner;
     private TaskStateInMemoryStore storage;
     private SingleQueueTaskManager mockedTM;
@@ -105,7 +124,6 @@ public class SingleQueueTaskRunnerTest {
 
         storage = new TaskStateInMemoryStore();
         offsetStorage = mock(ExternalOffsetStorage.class);
-        
         consumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
         partition = new TopicPartition("hi", 0);
@@ -120,11 +138,11 @@ public class SingleQueueTaskRunnerTest {
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
-        }).when(mockedTM).addTask(any());
+        }).when(mockedTM).addTask(Mockito.any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF);
 
         createValidQueue(tasks);
 
@@ -168,7 +186,7 @@ public class SingleQueueTaskRunnerTest {
 
     private void addTask(TaskState task) {
         Long offset = consumer.endOffsets(ImmutableSet.of(partition)).get(partition);
-        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task));
+        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task.copy()));
         consumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
     }
 
@@ -190,7 +208,7 @@ public class SingleQueueTaskRunnerTest {
         taskRunner.run();
 
         completableTasks(tasks(tasks)).forEach(task ->
-                assertThat(storage.getState(task).status(), is(COMPLETED))
+                assertThat("Task " + task + " should have completed.", storage.getState(task).status(), is(COMPLETED))
         );
     }
 
@@ -201,7 +219,7 @@ public class SingleQueueTaskRunnerTest {
         taskRunner.run();
 
         failingTasks(tasks(tasks)).forEach(task ->
-                assertThat(storage.getState(task).status(), is(FAILED))
+                assertThat("Task " + task + " should have failed.", storage.getState(task).status(), is(FAILED))
         );
     }
 

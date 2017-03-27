@@ -357,7 +357,7 @@ public class GraknGraphPropertyTest {
         } else {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getName()));
         }
-        type.hasResource(resource);
+        type.resource(resource);
     }
 
     @Property

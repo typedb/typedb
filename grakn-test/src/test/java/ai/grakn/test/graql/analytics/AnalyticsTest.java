@@ -79,11 +79,11 @@ public class AnalyticsTest {
             TypeName resourceTypeName = TypeName.of("degree");
             ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
             EntityType thing = graph.putEntityType("thing");
-            thing.hasResource(degree);
+            thing.resource(degree);
 
             Entity thisThing = thing.addEntity();
             Resource thisResource = degree.putResource(1L);
-            thisThing.hasResource(thisResource);
+            thisThing.resource(thisResource);
             graph.commitOnClose();
         }
 
@@ -110,9 +110,9 @@ public class AnalyticsTest {
             EntityType thing = graph.putEntityType("thing");
 
             graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-            RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeId));
-            RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeId));
-            RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceTypeId))
+            RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeId));
+            RoleType degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeId));
+            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeId))
                     .hasRole(degreeOwner)
                     .hasRole(degreeValue);
             thing.playsRole(degreeOwner);

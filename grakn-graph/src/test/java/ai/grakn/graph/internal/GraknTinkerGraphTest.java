@@ -33,20 +33,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraknTinkerGraphTest extends GraphTestBase{
 
     @Test
-    public void testMultithreading(){
+    public void whenAddingMultipleConceptToTinkerGraph_EnsureGraphIsMutatedDirectlyNotViaTransaction(){
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(this::addEntityType));
+            futures.add(pool.submit(this::addRandomEntityType));
         }
 
         futures.forEach(future -> {
@@ -56,54 +56,27 @@ public class GraknTinkerGraphTest extends GraphTestBase{
                 ignored.printStackTrace();
             }
         });
-        assertEquals(108, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(101, graknGraph.admin().getMetaEntityType().subTypes().size());
     }
-    private void addEntityType(){
+    private void addRandomEntityType(){
         try(GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph()){
             graph.putEntityType(UUID.randomUUID().toString());
-        } catch (GraknValidationException e) {
-            e.printStackTrace();
         }
     }
 
     @Test
-    public void testTestThreadLocal(){
-        ExecutorService pool = Executors.newFixedThreadPool(10);
-        Set<Future> futures = new HashSet<>();
-        AbstractGraknGraph transcation = graknGraph;
-        transcation.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, transcation.getTinkerTraversal().toList().size());
-
-        for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> {
-                GraknGraph innerTranscation = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
-                innerTranscation.putEntityType(UUID.randomUUID().toString());
-            }));
-        }
-
-        futures.forEach(future -> {
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException ignored) {
-                ignored.printStackTrace();
-            }
-        });
-
-        assertEquals(109, transcation.getTinkerTraversal().toList().size()); //This is due to tinkergraphs not being thread local
-    }
-
-    @Test
-    public void testClear(){
+    public void whenClearingGraph_EnsureGraphIsClosedAndRealodedWhenNextOpening(){
         graknGraph.putEntityType("entity type");
         assertNotNull(graknGraph.getEntityType("entity type"));
         graknGraph.clear();
+        assertTrue(graknGraph.isClosed());
         graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
         assertNull(graknGraph.getEntityType("entity type"));
         assertNotNull(graknGraph.getMetaEntityType());
     }
 
     @Test
-    public void testCloseStandard() throws GraknValidationException {
+    public void whenMutatingClosedGraph_Throw() throws GraknValidationException {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
         graph.close();
 
@@ -112,14 +85,4 @@ public class GraknTinkerGraphTest extends GraphTestBase{
 
         graph.putEntityType("thing");
     }
-
-    @Test
-    public void testCloseWhenClearing(){
-        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").getGraph();
-        graphNormal.clear();
-        expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(CLOSED_CLEAR.getMessage());
-        graphNormal.getEntityType("thing");
-    }
-
 }

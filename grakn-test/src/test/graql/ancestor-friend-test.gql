@@ -46,9 +46,9 @@ $g  isa Person, has name "g";
 
 isa inference-rule,
 lhs {
-($x, $y) isa Friend;},
+(friendA: $x, friendB: $y) isa Friend;},
 rhs {
-($x, $y) isa Ancestor-friend;};
+(person: $x, ancestor-friend: $y) isa Ancestor-friend;};
 
 isa inference-rule,
 lhs {

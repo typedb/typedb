@@ -60,17 +60,17 @@ public interface Type extends Concept {
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     * @return The Type itself.
      */
-    RelationType key(ResourceType resourceType);
+    Type key(ResourceType resourceType);
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     * @return The Type itself.
      */
-    RelationType hasResource(ResourceType resourceType);
+     Type resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ---------------------------------
 
@@ -92,6 +92,12 @@ public interface Type extends Concept {
      * @return The resource types which this type is linked with.
      */
     Collection<ResourceType> resources();
+
+    /**
+     *
+     * @return The resource types which this type is linked with as a key.
+     */
+    Collection<ResourceType> keys();
 
     /**
      *
@@ -125,7 +131,7 @@ public interface Type extends Concept {
      *
      * By default, types are not implicit.
      *
-     * @return returns true if the type was created implicitly through {@link #hasResource}
+     * @return returns true if the type was created implicitly through {@link #resource}
      */
     Boolean isImplicit();
 

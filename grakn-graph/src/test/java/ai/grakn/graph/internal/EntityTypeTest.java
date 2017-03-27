@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
@@ -34,11 +35,14 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -232,11 +236,13 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Implicit Names
-        TypeName hasResourceOwnerName = Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName);
-        TypeName hasResourceValueName = Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName);
-        TypeName hasResourceName = Schema.Resource.HAS_RESOURCE.getName(resourceTypeName);
+        TypeName hasResourceOwnerName = Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName);
+        TypeName hasResourceValueName = Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName);
+        TypeName hasResourceName = Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName);
 
-        RelationType relationType = entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
+
+        RelationType relationType = graknGraph.getRelationType(hasResourceName.getValue());
         assertEquals(hasResourceName, relationType.getName());
 
         Set<TypeName> roleNames = relationType.hasRoles().stream().map(Type::getName).collect(toSet());
@@ -267,64 +273,30 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType rtSuper = graknGraph.putResourceType(superName, ResourceType.DataType.STRING);
         ResourceType rt = graknGraph.putResourceType(name, ResourceType.DataType.STRING).superType(rtSuper);
 
-        entityType1.hasResource(rtSuper);
-        entityType2.hasResource(rt);
+        entityType1.resource(rtSuper);
+        entityType2.resource(rt);
 
         graknGraph.showImplicitConcepts(true);
 
         //Check role types are only built explicitly
         assertThat(entityType1.playsRoles(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName).getValue())));
+                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(superName).getValue())));
 
         assertThat(entityType2.playsRoles(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name).getValue())));
+                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(name).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType rtSuperRelation = graknGraph.getType(Schema.Resource.HAS_RESOURCE.getName(rtSuper.getName()));
-        RoleType rtSuperRoleOwner = graknGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
-        RoleType rtSuperRoleValue = graknGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
+        RelationType rtSuperRelation = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(rtSuper.getName()));
+        RoleType rtSuperRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
+        RoleType rtSuperRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
 
-        RelationType rtRelation = graknGraph.getType(Schema.Resource.HAS_RESOURCE.getName(rt.getName()));
-        RoleType reRoleOwner = graknGraph.getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(rt.getName()));
-        RoleType reRoleValue = graknGraph.getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(rt.getName()));
+        RelationType rtRelation = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(rt.getName()));
+        RoleType reRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(rt.getName()));
+        RoleType reRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(rt.getName()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.superType());
         assertEquals(rtSuperRoleValue, reRoleValue.superType());
         assertEquals(rtSuperRelation, rtRelation.superType());
-    }
-
-    @Test
-    public void testHasResourceThenKey(){
-        EntityType entityType = graknGraph.putEntityType("Entity1");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-
-        RelationType relationTypeHasResource = entityType.hasResource(resourceType);
-        RelationType relationTypeKey = entityType.key(resourceType);
-
-        assertEquals(relationTypeHasResource, relationTypeKey);
-
-        // Check that resource is required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-    }
-
-    @Test
-    public void testKeyThenHasResource(){
-        EntityType entityType = graknGraph.putEntityType("Entity1");
-        ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
-
-        RelationType relationTypeKey = entityType.key(resourceType);
-        RelationType relationTypeHasResource = entityType.hasResource(resourceType);
-
-        assertEquals(relationTypeHasResource, relationTypeKey);
-
-        // Check that resource is required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
-        assertTrue(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
     @Test
@@ -387,10 +359,80 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType r3 = graknGraph.putResourceType("r3", ResourceType.DataType.BOOLEAN);
 
         assertTrue("Entity is linked to resources when it shouldn't", e1.resources().isEmpty());
-        e1.hasResource(r1);
-        e1.hasResource(r2);
-        e1.hasResource(r3);
+        e1.resource(r1);
+        e1.resource(r2);
+        e1.resource(r3);
         assertThat(e1.resources(), containsInAnyOrder(r1, r2, r3));
+    }
+
+    @Test
+    public void addResourceTypeAsKeyToOneEntityTypeAndAsResourceToAnotherEntityType(){
+        ResourceType<String> resourceType1 = graknGraph.putResourceType("Shared Resource 1", ResourceType.DataType.STRING);
+        ResourceType<String> resourceType2 = graknGraph.putResourceType("Shared Resource 2", ResourceType.DataType.STRING);
+
+        EntityType entityType1 = graknGraph.putEntityType("EntityType 1");
+        EntityType entityType2 = graknGraph.putEntityType("EntityType 2");
+
+        assertThat(entityType1.keys(), is(empty()));
+        assertThat(entityType1.resources(), is(empty()));
+        assertThat(entityType2.keys(), is(empty()));
+        assertThat(entityType2.resources(), is(empty()));
+
+        //Link the resources
+        entityType1.resource(resourceType1);
+
+        entityType1.key(resourceType2);
+        entityType2.key(resourceType1);
+        entityType2.key(resourceType2);
+
+        assertThat(entityType1.resources(), containsInAnyOrder(resourceType1, resourceType2));
+        assertThat(entityType2.resources(), containsInAnyOrder(resourceType1, resourceType2));
+
+        assertThat(entityType1.keys(), containsInAnyOrder(resourceType2));
+        assertThat(entityType2.keys(), containsInAnyOrder(resourceType1, resourceType2));
+
+        //Add resource which is a key for one entity and a resource for another
+        Entity entity1 = entityType1.addEntity();
+        Entity entity2 = entityType2.addEntity();
+        Resource<String> resource1 = resourceType1.putResource("Test 1");
+        Resource<String> resource2 = resourceType2.putResource("Test 2");
+        Resource<String> resource3 = resourceType2.putResource("Test 3");
+
+        //Resource 1 is a key to one and a resource to another
+        entity1.resource(resource1);
+        entity2.resource(resource1);
+
+        entity1.resource(resource2);
+        entity2.resource(resource3);
+
+        graknGraph.commitOnClose();
+        graknGraph.close();
+    }
+
+    @Test
+    public void whenAddingResourceTypeAsKeyAfterResource_Throw(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("EntityType");
+
+        entityType.resource(resourceType);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getName(), resourceType.getName()));
+
+        entityType.key(resourceType);
+    }
+
+    @Test
+    public void whenAddingResourceTypeAsResourceAfterResource_Throw(){
+        ResourceType<String> resourceType = graknGraph.putResourceType("Shared Resource", ResourceType.DataType.STRING);
+        EntityType entityType = graknGraph.putEntityType("EntityType");
+
+        entityType.key(resourceType);
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getName(), resourceType.getName()));
+
+        entityType.resource(resourceType);
     }
 
 }

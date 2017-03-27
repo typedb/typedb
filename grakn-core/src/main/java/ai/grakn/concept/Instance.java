@@ -71,9 +71,9 @@ public interface Instance extends Concept{
      * Creates a relation from this instance to the provided resource.
      *
      * @param resource The resource to which a relationship is created
-     * @return A relation which contains both the entity and the resource
+     * @return The instance itself
      */
-    Relation hasResource(Resource resource);
+    Instance resource(Resource resource);
 
     /**
      * Retrieves a collection of Resources attached to this Instances

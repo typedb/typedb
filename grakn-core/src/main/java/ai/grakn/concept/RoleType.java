@@ -79,6 +79,22 @@ public interface RoleType extends Type {
      */
     RoleType deletePlaysRole(RoleType roleType);
 
+    /**
+     * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
+     *
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    RoleType key(ResourceType resourceType);
+
+    /**
+     * Creates a RelationType which allows this type and a resource type to be linked.
+     *
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The Type itself.
+     */
+    RoleType resource(ResourceType resourceType);
+
     //------------------------------------- Accessors ----------------------------------
     /**
      * Returns the supertype of this RoleType.

@@ -22,8 +22,10 @@ import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
+import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.NewTask;
+import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
@@ -89,8 +91,8 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(@NewTask TaskState task, String requester) {
-        taskManager.stopTask(task.getId(), requester);
+    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(@NewTask TaskState task) {
+        taskManager.stopTask(task.getId());
 
         taskManager.addTask(task);
 
@@ -100,8 +102,8 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(@NewTask TaskState task, String requester) {
-        taskManager.stopTask(task.getId(), requester);
+    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(@NewTask TaskState task) {
+        taskManager.stopTask(task.getId());
 
         taskManager.addTask(task);
 
@@ -111,8 +113,9 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(@NewTask TaskState task, String requester) {
-        whenTaskStarts(id -> taskManager.stopTask(id, requester));
+    public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+        whenTaskStarts(id -> taskManager.stopTask(id));
 
         taskManager.addTask(task);
 
@@ -123,8 +126,9 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(@NewTask TaskState task, String requester) {
-        whenTaskStarts(id -> taskManager.stopTask(id, requester));
+    public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(
+            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+        whenTaskStarts(id -> taskManager.stopTask(id));
 
         taskManager.addTask(task);
 
@@ -134,8 +138,8 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(@NewTask TaskState task, String requester) {
-        whenTaskFinishes(id -> taskManager.stopTask(id, requester));
+    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(@NewTask TaskState task) {
+        whenTaskFinishes(id -> taskManager.stopTask(id));
 
         taskManager.addTask(task);
 
@@ -145,8 +149,8 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(@NewTask TaskState task, String requester) {
-        whenTaskFinishes(id -> taskManager.stopTask(id, requester));
+    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(@NewTask TaskState task) {
+        whenTaskFinishes(id -> taskManager.stopTask(id));
 
         taskManager.addTask(task);
 

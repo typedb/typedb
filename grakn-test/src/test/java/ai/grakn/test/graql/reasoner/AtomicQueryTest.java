@@ -103,6 +103,32 @@ public class AtomicQueryTest {
     }
 
     @Test
+    public void testWhenModifyingAQuery_TheCopyDoesNotChange(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{(recommended-item: $x, recommended-customer: $y) isa recommendation;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
+
+        atomicQuery.unify(VarName.of("y"), VarName.of("z"));
+        MatchQuery q1 = atomicQuery.getMatchQuery();
+        MatchQuery q2 = copy.getMatchQuery();
+        assertTrue(!q1.toString().equals(q2.toString()));
+    }
+
+    @Test
+    public void testWhenCopyingAQuery_TheyHaveTheSameRoleVarTypeMaps(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{(recommended-item: $x, recommended-customer: $y) isa recommendation;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
+
+        atomicQuery.unify(VarName.of("y"), VarName.of("z"));
+        assertEquals(new ReasonerAtomicQuery(conjunction(patternString, graph), snbGraph.graph()).getAtom().getRoleVarTypeMap(), copy.getAtom().getRoleVarTypeMap());
+    }
+
+    @Test
     public void testMaterialize(){
         QueryBuilder qb = snbGraph.graph().graql().infer(false);
         String explicitQuery = "match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic';";

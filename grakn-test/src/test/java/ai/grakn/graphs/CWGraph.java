@@ -37,14 +37,11 @@ public class CWGraph extends TestGraph {
     private static EntityType person, criminal, weapon, rocket, missile, country;
     
     private static ResourceType<String> alignment;
-    private static RoleType alignmentValue, alignmentTarget;
 
     private static ResourceType<String> propulsion;
-    private static RoleType propulsionValue, propulsionTarget;
 
     private static ResourceType<String> nationality;
-    private static RoleType nationalityValue, nationalityTarget;
-    
+
     private static RelationType isEnemyOf, isPaidBy, owns, transaction;
     
     private static RoleType enemySource, enemyTarget;
@@ -62,20 +59,9 @@ public class CWGraph extends TestGraph {
     protected void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
-        nationalityTarget = graph.putRoleType("has-nationality-owner");
-        nationalityValue = graph.putRoleType("has-nationality-value");
-        nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING)
-                .playsRole(nationalityValue);
-
-        propulsionTarget = graph.putRoleType("has-propulsion-owner");
-        propulsionValue = graph.putRoleType("has-propulsion-value");
-        propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING)
-                .playsRole(propulsionValue);
-
-        alignmentTarget = graph.putRoleType("has-alignment-owner");
-        alignmentValue = graph.putRoleType("has-alignment-value");
-        alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING)
-                .playsRole(alignmentValue);
+        nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING);
+        propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING);
+        alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING);
 
         enemySource = graph.putRoleType("enemy-source");
         enemyTarget = graph.putRoleType("enemy-target");
@@ -104,8 +90,8 @@ public class CWGraph extends TestGraph {
         person = graph.putEntityType("person")
                 .playsRole(seller)
                 .playsRole(payee);
-        person.hasResource(key);
-        person.hasResource(nationality);
+        person.resource(key);
+        person.resource(nationality);
 
         criminal = graph.putEntityType("criminal")
                 .superType(person);
@@ -113,18 +99,18 @@ public class CWGraph extends TestGraph {
         weapon = graph.putEntityType("weapon")
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
-        weapon.hasResource(key);
+        weapon.resource(key);
 
         rocket = graph.putEntityType("rocket")
                 .playsRole(transactionItem)
                 .playsRole(ownedItem);
-        rocket.hasResource(key);
-        rocket.hasResource(propulsion);
+        rocket.resource(key);
+        rocket.resource(propulsion);
 
         missile = graph.putEntityType("missile")
                 .superType(weapon)
                 .playsRole(transactionItem);
-        missile.hasResource(key);
+        missile.resource(key);
 
         country = graph.putEntityType("country")
                 .playsRole(buyer)
@@ -132,8 +118,8 @@ public class CWGraph extends TestGraph {
                 .playsRole(enemyTarget)
                 .playsRole(payer)
                 .playsRole(enemySource);
-        country.hasResource(key);
-        country.hasResource(alignment);
+        country.resource(key);
+        country.resource(alignment);
     }
 
     @Override

@@ -41,11 +41,11 @@ isa inference-rule,
 lhs {
 ($x, $y) isa link;},
 rhs {
-($x, $y) isa reachable;};
+(reach-endA: $x, reach-endB: $y) isa reachable;};
 
 isa inference-rule,
 lhs {
-($x, $z) isa link;
-($z, $y) isa reachable;},
+(link-endA: $x, link-endB: $z) isa link;
+(reach-endA: $z, reach-endB: $y) isa reachable;},
 rhs {
-($x, $y) isa reachable;};
+(reach-endA: $x, reach-endB: $y) isa reachable;};

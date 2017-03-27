@@ -100,11 +100,11 @@ public class MovieGraph extends TestGraph {
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
                 .playsRole(productionWithGenre);
 
-        production.hasResource(title);
-        production.hasResource(tmdbVoteCount);
-        production.hasResource(tmdbVoteAverage);
-        production.hasResource(releaseDate);
-        production.hasResource(runtime);
+        production.resource(title);
+        production.resource(tmdbVoteCount);
+        production.resource(tmdbVoteAverage);
+        production.resource(releaseDate);
+        production.resource(runtime);
 
         movie = graph.putEntityType("movie").superType(production);
 
@@ -113,26 +113,25 @@ public class MovieGraph extends TestGraph {
         person = graph.putEntityType("person")
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
-        person.hasResource(gender);
-        person.hasResource(name);
-        person.hasResource(realName);
+        person.resource(gender);
+        person.resource(name);
+        person.resource(realName);
 
         genre = graph.putEntityType("genre").playsRole(genreOfProduction);
-
         genre.key(name);
 
         character = graph.putEntityType("character")
                 .playsRole(characterBeingPlayed);
 
-        character.hasResource(name);
+        character.resource(name);
 
         graph.putEntityType("award");
         language = graph.putEntityType("language");
 
-        language.hasResource(name);
+        language.resource(name);
 
         cluster = graph.putEntityType("cluster").playsRole(clusterOfProduction);
-        cluster.hasResource(name);
+        cluster.resource(name);
     }
 
     @Override
@@ -287,7 +286,7 @@ public class MovieGraph extends TestGraph {
     protected void buildRules(GraknGraph graph) {
         // These rules are totally made up for testing purposes and don't work!
         aRuleType = graph.putRuleType("a-rule-type");
-        aRuleType.hasResource(name);
+        aRuleType.resource(name);
 
         Pattern lhs = graph.graql().parsePattern("$x id 'expect-lhs'");
         Pattern rhs = graph.graql().parsePattern("$x id 'expect-rhs'");
