@@ -262,8 +262,8 @@ public class ReasonerTest {
         Reasoner.commitGraph(snbGraph.graph());
         snbGraph.graph(); //Reopen transaction
 
-        QueryBuilder qb = snbGraph.graph().graql().infer(true).materialise(false);
-        MatchQuery query = qb.parse(queryString);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        MatchQuery query = iqb.parse(queryString);
         QueryAnswers answers = new QueryAnswers(query.admin().results());
         assertTrue(!answers.isEmpty());
     }
@@ -712,10 +712,11 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingRelationTypeVar2(){
         String queryString = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;";
         String queryString2 = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;$rel type-name recommendation;";
-        QueryBuilder qb = snbGraph.graph().graql();
-        QueryAnswers answers = queryAnswers(qb.infer(true).materialise(false).parse(queryString));
-        QueryAnswers answers2 = queryAnswers(qb.infer(true).materialise(true).parse(queryString));
-        QueryAnswers answers3 = queryAnswers(qb.infer(false).parse(queryString2));
+        QueryBuilder qb = snbGraph.graph().graql().infer(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true);
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        QueryAnswers answers3 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers.size(), answers2.size());
         assertEquals(answers, answers2);
         assertEquals(answers2, answers3);
