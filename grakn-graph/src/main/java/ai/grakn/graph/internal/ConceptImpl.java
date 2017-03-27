@@ -144,13 +144,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      * Deletes the node and adds it neighbours for validation
      */
     void deleteNode(){
-        // tracking
-        getVertex().edges(Direction.BOTH).
-                forEachRemaining(
-                        e -> {
-                            graknGraph.getConceptLog().trackConceptForValidation(getGraknGraph().getElementFactory().buildConcept(e.inVertex()));
-                            graknGraph.getConceptLog().trackConceptForValidation(getGraknGraph().getElementFactory().buildConcept(e.outVertex()));}
-                );
         graknGraph.getConceptLog().removeConcept(this);
         // delete node
         getVertex().remove();

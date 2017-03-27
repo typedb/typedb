@@ -382,9 +382,9 @@ public class ScalingTestIT {
         thing.playsRole(relation1).playsRole(relation2);
         graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
         ResourceType<String> id = graph.putResourceType("node-id", ResourceType.DataType.STRING);
-        thing.hasResource(id);
+        thing.resource(id);
         ResourceType<Long> degree = graph.putResourceType("degree", ResourceType.DataType.LONG);
-        thing.hasResource(degree);
+        thing.resource(degree);
         graph.commitOnClose();
         graph.close();
     }

@@ -115,16 +115,15 @@ public class EntityTest extends GraphTestBase{
         TypeName resourceTypeName = TypeName.of("A Resource Thing");
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeName, ResourceType.DataType.STRING);
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
 
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
-        entity.hasResource(resource);
+        entity.resource(resource);
         Relation relation = entity.relations().iterator().next();
-        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
-        checkResourceStructure(resourceType, relation, entity);
+        checkImplicitStructure(resourceType, relation, entity, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_OWNER, Schema.ImplicitType.HAS_RESOURCE_VALUE);
     }
 
     @Test
@@ -137,10 +136,10 @@ public class EntityTest extends GraphTestBase{
 
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(
-                ErrorMessage.HAS_RESOURCE_INVALID.getMessage(entityType.getName(), resourceType.getName())
+                ErrorMessage.HAS_INVALID.getMessage(entityType.getName(), "resource", resourceType.getName())
         );
 
-        entity.hasResource(resource);
+        entity.resource(resource);
     }
 
     @Test
@@ -148,16 +147,16 @@ public class EntityTest extends GraphTestBase{
         String resourceTypeId = "A Resource Thing";
         EntityType entityType = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
 
         Entity entity = entityType.addEntity();
         Resource resource1 = resourceType.putResource("A resource thing");
         Resource resource2 = resourceType.putResource("Another resource thing");
 
         assertEquals(0, entity.relations().size());
-        entity.hasResource(resource1);
+        entity.resource(resource1);
         assertEquals(1, entity.relations().size());
-        entity.hasResource(resource2);
+        entity.resource(resource2);
         assertEquals(2, entity.relations().size());
 
         graknGraph.validateGraph();
@@ -173,11 +172,10 @@ public class EntityTest extends GraphTestBase{
         Entity entity = entityType.addEntity();
         Resource resource = resourceType.putResource("A resource thing");
 
-        entity.hasResource(resource);
+        entity.resource(resource);
         Relation relation = entity.relations().iterator().next();
-        assertEquals(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName), relation.type().getName());
 
-        checkResourceStructure(resourceType, relation, entity);
+        checkImplicitStructure(resourceType, relation, entity, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_OWNER, Schema.ImplicitType.HAS_KEY_VALUE);
     }
 
     @Test
@@ -193,16 +191,17 @@ public class EntityTest extends GraphTestBase{
         graknGraph.validateGraph();
     }
 
-    private void checkResourceStructure(ResourceType<?> resourceType, Relation relation, Entity entity){
+    private void checkImplicitStructure(ResourceType<?> resourceType, Relation relation, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
         assertEquals(2, relation.allRolePlayers().size());
+        assertEquals(has.getName(resourceType.getName()), relation.type().getName());
         relation.allRolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
             assertEquals(1, entry.getValue().size());
             entry.getValue().forEach(instance -> {
                 if(instance.equals(entity)){
-                    assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceType.getName()), roleType.getName());
+                    assertEquals(hasOwner.getName(resourceType.getName()), roleType.getName());
                 } else {
-                    assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceType.getName()), roleType.getName());
+                    assertEquals(hasValue.getName(resourceType.getName()), roleType.getName());
                 }
             });
         });
@@ -215,7 +214,7 @@ public class EntityTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").hasRole(role1).hasRole(role2);
         EntityType entityType = graknGraph.putEntityType("A Thing").playsRole(role1).playsRole(role2);
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
-        entityType.hasResource(resourceType);
+        entityType.resource(resourceType);
 
         Entity entityToDelete = entityType.addEntity();
         Entity entityOther = entityType.addEntity();
@@ -224,15 +223,15 @@ public class EntityTest extends GraphTestBase{
         Resource<String> resource3 = resourceType.putResource("3");
 
         //Create Implicit Relations
-        entityToDelete.hasResource(resource1);
-        entityToDelete.hasResource(resource2);
-        entityToDelete.hasResource(resource3);
+        entityToDelete.resource(resource1);
+        entityToDelete.resource(resource2);
+        entityToDelete.resource(resource3);
 
         //Create Explicit Relation
         relationType.addRelation().addRolePlayer(role1, entityToDelete).addRolePlayer(role2, entityOther);
 
         //Check Relation Counts
-        RelationType implicitRelationType = graknGraph.getRelationType(Schema.Resource.HAS_RESOURCE.getName(resourceType.getName()).getValue());
+        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceType.getName()).getValue());
         assertEquals(1, relationType.instances().size());
         assertEquals(3, implicitRelationType.instances().size());
 

@@ -49,7 +49,7 @@ public enum ErrorMessage {
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
     RESOURCE_TYPE_UNIQUE("The resource [%s] is unique and is already attached to [%s]."),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
-    HAS_RESOURCE_INVALID("The type [%s] is not allowed to have a resource of type [%s]"),
+    HAS_INVALID("The type [%s] is not allowed to have a %s of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
     BACKEND_EXCEPTION("Unknown Backend Exception."),
@@ -57,6 +57,7 @@ public enum ErrorMessage {
     GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
     TRANSACTIONS_OPEN("Cannot close graph [%s] connecting to keyspace [%s] because there are [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
+    CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Resource Type [%s] as a key and as a resource"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -75,7 +76,7 @@ public enum ErrorMessage {
             "does not have a %s Role Type which is connected to the %s Relation Type [%s] \n"),
 
     VALIDATION_RELATION_DUPLICATE("You have created one or more relations with the following roles and role player [%s] \n"),
-    VALIDATION_REQUIRED_RELATION("The role player [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
+    VALIDATION_REQUIRED_RELATION("The role player [%s] of type [%s] can only play the role of [%s] once but is currently doing so [%s] times \n"),
 
     VALIDATION_RULE_MISSING_ELEMENTS("The [%s] of rule [%s] of type [%s] refers to type [%s] which does not exist in the graph \n"),
 

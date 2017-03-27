@@ -23,17 +23,16 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
-import static java.util.Comparator.naturalOrder;
 
 /**
  * Class for generating greedy traversal plans
@@ -42,7 +41,11 @@ import static java.util.Comparator.naturalOrder;
  */
 public class GreedyTraversalPlan {
 
-    private static final long MAX_TRAVERSAL_ATTEMPTS = 10_000;
+    private static final long MAX_TRAVERSAL_ATTEMPTS = 15_000;
+
+    // The degree to prune plans - 0.0 means never prune plans, 1.0 means always prune everything except the fastest
+    // estimated plan (this is equivalent to a naive greedy algorithm that does not look ahead).
+    private static final double PRUNE_FACTOR = 0.1;
 
     /**
      * Create a traversal plan using the default maxTraersalAttempts.
@@ -94,7 +97,7 @@ public class GreedyTraversalPlan {
         Set<EquivalentFragmentSet> fragmentSets = Sets.newHashSet(query.getEquivalentFragmentSets());
 
         long numFragments = fragments(fragmentSets).count();
-        long depth = 1;
+        long depth = 0;
         long numTraversalAttempts = numFragments;
 
         // Calculate the depth to descend in the tree, based on how many plans we want to evaluate
@@ -107,7 +110,18 @@ public class GreedyTraversalPlan {
         Plan plan = Plan.base();
 
         while (!fragmentSets.isEmpty()) {
-            plan = extendPlan(plan, fragmentSets, depth);
+            List<Plan> allPlans = Lists.newArrayList();
+            extendPlan(plan, allPlans, fragmentSets, depth);
+
+            Plan newPlan = Collections.min(allPlans);
+
+            // Only retain one new fragment
+            // TODO: Find a more elegant way to do this?
+            while (newPlan.size() > plan.size() + 1) {
+                newPlan.pop();
+            }
+
+            plan = newPlan;
 
             plan.fragments().forEach(fragment -> {
                 fragmentSets.remove(fragment.getEquivalentFragmentSet());
@@ -124,31 +138,55 @@ public class GreedyTraversalPlan {
      * @param depth the maximum depth the plan is allowed to descend in the tree
      * @return a new plan that extends the given plan
      */
-    private static Plan extendPlan(Plan plan, Set<EquivalentFragmentSet> fragmentSets, long depth) {
+    private static void extendPlan(Plan plan, List<Plan> allPlans, Set<EquivalentFragmentSet> fragmentSets, long depth) {
 
         // Base case
-        if (depth == 0) return plan;
+        if (depth == 0) {
+            allPlans.add(plan.copy());
+            return;
+        }
 
-        // A function that will recursively extend the plan using the given fragment
-        Function<Fragment, Plan> extendPlanWithFragment = fragment -> {
-            // Create the new plan, fragment sets and variable names when using this fragment
-            Plan newPlan = plan.append(fragment);
-            EquivalentFragmentSet fragmentSet = fragment.getEquivalentFragmentSet();
-            Set<EquivalentFragmentSet> newFragmentSets = Sets.difference(fragmentSets, ImmutableSet.of(fragmentSet));
+        // The minimum cost of all plan with only one additional fragment. Used for deciding which branches to prune.
+        double minPartialPlanCost = Double.MAX_VALUE;
 
-            // Recursively find a plan
-            return extendPlan(newPlan, newFragmentSets, depth - 1);
-        };
+        for (EquivalentFragmentSet fragmentSet : fragmentSets) {
+            for (Fragment fragment : fragmentSet.fragments()) {
 
-        // Create a plan for every fragment that has its dependencies met, then select the lowest cost plan
-        return fragments(fragmentSets)
-                .filter(fragment -> plan.names().containsAll(fragment.getDependencies()))
-                .map(extendPlanWithFragment)
-                .min(naturalOrder())
-                .orElse(plan);
+                if (plan.tryPush(fragment)) {
+                    minPartialPlanCost = Math.min(plan.cost(), minPartialPlanCost);
+                    plan.pop();
+                }
+            }
+        }
+
+        boolean addedPlan = false;
+
+        for (EquivalentFragmentSet fragmentSet : fragmentSets) {
+            for (Fragment fragment : fragmentSet.fragments()) {
+
+                // Skip fragments that don't have their dependencies met or are in sets that have already been visited
+                if (!plan.tryPush(fragment)) {
+                    continue;
+                }
+
+                // Prune any plans that are much more expensive than the cheapest partial plan
+                if (plan.cost() * PRUNE_FACTOR <= minPartialPlanCost) {
+                    addedPlan = true;
+
+                    // Recursively find a plan
+                    extendPlan(plan, allPlans, fragmentSets, depth - 1);
+                }
+
+                plan.pop();
+            }
+        }
+
+        if (!addedPlan) {
+            allPlans.add(plan.copy());
+        }
     }
 
     private static Stream<Fragment> fragments(Set<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSets.stream().flatMap(EquivalentFragmentSet::getFragments);
+        return fragmentSets.stream().flatMap(EquivalentFragmentSet::streamFragments);
     }
 }

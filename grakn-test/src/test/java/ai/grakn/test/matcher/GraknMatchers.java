@@ -61,9 +61,9 @@ public class GraknMatchers {
      * Create a matcher to test against the results of a Graql query.
      */
     public static Matcher<MatchQuery> results(
-            Matcher<? extends Iterable<? extends Map<String, ? extends MatchableConcept>>> matcher
+            Matcher<? extends Iterable<? extends Map<? extends String, ? extends MatchableConcept>>> matcher
     ) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<String, ? extends MatchableConcept>>>(matcher) {
+        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<? extends String, ? extends MatchableConcept>>>(matcher) {
 
             @Override
             public String getName() {
@@ -198,7 +198,7 @@ public class GraknMatchers {
     /**
      * Create a matcher to test that the concept has the given type name.
      */
-    private static Matcher<MatchableConcept> type(TypeName expectedName) {
+    static Matcher<MatchableConcept> type(TypeName expectedName) {
         return new PropertyEqualsMatcher<MatchableConcept, TypeName>(expectedName) {
 
             @Override

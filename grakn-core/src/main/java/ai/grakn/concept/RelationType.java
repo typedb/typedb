@@ -73,7 +73,7 @@ public interface RelationType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    RelationType hasResource(ResourceType resourceType);
+    RelationType resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ----------------------------------
     /**

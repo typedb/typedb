@@ -232,7 +232,7 @@ public class DeleteQueryTest {
         MatchQuery godfather = qb.match(var().has("title", "Godfather"));
         ConceptId id = qb.match(
                 var("x").has("title", "Godfather"),
-                var("a").rel("x").rel("y").isa("has-tmdb-vote-count")
+                var("a").rel("x").rel("y").isa(Schema.ImplicitType.HAS_RESOURCE.getName("tmdb-vote-count").getValue())
         ).get("a").findFirst().get().getId();
         MatchQuery relation = qb.match(var().id(id));
         MatchQuery voteCount = qb.match(var().value(1000L).isa("tmdb-vote-count"));

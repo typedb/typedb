@@ -34,8 +34,10 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class PostprocessingTest extends GraphTestBase{
@@ -48,7 +50,7 @@ public class PostprocessingTest extends GraphTestBase{
     private InstanceImpl instance4;
 
     @Before
-    public void buildGraphAccessManager(){
+    public void buildSampleGraph(){
         roleType1 = graknGraph.putRoleType("role 1");
         roleType2 = graknGraph.putRoleType("role 2");
         relationType = graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
@@ -59,11 +61,10 @@ public class PostprocessingTest extends GraphTestBase{
         instance4 = (InstanceImpl) thing.addEntity();
 
         relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
-        assertEquals(1, instance1.castings().size());
     }
 
     @Test
-    public void testMergingDuplicateCasting(){
+    public void whenMergingDuplicateCastings_EnsureOnlyOneCastingRemains(){
         Set<ConceptId> castingVertexIds = new HashSet<>();
         CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
         castingVertexIds.add(mainCasting.getId());
@@ -94,7 +95,7 @@ public class PostprocessingTest extends GraphTestBase{
     }
 
     @Test
-    public void testMergingDuplicateRelationsDueToDuplicateCastings() {
+    public void whenMergingCastingWhichResultInDuplicateRelations_MergeDuplicateRelations() {
         Set<ConceptId> castingVertexIds = new HashSet<>();
 
         CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
@@ -114,7 +115,7 @@ public class PostprocessingTest extends GraphTestBase{
     }
 
     @Test
-    public void testMergingResourcesSimple(){
+    public void whenMergingDuplicateResources_EnsureSingleResourceRemains(){
         ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Create fake resources
@@ -135,7 +136,7 @@ public class PostprocessingTest extends GraphTestBase{
     }
 
     @Test
-    public void testMergingResourcesWithRelations(){
+    public void whenMergingDuplicateResourcesWithRelations_EnsureSingleResourceRemainsAndNoDuplicateRelationsAreCreated(){
         RoleType roleEntity = graknGraph.putRoleType("Entity Role");
         RoleType roleResource = graknGraph.putRoleType("Resource Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").hasRole(roleEntity).hasRole(roleResource);
@@ -187,11 +188,8 @@ public class PostprocessingTest extends GraphTestBase{
         }
 
         assertNotNull(foundR1);
-        assertEquals(3, foundR1.relations().size());
-        assertTrue(foundR1.ownerInstances().contains(e1));
-        assertTrue(foundR1.ownerInstances().contains(e2));
-
-        assertEquals(4, graknGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertThat(foundR1.ownerInstances(), containsInAnyOrder(e1, e2, e3));
+        assertEquals(4, graknGraph.admin().getMetaRelationType().instances().size());
     }
 
 

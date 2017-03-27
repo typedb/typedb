@@ -125,13 +125,13 @@ public class PokemonGraphFactory{
         height = graph.putResourceType("height", ResourceType.DataType.LONG);
         weight = graph.putResourceType("weight", ResourceType.DataType.DOUBLE);
 
-        pokemon.hasResource(name);
-        pokemon.hasResource(pokedexNo);
-        pokemon.hasResource(description);
-        pokemon.hasResource(height);
-        pokemon.hasResource(weight);
+        pokemon.resource(name);
+        pokemon.resource(pokedexNo);
+        pokemon.resource(description);
+        pokemon.resource(height);
+        pokemon.resource(weight);
 
-        pokemonType.hasResource(name);
+        pokemonType.resource(name);
     }
 
     private static void buildInstances() {
@@ -198,7 +198,7 @@ public class PokemonGraphFactory{
 
     private static <T> void addResource(Entity entity, T s, ResourceType<T> type) {
         Resource<T> resource = type.putResource(s);
-        entity.hasResource(resource);
+        entity.resource(resource);
     }
 
     private static void putTypes(Entity pokemon, Entity... entities) {

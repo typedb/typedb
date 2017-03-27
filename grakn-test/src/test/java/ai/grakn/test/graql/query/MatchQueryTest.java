@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -130,6 +131,7 @@ import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteAverage;
 import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteCount;
 import static ai.grakn.test.matcher.MovieMatchers.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
+import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -807,6 +809,14 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void whenMatchingHasResource_ThenTheResultOnlyContainsTheExpectedVariables() {
+        MatchQuery query = qb.match(var("x").hasResource("name"));
+        for (Map<String, Concept> result : query) {
+            assertEquals(result.keySet(), ImmutableSet.of("x"));
+        }
+    }
+
+    @Test
     public void testMatchKey() {
         MatchQuery query = qb.match(var("x").hasKey("name"));
         assertThat(query, variable("x", contains(genre)));
@@ -820,7 +830,7 @@ public class MatchQueryTest {
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
-        MatchQuery query = qb.match(var("x").sub("concept").name("has-title"));
+        MatchQuery query = qb.match(var("x").sub("concept").name(HAS_RESOURCE.getName("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
     }
 

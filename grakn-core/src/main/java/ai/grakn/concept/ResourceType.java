@@ -137,7 +137,7 @@ public interface ResourceType<D> extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    ResourceType<D> hasResource(ResourceType resourceType);
+    ResourceType<D> resource(ResourceType resourceType);
 
     //------------------------------------- Accessors ---------------------------------
     /**

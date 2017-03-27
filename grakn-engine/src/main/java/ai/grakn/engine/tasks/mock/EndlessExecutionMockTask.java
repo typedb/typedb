@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.mock;
 import ai.grakn.engine.TaskId;
 
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import java.time.Duration;
 
 /**
  * Mocked task that will never end
@@ -35,7 +36,7 @@ public class EndlessExecutionMockTask extends MockBackgroundTask {
         if (!cancelled.get()) {
             synchronized (sync) {
                 try {
-                    sync.wait();
+                    sync.wait(Duration.ofMinutes(5).toMillis());
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
