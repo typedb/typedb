@@ -51,7 +51,6 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     // memory key
     private static final String VOTE_TO_HALT = "connectedComponentVertexProgram.voteToHalt";
 
-    //    private static final Set<String> ELEMENT_COMPUTE_KEYS = Sets.newHashSet(IS_ACTIVE_CASTING, CLUSTER_LABEL);
     private static final Set<String> MEMORY_COMPUTE_KEYS = Sets.newHashSet(VOTE_TO_HALT);
 
     private static final String MESSAGE_FROM_ROLE_PLAYER = "R";
