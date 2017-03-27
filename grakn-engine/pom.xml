@@ -30,6 +30,11 @@
     <artifactId>grakn-engine</artifactId>
 
     <dependencies>
+        <dependency>   
+            <groupId>ai.grakn</groupId>
+            <artifactId>titan-factory</artifactId>
+            <version>${project.version}</version>
+        </dependency>    
         <dependency>
             <groupId>com.auth0</groupId>
             <artifactId>java-jwt</artifactId>
