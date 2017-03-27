@@ -107,8 +107,8 @@ public class Resource extends MultiPredicateBinary{
         if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
 
         Unifier unifier = new UnifierImpl();
-        unifier.put(this.getValueVariable(), parentAtom.getVarName());
-        if (parentAtom.containsVar(this.getVarName())) unifier.put(this.getVarName(), VarName.anon());
+        unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
+        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), VarName.anon());
         return unifier;
     }
 

@@ -200,7 +200,7 @@ public class Utility {
             while(pIt.hasNext() && cIt.hasNext()){
                 VarName pVar = pIt.next();
                 VarName chVar = cIt.next();
-                if (!pVar.equals(chVar)) unifier.put(pVar, chVar);
+                if (!pVar.equals(chVar)) unifier.addMapping(pVar, chVar);
             }
             unifierSet.add(unifier);
         });

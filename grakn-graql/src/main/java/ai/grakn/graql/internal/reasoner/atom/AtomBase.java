@@ -128,7 +128,7 @@ public abstract class AtomBase implements Atomic {
         }
         Unifier unifier = new UnifierImpl();
         if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.put(this.getVarName(), parentAtom.getVarName());
+            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
         }
         return unifier;
     }

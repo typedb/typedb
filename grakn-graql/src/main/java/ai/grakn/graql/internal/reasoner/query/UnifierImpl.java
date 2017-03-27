@@ -86,7 +86,7 @@ public class UnifierImpl implements Unifier {
     @Override
     public Set<Map.Entry<VarName, VarName>> getMappings(){ return unifier.entrySet();}
 
-    public VarName put(VarName key, VarName value){
+    public VarName addMapping(VarName key, VarName value){
         return unifier.put(key, value);
     }
 

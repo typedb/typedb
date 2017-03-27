@@ -266,8 +266,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             //bidirectional mapping
             if (!replacementVar.equals(appliedMappings.get(varToReplace)) && varToReplace.equals(mappings.get(replacementVar))) {
                 exchangeRelVarNames(varToReplace, replacementVar);
-                appliedMappings.put(varToReplace, replacementVar);
-                appliedMappings.put(replacementVar, varToReplace);
+                appliedMappings.addMapping(varToReplace, replacementVar);
+                appliedMappings.addMapping(replacementVar, varToReplace);
             }
         }
         mappings.getMappings().removeIf(e ->
@@ -307,7 +307,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     VarName old = uncapture(cap);
                     VarName fresh = VarName.anon();
                     unify(cap, fresh);
-                    newMappings.put(old, fresh);
+                    newMappings.addMapping(old, fresh);
                 });
         return newMappings;
     }

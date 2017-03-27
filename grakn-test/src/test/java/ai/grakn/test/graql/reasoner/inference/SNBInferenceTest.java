@@ -30,8 +30,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -371,7 +369,7 @@ public class SNBInferenceTest {
         String queryString2 = "match $x isa person; $y isa person;$y has name 'Miguel Gonzalez';" +
                         "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
         Unifier unifier = new UnifierImpl();
-        unifier.put(VarName.of("z"), VarName.of("y"));
+        unifier.addMapping(VarName.of("z"), VarName.of("y"));
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers answers2 =  queryAnswers(iqb.materialise(false).parse(queryString2)).unify(unifier);

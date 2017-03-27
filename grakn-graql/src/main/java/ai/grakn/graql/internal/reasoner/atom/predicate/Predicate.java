@@ -103,7 +103,7 @@ public abstract class Predicate<T> extends AtomBase {
         }
         Unifier unifier = new UnifierImpl();
         if (!this.getVarName().equals(parentAtom.getVarName())) {
-            unifier.put(this.getVarName(), parentAtom.getVarName());
+            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
         }
         return unifier;
     }

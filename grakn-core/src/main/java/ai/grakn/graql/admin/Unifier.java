@@ -52,7 +52,7 @@ public interface Unifier{
      * @param value term
      * @return previous value associated with key, or null if there was no mapping for key
      */
-    VarName put(VarName key, VarName value);
+    VarName addMapping(VarName key, VarName value);
 
 
     /**

@@ -666,7 +666,7 @@ public class Relation extends TypeAtom {
                     if (compatibleChildRoles.size() == 1){
                         RoleType childRole = compatibleChildRoles.iterator().next();
                         VarName chVar = childMap.get(childRole);
-                        unifier.put(chVar, pVar);
+                        unifier.addMapping(chVar, pVar);
                         roleMappings.put(childRole, parentRole);
                         varsToAllocate.remove(pVar);
                     }
@@ -681,7 +681,7 @@ public class Relation extends TypeAtom {
                 VarName chVar = cit.next();
                 RoleType chRole = childInverseMap.get(chVar);
                 RoleType pRole = parentInverseMap.get(pVar);
-                unifier.put(chVar, pVar);
+                unifier.addMapping(chVar, pVar);
                 if (pRole != null) roleMappings.put(chRole, pRole);
             }
         }
@@ -763,7 +763,7 @@ public class Relation extends TypeAtom {
         for (RelationPlayer c: getRelationPlayers()) {
             VarAdmin rolePlayer = c.getRolePlayer();
             VarName rolePlayerVarName = VarName.anon();
-            unifier.put(rolePlayer.getVarName(), rolePlayerVarName);
+            unifier.addMapping(rolePlayer.getVarName(), rolePlayerVarName);
             VarAdmin roleType = c.getRoleType().orElse(null);
             if (roleType != null) {
                 relVar = relVar.rel(roleType, Graql.var(rolePlayerVarName));
