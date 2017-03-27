@@ -26,6 +26,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Reasoner;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Maps;
@@ -50,7 +51,7 @@ class MatchQueryInfer extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> optionalGraph) {
+    public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalOr(optionalGraph, inner.getGraph()).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
@@ -59,13 +60,13 @@ class MatchQueryInfer extends MatchQueryModifier {
 
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-        Stream<Map<VarName, Concept>> answerStream = conjunctiveQuery.resolve(materialise, false).map(Answer::map);
+        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise, true);
         while(conjIt.hasNext()) {
             conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-            Stream<Map<VarName, Concept>> localStream = conjunctiveQuery.resolve(materialise, false).map(Answer::map);
+            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise, true);
             answerStream = Stream.concat(answerStream, localStream);
         }
-        return answerStream.map(result -> Maps.filterKeys(result, getSelectedNames()::contains));
+        return answerStream.map(result -> result.filterVars(getSelectedNames()));
     }
 
     @Override

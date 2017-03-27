@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 
+import ai.grakn.graql.admin.Answer;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -39,7 +40,7 @@ class MatchQueryLimit extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
+    public Stream<Answer> stream(Optional<GraknGraph> graph) {
         return inner.stream(graph).limit(limit);
     }
 
