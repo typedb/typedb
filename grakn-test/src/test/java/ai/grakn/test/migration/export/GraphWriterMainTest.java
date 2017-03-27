@@ -19,10 +19,9 @@
 package ai.grakn.test.migration.export;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
-import ai.grakn.graphs.MovieGraph;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.EngineContext;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -33,20 +32,27 @@ public class GraphWriterMainTest {
     public static final EngineContext engineContext = EngineContext.startInMemoryServer();
 
     private static GraknGraph graph;
+    private String keyspace;
 
     @BeforeClass
     public static void loadMovieGraph() {
         graph =  engineContext.factoryWithNewKeyspace().getGraph();
     }
 
+    @Before
+    public void setup(){
+        keyspace = graph.getKeyspace();
+        graph.close();
+    }
+
     @Test
     public void exportOntologyToSystemOutTest(){
-        runAndAssertDataCorrect("export", "-ontology", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("export", "-ontology", "-keyspace", keyspace);
     }
 
     @Test
     public void exportDataToSystemOutTest(){
-        runAndAssertDataCorrect("export", "-data", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("export", "-data", "-keyspace", keyspace);
     }
     
     @Test
@@ -61,7 +67,7 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportEngineURLProvidedTest(){
-        runAndAssertDataCorrect("export", "-data", "-uri", "localhost:4567", "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("export", "-data", "-uri", "localhost:4567", "-keyspace", keyspace);
     }
 
     private void runAndAssertDataCorrect(String... args){
