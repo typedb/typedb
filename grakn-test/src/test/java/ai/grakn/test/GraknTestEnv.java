@@ -111,15 +111,15 @@ public abstract class GraknTestEnv {
         // Drop all keyspaces
         EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
 
-        GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
-        systemGraph.graql().match(var("x").isa("keyspace-name"))
-                .execute()
-                .forEach(x -> x.values().forEach(y -> {
-                    String name = y.asResource().getValue().toString();
-                    GraknGraph graph = engineGraknGraphFactory.getGraph(name);
-                    graph.admin().clear(EngineCache.getInstance());
-                }));
-
+        try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            systemGraph.graql().match(var("x").isa("keyspace-name"))
+                    .execute()
+                    .forEach(x -> x.values().forEach(y -> {
+                        String name = y.asResource().getValue().toString();
+                        GraknGraph graph = engineGraknGraphFactory.getGraph(name);
+                        graph.admin().clear(EngineCache.getInstance());
+                    }));
+        }
         engineGraknGraphFactory.refreshConnections();
     }
 

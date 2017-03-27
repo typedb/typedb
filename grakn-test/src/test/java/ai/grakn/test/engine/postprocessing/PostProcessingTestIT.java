@@ -72,7 +72,6 @@ public class PostProcessingTestIT {
         cache.getResourceJobs(graph.getKeyspace()).clear();
 
         graph.close();
-        factory.close();
     }
 
     @Test
