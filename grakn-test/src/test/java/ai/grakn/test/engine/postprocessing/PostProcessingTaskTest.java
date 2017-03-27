@@ -67,7 +67,7 @@ public class PostProcessingTaskTest {
     public void testStop() {
         TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
         taskManager.addTask(task);
-        taskManager.stopTask(task.getId(), this.getClass().getName());
+        taskManager.stopTask(task.getId());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());
     }
 }

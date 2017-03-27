@@ -528,8 +528,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     //------------------------------------ Lookup
-    public <T extends Concept> T getConceptByBaseIdentifier(Object baseIdentifier) {
-        GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
+    /**
+     * Looks up concept by using id against vertex ids. Does not use the index.
+     * This is primarily used to fix duplicates when indicies cannot be relied on.
+     *
+     * @param id The id of the concept which should match the vertex id
+     * @return The concept if it exists.
+     */
+    public <T extends Concept> T getConceptRawId(Object id) {
+        GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(id);
         if (traversal.hasNext()) {
             return getElementFactory().buildConcept(traversal.next());
         } else {
@@ -675,17 +682,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private CastingImpl getCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        try {
-            String hash = CastingImpl.generateNewHash(role, rolePlayer);
-            ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, hash);
-            if (concept != null) {
-                return concept.asCasting();
-            } else {
-                return null;
-            }
-        } catch(GraphRuntimeException e){
-            throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CASTINGS.getMessage(role, rolePlayer));
-        }
+        return getConcept(Schema.ConceptProperty.INDEX, CastingImpl.generateNewHash(role, rolePlayer));
     }
 
     private void putShortcutEdges(Relation relation, RelationType relationType, CastingImpl newCasting){
@@ -962,7 +959,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
         Set<CastingImpl> castings = castingVertexIds.stream().
-                map(id -> this.<CastingImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
+                map(id -> this.<CastingImpl>getConceptRawId(id.getValue())).collect(Collectors.toSet());
         if(castings.size() >= 1){
             //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
             CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
@@ -1062,7 +1059,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
         Set<ResourceImpl> duplicates = resourceVertexIds.stream().
-                map(id -> this.<ResourceImpl>getConceptByBaseIdentifier(id.getValue())).collect(Collectors.toSet());
+                map(id -> this.<ResourceImpl>getConceptRawId(id.getValue())).collect(Collectors.toSet());
 
         if(duplicates.size() >= 1){
             //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though

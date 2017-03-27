@@ -154,18 +154,33 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
+        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_RESOURCE_OWNER);
+        resources.addAll(keys());
+        return resources;
+    }
+
+    @Override
+    public Collection<ResourceType> keys() {
+        return resources(Schema.ImplicitType.HAS_KEY_OWNER);
+    }
+
+    private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
         boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
-        
-        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retreived
+
+        //TODO: Make this less convoluted
+        String [] implicitIdentifiers = implicitType.getName("").getValue().split("--");
+        String prefix = implicitIdentifiers[0] + "-";
+        String suffix = "-" + implicitIdentifiers[1];
+
+        getGraknGraph().showImplicitConcepts(true); // If we don't set this to true no role types relating to resources will not be retrieved
 
         Set<ResourceType> resourceTypes = new HashSet<>();
         //A traversal is not used in this caching so that ontology caching can be taken advantage of.
         playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            if(relationType.isImplicit()){
-                //This is faster than doing the traversal
-                TypeName prefix = Schema.Resource.HAS_RESOURCE.getName(TypeName.of(""));
-                TypeName resourceTypeName = TypeName.of(relationType.getName().getValue().replace(prefix.getValue(), ""));
-                resourceTypes.add(getGraknGraph().getType(resourceTypeName));
+            String roleTypeName = roleType.getName().getValue();
+            if(roleTypeName.startsWith(prefix) && roleTypeName.endsWith(suffix)){ //This is the implicit type we want
+                String resourceTypeName = roleTypeName.replace(prefix, "").replace(suffix, "");
+                resourceTypes.add(getGraknGraph().getResourceType(resourceTypeName));
             }
         }));
 
@@ -516,10 +531,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     /**
      * Creates a relation type which allows this type and a resource type to be linked.
      * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @param has the implicit relation type to build
+     * @param hasValue the implicit role type to build for the resource type
+     * @param hasOwner the implicit role type to build for the type
      * @param required Indicates if the resource is required on the entity
-     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     * @return The Type itself
      */
-    public T hasResource(ResourceType resourceType, boolean required){
+    public T hasResource(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
         checkTypeMutation();
 
@@ -529,9 +547,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         TypeName resourceTypeName = resourceType.getName();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(resourceTypeName));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(resourceTypeName));
-        RelationType relationType = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(resourceTypeName)).
+        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(resourceTypeName));
+        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(hasValue.getName(resourceTypeName));
+        RelationType relationType = getGraknGraph().putRelationTypeImplicit(has.getName(resourceTypeName)).
                 hasRole(ownerRole).
                 hasRole(valueRole);
 
@@ -539,9 +557,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         ResourceType resourceTypeSuper = resourceType.superType();
         TypeName superName = resourceTypeSuper.getName();
         if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
-            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getName(superName));
-            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getName(superName));
-            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getName(superName)).
+            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(superName));
+            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getName(superName));
+            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(has.getName(superName)).
                     hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
@@ -554,7 +572,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         this.playsRole(ownerRole, required);
-        ((ResourceTypeImpl) resourceType).playsRole(valueRole, required);
+        //TODO: Use explicit cardinality of 0-1 rather than just false
+        ((ResourceTypeImpl) resourceType).playsRole(valueRole, false);
 
         return getThis();
     }
@@ -571,15 +590,31 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     /**
      * Creates a relation type which allows this type and a resource type to be linked.
      * @param resourceType The resource type which instances of this type should be allowed to play.
-     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     * @return The Type itself
      */
     @Override
-    public T hasResource(ResourceType resourceType){
-        return hasResource(resourceType, false);
+    public T resource(ResourceType resourceType){
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_KEY_OWNER, resourceType);
+        return hasResource(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, false);
     }
 
     @Override
     public T key(ResourceType resourceType) {
-        return hasResource(resourceType, true);
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_RESOURCE_OWNER, resourceType);
+        return hasResource(resourceType, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_VALUE, Schema.ImplicitType.HAS_KEY_OWNER, true);
+    }
+
+    /**
+     * Checks if the provided resource type is already used in an other implicit relation.
+     *
+     * @param implicitType The implicit relation to check against.
+     * @param resourceType The resource type which should not be in that implicit relation
+     *
+     * @throws ConceptException when the resource type is already used in another implicit relation
+     */
+    private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, ResourceType resourceType){
+        if(resources(implicitType).contains(resourceType)) {
+            throw new ConceptException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(getName(), resourceType.getName()));
+        }
     }
 }

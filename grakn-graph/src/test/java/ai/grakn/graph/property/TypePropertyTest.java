@@ -88,7 +88,7 @@ public class TypePropertyTest {
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, ResourceType resourceType) {
         // TODO: Better define exception
         exception.expect(Exception.class);
-        type.hasResource(resourceType);
+        type.resource(resourceType);
     }
 
     @Property

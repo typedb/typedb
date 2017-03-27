@@ -81,6 +81,6 @@ public interface Resource<D> extends Instance{
      * @param resource The resource to which a relationship is created
      * @return The instance itself
      */
-    Resource hasResource(Resource resource);
+    Resource resource(Resource resource);
 
 }

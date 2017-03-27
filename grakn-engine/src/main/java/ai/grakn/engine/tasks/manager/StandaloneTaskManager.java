@@ -124,7 +124,7 @@ public class StandaloneTaskManager implements TaskManager {
         }
     }
 
-    public void stopTask(TaskId id, String requesterName) {
+    public void stopTask(TaskId id) {
         stateUpdateLock.lock();
 
         try {

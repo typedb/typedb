@@ -106,4 +106,19 @@ public class ResourceTypeTest extends GraphTestBase{
         assertThat(resourceType.superType(), instanceOf(ResourceType.class));
         assertEquals(superConcept, resourceType.superType());
     }
+
+    @Test
+    public void whenGettingTheResourceFromAResourceType_ReturnTheResource(){
+        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING);
+        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
+
+        Resource c1 = t1.putResource("1");
+        Resource c2 = t2.putResource("2");
+
+        assertEquals(c1, t1.getResource("1"));
+        assertNull(t1.getResource("2"));
+
+        assertEquals(c2, t2.getResource("2"));
+        assertNull(t2.getResource("1"));
+    }
 }
