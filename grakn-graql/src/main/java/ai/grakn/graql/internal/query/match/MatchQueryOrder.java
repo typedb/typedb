@@ -19,11 +19,8 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.VarName;
 
 import ai.grakn.graql.admin.Answer;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 

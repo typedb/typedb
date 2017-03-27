@@ -18,13 +18,11 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.VarName;
 
 import ai.grakn.graql.admin.Answer;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.stream.Stream;
 
 class MatchOrderImpl implements MatchOrder {
