@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 

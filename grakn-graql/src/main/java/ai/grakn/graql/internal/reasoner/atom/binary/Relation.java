@@ -729,7 +729,7 @@ public class Relation extends TypeAtom {
             unifier.merge(getRoleTypeUnifier(parentAtom));
         }
 
-        return unifier.removeTrivialEntries();
+        return unifier.removeTrivialMappings();
     }
 
     @Override

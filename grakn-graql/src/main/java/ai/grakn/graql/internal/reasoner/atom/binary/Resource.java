@@ -32,9 +32,7 @@ import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;

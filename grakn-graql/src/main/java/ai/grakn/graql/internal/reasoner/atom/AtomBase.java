@@ -29,8 +29,6 @@ import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.reasoner.Utility.capture;

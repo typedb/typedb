@@ -38,9 +38,7 @@ import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 

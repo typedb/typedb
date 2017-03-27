@@ -324,14 +324,18 @@ public class AtomicTest {
 
         Unifier unifier = specialisedAtom.getUnifier(atom);
         Unifier unifier2 = specialisedAtom2.getUnifier(atom);
-        Unifier correctUnifier = new UnifierImpl();
-        correctUnifier.put(VarName.of("p"), VarName.of("y"));
-        correctUnifier.put(VarName.of("c"), VarName.of("x"));
-        Unifier correctUnifier2 = new UnifierImpl();
-        correctUnifier2.put(VarName.of("p"), VarName.of("x"));
-        correctUnifier2.put(VarName.of("c"), VarName.of("y"));
-        assertTrue(unifier.toString(), unifier.entrySet().containsAll(correctUnifier.entrySet()));
-        assertTrue(unifier2.toString(), unifier2.entrySet().containsAll(correctUnifier2.entrySet()));
+        Unifier correctUnifier = new UnifierImpl(
+                ImmutableMap.of(
+                    VarName.of("p"), VarName.of("y"),
+                    VarName.of("c"), VarName.of("x"))
+        );
+        Unifier correctUnifier2 = new UnifierImpl(
+                ImmutableMap.of(
+                    VarName.of("p"), VarName.of("x"),
+                    VarName.of("c"), VarName.of("y"))
+        );
+        assertTrue(unifier.toString(), unifier.getMappings().containsAll(correctUnifier.getMappings()));
+        assertTrue(unifier2.toString(), unifier2.getMappings().containsAll(correctUnifier2.getMappings()));
     }
 
     @Test
@@ -343,16 +347,18 @@ public class AtomicTest {
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
 
         Unifier unifiers = childAtom.getUnifier(parentAtom);
-        Unifier correctUnifiers = new UnifierImpl();
-        correctUnifiers.put(VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"), VarName.of("x"));
-        assertTrue(unifiers.entrySet().containsAll(correctUnifiers.entrySet()));
+        Unifier correctUnifiers = new UnifierImpl(
+                ImmutableMap.of(VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"), VarName.of("x"))
+        );
+        assertTrue(unifiers.getMappings().containsAll(correctUnifiers.getMappings()));
 
         Unifier reverseUnifiers = parentAtom.getUnifier(childAtom);
-        Unifier correctReverseUnifiers = new UnifierImpl();
-        correctReverseUnifiers.put(VarName.of("x"), VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"));
+        Unifier correctReverseUnifiers = new UnifierImpl(
+                ImmutableMap.of(VarName.of("x"), VarName.of("5b7a70db-2256-4d03-8fa4-2621a354899e"))
+        );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctReverseUnifiers.toString() + "\n" + reverseUnifiers.toString(),
-                reverseUnifiers.entrySet().containsAll(correctReverseUnifiers.entrySet())
+                reverseUnifiers.getMappings().containsAll(correctReverseUnifiers.getMappings())
         );
     }
 
@@ -401,14 +407,16 @@ public class AtomicTest {
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
 
         Unifier unifiers = childAtom.getUnifier(parentAtom);
-        Unifier correctUnifiers = new UnifierImpl();
-        correctUnifiers.put(VarName.of("x1"), VarName.of("x"));
-        correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
-        correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
-        correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
+        Unifier correctUnifiers = new UnifierImpl(
+                ImmutableMap.of(
+                    VarName.of("x1"), VarName.of("x"),
+                    VarName.of("x2"), VarName.of("y"),
+                    VarName.of("r1"), VarName.of("R1"),
+                    VarName.of("r2"), VarName.of("R2"))
+        );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
-                unifiers.entrySet().containsAll(correctUnifiers.entrySet())
+                unifiers.getMappings().containsAll(correctUnifiers.getMappings())
         );
     }
 
@@ -421,14 +429,16 @@ public class AtomicTest {
         Atom childAtom = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph).getAtom();
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
         Unifier unifiers = childAtom.getUnifier(parentAtom);
-        Unifier correctUnifiers = new UnifierImpl();
-        correctUnifiers.put(VarName.of("x1"), VarName.of("x"));
-        correctUnifiers.put(VarName.of("x2"), VarName.of("y"));
-        correctUnifiers.put(VarName.of("r1"), VarName.of("R1"));
-        correctUnifiers.put(VarName.of("r2"), VarName.of("R2"));
+        Unifier correctUnifiers = new UnifierImpl(
+                ImmutableMap.of(
+                    VarName.of("x1"), VarName.of("x"),
+                    VarName.of("x2"), VarName.of("y"),
+                    VarName.of("r1"), VarName.of("R1"),
+                    VarName.of("r2"), VarName.of("R2"))
+        );
         assertTrue(
                 "Unifiers not in subset relation:\n" + correctUnifiers.toString() + "\n" + unifiers.toString(),
-                unifiers.entrySet().containsAll(correctUnifiers.entrySet())
+                unifiers.getMappings().containsAll(correctUnifiers.getMappings())
         );
     }
 
@@ -443,9 +453,7 @@ public class AtomicTest {
         relation.unify(unifier);
         assertEquals(unifier.size(), 2);
         Set<VarName> vars = relation.getVarNames();
-        Set<VarName> correctVars = new HashSet<>();
-        correctVars.add(VarName.of("a"));
-        correctVars.add(VarName.of("x"));
+        Set<VarName> correctVars = Sets.newHashSet(VarName.of("a"), VarName.of("x"));
         assertTrue(!vars.contains(VarName.of("")));
         assertTrue(vars.containsAll(correctVars));
     }
@@ -461,10 +469,7 @@ public class AtomicTest {
 
         rule.unify(parent);
         Set<VarName> vars = rule.getHead().getAtom().getVarNames();
-        Set<VarName> correctVars = new HashSet<>();
-        correctVars.add(VarName.of("r"));
-        correctVars.add(VarName.of("a"));
-        correctVars.add(VarName.of("x"));
+        Set<VarName> correctVars = Sets.newHashSet(VarName.of("r"), VarName.of("a"), VarName.of("x"));
         assertTrue(!vars.contains(VarName.of("")));
         assertTrue(
                 "Variables not in subset relation:\n" + correctVars.toString() + "\n" + vars.toString(),

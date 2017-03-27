@@ -23,14 +23,12 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import com.google.common.collect.Sets;
-import java.util.Map;
 import java.util.Set;
 
 /**

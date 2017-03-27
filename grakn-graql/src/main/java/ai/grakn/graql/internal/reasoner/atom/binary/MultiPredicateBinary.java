@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.graql.VarName;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -31,7 +30,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 

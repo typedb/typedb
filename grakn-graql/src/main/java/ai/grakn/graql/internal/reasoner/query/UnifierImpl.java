@@ -20,18 +20,23 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 
+/**
+ *
+ * <p>
+ * Implementation of Unifier interface.
+ * </p>
+ *
+ * @author Kasper Piskorski
+ *
+ */
 public class UnifierImpl implements Unifier {
 
     //TODO turn it to multimap to accommodate all cases
@@ -79,7 +84,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Set<Map.Entry<VarName, VarName>> entrySet(){ return unifier.entrySet();}
+    public Set<Map.Entry<VarName, VarName>> getMappings(){ return unifier.entrySet();}
 
     public VarName put(VarName key, VarName value){
         return unifier.put(key, value);
@@ -107,7 +112,7 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
-    public Unifier removeTrivialEntries() {
+    public Unifier removeTrivialMappings() {
         return new UnifierImpl(
                 unifier.entrySet().stream()
                 .filter(e -> e.getKey() != e.getValue())
