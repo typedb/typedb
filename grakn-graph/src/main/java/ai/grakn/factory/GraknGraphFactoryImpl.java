@@ -59,8 +59,10 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private final String keyspace;
 
     //Flags so we don't have to open a graph just to check the count of the transactions
-    private boolean graphOpen = false;
-    private boolean graphBatchOpen = false;
+    //private boolean graphOpen = false;
+    //private boolean graphBatchOpen = false;
+    private GraknGraph graph = null;
+    private GraknGraph graphBatch = null;
 
     public GraknGraphFactoryImpl(String keyspace, String location){
         this.location = location;
@@ -73,8 +75,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      */
     @Override
     public GraknGraph getGraph(){
-        graphOpen = true;
-        return getConfiguredFactory().factory.getGraph(false);
+        graph = getConfiguredFactory().factory.getGraph(false);
+        return graph;
     }
 
     /**
@@ -83,8 +85,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
      */
     @Override
     public GraknGraph getGraphBatchLoading(){
-        graphBatchOpen = true;
-        return getConfiguredFactory().factory.getGraph(true);
+        graphBatch = getConfiguredFactory().factory.getGraph(true);
+        return graphBatch;
     }
 
     private ConfiguredFactory getConfiguredFactory(){
@@ -108,8 +110,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
 
         //Close the main graph connections
         try {
-            if(graphOpen) ((AbstractGraknGraph)getGraph()).getTinkerPopGraph().close();
-            if(graphBatchOpen) ((AbstractGraknGraph)getGraphBatchLoading()).getTinkerPopGraph().close();
+            if(graph != null) ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
+            if(graphBatch != null) ((AbstractGraknGraph) graphBatch).getTinkerPopGraph().close();
         } catch (Exception e) {
             throw new GraphRuntimeException("Could not close graph.", e);
         }
@@ -124,14 +126,14 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
 
     @Override
     public int openGraphTxs() {
-        if(!graphOpen) return 0;
-        return ((AbstractGraknGraph)getGraph()).numOpenTx();
+        if(graph == null) return 0;
+        return ((AbstractGraknGraph) graph).numOpenTx();
     }
 
     @Override
     public int openGraphBatchTxs() {
-        if(!graphBatchOpen) return 0;
-        return ((AbstractGraknGraph)getGraphBatchLoading()).numOpenTx();
+        if(graphBatch == null) return 0;
+        return ((AbstractGraknGraph) graphBatch).numOpenTx();
     }
 
     /**
