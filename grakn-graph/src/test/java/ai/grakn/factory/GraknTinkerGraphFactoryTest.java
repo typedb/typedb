@@ -98,10 +98,11 @@ public class GraknTinkerGraphFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
-        TinkerInternalFactory factory = new TinkerInternalFactory("MyTest", Grakn.IN_MEMORY, null);
+        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, null);
         factory.getGraph(false);
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("MyTest"));
+        expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
+        factory.getGraph(false);
     }
 
 }
