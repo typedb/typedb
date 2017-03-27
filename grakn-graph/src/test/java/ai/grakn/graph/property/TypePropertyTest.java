@@ -49,9 +49,11 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeThat;
 
@@ -159,21 +161,15 @@ public class TypePropertyTest {
         assertThat(directSubTypes(graph, superType), hasItem(subType));
     }
 
-    @Property(trials=1000)
-    public void whenATypeHasAnIndirectSuperType_ItIsAnIndirectSubTypeOfThatSuperType(
-            Type subType, @FromGraph Type superType) {
-        Collection<Type> indirectSuperTypes = indirectSuperTypes(subType);
-        assumeThat(indirectSuperTypes, hasItem(superType));
-
+    @Property
+    public void whenATypeHasAnIndirectSuperType_ItIsAnIndirectSubTypeOfThatSuperType(Type subType, long seed) {
+        Type superType = choose(indirectSuperTypes(subType), seed);
         assertThat((Collection<Type>) superType.subTypes(), hasItem(subType));
     }
 
     @Property
-    public void whenATypeHasAnIndirectSubType_ItIsAnIndirectSuperTypeOfThatSubType(
-            Type superType, @FromGraph Type subType) {
-        Collection<Type> indirectSubTypes = (Collection<Type>) superType.subTypes();
-        assumeThat(indirectSubTypes, hasItem(subType));
-
+    public void whenATypeHasAnIndirectSubType_ItIsAnIndirectSuperTypeOfThatSubType(Type superType, long seed) {
+        Type subType = choose(superType.subTypes(), seed);
         assertThat(indirectSuperTypes(subType), hasItem(superType));
     }
 
@@ -195,6 +191,15 @@ public class TypePropertyTest {
     }
 
     @Property
+    public void whenGettingTheIndirectSubTypesWithoutImplicitConceptsVisible_TheyDoNotContainImplicitConcepts(
+            @Open GraknGraph graph, @FromGraph Type type) {
+        assumeFalse(graph.implicitConceptsVisible());
+        type.subTypes().forEach(subType -> {
+            assertFalse(subType + " should not be implicit", subType.isImplicit());
+        });
+    }
+
+    @Property
     public void whenGettingIndirectInstances_ReturnDirectInstancesAndIndirectInstancesOfDirectSubTypes(
             @Open GraknGraph graph, @FromGraph Type type) {
         Collection<Type> directSubTypes = directSubTypes(graph, type);
@@ -209,21 +214,18 @@ public class TypePropertyTest {
     @Property
     public void whenGettingPlaysRoles_ResultIsASupersetOfDirectSuperTypePlaysRoles(Type type) {
         assumeNotNull(type.superType());
-
         assertTrue(type.playsRoles().containsAll(type.superType().playsRoles()));
     }
 
     @Property
     public void whenTypePlaysARole_ThatRoleIsPlayedByTheType(Type type, long seed) {
         RoleType roleType = choose(type.playsRoles(), seed);
-
         assertThat(roleType.playedByTypes(), hasItem(type));
     }
 
     @Property
     public void whenARoleIsPlayedByAType_TheTypePlaysThatRole(RoleType roleType, long seed) {
         Type type = choose(roleType.playedByTypes(), seed);
-
         assertThat(type.playsRoles(), hasItem(roleType));
     }
 
