@@ -38,6 +38,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -60,7 +61,7 @@ import static java.util.stream.Collectors.joining;
  * Generator to create random {@link GraknGraph}s.
  */
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
-public class GraknGraphs extends AbstractGenerator<GraknGraph> {
+public class GraknGraphs extends AbstractGenerator<GraknGraph> implements MinimalCounterexampleHook {
 
     private static GraknGraph lastGeneratedGraph;
 
@@ -104,14 +105,17 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
         GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, keyspace);
 
+        int size = status.size();
+
         graphSummary = new StringBuilder();
+        graphSummary.append("size: ").append(size).append("\n");
 
         // Clear graph before retrieving
         graph = factory.getGraph();
         graph.clear();
         graph = factory.getGraph();
 
-        for (int i = 0; i < status.size(); i++) {
+        for (int i = 0; i < size; i++) {
             mutateOnce();
         }
 
@@ -364,6 +368,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         T result = function.apply(graph);
         graph.showImplicitConcepts(implicitFlag);
         return result;
+    }
+
+    @Override
+    public void handle(Object[] counterexample, Runnable action) {
+        System.err.println("Graph generated:\n" + graphSummary);
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
