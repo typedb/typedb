@@ -19,8 +19,6 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.VarName;
-
-import java.util.Map;
 import java.util.Set;
 
 /**
