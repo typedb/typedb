@@ -94,31 +94,6 @@ public class Reasoner {
     }
 
     /**
-     * resolve query and provide each answer with a corresponding explicit path
-     * @param query to resolve
-     * @param materialise whether to materialise inferences
-     * @return stream of answers
-     */
-    public static Stream<Answer> resolveWithExplanation(MatchQuery query, boolean materialise) {
-        GraknGraph graph = optionalOr(query.admin().getGraph()).orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
-        );
-
-        if (!Reasoner.hasRules(graph)) return query.admin().streamWithVarNames().map(QueryAnswer::new);
-
-        Iterator<Conjunction<VarAdmin>> conjIt = query.admin().getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise, true);
-        while(conjIt.hasNext()) {
-            conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise, true);
-            answerStream = Stream.concat(answerStream, localStream);
-        }
-        Set<VarName> selectVars = query.admin().getSelectedNames();
-        return answerStream.map(result -> result.filterVars(selectVars));
-    }
-
-    /**
      * materialise all possible inferences
      */
     public static void precomputeInferences(GraknGraph graph){

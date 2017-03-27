@@ -24,10 +24,10 @@ import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
@@ -61,6 +61,7 @@ public class ExplanationTest {
     public void testTransitiveExplanation() {
         GraknGraph graph = geoGraph.graph();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
+        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
 
         Concept polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
         Concept warsaw = getConcept(graph, "name", "Warsaw");
@@ -73,9 +74,7 @@ public class ExplanationTest {
         Answer answer3 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
         Answer answer4 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), europe));
 
-        MatchQuery query = graph.graql().parse(queryString);
-
-        List<Answer> answers = Reasoner.resolveWithExplanation(query, false).collect(Collectors.toList());
+        List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
@@ -100,6 +99,7 @@ public class ExplanationTest {
     @Test
     public void testExplainingSpecificAnswer(){
         GraknGraph graph = geoGraph.graph();
+        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         Concept polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
         Concept europe = getConcept(graph, "name", "Europe");
 
@@ -108,8 +108,7 @@ public class ExplanationTest {
                 "$x id '" + polibuda.getId() + "';" +
                 "$y id '" + europe.getId() + "';";
 
-        MatchQuery query = graph.graql().parse(queryString);
-        List<Answer> answers = Reasoner.resolveWithExplanation(query, false).collect(Collectors.toList());
+        List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
         assertEquals(answers.size(), 1);
 
         Answer answer = answers.iterator().next();

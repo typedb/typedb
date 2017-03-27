@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;
@@ -42,7 +43,7 @@ class MatchQueryGraph extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
+    public Stream<Answer> stream(Optional<GraknGraph> graph) {
         if (graph.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_GRAPH.getMessage());
         }

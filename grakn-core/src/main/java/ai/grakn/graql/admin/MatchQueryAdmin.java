@@ -52,6 +52,12 @@ public interface MatchQueryAdmin extends MatchQuery {
     Stream<Map<VarName, Concept>> streamWithVarNames();
 
     /**
+     *
+     * @return
+     */
+    Stream<Answer> streamWithAnswers();
+
+    /**
      * @param graph the graph to use to get types from
      * @return all concept types referred to explicitly in the query
      */
