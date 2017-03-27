@@ -197,7 +197,7 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws GraknValidationException {
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing-again").getGraph();
         graph.close();
 
         boolean errorThrown = false;
@@ -210,7 +210,7 @@ public class GraknGraphTest extends GraphTestBase {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+        graph = Grakn.factory(Grakn.IN_MEMORY, "testing-again").getGraph();
         graph.putEntityType("A Thing");
     }
 

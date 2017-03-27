@@ -58,9 +58,11 @@ public class GraknTinkerGraphFactoryTest {
     @Test
     public void whenBuildingGraphFromTheSameFactory_ReturnSingletonGraphs(){
         GraknGraph graph1 = tinkerGraphFactory.getGraph(false);
+        graph1.close();
         GraknGraph graph1_copy = tinkerGraphFactory.getGraph(false);
 
         GraknGraph graph2 = tinkerGraphFactory.getGraph(true);
+        graph2.close();
         GraknGraph graph2_copy = tinkerGraphFactory.getGraph(true);
 
         assertEquals(graph1, graph1_copy);
@@ -103,6 +105,15 @@ public class GraknTinkerGraphFactoryTest {
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
         factory.getGraph(false);
+    }
+
+    @Test
+    public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
+        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, null);
+        GraknGraph graph1 = factory.getGraph(false);
+        graph1.close();
+        GraknTinkerGraph graph2 = factory.getGraph(false);
+        assertEquals(graph1, graph2);
     }
 
 }
