@@ -110,8 +110,9 @@ public class GraknSparkExecutor {
                             final List<Tuple2<Object, M>> outgoingMessages = messenger.getOutgoingMessages(); // get the outgoing messages
 
                             // if no more vertices in the partition, end the worker's iteration
-                            if (!partitionIterator.hasNext())
+                            if (!partitionIterator.hasNext()) {
                                 workerVertexProgram.workerIterationEnd(memory.asImmutable());
+                            }
                             return new Tuple2<>(vertex.id(), new ViewOutgoingPayload<>(nextView, outgoingMessages));
                         }
                     });
