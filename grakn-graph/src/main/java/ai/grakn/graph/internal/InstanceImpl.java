@@ -186,17 +186,31 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     /**
      * Creates a relation from this instance to the provided resource.
      * @param resource The resource to creating a relationship to
-     * @return A relation which contains both the entity and the resource
+     * @return The instance itself
      */
     @Override
-    public T hasResource(Resource resource){
+    public T resource(Resource resource){
+        String type = "resource";
+        Schema.ImplicitType has = Schema.ImplicitType.HAS_RESOURCE;
+        Schema.ImplicitType hasValue = Schema.ImplicitType.HAS_RESOURCE_VALUE;
+        Schema.ImplicitType hasOwner  = Schema.ImplicitType.HAS_RESOURCE_OWNER;
+
+        //Is this resource a key to me?
+        if(type().keys().contains(resource.type())){
+            type = "key";
+            has = Schema.ImplicitType.HAS_KEY;
+            hasValue = Schema.ImplicitType.HAS_KEY_VALUE;
+            hasOwner  = Schema.ImplicitType.HAS_KEY_OWNER;
+        }
+
+
         TypeName name = resource.type().getName();
-        RelationType hasResource = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE.getName(name));
-        RoleType hasResourceTarget = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE_OWNER.getName(name));
-        RoleType hasResourceValue = getGraknGraph().getType(Schema.Resource.HAS_RESOURCE_VALUE.getName(name));
+        RelationType hasResource = getGraknGraph().getType(has.getName(name));
+        RoleType hasResourceTarget = getGraknGraph().getType(hasOwner.getName(name));
+        RoleType hasResourceValue = getGraknGraph().getType(hasValue.getName(name));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            throw new ConceptException(ErrorMessage.HAS_RESOURCE_INVALID.getMessage(type().getName(), resource.type().getName()));
+            throw new ConceptException(ErrorMessage.HAS_INVALID.getMessage(type().getName(), type, resource.type().getName()));
         }
 
         Relation relation = hasResource.addRelation();

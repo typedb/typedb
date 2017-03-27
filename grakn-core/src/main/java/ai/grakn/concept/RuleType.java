@@ -78,7 +78,7 @@ public interface RuleType extends Type {
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
      */
-    RuleType hasResource(ResourceType resourceType);
+    RuleType resource(ResourceType resourceType);
 
     //---- Inherited Methods
     /**

@@ -542,6 +542,18 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void whenUserMakesAMistake_SubsequentQueriesStillWork() throws Exception {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        String out = testShell(
+                "match $x sub concet; aggregate count;\n" +
+                "match $x sub concept; ask;\n",
+                err);
+
+        assertThat(err.toString(), not(containsString("error")));
+        assertThat(out, containsString("True"));
+    }
+
+    @Test
     public void testDuplicateRelation() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(

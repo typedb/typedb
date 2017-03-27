@@ -182,14 +182,14 @@ public class TaskClientTest {
 
         client.stopTask(taskId);
 
-        verify(manager).stopTask(eq(taskId), any());
+        verify(manager).stopTask(eq(taskId));
     }
 
     @Test
     public void whenStoppingATaskAndThereIsAnError_ReturnFalse() {
         TaskId taskId = TaskId.generate();
 
-        doThrow(new RuntimeException("out of cheese error")).when(manager).stopTask(any(), any());
+        doThrow(new RuntimeException("out of cheese error")).when(manager).stopTask(any());
 
         assertFalse(client.stopTask(taskId));
     }
