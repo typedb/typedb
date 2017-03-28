@@ -173,7 +173,7 @@ public class GraqlShell {
         options.addOption("u", "user", true, "username to sign in");
         options.addOption("p", "pass", true, "password to sign in");
         options.addOption("i", "implicit", false, "show implicit types");
-        options.addOption("n", "do not infer", true, "perform inference on results");
+        options.addOption("n", "infer", false, "perform inference on results");
         options.addOption("m", "materialise", false, "materialise inferred results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
@@ -216,7 +216,7 @@ public class GraqlShell {
         Optional<String> password = Optional.ofNullable(cmd.getOptionValue("p"));
 
         boolean showImplicitTypes = cmd.hasOption("i");
-        boolean infer = !cmd.hasOption("n");
+        boolean infer = cmd.hasOption("n");
         boolean materialise = cmd.hasOption("m");
 
         if (cmd.hasOption("b")) {
