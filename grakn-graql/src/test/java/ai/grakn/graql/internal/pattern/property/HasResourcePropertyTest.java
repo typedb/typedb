@@ -91,7 +91,20 @@ public class HasResourcePropertyTest {
 
     @Test
     public void whenPropertyRefersToAResourceVariable_DoNotUseResourceIndex() {
-        HasResourceProperty hasResource = HasResourceProperty.of(resourceTypeWithoutSubTypes, var("y").admin());
+        HasResourceProperty hasResource = HasResourceProperty.of(
+                resourceTypeWithoutSubTypes, var("y").value(literalValue).admin()
+        );
+
+        Collection<EquivalentFragmentSet> fragmentSets = hasResource.match(VarName.of("x"));
+
+        assertThat(fragmentSets, hasSize(1));
+        EquivalentFragmentSet fragmentSet = fragmentSets.iterator().next();
+        assertThat(fragmentSet.fragments(), hasSize(2));
+    }
+
+    @Test
+    public void whenPropertyDoesNotHaveAResourceType_DoNotUseResourceIndex() {
+        HasResourceProperty hasResource = HasResourceProperty.of(literalVar);
 
         Collection<EquivalentFragmentSet> fragmentSets = hasResource.match(VarName.of("x"));
 
