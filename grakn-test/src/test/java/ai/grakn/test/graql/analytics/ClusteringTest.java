@@ -30,7 +30,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -178,8 +177,6 @@ public class ClusteringTest {
 
         Map<String, Long> sizeMap;
         Map<String, Set<String>> memberMap;
-        Map<String, Long> sizeMapPersist;
-        Map<String, Set<String>> memberMapPersist;
 
         // add something, test again
         addOntologyAndEntities();
@@ -193,19 +190,6 @@ public class ClusteringTest {
             assertEquals(1, memberMap.size());
             assertEquals(7, memberMap.values().iterator().next().size());
         }
-
-        List<Long> list = new ArrayList<>(4);
-        for (long i = 0L; i < 4L; i++) {
-            list.add(i);
-        }
-        GraknSparkComputer.clear();
-        list.parallelStream().forEach(i -> {
-            GraknGraph graph = factory.getGraph();
-            Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();
-            assertEquals(1, sizeMap1.size());
-            assertEquals(7L, sizeMap1.values().iterator().next().longValue());
-            graph.close();
-        });
 
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
@@ -248,9 +232,28 @@ public class ClusteringTest {
             id = graph.getResourceType(resourceType6).putResource(0.8).asInstance().getId().getValue();
             assertEquals(1L, sizeMap.get(id).longValue());
         }
-
     }
 
+    @Test
+    public void testConnectedComponentConcurrency() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        addOntologyAndEntities();
+
+        List<Long> list = new ArrayList<>(4);
+        for (long i = 0L; i < 4L; i++) {
+            list.add(i);
+        }
+        GraknSparkComputer.clear();
+        list.parallelStream().forEach(i -> {
+            try (GraknGraph graph = factory.getGraph()) {
+                Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();
+                assertEquals(1, sizeMap1.size());
+                assertEquals(7L, sizeMap1.values().iterator().next().longValue());
+            }
+        });
+    }
 
     private void addOntologyAndEntities() throws GraknValidationException {
         try (GraknGraph graph = factory.getGraph()) {

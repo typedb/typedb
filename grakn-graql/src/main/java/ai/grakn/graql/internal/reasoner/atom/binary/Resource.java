@@ -18,6 +18,7 @@
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeName;
@@ -27,12 +28,11 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -103,13 +103,13 @@ public class Resource extends MultiPredicateBinary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
-    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
-        if (!(parentAtom instanceof TypeAtom)) return super.getUnifiers(parentAtom);
+    public Unifier getUnifier(Atomic parentAtom) {
+        if (!(parentAtom instanceof TypeAtom)) return super.getUnifier(parentAtom);
 
-        Map<VarName, VarName> unifiers = new HashMap<>();
-        unifiers.put(this.getValueVariable(), parentAtom.getVarName());
-        if (parentAtom.containsVar(this.getVarName())) unifiers.put(this.getVarName(), VarName.anon());
-        return unifiers;
+        Unifier unifier = new UnifierImpl();
+        unifier.addMapping(this.getValueVariable(), parentAtom.getVarName());
+        if (parentAtom.containsVar(this.getVarName())) unifier.addMapping(this.getVarName(), VarName.anon());
+        return unifier;
     }
 
     @Override

@@ -29,7 +29,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
-import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -433,8 +432,12 @@ public class StatisticsTest {
             list.add(i);
         }
         GraknSparkComputer.clear();
-        list.parallelStream().forEach(i -> assertEquals(2.5,
-                factory.getGraph().graql().compute().std().of(resourceType2).in(thing).execute().get(), delta));
+        list.parallelStream().forEach(i -> {
+            try (GraknGraph graph = factory.getGraph()) {
+                assertEquals(2.5,
+                        graph.graql().compute().std().of(resourceType2).in(thing).execute().get(), delta);
+            }
+        });
     }
 
     @Test
@@ -505,8 +508,12 @@ public class StatisticsTest {
             list.add(i);
         }
         GraknSparkComputer.clear();
-        list.parallelStream().forEach(i -> assertEquals(1.5D,
-                factory.getGraph().graql().compute().median().of(resourceType1).execute().get()));
+        list.parallelStream().forEach(i -> {
+            try (GraknGraph graph = factory.getGraph()) {
+                assertEquals(1.5D,
+                        graph.graql().compute().median().of(resourceType1).execute().get());
+            }
+        });
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {

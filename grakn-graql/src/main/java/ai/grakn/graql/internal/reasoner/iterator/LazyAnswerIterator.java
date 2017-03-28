@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.iterator;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import com.google.common.collect.Iterators;
 import java.util.Iterator;
@@ -40,9 +41,9 @@ public class LazyAnswerIterator extends LazyIterator<Map<VarName, Concept>> {
     public LazyAnswerIterator(Stream<Map<VarName, Concept>> stream){ super(stream);}
     private LazyAnswerIterator(Iterator<Map<VarName, Concept>> iterator){ super(iterator);}
 
-    public LazyAnswerIterator unify(Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return this;
-        Iterator<Map<VarName, Concept>> transform = Iterators.transform(iterator(), input -> QueryAnswers.unify(input, unifiers));
+    public LazyAnswerIterator unify(Unifier unifier){
+        if (unifier.isEmpty()) return this;
+        Iterator<Map<VarName, Concept>> transform = Iterators.transform(iterator(), input -> QueryAnswers.unify(input, unifier));
         return new LazyAnswerIterator(transform);
     }
 
