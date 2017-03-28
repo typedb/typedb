@@ -44,8 +44,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * @author fppt
  */
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
+    private final StandardTitanGraph rootGraph;
+
     public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
         super(graph, name, engineUrl, batchLoading);
+        this.rootGraph = (StandardTitanGraph) graph;
     }
 
     /**
@@ -61,15 +64,20 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
+    public void openTransaction(){
+        super.openTransaction();
+        if(getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
+    }
+
+    @Override
     public int numOpenTx() {
-        return ((StandardTitanGraph)getTinkerPopGraph()).getOpenTxs();
+        return rootGraph.getOpenTxs();
     }
 
     @Override
     protected void clearGraph() {
-        TitanGraph titanGraph = getTinkerPopGraph();
-        titanGraph.close();
-        TitanCleanup.clear(titanGraph);
+        rootGraph.close();
+        TitanCleanup.clear(rootGraph);
     }
 
     @Override

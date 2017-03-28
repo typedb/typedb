@@ -77,6 +77,8 @@ public class SystemKeyspaceTest {
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userEmail.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()).getValue())));
+
+        graph.close();
     }
 
 }

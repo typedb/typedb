@@ -174,6 +174,7 @@ public class ShortestPathTest {
                 list.add(i);
             }
             GraknSparkComputer.clear();
+            graph.close();
             list.parallelStream().forEach(i -> {
                 try (GraknGraph graph1 = factory.getGraph()) {
                     int size = graph1.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)

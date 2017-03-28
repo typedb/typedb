@@ -66,6 +66,7 @@ public class GraphTest {
     public void testSameGraphs() throws GraknValidationException {
         String key = "mykeyspace";
         GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).getGraph();
+        graph1.close();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key);
         assertEquals(graph1, graph2);
         graph1.close();
@@ -82,7 +83,6 @@ public class GraphTest {
         assertEquals(1, factory.openGraphTxs());
         assertEquals(0, factory.openGraphBatchTxs());
 
-        factory.getGraph();
         factory.getGraphBatchLoading();
         assertEquals(1, factory.openGraphTxs());
         assertEquals(1, factory.openGraphBatchTxs());

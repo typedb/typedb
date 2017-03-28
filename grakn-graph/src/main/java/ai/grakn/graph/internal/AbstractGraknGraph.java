@@ -797,11 +797,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void close() throws GraknValidationException {
-        if(getCommitRequired()){
-            commit();
+        try{
+            if(getCommitRequired()) {
+                commit();
+            }
+        } finally {
+            localCommitRequired.set(false);
+            closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
         }
-        localCommitRequired.remove();
-        closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
     }
 
     private void closeGraph(String closedReason){

@@ -68,9 +68,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public static GraknGraph lastGeneratedGraph() {
-        if (lastGeneratedGraph == null) {
-            throw new IllegalStateException("No graph to generate from");
-        }
         return lastGeneratedGraph;
     }
 
@@ -98,6 +95,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
         GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, keyspace);
 
+        closeGraph(lastGeneratedGraph);
+
         // Clear graph before retrieving
         graph = factory.getGraph();
         graph.clear();
@@ -114,6 +113,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
         lastGeneratedGraph = graph;
         return graph;
+    }
+
+    private void closeGraph(GraknGraph graph){
+        if(graph != null && !graph.isClosed()){
+            graph.close();
+        }
     }
 
     public void configure(Open open) {
