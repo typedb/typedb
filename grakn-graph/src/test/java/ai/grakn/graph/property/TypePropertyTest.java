@@ -111,6 +111,7 @@ public class TypePropertyTest {
         type.delete();
     }
 
+    @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingATypeWithHypothesisRules_Throw(Type type) {
         assumeThat(type.getRulesOfHypothesis(), not(empty()));
@@ -120,6 +121,7 @@ public class TypePropertyTest {
         type.delete();
     }
 
+    @Ignore // TODO: Find a way to generate linked rules
     @Property
     public void whenDeletingATypeWithConclusionRules_Throw(Type type) {
         assumeThat(type.getRulesOfConclusion(), not(empty()));
@@ -275,6 +277,8 @@ public class TypePropertyTest {
         type.deletePlaysRole(roleType);
         assertThat(type.playsRoles(), hasItem(roleType));
     }
+
+    // TODO: Tests for `resource` and `key`
 
     private Collection<Type> directSubTypes(GraknGraph graph, Type type) {
         return withImplicitConceptsVisible(graph, g ->
