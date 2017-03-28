@@ -43,6 +43,7 @@ import java.util.Collection;
  */
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
+    // TODO: Describe behaviour when setting a type with direct instances as abstract
     /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
@@ -85,9 +86,9 @@ public interface Type extends Concept {
     //------------------------------------- Accessors ---------------------------------
 
     /**
-     * Returns the name of this Type.
+     * Returns the unique name of this Type.
      *
-     * @return The name of this type
+     * @return The unique name of this type
      */
     TypeName getName();
 
@@ -116,14 +117,18 @@ public interface Type extends Concept {
     Type superType();
 
     /**
-     * Get all indirect sub-types of this type. The indirect sub-types are and all indirect
-     * sub-types of direct sub-types.
+     * Get all indirect sub-types of this type.
      *
-     * @return All the indirect sub classes of this Type
+     * The indirect sub-types are the type itself and all indirect sub-types of direct sub-types.
+     *
+     * @return All the indirect sub-types of this Type
      */
     Collection<? extends Type> subTypes();
 
     /**
+     * Get all indirect instances of this type.
+     *
+     * The indirect instances are the direct instances and all indirect instances of direct sub-types.
      *
      * @return All the indirect instances of this type.
      */
