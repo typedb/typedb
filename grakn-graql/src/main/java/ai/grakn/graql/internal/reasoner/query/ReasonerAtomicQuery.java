@@ -460,4 +460,27 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             return dCache.answerSize(subGoals);
         }
     }
+
+    public ReasonerAtomicQueryIterator iterator(Answer substitution){
+        return new ReasonerAtomicQueryIterator(substitution);
+    }
+
+    class ReasonerAtomicQueryIterator implements Iterator<Answer> {
+
+
+
+        ReasonerAtomicQueryIterator(Answer substitution){
+
+        }
+
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public Answer next() {
+            return null;
+        }
+    }
 }

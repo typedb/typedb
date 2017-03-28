@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
@@ -56,6 +57,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -543,5 +545,49 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return answerStream
                 .filter(a -> nonEqualsFilter(a, filters))
                 .flatMap(a -> varFilterFunction.apply(a, vars));
+    }
+
+    public ReasonerQueryImplIterator iterator(Answer substitution){
+        return new ReasonerQueryImplIterator(substitution);
+    }
+
+    private class ReasonerQueryImplIterator implements Iterator<Answer> {
+
+        private final Answer partialSubstitution;
+        private ReasonerQueryImplIterator queryIterator;
+        private final ReasonerQueryImpl Qprime;
+        private final ReasonerAtomicQuery.ReasonerAtomicQueryIterator atomicIterator;
+
+        ReasonerQueryImplIterator(Answer substitution){
+            this.partialSubstitution = substitution;
+            Atom atom = selectAtoms().iterator().next();
+            atomicIterator = new ReasonerAtomicQuery(atom).iterator(substitution);
+
+            Qprime = new ReasonerQueryImpl(ReasonerQueryImpl.this);
+            Qprime.removeAtom(atom);
+        }
+
+        Stream<Answer> hasStream(){
+            Iterable<Answer> iterable = () -> this;
+            return StreamSupport.stream(iterable.spliterator(), false).distinct();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (queryIterator.hasNext()) return true;
+            else {
+                if (atomicIterator.hasNext()) {
+                    queryIterator = Qprime.iterator(atomicIterator.next());
+                    return hasNext();
+                }
+                else return false;
+            }
+        }
+
+        @Override
+        public Answer next() {
+            Answer sub = queryIterator.next();
+            return sub.merge(partialSubstitution);
+        }
     }
 }
