@@ -61,9 +61,9 @@ public class HALBuilder {
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace, int offset, int limit) {
 
         //Stores connections between variables in Graql result [varName:List<VarAdmin> (only VarAdmins that contain a relation)]
-        Map<VarName, Collection<VarAdmin>> linkedNodes =  computeLinkedNodesFromQuery(matchQuery);
+        Map<VarName, Collection<VarAdmin>> linkedNodes = computeLinkedNodesFromQuery(matchQuery);
         //For each VarAdmin containing a relation we store a map containing varnames associated to roletypes
-        Map<String,Map<VarName, String>> roleTypes = computeRoleTypesFromQuery(matchQuery);
+        Map<String, Map<VarName, String>> roleTypes = computeRoleTypesFromQuery(matchQuery);
 
         //Collect all the types explicitly asked in the match query
         Set<TypeName> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
@@ -73,22 +73,23 @@ public class HALBuilder {
     }
 
     public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace, int offset, int limit) {
-        return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset,limit).render();
+        return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset, limit).render();
     }
 
     public static String HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
         String renderedHAL = null;
 
-        if(concept.isInstance())
+        if (concept.isInstance()) {
             renderedHAL = new HALExploreInstance(concept, keyspace, offset, limit).render();
-
-        if (concept.isType())
+        }
+        if (concept.isType()) {
             renderedHAL = new HALExploreType(concept, keyspace, offset, limit).render();
+        }
 
         return renderedHAL;
     }
 
-    private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
+    private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String, Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
         final Json lines = Json.array();
         graqlResultsList.forEach(resultLine -> resultLine.entrySet().forEach(current -> {
 
@@ -104,14 +105,14 @@ public class HALBuilder {
         return lines;
     }
 
-    static void attachGeneratedRelations(Representation currentHal, Map.Entry<VarName, Concept> current, Map<VarName, Collection<VarAdmin>> linkedNodes, Map<VarName, Concept> resultLine, Map<String,Map<VarName, String>> roleTypes, String keyspace, int limit) {
+    static void attachGeneratedRelations(Representation currentHal, Map.Entry<VarName, Concept> current, Map<VarName, Collection<VarAdmin>> linkedNodes, Map<VarName, Concept> resultLine, Map<String, Map<VarName, String>> roleTypes, String keyspace, int limit) {
         if (linkedNodes.containsKey(current.getKey())) {
             linkedNodes.get(current.getKey())
                     .forEach(currentRelation -> {
                         if (current.getValue() != null) {
                             VarName currentVarName = current.getKey();
                             Concept currentRolePlayer = current.getValue();
-                            final Optional<TypeName> relationType = currentRelation.getProperty(IsaProperty.class).flatMap(x->x.getType().getTypeName());
+                            final Optional<TypeName> relationType = currentRelation.getProperty(IsaProperty.class).flatMap(x -> x.getType().getTypeName());
 
                             currentRelation.getProperty(RelationProperty.class).get()
                                     .getRelationPlayers()
@@ -119,7 +120,7 @@ public class HALBuilder {
                                     .filter(x -> (!x.getRolePlayer().getVarName().equals(currentVarName)))
                                     .map(RelationPlayer::getRolePlayer).forEach(otherVar -> {
 
-                                if(resultLine.get(otherVar.getVarName())!=null) {
+                                if (resultLine.get(otherVar.getVarName()) != null) {
                                     attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(currentRelation.toString()), currentVarName, otherVar.getVarName(), relationType, keyspace, limit);
                                 }
                             });
@@ -151,8 +152,8 @@ public class HALBuilder {
 
         String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeNameToString(relationType.get()) : "";
 
-        String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString, limit);
-        currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(firstID,secondID,assertionID, relationType));
+        String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole, isaString, limit);
+        currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(firstID, secondID, assertionID, relationType));
     }
 
     private static Map<VarName, Collection<VarAdmin>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
@@ -180,12 +181,12 @@ public class HALBuilder {
         return linkedNodes;
     }
 
-    private static Map<String,Map<VarName,String>> computeRoleTypesFromQuery(MatchQuery matchQuery) {
-        final Map<String,Map<VarName,String>> roleTypes = new HashMap<>();
+    private static Map<String, Map<VarName, String>> computeRoleTypesFromQuery(MatchQuery matchQuery) {
+        final Map<String, Map<VarName, String>> roleTypes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             if (var.getProperty(RelationProperty.class).isPresent()) {
                 final String varHashCode = var.toString();
-                roleTypes.put(varHashCode,new HashMap<>());
+                roleTypes.put(varHashCode, new HashMap<>());
                 var.getProperty(RelationProperty.class)
                         .get()
                         .getRelationPlayers()

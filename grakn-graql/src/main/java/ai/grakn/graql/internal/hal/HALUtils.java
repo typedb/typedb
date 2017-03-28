@@ -19,37 +19,13 @@
 package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
-import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.RelationPlayer;
-import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.util.StringConverter;
-import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
-import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
- * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
+ * Utils class used by HALBuilders
  *
  * @author Marco Scoppetta
  */
