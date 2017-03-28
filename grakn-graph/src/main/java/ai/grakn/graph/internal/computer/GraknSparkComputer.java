@@ -272,8 +272,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
     /////////////////
 
     private static void loadJars(final JavaSparkContext sparkContext,
-                                 final Configuration hadoopConfiguration,
-                                 Logger LOGGER) {
+                                 final Configuration hadoopConfiguration) {
         if (hadoopConfiguration.getBoolean(Constants.GREMLIN_HADOOP_JARS_IN_DISTRIBUTED_CACHE, true)) {
             final String hadoopGremlinLocalLibs = null == System.getProperty(Constants.HADOOP_GREMLIN_LIBS) ?
                     System.getenv(Constants.HADOOP_GREMLIN_LIBS) : System.getProperty(Constants.HADOOP_GREMLIN_LIBS);
@@ -301,8 +300,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
      * SparkContext.setLocalProperty
      */
     private static void updateLocalConfiguration(final JavaSparkContext sparkContext,
-                                                 final SparkConf sparkConfiguration,
-                                                 Logger LOGGER) {
+                                                 final SparkConf sparkConfiguration) {
         /*
          * While we could enumerate over the entire SparkConfiguration and copy into the Thread
          * Local properties of the Spark Context this could cause adverse effects with future
@@ -413,9 +411,9 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
             graknSparkComputer.hadoopConfiguration.forEach(entry -> sparkConf.set(entry.getKey(), entry.getValue()));
 
             sparkContext = new JavaSparkContext(SparkContext.getOrCreate(sparkConf));
-            loadJars(sparkContext, graknSparkComputer.hadoopConfiguration, LOGGER);
+            loadJars(sparkContext, graknSparkComputer.hadoopConfiguration);
             Spark.create(sparkContext.sc()); // this is the context RDD holder that prevents GC
-            updateLocalConfiguration(sparkContext, sparkConf, LOGGER);
+            updateLocalConfiguration(sparkContext, sparkConf);
 
             boolean partitioned = false;
             try {
