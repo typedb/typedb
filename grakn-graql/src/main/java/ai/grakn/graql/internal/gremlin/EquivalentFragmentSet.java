@@ -55,7 +55,7 @@ public class EquivalentFragmentSet {
     /**
      * @return a set of fragments that this EquivalentFragmentSet contains
      */
-    Set<Fragment> fragments() {
+    public Set<Fragment> fragments() {
         return fragments;
     }
 
