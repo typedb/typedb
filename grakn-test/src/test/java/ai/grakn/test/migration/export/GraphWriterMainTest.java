@@ -21,7 +21,6 @@ package ai.grakn.test.migration.export;
 import ai.grakn.GraknGraph;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.EngineContext;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -31,16 +30,11 @@ public class GraphWriterMainTest {
     @ClassRule
     public static final EngineContext engineContext = EngineContext.startInMemoryServer();
 
-    private static GraknGraph graph;
-    private String keyspace;
+    private static String keyspace;
 
     @BeforeClass
     public static void loadMovieGraph() {
-        graph =  engineContext.factoryWithNewKeyspace().getGraph();
-    }
-
-    @Before
-    public void setup(){
+        GraknGraph graph = engineContext.factoryWithNewKeyspace().getGraph();
         keyspace = graph.getKeyspace();
         graph.close();
     }

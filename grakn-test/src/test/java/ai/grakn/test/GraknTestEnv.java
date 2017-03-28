@@ -138,7 +138,7 @@ public abstract class GraknTestEnv {
         }
     }
 
-    static String randomKeyspace(){
+    public static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }
