@@ -22,64 +22,31 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import java.util.Collection;
 
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
-import static ai.grakn.graql.internal.hal.HALUtils.EXPLORE_CONCEPT_LINK;
 import static ai.grakn.graql.internal.hal.HALUtils.HAS_RESOURCE_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.HAS_ROLE_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.INBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.PLAYS_ROLE_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
-import static ai.grakn.graql.internal.hal.HALUtils.generateConceptState;
 
 
 /**
  * Class used to build the HAL representation of a given concept.
  */
 
-class HALExploreType {
-
-    private final RepresentationFactory factory;
-    private final Representation halResource;
-    private final String keyspace;
-    private final int limit;
-    private final int offset;
-    private final String resourceLinkPrefix;
+class HALExploreType extends HALExploreConcept{
 
     HALExploreType(Concept concept, String keyspace, int offset, int limit) {
-
-        //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
-        resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
-        this.keyspace = keyspace;
-        this.offset = offset;
-        this.limit = limit;
-        factory = new StandardRepresentationFactory();
-        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId() + getURIParams());
-
-        generateStateAndLinks(halResource, concept);
-        populateEmbedded(halResource, concept);
-
+        super(concept, keyspace, offset, limit);
     }
 
-    private String getURIParams() {
-        // If limit -1, we don't append the limit parameter to the URI string
-        String limitParam = (this.limit >= 0) ? "&limit=" + this.limit : "";
-        return "?keyspace=" + this.keyspace + "&offset=" + this.offset + limitParam;
-    }
-
-    private void generateStateAndLinks(Representation resource, Concept concept) {
-        resource.withLink(EXPLORE_CONCEPT_LINK, REST.WebPath.CONCEPT_BY_ID_EXPLORE_URI + concept.getId() + getURIParams());
-        generateConceptState(resource, concept);
-    }
-
-    private void populateEmbedded(Representation halResource, Concept concept) {
+    void populateEmbedded(Representation halResource, Concept concept) {
 
         Type type = concept.asType();
 
