@@ -58,7 +58,9 @@ public class JsonMigratorTest {
     @Before
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
-        migrator = Migrator.to(Grakn.DEFAULT_URI, factory.getGraph().getKeyspace());
+        GraknGraph graph = factory.getGraph();
+        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
+        graph.close();
     }
 
     @Test

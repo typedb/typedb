@@ -264,6 +264,7 @@ public class GraknGraphPropertyTest {
             assertTrue(concept.isType());
             assertTrue(isMetaName(concept.asType().getName()));
             });
+        graph.close();
     }
 
     @Property
@@ -271,12 +272,7 @@ public class GraknGraphPropertyTest {
         graph.clear();
         graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
         assertNotNull(graph.getType(typeName));
-    }
-
-    @Property
-    public void whenCallingGetKeySpace_ReturnTheLowercaseKeyspaceOfTheGraph(String keyspace) {
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-        assertEquals(keyspace.toLowerCase(), graph.getKeyspace());
+        graph.close();
     }
 
     @Property

@@ -75,9 +75,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     }
 
     public static GraknGraph lastGeneratedGraph() {
-        if (lastGeneratedGraph == null) {
-            throw new IllegalStateException("No graph to generate from");
-        }
         return lastGeneratedGraph;
     }
 
@@ -110,6 +107,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         graphSummary = new StringBuilder();
         graphSummary.append("size: ").append(size).append("\n");
 
+        closeGraph(lastGeneratedGraph);
+
         // Clear graph before retrieving
         graph = factory.getGraph();
         graph.clear();
@@ -126,6 +125,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
         lastGeneratedGraph = graph;
         return graph;
+    }
+
+    private void closeGraph(GraknGraph graph){
+        if(graph != null && !graph.isClosed()){
+            graph.close();
+        }
     }
 
     public void configure(Open open) {

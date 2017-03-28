@@ -23,7 +23,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.csv.CSVMigrator;
@@ -38,9 +37,9 @@ import java.util.Collection;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
+import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.getFileAsString;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
-import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -55,7 +54,9 @@ public class CSVMigratorTest {
     @Before
     public void setup() {
         factory = engine.factoryWithNewKeyspace();
-        migrator = Migrator.to(Grakn.DEFAULT_URI, factory.getGraph().getKeyspace());
+        GraknGraph graph = factory.getGraph();
+        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
+        graph.close();
     }
 
     @Test

@@ -57,19 +57,10 @@ import static org.junit.Assert.assertTrue;
 
 public class TitanInternalFactoryTest extends TitanTestBase{
     private static TitanGraph sharedGraph;
-    private static TitanGraph noIndexGraph;
-    private static TitanGraph indexGraph;
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
         sharedGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING).getTinkerPopGraph();
-
-        int max = 1000;
-        noIndexGraph = getGraph();
-        createGraphTestNoIndex("", noIndexGraph, max);
-
-        indexGraph = getGraph();
-        createGraphTestVertexCentricIndex("", indexGraph, max);
     }
 
     @Test
@@ -110,9 +101,11 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @Test
     public void testSingleton(){
-        GraknTitanGraph mg1 = titanGraphFactory.getGraph(true);
-        GraknTitanGraph mg2 = titanGraphFactory.getGraph(false);
-        GraknTitanGraph mg3 = titanGraphFactory.getGraph(true);
+        TitanInternalFactory factory = new TitanInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        GraknTitanGraph mg1 = factory.getGraph(true);
+        mg1.close();
+        GraknTitanGraph mg2 = factory.getGraph(false);
+        GraknTitanGraph mg3 = factory.getGraph(true);
 
         assertEquals(mg1, mg3);
         assertEquals(mg1.getTinkerPopGraph(), mg3.getTinkerPopGraph());
@@ -216,12 +209,13 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @Test
     public void testGraphNotClosed() throws GraknValidationException {
-        GraknTitanGraph graph = titanGraphFactory.getGraph(false);
+        TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        GraknTitanGraph graph = factory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
         graph.close();
 
-        graph = titanGraphFactory.getGraph(false);
+        graph = factory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
     }
@@ -247,10 +241,6 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     private void assertIndexCorrect(Graph graph) {
         assertEquals(2, graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
         assertFalse(graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
-    }
-
-    private static void createGraphTestNoIndex(String indexProp,Graph graph, int max) throws InterruptedException {
-        createGraphGeneric(indexProp, graph, max, "ITEM_IDENTIFIER", Schema.EdgeLabel.ISA.getLabel(), "TYPE");
     }
 
     private static void createGraphTestVertexCentricIndex(String indexProp,Graph graph, int max) throws InterruptedException {
