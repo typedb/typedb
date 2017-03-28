@@ -25,6 +25,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.exception.ConceptException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
@@ -45,12 +46,15 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
+import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
+import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -69,45 +73,60 @@ public class TypePropertyTest {
 
     @Property
     public void whenSettingAMetaTypeAsAbstract_Throw(@Meta Type type, boolean isAbstract) {
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
         type.setAbstract(isAbstract);
     }
 
     @Property
     public void whenMakingAMetaTypePlayRole_Throw(@Meta Type type, RoleType roleType) {
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        assumeThat(type, not(is(roleType)));
+
+        exception.expect(ConceptException.class);
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
         type.playsRole(roleType);
     }
 
     @Property
     public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, ResourceType resourceType) {
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
         type.key(resourceType);
     }
 
     @Property
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, ResourceType resourceType) {
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
         type.resource(resourceType);
     }
 
     @Property
-    public void whenDeletingATypeWithDirectSubTypes_Throw(Type type) {
-        // TODO: Better define exception
-        exception.expect(Exception.class);
-        type.superType().delete();
+    public void whenDeletingAMetaType_Throw(@Meta Type type) {
+        exception.expect(ConceptException.class);
+        exception.expectMessage(isOneOf(
+                META_TYPE_IMMUTABLE.getMessage(type.getName()),
+                CANNOT_DELETE.getMessage(type.getName())
+        ));
+        type.delete();
     }
 
     @Property
-    public void whenDeletingATypeWithIndirectInstances_Throw(Type type) {
+    public void whenDeletingATypeWithDirectSubTypes_Throw(@Meta(false) Type type) {
+        Type superType = type.superType();
+        assumeFalse(isMetaName(superType.getName()));
+
+        exception.expect(ConceptException.class);
+        exception.expectMessage(CANNOT_DELETE.getMessage(superType.getName()));
+        superType.delete();
+    }
+
+    @Property
+    public void whenDeletingATypeWithIndirectInstances_Throw(@Meta(false) Type type) {
         assumeThat(type.instances(), not(empty()));
 
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(CANNOT_DELETE.getMessage(type.getName()));
         type.delete();
     }
 
@@ -116,8 +135,8 @@ public class TypePropertyTest {
     public void whenDeletingATypeWithHypothesisRules_Throw(Type type) {
         assumeThat(type.getRulesOfHypothesis(), not(empty()));
 
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(CANNOT_DELETE.getMessage(type.getName()));
         type.delete();
     }
 
@@ -126,8 +145,8 @@ public class TypePropertyTest {
     public void whenDeletingATypeWithConclusionRules_Throw(Type type) {
         assumeThat(type.getRulesOfConclusion(), not(empty()));
 
-        // TODO: Better define exception
-        exception.expect(Exception.class);
+        exception.expect(ConceptException.class);
+        exception.expectMessage(CANNOT_DELETE.getMessage(type.getName()));
         type.delete();
     }
 

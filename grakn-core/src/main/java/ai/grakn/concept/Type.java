@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.exception.ConceptException;
+
 import java.util.Collection;
 
 /**
@@ -46,31 +48,39 @@ public interface Type extends Concept {
      *
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
+     *
+     * @throws ConceptException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract);
+    Type setAbstract(Boolean isAbstract) throws ConceptException;
 
     /**
      *
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
+     *
+     * @throws ConceptException if this is a meta-type
      */
-    Type playsRole(RoleType roleType);
+    Type playsRole(RoleType roleType) throws ConceptException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
+     *
+     * @throws ConceptException if this is a meta-type
      */
-    Type key(ResourceType resourceType);
+    Type key(ResourceType resourceType) throws ConceptException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
+     *
+     * @throws ConceptException if this is a meta-type
      */
-     Type resource(ResourceType resourceType);
+     Type resource(ResourceType resourceType) throws ConceptException;
 
     //------------------------------------- Accessors ---------------------------------
 
