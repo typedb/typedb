@@ -45,6 +45,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -157,6 +158,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private boolean isTransitive(){
         return getAtoms().stream().filter(this::containsEquivalentAtom).count() == 2;
     }
+
+    private boolean isAtomic(){ return selectAtoms().size() == 1;}
 
     /**
      * @return atom set constituting this query
@@ -547,24 +550,43 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .flatMap(a -> varFilterFunction.apply(a, vars));
     }
 
-    public ReasonerQueryImplIterator iterator(Answer substitution){
+    public Stream<Answer> resolve() {
+        if (!this.isRuleResolvable()) {
+            return this.getMatchQuery().admin().streamWithVarNames()
+                    .map(QueryAnswer::new);
+        }
+        return new ReasonerQueryImplIterator().hasStream();
+    }
+
+    public Iterator<Answer> iterator(Answer substitution){
         return new ReasonerQueryImplIterator(substitution);
     }
 
     private class ReasonerQueryImplIterator implements Iterator<Answer> {
 
         private final Answer partialSubstitution;
-        private ReasonerQueryImplIterator queryIterator;
         private final ReasonerQueryImpl Qprime;
-        private final ReasonerAtomicQuery.ReasonerAtomicQueryIterator atomicIterator;
 
+        private Iterator<Answer> queryIterator = Collections.emptyIterator();
+        private final Iterator<Answer> atomicQueryIterator;
+
+
+        ReasonerQueryImplIterator(){ this(new QueryAnswer());}
         ReasonerQueryImplIterator(Answer substitution){
             this.partialSubstitution = substitution;
-            Atom atom = selectAtoms().iterator().next();
-            atomicIterator = new ReasonerAtomicQuery(atom).iterator(substitution);
 
-            Qprime = new ReasonerQueryImpl(ReasonerQueryImpl.this);
-            Qprime.removeAtom(atom);
+            //get prioritised atom and construct atomic query from it
+            //prioritise id predicates and resources
+            Atom atom = selectAtoms().iterator().next();
+            atomicQueryIterator = new ReasonerAtomicQuery(atom).iterator(substitution);
+
+            //construct new reasoner query with the specified atom removed
+            ReasonerQueryImpl newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
+            newQuery.removeAtom(atom);
+
+            Qprime = newQuery.isAtomic()?
+                    new ReasonerAtomicQuery(newQuery.selectAtoms().iterator().next()) :
+                    newQuery;
         }
 
         Stream<Answer> hasStream(){
@@ -576,8 +598,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         public boolean hasNext() {
             if (queryIterator.hasNext()) return true;
             else {
-                if (atomicIterator.hasNext()) {
-                    queryIterator = Qprime.iterator(atomicIterator.next());
+                if (atomicQueryIterator.hasNext()) {
+                    queryIterator = Qprime.iterator(atomicQueryIterator.next());
                     return hasNext();
                 }
                 else return false;

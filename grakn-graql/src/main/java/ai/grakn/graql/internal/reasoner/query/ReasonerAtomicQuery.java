@@ -45,6 +45,7 @@ import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -266,19 +267,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<VarName, Concept> getIdPredicateAnswer(){
+    //Query type atoms -> Answer
+    private Answer getIdPredicateAnswer(){
         Object result = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate).filter(Objects::nonNull)
                 .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
-        return (Map<VarName, Concept>)result;
+        return new QueryAnswer((Map<VarName, Concept>)result);
     }
 
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
-        Map<VarName, Concept> idPredicateAnswer = getIdPredicateAnswer();
-        return stream.map(answer -> {
-            answer.putAll(idPredicateAnswer);
-            return answer;
-        });
+        Answer idPredicateAnswer = getIdPredicateAnswer();
+        return stream.map(answer -> answer.merge(idPredicateAnswer));
     }
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers, ReasonerAtomicQuery ruleHead){
@@ -461,26 +460,62 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
-    public ReasonerAtomicQueryIterator iterator(Answer substitution){
-        return new ReasonerAtomicQueryIterator(substitution);
+    private Iterator<Answer> resolveViaRule(InferenceRule rule, Answer substitution, Set<ReasonerAtomicQuery> subGoals){
+        Atom atom = this.getAtom();
+        rule.unify(atom);
+        subGoals.add(this);
+        return rule.getBody().iterator(substitution);
+
     }
 
-    class ReasonerAtomicQueryIterator implements Iterator<Answer> {
+    public Iterator<Answer> iterator(Answer substitution){
+        return new ReasonerAtomicQueryIterator(substitution, new HashSet<>());
+    }
 
+    private class ReasonerAtomicQueryIterator implements Iterator<Answer> {
+        private final Answer partialSubstitution;
+        Set<ReasonerAtomicQuery> subGoals;
+        private Iterator<InferenceRule> ruleIterator;
+        private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
+        ReasonerAtomicQueryIterator(Answer substitution, Set<ReasonerAtomicQuery> subGoals){
+            this.partialSubstitution = substitution;
+            this.ruleIterator = getAtom().getApplicableRules().iterator();
+            this.subGoals = subGoals;
 
-        ReasonerAtomicQueryIterator(Answer substitution){
-
+            //initialize queryIterator to db content
+            this.queryIterator = DBlookup().iterator();
         }
 
         @Override
         public boolean hasNext() {
-            return false;
+            if (queryIterator.hasNext()) return true;
+            else{
+                if (ruleIterator.hasNext()){
+                    //TODO make it the query with specific substitution attached
+                    ReasonerAtomicQuery subbedQuery = ReasonerAtomicQuery.this;
+
+                    if (!subGoals.contains(subbedQuery)) {
+                        InferenceRule rule = ruleIterator.next();
+                        rule.unify(subbedQuery.getAtom());
+
+                        subGoals.add(subbedQuery);
+                        queryIterator = rule.getBody().iterator(partialSubstitution);
+                    }
+                    else {
+                        queryIterator = Collections.emptyIterator();
+                    }
+                    return hasNext();
+                }
+                else return false;
+            }
         }
 
         @Override
         public Answer next() {
-            return null;
+            Answer sub = queryIterator.next();
+            return sub.merge(partialSubstitution);
         }
+
     }
 }
