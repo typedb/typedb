@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.HashSet;
@@ -86,24 +87,24 @@ public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
 
     /**
      * unify the answers by applying unifiers to variable set
-     * @param unifiers map of [key: from/value: to] unifiers
+     * @param unifier map of [key: from/value: to] unifiers
      * @return unified query answers
      */
-    public QueryAnswers unify(Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return new QueryAnswers(this);
+    public QueryAnswers unify(Unifier unifier){
+        if (unifier.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(answer -> {
-            Map<VarName, Concept> unifiedAnswer = unify(answer, unifiers);
+            Map<VarName, Concept> unifiedAnswer = unify(answer, unifier);
             unifiedAnswers.add(unifiedAnswer);
         });
 
         return unifiedAnswers;
     }
 
-    public static Map<VarName, Concept> unify(Map<VarName, Concept> answer, Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return answer;
+    public static Map<VarName, Concept> unify(Map<VarName, Concept> answer, Unifier unifier){
+        if (unifier.isEmpty()) return answer;
         return answer.entrySet().stream()
-                .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())?  unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
+                .collect(Collectors.toMap(e -> unifier.containsKey(e.getKey())?  unifier.get(e.getKey()) : e.getKey(), Map.Entry::getValue));
     }
 
     /**
@@ -113,6 +114,6 @@ public class QueryAnswers implements Iterable<Map<VarName, Concept>>{
      */
     public static <T extends ReasonerQuery> QueryAnswers getUnifiedAnswers(T parentQuery, T childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        return answers.unify(childQuery.getUnifiers(parentQuery));
+        return answers.unify(childQuery.getUnifier(parentQuery));
     }
 }

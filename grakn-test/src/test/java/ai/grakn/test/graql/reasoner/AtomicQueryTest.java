@@ -29,6 +29,7 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -193,7 +194,7 @@ public class AtomicQueryTest {
         Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
         Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
 
-        Set<Map<VarName, VarName>> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
+        Set<Unifier> permutationUnifiers = mappedAtom.getPermutationUnifiers(mappedAtom);
         Set<IdPredicate> unmappedIdPredicates = mappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints = mappedAtom.getUnmappedTypeConstraints();
         Set<Map<VarName, Concept>> permutedAnswers = answers.stream()
@@ -202,7 +203,7 @@ public class AtomicQueryTest {
                 .filter(a -> entityTypeFilter(a, unmappedTypeConstraints))
                 .collect(Collectors.toSet());
 
-        Set<Map<VarName, VarName>> permutationUnifiers2 = unmappedAtom.getPermutationUnifiers(mappedAtom);
+        Set<Unifier> permutationUnifiers2 = unmappedAtom.getPermutationUnifiers(mappedAtom);
         Set<IdPredicate> unmappedIdPredicates2 = unmappedAtom.getUnmappedIdPredicates();
         Set<TypeAtom> unmappedTypeConstraints2 = unmappedAtom.getUnmappedTypeConstraints();
         Set<Map<VarName, Concept>> permutedAnswers2 = answers.stream()
@@ -235,8 +236,8 @@ public class AtomicQueryTest {
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, graph);
         ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern, graph);
-        Map<VarName, VarName> unifiers = childQuery.getUnifiers(parentQuery);
-        assertTrue(Sets.intersection(unifiers.keySet(), Sets.newHashSet(VarName.of("x"), VarName.of("y"))).isEmpty());
+        Unifier unifier = childQuery.getUnifier(parentQuery);
+        assertTrue(Sets.intersection(unifier.keySet(), Sets.newHashSet(VarName.of("x"), VarName.of("y"))).isEmpty());
 
     }
 

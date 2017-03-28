@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
@@ -116,9 +117,9 @@ public class QueryAnswerStream {
         return true;
     }
 
-    private static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Map<VarName, VarName>> unifierSet){
+    private static Stream<Map<VarName, Concept>> permuteOperator(Map<VarName, Concept> answer, Set<Unifier> unifierSet){
         if (unifierSet.isEmpty()) return Stream.of(answer);
-        return unifierSet.stream().flatMap(unifiers -> Stream.of(QueryAnswers.unify(answer, unifiers)));
+        return unifierSet.stream().flatMap(unifier -> Stream.of(QueryAnswers.unify(answer, unifier)));
     }
 
     private static Map<VarName, Concept> joinOperator(Map<VarName, Concept> m1, Map<VarName, Concept> m2){
@@ -141,7 +142,7 @@ public class QueryAnswerStream {
         return filteredAnswer.isEmpty() ? Stream.empty() : Stream.of(filteredAnswer);
     };
 
-    public static final BiFunction<Map<VarName, Concept>, Set<Map<VarName, VarName>>, Stream<Map<VarName, Concept>>> permuteFunction = QueryAnswerStream::permuteOperator;
+    public static final BiFunction<Map<VarName, Concept>, Set<Unifier>, Stream<Map<VarName, Concept>>> permuteFunction = QueryAnswerStream::permuteOperator;
 
     private static final BiFunction<Map<VarName, Concept>, Map<VarName, Concept>, Stream<Map<VarName, Concept>>> joinFunction = (a1, a2) -> {
         Map<VarName, Concept> merged = joinOperator(a1, a2);
@@ -151,12 +152,12 @@ public class QueryAnswerStream {
     /**
      * unify answer stream by applying unifiers
      * @param answers stream of answers to be unified
-     * @param unifiers to apply on stream elements
+     * @param unifier to apply on stream elements
      * @return unified answer stream
      */
-    public static Stream<Map<VarName, Concept>> unify(Stream<Map<VarName, Concept>> answers, Map<VarName, VarName> unifiers) {
-        if(unifiers.isEmpty()) return answers;
-        return answers.map(ans -> QueryAnswers.unify(ans, unifiers));
+    public static Stream<Map<VarName, Concept>> unify(Stream<Map<VarName, Concept>> answers, Unifier unifier) {
+        if(unifier.isEmpty()) return answers;
+        return answers.map(ans -> QueryAnswers.unify(ans, unifier));
     }
 
     /**
