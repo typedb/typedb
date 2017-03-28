@@ -1,22 +1,5 @@
 package ai.grakn.test.engine.postprocessing;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
-import static org.junit.Assume.assumeTrue;
-
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.Entity;
@@ -30,6 +13,22 @@ import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import mjson.Json;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
+import static org.junit.Assume.assumeTrue;
 
 public class ResourceDeduplicationMapReduceTestIT {
 
@@ -158,7 +157,6 @@ public class ResourceDeduplicationMapReduceTestIT {
      * Test that the normal case with no duplicates on various resources doesn't screw things up.
      */
     @Test
-    //@Ignore
     public void testNoDuplicates() {
         transact(graph ->  {
             Entity e1 = thing.addEntity();
@@ -183,7 +181,6 @@ public class ResourceDeduplicationMapReduceTestIT {
      * relationships.
      */
     @Test
-    //@Ignore
     public void testManyUnattachedResources() {
         String stringIndex = transact(graph -> { 
             Resource<String> res = stringResource.putResource("value_dup");
@@ -226,7 +223,6 @@ public class ResourceDeduplicationMapReduceTestIT {
      * Test when a few instances of the same resource get attached to the same entity.
      */
     @Test
-    //@Ignore
     public void testDuplicatesOnSameEntity() {
         String resourceIndex = transact(graph -> {
            Entity something = thing.addEntity();
@@ -248,7 +244,6 @@ public class ResourceDeduplicationMapReduceTestIT {
     }
 
     @Test
-    @Ignore
     public void testDuplicatesOnDifferentEntity() {
         String resourceIndex = transact(graph -> {
            Entity something = thing.addEntity();
