@@ -24,12 +24,14 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.GraqlTraversal;
 import ai.grakn.graql.internal.gremlin.GreedyTraversalPlan;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
@@ -76,8 +78,10 @@ public class MatchQueryBase extends AbstractMatchQuery {
         this.typeNames = getAllTypeNames();
     }
 
+
+
     @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> optionalGraph) {
+    public Stream<Answer> stream(Optional<GraknGraph> optionalGraph) {
         GraknGraph graph = optionalGraph.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
@@ -101,7 +105,8 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return traversal.toStream()
                 .map(vertices -> makeResults(graph, vertices))
                 .filter(result -> shouldShowResult(graph, result))
-                .sequential();
+                .sequential()
+                .map(QueryAnswer::new);
     }
 
     @Override

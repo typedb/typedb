@@ -18,24 +18,23 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.VarName;
 
+import ai.grakn.graql.admin.Answer;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.stream.Stream;
 
 class MatchOrderImpl implements MatchOrder {
 
     private final VarName var;
 
-    private final Comparator<Map<VarName, Concept>> comparator;
+    private final Comparator<Answer> comparator;
 
     MatchOrderImpl(VarName var, Order order) {
         this.var = var;
 
-        Comparator<Map<VarName, Concept>> comparator = Comparator.comparing(this::getOrderValue);
+        Comparator<Answer> comparator = Comparator.comparing(this::getOrderValue);
 
         this.comparator = (order == Order.desc) ? comparator.reversed() : comparator;
     }
@@ -46,13 +45,13 @@ class MatchOrderImpl implements MatchOrder {
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> orderStream(Stream<Map<VarName, Concept>> stream) {
+    public Stream<Answer> orderStream(Stream<Answer> stream) {
         return stream.sorted(comparator);
     }
 
     // All data types are comparable, so this is safe
     @SuppressWarnings("unchecked")
-    private Comparable<? super Comparable> getOrderValue(Map<VarName, Concept> result) {
+    private Comparable<? super Comparable> getOrderValue(Answer result) {
         return (Comparable<? super Comparable>) result.get(var).asResource().getValue();
     }
 
