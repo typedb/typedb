@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.Grakn;
+
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.concept.ConceptId;
@@ -44,6 +45,7 @@ import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.*;
 
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
@@ -188,10 +190,10 @@ public class PostProcessingTest {
         waitForCache(false, keyspace, 1);
 
         //Check duplicates have been created
-        createDuplicateResource(graph, resourceType, resource);
-        createDuplicateResource(graph, resourceType, resource);
-        createDuplicateResource(graph, resourceType, resource);
-        createDuplicateResource(graph, resourceType, resource);
+        PostProcessingTestUtils.createDuplicateResource(graph, cache, resourceType, resource);
+        createDuplicateResource(graph, cache, resourceType, resource);
+        createDuplicateResource(graph, cache, resourceType, resource);
+        createDuplicateResource(graph, cache, resourceType, resource);
         assertEquals(5, resourceType.instances().size());
         waitForCache(false, keyspace, 5);
 
@@ -203,22 +205,6 @@ public class PostProcessingTest {
 
         //Check the cache has been cleared
         assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
-    }
-    private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
-        AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;
-        Vertex originalResource = (Vertex) graph.getTinkerTraversal()
-                .hasId(resource.getId().getValue()).next();
-        Vertex vertexResourceType = (Vertex) graph.getTinkerTraversal()
-                .hasId(resourceType.getId().getValue()).next();
-
-        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
-        resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
-        resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
-        resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
-
-        resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);
-
-        cache.addJobResource(graknGraph.getKeyspace(), resourceVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(resourceVertex.id().toString()));
     }
 
     private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
