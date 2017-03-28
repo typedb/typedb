@@ -30,7 +30,6 @@ import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Properties;
-import java.util.function.Supplier;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
@@ -103,8 +102,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
 
     @Override
     public void close() throws GraphRuntimeException {
-        checkClosure(openGraphTxs(), this::getGraph);
-        checkClosure(openGraphBatchTxs(), this::getGraphBatchLoading);
+        checkClosure(openGraphTxs(), graph);
+        checkClosure(openGraphBatchTxs(), graphBatch);
 
         //Close the main graph connections
         try {
@@ -114,9 +113,8 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
             throw new GraphRuntimeException("Could not close graph.", e);
         }
     }
-    private void checkClosure(int numOpenTransactions, Supplier<GraknGraph> graphSupplier){
+    private void checkClosure(int numOpenTransactions, GraknGraph graph){
         if(numOpenTransactions > 1){
-            GraknGraph graph = graphSupplier.get();
             throw new GraphRuntimeException(ErrorMessage.TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), numOpenTransactions));
         }
     }
