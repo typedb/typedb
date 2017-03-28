@@ -37,7 +37,7 @@ public class REST {
         public static final String GRAPH_PRE_MATERIALISE_QUERY_URI = "/graph/preMaterialiseAll";
         public static final String GRAPH_ONTOLOGY_URI = "/graph/ontology" ;
         public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
-        public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
+        public static final String CONCEPT_BY_ID_EXPLORE_URI = "/graph/concept/explore/" ;
 
         public static final String COMMIT_LOG_URI = "/commit_log";
         public static final String GET_STATUS_CONFIG_URI = "/status/config";

@@ -29,123 +29,109 @@ import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
 import java.util.Collection;
 
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.generateConceptState;
+import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.EXPLORE_CONCEPT_LINK;
+import static ai.grakn.graql.internal.hal.HALUtils.HAS_RESOURCE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.HAS_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.INBOUND_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.PLAYS_ROLE_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.generateConceptState;
+
 
 /**
  * Class used to build the HAL representation of a given concept.
  */
 
-class HALConceptOntology {
+class HALExploreType {
 
     private final RepresentationFactory factory;
-
     private final Representation halResource;
-
     private final String keyspace;
     private final int limit;
     private final int offset;
-
-
     private final String resourceLinkPrefix;
-    private final String resourceLinkOntologyPrefix;
-    private final static String SUB_EDGE = "sub";
-    private final static String ONTOLOGY_LINK = "ontology";
-    private final static String OUTBOUND_EDGE = "OUT";
-    private final static String INBOUND_EDGE = "IN";
-    private final static String HAS_ROLE_EDGE = "has-role";
-    private final static String HAS_RESOURCE_EDGE = "has-resource";
-    private final static String PLAYS_ROLE_EDGE = "plays-role";
 
-    // - State properties
-
-    private final static String DIRECTION_PROPERTY = "_direction";
-
-
-    HALConceptOntology(Concept concept,String keyspace, int offset, int limit) {
+    HALExploreType(Concept concept, String keyspace, int offset, int limit) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
-        resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
-        this.keyspace=keyspace;
+        this.keyspace = keyspace;
         this.offset = offset;
         this.limit = limit;
         factory = new StandardRepresentationFactory();
-        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId()+getURIParams());
+        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId() + getURIParams());
 
-        handleConceptOntology(halResource, concept);
+        generateStateAndLinks(halResource, concept);
+        populateEmbedded(halResource, concept);
 
     }
 
     private String getURIParams() {
         // If limit -1, we don't append the limit parameter to the URI string
         String limitParam = (this.limit >= 0) ? "&limit=" + this.limit : "";
-
-        return "?keyspace=" + this.keyspace + "&offset="+this.offset+ limitParam;
+        return "?keyspace=" + this.keyspace + "&offset=" + this.offset + limitParam;
     }
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
-
-        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + getURIParams());
-        generateConceptState(resource,concept);
+        resource.withLink(EXPLORE_CONCEPT_LINK, REST.WebPath.CONCEPT_BY_ID_EXPLORE_URI + concept.getId() + getURIParams());
+        generateConceptState(resource, concept);
     }
 
-    private void handleConceptOntology(Representation halResource, Concept concept) {
-        generateStateAndLinks(halResource, concept);
+    private void populateEmbedded(Representation halResource, Concept concept) {
 
-        if (concept.isType()) {
-            attachRolesPlayed(halResource, concept.asType().playsRoles());
-            attachTypeResources(halResource, concept.asType());
+        Type type = concept.asType();
+
+        // Role types played by current type
+        attachRolesPlayed(halResource, type.playsRoles());
+        // Resources owned by the current type
+        attachTypeResources(halResource, type);
+        // Subtypes
+        attachSubTypes(halResource, type);
+
+        if (type.isRelationType()) {
+            // Role types that make up this RelationType
+            relationTypeRoles(halResource, type.asRelationType());
+        } else if (type.isRoleType()) {
+            // Types that can play this role && Relation types this role can take part in.
+            roleTypeOntology(halResource, type.asRoleType());
         }
 
-        if (concept.isRelationType()) {
-            relationTypeOntology(halResource, concept.asRelationType());
-        } else if (concept.isRoleType()) {
-            roleTypeOntology(halResource, concept.asRoleType());
-        }
+    }
 
-        if (concept.isType()) {
-            concept.asType().subTypes().forEach(instance -> {
-                // let's not put the current type in its own embedded
-                if (!instance.getId().equals(concept.getId())) {
-                    Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams())
-                            .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-                    generateStateAndLinks(instanceResource, instance);
-                    halResource.withRepresentation(SUB_EDGE, instanceResource);
-                }
-            });
-        }
-
-        if(concept.isInstance()){
-            //attach instance resources
-            concept.asInstance().resources().forEach(currentResource -> {
-                Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId() + getURIParams())
-                        .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-                generateStateAndLinks(embeddedResource, currentResource);
-                halResource.withRepresentation(currentResource.type().getName().getValue(), embeddedResource);
-            });
-        }
+    private void attachSubTypes(Representation halResource, Type conceptType) {
+        conceptType.subTypes().forEach(instance -> {
+            // let's not put the current type in its own embedded
+            if (!instance.getId().equals(conceptType.getId())) {
+                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams())
+                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+                generateStateAndLinks(instanceResource, instance);
+                halResource.withRepresentation(SUB_EDGE, instanceResource);
+            }
+        });
     }
 
 
     private void roleTypeOntology(Representation halResource, RoleType roleType) {
         roleType.playedByTypes().forEach(type -> {
-            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId()+getURIParams())
+            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, type);
             halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
         });
 
-        roleType.relationTypes().forEach(relType-> {
-                Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() +getURIParams())
-                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-                generateStateAndLinks(roleRepresentation, relType);
-                halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
-            });
+        roleType.relationTypes().forEach(relType -> {
+            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() + getURIParams())
+                    .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+            generateStateAndLinks(roleRepresentation, relType);
+            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+        });
     }
 
-    private void relationTypeOntology(Representation halResource, RelationType relationType) {
+    private void relationTypeRoles(Representation halResource, RelationType relationType) {
         relationType.hasRoles().forEach(role -> {
-            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId()+getURIParams())
+            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the entities that play that role.
@@ -154,7 +140,7 @@ class HALConceptOntology {
         });
     }
 
-    private void attachTypeResources(Representation halResource, Type conceptType){
+    private void attachTypeResources(Representation halResource, Type conceptType) {
         conceptType.resources().forEach(currentResourceType -> {
             Representation embeddedResource = factory
                     .newRepresentation(resourceLinkPrefix + currentResourceType.getId() + getURIParams())
@@ -167,7 +153,7 @@ class HALConceptOntology {
     private void attachRolesPlayed(Representation halResource, Collection<RoleType> roles) {
         roles.forEach(role -> {
             Representation roleRepresentation = factory
-                    .newRepresentation(resourceLinkPrefix + role.getId()+getURIParams())
+                    .newRepresentation(resourceLinkPrefix + role.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the relations they play in.

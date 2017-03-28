@@ -209,7 +209,7 @@ export default class HALParser {
   // Load instance resouces if the node is not already in the graph
     if (nodeObj[API.KEY_BASE_TYPE] === API.ENTITY || nodeObj[API.KEY_BASE_TYPE] === API.RELATION || nodeObj[API.KEY_BASE_TYPE] === API.RULE) {
       if (!visualiser.nodeExists(nodeObj[API.KEY_ID])) {
-        this.instances.push({ id: nodeObj[API.KEY_ID], href: nodeObj[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF] });
+        this.instances.push({ id: nodeObj[API.KEY_ID], href: nodeObj[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF] });
       }
     }
     this.newResource(HALParser.getHref(nodeObj),

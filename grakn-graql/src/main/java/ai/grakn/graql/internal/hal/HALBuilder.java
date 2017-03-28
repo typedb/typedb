@@ -20,8 +20,6 @@ package ai.grakn.graql.internal.hal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
@@ -31,7 +29,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import mjson.Json;
@@ -53,29 +50,20 @@ import java.util.stream.Collectors;
  *
  * @author Marco Scoppetta
  */
-public class HALConceptRepresentationBuilder {
+public class HALBuilder {
 
-    private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);
+    private final static Logger LOG = LoggerFactory.getLogger(HALBuilder.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
     private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;&limit=%s";
     private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
-
-    // - State properties
-
-    private final static String ID_PROPERTY = "_id";
-    private final static String TYPE_PROPERTY = "_type";
-    private final static String BASETYPE_PROPERTY = "_baseType";
-    private final static String VALUE_PROPERTY = "_value";
-    private final static String NAME_PROPERTY = "_name";
 
 
     public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Map<VarName, Concept>> graqlResultsList, String keyspace, int offset, int limit) {
 
         //Stores connections between variables in Graql result [varName:List<VarAdmin> (only VarAdmins that contain a relation)]
         Map<VarName, Collection<VarAdmin>> linkedNodes =  computeLinkedNodesFromQuery(matchQuery);
-        //For each VarAdmin(hashCode) containing a relation we store a map containing varnames associated to roletypes
+        //For each VarAdmin containing a relation we store a map containing varnames associated to roletypes
         Map<String,Map<VarName, String>> roleTypes = computeRoleTypesFromQuery(matchQuery);
-
 
         //Collect all the types explicitly asked in the match query
         Set<TypeName> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
@@ -88,8 +76,16 @@ public class HALConceptRepresentationBuilder {
         return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset,limit).render();
     }
 
-    public static String renderHALConceptOntology(Concept concept, String keyspace, int offset, int limit) {
-        return new HALConceptOntology(concept, keyspace, offset, limit).render();
+    public static String HALExploreConcept(Concept concept, String keyspace, int offset, int limit) {
+        String renderedHAL = null;
+
+        if(concept.isInstance())
+            renderedHAL = new HALExploreInstance(concept, keyspace, offset, limit).render();
+
+        if (concept.isType())
+            renderedHAL = new HALExploreType(concept, keyspace, offset, limit).render();
+
+        return renderedHAL;
     }
 
     private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
@@ -198,57 +194,5 @@ public class HALConceptRepresentationBuilder {
             }
         });
         return roleTypes;
-    }
-
-    static Schema.BaseType getBaseType(Instance instance) {
-        if (instance.isEntity()) {
-            return Schema.BaseType.ENTITY;
-        } else if (instance.isRelation()) {
-            return Schema.BaseType.RELATION;
-        } else if (instance.isResource()) {
-            return Schema.BaseType.RESOURCE;
-        } else if (instance.isRule()) {
-            return Schema.BaseType.RULE;
-        } else {
-            throw new RuntimeException("Unrecognized base type of " + instance);
-        }
-    }
-
-    static Schema.BaseType getBaseType(Type type) {
-        if (type.isEntityType()) {
-            return Schema.BaseType.ENTITY_TYPE;
-        } else if (type.isRelationType()) {
-            return Schema.BaseType.RELATION_TYPE;
-        } else if (type.isResourceType()) {
-            return Schema.BaseType.RESOURCE_TYPE;
-        } else if (type.isRuleType()) {
-            return Schema.BaseType.RULE_TYPE;
-        } else if (type.isRoleType()) {
-            return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
-            return Schema.BaseType.TYPE;
-        } else {
-            throw new RuntimeException("Unrecognized base type of " + type);
-        }
-    }
-
-    static void generateConceptState(Representation resource, Concept concept){
-
-        resource.withProperty(ID_PROPERTY, concept.getId().getValue());
-
-        if (concept.isInstance()) {
-            Instance instance = concept.asInstance();
-            resource.withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
-                    .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
-        } else {
-            resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
-        }
-
-        if (concept.isResource()) {
-            resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
-        }
-        if(concept.isType()){
-            resource.withProperty(NAME_PROPERTY, concept.asType().getName().getValue());
-        }
     }
 }

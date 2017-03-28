@@ -76,7 +76,7 @@ export default class CanvasHandler {
     const nodeObj = visualiser.getNode(node);
 
     if (eventKeys.shiftKey) {
-      this.requestOntology(nodeObj);
+      this.requestExplore(nodeObj);
     } else {
       let generatedNode = false;
       // If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
@@ -116,12 +116,11 @@ export default class CanvasHandler {
   blurNode() {
     this.state.eventHub.$emit('blur-node');
   }
-  requestOntology(nodeObj) {
-      // If alt key is pressed we load ontology related to the current node
-    if (nodeObj.ontology) {
+  requestExplore(nodeObj) {
+    if (nodeObj.explore) {
       EngineClient.request({
-        url: nodeObj.ontology,
-      }).then(resp => this.onGraphResponseOntology(resp, nodeObj.id), (err) => {
+        url: nodeObj.explore,
+      }).then(resp => this.onGraphResponseExplore(resp, nodeObj.id), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
     }
@@ -147,7 +146,7 @@ export default class CanvasHandler {
     const nodeObj = visualiser.getNode(node);
 
     if (eventKeys.shiftKey) {
-      this.requestOntology(nodeObj);
+      this.requestExplore(nodeObj);
     } else {
           // Show node properties on node panel.
       const ontologyProps = {
@@ -259,7 +258,7 @@ export default class CanvasHandler {
     visualiser.fitGraphToWindow();
   }
 
-  onGraphResponseOntology(resp, nodeId) {
+  onGraphResponseExplore(resp, nodeId) {
     if (!this.halParser.parseResponse(JSON.parse(resp), true, true, nodeId)) {
       this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
     }

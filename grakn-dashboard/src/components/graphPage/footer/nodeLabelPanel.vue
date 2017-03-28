@@ -21,11 +21,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <transition name="slideInUp">
     <div class="panel-wrapper  z-depth-1-half" v-show="showNodeLabelPanel">
         <div class="modal-header">
-            <h5 class="modal-title">Node label settings &nbsp;<i style="font-size:35px;" class="pe page-header-icon pe-7s-paint-bucket"></i></h5>
-            <div class="sub-title"><p v-if="allNodeProps.length">Select properties to show on nodes of type "{{nodeType}}".
-            </p>
-            <p v-else>There is nothing configurable for nodes of type "{{nodeType}}".</p>
-          </div>
+            <h5 class="modal-title"><div class="inner-title"><span class="bold">{{nodeType}}</span><span>label settings</span></div></h5>
+            <div class="sub-title">
+              <p v-if="!allNodeProps.length">There is nothing configurable for nodes of type "{{nodeType}}".</p>
+            </div>
         </div>
         <div class="panel-body">
             <div class="side-column"></div>
@@ -47,6 +46,16 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <style scoped>
 
+.bold{
+  font-weight: bold;
+  font-size: 105%;
+}
+
+.inner-title{
+  display: flex;
+  flex-flow: column;
+}
+
 .panel-wrapper{
   position: absolute;
   bottom: 100%;
@@ -62,9 +71,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .modal-title{
   margin-bottom:20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   font-weight: 400;
+  margin-top:10px;
 }
 
 .sub-title{
@@ -83,7 +93,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .panel-body{
   display: flex;
   flex-direction: row;
-  margin-bottom: 25px;
+  margin-bottom: 5px;
 }
 
 .side-column{
@@ -98,9 +108,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 .properties-list{
   display: flex;
-  flex:3;
+  flex:4;
   justify-content: center;
-  margin-top:20px;
 }
 .dd-list{
   width: 100%;
@@ -159,7 +168,7 @@ export default {
         const node = visualiser.getNode(nodeId);
 
         this.allNodeProps=allNodePropsParam;
-        
+
         if((node.type != "")) this.allNodeProps.push('type');
 
         this.nodeType=nodeTypeParam;

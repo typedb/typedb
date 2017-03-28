@@ -294,7 +294,7 @@ export default class Visualiser {
         shape: this.style.getNodeShape(bp.baseType),
         size: this.style.getNodeSize(bp.baseType),
         selected: false,
-        ontology: bp.ontology,
+        explore: bp.explore,
         properties: ap,
         links: ls,
       });
