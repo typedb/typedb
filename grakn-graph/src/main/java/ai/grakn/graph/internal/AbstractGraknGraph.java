@@ -1078,12 +1078,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //This is so we can copy them uniquely later
                 otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
 
-                //Cope the actual relation
+                //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
-                otherResource.delete();
+                otherResource.deleteNode(); //Delete the node directly so we don't accidentally delete copied relations
             }
 
             return true;
