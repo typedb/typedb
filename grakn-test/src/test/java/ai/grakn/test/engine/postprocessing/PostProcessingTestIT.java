@@ -70,7 +70,6 @@ public class PostProcessingTestIT {
     public void takeDown() throws InterruptedException {
         cache.getCastingJobs(graph.getKeyspace()).clear();
         cache.getResourceJobs(graph.getKeyspace()).clear();
-
         graph.close();
     }
 
@@ -79,7 +78,7 @@ public class PostProcessingTestIT {
         assumeFalse(usingTinker());
 
         int transactionSize = 50;
-        int numAttempts = 500;
+        int numAttempts = 200;
 
         //Resource Variables
         int numResTypes = 100;
@@ -124,8 +123,7 @@ public class PostProcessingTestIT {
                     }
 
                     graph.commitOnClose();
-
-                    Thread.sleep((long) Math.floor(Math.random() * 5000));
+                    Thread.sleep((long) Math.floor(Math.random() * 1000));
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
@@ -135,8 +133,6 @@ public class PostProcessingTestIT {
         for (Future future : futures) {
             future.get();
         }
-
-        graph.close();
 
         //Give some time for jobs to go through REST API
         Thread.sleep(5000);

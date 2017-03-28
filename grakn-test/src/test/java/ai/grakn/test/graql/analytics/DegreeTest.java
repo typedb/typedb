@@ -120,6 +120,7 @@ public class DegreeTest {
             list.add(i);
         }
         GraknSparkComputer.clear();
+        graph.close();
         list.parallelStream().forEach(i -> {
             try (GraknGraph graph = factory.getGraph()) {
                 Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
