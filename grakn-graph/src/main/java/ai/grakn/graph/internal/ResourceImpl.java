@@ -31,6 +31,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static ai.grakn.util.Schema.generateResourceIndex;
+
 /**
  * <p>
  *     Represent a literal resource in the graph.
@@ -110,20 +112,10 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             //noinspection unchecked
             setImmutableProperty(property, castValue(value), getProperty(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
 
-            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type(), value.toString()));
+            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getName(), value.toString()));
         } catch (ClassCastException e) {
             throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
         }
-    }
-
-    /**
-     *
-     * @param resourceType it's resource type
-     * @param value The value of the resource
-     * @return A unique id for the resource
-     */
-    public static String generateResourceIndex(ResourceType resourceType, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + resourceType.getName() + "-" + value;
     }
 
     /**
