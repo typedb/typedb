@@ -165,8 +165,8 @@ public class TypePropertyTest {
 
     @Ignore // TODO: Make this pass!
     @Property
-    public void whenATypeWithInstancesIsSetToAbstract_Throw(Type type) {
-        assumeThat(type.instances(), not(empty()));
+    public void whenATypeWithDirectInstancesIsSetToAbstract_Throw(Type type) {
+        assumeThat(directInstances(type), not(empty()));
 
         // TODO: Better define exception
         exception.expect(Exception.class);
