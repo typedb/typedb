@@ -250,6 +250,22 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
+    public void whenClosingAGraphWhichWasJustCommitted_DoNothing(){
+        graknGraph.commit();
+        assertTrue("Graph is still open after commit", graknGraph.isClosed());
+        graknGraph.close();
+        assertTrue("Graph is somehow open after close", graknGraph.isClosed());
+    }
+
+    @Test
+    public void whenCommittingAGraphWhichWasJustCommitted_DoNothing(){
+        graknGraph.commit();
+        assertTrue("Graph is still open after commit", graknGraph.isClosed());
+        graknGraph.commit();
+        assertTrue("Graph is somehow open after 2nd commit", graknGraph.isClosed());
+    }
+
+    @Test
     public void checkComplexSampleOntologyCanLoad() throws GraknValidationException {
         graknGraph.graql().parse("insert\n" +
                 "user-interaction sub relation is-abstract;\n" +

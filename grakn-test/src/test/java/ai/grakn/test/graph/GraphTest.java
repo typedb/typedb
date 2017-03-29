@@ -20,7 +20,6 @@ import java.util.concurrent.Future;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.ErrorMessage.TRANSACTIONS_OPEN;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -38,8 +37,6 @@ public class GraphTest {
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
         graph.commit();
-        assertFalse(graph.isClosed());
-        graph.close();
         assertTrue(graph.isClosed());
 
         HashSet<Future> futures = new HashSet<>();

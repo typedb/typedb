@@ -797,6 +797,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void close() throws GraknValidationException {
+        if(isClosed()) return;
+
         try{
             if(isCommitRequired()) {
                 commit(this::submitCommitLogs);
