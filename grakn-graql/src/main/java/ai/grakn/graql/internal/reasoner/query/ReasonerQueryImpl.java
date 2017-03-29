@@ -19,7 +19,6 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
@@ -36,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -183,10 +183,20 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (!subbedAtoms.isEmpty()) return subbedAtoms.iterator().next();
 
         //order resources by number of value predicates in descdending order
-        return atoms.stream()
+        List<Resource> resources = atoms.stream()
                 .filter(Atom::isResource).map(at -> (Resource) at)
                 .sorted(Comparator.comparing(r -> -r.getMultiPredicate().size()))
-                .findFirst().orElse(null);
+                .collect(Collectors.toList());
+        if (!resources.isEmpty()) return resources.iterator().next();
+
+        Set<Atom> relations = atoms.stream()
+                .filter(Atom::isRelation)
+                .filter(at -> !at.isRuleResolvable())
+                .collect(Collectors.toSet());
+
+        if (!relations.isEmpty()) return relations.iterator().next();
+
+        return selectAtoms().stream().findFirst().orElse(null);
 
     }
 
@@ -583,10 +593,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
         //TODO temporary switch
-        if (materialise || getTopAtom() == null)
+        if (materialise || getTopAtom() == null) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
-        else
+        } else {
             return resolve();
+        }
     }
 
     /**
