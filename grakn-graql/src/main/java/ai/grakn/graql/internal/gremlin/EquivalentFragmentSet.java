@@ -56,7 +56,7 @@ public class EquivalentFragmentSet implements Iterable<Fragment> {
     /**
      * @return a set of fragments that this EquivalentFragmentSet contains
      */
-    public Set<Fragment> fragments() {
+    Set<Fragment> fragments() {
         return fragments;
     }
 
