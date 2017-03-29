@@ -96,7 +96,7 @@ class ConceptFixer {
                 return; //If it can get here. All post processing has succeeded.
 
             } catch (Throwable t) { //These exceptions need to become more specialised
-                LOG.warn(ErrorMessage.POSTPROCESSING_ERROR.getMessage(jobId, t.getMessage()), t);
+                LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage(jobId, t.getMessage()), t);
             }
 
             //Fixing the job has failed after several attempts
