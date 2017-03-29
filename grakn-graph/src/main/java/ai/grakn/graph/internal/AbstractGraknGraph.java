@@ -124,7 +124,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         localIsOpen.set(true);
 
-        if(initialiseMetaConcepts()) commitTransaction();
+        if(initialiseMetaConcepts()) commitTransactionInternal();
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         localShowImplicitStructures.set(false);
@@ -168,7 +168,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getBooleanFromLocalThread(localShowImplicitStructures);
     }
 
-    private boolean getCommitRequired(){
+    boolean isCommitRequired(){
         return getBooleanFromLocalThread(localCommitRequired);
     }
 
@@ -798,8 +798,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void close() throws GraknValidationException {
         try{
-            if(getCommitRequired()) {
-                commit();
+            if(isCommitRequired()) {
+                commit(this::submitCommitLogs);
                 getConceptLog().writeToCentralCache(true);
             } else {
                 getConceptLog().writeToCentralCache(false);
@@ -831,14 +831,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     public void commitOnClose(){
         localCommitRequired.set(true);
-    }
-
-    /**
-     * Commits the graph
-     * @throws GraknValidationException when the graph does not conform to the object concept
-     */
-    public void commit() throws GraknValidationException {
-        commit(this::submitCommitLogs);
     }
 
     /**
@@ -878,7 +870,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
 
         LOG.trace("Graph is valid. Committing graph . . . ");
-        commitTransaction();
+        commitTransactionInternal();
 
         //TODO: Kill when analytics no longer needs this
         GraknSparkComputer.refresh();
@@ -891,7 +883,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    protected void commitTransaction(){
+    void commitTransactionInternal(){
         try {
             getTinkerPopGraph().tx().commit();
         } catch (UnsupportedOperationException e){
