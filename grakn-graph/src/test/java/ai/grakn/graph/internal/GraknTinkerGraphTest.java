@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTransaction;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
@@ -59,7 +60,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         assertEquals(101, graknGraph.admin().getMetaEntityType().subTypes().size());
     }
     private void addRandomEntityType(){
-        try(GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open()){
+        try(GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE)){
             graph.putEntityType(UUID.randomUUID().toString());
         }
     }
@@ -70,14 +71,14 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         assertNotNull(graknGraph.getEntityType("entity type"));
         graknGraph.clear();
         assertTrue(graknGraph.isClosed());
-        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE);
         assertNull(graknGraph.getEntityType("entity type"));
         assertNotNull(graknGraph.getMetaEntityType());
     }
 
     @Test
     public void whenMutatingClosedGraph_Throw() throws GraknValidationException {
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").open();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, "new graph").open(GraknTransaction.WRITE);
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);

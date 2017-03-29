@@ -22,6 +22,7 @@ package ai.grakn.generator;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -110,9 +111,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         closeGraph(lastGeneratedGraph);
 
         // Clear graph before retrieving
-        graph = factory.open();
+        graph = factory.open(GraknTransaction.WRITE);
         graph.clear();
-        graph = factory.open();
+        graph = factory.open(GraknTransaction.WRITE);
 
         for (int i = 0; i < size; i++) {
             mutateOnce();

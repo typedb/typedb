@@ -20,6 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTransaction;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
@@ -48,8 +49,8 @@ public class GraphFactoryControllerTest {
 
 	@Test
 	public void testKeyspaceList() throws GraknValidationException {
-		Grakn.factory(Grakn.DEFAULT_URI, "grakntest1").open().close();
-        Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").open().close();
+		Grakn.factory(Grakn.DEFAULT_URI, "grakntest1").open(GraknTransaction.WRITE).close();
+        Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").open(GraknTransaction.WRITE).close();
         Response response = get(KEYSPACE_LIST).then().statusCode(200).extract().response();
         Json result = Json.read(response.body().asString());
         Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest")));
@@ -84,8 +85,8 @@ public class GraphFactoryControllerTest {
 
     @Test
     public void testGrakn() throws GraknValidationException {
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").open();
-        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").open();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").open(GraknTransaction.WRITE);
+        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").open(GraknTransaction.WRITE);
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchLoadingEnabled());
         assertNotEquals(graph, graph2);
@@ -104,7 +105,7 @@ public class GraphFactoryControllerTest {
     public void testGraphSingleton(){
         assumeTrue(usingTinker());
         String keyspace = "grakntest";
-        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
+        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransaction.WRITE);
         AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
 
         assertNotEquals(graphNormal, graphBatch);

@@ -2,6 +2,7 @@ package ai.grakn.test.engine.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTransaction;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.test.EngineContext;
 import org.junit.ClassRule;
@@ -19,7 +20,7 @@ public class EngineGraknSessionTest {
     public void testDifferentFactoriesReturnTheSameGraph(){
         String keyspace = "mykeyspace";
 
-        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
+        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransaction.WRITE);
         graph1.close();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 

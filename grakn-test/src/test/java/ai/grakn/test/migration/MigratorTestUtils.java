@@ -20,6 +20,7 @@ package ai.grakn.test.migration;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -60,7 +61,7 @@ public class MigratorTestUtils {
     }
 
     public static void load(GraknSession factory, File ontology) {
-        try(GraknGraph graph = factory.open()) {
+        try(GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
             graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();

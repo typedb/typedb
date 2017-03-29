@@ -32,15 +32,15 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.factory(Grakn.IN_MEMORY, "test").open(), instanceOf(GraknTinkerGraph.class));
+        assertThat(Grakn.factory(Grakn.IN_MEMORY, "test").open(GraknTransaction.WRITE), instanceOf(GraknTinkerGraph.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        GraknGraph test1 = Grakn.factory(Grakn.IN_MEMORY, "test1").open();
+        GraknGraph test1 = Grakn.factory(Grakn.IN_MEMORY, "test1").open(GraknTransaction.WRITE);
         test1.close();
-        GraknGraph test11 = Grakn.factory(Grakn.IN_MEMORY, "test1").open();
-        GraknGraph test2 = Grakn.factory(Grakn.IN_MEMORY, "test2").open();
+        GraknGraph test11 = Grakn.factory(Grakn.IN_MEMORY, "test1").open(GraknTransaction.WRITE);
+        GraknGraph test2 = Grakn.factory(Grakn.IN_MEMORY, "test2").open(GraknTransaction.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -48,9 +48,9 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "default").open();
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "default").open(GraknTransaction.WRITE);
         graph.clear();
-        graph =  Grakn.factory(Grakn.IN_MEMORY, "default").open();
+        graph =  Grakn.factory(Grakn.IN_MEMORY, "default").open(GraknTransaction.WRITE);
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
@@ -63,7 +63,7 @@ public class GraknTest {
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).open();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).open(GraknTransaction.WRITE);
         AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
 
         assertNotEquals(graph, batchGraph);

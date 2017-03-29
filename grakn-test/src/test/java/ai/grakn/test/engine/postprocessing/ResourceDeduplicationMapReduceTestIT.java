@@ -2,6 +2,7 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -49,14 +50,14 @@ public class ResourceDeduplicationMapReduceTestIT {
     static RoleType related1, related2, related3, related4, related5;
     
     static void transact(Consumer<GraknGraph> action) {
-        try (GraknGraph graph = factory.open()) {
+        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
             action.accept(graph);
             graph.commit();
         }
     }
 
     static <T> T transact(Function<GraknGraph, T> action) {
-        try (GraknGraph graph = factory.open()) {
+        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
             T result = action.apply(graph);
             graph.commit();
             return result;
@@ -69,7 +70,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     }
 
     private String keyspace() {
-        try (GraknGraph graph = factory.open()) {
+        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
             return graph.getKeyspace();
         }        
     }
@@ -138,7 +139,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     
     @After
     public void emptyGraph() {
-        GraknGraph graph = factory.open();
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);
         graph.clear();
     }
     

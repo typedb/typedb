@@ -20,6 +20,7 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
@@ -50,7 +51,7 @@ public class CSVMigratorMainTest {
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
         load(factory, getFile("csv", "pets/schema.gql"));
-        graph = factory.open();
+        graph = factory.open(GraknTransaction.WRITE);
     }
 
     @Test
@@ -103,7 +104,7 @@ public class CSVMigratorMainTest {
         load(factory, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
         run("csv", "-config", configurationFile, "-keyspace", graph.getKeyspace());
-        graph = factory.open();
+        graph = factory.open(GraknTransaction.WRITE);
         assertPokemonGraphCorrect(graph);
     }
 
@@ -144,7 +145,7 @@ public class CSVMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        if(graph.isClosed()) graph = factory.open(); //Make sure the graph is open
+        if(graph.isClosed()) graph = factory.open(GraknTransaction.WRITE); //Make sure the graph is open
         assertPetGraphCorrect(graph);
     }
 }

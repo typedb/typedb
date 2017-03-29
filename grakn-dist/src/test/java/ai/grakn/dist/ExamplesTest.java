@@ -20,7 +20,7 @@ package ai.grakn.dist;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        graph = Grakn.factory("in-memory", "my-pokemon-graph").open();
+        graph = Grakn.factory("in-memory", "my-pokemon-graph").open(GraknTransaction.WRITE);
     }
 
     @After

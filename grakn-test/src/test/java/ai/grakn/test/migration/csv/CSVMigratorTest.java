@@ -21,6 +21,7 @@ package ai.grakn.test.migration.csv;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
@@ -54,7 +55,7 @@ public class CSVMigratorTest {
     @Before
     public void setup() {
         factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.open();
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);
         migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
         graph.close();
     }
@@ -85,7 +86,7 @@ public class CSVMigratorTest {
         declareAndLoad(pokemonTypeTemplate,  "multi-file/data/types.csv");
         declareAndLoad(edgeTemplate,  "multi-file/data/edges.csv");
 
-        GraknGraph graph = factory.open();//Re Open Transaction
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);//Re Open Transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -96,7 +97,7 @@ public class CSVMigratorTest {
 
         declareAndLoad(template,  "pets/data/pets.quotes");
 
-        GraknGraph graph = factory.open();//Re Open Transaction
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);//Re Open Transaction
         assertPetGraphCorrect(graph);
     }
 
@@ -109,7 +110,7 @@ public class CSVMigratorTest {
             migrator.load(template, m.setNullString("").convert());
         }
 
-        GraknGraph graph = factory.open();//Re Open Transaction
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);//Re Open Transaction
 
         Collection<Entity> pets = graph.getEntityType("pet").instances();
         assertEquals(1, pets.size());
@@ -132,7 +133,7 @@ public class CSVMigratorTest {
         String template = "if (<name> != \"Puffball\") do { insert $x isa pet; }";
         declareAndLoad(template, "pets/data/pets.quotes");
 
-        GraknGraph graph = factory.open();//Re Open Transaction
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);//Re Open Transaction
         assertEquals(1, graph.getEntityType("pet").instances().size());
     }
 
@@ -141,7 +142,7 @@ public class CSVMigratorTest {
     public void multipleEntitiesInOneFileTest() throws IOException {
         load(factory, getFile("csv", "single-file/schema.gql"));
 
-        GraknGraph graph = factory.open();//Re Open Transaction
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);//Re Open Transaction
         assertNotNull(graph.getEntityType("make"));
 
         String template = getFileAsString("csv", "single-file/template.gql");

@@ -21,6 +21,7 @@ package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.analytics.CountQuery;
 import com.google.common.collect.ImmutableList;
@@ -48,7 +49,7 @@ public class GraqlSessionTest {
         QueryBuilder qb = mock(QueryBuilder.class);
         CountQuery count = mock(CountQuery.class);
 
-        when(factory.open()).thenReturn(graph);
+        when(factory.open(GraknTransaction.WRITE)).thenReturn(graph);
         when(graph.graql()).thenReturn(qb);
         when(qb.infer(false)).thenReturn(qb);
         when(qb.materialise(false)).thenReturn(qb);

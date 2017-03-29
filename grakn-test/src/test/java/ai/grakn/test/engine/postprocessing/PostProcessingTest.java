@@ -19,9 +19,9 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.Grakn;
-
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -40,12 +40,17 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
-import static ai.grakn.test.GraknTestEnv.*;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.*;
 
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
@@ -63,7 +68,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        graph = engine.factoryWithNewKeyspace().open();
+        graph = engine.factoryWithNewKeyspace().open(GraknTransaction.WRITE);
     }
 
     @After
@@ -103,7 +108,7 @@ public class PostProcessingTest {
         ConceptId otherInstanceId4 = instance4.getId();
 
         graph.commit();
-        graph = factory.open();
+        graph = factory.open(GraknTransaction.WRITE);
 
         //Check Number of castings is as expected
         Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
@@ -174,13 +179,13 @@ public class PostProcessingTest {
 
         //Create Graph With Duplicate Resources
         GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
-        GraknGraph graph = factory.open();
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 
 
         Resource<String> resource = resourceType.putResource(value);
         graph.commit();
-        graph = factory.open();
+        graph = factory.open(GraknTransaction.WRITE);
 
         assertEquals(1, resourceType.instances().size());
         waitForCache(false, keyspace, 1);

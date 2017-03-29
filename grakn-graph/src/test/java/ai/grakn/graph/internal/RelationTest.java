@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -192,7 +193,7 @@ public class RelationTest extends GraphTestBase{
 
         relationType.addRelation();
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE);
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
 
@@ -208,7 +209,7 @@ public class RelationTest extends GraphTestBase{
         relation.putRolePlayer(roleType2, null);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE);
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
         assertEquals(getFakeId(relation.type(), roleMap), relation.getIndex());

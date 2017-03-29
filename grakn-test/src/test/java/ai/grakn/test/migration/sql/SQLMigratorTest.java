@@ -21,6 +21,7 @@ package ai.grakn.test.migration.sql;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.Resource;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.sql.SQLMigrator;
@@ -56,7 +57,7 @@ public class SQLMigratorTest {
     @Before
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.open();
+        GraknGraph graph = factory.open(GraknTransaction.WRITE);
         graph.close();
         migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
     }
@@ -69,7 +70,7 @@ public class SQLMigratorTest {
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open();
+            GraknGraph graph = factory.open(GraknTransaction.WRITE);
             assertPetGraphCorrect(graph);
         }
     }
@@ -104,7 +105,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open();
+            GraknGraph graph = factory.open(GraknTransaction.WRITE);
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -142,7 +143,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open();
+            GraknGraph graph = factory.open(GraknTransaction.WRITE);
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -155,7 +156,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.open();
+            GraknGraph graph = factory.open(GraknTransaction.WRITE);
             Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));

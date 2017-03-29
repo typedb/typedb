@@ -17,21 +17,11 @@
  */
 package ai.grakn.engine.postprocessing;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -39,6 +29,17 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.exception.GraknLockingException;
 import ai.grakn.util.Schema;
 import mjson.Json;
+import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -63,7 +64,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     
     static <T> T transact(GraknSession factory, Function<GraknGraph, T> work, String description) {
         while (true) {
-            try (GraknGraph graph = factory.open()) {
+            try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
                 return work.apply(graph);
             }
             catch (GraknLockingException ex) {
@@ -170,7 +171,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
                 // TODO: what if we fail here due to some read-write conflict?
-                try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open()) {
+                try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransaction.WRITE)) {
                     Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();

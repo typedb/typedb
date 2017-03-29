@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.shell;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknTransaction;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.GraqlShell;
 import ai.grakn.test.EngineContext;
@@ -98,7 +99,7 @@ public class GraqlShellIT {
     @After
     public void tearDown() throws GraknValidationException {
         for (String keyspace : keyspaces){
-            Grakn.factory(Grakn.DEFAULT_URI, keyspace).open().clear();
+            Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransaction.WRITE).clear();
         }
     }
 
