@@ -25,16 +25,8 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 import java.util.Optional;
-
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsaCastings;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsaCastings;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 
 public class EquivalentFragmentSets {
 
@@ -42,10 +34,7 @@ public class EquivalentFragmentSets {
      * An {@link EquivalentFragmentSet} that indicates two castings are unique
      */
     public static EquivalentFragmentSet distinctCasting(VarName castingA, VarName castingB) {
-        return EquivalentFragmentSet.create(
-                Fragments.distinctCasting(castingA, castingB),
-                Fragments.distinctCasting(castingB, castingA)
-        );
+        return new DistinctCastingFragmentSet(castingA, castingB);
     }
 
     /**
@@ -55,33 +44,28 @@ public class EquivalentFragmentSets {
      * @param required whether the plays-role must be constrained to be "required"
      */
     public static EquivalentFragmentSet playsRole(VarName type, VarName roleType, boolean required) {
-        return EquivalentFragmentSet.create(
-                Fragments.outPlaysRole(type, roleType, required),
-                Fragments.inPlaysRole(roleType, type, required)
-        );
+        return new PlaysRoleFragmentSet(type, roleType, required);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation with a casting.
      */
     public static EquivalentFragmentSet casting(VarName relation, VarName casting) {
-        return EquivalentFragmentSet.create(outCasting(relation, casting), inCasting(casting, relation));
+        return new CastingFragmentSet(relation, casting);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a casting connected to a role-player.
      */
     public static EquivalentFragmentSet rolePlayer(VarName casting, VarName rolePlayer) {
-        return EquivalentFragmentSet.create(outRolePlayer(casting, rolePlayer), inRolePlayer(rolePlayer, casting));
+        return new RolePlayerFragmentSet(casting, rolePlayer);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a role-type.
      */
     public static EquivalentFragmentSet isaCastings(VarName casting, VarName roleType) {
-        return EquivalentFragmentSet.create(
-                outIsaCastings(casting, roleType), inIsaCastings(roleType, casting)
-        );
+        return new IsaCastingsFragmentSet(casting, roleType);
     }
 
     /**
@@ -94,106 +78,91 @@ public class EquivalentFragmentSets {
      */
     public static EquivalentFragmentSet shortcut(
             Optional<TypeName> roleTypeA, VarName rolePlayerA,
-            Optional<TypeName> roleTypeB,VarName rolePlayerB, Optional<TypeName> relationType) {
-        return EquivalentFragmentSet.create(
-                Fragments.shortcut(relationType, roleTypeA, roleTypeB, rolePlayerA, rolePlayerB),
-                Fragments.shortcut(relationType, roleTypeB, roleTypeA, rolePlayerB, rolePlayerA)
-        );
+            Optional<TypeName> roleTypeB, VarName rolePlayerB, Optional<TypeName> relationType) {
+        return new ShortcutFragmentSet(roleTypeA, rolePlayerA, roleTypeB, rolePlayerB, relationType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
      */
     public static EquivalentFragmentSet sub(VarName subType, VarName superType) {
-        return EquivalentFragmentSet.create(
-                Fragments.outSub(subType, superType),
-                Fragments.inSub(superType, subType)
-        );
+        return new SubFragmentSet(subType, superType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation with a scope.
      */
     public static EquivalentFragmentSet hasScope(VarName relation, VarName scope) {
-        return EquivalentFragmentSet.create(
-                Fragments.outHasScope(relation, scope),
-                Fragments.inHasScope(scope, relation)
-        );
+        return new HasScopeFragmentSet(relation, scope);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.
      */
     public static EquivalentFragmentSet hasRole(VarName relationType, VarName roleType) {
-        return EquivalentFragmentSet.create(
-                Fragments.outHasRole(relationType, roleType),
-                Fragments.inHasRole(roleType, relationType)
-        );
+        return new HasRoleFragmentSet(relationType, roleType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is not a casting.
      */
     public static EquivalentFragmentSet notCasting(VarName start) {
-        return EquivalentFragmentSet.create(Fragments.notCasting(start));
+        return new NotCastingFragmentSet(start);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is an instance of a type.
      */
     public static EquivalentFragmentSet isa(VarName instance, VarName type) {
-        return EquivalentFragmentSet.create(
-                Fragments.outIsa(instance, type),
-                Fragments.inIsa(type, instance)
-        );
+        return new IsaFragmentSet(instance, type);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is not equal to another variable.
      */
     public static EquivalentFragmentSet neq(VarName varA, VarName varB) {
-        return EquivalentFragmentSet.create(Fragments.neq(varA, varB), Fragments.neq(varB, varA));
+        return new NeqFragmentSet(varA, varB);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents a resource with value matching a predicate.
      */
     public static EquivalentFragmentSet value(VarName resource, ValuePredicateAdmin predicate) {
-        return EquivalentFragmentSet.create(Fragments.value(resource, predicate));
+        return new ValueFragmentSet(resource, predicate);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a concept with a particular ID.
      */
     public static EquivalentFragmentSet id(VarName start, ConceptId id) {
-        return EquivalentFragmentSet.create(Fragments.id(start, id));
+        return new IdFragmentSet(start, id);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable represents an abstract type.
      */
     public static EquivalentFragmentSet isAbstract(VarName start) {
-        return EquivalentFragmentSet.create(Fragments.isAbstract(start));
+        return new IsAbstractFragmentSet(start);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular name.
      */
     public static EquivalentFragmentSet name(VarName type, TypeName name) {
-        return EquivalentFragmentSet.create(Fragments.name(type, name));
+        return new NameFragmentSet(type, name);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a resource type with a data-type.
      */
     public static EquivalentFragmentSet dataType(VarName resourceType, ResourceType.DataType<?> dataType) {
-        return EquivalentFragmentSet.create(Fragments.dataType(resourceType, dataType));
+        return new DataTypeFragmentSet(resourceType, dataType);
     }
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a resource type whose instances must conform to a given regex.
      */
     public static EquivalentFragmentSet regex(VarName resourceType, String regex) {
-        return EquivalentFragmentSet.create(Fragments.regex(resourceType, regex));
+        return new RegexFragmentSet(resourceType, regex);
     }
 }
