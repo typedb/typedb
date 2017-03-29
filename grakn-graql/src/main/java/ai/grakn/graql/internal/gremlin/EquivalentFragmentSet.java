@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -33,7 +34,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class EquivalentFragmentSet {
+public class EquivalentFragmentSet implements Iterable<Fragment> {
 
     private final ImmutableSet<Fragment> fragments;
 
@@ -80,5 +81,10 @@ public class EquivalentFragmentSet {
     @Override
     public int hashCode() {
         return fragments != null ? fragments.hashCode() : 0;
+    }
+
+    @Override
+    public Iterator<Fragment> iterator() {
+        return fragments.iterator();
     }
 }
