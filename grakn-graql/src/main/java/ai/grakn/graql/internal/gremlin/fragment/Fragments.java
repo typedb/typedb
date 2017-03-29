@@ -153,6 +153,10 @@ public class Fragments {
         return new NeqFragment(start, other);
     }
 
+    public static Fragment resourceIndex(VarName start, TypeName typeName, Object resourceValue) {
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
         return traversal.union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold();

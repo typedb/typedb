@@ -19,96 +19,90 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.common.collect.Sets;
+import org.hamcrest.FeatureMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
-import java.util.Collection;
+import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.gt;
+import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.ConceptProperty.INDEX;
-import static ai.grakn.util.Schema.generateResourceIndex;
-import static org.hamcrest.Matchers.hasSize;
+import static ai.grakn.graql.internal.pattern.Patterns.conjunction;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 public class ConjunctionQueryTest {
-    TypeName resourceTypeWithoutSubTypes = TypeName.of("name");
-    TypeName resourceTypeWithSubTypes = TypeName.of("resource");
-    String literalValue = "Bob";
-    VarAdmin literalVar = var().value(literalValue).admin();
-    VarAdmin comparatorVar = var().value(gt(literalValue)).admin();
+    private TypeName resourceTypeName = TypeName.of("name");
+    private Var resourceTypeWithoutSubTypes = name(resourceTypeName);
+    private Var resourceTypeWithSubTypes = name(TypeName.of("resource"));
+    private String literalValue = "Bob";
 
     @Test
-    public void whenPropertyRefersToATypeWithoutSubTypesAndALiteralValue_UseResourceIndex() {
-        HasResourceProperty hasResource = HasResourceProperty.of(resourceTypeWithoutSubTypes, literalVar);
-
-        Collection<EquivalentFragmentSet> fragmentSets = hasResource.match(VarName.of("x"));
-
-        assertThat(fragmentSets, hasSize(1));
-        EquivalentFragmentSet fragmentSet = fragmentSets.iterator().next();
-
-        assertThat(fragmentSet.fragments(), hasSize(1));
-        Fragment fragment = fragmentSet.fragments().iterator().next();
-
-        //noinspection unchecked
-        GraphTraversal<Vertex, Vertex> traversal = mock(GraphTraversal.class);
-
-        fragment.applyTraversal(traversal);
-
-        verify(traversal).has(INDEX.name(), generateResourceIndex(resourceTypeWithoutSubTypes, literalValue));
+    public void whenVarRefersToATypeWithoutSubTypesAndALiteralValue_UseResourceIndex() {
+        assertThat(var("x").isa(resourceTypeWithoutSubTypes).value(literalValue), usesResourceIndex());
     }
 
     @Test
-    public void whenPropertyRefersToATypeWithSubtypes_DoNotUseResourceIndex() {
-        HasResourceProperty hasResource = HasResourceProperty.of(resourceTypeWithSubTypes, literalVar);
-
-        Collection<EquivalentFragmentSet> fragmentSets = hasResource.match(VarName.of("x"));
-
-        assertThat(fragmentSets, hasSize(1));
-        EquivalentFragmentSet fragmentSet = fragmentSets.iterator().next();
-        assertThat(fragmentSet.fragments(), hasSize(2));
-    }
-
-    @Test
-    public void whenPropertyRefersToAResourceComparator_DoNotUseResourceIndex() {
-        HasResourceProperty hasResource = HasResourceProperty.of(resourceTypeWithoutSubTypes, comparatorVar);
-
-        Collection<EquivalentFragmentSet> fragmentSets = hasResource.match(VarName.of("x"));
-
-        assertThat(fragmentSets, hasSize(1));
-        EquivalentFragmentSet fragmentSet = fragmentSets.iterator().next();
-        assertThat(fragmentSet.fragments(), hasSize(2));
-    }
-
-    @Test
-    public void whenPropertyRefersToAResourceVariable_DoNotUseResourceIndex() {
-        HasResourceProperty hasResource = HasResourceProperty.of(
-                resourceTypeWithoutSubTypes, var("y").value(literalValue).admin()
+    public void whenVarCanUseResourceIndexAndHasOtherProperties_UseResourceIndex() {
+        assertThat(
+                var("x").isa(resourceTypeWithoutSubTypes).value(literalValue).id(ConceptId.of("123")),
+                usesResourceIndex()
         );
-
-        Collection<EquivalentFragmentSet> fragmentSets = hasResource.match(VarName.of("x"));
-
-        assertThat(fragmentSets, hasSize(1));
-        EquivalentFragmentSet fragmentSet = fragmentSets.iterator().next();
-        assertThat(fragmentSet.fragments(), hasSize(2));
     }
 
     @Test
-    public void whenPropertyDoesNotHaveAResourceType_DoNotUseResourceIndex() {
-        HasResourceProperty hasResource = HasResourceProperty.of(literalVar);
+    public void whenVarRefersToATypeWithSubtypes_DoNotUseResourceIndex() {
+        assertThat(var("x").isa(resourceTypeWithSubTypes).value(literalValue), not(usesResourceIndex()));
+    }
 
-        Collection<EquivalentFragmentSet> fragmentSets = hasResource.match(VarName.of("x"));
+    @Test
+    public void whenVarHasAValueComparator_DoNotUseResourceIndex() {
+        assertThat(var("x").isa(resourceTypeWithoutSubTypes).value(gt(literalValue)), not(usesResourceIndex()));
+    }
 
-        assertThat(fragmentSets, hasSize(1));
-        EquivalentFragmentSet fragmentSet = fragmentSets.iterator().next();
-        assertThat(fragmentSet.fragments(), hasSize(2));
+    @Test
+    public void whenVarHasMultipleLiteralValues_DoNotUseResourceIndex() {
+        assertThat(
+                var("x").isa(resourceTypeWithoutSubTypes).value(literalValue).value("something else"),
+                not(usesResourceIndex())
+        );
+    }
+
+    @Test
+    public void whenVarDoesNotHaveAType_DoNotUseResourceIndex() {
+        assertThat(var("x").value(literalValue), not(usesResourceIndex()));
+    }
+
+    @Test
+    public void whenVarDoesNotHaveAValue_DoNotUseResourceIndex() {
+        assertThat(var("x").value(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
+    }
+
+    private Matcher<Var> usesResourceIndex() {
+        Fragment resourceIndexFragment = Fragments.resourceIndex(VarName.of("x"), resourceTypeName, literalValue);
+
+        return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", var ->
+                new ConjunctionQuery(conjunction(Sets.newHashSet(var.admin()))).getEquivalentFragmentSets()
+        );
+    }
+
+    private <T, U> Matcher<T> feature(Matcher<? super U> subMatcher, String name, Function<T, U> extractor) {
+        return new FeatureMatcher<T, U>(subMatcher, name, name) {
+
+            @Override
+            protected U featureValueOf(T actual) {
+                return extractor.apply(actual);
+            }
+        };
     }
 }
