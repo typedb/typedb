@@ -101,8 +101,7 @@ public class DegreeTest {
                 .putRolePlayer(role1, graph.getConcept(entity2))
                 .putRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
@@ -209,8 +208,7 @@ public class DegreeTest {
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
         EntityType dog = graph.putEntityType("dog").superType(animal);
         ConceptId foofoo = dog.addEntity().getId();
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         // set subgraph
@@ -273,8 +271,7 @@ public class DegreeTest {
         referenceDegrees.put(cocoName.getId(), 2L);
         referenceDegrees.put(cocoAltName.getId(), 2L);
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         // create a subgraph excluding resources and the relationship
@@ -336,8 +333,7 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 1L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         // compute and persist degrees
@@ -403,8 +399,7 @@ public class DegreeTest {
         referenceDegrees2.put(dave.getId(), 1L);
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         // create a subgraph with assertion on assertion
@@ -464,8 +459,7 @@ public class DegreeTest {
                 .putRolePlayer(characterBeingPlayed, donVitoCorleone);
         ConceptId relationId = relation.getId();
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -503,8 +497,7 @@ public class DegreeTest {
         referenceDegrees.put(dave.getId(), 2L);
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -550,8 +543,7 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsBeast.getId(), 2L);
 
         // validate
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         // check degree for dave owning cats

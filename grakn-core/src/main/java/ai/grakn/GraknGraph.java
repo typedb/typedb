@@ -371,25 +371,19 @@ public interface GraknGraph extends AutoCloseable{
     /**
      * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknSession} to
      * get a new open transaction.
-     *
-     * This will result in a commit if {@link GraknGraph#commitOnClose()} was called before hand. Otherwise the
-     * transaction will be rolled back.
      */
     void close() throws GraknValidationException;
 
     /**
-     * Reverts any changes done to the graph and closes the transaction
+     * Reverts any changes done to the graph and closes the transaction. You must use the {@link GraknSession} to
+     * get a new open transaction.
      */
     void abort();
 
     /**
-     * Commits any changes to the graph and closes the transaction
+     * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
+     * get a new open transaction.
      */
     void commit();
 
-    // TODO: what does this do when the graph is closed?
-    /**
-     * Will cause the current transaction to be committed when closing the transaction.
-     */
-    void commitOnClose();
 }

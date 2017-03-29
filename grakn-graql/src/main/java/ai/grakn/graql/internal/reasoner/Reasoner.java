@@ -55,8 +55,7 @@ public class Reasoner {
 
     public static void commitGraph(GraknGraph graph) {
         try {
-            graph.commitOnClose();
-            graph.close();
+            graph.commit();
         } catch (GraknValidationException e) {
             LOG.error(e.getMessage());
         }

@@ -102,8 +102,7 @@ public class PostProcessingTest {
         ConceptId otherInstanceId3 = instance3.getId();
         ConceptId otherInstanceId4 = instance4.getId();
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         //Check Number of castings is as expected
@@ -180,8 +179,7 @@ public class PostProcessingTest {
 
 
         Resource<String> resource = resourceType.putResource(value);
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         assertEquals(1, resourceType.instances().size());

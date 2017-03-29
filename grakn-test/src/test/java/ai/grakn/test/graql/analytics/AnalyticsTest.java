@@ -84,7 +84,7 @@ public class AnalyticsTest {
             Entity thisThing = thing.addEntity();
             Resource thisResource = degree.putResource(1L);
             thisThing.resource(thisResource);
-            graph.commitOnClose();
+            graph.commit();
         }
 
         try (GraknGraph graph = factory.getGraph()) {
@@ -119,7 +119,7 @@ public class AnalyticsTest {
 
             Entity thisThing = thing.addEntity();
             relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
-            graph.commitOnClose();
+            graph.commit();
         }
 
         // the null role-player caused analytics to fail at some stage
@@ -179,7 +179,7 @@ public class AnalyticsTest {
                     .putRolePlayer(role1, entity2)
                     .putRolePlayer(role2, entity4).getId().getValue();
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

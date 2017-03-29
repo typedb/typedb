@@ -62,8 +62,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(40);
 
         EntityType type = graknGraph.putEntityType("A Type");
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> addEntity(type)));
@@ -79,8 +78,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
     private void addEntity(EntityType type){
         GraknTitanGraph graph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
         type.addEntity();
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
     }
 
     @Test

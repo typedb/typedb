@@ -385,8 +385,7 @@ public class ScalingTestIT {
         thing.resource(id);
         ResourceType<Long> degree = graph.putResourceType("degree", ResourceType.DataType.LONG);
         thing.resource(degree);
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
     }
 
     private Set<String> makeSuperNodes(String keyspace) throws GraknValidationException {
@@ -396,8 +395,7 @@ public class ScalingTestIT {
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
             superNodes.add(thing.addEntity().getId().getValue());
         }
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         return superNodes;
     }
 

@@ -37,7 +37,7 @@ public class GraphTest {
         GraknGraph graph = engine.factoryWithNewKeyspace().getGraph();
         String keyspace = graph.getKeyspace();
         graph.putEntityType("thing");
-        graph.commitOnClose();
+        graph.commit();
         assertFalse(graph.isClosed());
         graph.close();
         assertTrue(graph.isClosed());
@@ -55,8 +55,7 @@ public class GraphTest {
     private void addThingToBatch(String keyspace){
         try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
             graphBatchLoading.getEntityType("thing").addEntity();
-            graphBatchLoading.commitOnClose();
-            graphBatchLoading.close();
+            graphBatchLoading.commit();
         } catch (Exception e){
             throw new RuntimeException(e);
         }

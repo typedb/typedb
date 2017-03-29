@@ -159,7 +159,7 @@ public class GraqlTest {
                     .putRolePlayer(resourceOwner, theResourceOwner)
                     .putRolePlayer(resourceValue, resource.putResource(3L));
 
-            graph.commitOnClose();
+            graph.commit();
         }
 
         try (GraknGraph graph = factory.getGraph()) {
@@ -217,7 +217,7 @@ public class GraqlTest {
     public void testNonResourceTypeAsSubgraphForAnalytics() throws GraknValidationException {
         try (GraknGraph graph = factory.getGraph()) {
             graph.putEntityType(thing);
-            graph.commitOnClose();
+            graph.commit();
         }
 
         try (GraknGraph graph = factory.getGraph()) {
@@ -242,7 +242,7 @@ public class GraqlTest {
         assumeFalse(usingTinker());
         try (GraknGraph graph = factory.getGraph()) {
             graph.putResourceType("number", ResourceType.DataType.LONG);
-            graph.commitOnClose();
+            graph.commit();
         }
 
         Set<String> analyticsCommands = new HashSet<>(Arrays.asList(
@@ -293,7 +293,7 @@ public class GraqlTest {
                     .putRolePlayer(role1, entity2)
                     .putRolePlayer(role2, entity4).getId().getValue();
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

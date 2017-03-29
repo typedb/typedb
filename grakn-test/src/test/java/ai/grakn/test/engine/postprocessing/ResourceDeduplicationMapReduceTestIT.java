@@ -1,22 +1,5 @@
 package ai.grakn.test.engine.postprocessing;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
-import static org.junit.Assume.assumeTrue;
-
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.concept.Entity;
@@ -30,6 +13,22 @@ import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import mjson.Json;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
+import static org.junit.Assume.assumeTrue;
 
 public class ResourceDeduplicationMapReduceTestIT {
 
@@ -51,16 +50,17 @@ public class ResourceDeduplicationMapReduceTestIT {
     
     static void transact(Consumer<GraknGraph> action) {
         try (GraknGraph graph = factory.getGraph()) {
-            graph.commitOnClose();            
             action.accept(graph);
-        }                
+            graph.commit();
+        }
     }
 
     static <T> T transact(Function<GraknGraph, T> action) {
         try (GraknGraph graph = factory.getGraph()) {
-            graph.commitOnClose();            
-            return action.apply(graph);
-        }                
+            T result = action.apply(graph);
+            graph.commit();
+            return result;
+        }
     }
     
     @BeforeClass
@@ -170,7 +170,7 @@ public class ResourceDeduplicationMapReduceTestIT {
             r1.resource(booleanResource.putResource(true));
             r1.resource(floatResource.putResource(56.43f));
             r1.resource(doubleResource.putResource(2342.546));            
-            graph.commitOnClose();
+            graph.commit();
         });
         ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
         task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); }, 

@@ -62,8 +62,7 @@ public class VisualiserControllerTest {
         loadFromFile(graph, "genealogy/ontology.gql");
         loadFromFile(graph, "genealogy/data.gql");
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
     }
 

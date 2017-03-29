@@ -72,8 +72,7 @@ public class CountTest {
         thing.addEntity().getId();
         thing.addEntity().getId();
         anotherThing.addEntity().getId();
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
         graph = factory.getGraph();
 
         // assert computer returns the correct count of instances

@@ -833,13 +833,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     /**
-     * Sets a thread local flag indicating that a commit is required when cloding the graph.
-     */
-    public void commitOnClose(){
-        localCommitRequired.set(true);
-    }
-
-    /**
      * Commits the graph and adds concepts for post processing directly to the cache bypassing the REST API.
      *
      * @param conceptCache The concept Cache to store concepts in for processing later

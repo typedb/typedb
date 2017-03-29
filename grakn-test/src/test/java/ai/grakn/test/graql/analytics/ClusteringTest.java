@@ -156,7 +156,7 @@ public class ClusteringTest {
             Resource aResource = resourceType.putResource("blah");
             graph.getEntityType(thing).instances().forEach(instance -> instance.resource(aResource));
             graph.getEntityType(anotherThing).instances().forEach(instance -> instance.resource(aResource));
-            graph.commitOnClose();
+            graph.commit();
         }
 
         try (GraknGraph graph = factory.getGraph()) {
@@ -352,7 +352,7 @@ public class ClusteringTest {
                     .playsRole(resourceValue6)
                     .playsRole(resourceValue7));
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 
@@ -429,7 +429,7 @@ public class ClusteringTest {
             graph.getResourceType(resourceType5).putResource(10L);
             graph.getResourceType(resourceType6).putResource(0.8);
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

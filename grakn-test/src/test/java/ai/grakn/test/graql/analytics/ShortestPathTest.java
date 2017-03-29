@@ -275,7 +275,7 @@ public class ShortestPathTest {
                 validPaths.add(validPath);
             }
 
-            graph.commitOnClose();
+            graph.commit();
         }
 
         try (GraknGraph graph = factory.getGraph()) {
@@ -338,7 +338,7 @@ public class ShortestPathTest {
                     .putRolePlayer(role1, entity3)
                     .putRolePlayer(role2, entity4).getId();
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 
@@ -376,7 +376,7 @@ public class ShortestPathTest {
                     .putRolePlayer(role3, entity1)
                     .putRolePlayer(role4, graph.getConcept(relationId12)).getId();
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

@@ -246,8 +246,7 @@ class GraqlSession {
     void commit() {
         queryExecutor.execute(() -> {
             try {
-                graph.commitOnClose();
-                graph.close();
+                graph.commit();
             } catch (GraknValidationException e) {
                 sendCommitError(e.getMessage());
             } finally {

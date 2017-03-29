@@ -105,8 +105,7 @@ public class PostProcessingTestIT {
                 graph.getEntityType("ent" + j).resource(rt);
             }
         }
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
 
         //Try to force duplicate resources
         for(int i = 0; i < numAttempts; i++){
@@ -122,8 +121,8 @@ public class PostProcessingTestIT {
                         forceDuplicateResources(graph, resType, resValue, entType, entNum);
                     }
 
-                    graph.commitOnClose();
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
+                    graph.commit();
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
