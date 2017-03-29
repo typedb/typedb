@@ -99,7 +99,7 @@ public class GraknGraphPropertyTest {
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraphRuntimeException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }

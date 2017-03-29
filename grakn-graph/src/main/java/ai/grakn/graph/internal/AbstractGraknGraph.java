@@ -108,7 +108,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
     private Cache<TypeName, Type> cachedOntology = CacheBuilder.newBuilder()
@@ -166,10 +165,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean implicitConceptsVisible(){
         return getBooleanFromLocalThread(localShowImplicitStructures);
-    }
-
-    boolean isCommitRequired(){
-        return getBooleanFromLocalThread(localCommitRequired);
     }
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
@@ -797,29 +792,35 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void close() throws GraknValidationException {
+        close(false);
+    }
+
+    @Override
+    public void abort(){
+        close();
+    }
+
+    @Override
+    public void commit(){
+        close(true);
+    }
+
+    private void close(boolean commitRequired){
         if(isClosed()) return;
 
+        String closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
+
         try{
-            if(isCommitRequired()) {
+            if(commitRequired) {
+                closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
                 commit(this::submitCommitLogs);
                 getConceptLog().writeToCentralCache(true);
             } else {
                 getConceptLog().writeToCentralCache(false);
             }
         } finally {
-            closeTransaction(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
+            closeTransaction(closeMessage);
         }
-    }
-
-    @Override
-    public void abort(){
-        closeTransaction(ErrorMessage.GRAPH_CLOSED_ON_ABORT.getMessage());
-    }
-
-    @Override
-    public void commit(){
-        localCommitRequired.set(true);
-        close();
     }
 
     private void closeTransaction(String closedReason){
@@ -829,7 +830,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Ignored for Tinker
         }
         localClosedReason.set(closedReason);
-        localCommitRequired.remove();
         localIsOpen.remove();
         localConceptLog.remove();
     }

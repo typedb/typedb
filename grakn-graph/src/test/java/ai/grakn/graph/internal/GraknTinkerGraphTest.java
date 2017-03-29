@@ -81,7 +81,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
+        expectedException.expectMessage(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         graph.putEntityType("thing");
     }
