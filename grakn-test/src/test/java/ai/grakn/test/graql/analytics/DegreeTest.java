@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -56,7 +56,7 @@ public class DegreeTest {
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private GraknGraph graph;
 
     @Before

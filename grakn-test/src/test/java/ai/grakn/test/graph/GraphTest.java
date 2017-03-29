@@ -2,7 +2,7 @@ package ai.grakn.test.graph;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.factory.EngineGraknGraphFactory;
@@ -75,7 +75,7 @@ public class GraphTest {
 
     @Test
     public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
-        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        GraknSession factory = engine.factoryWithNewKeyspace();
         assertEquals(0, factory.openGraphTxs());
         assertEquals(0, factory.openGraphBatchTxs());
 
@@ -104,7 +104,7 @@ public class GraphTest {
     public void closeGraphWhenOnlyOneTransactionIsOpen(){
         assumeFalse(usingTinker()); //Tinker does not have any connections to close
 
-        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        GraknSession factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.getGraph();
         factory.close();
 
@@ -118,7 +118,7 @@ public class GraphTest {
     public void attemptToCloseGraphWithOpenTransactionsThenThrowException() throws ExecutionException, InterruptedException {
         assumeFalse(usingTinker()); //Only tinker really supports transactions
 
-        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        GraknSession factory = engine.factoryWithNewKeyspace();
         GraknGraph graph = factory.getGraph();
         Executors.newSingleThreadExecutor().submit(factory::getGraph).get();
 

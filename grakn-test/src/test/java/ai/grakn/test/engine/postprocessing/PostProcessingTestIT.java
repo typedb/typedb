@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
@@ -54,7 +54,7 @@ public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
     private EngineCache cache = EngineCache.getInstance();
 
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private GraknGraph graph;
 
     @ClassRule

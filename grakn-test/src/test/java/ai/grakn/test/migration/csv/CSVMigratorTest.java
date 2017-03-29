@@ -20,7 +20,7 @@ package ai.grakn.test.migration.csv;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.ResourceType;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class CSVMigratorTest {
 
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private Migrator migrator;
 
     @ClassRule

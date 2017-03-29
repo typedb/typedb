@@ -39,8 +39,8 @@ import java.util.Map;
  To connect to a knowledge graph, first make sure you have a Grakn Engine server running by starting it from the shell using:
  <pre>{@code grakn.sh start}</pre>
 
- To establish a connection, you first need to obtain a {@link GraknGraphFactory} by calling
- the {@link #factory(String, String)} method. A {@link GraknGraphFactory} connects to a given physical
+ To establish a connection, you first need to obtain a {@link GraknSession} by calling
+ the {@link #factory(String, String)} method. A {@link GraknSession} connects to a given physical
  location and specific database instance within that location.
 
  Once you've instantiated a factory, you can obtain multiple concurrent graph connections,
@@ -93,11 +93,11 @@ public class Grakn {
      */
     public static final String IN_MEMORY = "in-memory";
 
-    private static final Map<String, GraknGraphFactory> clients = new HashMap<>();
+    private static final Map<String, GraknSession> clients = new HashMap<>();
 
-    private static <F extends GraknGraphFactory> F loadImplementation(String className,
-                                                                      String location,
-                                                                      String keyspace) {
+    private static <F extends GraknSession> F loadImplementation(String className,
+                                                                 String location,
+                                                                 String keyspace) {
         try {
             @SuppressWarnings("unchecked")
             Class<F> cl = (Class<F>)Class.forName(className);
@@ -111,7 +111,7 @@ public class Grakn {
     /**
      * Returns a factory instance to produce concurrent connections to the Grakn knowledge graph.
      * <p>
-     * This method obtains the {@link GraknGraphFactory} for the specified location and keyspace.
+     * This method obtains the {@link GraknSession} for the specified location and keyspace.
      * </p>
      * 
      * @param location The location from which to create the graph.
@@ -124,7 +124,7 @@ public class Grakn {
      * If one doesn't exist, it will be created for you.
      * @return A factory instance that can produce concurrent connection to the specified knowledge graph.
      */
-    public static GraknGraphFactory factory(String location, String keyspace) {
+    public static GraknSession factory(String location, String keyspace) {
         String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
         String key = location + finalKeyspace;
         return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_GRAPH_FACTORY_IMPLEMENTATION, location, finalKeyspace));

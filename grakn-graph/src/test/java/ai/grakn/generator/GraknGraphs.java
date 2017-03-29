@@ -21,7 +21,7 @@ package ai.grakn.generator;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -100,7 +100,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system graph
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
-        GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, keyspace);
+        GraknSession factory = Grakn.factory(Grakn.IN_MEMORY, keyspace);
 
         int size = status.size();
 

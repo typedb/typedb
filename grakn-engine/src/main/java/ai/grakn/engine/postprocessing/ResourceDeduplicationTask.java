@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -61,7 +61,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceDeduplicationTask.class);
     private Long totalEliminated = null;
     
-    static <T> T transact(GraknGraphFactory factory, Function<GraknGraph, T> work, String description) {
+    static <T> T transact(GraknSession factory, Function<GraknGraph, T> work, String description) {
         while (true) {
             try (GraknGraph graph = factory.getGraph()) {
                 return work.apply(graph);

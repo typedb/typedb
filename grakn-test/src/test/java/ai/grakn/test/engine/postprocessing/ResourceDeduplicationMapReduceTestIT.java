@@ -18,7 +18,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -36,7 +36,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
-    static GraknGraphFactory factory;
+    static GraknSession factory;
     static ResourceType<String> stringResource = null;
     static ResourceType<Long> longResource = null;
     static ResourceType<Double> doubleResource = null;

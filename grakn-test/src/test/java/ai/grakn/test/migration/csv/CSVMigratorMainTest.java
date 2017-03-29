@@ -19,7 +19,7 @@
 package ai.grakn.test.migration.csv;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.migration.csv.CSVMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.Before;
@@ -34,7 +34,7 @@ import static ai.grakn.test.migration.MigratorTestUtils.getFile;
 import static ai.grakn.test.migration.MigratorTestUtils.load;
 
 public class CSVMigratorMainTest {
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private GraknGraph graph;
 
     private final String dataFile = getFile("csv", "pets/data/pets.csv").getAbsolutePath();

@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -63,7 +63,7 @@ import static org.junit.Assume.assumeFalse;
 
 public class GraqlTest {
 
-    public GraknGraphFactory factory;
+    public GraknSession factory;
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";

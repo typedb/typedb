@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.test.EngineContext;
@@ -56,7 +56,7 @@ public class VisualiserControllerTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        GraknSession factory = engine.factoryWithNewKeyspace();
         graph = factory.getGraph();
 
         loadFromFile(graph, "genealogy/ontology.gql");

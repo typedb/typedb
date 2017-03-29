@@ -20,7 +20,7 @@ package ai.grakn.test.migration.sql;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Resource;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.sql.SQLMigrator;
@@ -45,7 +45,7 @@ import static junit.framework.TestCase.assertNotNull;
 public class SQLMigratorTest {
 
     private Migrator migrator;
-    private GraknGraphFactory factory;
+    private GraknSession factory;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

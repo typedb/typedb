@@ -36,7 +36,7 @@ import ai.grakn.exception.GraphRuntimeException;
  *
  * @author fppt
  */
-public interface GraknGraphFactory {
+public interface GraknSession {
     /**
      * Get a new or existing graph.
      *

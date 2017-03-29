@@ -2,7 +2,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
@@ -24,13 +24,13 @@ public class SystemKeyspaceTest {
 
     @Test
     public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws GraknValidationException {
-    	GraknGraphFactory f1 = Grakn.factory(Grakn.IN_MEMORY, space1);
+    	GraknSession f1 = Grakn.factory(Grakn.IN_MEMORY, space1);
     	f1.getGraph().close();
-    	GraknGraphFactory f2 = Grakn.factory(Grakn.IN_MEMORY, space2);
+    	GraknSession f2 = Grakn.factory(Grakn.IN_MEMORY, space2);
     	GraknGraph gf2 = f2.getGraph();
-    	GraknGraphFactory f3 = Grakn.factory(Grakn.IN_MEMORY, space3);
+    	GraknSession f3 = Grakn.factory(Grakn.IN_MEMORY, space3);
     	GraknGraph gf3 = f3.getGraph();
-    	GraknGraphFactory system = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
+    	GraknSession system = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
     	GraknGraph graph = system.getGraph();
     	ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
     	Collection<String> spaces = graph.getEntityType("keyspace").instances()

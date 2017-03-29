@@ -19,7 +19,7 @@
 package ai.grakn.test;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
@@ -33,8 +33,6 @@ import static ai.grakn.test.GraknTestEnv.randomKeyspace;
 import static ai.grakn.test.GraknTestEnv.startEngine;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopEngine;
-import static ai.grakn.test.GraknTestEnv.stopKafka;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
 
 /**
  * <p>
@@ -89,7 +87,7 @@ public class EngineContext extends ExternalResource {
         return server.getTaskManager();
     }
 
-    public GraknGraphFactory factoryWithNewKeyspace() {
+    public GraknSession factoryWithNewKeyspace() {
         return Grakn.factory("localhost:" + port, randomKeyspace());
     }
 

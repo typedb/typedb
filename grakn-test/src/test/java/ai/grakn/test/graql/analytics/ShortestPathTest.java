@@ -1,7 +1,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -49,7 +49,7 @@ public class ShortestPathTest {
     private ConceptId relationId34;
     private ConceptId relationId1A12;
 
-    public GraknGraphFactory factory;
+    public GraknSession factory;
 
     @ClassRule
     public static EngineContext rule = EngineContext.startInMemoryServer();

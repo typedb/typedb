@@ -21,7 +21,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -81,7 +81,7 @@ public class PostProcessingTest {
         graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
         graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
-        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace());
+        GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace());
         roleType1 = graph.getRoleType("role 1");
         roleType2 = graph.getRoleType("role 2");
         RelationType relationType = graph.getRelationType("rel type");
@@ -174,7 +174,7 @@ public class PostProcessingTest {
         //ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
-        GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
+        GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
         GraknGraph graph = factory.getGraph();
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 

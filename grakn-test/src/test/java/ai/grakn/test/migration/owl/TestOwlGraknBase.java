@@ -18,7 +18,7 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
@@ -54,7 +54,7 @@ public class TestOwlGraknBase {
     protected OWLOntologyManager manager;
     protected OWLMigrator migrator;
 
-    protected GraknGraphFactory factory;
+    protected GraknSession factory;
     protected GraknGraph graph;
 
     @Rule

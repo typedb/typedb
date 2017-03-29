@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -42,7 +42,7 @@ public class CountTest {
     @ClassRule
     public static final EngineContext rule = EngineContext.startInMemoryServer();
 
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private GraknGraph graph;
 
     @Before
@@ -109,7 +109,7 @@ public class CountTest {
                 .map(i -> executeCount(factory))
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
     }
-    private Long executeCount(GraknGraphFactory factory){
+    private Long executeCount(GraknSession factory){
         GraknGraph graph = factory.getGraph();
         Long result = graph.graql().compute().count().execute();
         graph.close();

@@ -19,7 +19,7 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
@@ -46,7 +46,7 @@ public class SQLMigratorMainTest {
     private final String templateFile = getFile("sql", "pets/template.gql").getAbsolutePath();
     private final String query = "SELECT * FROM pet";
     private Connection connection;
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private String keyspace;
     private GraknGraph graph;
 

@@ -20,7 +20,7 @@ package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.json.JsonMigrator;
 import ai.grakn.test.EngineContext;
@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
 public class JsonMigratorTest {
 
     private Migrator migrator;
-    private GraknGraphFactory factory;
+    private GraknSession factory;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();

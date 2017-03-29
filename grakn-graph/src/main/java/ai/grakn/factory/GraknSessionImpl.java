@@ -21,7 +21,7 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknComputerImpl;
@@ -51,7 +51,7 @@ import static mjson.Json.read;
  *
  * @author fppt
  */
-public class GraknGraphFactoryImpl implements GraknGraphFactory {
+public class GraknSessionImpl implements GraknSession {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private static final String COMPUTER = "graph.computer";
     private final String location;
@@ -61,7 +61,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private GraknGraph graph = null;
     private GraknGraph graphBatch = null;
 
-    public GraknGraphFactoryImpl(String keyspace, String location){
+    public GraknSessionImpl(String keyspace, String location){
         this.location = location;
         this.keyspace = keyspace;
     }

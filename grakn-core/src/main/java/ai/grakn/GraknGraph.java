@@ -369,7 +369,7 @@ public interface GraknGraph extends AutoCloseable{
 
     // TODO: what does this do when the graph is closed?
     /**
-     * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknGraphFactory} to
+     * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknSession} to
      * get a new open transaction.
      *
      * This will result in a commit if {@link GraknGraph#commitOnClose()} was called before hand. Otherwise the

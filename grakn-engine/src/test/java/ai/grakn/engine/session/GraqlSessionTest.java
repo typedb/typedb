@@ -20,7 +20,7 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.analytics.CountQuery;
 import com.google.common.collect.ImmutableList;
@@ -43,7 +43,7 @@ public class GraqlSessionTest {
     public void whenRunningAComputeQueryThenExiting_TheComputeQueryIsKilled() throws ExecutionException, InterruptedException {
         Session jettySesssion = mock(Session.class, RETURNS_DEEP_STUBS);
 
-        GraknGraphFactory factory = mock(GraknGraphFactory.class);
+        GraknSession factory = mock(GraknSession.class);
         GraknGraph graph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
         QueryBuilder qb = mock(QueryBuilder.class);
         CountQuery count = mock(CountQuery.class);
