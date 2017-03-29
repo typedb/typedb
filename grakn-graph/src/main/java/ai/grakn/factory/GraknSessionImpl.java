@@ -22,7 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknComputerImpl;
@@ -69,7 +69,7 @@ public class GraknSessionImpl implements GraknSession {
     }
 
     @Override
-    public GraknGraph open(GraknTransaction transactionType){
+    public GraknGraph open(GraknTransactionType transactionType){
         switch (transactionType){
             case READ:
                 //TODO

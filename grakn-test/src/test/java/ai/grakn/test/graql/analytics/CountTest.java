@@ -20,7 +20,7 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -52,7 +52,7 @@ public class CountTest {
         assumeFalse(usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
     }
 
     @Test
@@ -74,7 +74,7 @@ public class CountTest {
         thing.addEntity().getId();
         anotherThing.addEntity().getId();
         graph.commit();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
 
         // assert computer returns the correct count of instances
         startTime = System.currentTimeMillis();
@@ -110,7 +110,7 @@ public class CountTest {
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
     }
     private Long executeCount(GraknSession factory){
-        GraknGraph graph = factory.open(GraknTransaction.WRITE);
+        GraknGraph graph = factory.open(GraknTransactionType.WRITE);
         Long result = graph.graql().compute().count().execute();
         graph.close();
         return result;

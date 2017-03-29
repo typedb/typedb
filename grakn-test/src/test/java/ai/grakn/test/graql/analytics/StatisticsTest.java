@@ -20,7 +20,7 @@ package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -92,7 +92,7 @@ public class StatisticsTest {
         addOntologyAndEntities();
         addResourceRelations();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             //TODO: add more detailed error messages
             // resources-type is not set
             assertIllegalStateExceptionThrown(graph.graql().compute().max().in(thing)::execute);
@@ -165,7 +165,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().min().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
@@ -204,7 +204,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().min().of(resourceType1).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().min().of(resourceType1).in().withGraph(graph).execute();
@@ -227,7 +227,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = graph.graql().compute().min().of(resourceType1).in(Collections.emptySet()).execute();
             assertEquals(1.2, result.get().doubleValue(), delta);
             result = Graql.compute().min().in(thing).of(resourceType2).withGraph(graph).execute();
@@ -260,7 +260,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().sum().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().sum().of(resourceType1).withGraph(graph).execute();
@@ -282,7 +282,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().sum().of(resourceType1).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().sum().of(resourceType1).in().withGraph(graph).execute();
@@ -296,7 +296,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().sum().of(resourceType1).withGraph(graph).execute();
             assertEquals(4.5, result.get().doubleValue(), delta);
             result = Graql.compute().sum().of(resourceType2).in(thing).withGraph(graph).execute();
@@ -319,7 +319,7 @@ public class StatisticsTest {
 
         // resource-type has no instance
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().mean().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().mean().of(resourceType1).withGraph(graph).execute();
@@ -341,7 +341,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().mean().of(resourceType1).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().mean().of(resourceType1).in().withGraph(graph).execute();
@@ -355,7 +355,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().withGraph(graph).mean().of(resourceType1).execute();
             assertEquals(1.5, result.get(), delta);
             result = Graql.compute().mean().of(resourceType2).withGraph(graph).execute();
@@ -379,7 +379,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().std().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().std().of(resourceType1).withGraph(graph).execute();
@@ -401,7 +401,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().std().of(resourceType1).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().std().of(resourceType1).in().withGraph(graph).execute();
@@ -415,7 +415,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().std().of(resourceType1).withGraph(graph).execute();
             assertEquals(Math.sqrt(0.18 / 3), result.get(), delta);
             result = Graql.compute().std().of(resourceType2).withGraph(graph).in(anotherThing).execute();
@@ -434,7 +434,7 @@ public class StatisticsTest {
         }
         GraknSparkComputer.clear();
         list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+            try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
                 assertEquals(2.5,
                         graph.graql().compute().std().of(resourceType2).in(thing).execute().get(), delta);
             }
@@ -451,7 +451,7 @@ public class StatisticsTest {
         // resource-type has no instance
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().median().of(resourceType1).in(Collections.emptyList()).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().median().of(resourceType1).withGraph(graph).execute();
@@ -473,7 +473,7 @@ public class StatisticsTest {
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = Graql.compute().median().of(resourceType1).withGraph(graph).execute();
             assertFalse(result.isPresent());
             result = Graql.compute().median().of(resourceType1).in().withGraph(graph).execute();
@@ -487,7 +487,7 @@ public class StatisticsTest {
         // connect entity and resources
         addResourceRelations();
 
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             result = graph.graql().compute().median().of(resourceType1).in().execute();
             assertEquals(1.5D, result.get().doubleValue(), delta);
             result = Graql.compute().withGraph(graph).median().of(resourceType6).execute();
@@ -510,7 +510,7 @@ public class StatisticsTest {
         }
         GraknSparkComputer.clear();
         list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+            try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
                 assertEquals(1.5D,
                         graph.graql().compute().median().of(resourceType1).execute().get());
             }
@@ -518,7 +518,7 @@ public class StatisticsTest {
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -616,7 +616,7 @@ public class StatisticsTest {
     }
 
     private void addResourcesInstances() throws GraknValidationException {
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             graph.<Double>getResourceType(resourceType1).putResource(1.2);
             graph.<Double>getResourceType(resourceType1).putResource(1.5);
             graph.<Double>getResourceType(resourceType1).putResource(1.8);
@@ -642,7 +642,7 @@ public class StatisticsTest {
     }
 
     private void addResourceRelations() throws GraknValidationException {
-        try (GraknGraph graph = factory.open(GraknTransaction.WRITE)) {
+        try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);
             Entity entity3 = graph.getConcept(entityId3);

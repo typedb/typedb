@@ -21,7 +21,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -68,7 +68,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        graph = engine.factoryWithNewKeyspace().open(GraknTransaction.WRITE);
+        graph = engine.factoryWithNewKeyspace().open(GraknTransactionType.WRITE);
     }
 
     @After
@@ -108,7 +108,7 @@ public class PostProcessingTest {
         ConceptId otherInstanceId4 = instance4.getId();
 
         graph.commit();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
 
         //Check Number of castings is as expected
         Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
@@ -179,13 +179,13 @@ public class PostProcessingTest {
 
         //Create Graph With Duplicate Resources
         GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
-        GraknGraph graph = factory.open(GraknTransaction.WRITE);
+        GraknGraph graph = factory.open(GraknTransactionType.WRITE);
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 
 
         Resource<String> resource = resourceType.putResource(value);
         graph.commit();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
 
         assertEquals(1, resourceType.instances().size());
         waitForCache(false, keyspace, 1);

@@ -20,7 +20,7 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
@@ -64,7 +64,7 @@ public class PostProcessingTestIT {
     @Before
     public void setUp() throws Exception {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
     }
 
     @After
@@ -111,7 +111,7 @@ public class PostProcessingTestIT {
         //Try to force duplicate resources
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
-                try(GraknGraph graph = factory.open(GraknTransaction.WRITE)){
+                try(GraknGraph graph = factory.open(GraknTransactionType.WRITE)){
                     Random r = new Random();
 
                     for(int j = 0; j < transactionSize; j ++) {
@@ -141,7 +141,7 @@ public class PostProcessingTestIT {
         waitForCache(graph.getKeyspace(), 2);
 
         //Check current broken state of graph
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
         assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
         //Force PP
@@ -150,7 +150,7 @@ public class PostProcessingTestIT {
         //Check current broken state of graph
         graph.close();
         factory.close();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
 
         assertFalse("Failed at fixing graph", graphIsBroken(graph));
     }

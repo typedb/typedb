@@ -21,7 +21,7 @@ package ai.grakn.graph.property;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -259,7 +259,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransaction.WRITE);
+        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransactionType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
@@ -271,7 +271,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransaction.WRITE);
+        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransactionType.WRITE);
         assertNotNull(graph.getType(typeName));
         graph.close();
     }

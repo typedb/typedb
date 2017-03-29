@@ -42,11 +42,11 @@ public interface GraknSession {
     /**
      * Gets a new transaction bound to the keyspace of this Session.
      *
-     * @param transactionType The type of transaction to open see {@link GraknTransaction} for more details
+     * @param transactionType The type of transaction to open see {@link GraknTransactionType} for more details
      * @return A new Grakn graph transaction
      * @see GraknGraph
      */
-    GraknGraph open(GraknTransaction transactionType);
+    GraknGraph open(GraknTransactionType transactionType);
 
     /**
      * Get a new or existing GraknComputer.

@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -69,7 +69,7 @@ public class ConceptLogTest extends GraphTestBase{
         CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE);
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -82,7 +82,7 @@ public class ConceptLogTest extends GraphTestBase{
         EntityType t1 = graknGraph.putEntityType("1");
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE);
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -100,7 +100,7 @@ public class ConceptLogTest extends GraphTestBase{
         Entity i2 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE);
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -116,7 +116,7 @@ public class ConceptLogTest extends GraphTestBase{
         Entity i1 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransaction.WRITE);
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 

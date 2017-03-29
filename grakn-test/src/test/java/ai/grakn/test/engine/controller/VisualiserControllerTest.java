@@ -20,7 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransaction;
+import ai.grakn.GraknTransactionType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.test.EngineContext;
@@ -58,13 +58,13 @@ public class VisualiserControllerTest {
     @BeforeClass
     public static void setUp() throws Exception {
         GraknSession factory = engine.factoryWithNewKeyspace();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
 
         loadFromFile(graph, "genealogy/ontology.gql");
         loadFromFile(graph, "genealogy/data.gql");
 
         graph.commit();
-        graph = factory.open(GraknTransaction.WRITE);
+        graph = factory.open(GraknTransactionType.WRITE);
     }
 
     @AfterClass
