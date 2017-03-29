@@ -382,6 +382,11 @@ public interface GraknGraph extends AutoCloseable{
      */
     void abort();
 
+    /**
+     * Commits any changes to the graph and closes the transaction
+     */
+    void commit();
+
     // TODO: what does this do when the graph is closed?
     /**
      * Will cause the current transaction to be committed when closing the transaction.

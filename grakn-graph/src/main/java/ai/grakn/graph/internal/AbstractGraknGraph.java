@@ -814,6 +814,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         closeTransaction(ErrorMessage.GRAPH_CLOSED_ON_ABORT.getMessage());
     }
 
+    @Override
+    public void commit(){
+        localCommitRequired.set(true);
+        close();
+    }
+
     private void closeTransaction(String closedReason){
         try {
             graph.tx().close();
