@@ -18,12 +18,12 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import com.google.common.collect.Sets;
 
@@ -65,9 +65,9 @@ public class NeqProperty extends AbstractVarProperty implements NamedProperty {
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
         return Sets.newHashSet(
-                EquivalentFragmentSet.create(Fragments.notCasting(start)),
-                EquivalentFragmentSet.create(Fragments.notCasting(var.getVarName())),
-                EquivalentFragmentSet.create(Fragments.neq(start, var.getVarName()), Fragments.neq(var.getVarName(), start))
+                EquivalentFragmentSets.notCasting(start),
+                EquivalentFragmentSets.notCasting(var.getVarName()),
+                EquivalentFragmentSets.neq(start, var.getVarName())
         );
     }
 

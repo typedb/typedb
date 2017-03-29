@@ -20,16 +20,19 @@ package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.RegexAtom;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -42,7 +45,7 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty, NamedProperty {
+public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
     private final String regex;
 
@@ -65,8 +68,8 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
     }
 
     @Override
-    public Fragment getFragment(VarName start) {
-        return Fragments.regex(start, regex);
+    public Collection<EquivalentFragmentSet> match(VarName start) {
+        return ImmutableSet.of(EquivalentFragmentSets.regex(start, regex));
     }
 
     @Override

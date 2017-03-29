@@ -24,7 +24,6 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import com.google.common.collect.Sets;
@@ -34,6 +33,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isaCastings;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 /**
@@ -81,14 +82,8 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
         VarName casting = VarName.anon();
 
         return Sets.newHashSet(
-                EquivalentFragmentSet.create(
-                        Fragments.inRolePlayer(start, casting),
-                        Fragments.outRolePlayer(casting, start)
-                ),
-                EquivalentFragmentSet.create(
-                        Fragments.outIsaCastings(casting, role.getVarName()),
-                        Fragments.inIsaCastings(role.getVarName(), casting)
-                )
+                rolePlayer(casting, start),
+                isaCastings(casting, role.getVarName())
         );
     }
 

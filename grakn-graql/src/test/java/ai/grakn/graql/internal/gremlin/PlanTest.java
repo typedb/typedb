@@ -30,6 +30,7 @@ import java.util.Optional;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class PlanTest {
 
@@ -42,10 +43,10 @@ public class PlanTest {
         VarName z = VarName.of("z");
 
         Fragment outIsa = outIsa(y, a);
-        outIsa.setEquivalentFragmentSet(EquivalentFragmentSet.create());
+        outIsa.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
         Fragment shortcut = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, z);
-        shortcut.setEquivalentFragmentSet(EquivalentFragmentSet.create());
+        shortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
         Plan plan = Plan.base();
         plan.tryPush(outIsa);

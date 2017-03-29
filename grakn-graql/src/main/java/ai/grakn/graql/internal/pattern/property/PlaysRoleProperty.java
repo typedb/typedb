@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -75,10 +75,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        return ImmutableSet.of(EquivalentFragmentSet.create(
-                Fragments.outPlaysRole(start, role.getVarName(), required),
-                Fragments.inPlaysRole(role.getVarName(), start, required)
-        ));
+        return ImmutableSet.of(EquivalentFragmentSets.playsRole(start, role.getVarName(), required));
     }
 
     @Override

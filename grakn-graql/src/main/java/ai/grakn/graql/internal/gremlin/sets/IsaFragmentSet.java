@@ -14,25 +14,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.ImmutableSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
-import java.util.Collection;
+/**
+ * @author Felix Chapman
+ */
+class IsaFragmentSet extends EquivalentFragmentSet {
 
-interface SingleFragmentProperty extends VarPropertyInternal {
-
-    Fragment getFragment(VarName start);
-
-    @Override
-    default Collection<EquivalentFragmentSet> match(VarName start) {
-        Fragment fragment = getFragment(start);
-        EquivalentFragmentSet equivalentFragmentSet = EquivalentFragmentSet.create(fragment);
-        return ImmutableSet.of(equivalentFragmentSet);
+    IsaFragmentSet(VarName instance, VarName type) {
+        super(Fragments.outIsa(instance, type), Fragments.inIsa(type, instance));
     }
 }
