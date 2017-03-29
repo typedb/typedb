@@ -109,7 +109,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     @Override
     public <V> Resource<V> getResource(V value) {
-        String index = ResourceImpl.generateResourceIndex(this, value.toString());
+        String index = Schema.generateResourceIndex(getName(), value.toString());
         return getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
     }
 

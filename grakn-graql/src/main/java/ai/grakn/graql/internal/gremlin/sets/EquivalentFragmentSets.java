@@ -28,6 +28,9 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Optional;
 
+/**
+ * @author Felix Chapman
+ */
 public class EquivalentFragmentSets {
 
     /**

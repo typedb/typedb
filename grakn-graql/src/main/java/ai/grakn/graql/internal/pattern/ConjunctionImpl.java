@@ -18,11 +18,13 @@
 
 package ai.grakn.graql.internal.pattern;
 
-import com.google.common.collect.Sets;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.List;
 import java.util.Set;
@@ -62,6 +64,11 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
+    }
+
+    @Override
+    public Set<VarName> commonVarNames() {
+        return patterns.stream().map(PatternAdmin::commonVarNames).reduce(ImmutableSet.of(), Sets::union);
     }
 
     @Override
