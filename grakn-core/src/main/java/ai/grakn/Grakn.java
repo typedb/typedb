@@ -86,7 +86,7 @@ public class Grakn {
      */
     public static final String DEFAULT_URI = "localhost:4567";
 
-    private static final String GRAKN_GRAPH_FACTORY_IMPLEMENTATION = "ai.grakn.factory.GraknGraphFactoryImpl";
+    private static final String GRAKN_GRAPH_SESSION_IMPLEMENTATION = "ai.grakn.factory.GraknSessionImpl";
 
     /**
      * Constant to be passed to {@link #factory(String, String)} to specify an in-memory graph.
@@ -127,6 +127,6 @@ public class Grakn {
     public static GraknSession factory(String location, String keyspace) {
         String finalKeyspace = keyspace.toLowerCase(Locale.getDefault());
         String key = location + finalKeyspace;
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_GRAPH_FACTORY_IMPLEMENTATION, location, finalKeyspace));
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(GRAKN_GRAPH_SESSION_IMPLEMENTATION, location, finalKeyspace));
     }
 }
