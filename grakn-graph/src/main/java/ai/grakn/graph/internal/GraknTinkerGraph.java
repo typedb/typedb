@@ -63,6 +63,11 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     }
 
     @Override
+    public void abort(){
+        throw new UnsupportedOperationException("Tinker Graphs do not support transactions and therefore transactions cannot be aborted");
+    }
+
+    @Override
     public <T extends Concept> T getConceptRawId(Object id) {
         try {
             return super.getConceptRawId(Long.valueOf(id.toString()));

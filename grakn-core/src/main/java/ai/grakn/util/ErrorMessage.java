@@ -54,6 +54,7 @@ public enum ErrorMessage {
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
+    GRAPH_CLOSED_ON_ABORT("The transaction was aborted and closed this graph. Use the factory to get a new graph."),
     GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
     TRANSACTIONS_OPEN("Cannot close graph [%s] connecting to keyspace [%s] because there are [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),

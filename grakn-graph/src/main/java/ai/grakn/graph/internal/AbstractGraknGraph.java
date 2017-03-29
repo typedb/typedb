@@ -800,11 +800,18 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         try{
             if(getCommitRequired()) {
                 commit();
+                getConceptLog().writeToCentralCache(true);
+            } else {
+                getConceptLog().writeToCentralCache(false);
             }
         } finally {
-            localCommitRequired.set(false);
             closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
         }
+    }
+
+    @Override
+    public void abort(){
+        closeGraph(ErrorMessage.GRAPH_CLOSED_ON_ABORT.getMessage());
     }
 
     private void closeGraph(String closedReason){
@@ -814,8 +821,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Ignored for Tinker
         }
         localClosedReason.set(closedReason);
-        localIsOpen.set(false);
-        clearLocalVariables();
+        localCommitRequired.remove();
+        localIsOpen.remove();
+        localConceptLog.remove();
     }
 
     /**
@@ -859,11 +867,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         commit((x, y) -> {});
     }
 
-    private void clearLocalVariables(){
-        getConceptLog().writeToCentralCache(false);
-        localConceptLog.remove();
-    }
-
     public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
@@ -881,8 +884,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         GraknSparkComputer.refresh();
 
         LOG.trace("Graph committed.");
-        getConceptLog().writeToCentralCache(true);
-        clearLocalVariables();
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {

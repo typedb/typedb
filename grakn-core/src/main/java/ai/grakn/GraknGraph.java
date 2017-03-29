@@ -377,6 +377,11 @@ public interface GraknGraph extends AutoCloseable{
      */
     void close() throws GraknValidationException;
 
+    /**
+     * Reverts any changes done to the graph and closes the transaction
+     */
+    void abort();
+
     // TODO: what does this do when the graph is closed?
     /**
      * Will cause the current transaction to be committed when closing the transaction.
