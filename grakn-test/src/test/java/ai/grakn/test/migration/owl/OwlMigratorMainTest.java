@@ -19,7 +19,7 @@
 package ai.grakn.test.migration.owl;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTransactionType;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeName;
@@ -74,7 +74,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     public void runAndAssertDataCorrect(String... args){
         run(args);
 
-        graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE);
+        graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         EntityType top = graph.getEntityType("tThing");
         EntityType type = graph.getEntityType("tAuthor");
         assertNotNull(type);

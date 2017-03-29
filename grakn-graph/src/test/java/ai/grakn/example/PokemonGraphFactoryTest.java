@@ -21,7 +21,7 @@ package ai.grakn.example;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransactionType;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -50,10 +50,10 @@ public class PokemonGraphFactoryTest {
     @Before
     public void setupPokemonGraph() {
         GraknSession factory = Grakn.session(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
-        graknGraph = factory.open(GraknTransactionType.WRITE);
+        graknGraph = factory.open(GraknTxType.WRITE);
         PokemonGraphFactory.loadGraph(graknGraph);
         graknGraph.commit();
-        graknGraph = factory.open(GraknTransactionType.WRITE);
+        graknGraph = factory.open(GraknTxType.WRITE);
     }
 
     @After

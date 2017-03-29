@@ -20,7 +20,7 @@ package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransactionType;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
@@ -117,7 +117,7 @@ class GraqlSession {
     }
 
     private void refreshGraph() {
-        graph = factory.open(GraknTransactionType.WRITE);
+        graph = factory.open(GraknTxType.WRITE);
         graph.showImplicitConcepts(showImplicitTypes);
     }
 

@@ -20,7 +20,7 @@ package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransactionType;
+import ai.grakn.GraknTxType;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
@@ -60,7 +60,7 @@ public class SQLMigratorMainTest {
     public void setup() throws SQLException {
         factory = engine.factoryWithNewKeyspace();
         connection = setupExample(factory, "pets");
-        graph = factory.open(GraknTransactionType.WRITE);
+        graph = factory.open(GraknTxType.WRITE);
         keyspace = graph.getKeyspace();
     }
 
@@ -140,7 +140,7 @@ public class SQLMigratorMainTest {
                 "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
-        graph = factory.open(GraknTransactionType.WRITE); //Reopen transaction
+        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -150,7 +150,7 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.open(GraknTransactionType.WRITE); //Reopen transaction
+        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
         assertPetGraphCorrect(graph);
     }
 

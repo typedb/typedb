@@ -21,7 +21,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransactionType;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -64,7 +64,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     
     static <T> T transact(GraknSession factory, Function<GraknGraph, T> work, String description) {
         while (true) {
-            try (GraknGraph graph = factory.open(GraknTransactionType.WRITE)) {
+            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 return work.apply(graph);
             }
             catch (GraknLockingException ex) {
@@ -171,7 +171,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
                 // TODO: what if we fail here due to some read-write conflict?
-                try (GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE)) {
+                try (GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)) {
                     Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();

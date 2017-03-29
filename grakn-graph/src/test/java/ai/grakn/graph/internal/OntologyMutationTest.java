@@ -19,7 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTransactionType;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -64,7 +64,7 @@ public class OntologyMutationTest extends GraphTestBase{
         bob = man.addEntity();
         marriage.addRelation().putRolePlayer(wife, alice).putRolePlayer(husband, bob);
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
     }
 
     @Test

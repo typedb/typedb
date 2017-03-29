@@ -20,7 +20,7 @@ package ai.grakn;
 
 /**
  * <p>
- *     A Class Desrcibing the behaviour of a transaction
+ *     A Class Describing the behaviour of a transaction
  * </p>
  *
  * <p>
@@ -33,7 +33,7 @@ package ai.grakn;
  *
   @author fppt
  */
-public enum GraknTransactionType {
+public enum GraknTxType {
     READ,  //Read only transaction where mutations to the graph are prohibited
     WRITE, //Write transaction where the graph can be mutated
     BATCH //Batch transaction which enables faster writes by switching off some consitency checks

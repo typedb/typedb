@@ -20,7 +20,7 @@ package ai.grakn.test.migration.json;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
-import ai.grakn.GraknTransactionType;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -60,7 +60,7 @@ public class JsonMigratorMainTest {
     public void setup() {
         GraknSession factory = engine.factoryWithNewKeyspace();
         load(factory, getFile("json", "simple-schema/schema.gql"));
-        graph = factory.open(GraknTransactionType.WRITE);
+        graph = factory.open(GraknTxType.WRITE);
     }
 
     @Test
