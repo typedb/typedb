@@ -25,6 +25,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.migration.owl.Main;
 import ai.grakn.migration.owl.OwlModel;
+import org.junit.Before;
 import org.junit.Test;
 
 import static ai.grakn.test.migration.MigratorTestUtils.assertRelationBetweenInstancesExists;
@@ -37,24 +38,32 @@ import static org.junit.Assert.assertTrue;
 
 public class OwlMigratorMainTest extends TestOwlGraknBase {
 
+    private String keyspace;
+
+    @Before
+    public void setup(){
+        keyspace = graph.getKeyspace();
+        graph.close();
+    }
+
     @Test
     public void owlMainFileTest(){
         String owlFile = getFile("owl", "shakespeare.owl").getAbsolutePath();
-        runAndAssertDataCorrect("owl", "-input", owlFile, "-keyspace", graph.getKeyspace());
+        runAndAssertDataCorrect("owl", "-input", owlFile, "-keyspace", keyspace);
     }
 
     @Test
     public void owlMainNoFileSpecifiedTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Data file missing (-i)");
-        run("owl", "-keyspace", graph.getKeyspace());
+        run("owl", "-keyspace", keyspace);
     }
 
     @Test
     public void owlMainCannotOpenFileTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Cannot find file:");
-        run("owl", "-input", "grah/?*", "-keyspace", graph.getKeyspace());
+        run("owl", "-input", "grah/?*", "-keyspace", keyspace);
     }
 
     public void run(String... args){
@@ -64,7 +73,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     public void runAndAssertDataCorrect(String... args){
         run(args);
 
-        graph = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace()).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
         EntityType top = graph.getEntityType("tThing");
         EntityType type = graph.getEntityType("tAuthor");
         assertNotNull(type);

@@ -21,14 +21,14 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -134,23 +134,23 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public void unify (Map<VarName, VarName> unifiers) {
-        super.unify(unifiers);
+    public void unify (Unifier unifier) {
+        super.unify(unifier);
         VarName var = valueVariable;
-        if (unifiers.containsKey(var)) {
-            setValueVariable(unifiers.get(var));
-        } else if (unifiers.containsValue(var)) {
+        if (unifier.containsKey(var)) {
+            setValueVariable(unifier.get(var));
+        } else if (unifier.containsValue(var)) {
             setValueVariable(capture(var));
         }
     }
 
     @Override
-    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
+    public Unifier getUnifier(Atomic parentAtom) {
         if (!(parentAtom instanceof BinaryBase)) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
         }
 
-        Map<VarName, VarName> unifiers = new HashMap<>();
+        Unifier unifier = new UnifierImpl();
         VarName childValVarName = this.getValueVariable();
         VarName parentValVarName = ((BinaryBase) parentAtom).getValueVariable();
 
@@ -158,14 +158,14 @@ public abstract class BinaryBase extends Atom {
             VarName childVarName = this.getVarName();
             VarName parentVarName = parentAtom.getVarName();
             if (!childVarName.equals(parentVarName)) {
-                unifiers.put(childVarName, parentVarName);
+                unifier.addMapping(childVarName, parentVarName);
             }
         }
         if (!childValVarName.getValue().isEmpty()
                 && !parentValVarName.getValue().isEmpty()
                 && !childValVarName.equals(parentValVarName)) {
-            unifiers.put(childValVarName, parentValVarName);
+            unifier.addMapping(childValVarName, parentValVarName);
         }
-        return unifiers;
+        return unifier;
     }
 }

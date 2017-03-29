@@ -31,11 +31,13 @@ import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.test.GraphContext;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.Rule;
-import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -44,6 +46,11 @@ public class BenchmarkTests {
 
     @Rule
     public final GraphContext graphContext = GraphContext.empty();
+
+    @Before
+    public void setUpGraph(){
+        graphContext.graph().close();
+    }
 
     /**
      * 2-rule transitive test with transitivity expressed in terms of two linear rules

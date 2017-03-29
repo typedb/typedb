@@ -28,6 +28,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,10 +50,16 @@ public class PokemonGraphFactoryTest {
     @Before
     public void setupPokemonGraph() {
         GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
-        PokemonGraphFactory.loadGraph(factory.getGraph());
-        factory.getGraph().commitOnClose();
-        factory.getGraph().close();
         graknGraph = factory.getGraph();
+        PokemonGraphFactory.loadGraph(graknGraph);
+        graknGraph.commitOnClose();
+        graknGraph.close();
+        graknGraph = factory.getGraph();
+    }
+
+    @After
+    public void closeGraph(){
+        graknGraph.close();
     }
 
     @Test

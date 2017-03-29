@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.explanation.Explanation;
 import com.google.common.collect.Sets;
 import java.util.Collection;
@@ -144,11 +145,11 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
-    public QueryAnswer unify(Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return this;
+    public QueryAnswer unify(Unifier unifier){
+        if (unifier.isEmpty()) return this;
         QueryAnswer unified = new QueryAnswer(
                 this.entrySet().stream()
-                        .collect(Collectors.toMap(e -> unifiers.containsKey(e.getKey())?  unifiers.get(e.getKey()) : e.getKey(), Map.Entry::getValue))
+                        .collect(Collectors.toMap(e -> unifier.containsKey(e.getKey())?  unifier.get(e.getKey()) : e.getKey(), Map.Entry::getValue))
         );
         return unified.setExplanation(this.getExplanation());
     }

@@ -99,12 +99,20 @@ public class CountTest {
             list.add(i);
         }
         GraknSparkComputer.clear();
+
+        graph.close();
         // running 4 jobs at the same time
         list.parallelStream()
-                .map(i -> factory.getGraph().graql().compute().count().execute())
+                .map(i -> executeCount(factory))
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
         list.parallelStream()
-                .map(i -> factory.getGraph().graql().compute().count().execute())
+                .map(i -> executeCount(factory))
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
+    }
+    private Long executeCount(GraknGraphFactory factory){
+        GraknGraph graph = factory.getGraph();
+        Long result = graph.graql().compute().count().execute();
+        graph.close();
+        return result;
     }
 }

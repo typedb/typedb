@@ -38,6 +38,7 @@ public class GraknTest {
     @Test
     public void testInMemorySingleton(){
         GraknGraph test1 = Grakn.factory(Grakn.IN_MEMORY, "test1").getGraph();
+        test1.close();
         GraknGraph test11 = Grakn.factory(Grakn.IN_MEMORY, "test1").getGraph();
         GraknGraph test2 = Grakn.factory(Grakn.IN_MEMORY, "test2").getGraph();
 
@@ -67,5 +68,8 @@ public class GraknTest {
 
         assertNotEquals(graph, batchGraph);
         assertEquals(graph.getTinkerPopGraph(), batchGraph.getTinkerPopGraph());
+
+        graph.close();
+        batchGraph.close();
     }
 }

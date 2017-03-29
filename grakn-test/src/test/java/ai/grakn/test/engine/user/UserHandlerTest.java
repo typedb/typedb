@@ -79,6 +79,7 @@ public class UserHandlerTest {
     public void testUserInGraph(){
         GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
         assertNotNull(graph.getResourceType(UsersHandler.USER_NAME).getResource(userName));
+        graph.close();
     }
 
     @Test

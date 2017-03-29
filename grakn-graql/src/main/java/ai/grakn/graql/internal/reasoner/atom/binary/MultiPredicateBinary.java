@@ -18,10 +18,10 @@
 
 package ai.grakn.graql.internal.reasoner.atom.binary;
 
-import ai.grakn.graql.VarName;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
@@ -30,7 +30,6 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -107,8 +106,8 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     }
 
     @Override
-    public void unify (Map<VarName, VarName> unifiers) {
-        super.unify(unifiers);
-        multiPredicate.forEach(predicate -> predicate.unify(unifiers));
+    public void unify (Unifier unifier) {
+        super.unify(unifier);
+        multiPredicate.forEach(predicate -> predicate.unify(unifier));
     }
 }

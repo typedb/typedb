@@ -48,7 +48,7 @@ public class GraphFactoryControllerTest {
 
 	@Test
 	public void testKeyspaceList() throws GraknValidationException {
-		Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph().close();
+		Grakn.factory(Grakn.DEFAULT_URI, "grakntest1").getGraph().close();
         Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").getGraph().close();
         Response response = get(KEYSPACE_LIST).then().statusCode(200).extract().response();
         Json result = Json.read(response.body().asString());
@@ -78,7 +78,7 @@ public class GraphFactoryControllerTest {
 
     @Test
     public void testGraknClientBatch() {
-        GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraphBatchLoading();
+        GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "grakntestagain").getGraphBatchLoading();
         assertTrue(((AbstractGraknGraph) batch).isBatchLoadingEnabled());
     }
 
@@ -86,17 +86,18 @@ public class GraphFactoryControllerTest {
     public void testGrakn() throws GraknValidationException {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph();
         AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").getGraph();
-        AbstractGraknGraph graphCopy = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph();
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchLoadingEnabled());
         assertNotEquals(graph, graph2);
-        assertEquals(graph, graphCopy);
         graph.close();
 
         AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraphBatchLoading();
         assertTrue(batch.isBatchLoadingEnabled());
         assertNotEquals(graph, batch);
 
+        graph.close();
+        batch.close();
+        graph2.close();
     }
 
     @Test

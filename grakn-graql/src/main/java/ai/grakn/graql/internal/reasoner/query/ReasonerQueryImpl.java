@@ -28,6 +28,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
@@ -266,7 +267,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
-    public Map<VarName, VarName> getUnifiers(ReasonerQuery parent) {
+    public Unifier getUnifier(ReasonerQuery parent) {
         throw new IllegalStateException("Attempted to obtain unifiers on non-atomic queries.");
     }
 
@@ -284,32 +285,31 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
         toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.unify(ImmutableMap.of(from, to)));
+        toAdd.forEach(atom -> atom.unify(new UnifierImpl(ImmutableMap.of(from, to))));
         toAdd.forEach(this::addAtom);
     }
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
-     *
-     * @param unifiers contain unifiers (variable mappings) to be applied
+     * @param unifier (variable mappings) to be applied
      */
     @Override
-    public void unify(Map<VarName, VarName> unifiers) {
-        if (unifiers.size() == 0) return;
-        Map<VarName, VarName> mappings = new HashMap<>(unifiers);
-        Map<VarName, VarName> appliedMappings = new HashMap<>();
+    public void unify(Unifier unifier) {
+        if (unifier.size() == 0) return;
+        Unifier mappings = new UnifierImpl(unifier);
+        Unifier appliedMappings = new UnifierImpl();
         //do bidirectional mappings if any
-        for (Map.Entry<VarName, VarName> mapping : mappings.entrySet()) {
+        for (Map.Entry<VarName, VarName> mapping: mappings.getMappings()) {
             VarName varToReplace = mapping.getKey();
             VarName replacementVar = mapping.getValue();
             //bidirectional mapping
             if (!replacementVar.equals(appliedMappings.get(varToReplace)) && varToReplace.equals(mappings.get(replacementVar))) {
                 exchangeRelVarNames(varToReplace, replacementVar);
-                appliedMappings.put(varToReplace, replacementVar);
-                appliedMappings.put(replacementVar, varToReplace);
+                appliedMappings.addMapping(varToReplace, replacementVar);
+                appliedMappings.addMapping(replacementVar, varToReplace);
             }
         }
-        mappings.entrySet().removeIf(e ->
+        mappings.getMappings().removeIf(e ->
                 appliedMappings.containsKey(e.getKey()) && appliedMappings.get(e.getKey()).equals(e.getValue()));
 
         Set<Atomic> toRemove = new HashSet<>();
@@ -330,7 +330,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         toAdd.forEach(this::addAtom);
 
         //NB:captures not resolved in place as resolution in-place alters respective atom hash
-        mappings.putAll(resolveCaptures());
+        mappings.merge(resolveCaptures());
     }
 
     /**
@@ -338,8 +338,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      *
      * @return new mappings resulting from capture resolution
      */
-    private Map<VarName, VarName> resolveCaptures() {
-        Map<VarName, VarName> newMappings = new HashMap<>();
+    private Unifier resolveCaptures() {
+        Unifier newMappings = new UnifierImpl();
         //find and resolve captures
         // TODO: This could cause bugs if a user has a variable including the word "capture"
         getVarNames().stream().filter(Utility::isCaptured)
@@ -347,7 +347,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     VarName old = uncapture(cap);
                     VarName fresh = VarName.anon();
                     unify(cap, fresh);
-                    newMappings.put(old, fresh);
+                    newMappings.addMapping(old, fresh);
                 });
         return newMappings;
     }

@@ -56,7 +56,9 @@ public class SQLMigratorTest {
     @Before
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
-        migrator = Migrator.to(Grakn.DEFAULT_URI, factory.getGraph().getKeyspace());
+        GraknGraph graph = factory.getGraph();
+        graph.close();
+        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
     }
 
     @Test

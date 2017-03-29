@@ -18,12 +18,11 @@
 
 package ai.grakn.graql.internal.reasoner.iterator;
 
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.Iterators;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -40,11 +39,11 @@ public class LazyAnswerIterator extends LazyIterator<Answer> {
     public LazyAnswerIterator(Stream<Answer> stream){ super(stream);}
     private LazyAnswerIterator(Iterator<Answer> iterator){ super(iterator);}
 
-    public LazyAnswerIterator unify(Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return this;
+    public LazyAnswerIterator unify(Unifier unifier){
+        if (unifier.isEmpty()) return this;
         Iterator<Answer> transform = Iterators.transform(iterator(), input -> {
             if (input == null) return null;
-            return input.unify(unifiers);
+            return input.unify(unifier);
         });
         return new LazyAnswerIterator(transform);
     }

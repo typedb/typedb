@@ -57,7 +57,7 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
     public Stream<Answer> record(Q query, Stream<Answer> answers) {
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
+            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifier(query));
             return unifiedStream.peek(ans -> match.getValue().add(ans));
         } else {
             cache.put(query, new Pair<>(query, new QueryAnswers()));

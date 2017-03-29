@@ -21,11 +21,11 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,14 +89,14 @@ public class QueryAnswers implements Iterable<Answer>{
 
     /**
      * unify the answers by applying unifiers to variable set
-     * @param unifiers map of [key: from/value: to] unifiers
+     * @param unifier map of [key: from/value: to] unifiers
      * @return unified query answers
      */
-    public QueryAnswers unify(Map<VarName, VarName> unifiers){
-        if (unifiers.isEmpty()) return new QueryAnswers(this);
+    public QueryAnswers unify(Unifier unifier){
+        if (unifier.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(answer -> {
-            Answer unifiedAnswer = answer.unify(unifiers);
+            Answer unifiedAnswer = answer.unify(unifier);
             unifiedAnswers.add(unifiedAnswer);
         });
 
@@ -110,6 +110,6 @@ public class QueryAnswers implements Iterable<Answer>{
      */
     public static <T extends ReasonerQuery> QueryAnswers getUnifiedAnswers(T parentQuery, T childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        return answers.unify(childQuery.getUnifiers(parentQuery));
+        return answers.unify(childQuery.getUnifier(parentQuery));
     }
 }

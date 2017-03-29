@@ -105,6 +105,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         } else {
             if(graknGraph.isClosed()){
                 graknGraph.openTransaction();
+            } else {
+                throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graknGraph.getKeyspace()));
             }
 
             //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
