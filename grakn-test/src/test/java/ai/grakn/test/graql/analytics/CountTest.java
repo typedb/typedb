@@ -51,7 +51,7 @@ public class CountTest {
         assumeFalse(usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = factory.open();
     }
 
     @Test
@@ -73,7 +73,7 @@ public class CountTest {
         thing.addEntity().getId();
         anotherThing.addEntity().getId();
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         // assert computer returns the correct count of instances
         startTime = System.currentTimeMillis();
@@ -109,7 +109,7 @@ public class CountTest {
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
     }
     private Long executeCount(GraknSession factory){
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         Long result = graph.graql().compute().count().execute();
         graph.close();
         return result;

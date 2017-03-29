@@ -37,7 +37,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        graph = Grakn.factory("in-memory", "my-pokemon-graph").getGraph();
+        graph = Grakn.factory("in-memory", "my-pokemon-graph").open();
     }
 
     @After

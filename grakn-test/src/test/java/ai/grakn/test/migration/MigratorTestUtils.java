@@ -60,7 +60,7 @@ public class MigratorTestUtils {
     }
 
     public static void load(GraknSession factory, File ontology) {
-        try(GraknGraph graph = factory.getGraph()) {
+        try(GraknGraph graph = factory.open()) {
             graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();

@@ -110,9 +110,9 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         closeGraph(lastGeneratedGraph);
 
         // Clear graph before retrieving
-        graph = factory.getGraph();
+        graph = factory.open();
         graph.clear();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         for (int i = 0; i < size; i++) {
             mutateOnce();

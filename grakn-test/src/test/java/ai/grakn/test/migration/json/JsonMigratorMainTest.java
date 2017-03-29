@@ -59,7 +59,7 @@ public class JsonMigratorMainTest {
     public void setup() {
         GraknSession factory = engine.factoryWithNewKeyspace();
         load(factory, getFile("json", "simple-schema/schema.gql"));
-        graph = factory.getGraph();
+        graph = factory.open();
     }
 
     @Test

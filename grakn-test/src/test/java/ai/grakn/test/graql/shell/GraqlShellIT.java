@@ -98,7 +98,7 @@ public class GraqlShellIT {
     @After
     public void tearDown() throws GraknValidationException {
         for (String keyspace : keyspaces){
-            Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().clear();
+            Grakn.factory(Grakn.DEFAULT_URI, keyspace).open().clear();
         }
     }
 

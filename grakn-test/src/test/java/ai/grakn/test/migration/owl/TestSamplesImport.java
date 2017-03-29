@@ -60,7 +60,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open();
             EntityType type = graph.getEntityType("tMensWear");
             EntityType sub = graph.getEntityType("tTshirts");
             Assert.assertNotNull(type);
@@ -88,7 +88,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open();
             EntityType top = graph.getEntityType("tThing");
             EntityType type = graph.getEntityType("tAuthor");
             Assert.assertNotNull(type);
@@ -132,7 +132,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open();
             EntityType type = graph.getEntityType("tProduct");
             Assert.assertNotNull(type);
             Optional<Entity> e = findById(type.instances(), "eProduct5");
@@ -161,7 +161,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open();
             migrator.graph(graph);
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         

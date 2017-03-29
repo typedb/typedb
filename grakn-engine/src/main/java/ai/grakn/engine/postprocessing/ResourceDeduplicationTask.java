@@ -63,7 +63,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     
     static <T> T transact(GraknSession factory, Function<GraknGraph, T> work, String description) {
         while (true) {
-            try (GraknGraph graph = factory.getGraph()) {
+            try (GraknGraph graph = factory.open()) {
                 return work.apply(graph);
             }
             catch (GraknLockingException ex) {
@@ -170,7 +170,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
                 // TODO: what if we fail here due to some read-write conflict?
-                try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
+                try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open()) {
                     Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();

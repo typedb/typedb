@@ -58,7 +58,7 @@ public class JsonMigratorTest {
     @Before
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
         graph.close();
     }
@@ -93,7 +93,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "simple-schema/data.json");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
@@ -140,7 +140,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "all-types/data.json");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
         assertEquals(1, things.size());
@@ -173,7 +173,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
 
@@ -197,7 +197,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
     }
@@ -208,7 +208,7 @@ public class JsonMigratorTest {
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(1, theThing.instances().size());
     }

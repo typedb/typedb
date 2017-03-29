@@ -43,7 +43,7 @@ public interface GraknSession {
      * @return A new or existing Grakn graph
      * @see GraknGraph
      */
-    GraknGraph getGraph();
+    GraknGraph open();
 
     /**
      * Get a new or existing graph with batch loading enabled.

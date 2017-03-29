@@ -192,7 +192,7 @@ public class RelationTest extends GraphTestBase{
 
         relationType.addRelation();
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
 
@@ -208,7 +208,7 @@ public class RelationTest extends GraphTestBase{
         relation.putRolePlayer(roleType2, null);
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
         assertEquals(getFakeId(relation.type(), roleMap), relation.getIndex());

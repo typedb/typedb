@@ -66,7 +66,7 @@ public class TestOwlGraknBase {
     @Before
     public void init() {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = factory.open();
         manager = OWLManager.createOWLOntologyManager();
         migrator = new OWLMigrator();
     }

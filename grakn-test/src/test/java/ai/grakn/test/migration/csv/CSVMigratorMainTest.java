@@ -50,7 +50,7 @@ public class CSVMigratorMainTest {
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
         load(factory, getFile("csv", "pets/schema.gql"));
-        graph = factory.getGraph();
+        graph = factory.open();
     }
 
     @Test
@@ -103,7 +103,7 @@ public class CSVMigratorMainTest {
         load(factory, getFile("csv", "multi-file/schema.gql"));
         String configurationFile = getFile("csv", "multi-file/migration.yaml").getAbsolutePath();
         run("csv", "-config", configurationFile, "-keyspace", graph.getKeyspace());
-        graph = factory.getGraph();
+        graph = factory.open();
         assertPokemonGraphCorrect(graph);
     }
 
@@ -144,7 +144,7 @@ public class CSVMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        if(graph.isClosed()) graph = factory.getGraph(); //Make sure the graph is open
+        if(graph.isClosed()) graph = factory.open(); //Make sure the graph is open
         assertPetGraphCorrect(graph);
     }
 }

@@ -71,7 +71,7 @@ public class GraknSessionImpl implements GraknSession {
      * @return A new or existing grakn graph with the defined name
      */
     @Override
-    public GraknGraph getGraph(){
+    public GraknGraph open(){
         graph = getConfiguredFactory().factory.getGraph(false);
         return graph;
     }

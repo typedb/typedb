@@ -57,13 +57,13 @@ public class VisualiserControllerTest {
     @BeforeClass
     public static void setUp() throws Exception {
         GraknSession factory = engine.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         loadFromFile(graph, "genealogy/ontology.gql");
         loadFromFile(graph, "genealogy/data.gql");
 
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
     }
 
     @AfterClass

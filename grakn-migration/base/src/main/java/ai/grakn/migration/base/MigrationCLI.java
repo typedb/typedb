@@ -125,7 +125,7 @@ public class MigrationCLI {
         if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph();
+            GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).open();
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();

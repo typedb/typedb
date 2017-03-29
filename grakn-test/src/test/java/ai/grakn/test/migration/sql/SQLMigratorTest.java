@@ -56,7 +56,7 @@ public class SQLMigratorTest {
     @Before
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         graph.close();
         migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
     }
@@ -69,7 +69,7 @@ public class SQLMigratorTest {
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open();
             assertPetGraphCorrect(graph);
         }
     }
@@ -104,7 +104,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open();
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -142,7 +142,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open();
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -155,7 +155,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open();
             Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));

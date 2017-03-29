@@ -68,7 +68,7 @@ public class ConceptLogTest extends GraphTestBase{
         CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -81,7 +81,7 @@ public class ConceptLogTest extends GraphTestBase{
         EntityType t1 = graknGraph.putEntityType("1");
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -99,7 +99,7 @@ public class ConceptLogTest extends GraphTestBase{
         Entity i2 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -115,7 +115,7 @@ public class ConceptLogTest extends GraphTestBase{
         Entity i1 = t1.addEntity();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open();
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 

@@ -34,7 +34,7 @@ public class GraphWriterMainTest {
 
     @BeforeClass
     public static void loadMovieGraph() {
-        GraknGraph graph = engineContext.factoryWithNewKeyspace().getGraph();
+        GraknGraph graph = engineContext.factoryWithNewKeyspace().open();
         keyspace = graph.getKeyspace();
         graph.close();
     }

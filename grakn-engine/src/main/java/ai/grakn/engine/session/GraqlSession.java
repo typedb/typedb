@@ -116,7 +116,7 @@ class GraqlSession {
     }
 
     private void refreshGraph() {
-        graph = factory.getGraph();
+        graph = factory.open();
         graph.showImplicitConcepts(showImplicitTypes);
     }
 

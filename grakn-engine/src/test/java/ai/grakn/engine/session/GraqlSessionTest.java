@@ -48,7 +48,7 @@ public class GraqlSessionTest {
         QueryBuilder qb = mock(QueryBuilder.class);
         CountQuery count = mock(CountQuery.class);
 
-        when(factory.getGraph()).thenReturn(graph);
+        when(factory.open()).thenReturn(graph);
         when(graph.graql()).thenReturn(qb);
         when(qb.infer(false)).thenReturn(qb);
         when(qb.materialise(false)).thenReturn(qb);

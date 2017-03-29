@@ -63,7 +63,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        graph = engine.factoryWithNewKeyspace().getGraph();
+        graph = engine.factoryWithNewKeyspace().open();
     }
 
     @After
@@ -103,7 +103,7 @@ public class PostProcessingTest {
         ConceptId otherInstanceId4 = instance4.getId();
 
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         //Check Number of castings is as expected
         Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
@@ -174,13 +174,13 @@ public class PostProcessingTest {
 
         //Create Graph With Duplicate Resources
         GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 
 
         Resource<String> resource = resourceType.putResource(value);
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         assertEquals(1, resourceType.instances().size());
         waitForCache(false, keyspace, 1);

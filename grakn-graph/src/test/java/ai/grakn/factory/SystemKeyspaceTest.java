@@ -25,13 +25,13 @@ public class SystemKeyspaceTest {
     @Test
     public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws GraknValidationException {
     	GraknSession f1 = Grakn.factory(Grakn.IN_MEMORY, space1);
-    	f1.getGraph().close();
+    	f1.open().close();
     	GraknSession f2 = Grakn.factory(Grakn.IN_MEMORY, space2);
-    	GraknGraph gf2 = f2.getGraph();
+    	GraknGraph gf2 = f2.open();
     	GraknSession f3 = Grakn.factory(Grakn.IN_MEMORY, space3);
-    	GraknGraph gf3 = f3.getGraph();
+    	GraknGraph gf3 = f3.open();
     	GraknSession system = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
-    	GraknGraph graph = system.getGraph();
+    	GraknGraph graph = system.open();
     	ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
     	Collection<String> spaces = graph.getEntityType("keyspace").instances()
     		.stream().map(e -> 
@@ -53,7 +53,7 @@ public class SystemKeyspaceTest {
 
     @Test
     public void ensureUserOntologyIsLoadedIntoSystemGraph(){
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME).open();
         graph.showImplicitConcepts(true);
 
         EntityType user = graph.getEntityType("user");

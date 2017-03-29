@@ -65,7 +65,7 @@ public class DegreeTest {
         assumeFalse(usingOrientDB());
 
         factory = context.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = factory.open();
     }
 
     @Test
@@ -102,7 +102,7 @@ public class DegreeTest {
                 .putRolePlayer(role2, graph.getConcept(entity4))
                 .getId();
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -121,7 +121,7 @@ public class DegreeTest {
         GraknSparkComputer.clear();
         graph.close();
         list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.getGraph()) {
+            try (GraknGraph graph = factory.open()) {
                 Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
 
                 assertEquals(3, degrees.size());
@@ -134,7 +134,7 @@ public class DegreeTest {
             }
         });
 
-        graph = factory.getGraph();
+        graph = factory.open();
         Map<Long, Set<String>> degrees2 = graph.graql().compute().degree().of("thing").execute();
 
         assertEquals(2, degrees2.size());
@@ -209,7 +209,7 @@ public class DegreeTest {
         EntityType dog = graph.putEntityType("dog").superType(animal);
         ConceptId foofoo = dog.addEntity().getId();
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         // set subgraph
         HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("person"), TypeName.of("animal"), TypeName.of("mans-best-friend"));
@@ -272,7 +272,7 @@ public class DegreeTest {
         referenceDegrees.put(cocoAltName.getId(), 2L);
 
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         // create a subgraph excluding resources and the relationship
         HashSet<TypeName> subGraphTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"));
@@ -334,7 +334,7 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         // compute and persist degrees
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
@@ -400,7 +400,7 @@ public class DegreeTest {
         referenceDegrees2.put(daveOwnsCoco.getId(), 2L);
 
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         // create a subgraph with assertion on assertion
         HashSet<TypeName> ct =
@@ -460,7 +460,7 @@ public class DegreeTest {
         ConceptId relationId = relation.getId();
 
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         assertTrue(degrees.get(3L).contains(relationId.getValue()));
@@ -498,7 +498,7 @@ public class DegreeTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 3L);
 
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().execute();
         assertFalse(degrees.isEmpty());
@@ -544,7 +544,7 @@ public class DegreeTest {
 
         // validate
         graph.commit();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         // check degree for dave owning cats
         //TODO: should we count the relationship even if there is no cat attached?

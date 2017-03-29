@@ -36,7 +36,7 @@ public class GraphTestBase {
     @Before
     public void setUpGraph() {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).open();
         graknGraphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
     }
 

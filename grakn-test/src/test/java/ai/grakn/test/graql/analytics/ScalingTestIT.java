@@ -114,7 +114,7 @@ public class ScalingTestIT {
         for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
-        keyspace = context.factoryWithNewKeyspace().getGraph().getKeyspace();
+        keyspace = context.factoryWithNewKeyspace().open().getKeyspace();
 
         headers = new ArrayList<>();
         headers.add("Size");
@@ -124,7 +124,7 @@ public class ScalingTestIT {
     @Ignore
     @After
     public void cleanGraph() {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
         graph.clear();
     }
 
@@ -137,7 +137,7 @@ public class ScalingTestIT {
         simpleOntology(keyspace);
 
         // get a count before adding any data
-        Long emptyCount = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()
+        Long emptyCount = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open()
                 .admin().getTinkerTraversal().count().next();
         LOGGER.info("gremlin count before data is: " + emptyCount);
 
@@ -156,7 +156,7 @@ public class ScalingTestIT {
 
             Long gremlinCount = (long) (NUM_SUPER_NODES * (3 * graphSize + 1) + graphSize);
             LOGGER.info("gremlin count is: " +
-                    Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph().admin().getTinkerTraversal().count().next());
+                    Grakn.factory(Grakn.DEFAULT_URI, keyspace).open().admin().getTinkerTraversal().count().next());
             gremlinCount += emptyCount;
             LOGGER.info("expected gremlin count is: "+gremlinCount);
 
@@ -281,7 +281,7 @@ public class ScalingTestIT {
             }
             loader.waitToFinish();
             LOGGER.info("stop loading data");
-            GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+            GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
             LOGGER.info("gremlin count is: " + graph.admin().getTinkerTraversal().count().next());
             graph.close();
 
@@ -348,7 +348,7 @@ public class ScalingTestIT {
             printers.get(method).flush();
             printers.get(method).close();
         }
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
         graph.clear();
         graph.close();
     }
@@ -375,7 +375,7 @@ public class ScalingTestIT {
     }
 
     private void simpleOntology(String keyspace) throws GraknValidationException {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
         EntityType thing = graph.putEntityType("thing");
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
@@ -389,7 +389,7 @@ public class ScalingTestIT {
     }
 
     private Set<String> makeSuperNodes(String keyspace) throws GraknValidationException {
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
         EntityType thing = graph.getEntityType("thing");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
@@ -430,6 +430,6 @@ public class ScalingTestIT {
     private StdQueryImplMock getStdQuery(ComputeQueryBuilderImplMock cqb) {return ((StdQueryImplMock) cqb.std());}
 
     private ComputeQueryBuilderImplMock getComputeQueryBuilder(String uri, String keyspace, int numWorkers){
-        return ((ComputeQueryBuilderImplMock) (new QueryBuilderImplMock(Grakn.factory(uri, keyspace).getGraph(), numWorkers)).compute());
+        return ((ComputeQueryBuilderImplMock) (new QueryBuilderImplMock(Grakn.factory(uri, keyspace).open(), numWorkers)).compute());
     }
 }

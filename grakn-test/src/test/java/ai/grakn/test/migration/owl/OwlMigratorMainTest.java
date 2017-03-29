@@ -73,7 +73,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
     public void runAndAssertDataCorrect(String... args){
         run(args);
 
-        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open();
         EntityType top = graph.getEntityType("tThing");
         EntityType type = graph.getEntityType("tAuthor");
         assertNotNull(type);

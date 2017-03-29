@@ -49,14 +49,14 @@ public class ResourceDeduplicationMapReduceTestIT {
     static RoleType related1, related2, related3, related4, related5;
     
     static void transact(Consumer<GraknGraph> action) {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open()) {
             action.accept(graph);
             graph.commit();
         }
     }
 
     static <T> T transact(Function<GraknGraph, T> action) {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open()) {
             T result = action.apply(graph);
             graph.commit();
             return result;
@@ -69,7 +69,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     }
 
     private String keyspace() {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open()) {
             return graph.getKeyspace();
         }        
     }
@@ -138,7 +138,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     
     @After
     public void emptyGraph() {
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open();
         graph.clear();
     }
     

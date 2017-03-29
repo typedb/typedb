@@ -59,7 +59,7 @@ public class SQLMigratorMainTest {
     public void setup() throws SQLException {
         factory = engine.factoryWithNewKeyspace();
         connection = setupExample(factory, "pets");
-        graph = factory.getGraph();
+        graph = factory.open();
         keyspace = graph.getKeyspace();
     }
 
@@ -139,7 +139,7 @@ public class SQLMigratorMainTest {
                 "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
-        graph = factory.getGraph(); //Reopen transaction
+        graph = factory.open(); //Reopen transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -149,7 +149,7 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.getGraph(); //Reopen transaction
+        graph = factory.open(); //Reopen transaction
         assertPetGraphCorrect(graph);
     }
 

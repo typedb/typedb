@@ -63,7 +63,7 @@ public class PostProcessingTestIT {
     @Before
     public void setUp() throws Exception {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = factory.open();
     }
 
     @After
@@ -110,7 +110,7 @@ public class PostProcessingTestIT {
         //Try to force duplicate resources
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
-                try(GraknGraph graph = factory.getGraph()){
+                try(GraknGraph graph = factory.open()){
                     Random r = new Random();
 
                     for(int j = 0; j < transactionSize; j ++) {
@@ -140,7 +140,7 @@ public class PostProcessingTestIT {
         waitForCache(graph.getKeyspace(), 2);
 
         //Check current broken state of graph
-        graph = factory.getGraph();
+        graph = factory.open();
         assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
         //Force PP
@@ -149,7 +149,7 @@ public class PostProcessingTestIT {
         //Check current broken state of graph
         graph.close();
         factory.close();
-        graph = factory.getGraph();
+        graph = factory.open();
 
         assertFalse("Failed at fixing graph", graphIsBroken(graph));
     }
