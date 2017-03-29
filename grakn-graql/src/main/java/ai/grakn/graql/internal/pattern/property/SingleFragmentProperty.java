@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 
@@ -33,6 +33,6 @@ interface SingleFragmentProperty extends VarPropertyInternal {
     default Collection<EquivalentFragmentSet> match(VarName start) {
         Fragment fragment = getFragment(start);
         EquivalentFragmentSet equivalentFragmentSet = EquivalentFragmentSet.create(fragment);
-        return Sets.newHashSet(equivalentFragmentSet);
+        return ImmutableSet.of(equivalentFragmentSet);
     }
 }
