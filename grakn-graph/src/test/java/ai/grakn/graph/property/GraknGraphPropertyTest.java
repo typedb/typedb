@@ -92,7 +92,7 @@ public class GraknGraphPropertyTest {
 
         // TODO: Should `admin`, `close`, `commitOnClose`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf(
-                "isClosed", "admin", "close", "abort", "commitOnClose", "implicitConceptsVisible", "showImplicitConcepts",
+                "isClosed", "admin", "close", "commit", "abort", "commitOnClose", "implicitConceptsVisible", "showImplicitConcepts",
                 "getKeyspace", "graql"
         )));
         Object[] params = mockParamsOf(method);
