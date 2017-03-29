@@ -22,11 +22,13 @@ package ai.grakn.generator;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.Collection;
+import java.util.Optional;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
@@ -37,7 +39,7 @@ import static java.util.stream.Collectors.toSet;
 
 public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGenerator<T> {
 
-    private boolean excludeMeta = false;
+    private Optional<Boolean> meta = Optional.empty();
 
     AbstractTypeGenerator(Class<T> type) {
         super(type);
@@ -45,16 +47,23 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
 
     @Override
     protected final T generateFromGraph() {
-        Collection<T> types = (Collection<T>) metaType().subTypes();
+        Collection<T> types;
+
+        if (!includeNonMeta()) {
+            types = Sets.newHashSet(otherMetaTypes());
+            types.add(metaType());
+        } else {
+            types = (Collection<T>) metaType().subTypes();
+        }
 
         types = types.stream().filter(this::filter).collect(toSet());
 
-        if (excludeMeta) {
+        if (!includeMeta()) {
             types.remove(metaType());
             types.removeAll(otherMetaTypes());
         }
         
-        if (types.isEmpty()) {
+        if (types.isEmpty() && includeNonMeta()) {
             TypeName name = genFromGraph(TypeNames.class).mustBeUnused().generate(random, status);
             assert graph().getType(name) == null;
             return newType(name);
@@ -75,18 +84,27 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         return true;
     }
 
-    public final void configure(NotMeta notMeta) {
-        excludeMeta();
+    private final boolean includeMeta() {
+        return meta.orElse(true);
+    }
+
+    private final boolean includeNonMeta() {
+        return !meta.orElse(false);
     }
 
     final AbstractTypeGenerator<T> excludeMeta() {
-        this.excludeMeta = true;
+        meta = Optional.of(false);
         return this;
+    }
+
+    public final void configure(Meta meta) {
+        this.meta = Optional.of(meta.value());
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
     @Retention(RUNTIME)
     @GeneratorConfiguration
-    public static @interface NotMeta {
+    public @interface Meta {
+        boolean value() default true;
     }
 }

@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.graph.property;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
@@ -27,7 +27,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptTypeException;
-import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
+import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.Methods.MethodOf;
@@ -71,7 +71,7 @@ public class ConceptPropertyTest {
     @Ignore // TODO: Either fix this, remove test or add exceptions to this rule
     @Property
     public void whenCallingAnyMethodOnADeletedConcept_Throw(
-            @NotMeta Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
+            @Meta(false) Concept concept, @MethodOf(Concept.class) Method method) throws Throwable {
         concept.delete();
 
         Object[] params = mockParamsOf(method);
@@ -99,7 +99,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingToStringOnADeletedConcept_TheStringContainsTheId(
-            @Open GraknGraph graph, @FromGraph @NotMeta Concept concept) {
+            @Open GraknGraph graph, @FromGraph @Meta(false) Concept concept) {
         assumeDeletable(graph, concept);
         concept.delete();
         assertThat(concept.toString(), containsString(concept.getId().getValue()));
@@ -120,7 +120,7 @@ public class ConceptPropertyTest {
 
     @Property
     public void whenCallingDelete_TheConceptIsNoLongerInTheGraph(
-            @Open GraknGraph graph, @NotMeta @FromGraph Concept concept) {
+            @Open GraknGraph graph, @Meta(false) @FromGraph Concept concept) {
         assumeDeletable(graph, concept);
 
         assertThat(allConceptsFrom(graph), hasItem(concept));
@@ -238,7 +238,6 @@ public class ConceptPropertyTest {
         withImplicitConceptsVisible(graph, g -> {
             if (concept.isType()) {
                 Type type = concept.asType();
-                assumeThat(type.playsRoles(), empty());
                 assumeThat(type.subTypes(), contains(type));
                 assumeThat(type.instances(), empty());
                 assumeThat(type.getRulesOfHypothesis(), empty());

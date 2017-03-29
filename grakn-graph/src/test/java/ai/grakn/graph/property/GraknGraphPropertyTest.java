@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.graph.property;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
@@ -35,7 +35,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
+import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.MetaTypeNames;
@@ -162,7 +162,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
-            @FromGraph @NotMeta ResourceType resourceType, @From(ResourceValues.class) Object value) {
+            @FromGraph @Meta(false) ResourceType resourceType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);
