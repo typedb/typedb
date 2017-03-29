@@ -69,8 +69,8 @@ public class GeoInferenceTest {
     public void testQueryPrime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $z1 isa city;$z1 has name $name;"+
-                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1, $name;";
+        String queryString = "match $z1 isa city;"+
+                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1;";
         String queryString2 = "match $z2 isa city;$z2 has name $name;"+
                 "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
         String explicitQuery = "match " +
@@ -141,6 +141,46 @@ public class GeoInferenceTest {
 
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
+        answers2.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), europe.getId().getValue()));
+        assertEquals(answers2.size(), 21);
+    }
+
+    @Test
+    public void testSpecificQueryPrime() {
+        GraknGraph graph = geoGraph.graph();
+        QueryBuilder iqb = graph.graql().infer(true);
+        String queryString = "match ($x, $y) isa is-located-in;" +
+                "$y has name 'Poland';$x has name $n;";
+
+        Concept poland = getConcept(graph, "name", "Poland");
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        answers.forEach(ans -> assertEquals(ans.size(), 3));
+        answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));
+        assertEquals(answers.size(), 6);
+    }
+
+    @Test
+    public void testSpecificQuery2() {
+        GraknGraph graph = geoGraph.graph();
+        QueryBuilder iqb = graph.graql().infer(true);
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "$y has name 'Poland';$x has name $n;";
+
+        String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "$y has name 'Europe';$x has name $n;";
+
+        Concept poland = getConcept(graph, "name", "Poland");
+        Concept europe = getConcept(graph, "name", "Europe");
+
+        //for(int i = 0 ; i< 50 ;i++) {
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        answers.forEach(ans -> assertEquals(ans.size(), 3));
+        answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));
+        assertEquals(answers.size(), 6);
+
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
+        answers2.forEach(ans -> assertEquals(ans.size(), 3));
         answers2.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), europe.getId().getValue()));
         assertEquals(answers2.size(), 21);
     }
@@ -224,6 +264,8 @@ public class GeoInferenceTest {
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(queryAnswers(q1), queryAnswers(q2));
+        QueryAnswers answers = queryAnswers(q1);
+        QueryAnswers answers2 = queryAnswers(q2);
+        assertEquals(answers, answers2);
     }
 }

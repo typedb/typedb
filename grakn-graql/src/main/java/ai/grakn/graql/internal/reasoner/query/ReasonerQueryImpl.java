@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
+import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -406,6 +407,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     public boolean addSubstitution(Answer sub){
         Set<VarName> varNames = getVarNames();
+
+        //skip predicates from types
+        getTypeConstraints().stream().map(BinaryBase::getValueVariable).forEach(varNames::remove);
+
         Set<IdPredicate> predicates = sub.entrySet().stream()
                 .filter(e -> varNames.contains(e.getKey()))
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), this))
@@ -577,7 +582,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
-        if (getTopAtom() == null)
+        //TODO temporary switch
+        if (materialise || getTopAtom() == null)
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         else
             return resolve();

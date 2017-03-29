@@ -476,10 +476,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         ReasonerAtomicQueryIterator(Set<ReasonerAtomicQuery> subGoals){
             this.partialSubstitution = getSubstitution();
             this.subGoals = subGoals;
-            //ReasonerAtomicQuery.this.addSubstitution(substitution);
 
-            //initialize queryIterator to db content
-            //TODO cover case when substitution maps all variables
             boolean hasFullSubstitution = hasFullSubstitution();
             this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : DBlookup().iterator();
             this.ruleIterator = hasFullSubstitution? Collections.emptyIterator() : getAtom().getApplicableRules().iterator();
@@ -496,6 +493,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                         InferenceRule rule = ruleIterator.next();
                         rule.unify(subbedQuery.getAtom());
                         subGoals.add(subbedQuery);
+
                         ReasonerQueryImpl query = rule.getBody();
                         query.addSubstitution(getSubstitution());
                         queryIterator = query.iterator(subGoals);
