@@ -18,17 +18,19 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.ImmutableSet;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -41,7 +43,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class ValueProperty extends AbstractVarProperty implements NamedProperty, SingleFragmentProperty {
+public class ValueProperty extends AbstractVarProperty implements NamedProperty {
 
     private final ValuePredicateAdmin predicate;
 
@@ -64,8 +66,8 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty,
     }
 
     @Override
-    public Fragment getFragment(VarName start) {
-        return Fragments.value(start, predicate);
+    public Collection<EquivalentFragmentSet> match(VarName start) {
+        return ImmutableSet.of(EquivalentFragmentSets.value(start, predicate));
     }
 
     @Override

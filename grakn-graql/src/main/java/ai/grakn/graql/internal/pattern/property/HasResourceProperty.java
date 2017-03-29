@@ -34,7 +34,6 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
@@ -48,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.Utility.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static java.util.stream.Collectors.joining;
@@ -122,10 +122,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        return ImmutableSet.of(EquivalentFragmentSet.create(
-                Fragments.shortcut(Optional.empty(), Optional.empty(), Optional.empty(), start, resource.getVarName()),
-                Fragments.shortcut(Optional.empty(), Optional.empty(), Optional.empty(), resource.getVarName(), start)
-        ));
+        return ImmutableSet.of(
+                shortcut(Optional.empty(), start, Optional.empty(), resource.getVarName(), Optional.empty())
+        );
     }
 
     @Override

@@ -23,7 +23,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Collections2;
@@ -154,7 +154,7 @@ class ConjunctionQuery {
             return traversals.stream();
         } else {
             // If this variable has no properties, only confirm that it is not a casting and nothing else.
-            return Stream.of(EquivalentFragmentSet.create(Fragments.notCasting(start)));
+            return Stream.of(EquivalentFragmentSets.notCasting(start));
         }
     }
 
