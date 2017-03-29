@@ -211,6 +211,14 @@ public class Relation extends TypeAtom {
     @Override
     public boolean isType(){ return getType() != null;}
 
+    @Override
+    public boolean hasSubstitution() {
+        Set<VarName> rolePlayers = getRolePlayers();
+        return getIdPredicates().stream()
+                .filter(pred -> rolePlayers.contains(pred.getVarName()))
+                .count() > 0;
+    }
+
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */

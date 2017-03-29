@@ -24,6 +24,7 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
@@ -71,7 +72,7 @@ public abstract class AtomBase implements Atomic {
 
     @Override
     public boolean isUserDefinedName(){ return atomPattern.asVar().isUserDefinedName();}
-
+    
     @Override
     public VarName getVarName(){ return varName;}
 
