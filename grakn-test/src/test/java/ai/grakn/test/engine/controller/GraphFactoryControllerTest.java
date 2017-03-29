@@ -79,7 +79,7 @@ public class GraphFactoryControllerTest {
 
     @Test
     public void testGraknClientBatch() {
-        GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "grakntestagain").getGraphBatchLoading();
+        GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "grakntestagain").open(GraknTransaction.BATCH);
         assertTrue(((AbstractGraknGraph) batch).isBatchLoadingEnabled());
     }
 
@@ -92,7 +92,7 @@ public class GraphFactoryControllerTest {
         assertNotEquals(graph, graph2);
         graph.close();
 
-        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraphBatchLoading();
+        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").open(GraknTransaction.BATCH);
         assertTrue(batch.isBatchLoadingEnabled());
         assertNotEquals(graph, batch);
 
@@ -106,7 +106,7 @@ public class GraphFactoryControllerTest {
         assumeTrue(usingTinker());
         String keyspace = "grakntest";
         AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransaction.WRITE);
-        AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
+        AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransaction.BATCH);
 
         assertNotEquals(graphNormal, graphBatch);
         //This is only true for tinkergraph

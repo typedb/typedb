@@ -83,16 +83,6 @@ public class GraknSessionImpl implements GraknSession {
         }
     }
 
-    /**
-     *
-     * @return A new or existing grakn graph with the defined name connecting to the specified remote location with batch loading enabled
-     */
-    @Override
-    public GraknGraph getGraphBatchLoading(){
-        graphBatch = getConfiguredFactory().factory.getGraph(true);
-        return graphBatch;
-    }
-
     private ConfiguredFactory getConfiguredFactory(){
         return configureGraphFactory(keyspace, location, REST.GraphConfig.DEFAULT);
     }

@@ -64,7 +64,7 @@ public class GraknTest {
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).open(GraknTransaction.WRITE);
-        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
+        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).open(GraknTransaction.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(graph.getTinkerPopGraph(), batchGraph.getTinkerPopGraph());

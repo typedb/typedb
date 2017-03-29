@@ -49,14 +49,6 @@ public interface GraknSession {
     GraknGraph open(GraknTransaction transactionType);
 
     /**
-     * Get a new or existing graph with batch loading enabled.
-     *
-     * @return A new or existing Grakn graph with batch loading enabled
-     * @see GraknGraph
-     */
-    GraknGraph getGraphBatchLoading();
-
-    /**
      * Get a new or existing GraknComputer.
      *
      * @return A new or existing Grakn graph computer

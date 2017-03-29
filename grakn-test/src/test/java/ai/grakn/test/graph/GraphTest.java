@@ -80,7 +80,7 @@ public class GraphTest {
         assertEquals(1, factory.openGraphTxs());
         assertEquals(0, factory.openGraphBatchTxs());
 
-        factory.getGraphBatchLoading();
+        factory.open(GraknTransaction.BATCH);
         assertEquals(1, factory.openGraphTxs());
         assertEquals(1, factory.openGraphBatchTxs());
 
@@ -88,7 +88,7 @@ public class GraphTest {
 
         for(int i = 0; i < 5; i ++){
             Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTransaction.WRITE)).get();
-            Executors.newSingleThreadExecutor().submit(factory::getGraphBatchLoading).get();
+            Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTransaction.BATCH)).get();
 
             if(!usingTinker()) expectedValue++;
 
