@@ -33,7 +33,6 @@ import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -85,12 +84,12 @@ public class MatchQueryBase extends AbstractMatchQuery {
         for (VarAdmin var : pattern.getVars()) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));}
 
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern);
+        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(pattern, graph);
         LOG.trace("Created query plan");
         LOG.trace(graqlTraversal.toString());
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal(graph);
 
-        String[] selectedNames = getSelectedNames().stream().map(VarName::getValue).toArray(String[]::new);
+        String[] selectedNames = pattern.commonVarNames().stream().map(VarName::getValue).toArray(String[]::new);
 
         // Must provide three arguments in order to pass an array to .select
         // If ordering, select the variable to order by as well
@@ -120,28 +119,6 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
-    public ImmutableSet<VarName> getSelectedNames() {
-        // Default selected names are all user defined variable names shared between disjunctions.
-        // For example, in a query of the form
-        // {..$x..$y..} or {..$x..}
-        // $x will appear in the results, but not $y because it is not guaranteed to appear in all disjunctions
-
-        // Get conjunctions within disjunction
-        Set<Conjunction<VarAdmin>> conjunctions = pattern.getDisjunctiveNormalForm().getPatterns();
-
-        // Get all selected names from each conjunction
-        Stream<Set<VarName>> vars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
-
-        // Get the intersection of all conjunctions to find any variables shared between them
-        // This will fail if there are no conjunctions (so the query is empty)
-        Set<VarName> names = vars.reduce(Sets::intersection).orElseThrow(
-                () -> new RuntimeException(ErrorMessage.MATCH_NO_PATTERNS.getMessage())
-        );
-        
-        return ImmutableSet.copyOf(names);
-    }
-
-    @Override
     public Conjunction<PatternAdmin> getPattern() {
         return pattern;
     }
@@ -152,24 +129,17 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     @Override
+    public Set<VarName> getSelectedNames() {
+        return pattern.commonVarNames();
+    }
+
+    @Override
     public String toString() {
         return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
     }
 
     public final MatchQuery infer(boolean materialise) {
         return new MatchQueryInfer(this, materialise);
-    }
-
-    /**
-     * @param conjunction a conjunction containing variables
-     * @return all user-defined variable names in the given conjunction
-     */
-    private Set<VarName> getDefinedNamesFromConjunction(Conjunction<VarAdmin> conjunction) {
-        return conjunction.getVars().stream()
-                .flatMap(var -> var.getInnerVars().stream())
-                .filter(VarAdmin::isUserDefinedName)
-                .map(VarAdmin::getVarName)
-                .collect(toSet());
     }
 
     private ImmutableSet<TypeName> getAllTypeNames() {
@@ -186,7 +156,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
      * @return a map of concepts where the key is the variable name
      */
     private Map<VarName, Concept> makeResults(GraknGraph graph, Map<String, Vertex> vertices) {
-        return getSelectedNames().stream().collect(Collectors.<VarName, VarName, Concept>toMap(
+        return pattern.commonVarNames().stream().collect(Collectors.<VarName, VarName, Concept>toMap(
                 Function.identity(),
                 name -> graph.admin().buildConcept(vertices.get(name.getValue()))
         ));
