@@ -80,8 +80,7 @@ public class RuleTest extends GraphTestBase{
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("LHS", rule.getId(), rule.type().getName(), "Your-Type"));
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test
@@ -96,8 +95,7 @@ public class RuleTest extends GraphTestBase{
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage("RHS", rule.getId(), rule.type().getName(), "Your-Type"));
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test
@@ -112,8 +110,7 @@ public class RuleTest extends GraphTestBase{
         assertTrue("Hypothesis is not empty before commit", rule.getHypothesisTypes().isEmpty());
         assertTrue("Conclusion is not empty before commit", rule.getConclusionTypes().isEmpty());
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
 
         assertThat(rule.getHypothesisTypes(), containsInAnyOrder(t1));
         assertThat(rule.getConclusionTypes(), containsInAnyOrder(t2));

@@ -225,8 +225,7 @@ public class GraknGraphTest extends GraphTestBase {
         RelationType rel1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
 
         //Purge the above concepts into the main cache
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
 
         //Check cache is in good order
@@ -360,7 +359,6 @@ public class GraknGraphTest extends GraphTestBase {
                 "successful-recommendation sub role;\n" +
                 "category-recommendation sub role;\n" +
                 "product-recommendation sub role;").execute();
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 }

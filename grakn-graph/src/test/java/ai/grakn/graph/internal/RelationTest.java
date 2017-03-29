@@ -191,8 +191,7 @@ public class RelationTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
 
         relationType.addRelation();
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
@@ -208,8 +207,7 @@ public class RelationTest extends GraphTestBase{
         relation.putRolePlayer(roleType1, instance1);
         relation.putRolePlayer(roleType2, null);
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
@@ -240,8 +238,7 @@ public class RelationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()));
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test

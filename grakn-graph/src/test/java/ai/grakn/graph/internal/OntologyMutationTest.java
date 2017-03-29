@@ -62,8 +62,7 @@ public class OntologyMutationTest extends GraphTestBase{
         alice = woman.addEntity();
         bob = man.addEntity();
         marriage.addRelation().putRolePlayer(wife, alice).putRolePlayer(husband, bob);
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
         graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
     }
 
@@ -74,16 +73,14 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getName(), alice.getId(), wife.getName()));
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test
     public void whenDeletingHasRoleUsedByExistingRelation_Throw() throws GraknValidationException {
         marriage.deleteHasRole(husband);
         expectedException.expect(GraknValidationException.class);
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test
@@ -93,8 +90,7 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(man.getName(), bob.getId(), husband.getName()));
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test
@@ -104,8 +100,7 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_IS_ABSTRACT.getMessage(man.getName()));
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test

@@ -51,8 +51,7 @@ public class PokemonGraphFactoryTest {
         GraknSession factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
         graknGraph = factory.getGraph();
         PokemonGraphFactory.loadGraph(graknGraph);
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
         graknGraph = factory.getGraph();
     }
 
