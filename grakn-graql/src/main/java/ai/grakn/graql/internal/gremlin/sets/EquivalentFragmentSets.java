@@ -19,6 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeName;
@@ -26,7 +27,10 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 
+import java.util.Collection;
 import java.util.Optional;
+
+import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
 
 /**
  * @author Felix Chapman
@@ -167,5 +171,23 @@ public class EquivalentFragmentSets {
      */
     public static EquivalentFragmentSet regex(VarName resourceType, String regex) {
         return new RegexFragmentSet(resourceType, regex);
+    }
+
+    // TODO: Move shortcut edge optimisation here
+    /**
+     * Modify the given collection of {@link EquivalentFragmentSet} to introduce certain optimisations, such as the
+     * {@link ResourceIndexFragmentSet}.
+     *
+     * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
+     */
+    public static void optimiseFragmentSets(
+            Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+
+        // Repeatedly apply optimisations until they don't alter the query
+        boolean changed = true;
+
+        while (changed) {
+            changed = applyResourceIndexOptimisation(fragmentSets, graph);
+        }
     }
 }

@@ -19,81 +19,130 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableList;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.function.Function;
 
+import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.pattern.Patterns.conjunction;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ConjunctionQueryTest {
-    private TypeName resourceTypeName = TypeName.of("name");
-    private Var resourceTypeWithoutSubTypes = name(resourceTypeName);
-    private Var resourceTypeWithSubTypes = name(TypeName.of("resource"));
+    private TypeName resourceTypeWithoutSubTypesName = TypeName.of("name");
+    private TypeName resourceTypeWithSubTypesName = TypeName.of("resource");
+    private Var resourceTypeWithoutSubTypes = name(resourceTypeWithoutSubTypesName);
+    private Var resourceTypeWithSubTypes = name(resourceTypeWithSubTypesName);
     private String literalValue = "Bob";
+    private GraknGraph graph;
+    private VarName x = VarName.of("x");
+    private VarName y = VarName.of("y");
+
+    @Before
+    public void setUp() {
+        graph = mock(GraknGraph.class);
+
+        Type resourceTypeWithoutSubTypesMock = mock(Type.class);
+        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock)).when(resourceTypeWithoutSubTypesMock).subTypes();
+
+        Type resourceTypeWithSubTypesMock = mock(Type.class);
+        doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
+                .when(resourceTypeWithSubTypesMock).subTypes();
+
+        when(graph.getType(resourceTypeWithoutSubTypesName)).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(graph.getType(resourceTypeWithSubTypesName)).thenReturn(resourceTypeWithSubTypesMock);
+    }
 
     @Test
     public void whenVarRefersToATypeWithoutSubTypesAndALiteralValue_UseResourceIndex() {
-        assertThat(var("x").isa(resourceTypeWithoutSubTypes).value(literalValue), usesResourceIndex());
+        assertThat(var(x).isa(resourceTypeWithoutSubTypes).value(literalValue), usesResourceIndex());
+    }
+
+    @Test
+    public void whenVarHasTwoResources_UseResourceIndexForBoth() {
+        Pattern pattern = and(
+                var(x).isa(resourceTypeWithoutSubTypes).value("Foo"),
+                var(y).isa(resourceTypeWithoutSubTypes).value("Bar")
+        );
+
+        assertThat(pattern, allOf(usesResourceIndex(x, "Foo"), usesResourceIndex(y, "Bar")));
+    }
+
+    @Test
+    public void whenVarRefersToATypeWithAnExplicitVarName_UseResourceIndex() {
+        assertThat(var(x).isa(var(y).name(resourceTypeWithoutSubTypesName)).value(literalValue), usesResourceIndex());
+    }
+
+    @Test
+    public void whenQueryUsesHasSyntax_UseResourceIndex() {
+        assertThat(
+                var(x).has(resourceTypeWithoutSubTypesName, var(y).value(literalValue)),
+                usesResourceIndex(y, literalValue)
+        );
     }
 
     @Test
     public void whenVarCanUseResourceIndexAndHasOtherProperties_UseResourceIndex() {
         assertThat(
-                var("x").isa(resourceTypeWithoutSubTypes).value(literalValue).id(ConceptId.of("123")),
+                var(x).isa(resourceTypeWithoutSubTypes).value(literalValue).id(ConceptId.of("123")),
                 usesResourceIndex()
         );
     }
 
     @Test
     public void whenVarRefersToATypeWithSubtypes_DoNotUseResourceIndex() {
-        assertThat(var("x").isa(resourceTypeWithSubTypes).value(literalValue), not(usesResourceIndex()));
+        assertThat(var(x).isa(resourceTypeWithSubTypes).value(literalValue), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarHasAValueComparator_DoNotUseResourceIndex() {
-        assertThat(var("x").isa(resourceTypeWithoutSubTypes).value(gt(literalValue)), not(usesResourceIndex()));
-    }
-
-    @Test
-    public void whenVarHasMultipleLiteralValues_DoNotUseResourceIndex() {
-        assertThat(
-                var("x").isa(resourceTypeWithoutSubTypes).value(literalValue).value("something else"),
-                not(usesResourceIndex())
-        );
+        assertThat(var(x).isa(resourceTypeWithoutSubTypes).value(gt(literalValue)), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarDoesNotHaveAType_DoNotUseResourceIndex() {
-        assertThat(var("x").value(literalValue), not(usesResourceIndex()));
+        assertThat(var(x).value(literalValue), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarDoesNotHaveAValue_DoNotUseResourceIndex() {
-        assertThat(var("x").value(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
+        assertThat(var(x).value(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
     }
 
-    private Matcher<Var> usesResourceIndex() {
-        Fragment resourceIndexFragment = Fragments.resourceIndex(VarName.of("x"), resourceTypeName, literalValue);
+    private Matcher<Pattern> usesResourceIndex() {
+        return usesResourceIndex(x, literalValue);
+    }
 
-        return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", var ->
-                new ConjunctionQuery(conjunction(Sets.newHashSet(var.admin()))).getEquivalentFragmentSets()
-        );
+    private Matcher<Pattern> usesResourceIndex(VarName varName, Object value) {
+        Fragment resourceIndexFragment = Fragments.resourceIndex(varName, resourceTypeWithoutSubTypesName, value);
+
+        return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
+            Conjunction<VarAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();
+            return new ConjunctionQuery(conjunction, graph).getEquivalentFragmentSets();
+        });
     }
 
     private <T, U> Matcher<T> feature(Matcher<? super U> subMatcher, String name, Function<T, U> extractor) {

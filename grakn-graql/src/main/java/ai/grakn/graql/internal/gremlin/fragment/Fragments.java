@@ -154,7 +154,7 @@ public class Fragments {
     }
 
     public static Fragment resourceIndex(VarName start, TypeName typeName, Object resourceValue) {
-        return null;
+        return new ResourceIndexFragment(start, typeName, resourceValue);
     }
 
     @SuppressWarnings("unchecked")

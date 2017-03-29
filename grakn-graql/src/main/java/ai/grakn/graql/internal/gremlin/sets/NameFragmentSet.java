@@ -29,7 +29,20 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
  */
 class NameFragmentSet extends EquivalentFragmentSet {
 
+    private final VarName type;
+    private TypeName name;
+
     NameFragmentSet(VarName type, TypeName name) {
         super(Fragments.name(type, name));
+        this.type = type;
+        this.name = name;
+    }
+
+    VarName type() {
+        return type;
+    }
+
+    TypeName name() {
+        return name;
     }
 }

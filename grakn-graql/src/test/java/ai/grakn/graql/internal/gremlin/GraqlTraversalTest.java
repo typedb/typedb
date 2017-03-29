@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Pattern;
@@ -30,6 +31,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -64,6 +66,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class GraqlTraversalTest {
 
@@ -82,6 +85,12 @@ public class GraqlTraversalTest {
     private static final Fragment yShortcutX = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, x);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
+    private static GraknGraph graph;
+
+    @BeforeClass
+    public static void setUp() {
+        graph = mock(GraknGraph.class);
+    }
 
     @Test
     public void testComplexityIndexVsIsa() {
@@ -283,7 +292,7 @@ public class GraqlTraversalTest {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern.admin());
+        return GreedyTraversalPlan.createTraversal(pattern.admin(), graph);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -300,7 +309,7 @@ public class GraqlTraversalTest {
         Collection<Conjunction<VarAdmin>> patterns = pattern.admin().getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
-                .map(ConjunctionQuery::new)
+                .map(conjunction -> new ConjunctionQuery(conjunction, graph))
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 
