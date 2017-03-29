@@ -17,13 +17,13 @@
  *
  */
 
-package ai.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
@@ -39,8 +39,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class HasResourcePropertyTest {
-
+public class ConjunctionQueryTest {
     TypeName resourceTypeWithoutSubTypes = TypeName.of("name");
     TypeName resourceTypeWithSubTypes = TypeName.of("resource");
     String literalValue = "Bob";
