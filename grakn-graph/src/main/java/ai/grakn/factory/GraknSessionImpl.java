@@ -75,9 +75,11 @@ public class GraknSessionImpl implements GraknSession {
                 //TODO
                 throw new UnsupportedOperationException("This has not been implemented yet");
             case WRITE:
-                return getConfiguredFactory().factory.getGraph(false);
+                graph = getConfiguredFactory().factory.getGraph(false);
+                return graph;
             case BATCH:
-                return getConfiguredFactory().factory.getGraph(true);
+                graphBatch = getConfiguredFactory().factory.getGraph(true);
+                return graphBatch;
             default:
                 throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");
         }
