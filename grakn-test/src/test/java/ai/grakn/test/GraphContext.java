@@ -88,20 +88,21 @@ public class GraphContext implements TestRule {
     }
 
     private void loadGraph() {
-        GraknGraph graph = getEngineGraph();
+        try(GraknGraph graph = getEngineGraph()) {
 
-        // if data should be pre-loaded, load
-        if (preLoad != null) {
-            preLoad.accept(graph);
-        }
-
-        if (files != null) {
-            for (String file : files) {
-                loadFromFile(graph, file);
+            // if data should be pre-loaded, load
+            if (preLoad != null) {
+                preLoad.accept(graph);
             }
-        }
 
-        graph.admin().commitNoLogs();
+            if (files != null) {
+                for (String file : files) {
+                    loadFromFile(graph, file);
+                }
+            }
+
+            graph.admin().commitNoLogs();
+        }
     }
 
     @Override

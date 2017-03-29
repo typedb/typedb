@@ -19,8 +19,6 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.VarName;
-
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -94,14 +92,14 @@ public interface Atomic {
      */
     void setParentQuery(ReasonerQuery q);
 
-    Map<VarName, VarName> getUnifiers(Atomic parentAtom);
+    Unifier getUnifier(Atomic parentAtom);
 
     /**
      * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
      * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
-     * @param unifiers contain variable mappings to be applied
+     * @param unifier contain variable mappings to be applied
      */
-    void unify(Map<VarName, VarName> unifiers);
+    void unify(Unifier unifier);
 
     VarName getVarName();
 

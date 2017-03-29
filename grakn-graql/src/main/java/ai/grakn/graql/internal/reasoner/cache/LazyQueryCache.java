@@ -18,11 +18,11 @@
 
 package ai.grakn.graql.internal.reasoner.cache;
 
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import java.util.HashMap;
@@ -51,7 +51,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     public LazyAnswerIterator record(Q query, LazyAnswerIterator answers) {
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
-            Stream<Answer> unifiedStream = answers.unify(getRecordUnifiers(query)).stream();
+            Stream<Answer> unifiedStream = answers.unify(getRecordUnifier(query)).stream();
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
         } else {
             cache.put(query, new Pair<>(query, answers));
@@ -73,7 +73,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     public LazyAnswerIterator recordRetrieveLazy(Q query, Stream<Answer> answers){
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match!= null) {
-            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifiers(query));
+            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifier(query));
             cache.put(match.getKey(), new Pair<>(match.getKey(), match.getValue().merge(unifiedStream)));
         } else {
             cache.put(query, new Pair<>(query, new LazyAnswerIterator(answers)));
@@ -91,7 +91,7 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             AnswerExplanation exp = new LookupExplanation(query);
-            Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
+            Unifier unifiers = getRetrieveUnifier(query);
             LazyAnswerIterator unified = match.getValue().unify(unifiers);
             return explanation? unified.explain(exp) : unified;
         }
@@ -102,9 +102,9 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
     public Stream<Answer> getAnswerStream(Q query){
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
-            Map<VarName, VarName> unifiers = getRetrieveUnifiers(query);
+            Unifier unifier = getRetrieveUnifier(query);
             AnswerExplanation exp = new LookupExplanation(query);
-            Stream<Answer> unified = match.getValue().stream().map(a -> a.unify(unifiers));
+            Stream<Answer> unified = match.getValue().stream().map(a -> a.unify(unifier));
             return explanation?
                     unified.map(a -> {
                         if (a.getExplanation() == null || a.getExplanation().isLookupExplanation()) {

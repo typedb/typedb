@@ -204,7 +204,8 @@ public interface Concept extends Comparable<Concept>{
 
     /**
      * Delete the Concept.
-     * @throws ConceptException Throws an exception if the node has any edges attached to it.
+     *
+     * @throws ConceptException Throws an exception if this is a type with incoming concepts.
      */
     void delete() throws ConceptException;
 }

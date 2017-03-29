@@ -20,6 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import org.junit.After;
@@ -28,7 +29,6 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,54 +54,30 @@ public class GraknTitanGraphTest extends TitanTestBase{
     }
 
     @Test
-    public void testMultithreading(){
+    public void whenCreatingIndependentMutatingTransactionsConcurrently_TheGraphIsUpdatedSafely() throws ExecutionException, InterruptedException {
         Set<Future> futures = new HashSet<>();
-        ExecutorService pool = Executors.newFixedThreadPool(10);
+        ExecutorService pool = Executors.newFixedThreadPool(40);
+
+        EntityType type = graknGraph.putEntityType("A Type");
+        graknGraph.commitOnClose();
+        graknGraph.close();
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(this::addEntityType));
+            futures.add(pool.submit(() -> addEntity(type)));
         }
 
-        futures.forEach(future -> {
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        });
+        for (Future future : futures) {
+            future.get();
+        }
 
-        assertEquals(108, graknGraph.admin().getTinkerTraversal().toList().size());
+        graknGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        assertEquals(109, graknGraph.admin().getTinkerTraversal().toList().size());
     }
-    private void addEntityType(){
+    private void addEntity(EntityType type){
         GraknTitanGraph graph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
-        graph.putEntityType(UUID.randomUUID().toString());
+        type.addEntity();
         graph.commitOnClose();
         graph.close();
-    }
-
-    @Test
-    public void testTestThreadLocal(){
-        ExecutorService pool = Executors.newFixedThreadPool(10);
-        Set<Future> futures = new HashSet<>();
-        graknGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
-
-        for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> {
-                GraknGraph innerTranscation = this.graknGraph;
-                innerTranscation.putEntityType(UUID.randomUUID().toString());
-            }));
-        }
-
-        futures.forEach(future -> {
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException ignored) {
-
-            }
-        });
-
-        assertEquals(9, graknGraph.admin().getTinkerTraversal().toList().size());
     }
 
     @Test

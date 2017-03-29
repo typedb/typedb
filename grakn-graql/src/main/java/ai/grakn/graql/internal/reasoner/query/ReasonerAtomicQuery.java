@@ -31,6 +31,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
@@ -136,8 +137,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public void unify(Map<VarName, VarName> unifiers) {
-        super.unify(unifiers);
+    public void unify(Unifier unifier) {
+        super.unify(unifier);
         atom = selectAtoms().iterator().next();
     }
 
@@ -151,10 +152,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Map<VarName, VarName> getUnifiers(ReasonerQuery p){
-        if (p == this) return new HashMap<>();
+    public Unifier getUnifier(ReasonerQuery p){
+        if (p == this) return new UnifierImpl();
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
-        Map<VarName, VarName> unifiers = getAtom().getUnifiers(parent.getAtom());
+        Unifier unifier = getAtom().getUnifier(parent.getAtom());
         //get type unifiers
         Set<Atomic> unified = new HashSet<>();
         getAtom().getTypeConstraints().forEach(type -> {
@@ -162,11 +163,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Atomic equiv = toUnify.stream().findFirst().orElse(null);
             //only apply if unambiguous
             if (equiv != null && toUnify.size() == 1){
-                type.getUnifiers(equiv).forEach(unifiers::put);
+                unifier.merge(type.getUnifier(equiv));
                 unified.add(equiv);
             }
         });
-        return unifiers;
+        return unifier;
     }
 
     /**
@@ -251,7 +252,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
 
-    private Set<Map<VarName, VarName>> getPermutationUnifiers(Atom headAtom) {
+    private Set<Unifier> getPermutationUnifiers(Atom headAtom) {
         if (!(atom.isRelation() && headAtom.isRelation())) return new HashSet<>();
         List<VarName> permuteVars = new ArrayList<>();
         //if atom is match all atom, add type from rule head and find unmapped roles
@@ -283,7 +284,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers, ReasonerAtomicQuery ruleHead){
         Set<VarName> vars = getVarNames();
-        Set<Map<VarName, VarName>> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
+        Set<Unifier> permutationUnifiers = getPermutationUnifiers(ruleHead.getAtom());
         Set<IdPredicate> unmappedIdPredicates = atom.getUnmappedIdPredicates();
         Set<TypeAtom> mappedTypeConstraints = atom.getMappedTypeConstraints();
         Set<TypeAtom> unmappedTypeConstraints = atom.getUnmappedTypeConstraints();

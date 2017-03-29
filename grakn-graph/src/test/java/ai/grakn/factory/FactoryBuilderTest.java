@@ -68,7 +68,7 @@ public class FactoryBuilderTest {
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);
         assertNotEquals(mgf1, mgf3);
-        assertEquals(mgf1.getGraph(true), mgf2.getGraph(true));
+
         assertNotEquals(mgf1.getGraph(true), mgf3.getGraph(true));
     }
 }

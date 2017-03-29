@@ -47,19 +47,20 @@ public class SQLMigratorMainTest {
     private final String query = "SELECT * FROM pet";
     private Connection connection;
     private GraknGraphFactory factory;
+    private String keyspace;
     private GraknGraph graph;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup() throws SQLException {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.getGraph();
         connection = setupExample(factory, "pets");
+        graph = factory.getGraph();
+        keyspace = graph.getKeyspace();
     }
 
     @After
@@ -69,9 +70,10 @@ public class SQLMigratorMainTest {
 
     @Test
     public void sqlMainTest(){
+        graph.close();
         runAndAssertDataCorrect("sql", "-t", templateFile,
                 "-driver", DRIVER, "-location", URL,
-                "-pass", PASS, "-user", USER, "-q", query, "-k", graph.getKeyspace());
+                "-pass", PASS, "-user", USER, "-q", query, "-k", keyspace);
     }
 
     @Test
@@ -85,14 +87,14 @@ public class SQLMigratorMainTest {
     public void sqlMainNoUserTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No username specified (-user)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", graph.getKeyspace());
+        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
     }
 
     @Test
     public void sqlMainNoPassTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No password specified (-pass)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", graph.getKeyspace());
+        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
     }
 
     @Test
@@ -107,7 +109,7 @@ public class SQLMigratorMainTest {
         exception.expect(RuntimeException.class);
         exception.expectMessage("No SQL query specified (-query)");
         run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL,
-                "-pass", PASS, "-user", USER, "-k", graph.getKeyspace());
+                "-pass", PASS, "-user", USER, "-k", keyspace);
     }
 
     @Test
@@ -128,12 +130,13 @@ public class SQLMigratorMainTest {
     @Test
     public void sqlMainPropertiesTest() throws SQLException {
         connection.close();
+        graph.close();
         connection = setupExample(factory, "pokemon");
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
 
         run("sql", "-driver", DRIVER, "-location", URL,
-                "-pass", PASS, "-user", USER, "-k", graph.getKeyspace(),
+                "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
         graph = factory.getGraph(); //Reopen transaction
