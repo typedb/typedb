@@ -41,6 +41,7 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -459,27 +460,25 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
-    public Iterator<Answer> iterator(){
-        return iterator(new HashSet<>());
-    }
-
-    public Iterator<Answer> iterator(Set<ReasonerAtomicQuery> subGoals){
-        return new ReasonerAtomicQueryIterator(subGoals);
+    public Iterator<Answer> iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ReasonerAtomicQueryIterator(subGoals, cache);
     }
 
     private class ReasonerAtomicQueryIterator implements Iterator<Answer> {
 
         private final Answer partialSubstitution;
+        private final QueryCache<ReasonerAtomicQuery> cache;
         private final Set<ReasonerAtomicQuery> subGoals;
         private final Iterator<InferenceRule> ruleIterator;
         private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
-        ReasonerAtomicQueryIterator(Set<ReasonerAtomicQuery> subGoals){
+        ReasonerAtomicQueryIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> qc){
             this.partialSubstitution = getSubstitution();
             this.subGoals = subGoals;
+            this.cache = qc;
 
             boolean hasFullSubstitution = hasFullSubstitution();
-            this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : DBlookup().iterator();
+            this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : lookup(cache).iterator();
             this.ruleIterator = hasFullSubstitution? Collections.emptyIterator() : getAtom().getApplicableRules().iterator();
         }
 
@@ -487,9 +486,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         public boolean hasNext() {
             if (queryIterator.hasNext()) return true;
             else{
-                if (ruleIterator.hasNext()){
-                    ReasonerAtomicQuery subbedQuery = ReasonerAtomicQuery.this;
-
+                ReasonerAtomicQuery subbedQuery = ReasonerAtomicQuery.this;
+                if (ruleIterator.hasNext()) {
                     if (!subGoals.contains(subbedQuery)) {
                         InferenceRule rule = ruleIterator.next();
                         rule.unify(subbedQuery.getAtom());
@@ -497,12 +495,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
                         ReasonerQueryImpl query = rule.getBody();
                         query.addSubstitution(getSubstitution());
-                        queryIterator = query.iterator(subGoals);
+                        queryIterator = query.iterator(subGoals, cache);
                         return hasNext();
+                    } else {
+                        return false;
                     }
-                    else return false;
+                } else {
+                    return false;
                 }
-                else return false;
             }
         }
 

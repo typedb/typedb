@@ -24,6 +24,7 @@ import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javafx.util.Pair;
 
@@ -54,15 +55,16 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
     }
 
     @Override
-    public Stream<Answer> record(Q query, Stream<Answer> answers) {
+    public Stream<Answer> record(Q query, Stream<Answer> answerStream) {
+        QueryAnswers answers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifier(query));
-            return unifiedStream.peek(ans -> match.getValue().add(ans));
+            QueryAnswers unifiedAnswers = answers.unify(getRecordUnifier(query));
+            match.getValue().addAll(unifiedAnswers);
+            return match.getValue().stream();
         } else {
-            cache.put(query, new Pair<>(query, new QueryAnswers()));
-            Pair<Q, QueryAnswers> put = cache.get(query);
-            return answers.peek(ans -> put.getValue().add(ans));
+            cache.put(query, new Pair<>(query, answers));
+            return answers.stream();
         }
     }
 

@@ -35,7 +35,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -43,6 +42,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -593,7 +593,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
         //TODO temporary switch
-        if (materialise || getTopAtom() == null) {
+        if (materialise || isAtomic()) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             return resolve();
@@ -638,26 +638,28 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
 
-    public Iterator<Answer> iterator(Set<ReasonerAtomicQuery> subGoals){
-        return new ReasonerQueryImplIterator(subGoals);
+    public Iterator<Answer> iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ReasonerQueryImplIterator(subGoals, cache);
     }
 
     private class ReasonerQueryImplIterator implements Iterator<Answer> {
 
         private final Answer partialSubstitution;
+        private final QueryCache<ReasonerAtomicQuery> cache;
         private final Set<ReasonerAtomicQuery> subGoals;
 
         private Iterator<Answer> queryIterator = Collections.emptyIterator();
         private final Iterator<Answer> atomicQueryIterator;
 
-        ReasonerQueryImplIterator(){ this(new HashSet<>());}
-        ReasonerQueryImplIterator(Set<ReasonerAtomicQuery> subGoals){
+        ReasonerQueryImplIterator(){ this(new HashSet<>(), new QueryCache<>());}
+        ReasonerQueryImplIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
             this.partialSubstitution = getSubstitution();
             this.subGoals = subGoals;
+            this.cache = cache;
 
             //get prioritised atom and construct atomic query from it
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(getTopAtom());
-            atomicQueryIterator = q.iterator(subGoals);
+            atomicQueryIterator = q.iterator(subGoals, cache);
         }
 
         Stream<Answer> hasStream(){
@@ -671,7 +673,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             else {
                 if (atomicQueryIterator.hasNext()) {
                     Answer sub = atomicQueryIterator.next();
-                    queryIterator = getQueryPrime(sub).iterator(subGoals);
+                    queryIterator = getQueryPrime(sub).iterator(subGoals, cache);
                     return hasNext();
                 }
                 else return false;
