@@ -2,6 +2,7 @@ package ai.grakn.dist;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknSession;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import org.junit.BeforeClass;

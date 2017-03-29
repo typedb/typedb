@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
+import ai.grakn.GraknTransaction;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknComputerImpl;
@@ -61,19 +62,25 @@ public class GraknSessionImpl implements GraknSession {
     private GraknGraph graph = null;
     private GraknGraph graphBatch = null;
 
+    //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){
         this.location = location;
         this.keyspace = keyspace;
     }
 
-    /**
-     *
-     * @return A new or existing grakn graph with the defined name
-     */
     @Override
-    public GraknGraph open(){
-        graph = getConfiguredFactory().factory.getGraph(false);
-        return graph;
+    public GraknGraph open(GraknTransaction transactionType){
+        switch (transactionType){
+            case READ:
+                //TODO
+                throw new UnsupportedOperationException("This has not been implemented yet");
+            case WRITE:
+                return getConfiguredFactory().factory.getGraph(false);
+            case BATCH:
+                return getConfiguredFactory().factory.getGraph(true);
+            default:
+                throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");
+        }
     }
 
     /**

@@ -20,6 +20,7 @@ package ai.grakn.dist;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknSession;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

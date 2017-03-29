@@ -37,13 +37,16 @@ import ai.grakn.exception.GraphRuntimeException;
  * @author fppt
  */
 public interface GraknSession {
+    String DEFAULT_URI = "localhost:4567";
+
     /**
-     * Get a new or existing graph.
+     * Gets a new transaction bound to the keyspace of this Session.
      *
-     * @return A new or existing Grakn graph
+     * @param transactionType The type of transaction to open see {@link GraknTransaction} for more details
+     * @return A new Grakn graph transaction
      * @see GraknGraph
      */
-    GraknGraph open();
+    GraknGraph open(GraknTransaction transactionType);
 
     /**
      * Get a new or existing graph with batch loading enabled.
@@ -79,4 +82,5 @@ public interface GraknSession {
      * @return The number of batch transactions open on the graph.
      */
     int openGraphBatchTxs();
+
 }
