@@ -81,7 +81,7 @@ public class CommitLogControllerTest {
 
     @Test
     public void checkDirectClearWorks(){
-        GraknGraph test = Grakn.factory(Grakn.DEFAULT_URI, KEYSPACE).open(GraknTransactionType.WRITE);
+        GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, KEYSPACE).open(GraknTransactionType.WRITE);
         test.admin().clear(EngineCache.getInstance());
         assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
@@ -98,8 +98,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        GraknGraph bob = Grakn.factory(Grakn.DEFAULT_URI, BOB).open(GraknTransactionType.WRITE);
-        GraknGraph tim = Grakn.factory(Grakn.DEFAULT_URI, TIM).open(GraknTransactionType.WRITE);
+        GraknGraph bob = Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTransactionType.WRITE);
+        GraknGraph tim = Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTransactionType.WRITE);
 
         addSomeData(bob);
 
@@ -114,8 +114,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs(TIM).size());
         assertEquals(1, cache.getResourceJobs(TIM).size());
 
-        Grakn.factory(Grakn.DEFAULT_URI, BOB).open(GraknTransactionType.WRITE).clear();
-        Grakn.factory(Grakn.DEFAULT_URI, TIM).open(GraknTransactionType.WRITE).clear();
+        Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTransactionType.WRITE).clear();
+        Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTransactionType.WRITE).clear();
 
         assertEquals(0, cache.getCastingJobs(BOB).size());
         assertEquals(0, cache.getCastingJobs(TIM).size());
@@ -167,7 +167,7 @@ public class CommitLogControllerTest {
 
     @Test
     public void testSystemKeyspaceNotSubmittingLogs() throws GraknValidationException {
-        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTransactionType.WRITE);
+        GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTransactionType.WRITE);
         ResourceType<String> resourceType = graph1.putResourceType("New Resource Type", ResourceType.DataType.STRING);
         resourceType.putResource("a");
         resourceType.putResource("b");

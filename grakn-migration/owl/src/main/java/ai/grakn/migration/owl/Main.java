@@ -61,7 +61,7 @@ public class Main {
         printInitMessage(options, owlfile.getPath());
 
         OWLMigrator migrator = new OWLMigrator();
-        try(GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).open(GraknTransactionType.WRITE)) {
+        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTransactionType.WRITE)) {
             migrator.graph(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();

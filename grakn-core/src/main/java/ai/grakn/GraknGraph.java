@@ -42,7 +42,7 @@ import java.util.Collection;
  * </p>
  *
  * <p>
- *     This is produced by {@link Grakn#factory(String, String)} and allows the user to construct and perform
+ *     This is produced by {@link Grakn#session(String, String)} and allows the user to construct and perform
  *     basic look ups to a Grakn Graph. This also allows the execution of Graql queries.
  * </p>
  *

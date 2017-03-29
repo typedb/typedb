@@ -20,7 +20,7 @@ public class EngineGraknSessionTest {
     public void testDifferentFactoriesReturnTheSameGraph(){
         String keyspace = "mykeyspace";
 
-        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE);
+        GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE);
         graph1.close();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 

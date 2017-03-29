@@ -49,7 +49,7 @@ public class PokemonGraphFactoryTest {
 
     @Before
     public void setupPokemonGraph() {
-        GraknSession factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
+        GraknSession factory = Grakn.session(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
         graknGraph = factory.open(GraknTransactionType.WRITE);
         PokemonGraphFactory.loadGraph(graknGraph);
         graknGraph.commit();

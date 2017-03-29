@@ -88,7 +88,7 @@ public class EngineContext extends ExternalResource {
     }
 
     public GraknSession factoryWithNewKeyspace() {
-        return Grakn.factory("localhost:" + port, randomKeyspace());
+        return Grakn.session("localhost:" + port, randomKeyspace());
     }
 
     @Override

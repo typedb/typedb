@@ -163,7 +163,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             LOG.debug("Concepts: " + conceptIds);
             if (conceptIds.size() > 1) {
                 // TODO: what if we fail here due to some read-write conflict?
-                transact(Grakn.factory(Grakn.DEFAULT_URI, keyspace),
+                transact(Grakn.session(Grakn.DEFAULT_URI, keyspace),
                          (graph) -> ConceptFixer.runResourceFix(graph, key, conceptIds),
                          "Reducing resource duplicate set " + conceptIds);
                 emitter.emit(key, (long) (conceptIds.size() - 1));
@@ -171,7 +171,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
                 // TODO: what if we fail here due to some read-write conflict?
-                try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE)) {
+                try (GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE)) {
                     Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();
@@ -202,7 +202,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
         LOG.info("Starting ResourceDeduplicationTask : " + configuration);
         
         String keyspace = configuration.at("keyspace", KEYSPACE_DEFAULT).asString();
-        GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
+        GraknComputer computer = Grakn.session(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
         Job job = new Job().keyspace(keyspace)
                            .deleteUnattached(configuration.at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
         this.totalEliminated = computer.compute(job).memory().get(job.getMemoryKey());

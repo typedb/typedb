@@ -48,7 +48,7 @@ public class Main {
         System.out.println("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
                 options.getUri() + " to System.out");
 
-        try(GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).open(GraknTransactionType.WRITE)) {
+        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTransactionType.WRITE)) {
             GraphWriter graphWriter = new GraphWriter(graph);
 
             if (options.exportOntology()) {

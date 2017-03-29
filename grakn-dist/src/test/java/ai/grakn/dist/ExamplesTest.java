@@ -38,7 +38,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        graph = Grakn.factory("in-memory", "my-pokemon-graph").open(GraknTransactionType.WRITE);
+        graph = Grakn.session("in-memory", "my-pokemon-graph").open(GraknTransactionType.WRITE);
     }
 
     @After

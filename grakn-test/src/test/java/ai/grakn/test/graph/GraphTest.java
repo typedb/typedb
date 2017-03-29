@@ -51,7 +51,7 @@ public class GraphTest {
     }
 
     private void addThingToBatch(String keyspace){
-        try(GraknGraph graphBatchLoading = Grakn.factory(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE)) {
+        try(GraknGraph graphBatchLoading = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTransactionType.WRITE)) {
             graphBatchLoading.getEntityType("thing").addEntity();
             graphBatchLoading.commit();
         } catch (Exception e){
@@ -62,7 +62,7 @@ public class GraphTest {
     @Test
     public void testSameGraphs() throws GraknValidationException {
         String key = "mykeyspace";
-        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, key).open(GraknTransactionType.WRITE);
+        GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTransactionType.WRITE);
         graph1.close();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key);
         assertEquals(graph1, graph2);

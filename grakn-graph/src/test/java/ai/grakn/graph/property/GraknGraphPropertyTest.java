@@ -259,7 +259,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransactionType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransactionType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
@@ -271,7 +271,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransactionType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTransactionType.WRITE);
         assertNotNull(graph.getType(typeName));
         graph.close();
     }

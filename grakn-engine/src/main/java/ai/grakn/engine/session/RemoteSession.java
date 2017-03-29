@@ -101,7 +101,7 @@ public class RemoteSession {
             boolean showImplicitTypes = json.at(REST.RemoteShell.IMPLICIT).asBoolean();
             boolean infer = json.at(REST.RemoteShell.INFER).asBoolean();
             boolean materialise = json.at(REST.RemoteShell.MATERIALISE).asBoolean();
-            GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
+            GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, keyspace);
             GraqlSession graqlSession = new GraqlSession(
                     session, factory, outputFormat, showImplicitTypes, infer, materialise
             );

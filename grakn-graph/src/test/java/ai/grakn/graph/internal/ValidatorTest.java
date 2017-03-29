@@ -234,7 +234,7 @@ public class ValidatorTest extends GraphTestBase{
         }
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
 
         // now try to delete all assertions and then the movie
         godfather = graknGraph.getEntityType("movie").instances().iterator().next();
@@ -249,7 +249,7 @@ public class ValidatorTest extends GraphTestBase{
         godfather.delete();
 
         graknGraph.commit();
-        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTransactionType.WRITE);
 
         assertionIds.forEach(id -> assertNull(graknGraph.getConcept(id)));
 

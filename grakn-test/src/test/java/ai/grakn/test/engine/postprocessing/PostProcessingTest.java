@@ -86,7 +86,7 @@ public class PostProcessingTest {
         graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
         graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
-        GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, graph.getKeyspace());
+        GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, graph.getKeyspace());
         roleType1 = graph.getRoleType("role 1");
         roleType2 = graph.getRoleType("role 2");
         RelationType relationType = graph.getRelationType("rel type");
@@ -178,7 +178,7 @@ public class PostProcessingTest {
         //ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
-        GraknSession factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
+        GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, keyspace);
         GraknGraph graph = factory.open(GraknTransactionType.WRITE);
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 

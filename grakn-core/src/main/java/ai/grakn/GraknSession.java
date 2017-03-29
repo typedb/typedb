@@ -23,14 +23,14 @@ import ai.grakn.exception.GraphRuntimeException;
 
 /**
  * <p>
- *     Builds a Grakn Graph factory
+ *     Builds a Grakn Graph Session
  * </p>
  *
  * <p>
- *     This class facilitates the construction of Grakn Graphs by determining which factory should be built.
- *     The graphs produced by a factory are singletons bound to a specific keyspace.
- *     To create graphs bound to a different keyspace you must create another factory
- *     using {@link Grakn#factory(String, String)}
+ *     This class facilitates the construction of Grakn Graphs by determining which session should be built.
+ *     The graphs produced by a session are singletons bound to a specific keyspace.
+ *     To create graphs bound to a different keyspace you must create another session
+ *     using {@link Grakn#session(String, String)}
  *
  * </p>
  *

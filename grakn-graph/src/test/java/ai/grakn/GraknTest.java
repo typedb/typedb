@@ -32,15 +32,15 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.factory(Grakn.IN_MEMORY, "test").open(GraknTransactionType.WRITE), instanceOf(GraknTinkerGraph.class));
+        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").open(GraknTransactionType.WRITE), instanceOf(GraknTinkerGraph.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        GraknGraph test1 = Grakn.factory(Grakn.IN_MEMORY, "test1").open(GraknTransactionType.WRITE);
+        GraknGraph test1 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTransactionType.WRITE);
         test1.close();
-        GraknGraph test11 = Grakn.factory(Grakn.IN_MEMORY, "test1").open(GraknTransactionType.WRITE);
-        GraknGraph test2 = Grakn.factory(Grakn.IN_MEMORY, "test2").open(GraknTransactionType.WRITE);
+        GraknGraph test11 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTransactionType.WRITE);
+        GraknGraph test2 = Grakn.session(Grakn.IN_MEMORY, "test2").open(GraknTransactionType.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -48,23 +48,23 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "default").open(GraknTransactionType.WRITE);
+        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTransactionType.WRITE);
         graph.clear();
-        graph =  Grakn.factory(Grakn.IN_MEMORY, "default").open(GraknTransactionType.WRITE);
+        graph =  Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTransactionType.WRITE);
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
 
     @Test
     public void testComputer(){
-        assertThat(Grakn.factory(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
+        assertThat(Grakn.session(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
     }
 
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).open(GraknTransactionType.WRITE);
-        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).open(GraknTransactionType.BATCH);
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTransactionType.WRITE);
+        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTransactionType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(graph.getTinkerPopGraph(), batchGraph.getTinkerPopGraph());
