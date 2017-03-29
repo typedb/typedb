@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -231,7 +232,9 @@ public class ValidatorTest extends GraphTestBase{
                     putRolePlayer(actor, newPerson).putRolePlayer(feature, godfather);
         }
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
 
         // now try to delete all assertions and then the movie
         godfather = graknGraph.getEntityType("movie").instances().iterator().next();
@@ -245,7 +248,9 @@ public class ValidatorTest extends GraphTestBase{
         }
         godfather.delete();
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
 
         assertionIds.forEach(id -> assertNull(graknGraph.getConcept(id)));
 
@@ -259,7 +264,8 @@ public class ValidatorTest extends GraphTestBase{
         RoleType role1 = graknGraph.putRoleType("role1").setAbstract(true);
         RoleType role2 = graknGraph.putRoleType("role2").setAbstract(true);
         graknGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -278,7 +284,8 @@ public class ValidatorTest extends GraphTestBase{
                 putRolePlayer(personPlayingCharacter, matt).
                 putRolePlayer(characterBeingPlayed, walker);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     /*------------------------------- Entity Type to Role Type Validation (Schema) -----------------------------------*/
@@ -298,7 +305,8 @@ public class ValidatorTest extends GraphTestBase{
         //Padding to make it valid
         graknGraph.putRelationType("filler").hasRole(parent).hasRole(child).hasRole(father).hasRole(relative).hasRole(mother);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -313,7 +321,8 @@ public class ValidatorTest extends GraphTestBase{
         //Padding to make it valid
         graknGraph.putRelationType("filler").hasRole(parent).hasRole(child);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
     /*-------------------------------- Entity Type to Role Type Validation (Data) ------------------------------------*/
 
@@ -333,7 +342,8 @@ public class ValidatorTest extends GraphTestBase{
 
         parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
     @Test
     public void testRoleToRolePlayersDataValidationValid2() throws GraknValidationException {
@@ -350,7 +360,8 @@ public class ValidatorTest extends GraphTestBase{
 
         parenthood.addRelation().putRolePlayer(parent, x).putRolePlayer(child, y);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
     @Test
     public void testRoleToRolePlayersDataValidationInvalid1() throws GraknValidationException {
@@ -371,7 +382,8 @@ public class ValidatorTest extends GraphTestBase{
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(man.getName(), x.getId(), parent.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
     @Test
     public void testRoleToRolePlayersDataValidationInvalid2() throws GraknValidationException {
@@ -391,7 +403,8 @@ public class ValidatorTest extends GraphTestBase{
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
     @Test
     public void testRoleToRolePlayersDataValidationInvalid3() throws GraknValidationException {
@@ -411,7 +424,8 @@ public class ValidatorTest extends GraphTestBase{
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     /*------------------------------- Relation Type to Role Type Validation (Schema) ---------------------------------*/
@@ -438,7 +452,8 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putRelationType("fatherhood").superType(parenthood).hasRole(father).hasRole(fChild);
         graknGraph.putRelationType("motherhood").superType(parenthood).hasRole(mother).hasRole(mChild);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -461,7 +476,8 @@ public class ValidatorTest extends GraphTestBase{
         RelationType parenthood = graknGraph.putRelationType("parenthood").hasRole(parent).hasRole(pChild);
         graknGraph.putRelationType("fathermotherhood").superType(parenthood).hasRole(father).hasRole(mother).hasRole(fmChild);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
     @Test
     public void testRelationTypeToRoleTypeSchemaValidationValid3() throws GraknValidationException {
@@ -483,7 +499,8 @@ public class ValidatorTest extends GraphTestBase{
         graknGraph.putRelationType("fatherhood").superType(parentrelativehood).
                 hasRole(father).hasRole(fChild);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -504,7 +521,8 @@ public class ValidatorTest extends GraphTestBase{
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), "super", "super", parenthood.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -525,7 +543,8 @@ public class ValidatorTest extends GraphTestBase{
         expectedException.expectMessage(
                 ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), parenthood.getName(), "sub", "sub", fatherhood.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -535,7 +554,8 @@ public class ValidatorTest extends GraphTestBase{
         RoleType insured = graknGraph.putRoleType("insured");
         RelationType insure = graknGraph.putRelationType("insure").hasRole(insurer).hasRole(insured);
         graknGraph.putRelationType("monoline-insure").hasRole(monoline).hasRole(insured).superType(insure);
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
 }

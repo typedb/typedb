@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
@@ -61,7 +62,9 @@ public class OntologyMutationTest extends GraphTestBase{
         alice = woman.addEntity();
         bob = man.addEntity();
         marriage.addRelation().putRolePlayer(wife, alice).putRolePlayer(husband, bob);
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
     }
 
     @Test
@@ -71,14 +74,16 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getName(), alice.getId(), wife.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
     public void whenDeletingHasRoleUsedByExistingRelation_Throw() throws GraknValidationException {
         marriage.deleteHasRole(husband);
         expectedException.expect(GraknValidationException.class);
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -88,7 +93,8 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(man.getName(), bob.getId(), husband.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test
@@ -98,7 +104,8 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_IS_ABSTRACT.getMessage(man.getName()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test

@@ -784,7 +784,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void innerClear(){
         clearGraph();
-        closeGraph(ErrorMessage.CLOSED_CLEAR.getMessage());
+        closeTransaction(ErrorMessage.CLOSED_CLEAR.getMessage());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -805,16 +805,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 getConceptLog().writeToCentralCache(false);
             }
         } finally {
-            closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
+            closeTransaction(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
         }
     }
 
     @Override
     public void abort(){
-        closeGraph(ErrorMessage.GRAPH_CLOSED_ON_ABORT.getMessage());
+        closeTransaction(ErrorMessage.GRAPH_CLOSED_ON_ABORT.getMessage());
     }
 
-    private void closeGraph(String closedReason){
+    private void closeTransaction(String closedReason){
         try {
             graph.tx().close();
         } catch (UnsupportedOperationException e) {

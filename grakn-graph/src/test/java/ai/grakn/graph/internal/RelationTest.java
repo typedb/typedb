@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -190,7 +191,9 @@ public class RelationTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
 
         relationType.addRelation();
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
 
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
 
@@ -205,7 +208,10 @@ public class RelationTest extends GraphTestBase{
         relation.putRolePlayer(roleType1, instance1);
         relation.putRolePlayer(roleType2, null);
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+
         relation = (RelationImpl) graknGraph.getRelationType("relation type").instances().iterator().next();
         assertEquals(getFakeId(relation.type(), roleMap), relation.getIndex());
     }
@@ -234,7 +240,8 @@ public class RelationTest extends GraphTestBase{
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()));
 
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 
     @Test

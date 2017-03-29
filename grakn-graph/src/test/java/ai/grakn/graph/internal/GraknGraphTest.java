@@ -360,6 +360,7 @@ public class GraknGraphTest extends GraphTestBase {
                 "successful-recommendation sub role;\n" +
                 "category-recommendation sub role;\n" +
                 "product-recommendation sub role;").execute();
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
     }
 }

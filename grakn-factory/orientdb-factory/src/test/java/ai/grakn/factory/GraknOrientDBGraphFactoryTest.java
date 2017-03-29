@@ -86,13 +86,15 @@ public class GraknOrientDBGraphFactoryTest {
         entityType.addEntity();
         entityType.addEntity();
         entityType.addEntity();
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
         assertEquals(12, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
 
         RoleType role1 = graknGraph.putRoleType("Role 1");
         RoleType role2 = graknGraph.putRoleType("Role 2");
         graknGraph.putRelationType("My Relation Type").hasRole(role1).hasRole(role2);
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
         assertEquals(15, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
