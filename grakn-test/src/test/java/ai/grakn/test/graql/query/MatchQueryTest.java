@@ -845,11 +845,14 @@ public class MatchQueryTest {
     public void testHideImplicitTypesTwice() {
         MatchQuery query1 = qb.match(var("x").sub("concept"));
         assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
+        List<Map<String, Concept>> results1 = query1.execute();
 
-        GraknGraph graph2 = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(movieGraph.graph().getKeyspace());
+        String keyspace = movieGraph.graph().getKeyspace();
+        movieGraph.graph().close();
+        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 
         MatchQuery query2 = graph2.graql().match(var("x").sub("concept"));
-        assertEquals(query1.execute(), query2.execute());
+        assertEquals(results1, query2.execute());
     }
 
     @Test

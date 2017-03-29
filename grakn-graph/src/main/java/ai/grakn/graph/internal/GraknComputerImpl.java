@@ -84,7 +84,7 @@ public class GraknComputerImpl implements GraknComputer {
     @Override
     public void killJobs() {
         if (graphComputer != null && graphComputerClass.equals(GraknSparkComputer.class)) {
-            ((GraknSparkComputer)graphComputer).cancelJobs();
+            ((GraknSparkComputer) graphComputer).cancelJobs();
         }
     }
 

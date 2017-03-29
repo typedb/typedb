@@ -182,6 +182,7 @@ public class LazyTest {
         final int N = 20;
 
         long startTime = System.currentTimeMillis();
+        graphContext.graph().close();
         graphContext.load(MatrixGraphII.get(N, N));
         long loadTime = System.currentTimeMillis() - startTime;
         System.out.println("loadTime: " + loadTime);

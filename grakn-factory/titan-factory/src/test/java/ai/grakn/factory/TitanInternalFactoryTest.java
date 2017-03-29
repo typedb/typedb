@@ -94,9 +94,11 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @Test
     public void testSingleton(){
-        GraknTitanGraph mg1 = titanGraphFactory.getGraph(true);
-        GraknTitanGraph mg2 = titanGraphFactory.getGraph(false);
-        GraknTitanGraph mg3 = titanGraphFactory.getGraph(true);
+        TitanInternalFactory factory = new TitanInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        GraknTitanGraph mg1 = factory.getGraph(true);
+        mg1.close();
+        GraknTitanGraph mg2 = factory.getGraph(false);
+        GraknTitanGraph mg3 = factory.getGraph(true);
 
         assertEquals(mg1, mg3);
         assertEquals(mg1.getTinkerPopGraph(), mg3.getTinkerPopGraph());
@@ -166,12 +168,13 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @Test
     public void testGraphNotClosed() throws GraknValidationException {
-        GraknTitanGraph graph = titanGraphFactory.getGraph(false);
+        TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
+        GraknTitanGraph graph = factory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
         graph.close();
 
-        graph = titanGraphFactory.getGraph(false);
+        graph = factory.getGraph(false);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
     }

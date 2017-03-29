@@ -147,7 +147,7 @@ class ConceptFixer {
         return Optional.empty();
     }
 
-    private static Consumer<EngineCache> runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+    static Consumer<EngineCache> runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         graph.admin().fixDuplicateResources(index, conceptIds);
         return (cache) -> {
             conceptIds.forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));

@@ -29,6 +29,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
@@ -37,6 +38,7 @@ import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Maps;
@@ -45,7 +47,6 @@ import javafx.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -190,18 +191,18 @@ public class Utility {
      * @param permutations different permutations on the variables
      * @return set of unifiers
      */
-    public static Set<Map<VarName, VarName>> getUnifiersFromPermutations(List<VarName> originalVars, List<List<VarName>> permutations){
-        Set<Map<VarName, VarName>> unifierSet = new HashSet<>();
+    public static Set<Unifier> getUnifiersFromPermutations(List<VarName> originalVars, List<List<VarName>> permutations){
+        Set<Unifier> unifierSet = new HashSet<>();
         permutations.forEach(perm -> {
-            Map<VarName, VarName> unifiers = new HashMap<>();
+            Unifier unifier = new UnifierImpl();
             Iterator<VarName> pIt = originalVars.iterator();
             Iterator<VarName> cIt = perm.iterator();
             while(pIt.hasNext() && cIt.hasNext()){
                 VarName pVar = pIt.next();
                 VarName chVar = cIt.next();
-                if (!pVar.equals(chVar)) unifiers.put(pVar, chVar);
+                if (!pVar.equals(chVar)) unifier.addMapping(pVar, chVar);
             }
-            unifierSet.add(unifiers);
+            unifierSet.add(unifier);
         });
         return unifierSet;
     }

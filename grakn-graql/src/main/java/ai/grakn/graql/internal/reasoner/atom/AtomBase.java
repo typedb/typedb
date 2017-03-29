@@ -23,12 +23,12 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.internal.reasoner.Utility.capture;
@@ -104,13 +104,14 @@ public abstract class AtomBase implements Atomic {
 
     /**
      * perform unification on the atom by applying unifiers
-     * @param unifiers contain variable mappings to be applied
+     * @param unifier contain variable mappings to be applied
      */
-    public void unify(Map<VarName, VarName> unifiers){
+    @Override
+    public void unify(Unifier unifier){
         VarName var = getVarName();
-        if (unifiers.containsKey(var)) {
-            setVarName(unifiers.get(var));
-        } else if (unifiers.containsValue(var)) {
+        if (unifier.containsKey(var)) {
+            setVarName(unifier.get(var));
+        } else if (unifier.containsValue(var)) {
             setVarName(capture(var));
         }
     }
@@ -118,17 +119,18 @@ public abstract class AtomBase implements Atomic {
     /**
      * get unifiers by comparing this atom with parent
      * @param parentAtom atom defining variable names
-     * @return map of unifiers
+     * @return unifier
      */
-    public Map<VarName, VarName> getUnifiers(Atomic parentAtom) {
+    @Override
+    public Unifier getUnifier(Atomic parentAtom) {
         if (parentAtom.getClass() != this.getClass()) {
             throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
         }
-        Map<VarName, VarName> map = new HashMap<>();
+        Unifier unifier = new UnifierImpl();
         if (!this.getVarName().equals(parentAtom.getVarName())) {
-            map.put(this.getVarName(), parentAtom.getVarName());
+            unifier.addMapping(this.getVarName(), parentAtom.getVarName());
         }
-        return map;
+        return unifier;
     }
 }
 

@@ -89,28 +89,32 @@ public class GraknSparkExecutor {
                     workerVertexProgram.workerIterationStart(memory.asImmutable()); // start the worker
                     return () -> IteratorUtils.map(partitionIterator, vertexViewIncoming -> {
                         final StarGraph.StarVertex vertex = vertexViewIncoming._2()._1().get(); // get the vertex from the vertex writable
-                        // drop any computed properties that are cached in memory
-                        if (elementComputeKeysArray.length > 0) {
-                            vertex.dropVertexProperties(elementComputeKeysArray);
-                        }
-                        final boolean hasViewAndMessages = vertexViewIncoming._2()._2().isPresent(); // if this is the first iteration, then there are no views or messages
-                        final List<DetachedVertexProperty<Object>> previousView = hasViewAndMessages ? vertexViewIncoming._2()._2().get().getView() : Collections.emptyList();
-                        final List<M> incomingMessages = hasViewAndMessages ? vertexViewIncoming._2()._2().get().getIncomingMessages() : Collections.emptyList();
-                        previousView.forEach(property -> property.attach(Attachable.Method.create(vertex)));  // attach the view to the vertex
-                        // previousView.clear(); // no longer needed so kill it from memory
-                        ///
-                        messenger.setVertexAndIncomingMessages(vertex, incomingMessages); // set the messenger with the incoming messages
-                        workerVertexProgram.execute(ComputerGraph.vertexProgram(vertex, workerVertexProgram), messenger, memory); // execute the vertex program on this vertex for this iteration
-                        // incomingMessages.clear(); // no longer needed so kill it from memory
-                        ///
-                        final List<DetachedVertexProperty<Object>> nextView = elementComputeKeysArray.length == 0 ?  // not all vertex programs have compute keys
-                                Collections.emptyList() :
-                                IteratorUtils.list(IteratorUtils.map(vertex.properties(elementComputeKeysArray), property -> DetachedFactory.detach(property, true)));
-                        final List<Tuple2<Object, M>> outgoingMessages = messenger.getOutgoingMessages(); // get the outgoing messages
+                        synchronized (vertex) {
+                            // drop any computed properties that are cached in memory
+                            if (elementComputeKeysArray.length > 0) {
+                                vertex.dropVertexProperties(elementComputeKeysArray);
+                            }
+                            final boolean hasViewAndMessages = vertexViewIncoming._2()._2().isPresent(); // if this is the first iteration, then there are no views or messages
+                            final List<DetachedVertexProperty<Object>> previousView = hasViewAndMessages ? vertexViewIncoming._2()._2().get().getView() : Collections.emptyList();
+                            final List<M> incomingMessages = hasViewAndMessages ? vertexViewIncoming._2()._2().get().getIncomingMessages() : Collections.emptyList();
+                            previousView.forEach(property -> property.attach(Attachable.Method.create(vertex)));  // attach the view to the vertex
+                            // previousView.clear(); // no longer needed so kill it from memory
+                            ///
+                            messenger.setVertexAndIncomingMessages(vertex, incomingMessages); // set the messenger with the incoming messages
+                            workerVertexProgram.execute(ComputerGraph.vertexProgram(vertex, workerVertexProgram), messenger, memory); // execute the vertex program on this vertex for this iteration
+                            // incomingMessages.clear(); // no longer needed so kill it from memory
+                            ///
+                            final List<DetachedVertexProperty<Object>> nextView = elementComputeKeysArray.length == 0 ?  // not all vertex programs have compute keys
+                                    Collections.emptyList() :
+                                    IteratorUtils.list(IteratorUtils.map(vertex.properties(elementComputeKeysArray), property -> DetachedFactory.detach(property, true)));
+                            final List<Tuple2<Object, M>> outgoingMessages = messenger.getOutgoingMessages(); // get the outgoing messages
 
-                        // if no more vertices in the partition, end the worker's iteration
-                        if (!partitionIterator.hasNext()) workerVertexProgram.workerIterationEnd(memory.asImmutable());
-                        return new Tuple2<>(vertex.id(), new ViewOutgoingPayload<>(nextView, outgoingMessages));
+                            // if no more vertices in the partition, end the worker's iteration
+                            if (!partitionIterator.hasNext()) {
+                                workerVertexProgram.workerIterationEnd(memory.asImmutable());
+                            }
+                            return new Tuple2<>(vertex.id(), new ViewOutgoingPayload<>(nextView, outgoingMessages));
+                        }
                     });
                 }, true)); // true means that the partition is preserved
         // the graphRDD and the viewRDD must have the same partitioner

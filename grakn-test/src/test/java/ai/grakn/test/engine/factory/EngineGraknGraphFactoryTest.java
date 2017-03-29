@@ -20,9 +20,11 @@ public class EngineGraknGraphFactoryTest {
         String keyspace = "mykeyspace";
 
         GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
+        graph1.close();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 
         assertEquals(graph1, graph2);
+        graph2.close();
     }
 
     @Test
@@ -33,5 +35,8 @@ public class EngineGraknGraphFactoryTest {
 
         assertFalse(graph1.admin().isBatchLoadingEnabled());
         assertTrue(graph2.admin().isBatchLoadingEnabled());
+
+        graph1.close();
+        graph2.close();
     }
 }

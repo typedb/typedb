@@ -258,9 +258,10 @@ public class GraqlTest {
                 graph.graql().parse(command).execute();
             }
 
-            GraknGraph graph = factory.getGraph();
-            // see if the node was commited
-            assertNull(graph.getEntityType("thing"));
+            try(GraknGraph graph = factory.getGraph()) {
+                // see if the node was commited
+                assertNull(graph.getEntityType("thing"));
+            }
         });
     }
 

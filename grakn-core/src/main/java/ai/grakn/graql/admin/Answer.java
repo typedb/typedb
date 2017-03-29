@@ -93,7 +93,7 @@ public interface Answer {
 
     Answer filterVars(Set<VarName> vars);
 
-    Answer unify(Map<VarName, VarName> unifiers);
+    Answer unify(Unifier unifier);
 
     AnswerExplanation getExplanation();
 
