@@ -19,7 +19,8 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -49,7 +50,7 @@ public class AnalyticsTest {
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
-    private GraknGraphFactory factory;
+    private GraknSession factory;
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";
@@ -75,7 +76,7 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             TypeName resourceTypeName = TypeName.of("degree");
             ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
             EntityType thing = graph.putEntityType("thing");
@@ -84,10 +85,10 @@ public class AnalyticsTest {
             Entity thisThing = thing.addEntity();
             Resource thisResource = degree.putResource(1L);
             thisThing.resource(thisResource);
-            graph.commitOnClose();
+            graph.commit();
         }
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<Long, Set<String>> degrees;
             degrees = graph.graql().compute().degree().of("thing").in("thing", "degree").execute();
             assertEquals(1, degrees.size());
@@ -104,7 +105,7 @@ public class AnalyticsTest {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
             TypeName resourceTypeId = TypeName.of("degree");
             EntityType thing = graph.putEntityType("thing");
@@ -119,11 +120,11 @@ public class AnalyticsTest {
 
             Entity thisThing = thing.addEntity();
             relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
-            graph.commitOnClose();
+            graph.commit();
         }
 
         // the null role-player caused analytics to fail at some stage
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().compute().degree().execute();
         } catch (RuntimeException e) {
             e.printStackTrace();
@@ -145,14 +146,14 @@ public class AnalyticsTest {
         queryList.add("compute path from \"" + entityId1 + "\" to \"" + entityId4 + "\";");
 
         queryList.parallelStream().forEach(query -> {
-            try (GraknGraph graph = factory.getGraph()) {
+            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 graph.graql().parse(query).execute();
             }
         });
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -179,7 +180,7 @@ public class AnalyticsTest {
                     .putRolePlayer(role1, entity2)
                     .putRolePlayer(role2, entity4).getId().getValue();
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

@@ -19,7 +19,8 @@
 package ai.grakn.test.migration.json;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
@@ -57,9 +58,9 @@ public class JsonMigratorMainTest {
 
     @Before
     public void setup() {
-        GraknGraphFactory factory = engine.factoryWithNewKeyspace();
+        GraknSession factory = engine.factoryWithNewKeyspace();
         load(factory, getFile("json", "simple-schema/schema.gql"));
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
     }
 
     @Test

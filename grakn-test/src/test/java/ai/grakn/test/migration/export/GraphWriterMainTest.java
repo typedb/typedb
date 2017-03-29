@@ -19,6 +19,7 @@
 package ai.grakn.test.migration.export;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.migration.export.Main;
 import ai.grakn.test.EngineContext;
 import org.junit.BeforeClass;
@@ -34,7 +35,7 @@ public class GraphWriterMainTest {
 
     @BeforeClass
     public static void loadMovieGraph() {
-        GraknGraph graph = engineContext.factoryWithNewKeyspace().getGraph();
+        GraknGraph graph = engineContext.factoryWithNewKeyspace().open(GraknTxType.WRITE);
         keyspace = graph.getKeyspace();
         graph.close();
     }

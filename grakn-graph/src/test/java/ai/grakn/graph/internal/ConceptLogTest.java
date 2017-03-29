@@ -18,6 +18,8 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.Grakn;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -65,7 +67,9 @@ public class ConceptLogTest extends GraphTestBase{
         rt1.addRelation().putRolePlayer(r1, i1).putRolePlayer(r2, i2);
         CastingImpl c1 = ((EntityImpl) i1).castings().iterator().next();
         CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
+
         graknGraph.commit();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -76,7 +80,9 @@ public class ConceptLogTest extends GraphTestBase{
     @Test
     public void whenCreatingInstances_EnsureLogContainsInstance() {
         EntityType t1 = graknGraph.putEntityType("1");
+
         graknGraph.commit();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -92,7 +98,9 @@ public class ConceptLogTest extends GraphTestBase{
         RelationType rt1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
         Entity i1 = t1.addEntity();
         Entity i2 = t1.addEntity();
+
         graknGraph.commit();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
@@ -106,7 +114,10 @@ public class ConceptLogTest extends GraphTestBase{
     public void whenDeletingAnInstanceWithNoRelations_EnsureLogIsEmpty(){
         EntityType t1 = graknGraph.putEntityType("1");
         Entity i1 = t1.addEntity();
+
         graknGraph.commit();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
         i1.delete();

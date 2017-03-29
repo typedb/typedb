@@ -19,6 +19,7 @@ package ai.grakn.migration.export;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.migration.base.MigrationCLI;
 
 import java.util.Optional;
@@ -47,7 +48,7 @@ public class Main {
         System.out.println("Writing graph " + options.getKeyspace() + " using Grakn Engine " +
                 options.getUri() + " to System.out");
 
-        try(GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph()) {
+        try(GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE)) {
             GraphWriter graphWriter = new GraphWriter(graph);
 
             if (options.exportOntology()) {

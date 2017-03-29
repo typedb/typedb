@@ -19,7 +19,8 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
@@ -72,7 +73,7 @@ class GraqlSession {
     private final boolean infer;
     private final boolean materialise;
     private GraknGraph graph;
-    private final GraknGraphFactory factory;
+    private final GraknSession factory;
     private final String outputFormat;
     private Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
@@ -87,7 +88,7 @@ class GraqlSession {
     private List<Query<?>> queries = null;
 
     GraqlSession(
-            Session session, GraknGraphFactory factory, String outputFormat,
+            Session session, GraknSession factory, String outputFormat,
             boolean showImplicitTypes, boolean infer, boolean materialise
     ) {
         this.showImplicitTypes = showImplicitTypes;
@@ -116,7 +117,7 @@ class GraqlSession {
     }
 
     private void refreshGraph() {
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
         graph.showImplicitConcepts(showImplicitTypes);
     }
 
@@ -246,8 +247,7 @@ class GraqlSession {
     void commit() {
         queryExecutor.execute(() -> {
             try {
-                graph.commitOnClose();
-                graph.close();
+                graph.commit();
             } catch (GraknValidationException e) {
                 sendCommitError(e.getMessage());
             } finally {

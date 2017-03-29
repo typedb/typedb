@@ -23,35 +23,30 @@ import ai.grakn.exception.GraphRuntimeException;
 
 /**
  * <p>
- *     Builds a Grakn Graph factory
+ *     Builds a Grakn Graph Session
  * </p>
  *
  * <p>
- *     This class facilitates the construction of Grakn Graphs by determining which factory should be built.
- *     The graphs produced by a factory are singletons bound to a specific keyspace.
- *     To create graphs bound to a different keyspace you must create another factory
- *     using {@link Grakn#factory(String, String)}
+ *     This class facilitates the construction of Grakn Graphs by determining which session should be built.
+ *     The graphs produced by a session are singletons bound to a specific keyspace.
+ *     To create graphs bound to a different keyspace you must create another session
+ *     using {@link Grakn#session(String, String)}
  *
  * </p>
  *
  * @author fppt
  */
-public interface GraknGraphFactory {
-    /**
-     * Get a new or existing graph.
-     *
-     * @return A new or existing Grakn graph
-     * @see GraknGraph
-     */
-    GraknGraph getGraph();
+public interface GraknSession {
+    String DEFAULT_URI = "localhost:4567";
 
     /**
-     * Get a new or existing graph with batch loading enabled.
+     * Gets a new transaction bound to the keyspace of this Session.
      *
-     * @return A new or existing Grakn graph with batch loading enabled
+     * @param transactionType The type of transaction to open see {@link GraknTxType} for more details
+     * @return A new Grakn graph transaction
      * @see GraknGraph
      */
-    GraknGraph getGraphBatchLoading();
+    GraknGraph open(GraknTxType transactionType);
 
     /**
      * Get a new or existing GraknComputer.
@@ -79,4 +74,5 @@ public interface GraknGraphFactory {
      * @return The number of batch transactions open on the graph.
      */
     int openGraphBatchTxs();
+
 }

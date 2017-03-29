@@ -405,8 +405,7 @@ public class EntityTypeTest extends GraphTestBase{
         entity1.resource(resource2);
         entity2.resource(resource3);
 
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
     }
 
     @Test

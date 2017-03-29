@@ -21,7 +21,8 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknComputerImpl;
@@ -51,7 +52,7 @@ import static mjson.Json.read;
  *
  * @author fppt
  */
-public class GraknGraphFactoryImpl implements GraknGraphFactory {
+public class GraknSessionImpl implements GraknSession {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private static final String COMPUTER = "graph.computer";
     private final String location;
@@ -61,29 +62,27 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private GraknGraph graph = null;
     private GraknGraph graphBatch = null;
 
-    public GraknGraphFactoryImpl(String keyspace, String location){
+    //This constructor must remain public because it is accessed via reflection
+    public GraknSessionImpl(String keyspace, String location){
         this.location = location;
         this.keyspace = keyspace;
     }
 
-    /**
-     *
-     * @return A new or existing grakn graph with the defined name
-     */
     @Override
-    public GraknGraph getGraph(){
-        graph = getConfiguredFactory().factory.getGraph(false);
-        return graph;
-    }
-
-    /**
-     *
-     * @return A new or existing grakn graph with the defined name connecting to the specified remote location with batch loading enabled
-     */
-    @Override
-    public GraknGraph getGraphBatchLoading(){
-        graphBatch = getConfiguredFactory().factory.getGraph(true);
-        return graphBatch;
+    public GraknGraph open(GraknTxType transactionType){
+        switch (transactionType){
+            case READ:
+                //TODO
+                throw new UnsupportedOperationException("This has not been implemented yet");
+            case WRITE:
+                graph = getConfiguredFactory().factory.getGraph(false);
+                return graph;
+            case BATCH:
+                graphBatch = getConfiguredFactory().factory.getGraph(true);
+                return graphBatch;
+            default:
+                throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");
+        }
     }
 
     private ConfiguredFactory getConfiguredFactory(){

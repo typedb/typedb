@@ -19,7 +19,8 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
@@ -35,18 +36,18 @@ import java.sql.SQLException;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.DRIVER;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
 
 public class SQLMigratorMainTest {
 
     private final String templateFile = getFile("sql", "pets/template.gql").getAbsolutePath();
     private final String query = "SELECT * FROM pet";
     private Connection connection;
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private String keyspace;
     private GraknGraph graph;
 
@@ -59,7 +60,7 @@ public class SQLMigratorMainTest {
     public void setup() throws SQLException {
         factory = engine.factoryWithNewKeyspace();
         connection = setupExample(factory, "pets");
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
         keyspace = graph.getKeyspace();
     }
 
@@ -139,7 +140,7 @@ public class SQLMigratorMainTest {
                 "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
-        graph = factory.getGraph(); //Reopen transaction
+        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -149,7 +150,7 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.getGraph(); //Reopen transaction
+        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
         assertPetGraphCorrect(graph);
     }
 

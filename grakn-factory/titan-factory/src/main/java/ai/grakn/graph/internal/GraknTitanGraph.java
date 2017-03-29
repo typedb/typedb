@@ -81,9 +81,9 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public void commitTransaction(){
+    public void commitTransactionInternal(){
         try {
-            super.commitTransaction();
+            super.commitTransactionInternal();
         } catch (TitanException e){
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw new GraknLockingException(e);

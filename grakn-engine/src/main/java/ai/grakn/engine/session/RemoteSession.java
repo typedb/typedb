@@ -19,7 +19,7 @@
 package ai.grakn.engine.session;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.user.UsersHandler;
 import ai.grakn.util.REST;
@@ -101,7 +101,7 @@ public class RemoteSession {
             boolean showImplicitTypes = json.at(REST.RemoteShell.IMPLICIT).asBoolean();
             boolean infer = json.at(REST.RemoteShell.INFER).asBoolean();
             boolean materialise = json.at(REST.RemoteShell.MATERIALISE).asBoolean();
-            GraknGraphFactory factory = Grakn.factory(Grakn.DEFAULT_URI, keyspace);
+            GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, keyspace);
             GraqlSession graqlSession = new GraqlSession(
                     session, factory, outputFormat, showImplicitTypes, infer, materialise
             );

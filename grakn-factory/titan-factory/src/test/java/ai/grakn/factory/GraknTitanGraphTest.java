@@ -35,9 +35,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
-import static ai.grakn.util.ErrorMessage.GRAPH_PERMANENTLY_CLOSED;
+import static ai.grakn.util.ErrorMessage.GRAPH_CLOSED_ON_ACTION;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraknTitanGraphTest extends TitanTestBase{
     private GraknGraph graknGraph;
@@ -59,8 +61,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(40);
 
         EntityType type = graknGraph.putEntityType("A Type");
-        graknGraph.commitOnClose();
-        graknGraph.close();
+        graknGraph.commit();
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> addEntity(type)));
@@ -76,8 +77,25 @@ public class GraknTitanGraphTest extends TitanTestBase{
     private void addEntity(EntityType type){
         GraknTitanGraph graph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
         type.addEntity();
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
+    }
+
+    @Test
+    public void whenAbortingTransaction_ChangesNotCommitted(){
+        String name = "My New Type";
+        graknGraph.putEntityType(name);
+        graknGraph.abort();
+        graknGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        assertNull(graknGraph.getEntityType(name));
+    }
+
+    @Test
+    public void whenAbortingTransaction_GraphIsClosedBecauseOfAbort(){
+        graknGraph.abort();
+        assertTrue("Aborting transaction did not close the graph", graknGraph.isClosed());
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graknGraph.getKeyspace()));
+        graknGraph.putEntityType("This should fail");
     }
 
     @Test
@@ -111,7 +129,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()));
+        expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
         graph.getEntityType(entityTypeName);
     }

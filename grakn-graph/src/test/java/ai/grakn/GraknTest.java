@@ -32,15 +32,15 @@ public class GraknTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Grakn.factory(Grakn.IN_MEMORY, "test").getGraph(), instanceOf(GraknTinkerGraph.class));
+        assertThat(Grakn.session(Grakn.IN_MEMORY, "test").open(GraknTxType.WRITE), instanceOf(GraknTinkerGraph.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        GraknGraph test1 = Grakn.factory(Grakn.IN_MEMORY, "test1").getGraph();
+        GraknGraph test1 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
         test1.close();
-        GraknGraph test11 = Grakn.factory(Grakn.IN_MEMORY, "test1").getGraph();
-        GraknGraph test2 = Grakn.factory(Grakn.IN_MEMORY, "test2").getGraph();
+        GraknGraph test11 = Grakn.session(Grakn.IN_MEMORY, "test1").open(GraknTxType.WRITE);
+        GraknGraph test2 = Grakn.session(Grakn.IN_MEMORY, "test2").open(GraknTxType.WRITE);
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -48,23 +48,23 @@ public class GraknTest {
 
     @Test
     public void testInMemoryClear(){
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "default").getGraph();
+        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.clear();
-        graph =  Grakn.factory(Grakn.IN_MEMORY, "default").getGraph();
+        graph =  Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
 
     @Test
     public void testComputer(){
-        assertThat(Grakn.factory(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
+        assertThat(Grakn.session(Grakn.IN_MEMORY, "bob").getGraphComputer(), instanceOf(GraknComputer.class));
     }
 
     @Test
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
         assertEquals(graph.getTinkerPopGraph(), batchGraph.getTinkerPopGraph());

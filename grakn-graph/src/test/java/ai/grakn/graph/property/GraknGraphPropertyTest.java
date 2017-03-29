@@ -21,6 +21,7 @@ package ai.grakn.graph.property;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -92,14 +93,14 @@ public class GraknGraphPropertyTest {
 
         // TODO: Should `admin`, `close`, `commitOnClose`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf(
-                "isClosed", "admin", "close", "commitOnClose", "implicitConceptsVisible", "showImplicitConcepts",
+                "isClosed", "admin", "close", "commit", "abort", "commitOnClose", "implicitConceptsVisible", "showImplicitConcepts",
                 "getKeyspace", "graql"
         )));
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraphRuntimeException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }
@@ -258,7 +259,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
@@ -270,7 +271,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getType(typeName));
         graph.close();
     }

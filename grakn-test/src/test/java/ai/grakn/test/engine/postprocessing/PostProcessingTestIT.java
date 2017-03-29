@@ -19,7 +19,8 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
@@ -54,7 +55,7 @@ public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
     private EngineCache cache = EngineCache.getInstance();
 
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private GraknGraph graph;
 
     @ClassRule
@@ -63,7 +64,7 @@ public class PostProcessingTestIT {
     @Before
     public void setUp() throws Exception {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
     }
 
     @After
@@ -105,13 +106,12 @@ public class PostProcessingTestIT {
                 graph.getEntityType("ent" + j).resource(rt);
             }
         }
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
 
         //Try to force duplicate resources
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
-                try(GraknGraph graph = factory.getGraph()){
+                try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
                     Random r = new Random();
 
                     for(int j = 0; j < transactionSize; j ++) {
@@ -122,8 +122,8 @@ public class PostProcessingTestIT {
                         forceDuplicateResources(graph, resType, resValue, entType, entNum);
                     }
 
-                    graph.commitOnClose();
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
+                    graph.commit();
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
@@ -141,7 +141,7 @@ public class PostProcessingTestIT {
         waitForCache(graph.getKeyspace(), 2);
 
         //Check current broken state of graph
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
         assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
         //Force PP
@@ -150,7 +150,7 @@ public class PostProcessingTestIT {
         //Check current broken state of graph
         graph.close();
         factory.close();
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
 
         assertFalse("Failed at fixing graph", graphIsBroken(graph));
     }
