@@ -30,7 +30,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -372,7 +371,7 @@ public interface GraknGraph extends AutoCloseable{
      * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknSession} to
      * get a new open transaction.
      */
-    void close() throws GraknValidationException;
+    void close();
 
     /**
      * Reverts any changes done to the graph and closes the transaction. You must use the {@link GraknSession} to

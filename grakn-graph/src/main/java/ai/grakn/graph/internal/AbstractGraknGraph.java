@@ -787,11 +787,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
-    /**
-     * Closes the current graph, rendering it unusable.
-     */
     @Override
-    public void close() throws GraknValidationException {
+    public void close(){
         close(false);
     }
 
