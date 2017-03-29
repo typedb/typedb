@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
+import ai.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +39,8 @@ import static ai.grakn.util.ErrorMessage.CLOSED_CLEAR;
 import static ai.grakn.util.ErrorMessage.GRAPH_PERMANENTLY_CLOSED;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraknTitanGraphTest extends TitanTestBase{
     private GraknGraph graknGraph;
@@ -78,6 +81,24 @@ public class GraknTitanGraphTest extends TitanTestBase{
         type.addEntity();
         graph.commitOnClose();
         graph.close();
+    }
+
+    @Test
+    public void whenAbortingTransaction_ChangesNotCommitted(){
+        String name = "My New Type";
+        graknGraph.putEntityType(name);
+        graknGraph.abort();
+        graknGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        assertNull(graknGraph.getEntityType(name));
+    }
+
+    @Test
+    public void whenAbortingTransaction_GraphIsClosedBecauseOfAbort(){
+        graknGraph.abort();
+        assertTrue("Aborting transaction did not close the graph", graknGraph.isClosed());
+        expectedException.expect(GraphRuntimeException.class);
+        expectedException.expectMessage(ErrorMessage.GRAPH_CLOSED_ON_ABORT.getMessage());
+        graknGraph.putEntityType("This should fail");
     }
 
     @Test

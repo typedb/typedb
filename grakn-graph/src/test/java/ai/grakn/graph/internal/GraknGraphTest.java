@@ -225,7 +225,9 @@ public class GraknGraphTest extends GraphTestBase {
         RelationType rel1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
 
         //Purge the above concepts into the main cache
-        graknGraph.commit();
+        graknGraph.commitOnClose();
+        graknGraph.close();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
 
         //Check cache is in good order
         assertThat(graknGraph.getCachedOntology().asMap().values(), containsInAnyOrder(r1, r2, e1, rel1,

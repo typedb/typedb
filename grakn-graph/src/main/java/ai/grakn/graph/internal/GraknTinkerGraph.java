@@ -58,13 +58,14 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
 
     @Override
     public void commit(){
-        LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(TinkerGraph.class.getName()));
+        LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(TinkerGraph.class.getName(), "committed"));
         super.commit();
     }
 
     @Override
     public void abort(){
-        throw new UnsupportedOperationException("Tinker Graphs do not support transactions and therefore transactions cannot be aborted");
+        LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(TinkerGraph.class.getName(), "aborted"));
+        super.abort();
     }
 
     @Override
