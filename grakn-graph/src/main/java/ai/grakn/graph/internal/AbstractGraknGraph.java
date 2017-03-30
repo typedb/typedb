@@ -738,7 +738,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void commit(){
+    public void commit() throws GraknValidationException{
         close(true);
     }
 

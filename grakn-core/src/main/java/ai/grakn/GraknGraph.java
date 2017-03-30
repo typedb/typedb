@@ -30,6 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -382,7 +383,10 @@ public interface GraknGraph extends AutoCloseable{
     /**
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
+     *
+     * @throws GraknValidationException when the transaction contains graph mutations which does not form to the Grakn
+     * knowledge model.
      */
-    void commit();
+    void commit() throws GraknValidationException;
 
 }
