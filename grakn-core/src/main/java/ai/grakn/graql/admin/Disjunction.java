@@ -23,6 +23,8 @@ import java.util.Set;
 /**
  * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
  *
+ * @param <T> the type of patterns in this disjunction
+ *
  * @author Felix Chapman
  */
 public interface Disjunction<T extends PatternAdmin> extends PatternAdmin {

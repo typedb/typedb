@@ -23,15 +23,18 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import javafx.util.Pair;
+
 import java.util.Set;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 /**
  *
  * <p>
  * Container class for storing performed query resolutions.
  * </p>
+ *
+ * @param <Q> the type of query that is being cached
  *
  * @author Kasper Piskorski
  *

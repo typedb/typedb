@@ -25,19 +25,23 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
+import javafx.util.Pair;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 /**
  *
  * <p>
  * Generic container class for storing performed query resolutions.
  * </p>
+ *
+ * @param <Q> the type of query that is being cached
+ * @param <T> the type of answer being cached
  *
  * @author Kasper Piskorski
  *

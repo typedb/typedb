@@ -21,22 +21,25 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
+import javafx.util.Pair;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.util.Pair;
 
 /**
  *
  * <p>
  * Lazy container class for storing performed query resolutions.
  * </p>
+ *
+ * @param <Q> the type of query that is being cached
  *
  * @author Kasper Piskorski
  *

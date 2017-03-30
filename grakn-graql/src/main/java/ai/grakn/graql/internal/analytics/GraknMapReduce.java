@@ -36,6 +36,8 @@ import java.util.Set;
  * A map reduce task specific to Grakn with common method implementations.
  * <p>
  *
+ * @param <T> type type of element that is being reduced
+ *
  * @author Jason Liu
  * @author Sheldon Hall
  */

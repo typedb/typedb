@@ -32,6 +32,8 @@ import ai.grakn.util.ErrorMessage;
  * Atom implementation serving as base class for predicate implementations.
  * </p>
  *
+ * @param <T> the type of the predicate on a concept
+ *
  * @author Kasper Piskorski
  *
  */

@@ -29,6 +29,8 @@ import java.util.Set;
 /**
  * Compute the connected components in the subgraph.
  *
+ * @param <T> the type of result this query will return
+ *
  * @author Jason Liu
  */
 public interface ClusterQuery<T> extends ComputeQuery<T> {
