@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.graql.Streamable;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import com.google.common.collect.ImmutableSet;
 
@@ -33,41 +34,29 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public class EquivalentFragmentSet {
+public abstract class EquivalentFragmentSet implements Streamable<Fragment> {
 
     private final ImmutableSet<Fragment> fragments;
-
-    public static EquivalentFragmentSet create(Fragment... fragments) {
-        EquivalentFragmentSet fragmentSet = new EquivalentFragmentSet(fragments);
-        for (Fragment fragment : fragments) {
-            fragment.setEquivalentFragmentSet(fragmentSet);
-        }
-        return fragmentSet;
-    }
 
     /**
      * @param fragments an array of Fragments that this EquivalentFragmentSet contains
      */
-    private EquivalentFragmentSet(Fragment... fragments) {
+    protected EquivalentFragmentSet(Fragment... fragments) {
+        for (Fragment fragment : fragments) {
+            fragment.setEquivalentFragmentSet(this);
+        }
         this.fragments = ImmutableSet.copyOf(fragments);
     }
 
     /**
      * @return a set of fragments that this EquivalentFragmentSet contains
      */
-    Set<Fragment> fragments() {
+    public final Set<Fragment> fragments() {
         return fragments;
     }
 
-    /**
-     * @return a stream of fragments that this EquivalentFragmentSet contains
-     */
-    Stream<Fragment> streamFragments() {
-        return fragments.stream();
-    }
-
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
@@ -78,7 +67,12 @@ public class EquivalentFragmentSet {
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return fragments != null ? fragments.hashCode() : 0;
+    }
+
+    @Override
+    public final Stream<Fragment> stream() {
+        return fragments.stream();
     }
 }

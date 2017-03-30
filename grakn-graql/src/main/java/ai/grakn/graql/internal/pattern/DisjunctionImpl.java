@@ -18,10 +18,13 @@
 
 package ai.grakn.graql.internal.pattern;
 
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Disjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,6 +52,11 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
                 .collect(toSet());
 
         return Patterns.disjunction(dnf);
+    }
+
+    @Override
+    public Set<VarName> commonVarNames() {
+        return patterns.stream().map(PatternAdmin::commonVarNames).reduce(Sets::intersection).orElse(ImmutableSet.of());
     }
 
     @Override

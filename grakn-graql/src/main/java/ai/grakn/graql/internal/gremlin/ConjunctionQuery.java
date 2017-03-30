@@ -23,7 +23,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Collections2;
@@ -74,14 +74,14 @@ class ConjunctionQuery {
 
         // Get all variable names mentioned in non-starting fragments
         Set<VarName> names = fragmentSets.stream()
-                .flatMap(EquivalentFragmentSet::streamFragments)
+                .flatMap(EquivalentFragmentSet::stream)
                 .filter(fragment -> !fragment.isStartingFragment())
                 .flatMap(fragment -> fragment.getVariableNames().stream())
                 .collect(toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
         Set<VarName> dependencies = fragmentSets.stream()
-                .flatMap(EquivalentFragmentSet::streamFragments)
+                .flatMap(EquivalentFragmentSet::stream)
                 .flatMap(fragment -> fragment.getDependencies().stream())
                 .collect(toImmutableSet());
 
@@ -89,7 +89,7 @@ class ConjunctionQuery {
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         this.equivalentFragmentSets = fragmentSets.stream()
-                .filter(set -> set.streamFragments().anyMatch(
+                .filter(set -> set.stream().anyMatch(
                         fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.getStart())
                 ))
                 .collect(toImmutableSet());
@@ -154,7 +154,7 @@ class ConjunctionQuery {
             return traversals.stream();
         } else {
             // If this variable has no properties, only confirm that it is not a casting and nothing else.
-            return Stream.of(EquivalentFragmentSet.create(Fragments.notCasting(start)));
+            return Stream.of(EquivalentFragmentSets.notCasting(start));
         }
     }
 

@@ -30,11 +30,11 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -89,10 +89,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragments.outIsa(start, type.getVarName()),
-                Fragments.inIsa(type.getVarName(), start)
-        ));
+        return ImmutableSet.of(EquivalentFragmentSets.isa(start, type.getVarName()));
     }
 
     @Override

@@ -19,15 +19,18 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.StringConverter;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
 import java.util.Set;
 
 /**
@@ -38,7 +41,7 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
+public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     private final ConceptId id;
 
@@ -61,8 +64,8 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
     }
 
     @Override
-    public Fragment getFragment(VarName start) {
-        return Fragments.id(start, id);
+    public Collection<EquivalentFragmentSet> match(VarName start) {
+        return ImmutableSet.of(EquivalentFragmentSets.id(start, id));
     }
 
     @Override

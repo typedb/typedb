@@ -19,16 +19,20 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.property.IsAbstractAtom;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
 /**
  * Represents the {@code is-abstract} property on a {@link ai.grakn.concept.Type}.
@@ -39,7 +43,7 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty {
+public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty {
 
     @Override
     public void buildString(StringBuilder builder) {
@@ -47,8 +51,8 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public Fragment getFragment(VarName start) {
-        return Fragments.isAbstract(start);
+    public Collection<EquivalentFragmentSet> match(VarName start) {
+        return ImmutableSet.of(isAbstract(start));
     }
 
     @Override

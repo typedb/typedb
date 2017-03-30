@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -82,10 +82,7 @@ public class ShortcutTraversal {
         Optional<TypeName> roleB = roletypes.get(1);
         VarName playerB = roleplayers.get(1);
 
-        return EquivalentFragmentSet.create(
-                Fragments.shortcut(type, roleA, roleB, playerA, playerB),
-                Fragments.shortcut(type, roleB, roleA, playerB, playerA)
-        );
+        return EquivalentFragmentSets.shortcut(roleA, playerA, roleB, playerB, type);
     }
 
     /**

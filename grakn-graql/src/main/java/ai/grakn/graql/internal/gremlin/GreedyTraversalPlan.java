@@ -187,6 +187,6 @@ public class GreedyTraversalPlan {
     }
 
     private static Stream<Fragment> fragments(Set<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSets.stream().flatMap(EquivalentFragmentSet::streamFragments);
+        return fragmentSets.stream().flatMap(EquivalentFragmentSet::stream);
     }
 }
