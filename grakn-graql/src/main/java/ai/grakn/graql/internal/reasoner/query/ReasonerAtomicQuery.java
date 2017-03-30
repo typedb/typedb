@@ -192,8 +192,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames()
                 .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
-        cache.record(this, dbStream);
-        return cache.getAnswerStream(this);
+        return cache.record(this, dbStream);
+        //return cache.getAnswerStream(this);
     }
 
     /**
