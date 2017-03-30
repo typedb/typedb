@@ -92,6 +92,20 @@ public class EntityTypePropertyTest {
     }
 
     @Property
+    public void whenAddingAnEntity_TheEntityIsInNoRelations(@Meta(false) EntityType type) {
+        Entity entity = type.addEntity();
+
+        assertThat(entity.relations(), empty());
+    }
+
+    @Property
+    public void whenAddingAnEntity_TheEntityHasNoResources(@Meta(false) EntityType type) {
+        Entity entity = type.addEntity();
+
+        assertThat(entity.resources(), empty());
+    }
+
+    @Property
     public void whenSettingTheDirectSuperTypeOfAMetaType_Throw(
             @Meta EntityType subType, @FromGraph EntityType superType) {
         exception.expect(ConceptException.class);
