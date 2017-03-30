@@ -302,4 +302,5 @@ public class TypePropertyTest {
     }
 
     // TODO: Tests for `resource` and `key`
+    // TODO: Tests for scope methods and inheritance
 }

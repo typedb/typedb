@@ -81,6 +81,7 @@ public class GraknGraphPutPropertyTest {
 
         assertThat("Type should only have one sub-type: itself", type.subTypes(), contains(type));
         assertThat("Type should not play any roles", type.playsRoles(), empty());
+        assertThat("Type should not have any scopes", type.scopes(), empty());
         assertFalse("Type should not be abstract", type.isAbstract());
         assertFalse("Type should not be implicit", type.isImplicit());
         assertThat("Rules of hypotheses should be empty", type.getRulesOfHypothesis(), empty());
