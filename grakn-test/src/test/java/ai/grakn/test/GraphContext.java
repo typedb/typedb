@@ -19,6 +19,7 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.TestRule;
@@ -84,7 +85,7 @@ public class GraphContext implements TestRule {
     }
 
     private GraknGraph getEngineGraph(){
-        return EngineGraknGraphFactory.getInstance().getGraph(keyspace);
+        return EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
     }
 
     private void loadGraph() {

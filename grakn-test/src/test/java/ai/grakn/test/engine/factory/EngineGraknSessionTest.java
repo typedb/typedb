@@ -22,7 +22,7 @@ public class EngineGraknSessionTest {
 
         GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
+        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
 
         assertEquals(graph1, graph2);
         graph2.close();
@@ -31,8 +31,8 @@ public class EngineGraknSessionTest {
     @Test
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
-        GraknGraph graph1 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraphBatchLoading(keyspace);
+        GraknGraph graph1 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
+        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH);
 
         assertFalse(graph1.admin().isBatchLoadingEnabled());
         assertTrue(graph2.admin().isBatchLoadingEnabled());

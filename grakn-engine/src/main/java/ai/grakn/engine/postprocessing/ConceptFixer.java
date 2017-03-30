@@ -19,6 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.factory.EngineGraknGraphFactory;
@@ -76,7 +77,7 @@ class ConceptFixer {
 
         while (notDone) {
             //Try to Fix the job
-            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace))  {
+            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE))  {
 
                 //Perform the fix
                 Consumer<EngineCache> jobFinaliser = postProcessor.apply(graph);

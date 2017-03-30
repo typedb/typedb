@@ -19,15 +19,16 @@
 package ai.grakn.engine.tasks.storage;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.EngineCache;
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -51,8 +52,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.tasks.TaskStateSerializer.serializeToString;
 import static ai.grakn.engine.tasks.TaskStateDeserializer.deserializeFromString;
+import static ai.grakn.engine.tasks.TaskStateSerializer.serializeToString;
 import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
 import static ai.grakn.engine.util.SystemOntologyElements.ENGINE_ID;
 import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
@@ -290,7 +291,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             LOG.debug("Attempting "  + (commit ? "commit" : "query") + " on system graph @ t"+Thread.currentThread().getId());
             long time = System.currentTimeMillis();
 
-            try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
                 T result = function.apply(graph);
                 if (commit) {
                     graph.admin().commit(EngineCache.getInstance());

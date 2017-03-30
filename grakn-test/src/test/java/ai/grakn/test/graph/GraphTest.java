@@ -64,7 +64,7 @@ public class GraphTest {
         String key = "mykeyspace";
         GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, key).open(GraknTxType.WRITE);
         graph1.close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key);
+        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(key, GraknTxType.WRITE);
         assertEquals(graph1, graph2);
         graph1.close();
         graph2.close();

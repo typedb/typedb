@@ -20,6 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 
 import java.util.Properties;
@@ -56,20 +57,12 @@ public class EngineGraknGraphFactory {
         properties.putAll(GraknEngineConfig.getInstance().getProperties());
     }
 
-    public synchronized GraknGraph getGraph(String keyspace) {
-        return getGraph(keyspace, false);
-    }
-
-    public synchronized GraknGraph getGraphBatchLoading(String keyspace) {
-        return getGraph(keyspace, true);
-    }
-
     public synchronized void refreshConnections(){
         FactoryBuilder.refresh();
     }
 
-    private GraknGraph getGraph(String keyspace, boolean batchLoading){
-        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).open(batchLoading);
+    public GraknGraph getGraph(String keyspace, GraknTxType type){
+        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).open(type);
     }
 }
 
