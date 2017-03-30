@@ -96,7 +96,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     @Test
     public void testSingleton(){
         TitanInternalFactory factory = new TitanInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTitanGraph mg1 = factory.open(GraknTxType.WRITE);
+        GraknTitanGraph mg1 = factory.open(GraknTxType.BATCH);
         mg1.close();
         GraknTitanGraph mg2 = factory.open(GraknTxType.WRITE);
         GraknTitanGraph mg3 = factory.open(GraknTxType.BATCH);
