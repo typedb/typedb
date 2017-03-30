@@ -20,6 +20,8 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -280,6 +282,17 @@ public class GraqlTraversalTest {
                 is(traversal(wifeFragment, xMarriesY)),
                 is(traversal(wifeFragment, yMarriesX))
         ));
+    }
+
+    @Test
+    public void whenALargeQueryIsParsedAndPlannedMultipleTimes_ThePlanIsReliablyTheSame() {
+        String queryString = "match $x isa movie; has title 'The Muppets'; ($x, $y); ($y, $z); $z isa person, has name 'James Cameron';";
+
+       for (int i = 0; i < 100; i ++) {
+           MatchQuery query1 = Graql.parse(queryString);
+           MatchQuery query2 = Graql.parse(queryString);
+           assertEquals(semiOptimal(query1.admin().getPattern()), semiOptimal(query2.admin().getPattern()));
+        }
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {

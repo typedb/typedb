@@ -23,13 +23,18 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
@@ -41,7 +46,17 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
  */
 public class GreedyTraversalPlan {
 
+    private static final long MAX_CACHED_PLANS = 10_000;
     private static final long MAX_TRAVERSAL_ATTEMPTS = 15_000;
+
+    private static final LoadingCache<PatternAdmin, GraqlTraversal> cachedPlans = CacheBuilder.newBuilder()
+            .maximumSize(MAX_CACHED_PLANS)
+            .build(new CacheLoader<PatternAdmin, GraqlTraversal>() {
+                @Override
+                public GraqlTraversal load(@Nonnull PatternAdmin pattern) {
+                    return createTraversal(pattern, MAX_TRAVERSAL_ATTEMPTS);
+                }
+            });
 
     // The degree to prune plans - 0.0 means never prune plans, 1.0 means always prune everything except the fastest
     // estimated plan (this is equivalent to a naive greedy algorithm that does not look ahead).
@@ -54,7 +69,12 @@ public class GreedyTraversalPlan {
      * @return a semi-optimal traversal plan
      */
     public static GraqlTraversal createTraversal(PatternAdmin pattern) {
-        return createTraversal(pattern, MAX_TRAVERSAL_ATTEMPTS);
+        try {
+            return cachedPlans.get(pattern);
+        } catch (ExecutionException e) {
+            // should be unreachable
+            throw new RuntimeException(e);
+        }
     }
 
     /**
