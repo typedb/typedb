@@ -255,4 +255,14 @@ public final class Schema {
             return TypeName.of(name);
         }
     }
+
+    /**
+     *
+     * @param typeName The resource type name
+     * @param value The value of the resource
+     * @return A unique id for the resource
+     */
+    public static String generateResourceIndex(TypeName typeName, String value){
+        return Schema.BaseType.RESOURCE.name() + "-" + typeName + "-" + value;
+    }
 }

@@ -508,6 +508,11 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
+    public Set<VarName> commonVarNames() {
+        return getInnerVars().stream().filter(VarAdmin::isUserDefinedName).map(VarAdmin::getVarName).collect(toSet());
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

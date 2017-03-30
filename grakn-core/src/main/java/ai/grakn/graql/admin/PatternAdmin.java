@@ -19,6 +19,7 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.graql.Pattern;
+import ai.grakn.graql.VarName;
 
 import java.util.Set;
 
@@ -41,6 +42,11 @@ public interface PatternAdmin extends Pattern {
      * @return the pattern group in disjunctive normal form
      */
     Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
+
+    /**
+     * Get all common, user-defined variable names in the pattern.
+     */
+    Set<VarName> commonVarNames();
 
     /**
      * @return true if this Pattern.Admin is a Conjunction

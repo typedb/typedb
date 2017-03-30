@@ -147,30 +147,40 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     private final ImmutableList<Runnable> mutators = ImmutableList.of(
             () -> {
                 TypeName typeName = typeName();
-                EntityType entityType = graph.putEntityType(typeName);
+                EntityType superType = entityType();
+                EntityType entityType = graph.putEntityType(typeName).superType(superType);
                 summaryAssign(entityType, "graph", "putEntityType", typeName);
+                summary(entityType, "superType", superType);
             },
             () -> {
                 TypeName typeName = typeName();
                 ResourceType.DataType dataType = gen(ResourceType.DataType.class);
-                ResourceType resourceType = graph.putResourceType(typeName, dataType);
+                ResourceType superType = resourceType();
+                ResourceType resourceType = graph.putResourceType(typeName, dataType).superType(superType);
                 summaryAssign(resourceType, "graph", "putResourceType", typeName, dataType);
+                summary(resourceType, "superType", superType);
             },
             () -> {
                 TypeName typeName = typeName();
                 ResourceType.DataType dataType = gen(ResourceType.DataType.class);
-                ResourceType resourceType = graph.putResourceTypeUnique(typeName, dataType);
+                ResourceType superType = resourceType();
+                ResourceType resourceType = graph.putResourceTypeUnique(typeName, dataType).superType(superType);
                 summaryAssign(resourceType, "graph", "putResourceTypeUnique", typeName, dataType);
+                summary(resourceType, "superType", superType);
             },
             () -> {
                 TypeName typeName = typeName();
-                RoleType roleType = graph.putRoleType(typeName);
+                RoleType superType = roleType();
+                RoleType roleType = graph.putRoleType(typeName).superType(superType);
                 summaryAssign(roleType, "graph", "putRoleType", typeName);
+                summary(roleType, "superType", superType);
             },
             () -> {
                 TypeName typeName = typeName();
-                RelationType relationType = graph.putRelationType(typeName);
+                RelationType superType = relationType();
+                RelationType relationType = graph.putRelationType(typeName).superType(superType);
                 summaryAssign(relationType, "graph", "putRelationType", typeName);
+                summary(relationType, "superType", superType);
             },
             () -> {
                 boolean flag = gen(Boolean.class);

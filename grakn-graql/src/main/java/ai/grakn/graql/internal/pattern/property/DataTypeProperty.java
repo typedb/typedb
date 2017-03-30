@@ -19,15 +19,19 @@
 package ai.grakn.graql.internal.pattern.property;
 
 import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.UniqueVarProperty;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.gremlin.fragment.Fragment;
-import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.reasoner.atom.property.DataTypeAtom;
+import com.google.common.collect.ImmutableSet;
+
+import java.util.Collection;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.dataType;
 
 /**
  * Represents the {@code datatype} property on a {@link ResourceType}.
@@ -39,7 +43,7 @@ import java.util.Set;
  *
  * @author Felix Chapman
  */
-public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
+public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     private final ResourceType.DataType<?> datatype;
 
@@ -72,8 +76,8 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public Fragment getFragment(VarName start) {
-        return Fragments.dataType(start, datatype);
+    public Collection<EquivalentFragmentSet> match(VarName start) {
+        return ImmutableSet.of(dataType(start, datatype));
     }
 
     @Override
