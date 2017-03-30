@@ -23,6 +23,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 
+import java.util.Collection;
 import javax.annotation.CheckReturnValue;
 import java.util.Optional;
 import java.util.Set;
@@ -112,12 +113,12 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return all variables that this variable references
      */
 
-    Set<VarAdmin> getInnerVars();
+    Collection<VarAdmin> getInnerVars();
 
     /**
      * Get all inner variables, including implicit variables such as in a has-resource property
      */
-    Set<VarAdmin> getImplicitInnerVars();
+    Collection<VarAdmin> getImplicitInnerVars();
 
     /**
      * @return all type names that this variable refers to

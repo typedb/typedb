@@ -521,7 +521,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return fromVertex.addEdge(type, getVertex());
     }
 
-
     //------------ Base Equality ------------
     /**
      *
@@ -541,10 +540,11 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
 
     @Override
     public final String toString(){
-        if (getGraknGraph().validVertex(vertex)) {
+        try {
+            getGraknGraph().validVertex(vertex);
             return innerToString();
-        } else {
-            // Concept has been deleted, so handle differently
+        } catch (RuntimeException e){
+            // Vertex is broken somehow. Most likely deleted.
             return "Id [" + getId() + "]";
         }
     }

@@ -119,7 +119,7 @@ public class AnalyticsTest {
             thing.playsRole(degreeOwner);
 
             Entity thisThing = thing.addEntity();
-            relationType.addRelation().putRolePlayer(degreeOwner, thisThing);
+            relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
             graph.commit();
         }
 
@@ -174,11 +174,11 @@ public class AnalyticsTest {
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId().getValue();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId().getValue();
             relationId24 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity4).getId().getValue();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity4).getId().getValue();
 
             graph.commit();
         }

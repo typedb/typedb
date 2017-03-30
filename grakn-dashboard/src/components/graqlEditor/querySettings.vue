@@ -26,6 +26,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                 <a @click="closeSettings"><i class="fa fa-times"></i></a>
             </div>
             <div class="panel-body">
+              <div class="dd-item">
+                 <div class="left"><input type="checkbox" v-model="freezeNodes"></div><div class="right">Lock nodes position</div>
+              </div>
+                <div class="divide"></div>
                 <div class="dd-item">
                    <div class="left"><input type="checkbox" v-model="useReasoner"></div><div class="right"> Activate inference</div>
                 </div>
@@ -130,11 +134,20 @@ export default {
         return {
           useReasoner: User.getReasonerStatus(),
           materialiseReasoner: User.getMaterialiseStatus(),
-          showSettings:false,
+          showSettings: false,
           queryLimit: User.getQueryLimit(),
+          freezeNodes: User.getFreezeNodes(),
         }
     },
-    created() {},
+    created() {
+      //Global key binding for locking/unlocking nodes
+      window.addEventListener('keyup', (e) => {
+          if(e.ctrlKey && e.keyCode === 76)
+          {
+            this.freezeNodes=!this.freezeNodes;
+          }
+      })
+    },
     mounted: function() {
         this.$nextTick(function() {
 
@@ -147,6 +160,16 @@ export default {
         },
         materialiseReasoner: function(newVal, oldVal) {
             User.setMaterialiseStatus(newVal);
+        },
+        freezeNodes: function(newVal, oldVal) {
+            User.setFreezeNodes(newVal);
+            if(newVal){
+              visualiser.fixAllNodes();
+              toastr.success("All nodes LOCKED.");
+            }else{
+              visualiser.releaseAllNodes();
+              toastr.success("All nodes UNLOCKED.");
+            }
         },
         queryLimit: function(newVal, oldVal) {
             User.setQueryLimit(newVal);

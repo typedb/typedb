@@ -64,7 +64,7 @@ public class ConceptLogTest extends GraphTestBase{
         RelationType rt1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
         Entity i1 = t1.addEntity();
         Entity i2 = t1.addEntity();
-        rt1.addRelation().putRolePlayer(r1, i1).putRolePlayer(r2, i2);
+        rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
         CastingImpl c1 = ((EntityImpl) i1).castings().iterator().next();
         CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
 
@@ -104,7 +104,7 @@ public class ConceptLogTest extends GraphTestBase{
 
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
 
-        Relation rel1 = rt1.addRelation().putRolePlayer(r1, i1).putRolePlayer(r2, i2);
+        Relation rel1 = rt1.addRelation().addRolePlayer(r1, i1).addRolePlayer(r2, i2);
         CastingImpl c1 = ((EntityImpl) i1).castings().iterator().next();
         CastingImpl c2 = ((EntityImpl) i2).castings().iterator().next();
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), containsInAnyOrder(rel1, c1, c2));

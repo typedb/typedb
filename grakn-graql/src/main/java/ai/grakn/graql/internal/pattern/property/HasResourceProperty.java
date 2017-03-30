@@ -166,7 +166,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     private boolean testPredicate(Optional<ValuePredicateAdmin> optPredicate, Relation relation, RoleType resourceRole) {
-        Object value = relation.rolePlayers().get(resourceRole).asResource().getValue();
+        Object value = relation.rolePlayers(resourceRole).iterator().next().asResource().getValue();
 
         return optPredicate
                 .flatMap(ValuePredicateAdmin::getPredicate)

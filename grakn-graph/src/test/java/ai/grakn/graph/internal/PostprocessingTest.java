@@ -21,7 +21,6 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -61,7 +60,7 @@ public class PostprocessingTest extends GraphTestBase{
         instance3 = (InstanceImpl) thing.addEntity();
         instance4 = (InstanceImpl) thing.addEntity();
 
-        relationType.addRelation().putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
     }
 
     @Test
@@ -78,7 +77,7 @@ public class PostprocessingTest extends GraphTestBase{
     }
 
     private CastingImpl buildDuplicateCastingWithNewRelation(CastingImpl mainCasting, RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
-        RelationImpl relation = (RelationImpl) relationType.addRelation().putRolePlayer(otherRoleType, otherInstance);
+        RelationImpl relation = (RelationImpl) relationType.addRelation().addRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
         Vertex castingVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
@@ -87,34 +86,12 @@ public class PostprocessingTest extends GraphTestBase{
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), mainRoleType.getId());
 
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
-
-        putFakeShortcutEdge(relationType, relation, mainRoleType, mainInstance, otherRoleType, otherInstance);
-        putFakeShortcutEdge(relationType, relation, otherRoleType, otherInstance, mainRoleType, mainInstance);
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), mainRoleType.getId());
 
         return graknGraph.admin().buildConcept(castingVertex);
-    }
-
-    private void putFakeShortcutEdge(RelationType relationType, Relation relation, RoleType fromRole, InstanceImpl fromInstance, RoleType toRole, InstanceImpl toInstance){
-        Edge tinkerEdge = fromInstance.getVertex().addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
-        EdgeImpl edge = new EdgeImpl(tinkerEdge, graknGraph);
-
-        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
-        edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
-
-        if (fromInstance.getId() != null)
-            edge.setProperty(Schema.EdgeProperty.FROM_ID, fromInstance.getId().getValue());
-        edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
-
-        if (toInstance.getId() != null)
-            edge.setProperty(Schema.EdgeProperty.TO_ID, toInstance.getId().getValue());
-        edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
-
-        edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromInstance.type().getName().getValue());
-        edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toInstance.type().getName().getValue());
     }
 
     @Test
@@ -130,18 +107,11 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(2, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
 
-        assertEquals(6, graknGraph.getTinkerPopGraph().traversal().E().
-                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
-
         graknGraph.fixDuplicateCastings(mainCasting.getIndex(), castingVertexIds);
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
-
-        assertEquals(4, graknGraph.getTinkerPopGraph().traversal().E().
-                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
-
     }
 
     @Test
@@ -187,11 +157,11 @@ public class PostprocessingTest extends GraphTestBase{
         resourceIds.add(r111.getId());
 
         //Give resources some relationships
-        relationType.addRelation().putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
-        relationType.addRelation().putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
-        relationType.addRelation().putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e2); //Absorb
-        relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e2); //Don't Absorb
-        relationType.addRelation().putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
+        relationType.addRelation().addRolePlayer(roleResource, r1).addRolePlayer(roleEntity, e1);
+        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
+        relationType.addRelation().addRolePlayer(roleResource, r11).addRolePlayer(roleEntity, e2); //Absorb
+        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e2); //Don't Absorb
+        relationType.addRelation().addRolePlayer(roleResource, r111).addRolePlayer(roleEntity, e3); //Absorb
 
         //Check everything is broken
         assertEquals(3, resourceType.instances().size());
@@ -200,7 +170,7 @@ public class PostprocessingTest extends GraphTestBase{
         assertEquals(1, r1.relations().size());
         assertEquals(6, graknGraph.getTinkerTraversal().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
 
-        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().values().contains(e1)));
+        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().contains(e1)));
 
         //Now fix everything
         graknGraph.fixDuplicateResources(r1.getIndex(), resourceIds);

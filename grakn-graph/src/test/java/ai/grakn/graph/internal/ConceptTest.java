@@ -37,7 +37,6 @@ import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -72,16 +71,6 @@ public class ConceptTest extends GraphTestBase{
         Instance entity = concept.addEntity();
 
         assertTrue(entity.toString().contains(Schema.BaseType.ENTITY.name()));
-        assertTrue(entity.toString().contains(entity.getId().getValue()));
-    }
-
-    @Test
-    public void whenCallingToStringOnDeleteConcept_ReturnOnlyConceptID() {
-        EntityType concept = graknGraph.putEntityType("a");
-        Instance entity = concept.addEntity();
-        entity.delete();
-
-        assertFalse(entity.toString().contains(Schema.BaseType.ENTITY.name()));
         assertTrue(entity.toString().contains(entity.getId().getValue()));
     }
 

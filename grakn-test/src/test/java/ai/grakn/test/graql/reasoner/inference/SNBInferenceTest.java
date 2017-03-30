@@ -21,6 +21,7 @@ package ai.grakn.test.graql.reasoner.inference;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.SNBGraph;
@@ -33,6 +34,7 @@ import org.junit.Test;
 import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -442,9 +444,8 @@ public class SNBInferenceTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().results());
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
     }
-
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
     }

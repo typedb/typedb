@@ -4,7 +4,7 @@ import EngineClient from './EngineClient';
 // Default constant values
 const DEFAULT_USE_REASONER = false;
 const DEFAULT_MATERIALISE = false;
-const DEFAULT_KEYSPACE = 'grakn';
+export const DEFAULT_KEYSPACE = 'grakn';
 const DEFAULT_QUERY_LIMIT = '30';
 
 
@@ -46,6 +46,19 @@ export default {
 
   setMaterialiseStatus(status) {
     localStorage.setItem('reasoner_materialise', status);
+  },
+
+  getFreezeNodes() {
+    const freezeNodes = localStorage.getItem('freeze_nodes');
+    if (freezeNodes == null) {
+      this.setFreezeNodes(false);
+      return false;
+    }
+    return (freezeNodes === 'true');
+  },
+
+  setFreezeNodes(status) {
+    localStorage.setItem('freeze_nodes', status);
   },
 
     // @return boolean

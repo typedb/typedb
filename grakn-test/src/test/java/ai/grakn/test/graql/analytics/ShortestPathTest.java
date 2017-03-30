@@ -261,15 +261,15 @@ public class ShortestPathTest {
                 Entity middle = entityType.addEntity();
                 ConceptId middleId = middle.getId();
                 ConceptId assertion1 = relationType.addRelation()
-                        .putRolePlayer(role1, start)
-                        .putRolePlayer(role2, middle).getId();
+                        .addRolePlayer(role1, start)
+                        .addRolePlayer(role2, middle).getId();
 
                 validPath.add(assertion1);
                 validPath.add(middleId);
 
                 ConceptId assertion2 = relationType.addRelation()
-                        .putRolePlayer(role1, middle)
-                        .putRolePlayer(role2, end).getId();
+                        .addRolePlayer(role1, middle)
+                        .addRolePlayer(role2, end).getId();
 
                 validPath.add(assertion2);
                 validPath.add(endId);
@@ -327,17 +327,17 @@ public class ShortestPathTest {
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId();
             relationId13 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity3).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity3).getId();
             relationId24 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity4).getId();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity4).getId();
             relationId34 = relationType.addRelation()
-                    .putRolePlayer(role1, entity3)
-                    .putRolePlayer(role2, entity4).getId();
+                    .addRolePlayer(role1, entity3)
+                    .addRolePlayer(role2, entity4).getId();
 
             graph.commit();
         }
@@ -367,15 +367,15 @@ public class ShortestPathTest {
             RelationType relationType2 = graph.putRelationType(veryRelated).hasRole(role3).hasRole(role4);
 
             relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId();
             relationId13 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity3).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity3).getId();
 
             relationId1A12 = relationType2.addRelation()
-                    .putRolePlayer(role3, entity1)
-                    .putRolePlayer(role4, graph.getConcept(relationId12)).getId();
+                    .addRolePlayer(role3, entity1)
+                    .addRolePlayer(role4, graph.getConcept(relationId12)).getId();
 
             graph.commit();
         }

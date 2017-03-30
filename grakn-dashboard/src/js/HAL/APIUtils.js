@@ -26,13 +26,15 @@ import * as API from '../util/HALTerms';
   * Build label to show in the visualiser, based on the node type.
   */
 function buildLabel(resource) {
-  let label;
+  let label = resource[API.KEY_TYPE];
 
   switch (resource[API.KEY_BASE_TYPE]) {
     case API.ENTITY_TYPE:
+    case API.ENTITY:
       label = `${resource[API.KEY_TYPE]}: ${resource[API.KEY_ID]}`;
       break;
     case API.RELATION_TYPE:
+    case API.RELATION:
       label = `${resource[API.KEY_BASE_TYPE].substring(0, 3)}: ${resource[API.KEY_TYPE]}`;
       break;
     case API.RESOURCE_TYPE:
@@ -44,7 +46,7 @@ function buildLabel(resource) {
       break;
 
     default:
-      label = resource[API.KEY_ID];
+      label = resource[API.KEY_TYPE];
   }
 
   if (API.KEY_VALUE in resource) { label = resource[API.KEY_VALUE] || label; }

@@ -248,7 +248,7 @@ public class ConceptPropertyTest {
                     assumeThat(roleType.playedByTypes(), empty());
                     assumeThat(roleType.relationTypes(), empty());
                     Collection<? extends Relation> allRelations = graph.admin().getMetaRelationType().instances();
-                    Set<RoleType> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.rolePlayers().keySet().stream()).collect(toSet());
+                    Set<RoleType> allRolesPlayed = allRelations.stream().flatMap(relation -> relation.allRolePlayers().keySet().stream()).collect(toSet());
                     assumeThat(allRolesPlayed, not(hasItem(roleType)));
                 } else if (type.isRelationType()) {
                     assumeThat(type.asRelationType().hasRoles(), empty());

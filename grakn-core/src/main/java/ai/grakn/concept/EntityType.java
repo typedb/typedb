@@ -85,6 +85,22 @@ public interface EntityType extends Type{
     Entity addEntity();
 
     /**
+     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     *
+     * @param scope The category of this Type
+     * @return The Type itself.
+     */
+    EntityType scope(Instance scope);
+
+    /**
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Type.
+     * @return The Type itself
+     */
+    EntityType deleteScope(Instance scope);
+
+    /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.

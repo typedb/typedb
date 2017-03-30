@@ -79,21 +79,21 @@ public class MatrixGraph extends TestGraph{
 
         for (int i = 0; i < m; i++) {
             R1.addRelation()
-                    .putRolePlayer(R1from, graph.getConcept(aInstancesIds[i]))
-                    .putRolePlayer(R1to, graph.getConcept(aInstancesIds[i + 1]));
+                    .addRolePlayer(R1from, graph.getConcept(aInstancesIds[i]))
+                    .addRolePlayer(R1to, graph.getConcept(aInstancesIds[i + 1]));
         }
 
         for(int j = 1 ; j <= n ;j++) {
             R2.addRelation()
-                    .putRolePlayer(R2from, graph.getConcept(aInstancesIds[0]))
-                    .putRolePlayer(R2to, graph.getConcept(bInstancesIds[1][j]));
+                    .addRolePlayer(R2from, graph.getConcept(aInstancesIds[0]))
+                    .addRolePlayer(R2to, graph.getConcept(bInstancesIds[1][j]));
             R2.addRelation()
-                    .putRolePlayer(R2from, graph.getConcept(bInstancesIds[m-1][j]))
-                    .putRolePlayer(R2to, graph.getConcept(aInstancesIds[m]));
+                    .addRolePlayer(R2from, graph.getConcept(bInstancesIds[m-1][j]))
+                    .addRolePlayer(R2to, graph.getConcept(aInstancesIds[m]));
             for (int i = 1; i < m - 1; i++) {
                 R2.addRelation()
-                        .putRolePlayer(R2from, graph.getConcept(bInstancesIds[i][j]))
-                        .putRolePlayer(R2to, graph.getConcept(bInstancesIds[i + 1][j]));
+                        .addRolePlayer(R2from, graph.getConcept(bInstancesIds[i][j]))
+                        .addRolePlayer(R2to, graph.getConcept(bInstancesIds[i + 1][j]));
             }
         }
     }

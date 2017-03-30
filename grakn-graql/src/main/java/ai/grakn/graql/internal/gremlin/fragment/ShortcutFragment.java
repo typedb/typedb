@@ -20,17 +20,18 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
-import static ai.grakn.util.Schema.EdgeProperty.FROM_ROLE_NAME;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_NAME;
-import static ai.grakn.util.Schema.EdgeProperty.TO_ROLE_NAME;
+import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_NAME;
 
 class ShortcutFragment extends AbstractFragment {
 
@@ -50,10 +51,13 @@ class ShortcutFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel());
-        roleStart.ifPresent(rs -> edgeTraversal.has(FROM_ROLE_NAME.name(), rs.getValue()));
-        roleEnd.ifPresent(re -> edgeTraversal.has(TO_ROLE_NAME.name(), re.getValue()));
+        // TODO: Split this traversal in two
+        String shortcutIn = UUID.randomUUID().toString();
+        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(SHORTCUT.getLabel()).as(shortcutIn);
+        roleStart.ifPresent(rs -> edgeTraversal.has(ROLE_TYPE_NAME.name(), rs.getValue()));
         relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_NAME.name(), rt.getValue()));
+        edgeTraversal.otherV().outE(SHORTCUT.getLabel()).where(P.neq(shortcutIn));
+        roleEnd.ifPresent(re -> edgeTraversal.has(ROLE_TYPE_NAME.name(), re.getValue()));
         edgeTraversal.inV();
     }
 

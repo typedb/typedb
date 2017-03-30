@@ -35,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -88,7 +89,10 @@ public class PokemonGraphFactoryTest {
         Entity poison = graknGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
         Entity grass = graknGraph.getResourcesByValue("grass").iterator().next().ownerInstances().iterator().next().asEntity();
         Stream<Relation> relations = poison.relations().stream();
-        assertTrue(relations.anyMatch(r -> r.type().equals(relationType) && r.rolePlayers().get(role).equals(grass)));
+        assertTrue(relations.anyMatch(r -> {
+            Collection<Instance> instances = r.rolePlayers(role);
+            return r.type().equals(relationType) && !instances.isEmpty() && instances.stream().anyMatch(instance -> instance.equals(grass));
+        }));
     }
 
 }

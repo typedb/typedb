@@ -27,9 +27,8 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -71,13 +70,9 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      */
     @Override
     public Collection<Instance> ownerInstances() {
-        Set<Instance> owners = new HashSet<>();
-        this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
-            if(!concept.isResource()){
-                owners.add(concept.asInstance());
-            }
-        });
-        return owners;
+        return getShortcutNeighbours().stream().
+                filter(concept -> !concept.isResource()).
+                collect(Collectors.toSet());
     }
 
     @Override

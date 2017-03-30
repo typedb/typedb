@@ -53,7 +53,7 @@ public class CastingTest extends GraphTestBase{
         entity1 = entityType.addEntity();
         entity2 = entityType.addEntity();
 
-        relation = relationType.addRelation().putRolePlayer(role1, entity1).putRolePlayer(role2, entity2);
+        relation = relationType.addRelation().addRolePlayer(role1, entity1).addRolePlayer(role2, entity2);
 
         //Get castings via internal index
         casting1 = graknGraph.getConcept(Schema.ConceptProperty.INDEX,

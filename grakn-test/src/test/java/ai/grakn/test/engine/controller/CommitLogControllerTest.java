@@ -135,7 +135,7 @@ public class CommitLogControllerTest {
         Entity entity = type.addEntity();
         Resource resource = resourceType.putResource(UUID.randomUUID().toString());
 
-        relationType.addRelation().putRolePlayer(role1, entity).putRolePlayer(role2, resource);
+        relationType.addRelation().addRolePlayer(role1, entity).addRolePlayer(role2, resource);
 
         graph.commit();
     }
