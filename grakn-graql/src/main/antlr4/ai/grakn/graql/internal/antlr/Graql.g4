@@ -28,8 +28,8 @@ matchQuery     : 'match' patterns                                 # matchBase
 
 askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchInsert | insertOnly ;
-insertOnly     : insert varPatterns ;
-matchInsert    : matchQuery insert varPatterns ;
+insertOnly     : 'insert' varPatterns ;
+matchInsert    : matchQuery 'insert' varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -113,11 +113,6 @@ value          : STRING   # valueString
                | REAL     # valueReal
                | BOOLEAN  # valueBoolean
                ;
-
-// These rules are used for parsing streams of patterns separated by semicolons
-insert         : 'insert' ;
-patternSep     : pattern ';' ;
-batchPattern   : 'match' | 'insert' | patternSep ;
 
 name           : identifier ;
 id             : identifier ;
