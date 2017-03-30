@@ -28,9 +28,11 @@ import org.junit.Test;
 
 import java.util.Set;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 public class AutocompleteTest {
 
@@ -40,44 +42,42 @@ public class AutocompleteTest {
     public static final GraphContext rule = GraphContext.preLoad(MovieGraph.get());
 
     @Test
-    public void testAutocompleteEmpty() {
+    public void whenAutocompletingAnEmptyQuery_CandidatesIncludeTypesAndKeywords() {
         Autocomplete autocomplete = Autocomplete.create(types, "", 0);
-        assertTrue(autocomplete.getCandidates().contains("match"));
-        assertTrue(autocomplete.getCandidates().contains("isa"));
-        assertTrue(autocomplete.getCandidates().contains("movie"));
-        assertFalse(autocomplete.getCandidates().contains("$x"));
+        assertThat(autocomplete.getCandidates(), hasItems("match", "isa", "movie"));
+        assertThat(autocomplete.getCandidates(), not(hasItem("$x")));
         assertEquals(0, autocomplete.getCursorPosition());
     }
 
     @Test
-    public void testAutocompleteKeywords() {
+    public void whenAutocompletingHalfwayThroughAWord_CandidatesOnlyIncludeKeywordsWithCorrectPrefix() {
         String queryString = "match $x isa movie; sel";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, queryString.length());
-        assertTrue(autocomplete.getCandidates().contains("select"));
-        assertFalse(autocomplete.getCandidates().contains("match"));
+        assertThat(autocomplete.getCandidates(), hasItem("select"));
+        assertThat(autocomplete.getCandidates(), not(hasItem("match")));
         assertEquals(queryString.length() - 3, autocomplete.getCursorPosition());
     }
 
     @Test
-    public void testAutocompleteKeywordCursorInQuery() {
+    public void whenAutocompletingWithinQuery_AppropriateCandidatesAreFound() {
         String queryString = " matc $x isa person";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, 4);
-        assertTrue(autocomplete.getCandidates().contains("match"));
-        assertFalse(autocomplete.getCandidates().contains("insert"));
+        assertThat(autocomplete.getCandidates(), hasItem("match"));
+        assertThat(autocomplete.getCandidates(), not(hasItem("insert")));
         assertEquals(1, autocomplete.getCursorPosition());
     }
 
     @Test
-    public void testAutocompleteKeywordCursorInWord() {
+    public void whenAutocompletingWithinWord_AppropriateCandidatesAreFound() {
         String queryString = "match $x has-re title";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, 11);
-        assertTrue(autocomplete.getCandidates().contains("has-resource"));
-        assertFalse(autocomplete.getCandidates().contains("delete"));
+        assertThat(autocomplete.getCandidates(), hasItem("has-resource"));
+        assertThat(autocomplete.getCandidates(), not(hasItem("delete")));
         assertEquals(9, autocomplete.getCursorPosition());
     }
 
     @Test
-    public void testAutocompleteSpace() {
+    public void whenAutocompletingAfterACompleteKeyword_InsertASpace() {
         String queryString = "match";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, queryString.length());
         assertEquals(Sets.newHashSet(" "), autocomplete.getCandidates());
@@ -85,26 +85,26 @@ public class AutocompleteTest {
     }
 
     @Test
-    public void testAutocompleteType() {
+    public void whenAutocompletingAQuery_IncludeTypesInTheOntology() {
         String queryString = "insert $x isa pro";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, queryString.length());
-        assertTrue(autocomplete.getCandidates().contains("production"));
+        assertThat(autocomplete.getCandidates(), hasItem("production"));
         assertEquals(queryString.length() - 3, autocomplete.getCursorPosition());
     }
 
     @Test
-    public void testAutocompleteVariables() {
+    public void whenAutocompletingAQuery_IncludeVariablesInTheQuery() {
         String queryString = "insert $x isa ";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, queryString.length());
-        assertTrue(autocomplete.getCandidates().contains("$x"));
+        assertThat(autocomplete.getCandidates(), hasItem("$x"));
         assertEquals(queryString.length(), autocomplete.getCursorPosition());
     }
 
     @Test
-    public void testAutocompleteVariablesDollar() {
+    public void whenAutocompletingAQueryStartingWithADollar_IncludeVariablesInTheQuery() {
         String queryString = "insert $x isa $";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, queryString.length());
-        assertTrue(autocomplete.getCandidates().contains("$x"));
+        assertThat(autocomplete.getCandidates(), hasItem("$x"));
         assertEquals(queryString.length() - 1, autocomplete.getCursorPosition());
     }
 }
