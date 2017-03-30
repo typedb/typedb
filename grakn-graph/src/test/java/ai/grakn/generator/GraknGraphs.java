@@ -249,7 +249,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 RoleType roleType = roleType();
                 Instance instance = instance();
                 relation.addRolePlayer(roleType, instance);
-                summary(relation, "putRolePlayer", roleType, instance);
+                summary(relation, "addRolePlayer", roleType, instance);
             }
     );
     private void summary(Object target, String methodName, Object... args) {
