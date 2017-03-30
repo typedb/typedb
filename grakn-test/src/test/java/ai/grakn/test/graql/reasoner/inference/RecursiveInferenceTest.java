@@ -82,6 +82,7 @@ public class RecursiveInferenceTest {
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
+        graphContext.graph().close();
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/

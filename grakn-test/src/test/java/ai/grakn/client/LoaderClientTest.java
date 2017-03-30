@@ -209,7 +209,7 @@ public class LoaderClientTest {
 
             nameTag.resource(nameTagString);
             nameTag.resource(nameTagId);
-            graph.commitOnClose();
+            graph.commit();
         }
 
         return spy(new LoaderClient(graphContext.graph().getKeyspace(), Grakn.DEFAULT_URI));

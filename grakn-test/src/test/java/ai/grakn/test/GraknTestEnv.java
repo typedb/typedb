@@ -111,15 +111,15 @@ public abstract class GraknTestEnv {
         // Drop all keyspaces
         EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
 
-        GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME);
-        systemGraph.graql().match(var("x").isa("keyspace-name"))
-                .execute()
-                .forEach(x -> x.values().forEach(y -> {
-                    String name = y.asResource().getValue().toString();
-                    GraknGraph graph = engineGraknGraphFactory.getGraph(name);
-                    graph.admin().clear(EngineCache.getInstance());
-                }));
-
+        try(GraknGraph systemGraph = engineGraknGraphFactory.getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            systemGraph.graql().match(var("x").isa("keyspace-name"))
+                    .execute()
+                    .forEach(x -> x.values().forEach(y -> {
+                        String name = y.asResource().getValue().toString();
+                        GraknGraph graph = engineGraknGraphFactory.getGraph(name);
+                        graph.admin().clear(EngineCache.getInstance());
+                    }));
+        }
         engineGraknGraphFactory.refreshConnections();
     }
 
@@ -138,7 +138,7 @@ public abstract class GraknTestEnv {
         }
     }
 
-    static String randomKeyspace(){
+    public static String randomKeyspace(){
         // Embedded Casandra has problems dropping keyspaces that start with a number
         return "a"+ UUID.randomUUID().toString().replaceAll("-", "");
     }

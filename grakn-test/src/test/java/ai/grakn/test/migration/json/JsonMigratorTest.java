@@ -20,16 +20,17 @@ package ai.grakn.test.migration.json;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
-import ai.grakn.migration.base.Migrator;
-import ai.grakn.migration.json.JsonMigrator;
-import ai.grakn.test.EngineContext;
-import com.google.common.collect.Sets;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.TypeName;
+import ai.grakn.migration.base.Migrator;
+import ai.grakn.migration.json.JsonMigrator;
+import ai.grakn.test.EngineContext;
+import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -50,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 public class JsonMigratorTest {
 
     private Migrator migrator;
-    private GraknGraphFactory factory;
+    private GraknSession factory;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -58,7 +59,9 @@ public class JsonMigratorTest {
     @Before
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
-        migrator = Migrator.to(Grakn.DEFAULT_URI, factory.getGraph().getKeyspace());
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
+        graph.close();
     }
 
     @Test
@@ -91,7 +94,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "simple-schema/data.json");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
         EntityType personType = graph.getEntityType("person");
         assertEquals(1, personType.instances().size());
 
@@ -138,7 +141,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "all-types/data.json");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
         EntityType rootType = graph.getEntityType("thing");
         Collection<Entity> things = rootType.instances();
         assertEquals(1, things.size());
@@ -171,7 +174,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
 
@@ -195,7 +198,7 @@ public class JsonMigratorTest {
 
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(2, theThing.instances().size());
     }
@@ -206,7 +209,7 @@ public class JsonMigratorTest {
         String template = "insert $thing isa the-thing has a-string <the-thing.a-string>;";
         declareAndLoad(template, "string-or-object/data");
 
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
         EntityType theThing = graph.getEntityType("the-thing");
         assertEquals(1, theThing.instances().size());
     }

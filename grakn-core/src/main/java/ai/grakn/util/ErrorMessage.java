@@ -43,7 +43,7 @@ public enum ErrorMessage {
     REGEX_NOT_STRING("The Resource Type [%s] is not of type String so it cannot support regular expressions"),
     ROLE_IS_NULL("The provided role cannot be null with roleplayer [%s]"),
     CLOSED_CLEAR("This graph has been closed due to clearing it"),
-    TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
+    TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
@@ -54,10 +54,11 @@ public enum ErrorMessage {
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
-    GRAPH_PERMANENTLY_CLOSED("The Graph for keyspace [%s] is closed. Use the factory to get a new graph."),
+    GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new trsnaction for the graph."),
     TRANSACTIONS_OPEN("Cannot close graph [%s] connecting to keyspace [%s] because there are [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Resource Type [%s] as a key and as a resource"),
+    TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

@@ -1,24 +1,8 @@
 package ai.grakn.test.engine.postprocessing;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
-import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
-import static org.junit.Assume.assumeTrue;
-
-import java.util.function.Consumer;
-import java.util.function.Function;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Relation;
@@ -30,13 +14,29 @@ import ai.grakn.engine.postprocessing.ResourceDeduplicationTask;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import mjson.Json;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.checkUnique;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
+import static org.junit.Assume.assumeTrue;
 
 public class ResourceDeduplicationMapReduceTestIT {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
-    static GraknGraphFactory factory;
+    static GraknSession factory;
     static ResourceType<String> stringResource = null;
     static ResourceType<Long> longResource = null;
     static ResourceType<Double> doubleResource = null;
@@ -50,17 +50,18 @@ public class ResourceDeduplicationMapReduceTestIT {
     static RoleType related1, related2, related3, related4, related5;
     
     static void transact(Consumer<GraknGraph> action) {
-        try (GraknGraph graph = factory.getGraph()) {
-            graph.commitOnClose();            
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             action.accept(graph);
-        }                
+            graph.commit();
+        }
     }
 
     static <T> T transact(Function<GraknGraph, T> action) {
-        try (GraknGraph graph = factory.getGraph()) {
-            graph.commitOnClose();            
-            return action.apply(graph);
-        }                
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
+            T result = action.apply(graph);
+            graph.commit();
+            return result;
+        }
     }
     
     @BeforeClass
@@ -69,7 +70,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     }
 
     private String keyspace() {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             return graph.getKeyspace();
         }        
     }
@@ -138,7 +139,7 @@ public class ResourceDeduplicationMapReduceTestIT {
     
     @After
     public void emptyGraph() {
-        GraknGraph graph = factory.getGraph();
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
         graph.clear();
     }
     
@@ -158,7 +159,6 @@ public class ResourceDeduplicationMapReduceTestIT {
      * Test that the normal case with no duplicates on various resources doesn't screw things up.
      */
     @Test
-    //@Ignore
     public void testNoDuplicates() {
         transact(graph ->  {
             Entity e1 = thing.addEntity();
@@ -170,7 +170,7 @@ public class ResourceDeduplicationMapReduceTestIT {
             r1.resource(booleanResource.putResource(true));
             r1.resource(floatResource.putResource(56.43f));
             r1.resource(doubleResource.putResource(2342.546));            
-            graph.commitOnClose();
+            graph.commit();
         });
         ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 
         task.start(checkpoint -> { throw new RuntimeException("No checkpoint expected."); }, 
@@ -183,7 +183,6 @@ public class ResourceDeduplicationMapReduceTestIT {
      * relationships.
      */
     @Test
-    //@Ignore
     public void testManyUnattachedResources() {
         String stringIndex = transact(graph -> { 
             Resource<String> res = stringResource.putResource("value_dup");
@@ -226,7 +225,6 @@ public class ResourceDeduplicationMapReduceTestIT {
      * Test when a few instances of the same resource get attached to the same entity.
      */
     @Test
-    //@Ignore
     public void testDuplicatesOnSameEntity() {
         String resourceIndex = transact(graph -> {
            Entity something = thing.addEntity();
@@ -248,7 +246,6 @@ public class ResourceDeduplicationMapReduceTestIT {
     }
 
     @Test
-    @Ignore
     public void testDuplicatesOnDifferentEntity() {
         String resourceIndex = transact(graph -> {
            Entity something = thing.addEntity();

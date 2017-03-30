@@ -108,7 +108,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
     private Cache<TypeName, Type> cachedOntology = CacheBuilder.newBuilder()
@@ -124,7 +123,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         localIsOpen.set(true);
 
-        if(initialiseMetaConcepts()) commitTransaction();
+        if(initialiseMetaConcepts()) commitTransactionInternal();
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         localShowImplicitStructures.set(false);
@@ -166,10 +165,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean implicitConceptsVisible(){
         return getBooleanFromLocalThread(localShowImplicitStructures);
-    }
-
-    private boolean getCommitRequired(){
-        return getBooleanFromLocalThread(localCommitRequired);
     }
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
@@ -784,7 +779,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void innerClear(){
         clearGraph();
-        closeGraph(ErrorMessage.CLOSED_CLEAR.getMessage());
+        closeTransaction(ErrorMessage.CLOSED_CLEAR.getMessage());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -792,42 +787,48 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
-    /**
-     * Closes the current graph, rendering it unusable.
-     */
     @Override
-    public void close() throws GraknValidationException {
-        if(getCommitRequired()){
-            commit();
-        }
-        localCommitRequired.remove();
-        closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
+    public void close(){
+        close(false);
     }
 
-    private void closeGraph(String closedReason){
+    @Override
+    public void abort(){
+        close();
+    }
+
+    @Override
+    public void commit(){
+        close(true);
+    }
+
+    private void close(boolean commitRequired){
+        if(isClosed()) return;
+
+        String closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
+
+        try{
+            if(commitRequired) {
+                closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
+                commit(this::submitCommitLogs);
+                getConceptLog().writeToCentralCache(true);
+            } else {
+                getConceptLog().writeToCentralCache(false);
+            }
+        } finally {
+            closeTransaction(closeMessage);
+        }
+    }
+
+    private void closeTransaction(String closedReason){
         try {
             graph.tx().close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         }
         localClosedReason.set(closedReason);
-        localIsOpen.set(false);
-        clearLocalVariables();
-    }
-
-    /**
-     * Sets a thread local flag indicating that a commit is required when cloding the graph.
-     */
-    public void commitOnClose(){
-        localCommitRequired.set(true);
-    }
-
-    /**
-     * Commits the graph
-     * @throws GraknValidationException when the graph does not conform to the object concept
-     */
-    public void commit() throws GraknValidationException {
-        commit(this::submitCommitLogs);
+        localIsOpen.remove();
+        localConceptLog.remove();
     }
 
     /**
@@ -856,11 +857,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         commit((x, y) -> {});
     }
 
-    private void clearLocalVariables(){
-        getConceptLog().writeToCentralCache(false);
-        localConceptLog.remove();
-    }
-
     public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
@@ -872,14 +868,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
 
         LOG.trace("Graph is valid. Committing graph . . . ");
-        commitTransaction();
+        commitTransactionInternal();
 
         //TODO: Kill when analytics no longer needs this
         GraknSparkComputer.refresh();
 
         LOG.trace("Graph committed.");
-        getConceptLog().writeToCentralCache(true);
-        clearLocalVariables();
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
@@ -887,7 +881,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    protected void commitTransaction(){
+    void commitTransactionInternal(){
         try {
             getTinkerPopGraph().tx().commit();
         } catch (UnsupportedOperationException e){
@@ -1075,12 +1069,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //This is so we can copy them uniquely later
                 otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
 
-                //Cope the actual relation
+                //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
-                otherResource.delete();
+                //Delete the node and it's castings directly so we don't accidentally delete copied relations
+                otherResource.castings().forEach(ConceptImpl::deleteNode);
+                otherResource.deleteNode();
             }
 
             return true;

@@ -39,7 +39,7 @@ public class PostProcessingTestUtils {
                 .hasId(resourceType.getId().getValue()).next();
         Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
-        resourceVertex.property(resourceType.getDataType().getConceptProperty().name(), resource.getClass());
+        resourceVertex.property(resourceType.getDataType().getConceptProperty().name(), resource.getValue());
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);        
         return (Resource<T>)graknGraph.admin().buildConcept(resourceVertex);

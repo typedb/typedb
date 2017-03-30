@@ -24,11 +24,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 /**
  *
  */
-public class GraknGraphFactoryMock extends GraknGraphFactoryImpl {
+public class GraknSessionMock extends GraknSessionImpl {
     private final String keyspace;
     private final String uri;
 
-    public GraknGraphFactoryMock(String keyspace, String uri) {
+    public GraknSessionMock(String keyspace, String uri) {
         super(keyspace.toLowerCase(), uri);
         this.keyspace = keyspace;
         this.uri = uri;

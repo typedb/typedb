@@ -54,7 +54,7 @@ import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
  * </p>
  *
  * <p>
- *     When calling {@link ai.grakn.Grakn#factory(String, String)} and using the non memory location this controller
+ *     When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location this controller
  *     is accessed. The controller provides the necessary config needed in order to build a {@link ai.grakn.GraknGraph}.
  *
  *     This controller also allows the retrieval of all keyspaces opened so far.

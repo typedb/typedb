@@ -3,7 +3,7 @@ package ai.grakn.graql.internal.query.analytics;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.factory.GraknGraphFactoryMock;
+import ai.grakn.factory.GraknSessionMock;
 
 import java.util.Optional;
 
@@ -20,7 +20,7 @@ public class MeanQueryImplMock extends MeanQueryImpl{
 
     @Override
     protected GraknComputer getGraphComputer() {
-        GraknGraphFactoryMock factory = new GraknGraphFactoryMock(keySpace, Grakn.DEFAULT_URI);
+        GraknSessionMock factory = new GraknSessionMock(keySpace, Grakn.DEFAULT_URI);
         return factory.getGraphComputer(numberOfWorkers);
     }
 }

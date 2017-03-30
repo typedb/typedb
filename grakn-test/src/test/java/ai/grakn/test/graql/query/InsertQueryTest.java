@@ -544,8 +544,7 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commitOnClose();
-        movieGraph.graph().close();
+        movieGraph.graph().commit();
     }
 
     @Ignore // TODO: Un-ignore this when constraints are designed and implemented
@@ -561,8 +560,7 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commitOnClose();
-        movieGraph.graph().close();
+        movieGraph.graph().commit();
     }
 
     @Test
@@ -576,8 +574,7 @@ public class InsertQueryTest {
         ).execute();
 
         exception.expect(GraknValidationException.class);
-        movieGraph.graph().commitOnClose();
-        movieGraph.graph().close();
+        movieGraph.graph().commit();
     }
 
     @Test

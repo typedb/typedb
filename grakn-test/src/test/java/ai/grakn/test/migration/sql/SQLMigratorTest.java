@@ -20,7 +20,8 @@ package ai.grakn.test.migration.sql;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Resource;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.sql.SQLMigrator;
@@ -45,7 +46,7 @@ import static junit.framework.TestCase.assertNotNull;
 public class SQLMigratorTest {
 
     private Migrator migrator;
-    private GraknGraphFactory factory;
+    private GraknSession factory;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -56,7 +57,9 @@ public class SQLMigratorTest {
     @Before
     public void setup(){
         factory = engine.factoryWithNewKeyspace();
-        migrator = Migrator.to(Grakn.DEFAULT_URI, factory.getGraph().getKeyspace());
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        graph.close();
+        migrator = Migrator.to(Grakn.DEFAULT_URI, graph.getKeyspace());
     }
 
     @Test
@@ -67,7 +70,7 @@ public class SQLMigratorTest {
         try(Connection connection = setupExample(factory, "pets")){
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open(GraknTxType.WRITE);
             assertPetGraphCorrect(graph);
         }
     }
@@ -102,7 +105,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open(GraknTxType.WRITE);
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -140,7 +143,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open(GraknTxType.WRITE);
             assertPokemonGraphCorrect(graph);
         }
     }
@@ -153,7 +156,7 @@ public class SQLMigratorTest {
 
             migrator.load(template, new SQLMigrator(query, connection).convert());
 
-            GraknGraph graph = factory.getGraph();
+            GraknGraph graph = factory.open(GraknTxType.WRITE);
             Resource<Long> count = graph.getResourcesByValue(9L).iterator().next();
             assertNotNull(count);
             assertEquals(count.type(), graph.getResourceType("count"));

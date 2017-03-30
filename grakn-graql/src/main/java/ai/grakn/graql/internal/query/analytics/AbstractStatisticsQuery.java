@@ -18,7 +18,6 @@
 
 package ai.grakn.graql.internal.query.analytics;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
@@ -138,15 +137,16 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     }
 
     boolean selectedResourceTypesHaveInstance(Set<TypeName> statisticsResourceTypes) {
-
-        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, this.keySpace).getGraph();
-
         List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
                 .map(type -> var("x").has(type, var())).collect(Collectors.toList());
         List<Pattern> checkSubtypes = subTypeNames.stream()
                 .map(type -> var("x").isa(name(type))).collect(Collectors.toList());
 
-        return graph.graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+        if(graph.isPresent()) {
+            return graph.get().graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+        } else {
+            throw new RuntimeException("Cannot compute the instnces of a type without a graph");
+        }
     }
 
     Set<TypeName> getCombinedSubTypes() {

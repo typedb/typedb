@@ -19,7 +19,8 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -73,7 +74,7 @@ public class ClusteringTest {
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
-    private GraknGraphFactory factory;
+    private GraknSession factory;
 
     @Before
     public void setUp() {
@@ -88,7 +89,7 @@ public class ClusteringTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
             Map<String, Long> sizeMap = Graql.compute().withGraph(graph).cluster().execute();
             assertTrue(sizeMap.isEmpty());
@@ -111,7 +112,7 @@ public class ClusteringTest {
 
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withGraph(graph).cluster().clusterSize(1L).execute();
             assertEquals(0, sizeMap.size());
             memberMap = graph.graql().compute().cluster().members().clusterSize(1L).execute();
@@ -120,7 +121,7 @@ public class ClusteringTest {
 
         addResourceRelations();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = graph.graql().compute().cluster().clusterSize(1L).execute();
             assertEquals(5, sizeMap.size());
 
@@ -148,7 +149,7 @@ public class ClusteringTest {
         addOntologyAndEntities();
         addResourceRelations();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             ResourceType<String> resourceType =
                     graph.putResourceType(aResourceTypeName, ResourceType.DataType.STRING);
             graph.getEntityType(thing).resource(resourceType);
@@ -156,10 +157,10 @@ public class ClusteringTest {
             Resource aResource = resourceType.putResource("blah");
             graph.getEntityType(thing).instances().forEach(instance -> instance.resource(aResource));
             graph.getEntityType(anotherThing).instances().forEach(instance -> instance.resource(aResource));
-            graph.commitOnClose();
+            graph.commit();
         }
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Set<String>> result = graph.graql().compute()
                     .cluster().in(thing, anotherThing, aResourceTypeName).members().execute();
             assertEquals(1, result.size());
@@ -181,7 +182,7 @@ public class ClusteringTest {
         // add something, test again
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withGraph(graph).cluster().execute();
             assertEquals(1, sizeMap.size());
             assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
@@ -194,7 +195,7 @@ public class ClusteringTest {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             long start = System.currentTimeMillis();
             sizeMap = graph.graql().compute().cluster().execute();
             System.out.println(System.currentTimeMillis() - start + " ms");
@@ -247,7 +248,7 @@ public class ClusteringTest {
         }
         GraknSparkComputer.clear();
         list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.getGraph()) {
+            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();
                 assertEquals(1, sizeMap1.size());
                 assertEquals(7L, sizeMap1.values().iterator().next().longValue());
@@ -256,7 +257,7 @@ public class ClusteringTest {
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -352,12 +353,12 @@ public class ClusteringTest {
                     .playsRole(resourceValue6)
                     .playsRole(resourceValue7));
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 
     private void addResourceRelations() throws GraknValidationException {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
 
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);
@@ -429,7 +430,7 @@ public class ClusteringTest {
             graph.getResourceType(resourceType5).putResource(10L);
             graph.getResourceType(resourceType6).putResource(0.8);
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

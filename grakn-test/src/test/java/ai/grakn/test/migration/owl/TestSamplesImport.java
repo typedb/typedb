@@ -17,6 +17,7 @@
  */
 package ai.grakn.test.migration.owl;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -52,8 +53,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Shopping.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commitOnClose();
-            migrator.graph().close();
+            migrator.graph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -61,7 +61,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open(GraknTxType.WRITE);
             EntityType type = graph.getEntityType("tMensWear");
             EntityType sub = graph.getEntityType("tTshirts");
             Assert.assertNotNull(type);
@@ -81,8 +81,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "shakespeare.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commitOnClose();
-            migrator.graph().close();
+            migrator.graph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -90,7 +89,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open(GraknTxType.WRITE);
             EntityType top = graph.getEntityType("tThing");
             EntityType type = graph.getEntityType("tAuthor");
             Assert.assertNotNull(type);
@@ -126,8 +125,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "Product.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commitOnClose();
-            migrator.graph().close();
+            migrator.graph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -135,7 +133,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open(GraknTxType.WRITE);
             EntityType type = graph.getEntityType("tProduct");
             Assert.assertNotNull(type);
             Optional<Entity> e = findById(type.instances(), "eProduct5");
@@ -156,8 +154,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             OWLOntology O = loadOntologyFromResource("owl", "test1.owl");
             O.axioms().forEach(System.out::println);            
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commitOnClose();
-            migrator.graph().close();
+            migrator.graph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -165,7 +162,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         }
         // Verify
         try {
-            graph = factory.getGraph();
+            graph = factory.open(GraknTxType.WRITE);
             migrator.graph(graph);
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
@@ -210,8 +207,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
         try {
             OWLOntology O = loadOntologyFromResource("owl", "family.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.graph().commitOnClose();
-            migrator.graph().close();
+            migrator.graph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

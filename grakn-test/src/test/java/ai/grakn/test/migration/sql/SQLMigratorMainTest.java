@@ -19,7 +19,8 @@
 package ai.grakn.test.migration.sql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.migration.sql.SQLMigrator;
 import ai.grakn.test.EngineContext;
 import org.junit.After;
@@ -35,31 +36,32 @@ import java.sql.SQLException;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPetGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.assertPokemonGraphCorrect;
 import static ai.grakn.test.migration.MigratorTestUtils.getFile;
-import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.DRIVER;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.PASS;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.URL;
 import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.USER;
+import static ai.grakn.test.migration.sql.SQLMigratorTestUtils.setupExample;
 
 public class SQLMigratorMainTest {
 
     private final String templateFile = getFile("sql", "pets/template.gql").getAbsolutePath();
     private final String query = "SELECT * FROM pet";
     private Connection connection;
-    private GraknGraphFactory factory;
+    private GraknSession factory;
+    private String keyspace;
     private GraknGraph graph;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setup() throws SQLException {
         factory = engine.factoryWithNewKeyspace();
-        graph = factory.getGraph();
         connection = setupExample(factory, "pets");
+        graph = factory.open(GraknTxType.WRITE);
+        keyspace = graph.getKeyspace();
     }
 
     @After
@@ -69,9 +71,10 @@ public class SQLMigratorMainTest {
 
     @Test
     public void sqlMainTest(){
+        graph.close();
         runAndAssertDataCorrect("sql", "-t", templateFile,
                 "-driver", DRIVER, "-location", URL,
-                "-pass", PASS, "-user", USER, "-q", query, "-k", graph.getKeyspace());
+                "-pass", PASS, "-user", USER, "-q", query, "-k", keyspace);
     }
 
     @Test
@@ -85,14 +88,14 @@ public class SQLMigratorMainTest {
     public void sqlMainNoUserTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No username specified (-user)");
-        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", graph.getKeyspace());
+        run("sql", "-pass", PASS, "-location", URL, "-q", query, "-t", templateFile, "-k", keyspace);
     }
 
     @Test
     public void sqlMainNoPassTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("No password specified (-pass)");
-        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", graph.getKeyspace());
+        run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL, "-user", USER, "-q", query, "-k", keyspace);
     }
 
     @Test
@@ -107,7 +110,7 @@ public class SQLMigratorMainTest {
         exception.expect(RuntimeException.class);
         exception.expectMessage("No SQL query specified (-query)");
         run("sql", "-t", templateFile, "-driver", DRIVER, "-location", URL,
-                "-pass", PASS, "-user", USER, "-k", graph.getKeyspace());
+                "-pass", PASS, "-user", USER, "-k", keyspace);
     }
 
     @Test
@@ -128,15 +131,16 @@ public class SQLMigratorMainTest {
     @Test
     public void sqlMainPropertiesTest() throws SQLException {
         connection.close();
+        graph.close();
         connection = setupExample(factory, "pokemon");
 
         String configurationFile = getFile("sql", "pokemon/migration.yaml").getAbsolutePath();
 
         run("sql", "-driver", DRIVER, "-location", URL,
-                "-pass", PASS, "-user", USER, "-k", graph.getKeyspace(),
+                "-pass", PASS, "-user", USER, "-k", keyspace,
                 "-c", configurationFile);
 
-        graph = factory.getGraph(); //Reopen transaction
+        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
         assertPokemonGraphCorrect(graph);
     }
 
@@ -146,7 +150,7 @@ public class SQLMigratorMainTest {
 
     private void runAndAssertDataCorrect(String... args){
         run(args);
-        graph = factory.getGraph(); //Reopen transaction
+        graph = factory.open(GraknTxType.WRITE); //Reopen transaction
         assertPetGraphCorrect(graph);
     }
 

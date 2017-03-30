@@ -19,6 +19,7 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknTxType;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,8 +37,8 @@ public class GraphTestBase {
     @Before
     public void setUpGraph() {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-        graknGraphBatch = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraphBatchLoading();
+        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
     }
 
     @After
