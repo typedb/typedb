@@ -187,6 +187,11 @@ public class TypePropertyTest {
     }
 
     @Property
+    public void whenGettingSuperType_TheResultIsNeverItself(Type type) {
+        assertNotEquals(type, type.superType());
+    }
+
+    @Property
     public void whenATypeHasAnIndirectSuperType_ItIsAnIndirectSubTypeOfThatSuperType(Type subType, long seed) {
         Type superType = choose(indirectSuperTypes(subType), seed);
         assertThat((Collection<Type>) superType.subTypes(), hasItem(subType));

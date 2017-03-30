@@ -73,12 +73,10 @@ import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(JUnitQuickcheck.class)
@@ -355,13 +353,6 @@ public class GraknGraphPropertyTest {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resource.getName()));
         }
         type.resource(resource);
-    }
-
-    @Property
-    public void whenGettingSuperType_TheResultIsNeverItself(@Open GraknGraph graph, TypeName typeName) {
-        Type type = graph.getType(typeName);
-        assumeNotNull(type);
-        assertNotEquals(type, type.superType());
     }
 
     private <T> void assertSameResult(Supplier<T> expectedMethod, Supplier<T> actualMethod) {
