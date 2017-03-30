@@ -59,6 +59,7 @@ public enum ErrorMessage {
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_RESOURCE("The Type [%s] cannot have the Resource Type [%s] as a key and as a resource"),
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]"),
+    TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
