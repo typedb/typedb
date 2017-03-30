@@ -370,10 +370,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     void checkOntologyMutation(){
+        checkMutation();
         if(isBatchLoadingEnabled()){
             throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
         }
     }
+
+    void checkMutation(){
+        if(isReadOnly())
+            throw new GraphRuntimeException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(getKeyspace()));
+    }
+
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction

@@ -71,7 +71,7 @@ public enum ErrorMessage {
     VALIDATION_CASTING("The type [%s] of role player [%s] is not allowed to play RoleType [%s] \n"),
     VALIDATION_IS_ABSTRACT("The abstract Type [%s] should not have any instances \n"),
     VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE("RoleType [%s] does not have a has-role connection to any Relation Type. \n"),
-    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have two or more roles \n"),
+    VALIDATION_RELATION_TYPE("Relation Type [%s] does not have one or more roles \n"),
     VALIDATION_INSTANCE("Instance [%s] of type [%s] does not play the required role [%s] \n"),
 
     VALIDATION_RELATION_TYPES_ROLES_SCHEMA("The Role Type [%s] which is connected to Relation Type [%s] " +

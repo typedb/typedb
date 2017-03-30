@@ -98,13 +98,9 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @Override
     public Resource<D> putResource(D value) {
         if(value == null) throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage("resource value"));
-
-        Resource<D> resource = getResource(value);
-        if(resource == null){
-            resource = addInstance(Schema.BaseType.RESOURCE, (vertex, type) ->
-                    getGraknGraph().getElementFactory().buildResource(vertex, type, value));
-        }
-        return resource;
+        return putInstance(Schema.BaseType.RESOURCE,
+                () -> getResource(value), (vertex, type) ->
+                getGraknGraph().getElementFactory().buildResource(vertex, type, value));
     }
 
     @Override
