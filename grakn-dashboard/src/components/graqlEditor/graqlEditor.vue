@@ -21,7 +21,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="graqlEditor-container">
         <div class="left-side">
             <fav-queries-list v-on:type-query="typeFavQuery" ref="savedQueries"></fav-queries-list>
-            <button @click="toggleTypeInstances" class="btn types-button"><span>Types</span><i style="padding-left:3px;" v-bind:class="[showTypeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
+            <button @click="toggleTypeInstances" class="btn types-button"><span>Types</span><i style="padding-left:3px;" :class="[showTypeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
                       </button>
         </div>
         <div class="center">
@@ -34,7 +34,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
         </div>
         <div class="right-side">
-            <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
+          <scroll-button :editorLinesNumber="editorLinesNumber"></scroll-button>
+          <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
             <button @click="runQuery" class="btn"><i
                           class="pe-7s-angle-right-circle"></i></button>
             <button @click="clearGraph" @click.shift="clearGraphAndPage" class="btn"><i class="pe-7s-close-circle"></i>
@@ -97,24 +98,24 @@ span {
 </style>
 
 <script>
+//Third party libs
 import CodeMirror from 'codemirror';
 import placeholder from 'codemirror/addon/display/placeholder.js';
 import simpleMode from 'codemirror/addon/mode/simple.js';
-
-import EngineClient from '../../js/EngineClient.js';
 import simpleGraql from '../../js/codemirrorGraql.js';
+
+//Modules
+import EngineClient from '../../js/EngineClient.js';
 import GraphPageState from '../../js/state/graphPageState';
 import ConsolePageState from '../../js/state/consolePageState';
 
-
-
 //Sub-components
-const AddCurrentQuery = require('./addCurrentQuery.vue');
-const FavQueriesList = require('./favQueriesList.vue');
-const TypesPanel = require('./typesPanel.vue');
-const MessagePanel = require('./messagePanel.vue');
-const QuerySettings = require('./querySettings.vue');
-
+import AddCurrentQuery from './addCurrentQuery.vue';
+import FavQueriesList from './favQueriesList.vue';
+import TypesPanel from './typesPanel.vue';
+import MessagePanel from './messagePanel.vue';
+import QuerySettings from './querySettings.vue';
+import ScrollButton from './scrollButton.vue';
 
 export default {
     name: "GraqlEditor",
@@ -124,6 +125,7 @@ export default {
         TypesPanel,
         MessagePanel,
         QuerySettings,
+        ScrollButton,
     },
     props: ['errorMessage', 'errorPanelClass'],
     data: function() {
@@ -157,8 +159,8 @@ export default {
                 viewportMargin: Infinity,
                 autofocus: true,
                 extraKeys: {
-                    // Enter key is now binded globally on the window object so that a runQuery can be fired even if the curson is not in the editor
-                    // But here we need to bind Enter to a behaviour that is not the default "newLine", otherwise everytime we hit enter the cursors goes to new line.
+                    // Enter key is now binded globally on the window object so that a runQuery can be fired even if the cursor is not in the editor
+                    // But here we need to bind Enter to a behaviour that is not the default "newLine", otherwise everytime we hit enter the cursor goes to new line.
                     Enter: "goLineEnd",
                     "Shift-Enter": "newlineAndIndent",
                     "Shift-Delete": this.clearGraph,
@@ -169,6 +171,7 @@ export default {
 
             this.codeMirror.on("change", (codeMirrorObj, changeObj) => {
                 this.currentQuery = codeMirrorObj.getValue();
+                this.editorLinesNumber = codeMirrorObj.lineCount();
             });
         });
     },

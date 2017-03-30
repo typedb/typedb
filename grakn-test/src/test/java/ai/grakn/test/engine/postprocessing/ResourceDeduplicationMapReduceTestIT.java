@@ -163,7 +163,7 @@ public class ResourceDeduplicationMapReduceTestIT {
         transact(graph ->  {
             Entity e1 = thing.addEntity();
             Entity e2 = thing.addEntity();
-            Relation r1 = related.addRelation().putRolePlayer(related1, e1).putRolePlayer(related2, e2);
+            Relation r1 = related.addRelation().addRolePlayer(related1, e1).addRolePlayer(related2, e2);
             e1.resource(stringResource.putResource("value_1"));            
             e1.resource(longResource.putResource(24234l));
             e2.resource(integerResource.putResource(42));
@@ -281,9 +281,9 @@ public class ResourceDeduplicationMapReduceTestIT {
         String resourceIndex = transact(graph -> {
             Relation relation = related.addRelation();
             Resource<String> res = stringResource.putResource("This is something!");
-            relation.putRolePlayer(related1, res);
+            relation.addRolePlayer(related1, res);
             res = createDuplicateResource(graph, res);
-            relation.putRolePlayer(related2, res);
+            relation.addRolePlayer(related2, res);
             return indexOf(graph, res);
          });        
          transact(graph -> {
@@ -320,8 +320,8 @@ public class ResourceDeduplicationMapReduceTestIT {
            t3.resource(createDuplicateResource(graph, sres));
            r1.resource(createDuplicateResource(graph, sres));
            r2.resource(sres);
-           r2.putRolePlayer(related1, sres);
-           r1.putRolePlayer(related2, createDuplicateResource(graph, sres));
+           r2.addRolePlayer(related1, sres);
+           r1.addRolePlayer(related2, createDuplicateResource(graph, sres));
            
            createDuplicateResource(graph, sres); // free floating
            createDuplicateResource(graph, sres); // another free floating
@@ -332,8 +332,8 @@ public class ResourceDeduplicationMapReduceTestIT {
            t2.resource(createDuplicateResource(graph, fres));
            t3.resource(createDuplicateResource(graph, fres));
            t1.resource(fres);
-           r2.putRolePlayer(related2, fres);
-           r1.putRolePlayer(related1, createDuplicateResource(graph, fres));
+           r2.addRolePlayer(related2, fres);
+           r1.addRolePlayer(related1, createDuplicateResource(graph, fres));
            return new String[] { indexOf(graph, sres), indexOf(graph, fres) };
         });
         ResourceDeduplicationTask task = new ResourceDeduplicationTask(); 

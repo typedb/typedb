@@ -265,17 +265,17 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(instance, "resource", resource);
             },
             () -> {
-                Relation relation = relation();
+                Type type = type();
                 Instance instance = instance();
-                relation.scope(instance);
-                summary(relation, "scope", instance);
+                type.scope(instance);
+                summary(type, "scope", instance);
             },
             () -> {
                 Relation relation = relation();
                 RoleType roleType = roleType();
                 Instance instance = instance();
-                relation.putRolePlayer(roleType, instance);
-                summary(relation, "putRolePlayer", roleType, instance);
+                relation.addRolePlayer(roleType, instance);
+                summary(relation, "addRolePlayer", roleType, instance);
             }
     );
 

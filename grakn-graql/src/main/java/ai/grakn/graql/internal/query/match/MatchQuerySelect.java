@@ -19,14 +19,12 @@
 package ai.grakn.graql.internal.query.match;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -58,8 +56,8 @@ class MatchQuerySelect extends MatchQueryModifier {
     }
 
     @Override
-    public Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph) {
-        return inner.stream(graph).map(result -> Maps.filterKeys(result, names::contains));
+    public Stream<Answer> stream(Optional<GraknGraph> graph) {
+        return inner.stream(graph).map(result -> result.filterVars(names));
     }
 
     @Override

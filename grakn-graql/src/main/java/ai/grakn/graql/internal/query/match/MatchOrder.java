@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.query.match;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 
-import java.util.Map;
+import ai.grakn.graql.admin.Answer;
 import java.util.stream.Stream;
 
 /**
@@ -36,5 +35,5 @@ public interface MatchOrder {
      * Order the stream
      * @param stream the stream to order
      */
-    Stream<Map<VarName, Concept>> orderStream(Stream<Map<VarName, Concept>> stream);
+    Stream<Answer> orderStream(Stream<Answer> stream);
 }

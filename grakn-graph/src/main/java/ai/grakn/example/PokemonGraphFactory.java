@@ -151,8 +151,8 @@ public class PokemonGraphFactory{
         addResource(ivysaur,130d,weight);
         putTypes(ivysaur, poison, grass);
         evolution.addRelation()
-                .putRolePlayer(descendent,ivysaur)
-                .putRolePlayer(ancestor,bulbasaur);
+                .addRolePlayer(descendent,ivysaur)
+                .addRolePlayer(ancestor,bulbasaur);
 
         Entity venusaur = pokemon.addEntity();
         addResource(venusaur, "Venusaur", name);
@@ -162,8 +162,8 @@ public class PokemonGraphFactory{
         addResource(venusaur,1000d,weight);
         putTypes(venusaur, poison, grass);
         evolution.addRelation()
-                .putRolePlayer(descendent,venusaur)
-                .putRolePlayer(ancestor,ivysaur);
+                .addRolePlayer(descendent,venusaur)
+                .addRolePlayer(ancestor,ivysaur);
 
         Entity charmander = pokemon.addEntity();
         addResource(charmander, "Charmander", name);
@@ -181,8 +181,8 @@ public class PokemonGraphFactory{
         addResource(charmeleon,190d,weight);
         putTypes(charmeleon, fire);
         evolution.addRelation()
-                .putRolePlayer(descendent,charmeleon)
-                .putRolePlayer(ancestor, charmander);
+                .addRolePlayer(descendent,charmeleon)
+                .addRolePlayer(ancestor, charmander);
 
         Entity charizard = pokemon.addEntity();
         addResource(charizard, "Charizard", name);
@@ -192,8 +192,8 @@ public class PokemonGraphFactory{
         addResource(charizard,905d,weight);
         putTypes(charizard, fire, flying);
         evolution.addRelation()
-                .putRolePlayer(descendent,charizard)
-                .putRolePlayer(ancestor, charmeleon);
+                .addRolePlayer(descendent,charizard)
+                .addRolePlayer(ancestor, charmeleon);
     }
 
     private static <T> void addResource(Entity entity, T s, ResourceType<T> type) {
@@ -204,8 +204,8 @@ public class PokemonGraphFactory{
     private static void putTypes(Entity pokemon, Entity... entities) {
         for (Entity entity : entities) {
             hasType.addRelation()
-                    .putRolePlayer(pokemonWithType,pokemon)
-                    .putRolePlayer(typeOfPokemon,entity);
+                    .addRolePlayer(pokemonWithType,pokemon)
+                    .addRolePlayer(typeOfPokemon,entity);
         }
     }
 
@@ -271,7 +271,7 @@ public class PokemonGraphFactory{
 
     private static void putSuper(Entity defend, Entity attack) {
         superEffective.addRelation()
-                .putRolePlayer(defendingType,defend)
-                .putRolePlayer(attackingType,attack);
+                .addRolePlayer(defendingType,defend)
+                .addRolePlayer(attackingType,attack);
     }
 }

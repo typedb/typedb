@@ -133,7 +133,7 @@ public class GraknEngineConfig {
     /**
      * Check if the JVM argument "-Dlogback.configurationFile" is set.
      * If it is not set, it sets it to the default one.
-     * It also sets the -Dgrakn.log.file system property equal to the one specified in grakn-engine.properties.
+     * It also sets the -Dgrakn.log.file system property equal to the one specified in grakn.properties.
      * The grakn.log.file property will be used by logback.xml
      */
     private void initialiseLogger() {
@@ -232,7 +232,7 @@ public class GraknEngineConfig {
     }
 
     /**
-     * @return The path to the config file currently in use. Default: /conf/main/grakn-engine.properties
+     * @return The path to the config file currently in use. Default: /conf/main/grakn.properties
      */
     String getConfigFilePath() {
         if (configFilePath == null) setConfigFilePath();

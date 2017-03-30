@@ -137,10 +137,14 @@ public class VisualiserController {
     private String conceptByIdOntology(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
+        int offset = (req.queryParams().contains("offset")) ? Integer.parseInt(req.queryParams("offset")) : 0;
+        int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
+
         try (GraknGraph graph = getInstance().getGraph(keyspace)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
-            return renderHALConceptOntology(concept, keyspace);
-        } catch (RuntimeException e) {
+
+            return renderHALConceptOntology(concept, keyspace,offset, limit);
+        } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
     }

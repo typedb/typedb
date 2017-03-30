@@ -20,6 +20,7 @@ package ai.grakn.test.graql.printer;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
 import ai.grakn.concept.Type;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
@@ -27,6 +28,7 @@ import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -59,6 +61,24 @@ public class GraqlPrinterTest {
         assertThat(relationString, containsString("actor"));
         assertThat(relationString, containsString("production-with-cast"));
         assertThat(relationString, containsString("character-being-played"));
+    }
+
+    @Test
+    public void whenGettingOutputForRelation_TheResultShouldHaveCommasBetweenRolePlayers() {
+        Printer printer = Printers.graql();
+
+        MatchQuery query = rule.graph().graql().match(var("r").isa("has-cluster"));
+
+        Relation relation = query.get("r").iterator().next().asRelation();
+        int numRolePlayers = relation.rolePlayers().size();
+        int numCommas = numRolePlayers - 1;
+
+        String relationString = printer.graqlString(relation);
+
+        assertEquals(
+                relationString + " should have " + numCommas + " commas separating role-players",
+                numCommas, StringUtils.countMatches(relationString, ",")
+        );
     }
 
     @Test

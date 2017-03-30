@@ -117,20 +117,20 @@ public class RoleTypeTest extends GraphTestBase {
         Entity d = entityType.addEntity();
 
         relationType.addRelation().
-                putRolePlayer(roleA, a).
-                putRolePlayer(roleB, b);
+                addRolePlayer(roleA, a).
+                addRolePlayer(roleB, b);
 
         relationType.addRelation().
-                putRolePlayer(roleA, c).
-                putRolePlayer(roleB, d);
+                addRolePlayer(roleA, c).
+                addRolePlayer(roleB, d);
 
         relationType.addRelation().
-                putRolePlayer(roleA, a).
-                putRolePlayer(roleB, c);
+                addRolePlayer(roleA, a).
+                addRolePlayer(roleB, c);
 
         relationType.addRelation().
-                putRolePlayer(roleA, c).
-                putRolePlayer(roleB, b);
+                addRolePlayer(roleA, c).
+                addRolePlayer(roleB, b);
 
         assertEquals(roleA.instances().size(), 0);
         assertEquals(roleB.instances().size(), 0);
@@ -173,8 +173,8 @@ public class RoleTypeTest extends GraphTestBase {
         Entity b = entityType.addEntity();
 
         relationType.addRelation().
-                putRolePlayer(roleA, a).
-                putRolePlayer(roleB, b);
+                addRolePlayer(roleA, a).
+                addRolePlayer(roleB, b);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getName()));
@@ -209,8 +209,8 @@ public class RoleTypeTest extends GraphTestBase {
         Entity b = entityType.addEntity();
 
         relationType.addRelation().
-                putRolePlayer(roleA, a).
-                putRolePlayer(roleB, b);
+                addRolePlayer(roleA, a).
+                addRolePlayer(roleB, b);
 
         assertEquals(1, roleA.castings().size());
         CastingImpl casting = roleA.castings().iterator().next();

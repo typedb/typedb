@@ -31,6 +31,7 @@ import ai.grakn.graql.Order;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.query.Queries;
@@ -85,10 +86,15 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
      * @param graph the graph to use to execute the query
      * @return a stream of results
      */
-    public abstract Stream<Map<VarName, Concept>> stream(Optional<GraknGraph> graph);
+    public abstract Stream<Answer> stream(Optional<GraknGraph> graph);
 
     @Override
     public final Stream<Map<VarName, Concept>> streamWithVarNames() {
+        return stream(Optional.empty()).map(Answer::map);
+    }
+
+    @Override
+    public final Stream<Answer> streamWithAnswers(){
         return stream(Optional.empty());
     }
 

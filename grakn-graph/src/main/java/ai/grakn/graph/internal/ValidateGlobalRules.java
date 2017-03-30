@@ -139,7 +139,7 @@ class ValidateGlobalRules {
      * @return An error message if the relationTypes does not have at least 2 roles
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationType) {
-        if(relationType.isAbstract() || relationType.hasRoles().size() >= 2){
+        if(relationType.isAbstract() || relationType.hasRoles().size() >= 1){
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getName()));
@@ -157,7 +157,9 @@ class ValidateGlobalRules {
         Set<CastingImpl> castings = relation.getMappingCasting();
         Collection<RoleType> roleTypes = relationType.hasRoles();
 
-        if(castings.size() > roleTypes.size()) {
+        Set<RoleType> rolesViaCastings = castings.stream().map(CastingImpl::getRole).collect(Collectors.toSet());
+
+        if(rolesViaCastings.size() > roleTypes.size()) {
             return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
         }
 
