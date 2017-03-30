@@ -43,9 +43,13 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import java.util.Collections;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -244,10 +248,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Answer> materialise(Answer answer) {
         ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(this);
-        answer.entrySet().stream()
-                .map(e -> new IdPredicate(e.getKey(), e.getValue(), queryToMaterialise))
-                .forEach(queryToMaterialise::addAtom);
-
+        queryToMaterialise.addSubstitution(answer);
         return queryToMaterialise.materialiseDirect()
                 .map(ans -> ans.setExplanation(answer.getExplanation()));
     }
@@ -267,19 +268,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<VarName, Concept> getIdPredicateAnswer(){
+    //Query type atoms -> Answer
+    private Answer getIdPredicateAnswer(){
         Object result = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate).filter(Objects::nonNull)
                 .collect(Collectors.toMap(IdPredicate::getVarName, sub -> graph().getConcept(sub.getPredicate())));
-        return (Map<VarName, Concept>)result;
+        return new QueryAnswer((Map<VarName, Concept>)result);
     }
 
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
-        Map<VarName, Concept> idPredicateAnswer = getIdPredicateAnswer();
-        return stream.map(answer -> {
-            answer.putAll(idPredicateAnswer);
-            return answer;
-        });
+        Answer idPredicateAnswer = getIdPredicateAnswer();
+        return stream.map(answer -> answer.merge(idPredicateAnswer));
     }
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers, ReasonerAtomicQuery ruleHead){
@@ -387,7 +386,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * @author Kasper Piskorski
      *
      */
-    private class QueryAnswerIterator implements Iterator<Answer> {
+    private class QueryAnswerIterator extends ReasonerQueryIterator {
 
         private int iter = 0;
         private long answers = 0;
@@ -412,7 +411,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         /**
          * @return stream constructed out of the answer iterator
          */
-        Stream<Answer> hasStream(){
+        @Override
+        public Stream<Answer> hasStream(){
             Iterable<Answer> iterable = () -> this;
             return StreamSupport.stream(iterable.spliterator(), false).distinct().peek(ans -> answers++);
         }
@@ -460,5 +460,60 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private long differentialAnswerSize(){
             return dCache.answerSize(subGoals);
         }
+    }
+
+    public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+
+        //TODO switch to iterative deepening for queries with no subs
+        return new ReasonerAtomicQueryIterator(subGoals, cache);
+    }
+
+    private class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
+
+        private final Answer partialSubstitution;
+        private final QueryCache<ReasonerAtomicQuery> cache;
+        private final Set<ReasonerAtomicQuery> subGoals;
+        private final Iterator<InferenceRule> ruleIterator;
+        private Iterator<Answer> queryIterator = Collections.emptyIterator();
+
+        ReasonerAtomicQueryIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> qc){
+            this.partialSubstitution = getSubstitution();
+            this.subGoals = subGoals;
+            this.cache = qc;
+
+            boolean hasFullSubstitution = hasFullSubstitution();
+            this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : lookup(cache).iterator();
+            this.ruleIterator = subGoals.contains(ReasonerAtomicQuery.this)? Collections.emptyIterator() : getRuleIterator();
+            if (ruleIterator.hasNext()) subGoals.add(ReasonerAtomicQuery.this);
+        }
+
+        private Iterator<InferenceRule> getRuleIterator(){
+            return getAtom().getApplicableRules().stream()
+                    .map(rule -> rule.unify(ReasonerAtomicQuery.this.getAtom()))
+                    .iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (queryIterator.hasNext()) return true;
+            else{
+                if (ruleIterator.hasNext()) {
+                    //TODO add permutation if necessary
+                    InferenceRule rule = ruleIterator.next();
+                    queryIterator = rule.getBody().iterator(subGoals, cache);
+                    return hasNext();
+                }
+                else return false;
+            }
+        }
+
+        @Override
+        public Answer next() {
+            Answer sub = queryIterator.next()
+                    .merge(partialSubstitution)
+                    .filterVars(getVarNames());
+            return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
+        }
+
     }
 }

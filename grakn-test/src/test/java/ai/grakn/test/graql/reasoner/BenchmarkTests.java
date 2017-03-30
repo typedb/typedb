@@ -124,7 +124,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 100;
+        final int N = 500;
 
         // DJ - differential joins
         // IC - inverse cache
@@ -152,13 +152,22 @@ public class BenchmarkTests {
         GraknGraph graph = graphContext.graph();
 
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
+
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q;";
         MatchQuery query = iqb.parse(queryString);
+
+        String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a';";
+        MatchQuery query2 = iqb.parse(queryString2);
 
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute = query.execute();
         assertEquals(execute.size(), N*N/2 + N/2);
         System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
+
+        startTime = System.currentTimeMillis();
+        List<Map<String, Concept>> execute2 = query2.execute();
+        assertEquals(execute2.size(), N);
+        System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
 
         int limit = 100;
         startTime = System.currentTimeMillis();
@@ -189,7 +198,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrix(){
-        final int N = 10;
+        final int N = 15;
 
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -222,7 +231,6 @@ public class BenchmarkTests {
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute = query.execute();
         System.out.println("full result computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
-
 
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute2 = query2.execute();

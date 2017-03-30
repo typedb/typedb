@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+
 import ai.grakn.Grakn;
 import ai.grakn.GraknTxType;
 import ai.grakn.GraknGraph;

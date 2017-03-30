@@ -73,7 +73,9 @@ public abstract class BinaryBase extends Atom {
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getHead().getAtom();
-        return (ruleAtom instanceof BinaryBase) && this.getType().equals(ruleAtom.getType());
+        return (ruleAtom instanceof BinaryBase)
+                && this.getType() != null
+                && this.getType().equals(ruleAtom.getType());
     }
 
     @Override

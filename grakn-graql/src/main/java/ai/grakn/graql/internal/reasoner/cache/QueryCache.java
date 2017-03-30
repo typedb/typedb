@@ -26,6 +26,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import javafx.util.Pair;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -57,16 +58,28 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
     }
 
     @Override
-    public Stream<Answer> record(Q query, Stream<Answer> answers) {
+    public Stream<Answer> record(Q query, Stream<Answer> answerStream) {
+        QueryAnswers answers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            Stream<Answer> unifiedStream = QueryAnswerStream.unify(answers, getRecordUnifier(query));
-            return unifiedStream.peek(ans -> match.getValue().add(ans));
+            QueryAnswers unifiedAnswers = answers.unify(getRecordUnifier(query));
+            match.getValue().addAll(unifiedAnswers);
+            return match.getValue().stream();
         } else {
-            cache.put(query, new Pair<>(query, new QueryAnswers()));
-            Pair<Q, QueryAnswers> put = cache.get(query);
-            return answers.peek(ans -> put.getValue().add(ans));
+            cache.put(query, new Pair<>(query, answers));
+            return answers.stream();
         }
+    }
+
+    public Answer recordAnswer(Q query, Answer answer){
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            Answer unifiedAnswer = answer.unify(getRecordUnifier(query));
+            match.getValue().add(unifiedAnswer);
+        } else {
+            cache.put(query, new Pair<>(query, new QueryAnswers(answer)));
+        }
+        return answer;
     }
 
     @Override

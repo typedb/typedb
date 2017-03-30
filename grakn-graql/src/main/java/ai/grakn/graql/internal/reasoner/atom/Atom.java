@@ -21,6 +21,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -82,6 +83,11 @@ public abstract class Atom extends AtomBase {
      * @return true if the atom corresponds to a resource atom
      * */
     public boolean isResource(){ return false;}
+
+    /**
+     * @return true if atom contains a substitution (id predicates)
+     */
+    public boolean hasSubstitution(){ return false;}
 
     protected abstract boolean isRuleApplicable(InferenceRule child);
 
