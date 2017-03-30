@@ -33,6 +33,8 @@ import java.util.Optional;
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
 
 /**
+ * Factory class for producing instances of {@link EquivalentFragmentSet}.
+ *
  * @author Felix Chapman
  */
 public class EquivalentFragmentSets {

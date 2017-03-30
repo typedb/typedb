@@ -99,7 +99,7 @@ public class OWLMigrator {
         ontology.axioms().forEach(ax -> {
             ax.accept(visitor); 
         });
-        graph.commitOnClose();
+        graph.commit();
     }
 
     public ResourceType.DataType<?> owlBuiltInToGraknDatatype(OWL2Datatype propertyType) {
@@ -149,8 +149,8 @@ public class OWLMigrator {
         Entity entity = type.addEntity();
         Resource resourceInstance = iriResource.putResource(id);
         hasIriRelation.addRelation()
-                .putRolePlayer(hasIriOwner, entity)
-                .putRolePlayer(hasIriValue, resourceInstance);
+                .addRolePlayer(hasIriOwner, entity)
+                .addRolePlayer(hasIriValue, resourceInstance);
         return entity;
     }
     

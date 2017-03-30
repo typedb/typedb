@@ -102,18 +102,14 @@ div>span {
     color: #56C0E0;
     font-size: 25px;
     cursor: pointer;
-    margin-left: 5px;
-    margin-top: 4px;
 }
 
 
 /*Tooltip positioning*/
 
 #addCurrentQuery {
-    position: relative;
-    display: inline-block;
-    float:right;
-    margin-right: 10px;
+  display: inline-flex;
+  margin: auto;
 }
 
 .tooltip-arrow-box:after,

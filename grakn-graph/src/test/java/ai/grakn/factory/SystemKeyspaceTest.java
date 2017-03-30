@@ -2,7 +2,8 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.GraknValidationException;
@@ -24,14 +25,14 @@ public class SystemKeyspaceTest {
 
     @Test
     public void whenCreatingMultipleGraphs_EnsureKeySpacesAreAddedToSystemGraph() throws GraknValidationException {
-    	GraknGraphFactory f1 = Grakn.factory(Grakn.IN_MEMORY, space1);
-    	f1.getGraph().close();
-    	GraknGraphFactory f2 = Grakn.factory(Grakn.IN_MEMORY, space2);
-    	GraknGraph gf2 = f2.getGraph();
-    	GraknGraphFactory f3 = Grakn.factory(Grakn.IN_MEMORY, space3);
-    	GraknGraph gf3 = f3.getGraph();
-    	GraknGraphFactory system = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
-    	GraknGraph graph = system.getGraph();
+    	GraknSession f1 = Grakn.session(Grakn.IN_MEMORY, space1);
+    	f1.open(GraknTxType.WRITE).close();
+    	GraknSession f2 = Grakn.session(Grakn.IN_MEMORY, space2);
+    	GraknGraph gf2 = f2.open(GraknTxType.WRITE);
+    	GraknSession f3 = Grakn.session(Grakn.IN_MEMORY, space3);
+    	GraknGraph gf3 = f3.open(GraknTxType.WRITE);
+    	GraknSession system = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME);
+    	GraknGraph graph = system.open(GraknTxType.WRITE);
     	ResourceType<String> keyspaceName = graph.getResourceType("keyspace-name");
     	Collection<String> spaces = graph.getEntityType("keyspace").instances()
     		.stream().map(e -> 
@@ -53,7 +54,7 @@ public class SystemKeyspaceTest {
 
     @Test
     public void ensureUserOntologyIsLoadedIntoSystemGraph(){
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph();
+        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
         graph.showImplicitConcepts(true);
 
         EntityType user = graph.getEntityType("user");
@@ -77,6 +78,8 @@ public class SystemKeyspaceTest {
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userEmail.getName()).getValue())));
         assertTrue(user.playsRoles().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()).getValue())));
+
+        graph.close();
     }
 
 }

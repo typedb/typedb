@@ -20,6 +20,7 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
@@ -40,7 +41,6 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import static ai.grakn.test.graql.query.AskQueryTest.graph;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
@@ -81,7 +81,7 @@ public class CommitLogControllerTest {
 
     @Test
     public void checkDirectClearWorks(){
-        GraknGraph test = Grakn.factory(Grakn.DEFAULT_URI, KEYSPACE).getGraph();
+        GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, KEYSPACE).open(GraknTxType.WRITE);
         test.admin().clear(EngineCache.getInstance());
         assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
@@ -98,8 +98,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        GraknGraph bob = Grakn.factory(Grakn.DEFAULT_URI, BOB).getGraph();
-        GraknGraph tim = Grakn.factory(Grakn.DEFAULT_URI, TIM).getGraph();
+        GraknGraph bob = Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE);
+        GraknGraph tim = Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTxType.WRITE);
 
         addSomeData(bob);
 
@@ -114,8 +114,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs(TIM).size());
         assertEquals(1, cache.getResourceJobs(TIM).size());
 
-        Grakn.factory(Grakn.DEFAULT_URI, BOB).getGraph().clear();
-        Grakn.factory(Grakn.DEFAULT_URI, TIM).getGraph().clear();
+        Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE).clear();
+        Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTxType.WRITE).clear();
 
         assertEquals(0, cache.getCastingJobs(BOB).size());
         assertEquals(0, cache.getCastingJobs(TIM).size());
@@ -135,10 +135,9 @@ public class CommitLogControllerTest {
         Entity entity = type.addEntity();
         Resource resource = resourceType.putResource(UUID.randomUUID().toString());
 
-        relationType.addRelation().putRolePlayer(role1, entity).putRolePlayer(role2, resource);
+        relationType.addRelation().addRolePlayer(role1, entity).addRolePlayer(role2, resource);
 
-        graph.commitOnClose();
-        graph.close();
+        graph.commit();
     }
 
     @Test
@@ -168,13 +167,12 @@ public class CommitLogControllerTest {
 
     @Test
     public void testSystemKeyspaceNotSubmittingLogs() throws GraknValidationException {
-        GraknGraph graph1 = Grakn.factory(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).getGraph();
+        GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
         ResourceType<String> resourceType = graph1.putResourceType("New Resource Type", ResourceType.DataType.STRING);
         resourceType.putResource("a");
         resourceType.putResource("b");
         resourceType.putResource("c");
-        graph1.commitOnClose();
-        graph1.close();
+        graph1.commit();
 
         assertEquals(0, cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME).size());
     }

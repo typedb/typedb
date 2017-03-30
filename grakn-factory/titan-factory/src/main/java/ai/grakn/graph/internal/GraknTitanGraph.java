@@ -44,8 +44,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * @author fppt
  */
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
+    private final StandardTitanGraph rootGraph;
+
     public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
         super(graph, name, engineUrl, batchLoading);
+        this.rootGraph = (StandardTitanGraph) graph;
     }
 
     /**
@@ -61,21 +64,26 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
+    public void openTransaction(){
+        super.openTransaction();
+        if(getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
+    }
+
+    @Override
     public int numOpenTx() {
-        return ((StandardTitanGraph)getTinkerPopGraph()).getOpenTxs();
+        return rootGraph.getOpenTxs();
     }
 
     @Override
     protected void clearGraph() {
-        TitanGraph titanGraph = getTinkerPopGraph();
-        titanGraph.close();
-        TitanCleanup.clear(titanGraph);
+        rootGraph.close();
+        TitanCleanup.clear(rootGraph);
     }
 
     @Override
-    public void commitTransaction(){
+    public void commitTransactionInternal(){
         try {
-            super.commitTransaction();
+            super.commitTransactionInternal();
         } catch (TitanException e){
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw new GraknLockingException(e);
@@ -86,7 +94,11 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public boolean validVertex(Vertex vertex) {
-        return !((TitanVertex) vertex).isRemoved() && super.validVertex(vertex);
+    public void validVertex(Vertex vertex) {
+        super.validVertex(vertex);
+
+        if(((TitanVertex) vertex).isRemoved()){
+            throw new IllegalStateException("The vertex [" + vertex + "] has been removed and is no longer valid");
+        }
     }
 }

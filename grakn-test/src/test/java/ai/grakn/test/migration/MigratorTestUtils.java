@@ -19,7 +19,9 @@
 package ai.grakn.test.migration;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -59,14 +61,13 @@ public class MigratorTestUtils {
         return new File(MigratorTestUtils.class.getResource(component + "/" + fileName).getPath());
     }
 
-    public static void load(GraknGraphFactory factory, File ontology) {
-        try(GraknGraph graph = factory.getGraph()) {
+    public static void load(GraknSession factory, File ontology) {
+        try(GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql()
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 
-            graph.commitOnClose();
-            graph.close();
+            graph.commit();
         } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }
@@ -84,7 +85,7 @@ public class MigratorTestUtils {
         RelationType relationType = graph.getType(relation);
 
         RoleType role1 = instance1.playsRoles().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
-        assertTrue(instance1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().values().contains(instance2)));
+        assertTrue(instance1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().contains(instance2)));
     }
 
 
@@ -99,8 +100,8 @@ public class MigratorTestUtils {
         Set<Instance> instances = new HashSet<>();
 
         relation.instances().stream()
-                .filter(i -> i.rolePlayers().values().contains(instance))
-                .forEach(i -> instances.addAll(i.rolePlayers().values()));
+                .filter(i -> i.rolePlayers().contains(instance))
+                .forEach(i -> instances.addAll(i.rolePlayers()));
 
         instances.remove(instance);
         return instances;
@@ -116,7 +117,7 @@ public class MigratorTestUtils {
         RoleType roleOther = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(name));
 
         Collection<Relation> relations = instance.relations(roleOwner);
-        return relations.stream().map(r -> r.rolePlayers().get(roleOther).asResource());
+        return relations.stream().flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);
     }
 
     /**

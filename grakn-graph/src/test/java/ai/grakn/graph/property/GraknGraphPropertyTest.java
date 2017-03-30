@@ -17,10 +17,11 @@
  *
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.graph.property;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -35,7 +36,7 @@ import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
-import ai.grakn.generator.AbstractTypeGenerator.NotMeta;
+import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.MetaTypeNames;
@@ -92,14 +93,14 @@ public class GraknGraphPropertyTest {
 
         // TODO: Should `admin`, `close`, `commitOnClose`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf(
-                "isClosed", "admin", "close", "commitOnClose", "implicitConceptsVisible", "showImplicitConcepts",
+                "isClosed", "admin", "close", "commit", "abort", "commitOnClose", "implicitConceptsVisible", "showImplicitConcepts",
                 "getKeyspace", "graql"
         )));
         Object[] params = mockParamsOf(method);
 
         exception.expect(InvocationTargetException.class);
         exception.expectCause(isA(GraphRuntimeException.class));
-        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))));
+        exception.expectCause(hasProperty("message", is(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))));
 
         method.invoke(graph, params);
     }
@@ -162,7 +163,7 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingGetResourcesByValueAfterAddingAResource_TheResultIncludesTheResource(
             @Open GraknGraph graph,
-            @FromGraph @NotMeta ResourceType resourceType, @From(ResourceValues.class) Object value) {
+            @FromGraph @Meta(false) ResourceType resourceType, @From(ResourceValues.class) Object value) {
         assumeThat(value.getClass().getName(), is(resourceType.getDataType().getName()));
 
         Collection<Resource<Object>> expectedResources = graph.getResourcesByValue(value);
@@ -258,25 +259,21 @@ public class GraknGraphPropertyTest {
     @Property
     public void whenCallingClear_OnlyMetaConceptsArePresent(@Open GraknGraph graph) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         List<Concept> concepts = allConceptsFrom(graph);
         concepts.forEach(concept -> {
             assertTrue(concept.isType());
             assertTrue(isMetaName(concept.asType().getName()));
             });
+        graph.close();
     }
 
     @Property
     public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeName typeName) {
         graph.clear();
-        graph = Grakn.factory(Grakn.IN_MEMORY, graph.getKeyspace()).getGraph();
+        graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getType(typeName));
-    }
-
-    @Property
-    public void whenCallingGetKeySpace_ReturnTheLowercaseKeyspaceOfTheGraph(String keyspace) {
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, keyspace).getGraph();
-        assertEquals(keyspace.toLowerCase(), graph.getKeyspace());
+        graph.close();
     }
 
     @Property

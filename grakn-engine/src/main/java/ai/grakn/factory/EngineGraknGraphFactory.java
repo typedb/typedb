@@ -32,7 +32,7 @@ import java.util.Properties;
  * <p>
  *     This internal factory is used to produce {@link GraknGraph}s.
  *
- *     It is also worth noting that both this class and {@link Grakn#factory(String, String)} us the same
+ *     It is also worth noting that both this class and {@link Grakn#session(String, String)} us the same
  *     {@link FactoryBuilder}. This means that graphs produced from either factory pointing to the same keyspace
  *     are actually the same graphs.
  * </p>

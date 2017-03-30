@@ -210,6 +210,9 @@ public class Relation extends TypeAtom {
         return true;
     }
 
+    @Override
+    public boolean isType(){ return getType() != null;}
+
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */

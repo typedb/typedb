@@ -66,20 +66,20 @@ public class MatrixGraphII extends TestGraph {
                 aInstancesIds[i][j] = putEntity(graph, "a" + i + "," + j, aEntity, key).getId();
 
         Q.addRelation()
-                .putRolePlayer(Qfrom, aInst)
-                .putRolePlayer(Qto, graph.getConcept(aInstancesIds[1][1]));
+                .addRolePlayer(Qfrom, aInst)
+                .addRolePlayer(Qto, graph.getConcept(aInstancesIds[1][1]));
 
         for(int i = 1 ; i <= n ; i++) {
             for (int j = 1; j <= m; j++) {
                 if ( i < n ) {
                     Q.addRelation()
-                            .putRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
-                            .putRolePlayer(Qto, graph.getConcept(aInstancesIds[i+1][j]));
+                            .addRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
+                            .addRolePlayer(Qto, graph.getConcept(aInstancesIds[i+1][j]));
                 }
                 if ( j < m){
                     Q.addRelation()
-                            .putRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
-                            .putRolePlayer(Qto, graph.getConcept(aInstancesIds[i][j+1]));
+                            .addRolePlayer(Qfrom, graph.getConcept(aInstancesIds[i][j]))
+                            .addRolePlayer(Qto, graph.getConcept(aInstancesIds[i][j+1]));
                 }
             }
         }

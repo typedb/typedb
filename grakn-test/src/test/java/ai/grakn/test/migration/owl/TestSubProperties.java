@@ -43,8 +43,7 @@ public class TestSubProperties extends TestOwlGraknBase {
 	public void loadShakespeare() throws GraknValidationException {
         shakespeare = loadOntologyFromResource("owl", "shakespeare.owl");
         migrator.ontology(shakespeare).graph(graph).migrate();
-        migrator.graph().commitOnClose();
-		migrator.graph().close();
+        migrator.graph().commit();
 	}
 
     @Ignore //TODO: Fix this test. Not sure why it is not working remotely

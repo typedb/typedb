@@ -23,6 +23,8 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
 import com.google.common.collect.Sets;
@@ -47,6 +49,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
 public class TestReasoning extends TestOwlGraknBase {
@@ -58,8 +61,7 @@ public class TestReasoning extends TestOwlGraknBase {
     public void loadOwlFiles() throws GraknValidationException {
         OWLOntology family = loadOntologyFromResource("owl", "family.owl");
         migrator.ontology(family).graph(graph).migrate();
-        migrator.graph().commitOnClose();
-        migrator.graph().close();
+        migrator.graph().commit();
         hermit = new org.semanticweb.HermiT.Reasoner(new Configuration(), family);
     }
 
@@ -78,9 +80,9 @@ public class TestReasoning extends TestOwlGraknBase {
         Set<OWLNamedIndividual> owlResult = reasoner.getInstances(expr).entities().collect(Collectors.toSet());
         long owlTime = System.currentTimeMillis() - owlStartTime;
 
-        Set<Map<VarName, Concept>> OWLanswers = new HashSet<>();
+        QueryAnswers OWLanswers = new QueryAnswers();
         owlResult.forEach(result -> {
-            Map<VarName, Concept> resultMap = new HashMap<>();
+            Answer resultMap = new QueryAnswer();
             resultMap.put(VarName.of("x"), migrator.entity(result));
             OWLanswers.add(resultMap);
         });
@@ -101,7 +103,7 @@ public class TestReasoning extends TestOwlGraknBase {
                 var("x").isa("tPerson"),
                 var("y").has(OwlModel.IRI.owlname(), "e"+instanceId),
                 var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
-        QueryAnswers gknAnswers = new QueryAnswers(query.admin().results());
+        QueryAnswers gknAnswers = queryAnswers(query);
         long gknTime = System.currentTimeMillis() - gknStartTime;
         System.out.println("Grakn Reasoner answers: " + gknAnswers.size() + " in " + gknTime + " ms");
         return gknAnswers;
@@ -213,5 +215,9 @@ public class TestReasoning extends TestOwlGraknBase {
 
     private void assertQueriesEqual(Stream<Map<String, Concept>> s1, Stream<Map<String, Concept>> s2) {
         assertEquals(s1.collect(Collectors.toSet()), s2.collect(Collectors.toSet()));
+    }
+
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
     }
 }

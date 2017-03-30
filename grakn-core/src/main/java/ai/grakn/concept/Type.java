@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.exception.ConceptException;
+
 import java.util.Collection;
 
 /**
@@ -41,49 +43,74 @@ import java.util.Collection;
  */
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
+    // TODO: Describe behaviour when setting a type with direct instances as abstract
     /**
      * Sets the Entity Type to be abstract - which prevents it from having any instances.
      *
      * @param isAbstract  Specifies if the concept is to be abstract (true) or not (false).
      * @return The concept itself
+     *
+     * @throws ConceptException if this is a meta-type
      */
-    Type setAbstract(Boolean isAbstract);
+    Type setAbstract(Boolean isAbstract) throws ConceptException;
 
     /**
      *
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
+     *
+     * @throws ConceptException if this is a meta-type
      */
-    Type playsRole(RoleType roleType);
+    Type playsRole(RoleType roleType) throws ConceptException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
+     *
+     * @throws ConceptException if this is a meta-type
      */
-    Type key(ResourceType resourceType);
+    Type key(ResourceType resourceType) throws ConceptException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked.
      *
      * @param resourceType The resource type which instances of this type should be allowed to play.
      * @return The Type itself.
+     *
+     * @throws ConceptException if this is a meta-type
      */
-     Type resource(ResourceType resourceType);
+     Type resource(ResourceType resourceType) throws ConceptException;
+
+    /**
+     * Classifies the type to a specific scope. This allows you to optionally categorise types.
+     *
+     * @param scope The category of this Type
+     * @return The Type itself.
+     */
+    Type scope(Instance scope);
+
+    /**
+     * Delete the scope specified.
+     *
+     * @param scope The Instances that is currently scoping this Type.
+     * @return The Type itself
+     */
+    Type deleteScope(Instance scope);
 
     //------------------------------------- Accessors ---------------------------------
 
     /**
-     * Returns the name of this Type.
+     * Returns the unique name of this Type.
      *
-     * @return The name of this type
+     * @return The unique name of this type
      */
     TypeName getName();
 
     /**
      *
-     * @return A list of Role Types which instances of this Type can play.
+     * @return A list of Role Types which instances of this Type can indirectly play.
      */
     Collection<RoleType> playsRoles();
 
@@ -101,19 +128,25 @@ public interface Type extends Concept {
 
     /**
      *
-     * @return The super of this Type
+     * @return The direct super of this Type
      */
     Type superType();
 
     /**
+     * Get all indirect sub-types of this type.
      *
-     * @return All the sub classes of this Type
+     * The indirect sub-types are the type itself and all indirect sub-types of direct sub-types.
+     *
+     * @return All the indirect sub-types of this Type
      */
     Collection<? extends Type> subTypes();
 
     /**
+     * Get all indirect instances of this type.
      *
-     * @return All the instances of this type.
+     * The indirect instances are the direct instances and all indirect instances of direct sub-types.
+     *
+     * @return All the indirect instances of this type.
      */
     Collection<? extends Instance> instances();
 
@@ -150,6 +183,13 @@ public interface Type extends Concept {
      * @return A collection of Rules for which this Type serves as a conclusion
      */
     Collection<Rule> getRulesOfConclusion();
+
+    /**
+     * Retrieve a list of the Instances that scope this Type.
+     *
+     * @return A list of the Instances that scope this Type.
+     */
+    Collection<Instance> scopes();
 
     //------------------------------------- Other ----------------------------------
     /**

@@ -1,7 +1,8 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -49,7 +50,7 @@ public class ShortestPathTest {
     private ConceptId relationId34;
     private ConceptId relationId1A12;
 
-    public GraknGraphFactory factory;
+    public GraknSession factory;
 
     @ClassRule
     public static EngineContext rule = EngineContext.startInMemoryServer();
@@ -68,7 +69,7 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         // test on an empty graph
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().compute().path().from(entityId1).to(entityId2).execute();
         }
     }
@@ -79,7 +80,7 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             graph.graql().compute().path().from(entityId1).to(entityId4).in(thing, related).execute();
         }
     }
@@ -90,7 +91,7 @@ public class ShortestPathTest {
         assumeFalse(usingTinker());
 
         addOntologyAndEntities();
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             assertFalse(graph.graql().compute().path().from(entityId1).to(entityId5).execute().isPresent());
         }
     }
@@ -104,7 +105,7 @@ public class ShortestPathTest {
         List<String> result;
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // directly connected vertices
             correctPath = Lists.newArrayList(entityId1.getValue(), relationId12.getValue());
             result = graph.graql().compute().path().from(entityId1).to(relationId12).execute()
@@ -174,8 +175,9 @@ public class ShortestPathTest {
                 list.add(i);
             }
             GraknSparkComputer.clear();
+            graph.close();
             list.parallelStream().forEach(i -> {
-                try (GraknGraph graph1 = factory.getGraph()) {
+                try (GraknGraph graph1 = factory.open(GraknTxType.WRITE)) {
                     int size = graph1.graql().compute().path().in(thing, related).from(entityId2).to(entityId1)
                             .execute().get().stream().map(Concept::getId).map(ConceptId::getValue)
                             .collect(Collectors.toList()).size();
@@ -194,7 +196,7 @@ public class ShortestPathTest {
         List<String> result;
         addOntologyAndEntities2();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             correctPath = Lists.newArrayList(entityId2.getValue(), relationId12.getValue(), entityId1.getValue(), relationId13.getValue(), entityId3.getValue());
             result = graph.graql().compute().path().from(entityId2).to(entityId3).execute()
                     .get().stream().map(Concept::getId).map(ConceptId::getValue).collect(Collectors.toList());
@@ -234,7 +236,7 @@ public class ShortestPathTest {
         ConceptId startId;
         ConceptId endId;
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             RoleType role1 = graph.putRoleType("role1");
@@ -259,25 +261,25 @@ public class ShortestPathTest {
                 Entity middle = entityType.addEntity();
                 ConceptId middleId = middle.getId();
                 ConceptId assertion1 = relationType.addRelation()
-                        .putRolePlayer(role1, start)
-                        .putRolePlayer(role2, middle).getId();
+                        .addRolePlayer(role1, start)
+                        .addRolePlayer(role2, middle).getId();
 
                 validPath.add(assertion1);
                 validPath.add(middleId);
 
                 ConceptId assertion2 = relationType.addRelation()
-                        .putRolePlayer(role1, middle)
-                        .putRolePlayer(role2, end).getId();
+                        .addRolePlayer(role1, middle)
+                        .addRolePlayer(role2, end).getId();
 
                 validPath.add(assertion2);
                 validPath.add(endId);
                 validPaths.add(validPath);
             }
 
-            graph.commitOnClose();
+            graph.commit();
         }
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Optional<List<Concept>> result = graph.graql().compute().path().from(startId).to(endId).execute();
             assertEquals(1, validPaths.stream().filter(path -> checkPathsAreEqual(path, result)).count());
         }
@@ -302,7 +304,7 @@ public class ShortestPathTest {
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -325,24 +327,24 @@ public class ShortestPathTest {
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId();
             relationId13 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity3).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity3).getId();
             relationId24 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity4).getId();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity4).getId();
             relationId34 = relationType.addRelation()
-                    .putRolePlayer(role1, entity3)
-                    .putRolePlayer(role2, entity4).getId();
+                    .addRolePlayer(role1, entity3)
+                    .addRolePlayer(role2, entity4).getId();
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 
     private void addOntologyAndEntities2() throws GraknValidationException {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             EntityType entityType = graph.putEntityType(thing);
 
             Entity entity1 = entityType.addEntity();
@@ -365,17 +367,17 @@ public class ShortestPathTest {
             RelationType relationType2 = graph.putRelationType(veryRelated).hasRole(role3).hasRole(role4);
 
             relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId();
             relationId13 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity3).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity3).getId();
 
             relationId1A12 = relationType2.addRelation()
-                    .putRolePlayer(role3, entity1)
-                    .putRolePlayer(role4, graph.getConcept(relationId12)).getId();
+                    .addRolePlayer(role3, entity1)
+                    .addRolePlayer(role4, graph.getConcept(relationId12)).getId();
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

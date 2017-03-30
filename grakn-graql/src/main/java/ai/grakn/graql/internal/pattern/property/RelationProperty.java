@@ -229,7 +229,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         RoleType roleType = insertQueryExecutor.getConcept(roleVar).asRoleType();
         Instance roleplayer = insertQueryExecutor.getConcept(relationPlayer.getRolePlayer()).asInstance();
-        relation.putRolePlayer(roleType, roleplayer);
+        relation.addRolePlayer(roleType, roleplayer);
     }
 
     @Override

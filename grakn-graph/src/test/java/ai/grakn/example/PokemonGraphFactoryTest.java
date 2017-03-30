@@ -20,7 +20,8 @@ package ai.grakn.example;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -28,11 +29,13 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collection;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -47,11 +50,16 @@ public class PokemonGraphFactoryTest {
 
     @Before
     public void setupPokemonGraph() {
-        GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
-        PokemonGraphFactory.loadGraph(factory.getGraph());
-        factory.getGraph().commitOnClose();
-        factory.getGraph().close();
-        graknGraph = factory.getGraph();
+        GraknSession factory = Grakn.session(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a"));
+        graknGraph = factory.open(GraknTxType.WRITE);
+        PokemonGraphFactory.loadGraph(graknGraph);
+        graknGraph.commit();
+        graknGraph = factory.open(GraknTxType.WRITE);
+    }
+
+    @After
+    public void closeGraph(){
+        graknGraph.close();
     }
 
     @Test
@@ -81,7 +89,10 @@ public class PokemonGraphFactoryTest {
         Entity poison = graknGraph.getResourcesByValue("poison").iterator().next().ownerInstances().iterator().next().asEntity();
         Entity grass = graknGraph.getResourcesByValue("grass").iterator().next().ownerInstances().iterator().next().asEntity();
         Stream<Relation> relations = poison.relations().stream();
-        assertTrue(relations.anyMatch(r -> r.type().equals(relationType) && r.rolePlayers().get(role).equals(grass)));
+        assertTrue(relations.anyMatch(r -> {
+            Collection<Instance> instances = r.rolePlayers(role);
+            return r.type().equals(relationType) && !instances.isEmpty() && instances.stream().anyMatch(instance -> instance.equals(grass));
+        }));
     }
 
 }

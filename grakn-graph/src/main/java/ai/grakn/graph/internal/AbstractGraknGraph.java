@@ -53,8 +53,6 @@ import com.google.common.cache.CacheBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
@@ -79,8 +77,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
-import static com.sun.corba.se.impl.util.RepositoryId.cache;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 /**
  * <p>
@@ -108,7 +104,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
-    private final ThreadLocal<Boolean> localCommitRequired = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
     private Cache<TypeName, Type> cachedOntology = CacheBuilder.newBuilder()
@@ -124,7 +119,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         localIsOpen.set(true);
 
-        if(initialiseMetaConcepts()) commitTransaction();
+        if(initialiseMetaConcepts()) commitTransactionInternal();
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         localShowImplicitStructures.set(false);
@@ -166,10 +161,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean implicitConceptsVisible(){
         return getBooleanFromLocalThread(localShowImplicitStructures);
-    }
-
-    private boolean getCommitRequired(){
-        return getBooleanFromLocalThread(localCommitRequired);
     }
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
@@ -657,11 +648,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         }
         return casting;
     }
-    CastingImpl putCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
+    CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation){
         CastingImpl foundCasting  = null;
         if(rolePlayer != null) {
             foundCasting = getCasting(role, rolePlayer);
@@ -672,11 +663,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
 
         // Relation To Casting
+
         EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
         getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
-        putShortcutEdges(relation, relation.type(), foundCasting);
+        //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
+        if(rolePlayer != null) putShortcutEdge(rolePlayer, relation, role);
 
         return foundCasting;
     }
@@ -685,79 +678,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return getConcept(Schema.ConceptProperty.INDEX, CastingImpl.generateNewHash(role, rolePlayer));
     }
 
-    private void putShortcutEdges(Relation relation, RelationType relationType, CastingImpl newCasting){
-        Map<RoleType, Instance> roleMap = relation.rolePlayers();
+    private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
+        boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
+                outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                has(Schema.EdgeProperty.RELATION_TYPE_NAME.name(), fromRelation.type().getName().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), roleType.getName().getValue()).inV().
+                hasId(toInstance.getId().getRawValue()).hasNext();
 
-        //This ensures the latest casting is taken into account when transferring relations
-        roleMap.put(newCasting.getRole(), newCasting.getRolePlayer());
-
-        if(roleMap.size() > 1) {
-            for(Map.Entry<RoleType, Instance> from : roleMap.entrySet()){
-                for(Map.Entry<RoleType, Instance> to :roleMap.entrySet()){
-                    if (from.getValue() != null && to.getValue() != null && from.getKey() != to.getKey()) {
-                        putShortcutEdge(
-                                relation,
-                                relationType.asRelationType(),
-                                from.getKey().asRoleType(),
-                                from.getValue().asInstance(),
-                                to.getKey().asRoleType(),
-                                to.getValue().asInstance());
-                    }
-                }
-            }
+        if(!exists){
+            EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, fromRelation.type().getName().getValue());
+            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, roleType.getName().getValue());
         }
     }
 
-    private void putShortcutEdge(Relation  relation, RelationType  relationType, RoleType fromRole, Instance from, RoleType  toRole, Instance to){
-        InstanceImpl fromRolePlayer = (InstanceImpl) from;
-        InstanceImpl toRolePlayer = (InstanceImpl) to;
-
-        String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getId().getRawValue()).
-                    local(outE(Schema.EdgeLabel.SHORTCUT.getLabel()).has(Schema.EdgeProperty.SHORTCUT_HASH.name(), hash)).
-                    hasNext();
-
-        if (!exists) {
-            EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, relationType.getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId().getValue());
-
-            if (fromRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.FROM_ID, fromRolePlayer.getId().getValue());
-            }
-            edge.setProperty(Schema.EdgeProperty.FROM_ROLE_NAME, fromRole.getName().getValue());
-
-            if (toRolePlayer.getId() != null) {
-                edge.setProperty(Schema.EdgeProperty.TO_ID, toRolePlayer.getId().getValue());
-            }
-            edge.setProperty(Schema.EdgeProperty.TO_ROLE_NAME, toRole.getName().getValue());
-
-            edge.setProperty(Schema.EdgeProperty.FROM_TYPE_NAME, fromRolePlayer.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.TO_TYPE_NAME, toRolePlayer.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.SHORTCUT_HASH, hash);
-        }
-    }
-
-    private String calculateShortcutHash(Relation relation, RelationType relationType, RoleType fromRole, Instance fromRolePlayer, RoleType toRole, Instance toRolePlayer){
-        String hash = "";
-        String relationIdValue = relationType.getId().getValue();
-        String fromIdValue = fromRolePlayer.getId().getValue();
-        String fromRoleValue = fromRole.getId().getValue();
-        String toIdValue = toRolePlayer.getId().getValue();
-        String toRoleValue = toRole.getId().getValue();
-        String assertionIdValue = relation.getId().getValue();
-
-        if(relationIdValue != null) hash += relationIdValue;
-        if(fromIdValue != null) hash += fromIdValue;
-        if(fromRoleValue != null) hash += fromRoleValue;
-        if(toIdValue != null) hash += toIdValue;
-        if(toRoleValue != null) hash += toRoleValue;
-        hash += String.valueOf(assertionIdValue);
-
-        return hash;
-    }
-
-    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
+    private RelationImpl getRelation(RelationType relationType, Map<RoleType, Set<Instance>> roleMap){
         String hash = generateNewHash(relationType, roleMap);
         RelationImpl concept = getConceptLog().getCachedRelation(hash);
 
@@ -784,7 +719,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void innerClear(){
         clearGraph();
-        closeGraph(ErrorMessage.CLOSED_CLEAR.getMessage());
+        closeTransaction(ErrorMessage.CLOSED_CLEAR.getMessage());
     }
 
     //This is overridden by vendors for more efficient clearing approaches
@@ -792,42 +727,48 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         getTinkerPopGraph().traversal().V().drop().iterate();
     }
 
-    /**
-     * Closes the current graph, rendering it unusable.
-     */
     @Override
-    public void close() throws GraknValidationException {
-        if(getCommitRequired()){
-            commit();
-        }
-        localCommitRequired.remove();
-        closeGraph(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(getKeyspace()));
+    public void close(){
+        close(false);
     }
 
-    private void closeGraph(String closedReason){
+    @Override
+    public void abort(){
+        close();
+    }
+
+    @Override
+    public void commit(){
+        close(true);
+    }
+
+    private void close(boolean commitRequired){
+        if(isClosed()) return;
+
+        String closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
+
+        try{
+            if(commitRequired) {
+                closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
+                commit(this::submitCommitLogs);
+                getConceptLog().writeToCentralCache(true);
+            } else {
+                getConceptLog().writeToCentralCache(false);
+            }
+        } finally {
+            closeTransaction(closeMessage);
+        }
+    }
+
+    private void closeTransaction(String closedReason){
         try {
             graph.tx().close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
         }
         localClosedReason.set(closedReason);
-        localIsOpen.set(false);
-        clearLocalVariables();
-    }
-
-    /**
-     * Sets a thread local flag indicating that a commit is required when cloding the graph.
-     */
-    public void commitOnClose(){
-        localCommitRequired.set(true);
-    }
-
-    /**
-     * Commits the graph
-     * @throws GraknValidationException when the graph does not conform to the object concept
-     */
-    public void commit() throws GraknValidationException {
-        commit(this::submitCommitLogs);
+        localIsOpen.remove();
+        localConceptLog.remove();
     }
 
     /**
@@ -839,7 +780,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public void commit(ConceptCache conceptCache) throws GraknValidationException{
         commit((castings, resources) -> {
-            if(cache != null) {
+            if(conceptCache != null) {
                 castings.forEach(pair -> conceptCache.addJobCasting(getKeyspace(), pair.getValue0(), pair.getValue1()));
                 resources.forEach(pair -> conceptCache.addJobResource(getKeyspace(), pair.getValue0(), pair.getValue1()));
             }
@@ -856,11 +797,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         commit((x, y) -> {});
     }
 
-    private void clearLocalVariables(){
-        getConceptLog().writeToCentralCache(false);
-        localConceptLog.remove();
-    }
-
     public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
@@ -872,14 +808,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
 
         LOG.trace("Graph is valid. Committing graph . . . ");
-        commitTransaction();
+        commitTransactionInternal();
 
         //TODO: Kill when analytics no longer needs this
         GraknSparkComputer.refresh();
 
         LOG.trace("Graph committed.");
-        getConceptLog().writeToCentralCache(true);
-        clearLocalVariables();
 
         //No post processing should ever be done for the system keyspace
         if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
@@ -887,7 +821,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    protected void commitTransaction(){
+    void commitTransactionInternal(){
         try {
             getTinkerPopGraph().tx().commit();
         } catch (UnsupportedOperationException e){
@@ -936,16 +870,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
     }
 
-    public boolean validVertex(Vertex vertex){
+    public void validVertex(Vertex vertex){
         if(vertex == null) {
-            return false;
-        }
-
-        try {
-            //Sample read
-            return vertex.property(Schema.ConceptProperty.ID.name()).isPresent();
-        } catch (IllegalStateException e){
-            return false;
+            throw new IllegalStateException("The provided vertex is null");
         }
     }
 
@@ -969,36 +896,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             Set<Relation> duplicateRelations = mergeCastings(mainCasting, castings);
 
             //Remove Redundant Relations
-            deleteRelations(duplicateRelations);
+            duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
 
             return true;
         }
 
         return false;
-    }
-
-    /**
-     *
-     * @param relations The duplicate relations to be merged
-     */
-    private void deleteRelations(Set<Relation> relations){
-        for (Relation relation : relations) {
-            String relationID = relation.getId().getValue();
-
-            //Kill Shortcut Edges
-            relation.rolePlayers().values().forEach(instance -> {
-                if(instance != null) {
-                    List<Edge> edges = getTinkerTraversal().
-                            hasId(instance.getId().getValue()).
-                            bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                            has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
-
-                    edges.forEach(Element::remove);
-                }
-            });
-
-            ((RelationImpl) relation).deleteNode();
-        }
     }
 
     /**
@@ -1029,7 +932,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //Perform the transfer
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId().getValue());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
                 }
             }
 
@@ -1047,7 +950,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if the roleplayers of the relations are the same.
      */
     private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
-        return mainRelation.rolePlayers().equals(otherRelation.rolePlayers()) &&
+        return mainRelation.allRolePlayers().equals(otherRelation.allRolePlayers()) &&
                 mainRelation.type().equals(otherRelation.type());
     }
 
@@ -1075,12 +978,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //This is so we can copy them uniquely later
                 otherResource.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT).forEach(EdgeImpl::delete);
 
-                //Cope the actual relation
+                //Copy the actual relation
                 for (Relation otherRelation : otherRelations) {
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
-                otherResource.delete();
+                //Delete the node and it's castings directly so we don't accidentally delete copied relations
+                otherResource.castings().forEach(ConceptImpl::deleteNode);
+                otherResource.deleteNode();
             }
 
             return true;
@@ -1097,29 +1002,35 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     private void copyRelation(ResourceImpl main, ResourceImpl<?> other, RelationImpl otherRelation){
         RelationType relationType = otherRelation.type();
-        RoleTypeImpl roleTypeOfResource = null;
-        Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
+        Set<RoleTypeImpl> roleTypesOfResource = new HashSet<>(); //All the role types which the resource must play by the end
+        Map<RoleType, Set<Instance>> allRolePlayers = otherRelation.allRolePlayers();
 
         //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
-        for (Map.Entry<RoleType, Instance> rolePlayer : rolePlayers.entrySet()) {
-            if(rolePlayer.getValue().equals(other)){
-                rolePlayers.put(rolePlayer.getKey(), main);
-                roleTypeOfResource = (RoleTypeImpl) rolePlayer.getKey();
+        for (Map.Entry<RoleType, Set<Instance>> allRolePlayerEntries : allRolePlayers.entrySet()) {
+
+            Iterator<Instance> it = allRolePlayerEntries.getValue().iterator();
+            while (it.hasNext()){
+                Instance instance = it.next();
+                if(instance.isResource() && instance.asResource().getValue().equals(other.getValue())){//If the values are the same replace with main
+                    it.remove();
+                    allRolePlayerEntries.getValue().add(main);
+                    roleTypesOfResource.add((RoleTypeImpl) allRolePlayerEntries.getKey());
+                }
             }
         }
 
         //See if a duplicate relation already exists
-        RelationImpl foundRelation = getRelation(relationType, rolePlayers);
+        RelationImpl foundRelation = getRelation(relationType, allRolePlayers);
 
         if(foundRelation != null){//If it exists delete the other one
             otherRelation.deleteNode(); //Raw deletion because the castings should remain
         } else { //If it doesn't exist transfer the edge to the relevant casting node
             foundRelation = otherRelation;
-            putCasting(roleTypeOfResource, main, otherRelation);
+            roleTypesOfResource.forEach(roleType -> addCasting(roleType, main, otherRelation));
         }
 
         //Explicitly track this new relation so we don't create duplicates
-        String newHash = generateNewHash(relationType, rolePlayers);
+        String newHash = generateNewHash(relationType, allRolePlayers);
         getConceptLog().getModifiedRelations().put(newHash, foundRelation);
     }
 }

@@ -36,6 +36,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -264,7 +265,7 @@ public class ReasonerTest {
 
         QueryBuilder qb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = qb.parse(queryString);
-        QueryAnswers answers = new QueryAnswers(query.admin().results());
+        QueryAnswers answers = new QueryAnswers(queryAnswers(query));
         assertTrue(!answers.isEmpty());
     }
 
@@ -410,24 +411,24 @@ public class ReasonerTest {
         String explicitQuery = "match $y isa $type;" +
                 "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
                 "{$x has name 'Bob';" +
-                    "{$y has name 'Ducatti 1299';} or " +
-                    "{$y has name 'The Good the Bad the Ugly';};} or" +
+                "{$y has name 'Ducatti 1299';} or " +
+                "{$y has name 'The Good the Bad the Ugly';};} or" +
                 "{$x has name 'Charlie';" +
-                    "{$y has name 'Blizzard of Ozz';} or " +
-                    "{$y has name 'Stratocaster';};} or " +
+                "{$y has name 'Blizzard of Ozz';} or " +
+                "{$y has name 'Stratocaster';};} or " +
                 "{$x has name 'Denis';" +
-                    "{$y has name 'Colour of Magic';} or " +
-                    "{$y has name 'Dorian Gray';};} or"+
+                "{$y has name 'Colour of Magic';} or " +
+                "{$y has name 'Dorian Gray';};} or"+
                 "{$x has name 'Frank';$y has name 'Nocturnes';} or" +
                 "{$x has name 'Karl Fischer';" +
-                    "{$y has name 'Faust';} or " +
-                    "{$y has name 'Nocturnes';};} or " +
+                "{$y has name 'Faust';} or " +
+                "{$y has name 'Nocturnes';};} or " +
                 "{$x has name 'Gary';$y has name 'The Wall';} or" +
                 "{$x has name 'Charlie';"+
-                    "{$y has name 'Yngwie Malmsteen';} or " +
-                    "{$y has name 'Cacophony';} or " +
-                    "{$y has name 'Steve Vai';} or " +
-                    "{$y has name 'Black Sabbath';};} or " +
+                "{$y has name 'Yngwie Malmsteen';} or " +
+                "{$y has name 'Cacophony';} or " +
+                "{$y has name 'Steve Vai';} or " +
+                "{$y has name 'Black Sabbath';};} or " +
                 "{$x has name 'Gary';$y has name 'Pink Floyd';};";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
@@ -526,7 +527,7 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingPlaysRole(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
-             "($x, $y) isa is-located-in;";
+                "($x, $y) isa is-located-in;";
         String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has $name;" +
                 "{" +
                 "{$name value 'Europe';};" +
@@ -787,7 +788,7 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingHasRole() {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match ($x, $y) isa $rel-type;$rel-type has-role geo-entity;" +
-            "$y isa country;$y has name 'Poland';select $x;";
+                "$y isa country;$y has name 'Poland';select $x;";
         String queryString2 = "match $y isa country;" +
             "($x, $y) isa is-located-in;$y has name 'Poland'; select $x;";
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
@@ -869,8 +870,8 @@ public class ReasonerTest {
         QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(query.admin().results());
-        QueryAnswers answers2 = new QueryAnswers(query2.admin().results());
+        QueryAnswers answers = new QueryAnswers(queryAnswers(query));
+        QueryAnswers answers2 = new QueryAnswers(queryAnswers(query2));
         answers2.forEach(answer -> assertEquals(answer.size(), 3));
         assertEquals(answers.size(), answers2.size());
     }
@@ -996,7 +997,7 @@ public class ReasonerTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().results());
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

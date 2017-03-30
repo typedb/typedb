@@ -57,7 +57,7 @@ public class HALConceptRepresentationBuilder {
 
     private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
-    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;";
+    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;&limit=%s";
     private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
 
     // - State properties
@@ -88,8 +88,8 @@ public class HALConceptRepresentationBuilder {
         return new HALConceptData(concept, separationDegree, false, new HashSet<>(), keyspace, offset,limit).render();
     }
 
-    public static String renderHALConceptOntology(Concept concept, String keyspace) {
-        return new HALConceptOntology(concept, keyspace).render();
+    public static String renderHALConceptOntology(Concept concept, String keyspace, int offset, int limit) {
+        return new HALConceptOntology(concept, keyspace, offset, limit).render();
     }
 
     private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
@@ -101,14 +101,14 @@ public class HALConceptRepresentationBuilder {
             LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId().getValue());
             Representation currentHal = new HALConceptData(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
                     typesAskedInQuery, keyspace, offset, limit).getRepresentation();
-            attachGeneratedRelations(currentHal, current, linkedNodes, resultLine, roleTypes, keyspace);
+            attachGeneratedRelations(currentHal, current, linkedNodes, resultLine, roleTypes, keyspace, limit);
             lines.add(Json.read(currentHal.toString(RepresentationFactory.HAL_JSON)));
 
         }));
         return lines;
     }
 
-    static void attachGeneratedRelations(Representation currentHal, Map.Entry<VarName, Concept> current, Map<VarName, Collection<VarAdmin>> linkedNodes, Map<VarName, Concept> resultLine, Map<String,Map<VarName, String>> roleTypes, String keyspace) {
+    static void attachGeneratedRelations(Representation currentHal, Map.Entry<VarName, Concept> current, Map<VarName, Collection<VarAdmin>> linkedNodes, Map<VarName, Concept> resultLine, Map<String,Map<VarName, String>> roleTypes, String keyspace, int limit) {
         if (linkedNodes.containsKey(current.getKey())) {
             linkedNodes.get(current.getKey())
                     .forEach(currentRelation -> {
@@ -124,7 +124,7 @@ public class HALConceptRepresentationBuilder {
                                     .map(RelationPlayer::getRolePlayer).forEach(otherVar -> {
 
                                 if(resultLine.get(otherVar.getVarName())!=null) {
-                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(currentRelation.toString()), currentVarName, otherVar.getVarName(), relationType, keyspace);
+                                    attachSingleGeneratedRelation(currentHal, currentRolePlayer, resultLine.get(otherVar.getVarName()), roleTypes.get(currentRelation.toString()), currentVarName, otherVar.getVarName(), relationType, keyspace, limit);
                                 }
                             });
 
@@ -133,7 +133,7 @@ public class HALConceptRepresentationBuilder {
         }
     }
 
-    private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, Optional<TypeName> relationType, String keyspace) {
+    private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, Optional<TypeName> relationType, String keyspace, int limit) {
         ConceptId currentID = currentVar.getId();
 
         ConceptId firstID;
@@ -155,7 +155,7 @@ public class HALConceptRepresentationBuilder {
 
         String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeNameToString(relationType.get()) : "";
 
-        String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString);
+        String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString, limit);
         currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(firstID,secondID,assertionID, relationType));
     }
 
@@ -163,7 +163,7 @@ public class HALConceptRepresentationBuilder {
         final Map<VarName, Collection<VarAdmin>> linkedNodes = new HashMap<>();
         matchQuery.admin().getPattern().getVars().forEach(var -> {
             //if in the current var is expressed some kind of relation (e.g. ($x,$y))
-            if (var.getProperty(RelationProperty.class).isPresent()) {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
                 //collect all the role players in the current var's relations (e.g. 'x' and 'y')
                 final List<VarName> rolePlayersInVar = new ArrayList<>();
                 var.getProperty(RelationProperty.class).get()

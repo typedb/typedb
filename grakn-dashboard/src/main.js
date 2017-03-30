@@ -21,7 +21,7 @@ import VeeValidate from 'vee-validate';
 import VueRouter from 'vue-router';
 
 // Modules
-import User from './js/User';
+import User, { DEFAULT_KEYSPACE } from './js/User';
 import EngineClient from './js/EngineClient';
 import routes from './routes';
 
@@ -37,7 +37,7 @@ const router = new VueRouter({
 
 let authNeeded;
 
-// Functino used to ask Engine if a token is needed to use its APIs
+// Function used to ask Engine if a token is needed to use its APIs
 const checkIfAuthNeeded = function contactEngine(next) {
   EngineClient.request({
     url: '/auth/enabled/',
@@ -51,15 +51,29 @@ const checkIfAuthNeeded = function contactEngine(next) {
   }, () => {});
 };
 
-// Middleware to ensure the user is authenticated when needed.
-router.beforeEach((to, from, next) => {
-  if (authNeeded === undefined) {
-    checkIfAuthNeeded(next);
-  } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
-    next();
-  } else {
-    next('/login');
+// Check if the currentKeyspace is in the list of keyspaces sent from grakn
+// If not, set the currentKeyspace to the default one.
+const checkCurrentKeySpace = () => EngineClient.fetchKeyspaces().then((resp) => {
+  const keyspaces = JSON.parse(resp);
+  if (!keyspaces.includes(User.getCurrentKeySpace())) {
+    User.setCurrentKeySpace(DEFAULT_KEYSPACE);
   }
+});
+
+// Middleware to ensure:
+// - current keyspace saved in localStorage is still available in Grakn
+// - the user is authenticated when needed
+router.beforeEach((to, from, next) => {
+  checkCurrentKeySpace()
+  .then(() => {
+    if (authNeeded === undefined) {
+      checkIfAuthNeeded(next);
+    } else if (User.isAuthenticated() || authNeeded === false || to.path === '/login') {
+      next();
+    } else {
+      next('/login');
+    }
+  });
 });
 
 new Vue({

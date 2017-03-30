@@ -19,7 +19,8 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
@@ -42,7 +43,7 @@ public class CountTest {
     @ClassRule
     public static final EngineContext rule = EngineContext.startInMemoryServer();
 
-    private GraknGraphFactory factory;
+    private GraknSession factory;
     private GraknGraph graph;
 
     @Before
@@ -51,7 +52,7 @@ public class CountTest {
         assumeFalse(usingOrientDB());
 
         factory = rule.factoryWithNewKeyspace();
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
     }
 
     @Test
@@ -72,9 +73,8 @@ public class CountTest {
         thing.addEntity().getId();
         thing.addEntity().getId();
         anotherThing.addEntity().getId();
-        graph.commitOnClose();
-        graph.close();
-        graph = factory.getGraph();
+        graph.commit();
+        graph = factory.open(GraknTxType.WRITE);
 
         // assert computer returns the correct count of instances
         startTime = System.currentTimeMillis();
@@ -99,20 +99,20 @@ public class CountTest {
             list.add(i);
         }
         GraknSparkComputer.clear();
+
+        graph.close();
         // running 4 jobs at the same time
         list.parallelStream()
-                .map(i -> {
-                    try (GraknGraph graph = factory.getGraph()) {
-                        return graph.graql().compute().count().execute();
-                    }
-                })
+                .map(i -> executeCount(factory))
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
         list.parallelStream()
-                .map(i -> {
-                    try (GraknGraph graph = factory.getGraph()) {
-                        return graph.graql().compute().count().execute();
-                    }
-                })
+                .map(i -> executeCount(factory))
                 .forEach(i -> Assert.assertEquals(3L, i.longValue()));
+    }
+    private Long executeCount(GraknSession factory){
+        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        Long result = graph.graql().compute().count().execute();
+        graph.close();
+        return result;
     }
 }

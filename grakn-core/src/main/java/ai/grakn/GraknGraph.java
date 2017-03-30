@@ -30,7 +30,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -43,7 +42,7 @@ import java.util.Collection;
  * </p>
  *
  * <p>
- *     This is produced by {@link Grakn#factory(String, String)} and allows the user to construct and perform
+ *     This is produced by {@link Grakn#session(String, String)} and allows the user to construct and perform
  *     basic look ups to a Grakn Graph. This also allows the execution of Graql queries.
  * </p>
  *
@@ -369,17 +368,21 @@ public interface GraknGraph extends AutoCloseable{
 
     // TODO: what does this do when the graph is closed?
     /**
-     * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknGraphFactory} to
+     * Closes the current transaction. Rendering this graph unusable. You must use the {@link GraknSession} to
      * get a new open transaction.
-     *
-     * This will result in a commit if {@link GraknGraph#commitOnClose()} was called before hand. Otherwise the
-     * transaction will be rolled back.
      */
-    void close() throws GraknValidationException;
+    void close();
 
-    // TODO: what does this do when the graph is closed?
     /**
-     * Will cause the current transaction to be committed when closing the transaction.
+     * Reverts any changes done to the graph and closes the transaction. You must use the {@link GraknSession} to
+     * get a new open transaction.
      */
-    void commitOnClose();
+    void abort();
+
+    /**
+     * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
+     * get a new open transaction.
+     */
+    void commit();
+
 }

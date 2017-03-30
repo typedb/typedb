@@ -21,7 +21,8 @@ package ai.grakn.factory;
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknComputerImpl;
@@ -30,7 +31,6 @@ import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.Properties;
-import java.util.function.Supplier;
 
 import static ai.grakn.util.EngineCommunicator.contactEngine;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
@@ -52,39 +52,37 @@ import static mjson.Json.read;
  *
  * @author fppt
  */
-public class GraknGraphFactoryImpl implements GraknGraphFactory {
+public class GraknSessionImpl implements GraknSession {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private static final String COMPUTER = "graph.computer";
     private final String location;
     private final String keyspace;
 
-    //Flags so we don't have to open a graph just to check the count of the transactions
-    private boolean graphOpen = false;
-    private boolean graphBatchOpen = false;
+    //References so we don't have to open a graph just to check the count of the transactions
+    private GraknGraph graph = null;
+    private GraknGraph graphBatch = null;
 
-    public GraknGraphFactoryImpl(String keyspace, String location){
+    //This constructor must remain public because it is accessed via reflection
+    public GraknSessionImpl(String keyspace, String location){
         this.location = location;
         this.keyspace = keyspace;
     }
 
-    /**
-     *
-     * @return A new or existing grakn graph with the defined name
-     */
     @Override
-    public GraknGraph getGraph(){
-        graphOpen = true;
-        return getConfiguredFactory().factory.getGraph(false);
-    }
-
-    /**
-     *
-     * @return A new or existing grakn graph with the defined name connecting to the specified remote location with batch loading enabled
-     */
-    @Override
-    public GraknGraph getGraphBatchLoading(){
-        graphBatchOpen = true;
-        return getConfiguredFactory().factory.getGraph(true);
+    public GraknGraph open(GraknTxType transactionType){
+        switch (transactionType){
+            case READ:
+                //TODO
+                throw new UnsupportedOperationException("This has not been implemented yet");
+            case WRITE:
+                graph = getConfiguredFactory().factory.getGraph(false);
+                return graph;
+            case BATCH:
+                graphBatch = getConfiguredFactory().factory.getGraph(true);
+                return graphBatch;
+            default:
+                throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");
+        }
     }
 
     private ConfiguredFactory getConfiguredFactory(){
@@ -103,20 +101,19 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
 
     @Override
     public void close() throws GraphRuntimeException {
-        checkClosure(openGraphTxs(), this::getGraph);
-        checkClosure(openGraphBatchTxs(), this::getGraphBatchLoading);
+        checkClosure(openGraphTxs(), graph);
+        checkClosure(openGraphBatchTxs(), graphBatch);
 
         //Close the main graph connections
         try {
-            if(graphOpen) ((AbstractGraknGraph)getGraph()).getTinkerPopGraph().close();
-            if(graphBatchOpen) ((AbstractGraknGraph)getGraphBatchLoading()).getTinkerPopGraph().close();
+            if(graph != null && !graph.isClosed()) ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
+            if(graphBatch != null && !graphBatch.isClosed()) ((AbstractGraknGraph) graphBatch).getTinkerPopGraph().close();
         } catch (Exception e) {
             throw new GraphRuntimeException("Could not close graph.", e);
         }
     }
-    private void checkClosure(int numOpenTransactions, Supplier<GraknGraph> graphSupplier){
+    private void checkClosure(int numOpenTransactions, GraknGraph graph){
         if(numOpenTransactions > 1){
-            GraknGraph graph = graphSupplier.get();
             throw new GraphRuntimeException(ErrorMessage.TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), numOpenTransactions));
         }
     }
@@ -124,14 +121,14 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
 
     @Override
     public int openGraphTxs() {
-        if(!graphOpen) return 0;
-        return ((AbstractGraknGraph)getGraph()).numOpenTx();
+        if(graph == null) return 0;
+        return ((AbstractGraknGraph) graph).numOpenTx();
     }
 
     @Override
     public int openGraphBatchTxs() {
-        if(!graphBatchOpen) return 0;
-        return ((AbstractGraknGraph)getGraphBatchLoading()).numOpenTx();
+        if(graphBatch == null) return 0;
+        return ((AbstractGraknGraph) graphBatch).numOpenTx();
     }
 
     /**

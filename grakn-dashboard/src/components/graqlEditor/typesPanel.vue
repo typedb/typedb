@@ -20,7 +20,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <transition name="slideInDown" appear>
     <div v-if="showTypeInstances" class="types-panel">
         <div class="tabs-row z-depth-1">
-            <button @click="$emit('load-ontology','concept')" class="btn">Ontology</button>
             <div class="inline-div">
               <button @click="$emit('load-ontology','entity')" class="btn norightmargin">Entities</button>
               <button @click="updateCurrentTab('entities')" :class="{'active':currentTab==='entities'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
@@ -33,6 +32,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
               <button @click="$emit('load-ontology','relation')" class="btn norightmargin">Relations</button>
               <button @click="updateCurrentTab('relations')" :class="{'active':currentTab==='relations'}" class="btn noleftmargin noselect"><i class="fa fa-caret-down"></i></button>
             </div>
+            <button @click="$emit('load-ontology','concept')" class="btn" style="margin-left:auto;">All Types</button>
         </div>
         <transition name="fade-in" v-for="k in Object.keys(typeInstances)">
             <div v-bind:id="k+'-tab'" class="tab-pane" v-show="currentTab===k">
@@ -101,7 +101,7 @@ a:hover {
 .tabs-row {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: start;
     background-color: #0f0f0f;
 }
 

@@ -2,6 +2,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -178,7 +179,7 @@ public class GraknGraphTest extends GraphTestBase {
     @Test
     public void whenPassingGraphToAnotherThreadWithoutOpening_Throw() throws ExecutionException, InterruptedException {
         ExecutorService pool = Executors.newSingleThreadExecutor();
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing").open(GraknTxType.WRITE);
 
         final boolean[] errorThrown = {false};
         Future future = pool.submit(() -> {
@@ -197,20 +198,20 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void attemptingToUseClosedGraphFailingThenOpeningGraph_EnsureGraphIsUsable() throws GraknValidationException {
-        GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+        GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
         graph.close();
 
         boolean errorThrown = false;
         try{
             graph.putEntityType("A Thing");
         } catch (GraphRuntimeException e){
-            if(e.getMessage().equals(ErrorMessage.GRAPH_PERMANENTLY_CLOSED.getMessage(graph.getKeyspace()))){
+            if(e.getMessage().equals(ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()))){
                 errorThrown = true;
             }
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        graph = Grakn.factory(Grakn.IN_MEMORY, "testing").getGraph();
+        graph = Grakn.session(Grakn.IN_MEMORY, "testing-again").open(GraknTxType.WRITE);
         graph.putEntityType("A Thing");
     }
 
@@ -226,6 +227,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         //Purge the above concepts into the main cache
         graknGraph.commit();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
         assertThat(graknGraph.getCachedOntology().asMap().values(), containsInAnyOrder(r1, r2, e1, rel1,
@@ -237,7 +239,7 @@ public class GraknGraphTest extends GraphTestBase {
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
         pool.submit(() -> {
-            GraknGraph innerGraph = Grakn.factory(Grakn.IN_MEMORY, graknGraph.getKeyspace()).getGraph();
+            GraknGraph innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             RoleType role = innerGraph.getRoleType("r1");
             entityType.deletePlaysRole(role);
@@ -246,6 +248,22 @@ public class GraknGraphTest extends GraphTestBase {
         //Check the above mutation did not affect central repo
         Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
         assertTrue("Main cache was affected by transaction", foundE1.playsRoles().contains(r1));
+    }
+
+    @Test
+    public void whenClosingAGraphWhichWasJustCommitted_DoNothing(){
+        graknGraph.commit();
+        assertTrue("Graph is still open after commit", graknGraph.isClosed());
+        graknGraph.close();
+        assertTrue("Graph is somehow open after close", graknGraph.isClosed());
+    }
+
+    @Test
+    public void whenCommittingAGraphWhichWasJustCommitted_DoNothing(){
+        graknGraph.commit();
+        assertTrue("Graph is still open after commit", graknGraph.isClosed());
+        graknGraph.commit();
+        assertTrue("Graph is somehow open after 2nd commit", graknGraph.isClosed());
     }
 
     @Test

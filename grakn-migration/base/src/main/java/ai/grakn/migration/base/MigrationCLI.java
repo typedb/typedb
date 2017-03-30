@@ -20,6 +20,7 @@ package ai.grakn.migration.base;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;
@@ -125,7 +126,7 @@ public class MigrationCLI {
         if(options.isVerbose()) {
             System.out.println("Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
 
-            GraknGraph graph = Grakn.factory(options.getUri(), options.getKeyspace()).getGraph();
+            GraknGraph graph = Grakn.session(options.getUri(), options.getKeyspace()).open(GraknTxType.WRITE);
             QueryBuilder qb = graph.graql();
 
             StringBuilder builder = new StringBuilder();

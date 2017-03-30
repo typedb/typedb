@@ -52,6 +52,13 @@ public interface MatchQueryAdmin extends MatchQuery {
     Stream<Map<VarName, Concept>> streamWithVarNames();
 
     /**
+     * Get a stream of answers. This differs from {@code MatchQuery#execute} because it returns a stream of
+     * {@code Answer} objects containing the original map with {@code VarName} as key.
+     * @return a stream of answers
+     */
+    Stream<Answer> streamWithAnswers();
+
+    /**
      * @param graph the graph to use to get types from
      * @return all concept types referred to explicitly in the query
      */

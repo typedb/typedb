@@ -21,8 +21,10 @@ package ai.grakn.generator;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -37,6 +39,7 @@ import ai.grakn.concept.TypeName;
 import ai.grakn.exception.GraphRuntimeException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.pholser.junit.quickcheck.MinimalCounterexampleHook;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -44,21 +47,26 @@ import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.stream.Collectors.joining;
 
 /**
  * Generator to create random {@link GraknGraph}s.
  */
 @SuppressWarnings("unchecked") // We're performing random operations. Generics will not constrain us!
-public class GraknGraphs extends AbstractGenerator<GraknGraph> {
+public class GraknGraphs extends AbstractGenerator<GraknGraph> implements MinimalCounterexampleHook {
 
     private static GraknGraph lastGeneratedGraph;
+
+    private static StringBuilder graphSummary;
 
     private GraknGraph graph;
     private Boolean open = null;
@@ -68,9 +76,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
     }
 
     public static GraknGraph lastGeneratedGraph() {
-        if (lastGeneratedGraph == null) {
-            throw new IllegalStateException("No graph to generate from");
-        }
         return lastGeneratedGraph;
     }
 
@@ -96,14 +101,21 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         // TODO: Generate more keyspaces
         // We don't do this now because creating lots of keyspaces seems to slow the system graph
         String keyspace = gen().make(MetasyntacticStrings.class).generate(random, status);
-        GraknGraphFactory factory = Grakn.factory(Grakn.IN_MEMORY, keyspace);
+        GraknSession factory = Grakn.session(Grakn.IN_MEMORY, keyspace);
+
+        int size = status.size();
+
+        graphSummary = new StringBuilder();
+        graphSummary.append("size: ").append(size).append("\n");
+
+        closeGraph(lastGeneratedGraph);
 
         // Clear graph before retrieving
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
         graph.clear();
-        graph = factory.getGraph();
+        graph = factory.open(GraknTxType.WRITE);
 
-        for (int i = 0; i < status.size(); i++) {
+        for (int i = 0; i < size; i++) {
             mutateOnce();
         }
 
@@ -114,6 +126,12 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
         lastGeneratedGraph = graph;
         return graph;
+    }
+
+    private void closeGraph(GraknGraph graph){
+        if(graph != null && !graph.isClosed()){
+            graph.close();
+        }
     }
 
     public void configure(Open open) {
@@ -127,31 +145,172 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
 
     // A list of methods that will mutate the graph in some random way when called
     private final ImmutableList<Runnable> mutators = ImmutableList.of(
-            () -> graph.putEntityType(typeName()),
-            () -> graph.putResourceType(typeName(), gen(ResourceType.DataType.class)),
-            () -> graph.putResourceTypeUnique(typeName(), gen(ResourceType.DataType.class)),
-            () -> graph.putRoleType(typeName()),
-            () -> graph.putRelationType(typeName()),
-            () -> graph.showImplicitConcepts(gen(Boolean.class)),
-            () -> type().playsRole(roleType()),
-            () -> type().resource(resourceType()),
-            () -> type().key(resourceType()),
-            () -> type().setAbstract(true),
-            () -> entityType().superType(entityType()),
-            () -> entityType().addEntity(),
-            () -> roleType().superType(roleType()),
-            () -> relationType().superType(relationType()),
-            () -> relationType().addRelation(),
-            () -> relationType().hasRole(roleType()),
-            () -> resourceType().superType(resourceType()),
-            () -> resourceType().putResource(gen().make(ResourceValues.class).generate(random, status)),
+            () -> {
+                TypeName typeName = typeName();
+                EntityType superType = entityType();
+                EntityType entityType = graph.putEntityType(typeName).superType(superType);
+                summaryAssign(entityType, "graph", "putEntityType", typeName);
+                summary(entityType, "superType", superType);
+            },
+            () -> {
+                TypeName typeName = typeName();
+                ResourceType.DataType dataType = gen(ResourceType.DataType.class);
+                ResourceType superType = resourceType();
+                ResourceType resourceType = graph.putResourceType(typeName, dataType).superType(superType);
+                summaryAssign(resourceType, "graph", "putResourceType", typeName, dataType);
+                summary(resourceType, "superType", superType);
+            },
+            () -> {
+                TypeName typeName = typeName();
+                ResourceType.DataType dataType = gen(ResourceType.DataType.class);
+                ResourceType superType = resourceType();
+                ResourceType resourceType = graph.putResourceTypeUnique(typeName, dataType).superType(superType);
+                summaryAssign(resourceType, "graph", "putResourceTypeUnique", typeName, dataType);
+                summary(resourceType, "superType", superType);
+            },
+            () -> {
+                TypeName typeName = typeName();
+                RoleType superType = roleType();
+                RoleType roleType = graph.putRoleType(typeName).superType(superType);
+                summaryAssign(roleType, "graph", "putRoleType", typeName);
+                summary(roleType, "superType", superType);
+            },
+            () -> {
+                TypeName typeName = typeName();
+                RelationType superType = relationType();
+                RelationType relationType = graph.putRelationType(typeName).superType(superType);
+                summaryAssign(relationType, "graph", "putRelationType", typeName);
+                summary(relationType, "superType", superType);
+            },
+            () -> {
+                boolean flag = gen(Boolean.class);
+                graph.showImplicitConcepts(flag);
+                summary("graph", "showImplicitConcepts", flag);
+            },
+            () -> {
+                Type type = type();
+                RoleType roleType = roleType();
+                type.playsRole(roleType);
+                summary(type, "playsRole", roleType);
+            },
+            () -> {
+                Type type = type();
+                ResourceType resourceType = resourceType();
+                type.resource(resourceType);
+                summary(type, "resource", resourceType);
+            },
+            () -> {
+                Type type = type();
+                ResourceType resourceType = resourceType();
+                type.key(resourceType);
+                summary(type, "key", resourceType);
+            },
+            () -> {
+                Type type = type();
+                type.setAbstract(true);
+                summary(type, "setAbstract", true);
+            },
+            () -> {
+                EntityType entityType1 = entityType();
+                EntityType entityType2 = entityType();
+                entityType1.superType(entityType2);
+                summary(entityType1, "superType", entityType2);
+            },
+            () -> {
+                EntityType entityType = entityType();
+                Entity entity = entityType.addEntity();
+                summaryAssign(entity, entityType, "addEntity");
+            },
+            () -> {
+                RoleType roleType1 = roleType();
+                RoleType roleType2 = roleType();
+                roleType1.superType(roleType2);
+                summary(roleType1, "superType", roleType2);
+            },
+            () -> {
+                RelationType relationType1 = relationType();
+                RelationType relationType2 = relationType();
+                relationType1.superType(relationType2);
+                summary(relationType1, "superType", relationType2);
+            },
+            () -> {
+                RelationType relationType = relationType();
+                Relation relation = relationType.addRelation();
+                summaryAssign(relation, relationType, "addRelation");
+            },
+            () -> {
+                RelationType relationType = relationType();
+                RoleType roleType = roleType();
+                relationType.hasRole(roleType);
+                summary(relationType, "hasRole", roleType);
+            },
+            () -> {
+                ResourceType resourceType1 = resourceType();
+                ResourceType resourceType2 = resourceType();
+                resourceType1.superType(resourceType2);
+                summary(resourceType1, "superType", resourceType2);
+            },
+            () -> {
+                ResourceType resourceType = resourceType();
+                Object value = gen().make(ResourceValues.class).generate(random, status);
+                Resource resource = resourceType.putResource(value);
+                summaryAssign(resource, resourceType, "putResource", valueToString(value));
+            },
             // () -> resourceType().setRegex(gen(String.class)), // TODO: Enable this when doesn't throw a NPE
-            () -> ruleType().superType(ruleType()),
-            () -> ruleType().putRule(var("x"), var("x")), // TODO: generate more complicated rules
-            () -> instance().resource(resource()),
-            () -> relation().scope(instance()),
-            () -> relation().putRolePlayer(roleType(), instance())
+            () -> {
+                RuleType ruleType1 = ruleType();
+                RuleType ruleType2 = ruleType();
+                ruleType1.superType(ruleType2);
+                summary(ruleType1, "superType", ruleType2);
+            },
+            () -> {
+                RuleType ruleType = ruleType();
+                Rule rule = ruleType.putRule(var("x"), var("x"));// TODO: generate more complicated rules
+                summaryAssign(rule, ruleType, "putRule", "var(\"x\")", "var(\"y\")");
+            },
+            () -> {
+                Instance instance = instance();
+                Resource resource = resource();
+                instance.resource(resource);
+                summary(instance, "resource", resource);
+            },
+            () -> {
+                Type type = type();
+                Instance instance = instance();
+                type.scope(instance);
+                summary(type, "scope", instance);
+            },
+            () -> {
+                Relation relation = relation();
+                RoleType roleType = roleType();
+                Instance instance = instance();
+                relation.addRolePlayer(roleType, instance);
+                summary(relation, "addRolePlayer", roleType, instance);
+            }
     );
+
+    private void summary(Object target, String methodName, Object... args) {
+        graphSummary.append(summaryFormat(target)).append(".").append(methodName).append("(");
+        graphSummary.append(Stream.of(args).map(this::summaryFormat).collect(joining(", ")));
+        graphSummary.append(");\n");
+    }
+
+    private void summaryAssign(Object assign, Object target, String methodName, Object... args) {
+        summary(summaryFormat(assign) + " = " + summaryFormat(target), methodName, args);
+    }
+
+    private String summaryFormat(Object object) {
+        if (object instanceof Type) {
+            return ((Type) object).getName().getValue().replaceAll("-", "_");
+        } else if (object instanceof Instance) {
+            Instance instance = (Instance) object;
+            return summaryFormat(instance.type()) + instance.getId().getValue();
+        } else if (object instanceof TypeName) {
+            return valueToString(((TypeName) object).getValue());
+        } else {
+            return object.toString();
+        }
+    }
 
     private TypeName typeName() {
         return gen().make(TypeNames.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
@@ -225,6 +384,11 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> {
         T result = function.apply(graph);
         graph.showImplicitConcepts(implicitFlag);
         return result;
+    }
+
+    @Override
+    public void handle(Object[] counterexample, Runnable action) {
+        System.err.println("Graph generated:\n" + graphSummary);
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

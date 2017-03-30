@@ -61,7 +61,7 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
     }
 
     @Override
-    protected void commitTransaction(){
+    protected void commitTransactionInternal(){
         getTinkerPopGraph().commit();
     }
 

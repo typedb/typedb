@@ -17,21 +17,11 @@
  */
 package ai.grakn.engine.postprocessing;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import ai.grakn.Grakn;
 import ai.grakn.GraknComputer;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -39,6 +29,17 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.exception.GraknLockingException;
 import ai.grakn.util.Schema;
 import mjson.Json;
+import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -61,9 +62,9 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceDeduplicationTask.class);
     private Long totalEliminated = null;
     
-    static <T> T transact(GraknGraphFactory factory, Function<GraknGraph, T> work, String description) {
+    static <T> T transact(GraknSession factory, Function<GraknGraph, T> work, String description) {
         while (true) {
-            try (GraknGraph graph = factory.getGraph()) {
+            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 return work.apply(graph);
             }
             catch (GraknLockingException ex) {
@@ -162,7 +163,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             LOG.debug("Concepts: " + conceptIds);
             if (conceptIds.size() > 1) {
                 // TODO: what if we fail here due to some read-write conflict?
-                transact(Grakn.factory(Grakn.DEFAULT_URI, keyspace),
+                transact(Grakn.session(Grakn.DEFAULT_URI, keyspace),
                          (graph) -> ConceptFixer.runResourceFix(graph, key, conceptIds),
                          "Reducing resource duplicate set " + conceptIds);
                 emitter.emit(key, (long) (conceptIds.size() - 1));
@@ -170,7 +171,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             // Check and maybe delete resource if it's not attached to anything
             if (this.deleteUnattached ) {
                 // TODO: what if we fail here due to some read-write conflict?
-                try (GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph()) {
+                try (GraknGraph graph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)) {
                     Resource<?> res = graph.admin().getConcept(Schema.ConceptProperty.INDEX, key);
                     if (res.ownerInstances().isEmpty() && res.relations().isEmpty()) {
                         res.delete();
@@ -201,7 +202,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
         LOG.info("Starting ResourceDeduplicationTask : " + configuration);
         
         String keyspace = configuration.at("keyspace", KEYSPACE_DEFAULT).asString();
-        GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
+        GraknComputer computer = Grakn.session(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
         Job job = new Job().keyspace(keyspace)
                            .deleteUnattached(configuration.at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
         this.totalEliminated = computer.compute(job).memory().get(job.getMemoryKey());

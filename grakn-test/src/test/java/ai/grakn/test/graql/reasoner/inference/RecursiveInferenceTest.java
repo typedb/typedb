@@ -30,7 +30,11 @@ import ai.grakn.graphs.TransitivityChainGraph;
 import ai.grakn.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.test.GraphContext;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -82,6 +86,7 @@ public class RecursiveInferenceTest {
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
+        graphContext.graph().close();
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/

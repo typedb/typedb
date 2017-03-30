@@ -19,7 +19,8 @@
 package ai.grakn.test.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
+import ai.grakn.GraknSession;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
@@ -73,7 +74,7 @@ public class ClusteringTest {
 
     @ClassRule
     public static final EngineContext context = EngineContext.startInMemoryServer();
-    private GraknGraphFactory factory;
+    private GraknSession factory;
 
     @Before
     public void setUp() {
@@ -88,7 +89,7 @@ public class ClusteringTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // test on an empty rule.graph()
             Map<String, Long> sizeMap = Graql.compute().withGraph(graph).cluster().execute();
             assertTrue(sizeMap.isEmpty());
@@ -111,7 +112,7 @@ public class ClusteringTest {
 
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withGraph(graph).cluster().clusterSize(1L).execute();
             assertEquals(0, sizeMap.size());
             memberMap = graph.graql().compute().cluster().members().clusterSize(1L).execute();
@@ -120,7 +121,7 @@ public class ClusteringTest {
 
         addResourceRelations();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = graph.graql().compute().cluster().clusterSize(1L).execute();
             assertEquals(5, sizeMap.size());
 
@@ -148,7 +149,7 @@ public class ClusteringTest {
         addOntologyAndEntities();
         addResourceRelations();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             ResourceType<String> resourceType =
                     graph.putResourceType(aResourceTypeName, ResourceType.DataType.STRING);
             graph.getEntityType(thing).resource(resourceType);
@@ -156,10 +157,10 @@ public class ClusteringTest {
             Resource aResource = resourceType.putResource("blah");
             graph.getEntityType(thing).instances().forEach(instance -> instance.resource(aResource));
             graph.getEntityType(anotherThing).instances().forEach(instance -> instance.resource(aResource));
-            graph.commitOnClose();
+            graph.commit();
         }
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Set<String>> result = graph.graql().compute()
                     .cluster().in(thing, anotherThing, aResourceTypeName).members().execute();
             assertEquals(1, result.size());
@@ -181,7 +182,7 @@ public class ClusteringTest {
         // add something, test again
         addOntologyAndEntities();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             sizeMap = Graql.compute().withGraph(graph).cluster().execute();
             assertEquals(1, sizeMap.size());
             assertEquals(7L, sizeMap.values().iterator().next().longValue()); // 4 entities, 3 assertions
@@ -194,7 +195,7 @@ public class ClusteringTest {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             long start = System.currentTimeMillis();
             sizeMap = graph.graql().compute().cluster().execute();
             System.out.println(System.currentTimeMillis() - start + " ms");
@@ -247,7 +248,7 @@ public class ClusteringTest {
         }
         GraknSparkComputer.clear();
         list.parallelStream().forEach(i -> {
-            try (GraknGraph graph = factory.getGraph()) {
+            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 Map<String, Long> sizeMap1 = Graql.compute().withGraph(graph).cluster().execute();
                 assertEquals(1, sizeMap1.size());
                 assertEquals(7L, sizeMap1.values().iterator().next().longValue());
@@ -256,7 +257,7 @@ public class ClusteringTest {
     }
 
     private void addOntologyAndEntities() throws GraknValidationException {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
 
             EntityType entityType1 = graph.putEntityType(thing);
             EntityType entityType2 = graph.putEntityType(anotherThing);
@@ -277,14 +278,14 @@ public class ClusteringTest {
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             ConceptId relationId12 = relationType.addRelation()
-                    .putRolePlayer(role1, entity1)
-                    .putRolePlayer(role2, entity2).getId();
+                    .addRolePlayer(role1, entity1)
+                    .addRolePlayer(role2, entity2).getId();
             ConceptId relationId23 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity3).getId();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity3).getId();
             ConceptId relationId24 = relationType.addRelation()
-                    .putRolePlayer(role1, entity2)
-                    .putRolePlayer(role2, entity4).getId();
+                    .addRolePlayer(role1, entity2)
+                    .addRolePlayer(role2, entity4).getId();
             instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
                     relationId12, relationId23, relationId24);
 
@@ -352,12 +353,12 @@ public class ClusteringTest {
                     .playsRole(resourceValue6)
                     .playsRole(resourceValue7));
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 
     private void addResourceRelations() throws GraknValidationException {
-        try (GraknGraph graph = factory.getGraph()) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
 
             Entity entity1 = graph.getConcept(entityId1);
             Entity entity2 = graph.getConcept(entityId2);
@@ -380,47 +381,47 @@ public class ClusteringTest {
 
             RelationType relationType1 = graph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(TypeName.of(resourceType1)));
             relationType1.addRelation()
-                    .putRolePlayer(resourceOwner1, entity1)
-                    .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.2));
+                    .addRolePlayer(resourceOwner1, entity1)
+                    .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.2));
             relationType1.addRelation()
-                    .putRolePlayer(resourceOwner1, entity1)
-                    .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.5));
+                    .addRolePlayer(resourceOwner1, entity1)
+                    .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.5));
             relationType1.addRelation()
-                    .putRolePlayer(resourceOwner1, entity3)
-                    .putRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.8));
+                    .addRolePlayer(resourceOwner1, entity3)
+                    .addRolePlayer(resourceValue1, graph.getResourceType(resourceType1).putResource(1.8));
 
             RelationType relationType2 = graph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(TypeName.of(resourceType2)));
             relationType2.addRelation()
-                    .putRolePlayer(resourceOwner2, entity1)
-                    .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(4L));
+                    .addRolePlayer(resourceOwner2, entity1)
+                    .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(4L));
             relationType2.addRelation()
-                    .putRolePlayer(resourceOwner2, entity1)
-                    .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(-1L));
+                    .addRolePlayer(resourceOwner2, entity1)
+                    .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(-1L));
             relationType2.addRelation()
-                    .putRolePlayer(resourceOwner2, entity4)
-                    .putRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(0L));
+                    .addRolePlayer(resourceOwner2, entity4)
+                    .addRolePlayer(resourceValue2, graph.getResourceType(resourceType2).putResource(0L));
 
             RelationType relationType5 = graph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(TypeName.of(resourceType5)));
             relationType5.addRelation()
-                    .putRolePlayer(resourceOwner5, entity1)
-                    .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+                    .addRolePlayer(resourceOwner5, entity1)
+                    .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
             relationType5.addRelation()
-                    .putRolePlayer(resourceOwner5, entity2)
-                    .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+                    .addRolePlayer(resourceOwner5, entity2)
+                    .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
             relationType5.addRelation()
-                    .putRolePlayer(resourceOwner5, entity4)
-                    .putRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
+                    .addRolePlayer(resourceOwner5, entity4)
+                    .addRolePlayer(resourceValue5, graph.getResourceType(resourceType5).putResource(-7L));
 
             RelationType relationType6 = graph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(TypeName.of(resourceType6)));
             relationType6.addRelation()
-                    .putRolePlayer(resourceOwner6, entity1)
-                    .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+                    .addRolePlayer(resourceOwner6, entity1)
+                    .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
             relationType6.addRelation()
-                    .putRolePlayer(resourceOwner6, entity2)
-                    .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+                    .addRolePlayer(resourceOwner6, entity2)
+                    .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
             relationType6.addRelation()
-                    .putRolePlayer(resourceOwner6, entity4)
-                    .putRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
+                    .addRolePlayer(resourceOwner6, entity4)
+                    .addRolePlayer(resourceValue6, graph.getResourceType(resourceType6).putResource(7.5));
 
             // some resources in, but not connect them to any instances
             graph.getResourceType(resourceType1).putResource(2.8);
@@ -429,7 +430,7 @@ public class ClusteringTest {
             graph.getResourceType(resourceType5).putResource(10L);
             graph.getResourceType(resourceType6).putResource(0.8);
 
-            graph.commitOnClose();
+            graph.commit();
         }
     }
 }

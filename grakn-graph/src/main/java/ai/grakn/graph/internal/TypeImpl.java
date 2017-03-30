@@ -372,6 +372,38 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     /**
      *
+     * @return A list of the Instances which scope this Relation
+     */
+    @Override
+    public Set<Instance> scopes() {
+        HashSet<Instance> scopes = new HashSet<>();
+        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
+        return scopes;
+    }
+
+    /**
+     *
+     * @param instance A new instance which can scope this concept
+     * @return The concept itself
+     */
+    @Override
+    public T scope(Instance instance) {
+        putEdge(instance, Schema.EdgeLabel.HAS_SCOPE);
+        return getThis();
+    }
+
+    /**
+     * @param scope A concept which is currently scoping this concept.
+     * @return The Relation itself
+     */
+    @Override
+    public T deleteScope(Instance scope) {
+        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, scope);
+        return getThis();
+    }
+
+    /**
+     *
      * @param newSuperType This type's super type
      * @return The Type itself
      */

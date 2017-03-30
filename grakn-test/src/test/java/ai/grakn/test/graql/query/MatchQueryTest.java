@@ -845,11 +845,14 @@ public class MatchQueryTest {
     public void testHideImplicitTypesTwice() {
         MatchQuery query1 = qb.match(var("x").sub("concept"));
         assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
+        List<Map<String, Concept>> results1 = query1.execute();
 
-        GraknGraph graph2 = (GraknGraph) EngineGraknGraphFactory.getInstance().getGraph(movieGraph.graph().getKeyspace());
+        String keyspace = movieGraph.graph().getKeyspace();
+        movieGraph.graph().close();
+        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
 
         MatchQuery query2 = graph2.graql().match(var("x").sub("concept"));
-        assertEquals(query1.execute(), query2.execute());
+        assertEquals(results1, query2.execute());
     }
 
     @Test
@@ -873,5 +876,34 @@ public class MatchQueryTest {
         Set<Map<String, Concept>> withRole = qb.match(var().rel("role", "x").isa("has-cast")).stream().collect(toSet());
 
         assertEquals(withoutRole, withRole);
+    }
+
+    @Test
+    public void whenQueryingForSameRoleTwice_ReturnResultsWithMultipleRolePlayers() {
+        MatchQuery query = qb.match(
+                var().rel("production-with-cluster", "x").rel("production-with-cluster", "y").rel("z"),
+                var("z").has("name", "1")
+        );
+
+        assertThat(query, results(containsInAnyOrder(
+                allOf(hasEntry(is("x"), hocusPocus), hasEntry(is("y"), theMuppets)),
+                allOf(hasEntry(is("x"), theMuppets), hasEntry(is("y"), hocusPocus))
+        )));
+    }
+
+    @Test
+    public void whenQueryingForSameRoleTwiceWhenItIsPlayedOnce_ReturnNoResults() {
+        MatchQuery query = qb.match(var().rel("actor", "x").rel("actor", "y"));
+
+        assertThat(query.execute(), empty());
+    }
+
+    @Test
+    public void whenQueryingForSameRoleTwice_DoNotReturnDuplicateRolePlayers() {
+        MatchQuery query = qb.match(var().rel("cluster-of-production", "x").rel("cluster-of-production", "y"));
+
+        query.forEach(result -> {
+            assertNotEquals(result.get("x"), result.get("y"));
+        });
     }
 }

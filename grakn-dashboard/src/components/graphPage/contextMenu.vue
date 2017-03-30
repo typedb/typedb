@@ -92,7 +92,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </style>
 
 <script>
-import QueryBuilder from '../../js/QueryBuilder';
+import QueryBuilder from './modules/QueryBuilder';
 
 
 export default {
@@ -133,17 +133,25 @@ export default {
         alignHorizontally() {
             this.$emit('close-context');
             let previousNode = this.selectedNodes[0];
-            visualiser.nodes.update({
+            visualiser.updateNode({
                 id: previousNode,
                 x: visualiser.rect.startX,
-                y: visualiser.rect.startY
+                y: visualiser.rect.startY,
+                fixed: {
+                  x: true,
+                  y: true,
+                },
             });
             for (let i = 1; i < this.selectedNodes.length; i++) {
                 const nodeId = this.selectedNodes[i];
-                visualiser.nodes.update({
+                visualiser.updateNode({
                     id: nodeId,
                     x: this.computeXHorizontal(nodeId, previousNode),
-                    y: visualiser.rect.startY
+                    y: visualiser.rect.startY,
+                    fixed: {
+                      x: true,
+                      y: true,
+                    },
                 });
                 previousNode = nodeId;
             }
@@ -151,17 +159,25 @@ export default {
         alignVertically() {
             this.$emit('close-context');
             let previousNode = this.selectedNodes[0];
-            visualiser.nodes.update({
+            visualiser.updateNode({
                 id: previousNode,
                 x: visualiser.rect.startX,
-                y: visualiser.rect.startY
+                y: visualiser.rect.startY,
+                fixed: {
+                  x: true,
+                  y: true,
+                },
             });
             for (let i = 1; i < this.selectedNodes.length; i++) {
                 const nodeId = this.selectedNodes[i];
-                visualiser.nodes.update({
+                visualiser.updateNode({
                     id: nodeId,
                     x: visualiser.rect.startX,
                     y: this.computeYVertical(nodeId, previousNode),
+                    fixed: {
+                      x: true,
+                      y: true,
+                    },
                 });
                 previousNode = nodeId;
             }

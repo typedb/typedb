@@ -22,7 +22,9 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.test.GraphContext;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -106,16 +109,18 @@ public class GenealogyTest {
 
     @Test
     public void testFemale() {
-        String queryString = "match $x isa person has identifier $id has gender 'female';";
-        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        String queryString = "match $x isa person has gender 'female';";
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 32);
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
     }
 
     @Test
     public void testGender() {
-        String queryString = "match $x isa person has identifier $id has gender $gender;";
-        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
+        String queryString = "match $x isa person has gender $gender;";
+        MatchQuery query = iqb.parse(queryString);
+        QueryAnswers answers = queryAnswers(query);
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
         assertEquals(answers.size(), qb.<MatchQueryAdmin>parse("match $x isa person;").execute().size());
     }
@@ -304,6 +309,7 @@ public class GenealogyTest {
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
@@ -314,6 +320,7 @@ public class GenealogyTest {
     public void testCousins() {
         String queryString = "match ($x, $y) isa cousins;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         assertEquals(answers.size(), 192);
         assertTrue(!hasDuplicates(answers));
@@ -324,6 +331,7 @@ public class GenealogyTest {
     public void testInLaws() {
         String queryString = "match $x(parent-in-law: $x1, child-in-law: $x2) isa in-laws;";
         MatchQuery query = iqb.parse(queryString);
+
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers requeriedAnswers = queryAnswers(query);
         assertEquals(answers.size(), 50);
@@ -504,7 +512,7 @@ public class GenealogyTest {
 
     private boolean checkResource(QueryAnswers answers, String var, String value){
         boolean isOk = true;
-        Iterator<Map<VarName, Concept>> it =  answers.iterator();
+        Iterator<Answer> it =  answers.iterator();
         while (it.hasNext() && isOk){
             Concept c = it.next().get(VarName.of(var));
             isOk = c.asResource().getValue().equals(value);
@@ -514,9 +522,9 @@ public class GenealogyTest {
 
     private boolean hasDuplicates(QueryAnswers answers){
         boolean hasDuplicates = false;
-        Iterator<Map<VarName, Concept>> it = answers.iterator();
+        Iterator<Answer> it = answers.iterator();
         while(it.hasNext() && !hasDuplicates){
-            Map<VarName, Concept> answer = it.next();
+            Answer answer = it.next();
             Set<Concept> existing = new HashSet<>();
             hasDuplicates = answer.entrySet()
                     .stream()
@@ -528,6 +536,6 @@ public class GenealogyTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().results());
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
     }
 }

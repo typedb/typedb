@@ -54,7 +54,7 @@ import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
  * </p>
  *
  * <p>
- *     When calling {@link ai.grakn.Grakn#factory(String, String)} and using the non memory location this controller
+ *     When calling {@link ai.grakn.Grakn#session(String, String)} and using the non memory location this controller
  *     is accessed. The controller provides the necessary config needed in order to build a {@link ai.grakn.GraknGraph}.
  *
  *     This controller also allows the retrieval of all keyspaces opened so far.
@@ -116,14 +116,14 @@ public class GraphFactoryController {
                 Collection<Resource<?>> names = keyspace.resources(keyspaceName);
                 if (names.size() != 1) {
                     throw new GraknEngineServerException(500,
-                            ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " hos no unique name."));
+                            ErrorMessage.INVALID_SYSTEM_KEYSPACE.getMessage(" keyspace " + keyspace.getId() + " has no unique name."));
                 }
                 result.add(names.iterator().next().getValue());
             }
             return result.toString();
         } catch (Exception e) {
             LOG.error("While retrieving keyspace list:", e);
-            throw new RuntimeException("Error while retrieving key spaces", e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 }
