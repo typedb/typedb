@@ -20,12 +20,10 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.macro.Macro;
 
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Starting point for creating queries
