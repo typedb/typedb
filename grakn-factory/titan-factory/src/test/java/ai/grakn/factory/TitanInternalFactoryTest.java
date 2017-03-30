@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.GraknTitanGraph;
 import ai.grakn.util.Schema;
@@ -53,7 +54,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
     @BeforeClass
     public static void setupClass() throws InterruptedException {
-        sharedGraph = titanGraphFactory.open(TEST_BATCH_LOADING).getTinkerPopGraph();
+        sharedGraph = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
     }
 
     @Test
@@ -95,10 +96,10 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     @Test
     public void testSingleton(){
         TitanInternalFactory factory = new TitanInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTitanGraph mg1 = factory.open(true);
+        GraknTitanGraph mg1 = factory.open(GraknTxType.WRITE);
         mg1.close();
-        GraknTitanGraph mg2 = factory.open(false);
-        GraknTitanGraph mg3 = factory.open(true);
+        GraknTitanGraph mg2 = factory.open(GraknTxType.WRITE);
+        GraknTitanGraph mg3 = factory.open(GraknTxType.BATCH);
 
         assertEquals(mg1, mg3);
         assertEquals(mg1.getTinkerPopGraph(), mg3.getTinkerPopGraph());
@@ -139,7 +140,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
 
         for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
-                GraknTitanGraph graph = factory.open(false);
+                GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
                 assertFalse("Grakn graph is closed", graph.isClosed());
                 assertFalse("Internal tinkerpop graph is closed", graph.getTinkerPopGraph().isClosed());
                 graph.putEntityType("A Thing");
@@ -169,12 +170,12 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     @Test
     public void testGraphNotClosed() throws GraknValidationException {
         TitanInternalFactory factory = new TitanInternalFactory("stuff", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTitanGraph graph = factory.open(false);
+        GraknTitanGraph graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
         graph.close();
 
-        graph = factory.open(false);
+        graph = factory.open(GraknTxType.WRITE);
         assertFalse(graph.getTinkerPopGraph().isClosed());
         graph.putEntityType("A Thing");
     }
@@ -183,7 +184,7 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString().replaceAll("-", "");
         titanGraphFactory = new TitanInternalFactory(name, Grakn.IN_MEMORY, TEST_PROPERTIES);
-        Graph graph = titanGraphFactory.open(TEST_BATCH_LOADING).getTinkerPopGraph();
+        Graph graph = titanGraphFactory.open(GraknTxType.WRITE).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;
     }

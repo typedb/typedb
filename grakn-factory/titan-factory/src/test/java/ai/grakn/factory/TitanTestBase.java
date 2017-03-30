@@ -14,7 +14,6 @@ import java.util.Properties;
 
 public abstract class TitanTestBase {
     private final static String CONFIG_LOCATION = "../../conf/main/grakn.properties";
-    final static boolean TEST_BATCH_LOADING = false;
     private final static String TEST_SHARED = "shared";
     static TitanInternalFactory titanGraphFactory;
     final static Properties TEST_PROPERTIES = new Properties();
