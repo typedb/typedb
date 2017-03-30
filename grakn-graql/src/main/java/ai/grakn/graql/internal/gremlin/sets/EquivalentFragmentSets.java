@@ -29,6 +29,8 @@ import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import java.util.Optional;
 
 /**
+ * Factory class for producing instances of {@link EquivalentFragmentSet}.
+ *
  * @author Felix Chapman
  */
 public class EquivalentFragmentSets {
