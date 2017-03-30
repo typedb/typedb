@@ -30,7 +30,6 @@ import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -40,16 +39,16 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.util.Collection;
-import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.generator.GraknGraphs.withImplicitConceptsVisible;
+import static ai.grakn.graph.property.PropertyUtil.choose;
+import static ai.grakn.graph.property.PropertyUtil.directInstances;
+import static ai.grakn.graph.property.PropertyUtil.directSubTypes;
+import static ai.grakn.graph.property.PropertyUtil.indirectSuperTypes;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.Schema.MetaSchema.isMetaName;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -303,43 +302,4 @@ public class TypePropertyTest {
     }
 
     // TODO: Tests for `resource` and `key`
-
-    private Collection<Type> directSubTypes(GraknGraph graph, Type type) {
-        return withImplicitConceptsVisible(graph, g ->
-            type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList())
-        );
-    }
-
-    private Collection<Type> indirectSuperTypes(Type type) {
-        Collection<Type> superTypes = Lists.newArrayList();
-
-        do {
-            superTypes.add(type);
-            type = type.superType();
-        } while (type != null);
-
-        return superTypes;
-    }
-
-    private Collection<Instance> directInstances(Type type) {
-        Collection<? extends Instance> indirectInstances = type.instances();
-        return indirectInstances.stream().filter(instance -> type.equals(instance.type())).collect(toList());
-    }
-
-    private <T> T choose(Collection<? extends T> collection, long seed) {
-        assumeThat(collection, not(empty()));
-        return chooseWithoutCheck(collection, seed);
-    }
-
-    private <T> T choose(String message, Collection<? extends T> collection, long seed) {
-        assumeThat(message, collection, not(empty()));
-        return chooseWithoutCheck(collection, seed);
-    }
-
-    private <T> T chooseWithoutCheck(Collection<? extends T> collection, long seed) {
-        int index = new Random(seed).nextInt(collection.size());
-        Optional<? extends T> result = collection.stream().skip(index).findFirst();
-        assert result.isPresent();
-        return result.get();
-    }
 }

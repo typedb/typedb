@@ -294,16 +294,6 @@ public class GraknGraphPropertyTest {
     // TODO: Everything below this point should be moved to more appropriate test classes
 
     @Property
-    public void whenDeletingMetaEntityType_Throw(@Open GraknGraph graph) {
-        EntityType entity = graph.admin().getMetaEntityType();
-
-        exception.expect(ConceptException.class);
-        exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(entity.getName()));
-
-        entity.delete();
-    }
-
-    @Property
     public void whenSetRegexOnMetaResourceType_Throw(@Open GraknGraph graph, String regex) {
         ResourceType resource = graph.admin().getMetaResourceType();
 
