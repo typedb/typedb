@@ -321,6 +321,13 @@ public interface GraknGraph extends AutoCloseable{
      */
     GraknAdmin admin();
 
+    /**
+     * Utility function used to check if the current transaction on the graph is a read only transaction
+     *
+     * @return true if the current transaction is read only
+     */
+    boolean isReadOnly();
+
     // TODO: what does this do when the graph is closed?
     /**
      * Utility function to specify whether implicit and system-generated types should be returned.

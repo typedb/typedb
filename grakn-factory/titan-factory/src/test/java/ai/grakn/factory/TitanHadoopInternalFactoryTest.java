@@ -51,7 +51,7 @@ public class TitanHadoopInternalFactoryTest {
 
     @Test(expected=UnsupportedOperationException.class)
     public void buildGraknGraphFromTinker() throws Exception {
-        factory.getGraph(false);
+        factory.open(false);
     }
 
     @Test

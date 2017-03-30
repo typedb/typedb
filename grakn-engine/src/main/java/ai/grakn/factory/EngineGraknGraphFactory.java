@@ -69,7 +69,7 @@ public class EngineGraknGraphFactory {
     }
 
     private GraknGraph getGraph(String keyspace, boolean batchLoading){
-        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).getGraph(batchLoading);
+        return FactoryBuilder.getFactory(keyspace, Grakn.DEFAULT_URI, properties).open(batchLoading);
     }
 }
 

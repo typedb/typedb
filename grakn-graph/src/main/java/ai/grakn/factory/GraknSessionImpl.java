@@ -72,13 +72,11 @@ public class GraknSessionImpl implements GraknSession {
     public GraknGraph open(GraknTxType transactionType){
         switch (transactionType){
             case READ:
-                //TODO
-                throw new UnsupportedOperationException("This has not been implemented yet");
             case WRITE:
-                graph = getConfiguredFactory().factory.getGraph(false);
+                graph = getConfiguredFactory().factory.open(transactionType);
                 return graph;
             case BATCH:
-                graphBatch = getConfiguredFactory().factory.getGraph(true);
+                graphBatch = getConfiguredFactory().factory.open(transactionType);
                 return graphBatch;
             default:
                 throw new GraphRuntimeException("Unknown type of transaction [" + transactionType.name() + "]");

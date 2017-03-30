@@ -50,22 +50,22 @@ public class GraknOrientDBGraphFactoryTest {
 
     @After
     public void clear() throws GraknValidationException {
-        GraknOrientDBGraph graph = orientGraphFactory.getGraph(false);
+        GraknOrientDBGraph graph = orientGraphFactory.open(false);
         graph.clear();
     }
 
     @Test
     public void testBuildSimpleGraph() throws Exception {
-        AbstractGraknGraph graknGraph = orientGraphFactory.getGraph(false);
+        AbstractGraknGraph graknGraph = orientGraphFactory.open(false);
         assertThat(graknGraph.getTinkerPopGraph(), instanceOf(OrientGraph.class));
         assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
     @Test
     public void testBuildSingletonGraphs(){
-        AbstractGraknGraph<OrientGraph> graknGraph1 = orientGraphFactory.getGraph(false);
-        AbstractGraknGraph<OrientGraph> graknGraph2 = orientGraphFactory.getGraph(false);
-        AbstractGraknGraph<OrientGraph> graknGraph3 = orientGraphFactory.getGraph(true);
+        AbstractGraknGraph<OrientGraph> graknGraph1 = orientGraphFactory.open(false);
+        AbstractGraknGraph<OrientGraph> graknGraph2 = orientGraphFactory.open(false);
+        AbstractGraknGraph<OrientGraph> graknGraph3 = orientGraphFactory.open(true);
 
         assertEquals(graknGraph1, graknGraph2);
         assertNotEquals(graknGraph2, graknGraph3);
@@ -77,7 +77,7 @@ public class GraknOrientDBGraphFactoryTest {
 
     @Test
     public void testBuildGraph() throws GraknValidationException {
-        GraknOrientDBGraph graknGraph = orientGraphFactory.getGraph(false);
+        GraknOrientDBGraph graknGraph = orientGraphFactory.open(false);
 
         assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
         assertNotNull(graknGraph.getMetaEntityType());
@@ -98,7 +98,7 @@ public class GraknOrientDBGraphFactoryTest {
 
     @Test
     public void testVertexIndices(){
-        OrientGraph graknOrientDBGraph = orientGraphFactory.getGraph(false).getTinkerPopGraph();
+        OrientGraph graknOrientDBGraph = orientGraphFactory.open(false).getTinkerPopGraph();
 
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.TYPE.name()).size());
         assertEquals(2, graknOrientDBGraph.getVertexIndexedKeys(Schema.BaseType.ENTITY_TYPE.name()).size());

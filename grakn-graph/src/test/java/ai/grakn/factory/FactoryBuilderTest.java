@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.Grakn;
+import ai.grakn.GraknTxType;
 import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -69,6 +70,6 @@ public class FactoryBuilderTest {
         assertEquals(mgf3, mgf4);
         assertNotEquals(mgf1, mgf3);
 
-        assertNotEquals(mgf1.getGraph(true), mgf3.getGraph(true));
+        assertNotEquals(mgf1.open(GraknTxType.WRITE), mgf3.open(GraknTxType.WRITE));
     }
 }

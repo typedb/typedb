@@ -44,7 +44,7 @@ public class GraknOrientDBGraphTest {
 
     @Before
     public void setup(){
-        graknGraph = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null).getGraph(TEST_BATCH_LOADING);
+        graknGraph = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null).open(TEST_BATCH_LOADING);
     }
 
     @After

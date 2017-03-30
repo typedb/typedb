@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.ErrorMessage;
@@ -85,14 +86,18 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     abstract G buildTinkerPopGraph(boolean batchLoading);
 
     @Override
-    public synchronized M getGraph(boolean batchLoading){
-        if(batchLoading){
+    public synchronized M open(GraknTxType txType){
+        if(GraknTxType.BATCH.equals(txType)){
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
-            batchLoadingGraknGraph.openTransaction();
+            batchLoadingGraknGraph.openTransaction(false);
             return batchLoadingGraknGraph;
         } else {
             graknGraph = getGraph(graknGraph, false);
-            graknGraph.openTransaction();
+            if(GraknTxType.WRITE.equals(txType)) {
+                graknGraph.openTransaction(false);
+            } else if(GraknTxType.READ.equals(txType)) {
+                graknGraph.openTransaction(true);
+            }
             return graknGraph;
         }
     }
@@ -104,7 +109,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
             }
         } else {
             if(graknGraph.isClosed()){
-                graknGraph.openTransaction();
+                //TODO: Get rid of this redundant open. This is only here so we can do the inner check later
+                graknGraph.openTransaction(false);
             } else {
                 throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graknGraph.getKeyspace()));
             }
