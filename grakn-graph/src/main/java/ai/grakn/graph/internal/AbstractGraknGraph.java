@@ -475,33 +475,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
-        return putResourceType(name, dataType, Boolean.FALSE);
-    }
-
-    @Override
-    public <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType){
-        return putResourceTypeUnique(TypeName.of(name), dataType);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
-        return putResourceType(name, dataType, Boolean.TRUE);
-    }
-
-    private <V> ResourceType <V> putResourceType(TypeName name, ResourceType.DataType<V> dataType, Boolean isUnique){
-
         @SuppressWarnings("unchecked")
         ResourceType<V> resourceType = putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType, isUnique)).asResourceType();
+                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType)).asResourceType();
 
         //These checks is needed here because caching will return a type by name without checking the datatype
         if(Schema.MetaSchema.isMetaName(name)) {
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(name));
         } else if(!dataType.equals(resourceType.getDataType())){
             throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
-        } else if(resourceType.isUnique() ^ isUnique){
-            throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.isUnique(), resourceType, isUnique, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
         return resourceType;

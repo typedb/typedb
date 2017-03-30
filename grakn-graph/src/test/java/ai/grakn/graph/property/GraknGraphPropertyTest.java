@@ -316,12 +316,6 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingIsUniqueOnMetaResourceType_ResultIsFalse(@Open GraknGraph graph) {
-        ResourceType resource = graph.admin().getMetaResourceType();
-        assertFalse(resource.isUnique());
-    }
-
-    @Property
     public void whenCreateInstanceOfMetaResourceType_Throw(
             @Open GraknGraph graph, @From(ResourceValues.class) Object value) {
         ResourceType resource = graph.admin().getMetaResourceType();

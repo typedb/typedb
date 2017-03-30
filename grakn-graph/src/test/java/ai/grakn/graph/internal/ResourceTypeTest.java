@@ -33,8 +33,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 public class ResourceTypeTest extends GraphTestBase{
     private ResourceType<String> resourceType;
@@ -87,15 +85,6 @@ public class ResourceTypeTest extends GraphTestBase{
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.getId(), thing.getValue(), resourceType.getName()));
         resourceType.setRegex("[abc]");
-    }
-
-    @Test
-    public void testGetUniqueResourceType(){
-        ResourceType unique = graknGraph.putResourceTypeUnique("Random ID", ResourceType.DataType.LONG);
-        ResourceType notUnique = graknGraph.putResourceType("Random ID 2", ResourceType.DataType.LONG);
-
-        assertTrue(unique.isUnique());
-        assertFalse(notUnique.isUnique());
     }
 
     @Test

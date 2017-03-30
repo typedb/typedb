@@ -47,7 +47,6 @@ public enum ErrorMessage {
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
-    RESOURCE_TYPE_UNIQUE("The resource [%s] is unique and is already attached to [%s]."),
     SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_INVALID("The type [%s] is not allowed to have a %s of type [%s]"),
     INVALID_SYSTEM_KEYSPACE("The system keyspace appears to be corrupted: [%s]."),

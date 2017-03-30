@@ -18,21 +18,17 @@
 
 package ai.grakn.graph.internal;
 
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
-import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptNotUniqueException;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
 
 import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
-import static ai.grakn.util.ErrorMessage.RESOURCE_TYPE_UNIQUE;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -145,38 +141,6 @@ public class ResourceTest extends GraphTestBase{
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(INVALID_DATATYPE.getMessage("1", String.class.getName()));
         stringResourceType.putResource(1L);
-    }
-
-    @Test
-    public void testUniqueResource(){
-        //Create Ontology
-        RoleType primaryKeyRole = graknGraph.putRoleType("Primary Key Role");
-        RoleType entityRole = graknGraph.putRoleType("Entity Role");
-        RelationType hasPrimaryKey = graknGraph.putRelationType("Has Parimary Key").hasRole(primaryKeyRole).hasRole(entityRole);
-
-
-        //Create Resources
-        ResourceType<String> primaryKeyType = graknGraph.putResourceTypeUnique("My Primary Key", ResourceType.DataType.STRING).playsRole(primaryKeyRole);
-        Resource pimaryKey1 = primaryKeyType.putResource("A Primary Key 1");
-        Resource pimaryKey2 = primaryKeyType.putResource("A Primary Key 2");
-
-        //Create Entities
-        EntityType entityType = graknGraph.putEntityType("My Entity Type").playsRole(entityRole);
-        Entity entity1 = entityType.addEntity();
-        Entity entity2 = entityType.addEntity();
-        Entity entity3 = entityType.addEntity();
-
-        //Link Entities to resources
-        assertNull(pimaryKey1.owner());
-        hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey1).addRolePlayer(entityRole, entity1);
-        assertEquals(entity1, pimaryKey1.owner());
-
-        Relation relation = hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey2).addRolePlayer(entityRole, entity2);
-
-        expectedException.expect(ConceptNotUniqueException.class);
-        expectedException.expectMessage(RESOURCE_TYPE_UNIQUE.getMessage(pimaryKey1.getId(), entity1.getId()));
-
-        hasPrimaryKey.addRelation().addRolePlayer(primaryKeyRole, pimaryKey1).addRolePlayer(entityRole, entity3);
     }
 
     @Test

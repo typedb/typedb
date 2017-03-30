@@ -29,11 +29,9 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
-import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.PutTypeFunctions;
-import ai.grakn.generator.ResourceTypes.Unique;
 import ai.grakn.generator.TypeNames.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -55,7 +53,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
@@ -125,13 +122,12 @@ public class GraknGraphPutPropertyTest {
         ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
 
         assertEquals("The data-type should be as specified", dataType, resourceType.getDataType());
-        assertFalse("The resource type should not be unique", resourceType.isUnique());
         assertNull("The resource type should have no regex constraint", resourceType.getRegex());
     }
 
     @Property
     public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingNonUniqueResourceType_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType) {
+            @Open GraknGraph graph, @FromGraph  ResourceType<?> resourceType) {
         assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
 
         TypeName typeName = resourceType.getName();
@@ -155,7 +151,7 @@ public class GraknGraphPutPropertyTest {
 
     @Property
     public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeNameButADifferentDataType_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType,
+            @Open GraknGraph graph, @FromGraph ResourceType<?> resourceType,
             ResourceType.DataType<?> dataType) {
         assumeThat(dataType, not(is(resourceType.getDataType())));
         TypeName typeName = resourceType.getName();
@@ -168,90 +164,6 @@ public class GraknGraphPutPropertyTest {
         }
 
         graph.putResourceType(typeName, dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeWithAnExistingUniqueResourceTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType) {
-        TypeName typeName = resourceType.getName();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
-
-        exception.expect(ConceptException.class);
-        if(isMetaName(typeName)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
-        } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(true, resourceType, false, Schema.ConceptProperty.IS_UNIQUE.name()));
-        }
-
-        graph.putResourceType(typeName, dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUnique_CreateATypeWithSuperTypeResource(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
-        assertEquals(graph.admin().getMetaResourceType(), resourceType.superType());
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUnique_CreateATypeWithDefaultProperties(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceTypeUnique(typeName, dataType);
-
-        assertEquals("The data-type should be as specified", dataType, resourceType.getDataType());
-        assertTrue("The resource type should be unique", resourceType.isUnique());
-        assertNull("The resource type should have no regex constraint", resourceType.getRegex());
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithThePropertiesOfAnExistingUniqueResourceType_ItReturnsThatType(
-            @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType) {
-        TypeName typeName = resourceType.getName();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
-
-        ResourceType<?> newType = graph.putResourceTypeUnique(typeName, dataType);
-
-        assertEquals(resourceType, newType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithAnExistingNonResourceTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph Type type, ResourceType.DataType<?> dataType) {
-        assumeFalse(type.isResourceType());
-
-        exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
-
-        graph.putResourceTypeUnique(type.getName(), dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithAnExistingUniqueResourceTypeNameButADifferentDataType_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique ResourceType<?> resourceType,
-            ResourceType.DataType<?> dataType) {
-        assumeThat(dataType, not(is(resourceType.getDataType())));
-        TypeName typeName = resourceType.getName();
-
-        exception.expect(InvalidConceptValueException.class);
-        exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType().getName(), resourceType, dataType.getName(), Schema.ConceptProperty.DATA_TYPE.name()));
-
-        graph.putResourceTypeUnique(typeName, dataType);
-    }
-
-    @Property
-    public void whenCallingPutResourceTypeUniqueWithAnExistingNonUniqueResourceTypeName_Throw(
-            @Open GraknGraph graph, @FromGraph @Unique(false) ResourceType<?> resourceType) {
-        TypeName typeName = resourceType.getName();
-        ResourceType.DataType<?> dataType = resourceType.getDataType();
-
-        exception.expect(ConceptException.class);
-        if(isMetaName(typeName)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
-        } else {
-            exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(false, resourceType, true, Schema.ConceptProperty.IS_UNIQUE.name()));
-        }
-
-        graph.putResourceTypeUnique(typeName, dataType);
     }
 
     @Property

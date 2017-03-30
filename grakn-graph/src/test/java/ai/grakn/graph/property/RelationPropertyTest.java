@@ -35,52 +35,13 @@ import java.util.Set;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.google.common.collect.Sets.union;
 import static org.apache.commons.lang.ArrayUtils.addAll;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
 
 @RunWith(JUnitQuickcheck.class)
 public class RelationPropertyTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
-    @Property
-    public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-            Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
-
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
-
-        relation.addRolePlayer(roleType, rolePlayer);
-
-        assertThat(relation.rolePlayers(), hasItem(rolePlayer));
-    }
-
-    @Property
-    public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-            Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
-
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
-
-        relation.addRolePlayer(roleType, rolePlayer);
-
-        assertThat(relation.rolePlayers(roleType), hasItem(rolePlayer));
-    }
-
-    @Property
-    public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-            Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
-
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
-
-        Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
-
-        relation.addRolePlayer(roleType, rolePlayer);
-
-        assertThat(relation.rolePlayers(roleType), hasItems(rolePlayers));
-    }
 
     @Property
     public void whenCallingRolePlayers_TheResultIsASet(Relation relation, @FromGraph RoleType[] roles) {
