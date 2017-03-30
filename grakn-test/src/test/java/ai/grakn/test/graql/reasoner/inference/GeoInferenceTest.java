@@ -62,7 +62,7 @@ public class GeoInferenceTest {
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
     @Test
@@ -132,12 +132,10 @@ public class GeoInferenceTest {
         Concept poland = getConcept(graph, "name", "Poland");
         Concept europe = getConcept(graph, "name", "Europe");
 
-        //for(int i = 0 ; i< 50 ;i++) {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 2));
         answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));
         assertEquals(answers.size(), 6);
-
 
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
         answers2.forEach(ans -> assertEquals(ans.size(), 2));
@@ -149,15 +147,21 @@ public class GeoInferenceTest {
     public void testSpecificQueryPrime() {
         GraknGraph graph = geoGraph.graph();
         QueryBuilder iqb = graph.graql().infer(true);
-        String queryString = "match ($x, $y) isa is-located-in;" +
-                "$y has name 'Poland';$x has name $n;";
+        String queryString = "match " +
+                "($x, $y) isa is-located-in;" +
+                "$y has name 'Poland';";
+        String queryString2 = "match " +
+                "{(geo-entity: $x, entity-location: $y) isa is-located-in or " +
+                "(geo-entity: $y, entity-location: $x) isa is-located-in;};" +
+                "$y has name 'Poland';";
 
         Concept poland = getConcept(graph, "name", "Poland");
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
-        answers.forEach(ans -> assertEquals(ans.size(), 3));
+        answers.forEach(ans -> assertEquals(ans.size(), 2));
         answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));
-        assertEquals(answers.size(), 6);
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));
+        assertEquals(answers.size(), answers2.size());
     }
 
     @Test
@@ -173,7 +177,6 @@ public class GeoInferenceTest {
         Concept poland = getConcept(graph, "name", "Poland");
         Concept europe = getConcept(graph, "name", "Europe");
 
-        //for(int i = 0 ; i< 50 ;i++) {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         answers.forEach(ans -> assertEquals(ans.size(), 3));
         answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));

@@ -32,6 +32,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
@@ -43,13 +44,13 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -66,6 +67,7 @@ import java.util.stream.StreamSupport;
 
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
+import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilterFunction;
 
@@ -179,24 +181,27 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     private Atom getTopAtom() {
         Set<Atom> atoms = selectAtoms();
+
+        //favour atoms with substitutions
         Set<Atom> subbedAtoms = atoms.stream().filter(Atom::hasSubstitution).collect(Collectors.toSet());
         if (!subbedAtoms.isEmpty()) return subbedAtoms.iterator().next();
 
-        //order resources by number of value predicates in descdending order
-        List<Resource> resources = atoms.stream()
+        //favour resources with value predicates
+        Set<Resource> resources = atoms.stream()
                 .filter(Atom::isResource).map(at -> (Resource) at)
-                .sorted(Comparator.comparing(r -> -r.getMultiPredicate().size()))
-                .collect(Collectors.toList());
+                .filter(r -> !r.getMultiPredicate().isEmpty())
+                .collect(Collectors.toSet());
         if (!resources.isEmpty()) return resources.iterator().next();
 
+
+        //favour non-resolvable atoms
         Set<Atom> relations = atoms.stream()
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isRuleResolvable())
                 .collect(Collectors.toSet());
 
         if (!relations.isEmpty()) return relations.iterator().next();
-
-        return selectAtoms().stream().findFirst().orElse(null);
+        return atoms.stream().findFirst().orElse(null);
 
     }
 
@@ -410,12 +415,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet());
         predicates.addAll(getIdPredicates());
+
+        if (predicates.stream().map(AtomBase::getVarName).collect(Collectors.toSet()).size() < predicates.size()){
+            System.out.println();
+        }
         return new QueryAnswer(predicates.stream()
                 .collect(Collectors.toMap(IdPredicate::getVarName, p -> graph().getConcept(p.getPredicate())))
         );
     }
 
-    public boolean addSubstitution(Answer sub){
+    public ReasonerQuery addSubstitution(Answer sub){
         Set<VarName> varNames = getVarNames();
 
         //skip predicates from types
@@ -425,7 +434,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .filter(e -> varNames.contains(e.getKey()))
                 .map(e -> new IdPredicate(e.getKey(), e.getValue(), this))
                 .collect(Collectors.toSet());
-        return atomSet.addAll(predicates);
+        atomSet.addAll(predicates);
+        return this;
     }
 
     public boolean hasFullSubstitution(){
@@ -543,7 +553,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             childAtomicQuery = qit.next();
             Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, explanation, false);
-            join = join(join, localSubs, ImmutableSet.copyOf(joinVars), explanation);
+            //join = join(join, localSubs, ImmutableSet.copyOf(joinVars), explanation);
+            join = joinWithInverse(
+                    join,
+                    localSubs,
+                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
+                    ImmutableSet.copyOf(joinVars),
+                    explanation);
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
         return join;
@@ -566,7 +582,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             for(ReasonerAtomicQuery qj : queries){
                 if ( qj != qi ){
                     Set<VarName> joinVars = Sets.intersection(joinedVars, qj.getVarNames());
-                    subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars), explanation);
+                    //subs = join(subs, cache.getAnswerStream(qj), ImmutableSet.copyOf(joinVars), explanation);
+                    subs = joinWithInverse(
+                            subs,
+                            cache.getAnswerStream(qj),
+                            cache.getInverseAnswerMap(qj, joinVars),
+                            ImmutableSet.copyOf(joinVars),
+                            explanation);
                     joinedVars.addAll(qj.getVarNames());
                 }
             }
@@ -592,11 +614,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
+        if (!this.isRuleResolvable()) {
+            return this.getMatchQuery().admin().streamWithVarNames()
+                    .map(QueryAnswer::new);
+        }
         //TODO temporary switch
-        if (materialise || isAtomic()) {
+        if (materialise || isAtomic() ) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
-            return resolve();
+            return new ReasonerQueryImplIterator().hasStream();
         }
     }
 
@@ -606,10 +632,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return stream of answers
      */
     public Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
-        if (!this.isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames()
-                    .map(QueryAnswer::new);
-        }
 
         Iterator<Atom> atIt = this.selectAtoms().iterator();
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(atIt.next());
@@ -630,25 +652,17 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .flatMap(a -> varFilterFunction.apply(a, vars));
     }
 
-    public Stream<Answer> resolve() {
-        if (!this.isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
-        }
-        return new ReasonerQueryImplIterator().hasStream();
-    }
-
-
-    public Iterator<Answer> iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+    public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
         return new ReasonerQueryImplIterator(subGoals, cache);
     }
 
-    private class ReasonerQueryImplIterator implements Iterator<Answer> {
+    private class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         private final Answer partialSubstitution;
         private final QueryCache<ReasonerAtomicQuery> cache;
         private final Set<ReasonerAtomicQuery> subGoals;
 
-        private Iterator<Answer> queryIterator = Collections.emptyIterator();
+        private Iterator<Answer> queryIterator;
         private final Iterator<Answer> atomicQueryIterator;
 
         ReasonerQueryImplIterator(){ this(new HashSet<>(), new QueryCache<>());}
@@ -659,12 +673,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
             //get prioritised atom and construct atomic query from it
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(getTopAtom());
-            atomicQueryIterator = q.iterator(subGoals, cache);
-        }
 
-        Stream<Answer> hasStream(){
-            Iterable<Answer> iterable = () -> this;
-            return StreamSupport.stream(iterable.spliterator(), false).distinct();
+            if(!isAtomic()) {
+                atomicQueryIterator = q.iterator(subGoals, cache);
+                queryIterator = Collections.emptyIterator();
+            } else {
+                atomicQueryIterator = Collections.emptyIterator();
+                queryIterator = q.iterator(subGoals, cache);
+            }
         }
 
         @Override

@@ -159,10 +159,10 @@ public class BenchmarkTests {
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a';";
         MatchQuery query2 = iqb.parse(queryString2);
 
-        //startTime = System.currentTimeMillis();
-        //List<Map<String, Concept>> execute = query.execute();
-        //assertEquals(execute.size(), N*N/2 + N/2);
-        //System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
+        startTime = System.currentTimeMillis();
+        List<Map<String, Concept>> execute = query.execute();
+        assertEquals(execute.size(), N*N/2 + N/2);
+        System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
 
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute2 = query2.execute();

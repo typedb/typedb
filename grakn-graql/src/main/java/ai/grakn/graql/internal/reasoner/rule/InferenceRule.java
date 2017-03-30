@@ -211,12 +211,13 @@ public class InferenceRule {
      * make rule consistent variable-wise with the parent atom by means of unification
      * @param parentAtom atom the rule should be unified with
      */
-    public void unify(Atom parentAtom) {
+    public InferenceRule unify(Atom parentAtom) {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
         if (head.getAtom().isUserDefinedName()) rewriteBody();
         if (parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);
         }
+        return this;
     }
 }

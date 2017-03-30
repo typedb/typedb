@@ -63,6 +63,7 @@ public class QueryAnswers implements Iterable<Answer>{
     public Stream<Answer> stream(){ return set.stream();}
 
     public QueryAnswers(){}
+    public QueryAnswers(Answer ans){ set.add(ans);}
     public QueryAnswers(Collection<Answer> ans){ ans.forEach(set::add);}
     public QueryAnswers(QueryAnswers ans){ ans.forEach(set::add);}
 

@@ -68,6 +68,17 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
         }
     }
 
+    public Answer recordAnswer(Q query, Answer answer){
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            Answer unifiedAnswer = answer.unify(getRecordUnifier(query));
+            match.getValue().add(unifiedAnswer);
+        } else {
+            cache.put(query, new Pair<>(query, new QueryAnswers(answer)));
+        }
+        return answer;
+    }
+
     @Override
     public LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers) {
         return new LazyIterator<>(record(query, answers));
