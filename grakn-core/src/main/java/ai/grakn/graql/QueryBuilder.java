@@ -64,12 +64,6 @@ public interface QueryBuilder {
     ComputeQueryBuilder compute();
 
     /**
-     * @param inputStream a stream representing a list of patterns
-     * @return a stream of patterns
-     */
-    Stream<Pattern> parsePatterns(InputStream inputStream);
-
-    /**
      * @param patternsString a string representing a list of patterns
      * @return a list of patterns
      */
