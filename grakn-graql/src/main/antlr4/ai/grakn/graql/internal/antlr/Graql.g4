@@ -154,9 +154,9 @@ REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 
-COMMENT : '#' .*? '\r'? ('\n' | EOF) -> skip ;
+COMMENT : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN) ;
 
-WS : [ \t\r\n]+ -> skip ;
+WS : [ \t\r\n]+ -> channel(HIDDEN) ;
 
 // Unused lexer rule to help with autocomplete on variable names
 DOLLAR : '$' ;

@@ -76,6 +76,7 @@ import static ai.grakn.graql.Graql.withoutGraph;
 import static ai.grakn.graql.Order.desc;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -527,13 +528,20 @@ public class QueryParserTest {
     }
 
     @Test
-    public void testBadSyntaxThrowsIllegalArgumentException() {
+    public void whenParseIncorrectSyntax_ThrowIllegalArgumentExceptionWithHelpfulError() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(allOf(
                 containsString("syntax error"), containsString("line 1"),
                 containsString("\nmatch $x isa "),
                 containsString("\n             ^")
         ));
+        parse("match $x isa ");
+    }
+
+    @Test
+    public void whenParseIncorrectSyntax_ErrorMessageShouldRetainWhitespace() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(not(containsString("match$xisa")));
         parse("match $x isa ");
     }
 
