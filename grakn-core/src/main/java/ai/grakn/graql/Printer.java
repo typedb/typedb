@@ -31,7 +31,7 @@ import java.util.Optional;
  * {@code YamlPrinter implements Printer<Yaml>}, that would convert everything into a {@code Yaml} and define a method
  * to convert a {@code Yaml} into a {@code String}.
  *
- * <T> The type of the intermediate representation that can be converted into a string
+ * @param <T> The type of the intermediate representation that can be converted into a string
  *
  * @author Felix Chapman
  */

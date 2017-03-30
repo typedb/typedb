@@ -40,6 +40,8 @@ import java.util.Set;
  * A vertex program specific to Grakn with common method implementations.
  * <p>
  *
+ * @param <T> the type of messages being sent between vertices
+ *
  * @author Jason Liu
  * @author Sheldon Hall
  */

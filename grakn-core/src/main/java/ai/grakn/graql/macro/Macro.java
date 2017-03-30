@@ -23,6 +23,8 @@ import java.util.List;
 /**
  * A macro function to perform on a template.
  *
+ * @param <T> the type of result after applying this macro
+ *
  * @author Alexandra Orth
  */
 public interface Macro<T> {

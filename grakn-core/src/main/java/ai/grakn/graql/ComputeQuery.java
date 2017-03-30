@@ -26,6 +26,8 @@ import java.util.Collection;
 /**
  * A query that triggers an analytics OLAP computation on a graph.
  *
+ * @param <T> the type of result this query will return
+ *
  * @author Jason Liu
  */
 public interface ComputeQuery<T> extends Query<T> {

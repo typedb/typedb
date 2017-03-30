@@ -31,6 +31,8 @@ import java.util.stream.StreamSupport;
  * Lazy iterator class allowing for rewinding streams by accumulating consumed results.
  * </p>
  *
+ * @param <T> the type of element that this iterator will iterate over
+ *
  * @author Kasper Piskorski
  *
  */
