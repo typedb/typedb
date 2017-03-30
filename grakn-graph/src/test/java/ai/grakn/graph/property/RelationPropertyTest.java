@@ -17,7 +17,7 @@
  *
  */
 
-package ai.grakn.graph.internal;
+package ai.grakn.graph.property;
 
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeFalse;
 
 @RunWith(JUnitQuickcheck.class)
-public class RelationPropertyIT {
+public class RelationPropertyTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
