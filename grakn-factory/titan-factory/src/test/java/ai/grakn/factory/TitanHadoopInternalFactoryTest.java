@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.Before;
@@ -33,13 +34,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class TitanHadoopInternalFactoryTest {
-    private final String TEST_CONFIG = "../../conf/main/grakn.properties";
     private final static Properties TEST_PROPERTIES = new Properties();
 
     private TitanHadoopInternalFactory factory;
 
     @Before
     public void setUp() throws Exception {
+        String TEST_CONFIG = "../../conf/main/grakn.properties";
         try (InputStream in = new FileInputStream(TEST_CONFIG)){
             TEST_PROPERTIES.load(in);
         } catch (IOException e) {
@@ -51,7 +52,7 @@ public class TitanHadoopInternalFactoryTest {
 
     @Test(expected=UnsupportedOperationException.class)
     public void buildGraknGraphFromTinker() throws Exception {
-        factory.getGraph(false);
+        factory.open(GraknTxType.WRITE);
     }
 
     @Test

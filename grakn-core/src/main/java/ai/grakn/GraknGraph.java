@@ -30,6 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -320,6 +321,13 @@ public interface GraknGraph extends AutoCloseable{
      */
     GraknAdmin admin();
 
+    /**
+     * Utility function used to check if the current transaction on the graph is a read only transaction
+     *
+     * @return true if the current transaction is read only
+     */
+    boolean isReadOnly();
+
     // TODO: what does this do when the graph is closed?
     /**
      * Utility function to specify whether implicit and system-generated types should be returned.
@@ -382,7 +390,10 @@ public interface GraknGraph extends AutoCloseable{
     /**
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
+     *
+     * @throws GraknValidationException when the transaction contains graph mutations which does not conform to the Grakn
+     * knowledge model.
      */
-    void commit();
+    void commit() throws GraknValidationException;
 
 }

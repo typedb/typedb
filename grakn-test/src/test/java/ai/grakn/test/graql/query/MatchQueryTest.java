@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
@@ -849,7 +850,7 @@ public class MatchQueryTest {
 
         String keyspace = movieGraph.graph().getKeyspace();
         movieGraph.graph().close();
-        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace);
+        GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
 
         MatchQuery query2 = graph2.graql().match(var("x").sub("concept"));
         assertEquals(results1, query2.execute());

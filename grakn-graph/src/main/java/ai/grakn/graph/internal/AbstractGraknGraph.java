@@ -103,6 +103,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
@@ -140,8 +141,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Opens the thread bound transaction
      */
-    public void openTransaction(){
+    public void openTransaction(boolean isReadOnly){
         localIsOpen.set(true);
+        localIsReadOnly.set(isReadOnly);
     }
 
     @Override
@@ -161,6 +163,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean implicitConceptsVisible(){
         return getBooleanFromLocalThread(localShowImplicitStructures);
+    }
+
+    @Override
+    public boolean isReadOnly(){
+        return getBooleanFromLocalThread(localIsReadOnly);
     }
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
@@ -363,10 +370,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     void checkOntologyMutation(){
+        checkMutation();
         if(isBatchLoadingEnabled()){
             throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
         }
     }
+
+    void checkMutation(){
+        if(isReadOnly()) throw new GraphRuntimeException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(getKeyspace()));
+    }
+
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
@@ -738,7 +751,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void commit(){
+    public void commit() throws GraknValidationException{
         close(true);
     }
 

@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.factory.OrientDBInternalFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -39,12 +40,11 @@ import static org.junit.Assert.assertEquals;
 public class GraknOrientDBGraphTest {
     private static final String TEST_NAME = "grakntest";
     private final static String TEST_URI = Grakn.IN_MEMORY;
-    private static final boolean TEST_BATCH_LOADING = false;
     private GraknGraph graknGraph;
 
     @Before
     public void setup(){
-        graknGraph = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null).getGraph(TEST_BATCH_LOADING);
+        graknGraph = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null).open(GraknTxType.WRITE);
     }
 
     @After

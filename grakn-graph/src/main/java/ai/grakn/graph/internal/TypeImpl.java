@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -119,12 +120,31 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     }
 
     /**
+     * Utility method used to create or find an instance of this type
+     *
+     * @param instanceBaseType The base type of the instances of this type
+     * @param finder The method to find the instrance if it already exists
+     * @param producer The factory method to produce the instance if it doesn't exist
+     * @return A new or already existing instance
+     */
+    V putInstance(Schema.BaseType instanceBaseType, Supplier<V> finder, BiFunction<Vertex, T, V> producer) {
+        getGraknGraph().checkMutation();
+
+        V instance = finder.get();
+        if(instance == null) instance = addInstance(instanceBaseType, producer);
+        return instance;
+    }
+
+    /**
+     * Utility method used to create an instance of this type
      *
      * @param instanceBaseType The base type of the instances of this type
      * @param producer The factory method to produce the instance
-     * @return The instance required
+     * @return A new instance
      */
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
+        getGraknGraph().checkMutation();
+
         if(Schema.MetaSchema.isMetaName(getName()) && !Schema.MetaSchema.INFERENCE_RULE.getName().equals(getName()) && !Schema.MetaSchema.CONSTRAINT_RULE.getName().equals(getName())){
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
         }
