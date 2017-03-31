@@ -391,7 +391,7 @@ public interface GraknGraph extends AutoCloseable{
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
      *
-     * @throws GraknValidationException when the transaction contains graph mutations which does not form to the Grakn
+     * @throws GraknValidationException when the transaction contains graph mutations which does not conform to the Grakn
      * knowledge model.
      */
     void commit() throws GraknValidationException;
