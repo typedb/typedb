@@ -639,12 +639,12 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         //TODO temporary switch
         if (materialise
-                || isAtomic()
+                //|| isAtomic()
                 /*&& ( !getTopAtom().hasSubstitution() || this.hasFullSubstitution() ) )*/) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
-            return new QueryAnswerIterator().hasStream();
-            //return new ReasonerQueryImplIterator().hasStream();
+            //return new QueryAnswerIterator().hasStream();
+            return new ReasonerQueryImplIterator().hasStream();
         }
     }
 
@@ -674,8 +674,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .flatMap(a -> varFilterFunction.apply(a, vars));
     }
 
-    public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new ReasonerQueryImplIterator(subGoals, cache);
+    public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        return new ReasonerQueryImplIterator(sub, subGoals, cache);
     }
 
     private class QueryAnswerIterator extends ReasonerQueryIterator {
@@ -690,7 +690,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         QueryAnswerIterator(){ this(new QueryCache<>());}
         QueryAnswerIterator(QueryCache<ReasonerAtomicQuery> qc){
             this.cache = qc;
-            this.answerIterator = new ReasonerQueryImplIterator(new HashSet<>(), cache);
+            this.answerIterator = new ReasonerQueryImplIterator(cache);
         }
 
         /**
@@ -706,7 +706,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 if (dAns != 0 || iter == 0) {
                     //System.out.println("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                     iter++;
-                    answerIterator = new ReasonerQueryImplIterator(new HashSet<>(), cache);
+                    answerIterator = new ReasonerQueryImplIterator(cache);
                     oldAns = answers.size();
                     return answerIterator.hasNext();
                 }
@@ -735,11 +735,16 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         private Iterator<Answer> queryIterator;
         private final Iterator<Answer> atomicQueryIterator;
 
-        ReasonerQueryImplIterator(){ this(new HashSet<>(), new QueryCache<>());}
-        ReasonerQueryImplIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-            this.partialSubstitution = getSubstitution();
+        private ReasonerQueryImpl query(){ return ReasonerQueryImpl.this;}
+
+        ReasonerQueryImplIterator(){ this(new QueryAnswer(), new HashSet<>(), new QueryCache<>());}
+        ReasonerQueryImplIterator(QueryCache<ReasonerAtomicQuery> cache){ this(new QueryAnswer(), new HashSet<>(), cache);}
+        ReasonerQueryImplIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){ this( new QueryAnswer(), subGoals, cache);}
+        ReasonerQueryImplIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+            this.partialSubstitution = sub;
             this.subGoals = subGoals;
             this.cache = cache;
+            //query().addSubstitution(sub);
 
             //get prioritised atom and construct atomic query from it
             Atom topAtom = getTopAtom();
@@ -770,7 +775,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             else {
                 if (atomicQueryIterator.hasNext()) {
                     Answer sub = atomicQueryIterator.next();
-                    queryIterator = getQueryPrime(sub).iterator(subGoals, cache);
+                    queryIterator = getQueryPrime(sub).iterator(sub, subGoals, cache);
                     return hasNext();
                 }
                 else return false;
@@ -779,6 +784,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         @Override
         public Answer next() {
+            //if corresponds to rule add Rule explanation
+            //otherwise do a join explanation
             Answer sub = queryIterator.next();
             sub = sub.merge(partialSubstitution, true);
             return sub;

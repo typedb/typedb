@@ -474,14 +474,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
-        private final Answer partialSubstitution;
+        //private final Answer partialSubstitution;
         private final QueryCache<ReasonerAtomicQuery> cache;
         private final Set<ReasonerAtomicQuery> subGoals;
         private final Iterator<InferenceRule> ruleIterator;
         private Iterator<Answer> queryIterator = Collections.emptyIterator();
 
+        private InferenceRule currentRule = null;
+
         ReasonerAtomicQueryIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> qc){
-            this.partialSubstitution = getSubstitution();
+            //this.partialSubstitution = getSubstitution();
             this.subGoals = subGoals;
             this.cache = qc;
 
@@ -510,9 +512,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             else{
                 if (ruleIterator.hasNext()) {
                     //TODO add permutation if necessary
-                    InferenceRule rule = ruleIterator.next();
+                    currentRule = ruleIterator.next();
                     //System.out.println("RESOLVING VIA RULE " + rule.getRuleId());
-                    queryIterator = rule.getBody().iterator(subGoals, cache);
+                    queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                     return hasNext();
                 }
                 else return false;
@@ -522,9 +524,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         @Override
         public Answer next() {
             Answer sub = queryIterator.next();
-            sub = sub//.merge(partialSubstitution)
-                    .filterVars(getVarNames());
-
+            sub = sub.filterVars(getVarNames());
+            if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
             /*
             System.out.println("ANSWER: ");
             sub.entrySet().forEach(System.out::println);
