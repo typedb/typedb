@@ -69,7 +69,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -963,19 +962,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(duplicates.size() >= 1){
             //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
             ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
-            //duplicates.remove(mainResource);
-
-            //TODO: Remove this when Titan Bug is fixed
-            //Titan Bug Workaround
-            //Change the Indexed Property For all duplicates
-            duplicates.add(mainResource);
-            duplicates.forEach(duplicate -> duplicate.setProperty(Schema.ConceptProperty.INDEX, "rubbish-" + UUID.randomUUID().toString()));
-
-            //Create a new resource which will absorb all the others
-            ResourceType mainResourceType = mainResource.type();
-            //noinspection unchecked
-            mainResource = (ResourceImpl) mainResourceType.putResource(mainResource.getValue());
-            //End of Workaround
+            duplicates.remove(mainResource);
 
             Iterator<ResourceImpl> it = duplicates.iterator();
 
@@ -996,6 +983,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 otherResource.castings().forEach(ConceptImpl::deleteNode);
                 otherResource.deleteNode();
             }
+
+            String newIndex = mainResource.getIndex();
+            mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }
