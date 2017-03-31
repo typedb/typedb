@@ -21,12 +21,9 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
@@ -142,25 +139,6 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public Relation addRolePlayer(RoleType roleType, Instance instance) {
         if(roleType == null){
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
-        }
-
-        //Check if it is a unique resource
-        if(instance != null && instance.isResource()){
-            Resource<Object> resource = instance.asResource();
-            if(resource.type().isUnique()) {
-
-                GraphTraversal traversal = getGraknGraph().getTinkerTraversal().
-                        hasId(resource.getId().getValue()).
-                        in(Schema.EdgeLabel.SHORTCUT.getLabel());
-
-                if(traversal.hasNext()) {
-                    RelationImpl relation = getGraknGraph().getElementFactory().buildConcept((Vertex) traversal.next());
-                    Collection<Instance> rolePlayers = relation.rolePlayers();
-                    rolePlayers.remove(resource);
-
-                    if(!rolePlayers.isEmpty()) throw new ConceptNotUniqueException(resource, rolePlayers.iterator().next());
-                }
-            }
         }
 
         //Do the actual put of the role and role player

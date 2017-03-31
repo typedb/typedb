@@ -25,7 +25,6 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,10 +51,9 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         super(graknGraph, v);
     }
 
-    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, ResourceType<D> type, DataType<D> dataType, Boolean isUnique) {
+    ResourceTypeImpl(AbstractGraknGraph graknGraph, Vertex v, ResourceType<D> type, DataType<D> dataType) {
         super(graknGraph, v, type);
         setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType, getDataType(), DataType::getName);
-        setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique, getProperty(Schema.ConceptProperty.IS_UNIQUE), Function.identity());
     }
 
     private ResourceTypeImpl(ResourceTypeImpl resourceType){
@@ -127,12 +125,4 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         return getProperty(Schema.ConceptProperty.REGEX);
     }
 
-    /**
-     *
-     * @return True if the resource type is unique and its instances are limited to one connection to an entity
-     */
-    @Override
-    public Boolean isUnique() {
-        return getPropertyBoolean(Schema.ConceptProperty.IS_UNIQUE);
-    }
 }
