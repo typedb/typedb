@@ -963,6 +963,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
             ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
             duplicates.remove(mainResource);
+
             Iterator<ResourceImpl> it = duplicates.iterator();
 
             while(it.hasNext()){
@@ -982,6 +983,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 otherResource.castings().forEach(ConceptImpl::deleteNode);
                 otherResource.deleteNode();
             }
+
+            String newIndex = mainResource.getIndex();
+            mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }
