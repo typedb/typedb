@@ -153,6 +153,13 @@ public class Fragments {
         return new NeqFragment(start, other);
     }
 
+    /**
+     * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
+     */
+    public static Fragment resourceIndex(VarName start, TypeName typeName, Object resourceValue) {
+        return new ResourceIndexFragment(start, typeName, resourceValue);
+    }
+
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
         return traversal.union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
