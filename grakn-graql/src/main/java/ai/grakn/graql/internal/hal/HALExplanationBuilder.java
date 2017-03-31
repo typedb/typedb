@@ -26,7 +26,6 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,6 +45,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
 
 /**
  * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
@@ -54,6 +53,8 @@ import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
  * @author Marco Scoppetta
  */
 public class HALExplanationBuilder {
+
+    //TODO: implement this as extension of abstract class with HALBuilder (handle different type of RelationType which in some cases is Optional)
 
     private final static Logger LOG = LoggerFactory.getLogger(HALExplanationBuilder.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
@@ -141,34 +142,18 @@ public class HALExplanationBuilder {
 
     private static String computeRelationHref(RelationType relationType, Collection<VarName> varNamesInCurrentRelation, Map<VarName, Concept> resultLine, Map<VarName, String> roleTypes, String keyspace, int limit) {
         String isaString = (relationType != null) ? "isa " + relationType.getName().getValue() : "";
-        StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         StringBuilder stringBuilderParenthesis = new StringBuilder().append('(');
+        StringBuilder stringBuilderVarsWithIds = new StringBuilder();
         char currentVarLetter = 'a';
         for (VarName varName : varNamesInCurrentRelation) {
-            String id = resultLine.get(varName).getId().getValue();
-            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(id).append("';");
             String role = (roleTypes.get(varName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(varName) + ":";
             stringBuilderParenthesis.append(role).append("$").append(currentVarLetter++).append(",");
+            String id = resultLine.get(varName).getId().getValue();
+            stringBuilderVarsWithIds.append(" $").append(currentVarLetter).append(" id '").append(id).append("';");
         }
-        String varsWithIds = stringBuilderVarsWithIds.toString();
         String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
+        String varsWithIds = stringBuilderVarsWithIds.toString();
 
         return String.format(ASSERTION_URL, keyspace, varsWithIds, parenthesis, isaString, limit);
-    }
-
-
-    private static Map<VarAdmin, Map<VarName, String>> computeRoleTypesFromQuery(MatchQuery matchQuery) {
-        final Map<VarAdmin, Map<VarName, String>> roleTypes = new HashMap<>();
-        matchQuery.admin().getPattern().getVars().forEach(var -> {
-            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
-                roleTypes.put(var, new HashMap<>());
-                var.getProperty(RelationProperty.class).get()
-                        .getRelationPlayers().forEach(x ->
-                        roleTypes.get(var).put(x.getRolePlayer().getVarName(),
-                                (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE)
-                );
-            }
-        });
-        return roleTypes;
     }
 }

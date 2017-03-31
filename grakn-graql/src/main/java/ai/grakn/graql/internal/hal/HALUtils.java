@@ -21,8 +21,15 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Utils class used by HALBuilders
@@ -103,5 +110,20 @@ public class HALUtils {
         if(concept.isType()){
             resource.withProperty(NAME_PROPERTY, concept.asType().getName().getValue());
         }
+    }
+
+    static Map<VarAdmin, Map<VarName, String>> computeRoleTypesFromQuery(MatchQuery matchQuery) {
+        final Map<VarAdmin, Map<VarName, String>> roleTypes = new HashMap<>();
+        matchQuery.admin().getPattern().getVars().forEach(var -> {
+            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
+                roleTypes.put(var, new HashMap<>());
+                var.getProperty(RelationProperty.class).get()
+                        .getRelationPlayers().forEach(x ->
+                        roleTypes.get(var).put(x.getRolePlayer().getVarName(),
+                                (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE)
+                );
+            }
+        });
+        return roleTypes;
     }
 }

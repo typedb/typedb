@@ -24,7 +24,6 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
-import ai.grakn.graql.internal.pattern.property.RelationProperty;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.REST;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -43,6 +42,7 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.hal.HALUtils.DIRECTION_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
+import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
 
 /**
  * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
@@ -149,20 +149,5 @@ public class HALBuilder {
         String parenthesis = stringBuilderParenthesis.deleteCharAt(stringBuilderParenthesis.length() - 1).append(')').toString();
 
         return String.format(ASSERTION_URL, keyspace, varsWithIds, parenthesis, isaString, limit);
-    }
-
-    private static Map<VarAdmin, Map<VarName, String>> computeRoleTypesFromQuery(MatchQuery matchQuery) {
-        final Map<VarAdmin, Map<VarName, String>> roleTypes = new HashMap<>();
-        matchQuery.admin().getPattern().getVars().forEach(var -> {
-            if (var.getProperty(RelationProperty.class).isPresent() && !var.isUserDefinedName()) {
-                roleTypes.put(var, new HashMap<>());
-                var.getProperty(RelationProperty.class).get()
-                   .getRelationPlayers().forEach(x ->
-                                roleTypes.get(var).put(x.getRolePlayer().getVarName(),
-                                (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE)
-                                );
-            }
-        });
-        return roleTypes;
     }
 }

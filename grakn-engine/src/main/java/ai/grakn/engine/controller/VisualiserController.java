@@ -95,8 +95,6 @@ public class VisualiserController {
     private final static int separationDegree = 1;
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
-    private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;&limit=%s";
-
 
     public VisualiserController(Service spark) {
         spark.get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::conceptById);
