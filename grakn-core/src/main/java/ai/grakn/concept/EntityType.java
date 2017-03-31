@@ -85,7 +85,7 @@ public interface EntityType extends Type{
     EntityType deletePlaysRole(RoleType roleType);
 
     /**
-     * Creates and returns a new Entity instance, whose direct type will be this instance.
+     * Creates and returns a new Entity instance, whose direct type will be this type.
      * @see Entity
      *
      * @return a new empty entity.
