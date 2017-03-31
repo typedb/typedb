@@ -70,6 +70,11 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
+    public boolean isConnectionClosed() {
+        return rootGraph.isClosed();
+    }
+
+    @Override
     public int numOpenTx() {
         return rootGraph.getOpenTxs();
     }

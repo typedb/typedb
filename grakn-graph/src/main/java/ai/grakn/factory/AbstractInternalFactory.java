@@ -108,24 +108,14 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 systemKeyspace.keyspaceOpened(this.keyspace);
             }
         } else {
-            if(graknGraph.isClosed()){
-                //TODO: Get rid of this redundant open. This is only here so we can do the inner check later
-                graknGraph.openTransaction(false);
-            } else {
+            if(!graknGraph.isClosed()){
                 throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graknGraph.getKeyspace()));
             }
 
-            //This check exists because the innerGraph could be closed while the grakn graph is still flagged as open.
-            G innerGraph = graknGraph.getTinkerPopGraph();
-            synchronized (innerGraph){
-                if(isClosed(innerGraph)){
-                    graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
-                } else {
-                    getGraphWithNewTransaction(graknGraph.getTinkerPopGraph());
-                }
+            if(graknGraph.isConnectionClosed()){
+                graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
             }
         }
-
         return graknGraph;
     }
 

@@ -50,7 +50,7 @@ public class GraknTest {
     public void testInMemoryClear(){
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.clear();
-        graph =  Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }

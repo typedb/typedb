@@ -159,6 +159,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean isClosed(){
         return !getBooleanFromLocalThread(localIsOpen);
     }
+    public abstract boolean isConnectionClosed();
 
     @Override
     public boolean implicitConceptsVisible(){
