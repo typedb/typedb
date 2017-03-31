@@ -29,6 +29,7 @@ import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
@@ -47,6 +48,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -153,6 +155,13 @@ public class PostProcessingTestIT {
         graph = factory.open(GraknTxType.WRITE);
 
         assertFalse("Failed at fixing graph", graphIsBroken(graph));
+
+        //Check the resource indices are working
+        for (Object object : graph.admin().getMetaResourceType().instances()) {
+            Resource resource = (Resource) object;
+            String index = Schema.generateResourceIndex(resource.type().getName(), resource.getValue().toString());
+            assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+        }
     }
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})

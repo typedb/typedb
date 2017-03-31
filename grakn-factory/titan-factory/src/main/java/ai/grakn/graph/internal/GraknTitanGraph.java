@@ -64,8 +64,8 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public void openTransaction(){
-        super.openTransaction();
+    public void openTransaction(boolean isReadOnly){
+        super.openTransaction(isReadOnly);
         if(getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
     }
 

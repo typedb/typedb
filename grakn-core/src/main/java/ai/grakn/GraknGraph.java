@@ -30,6 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graql.QueryBuilder;
@@ -114,44 +115,6 @@ public interface GraknGraph extends AutoCloseable{
      *                          unique or has a different datatype.
      */
     <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType);
-
-    /**
-     * Create a unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
-     * unique {@link ResourceType}, with the specified name and data type.
-     * The {@link ResourceType} is guaranteed to be unique, in that its instances can be connected to one entity.
-     *
-     * @param name A unique name for the {@link ResourceType}
-     * @param dataType The data type of the {@link ResourceType}.
-     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
-     * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
-     *           This should match the parameter type
-     * @return A new or existing {@link ResourceType} with the provided name.
-     *
-     * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
-     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
-     *                          not unique or has a different datatype.
-     */
-    <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType);
-
-    /**
-     * Create a unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
-     * unique {@link ResourceType}, with the specified name and data type.
-     * The {@link ResourceType} is guaranteed to be unique, in that its instances can be connected to one entity.
-     *
-     * @param name A unique name for the {@link ResourceType}
-     * @param dataType The data type of the {@link ResourceType}.
-     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
-     * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
-     *           This should match the parameter type
-     * @return A new or existing {@link ResourceType} with the provided name.
-     *
-     * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
-     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
-     *                          not unique or has a different datatype.
-     */
-    <V> ResourceType <V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType);
 
     /**
      * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
@@ -320,6 +283,13 @@ public interface GraknGraph extends AutoCloseable{
      */
     GraknAdmin admin();
 
+    /**
+     * Utility function used to check if the current transaction on the graph is a read only transaction
+     *
+     * @return true if the current transaction is read only
+     */
+    boolean isReadOnly();
+
     // TODO: what does this do when the graph is closed?
     /**
      * Utility function to specify whether implicit and system-generated types should be returned.
@@ -382,7 +352,10 @@ public interface GraknGraph extends AutoCloseable{
     /**
      * Commits any changes to the graph and closes the transaction. You must use the {@link GraknSession} to
      * get a new open transaction.
+     *
+     * @throws GraknValidationException when the transaction contains graph mutations which does not conform to the Grakn
+     * knowledge model.
      */
-    void commit();
+    void commit() throws GraknValidationException;
 
 }

@@ -19,6 +19,7 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.GraknEngineConfig;
@@ -83,7 +84,7 @@ public class LoaderTask implements BackgroundTask {
     }
 
     private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts) {
-        try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraphBatchLoading(keyspace)) {
+        try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH)) {
             for (int i = 0; i < repeatCommits; i++) {
                 if(insertQueriesInOneTransaction(graph, inserts)){
                     return;

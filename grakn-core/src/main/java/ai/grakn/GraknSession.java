@@ -36,7 +36,7 @@ import ai.grakn.exception.GraphRuntimeException;
  *
  * @author fppt
  */
-public interface GraknSession {
+public interface GraknSession extends AutoCloseable {
     String DEFAULT_URI = "localhost:4567";
 
     /**

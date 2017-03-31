@@ -189,13 +189,6 @@ public interface ResourceType<D> extends Type {
     String getRegex();
 
     /**
-     * Returns whether the ResourceType is unique.
-     *
-     * @return True if the ResourceType is unique and its instances are limited to one connection to an entity
-     */
-    Boolean isUnique();
-
-    /**
      *
      * @return a deep copy of this concept.
      */

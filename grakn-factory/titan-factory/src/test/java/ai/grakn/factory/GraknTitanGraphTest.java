@@ -20,6 +20,7 @@ package ai.grakn.factory;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.GraknTitanGraph;
@@ -46,7 +47,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Before
     public void setup(){
-        graknGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
     }
 
     @After
@@ -71,11 +72,11 @@ public class GraknTitanGraphTest extends TitanTestBase{
             future.get();
         }
 
-        graknGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
         assertEquals(109, graknGraph.admin().getTinkerTraversal().toList().size());
     }
     private void addEntity(EntityType type){
-        GraknTitanGraph graph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        GraknTitanGraph graph = titanGraphFactory.open(GraknTxType.WRITE);
         type.addEntity();
         graph.commit();
     }
@@ -85,7 +86,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
         String name = "My New Type";
         graknGraph.putEntityType(name);
         graknGraph.abort();
-        graknGraph = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
         assertNull(graknGraph.getEntityType(name));
     }
 
@@ -102,15 +103,15 @@ public class GraknTitanGraphTest extends TitanTestBase{
     public void testCaseSensitiveKeyspaces(){
         TitanInternalFactory factory1 =  new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES);
         TitanInternalFactory factory2 = new TitanInternalFactory("Case", Grakn.IN_MEMORY, TEST_PROPERTIES);
-        GraknTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
-        GraknTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
+        GraknTitanGraph case1 = factory1.open(GraknTxType.WRITE);
+        GraknTitanGraph case2 = factory2.open(GraknTxType.WRITE);
 
         assertEquals(case1.getKeyspace(), case2.getKeyspace());
     }
 
     @Test
     public void testClearTitanGraph(){
-        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
+        GraknTitanGraph graph = new TitanInternalFactory("case", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
         graph.clear();
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(CLOSED_CLEAR.getMessage());
@@ -119,7 +120,7 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void testPermanentlyClosedGraph(){
-        GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).getGraph(false);
+        GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
         String entityTypeName = "Hello";
 

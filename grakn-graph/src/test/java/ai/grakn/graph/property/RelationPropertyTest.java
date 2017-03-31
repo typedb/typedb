@@ -35,11 +35,10 @@ import java.util.Set;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.google.common.collect.Sets.union;
 import static org.apache.commons.lang.ArrayUtils.addAll;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
 
 @RunWith(JUnitQuickcheck.class)
 public class RelationPropertyTest {
@@ -49,9 +48,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-            Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
-
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
+        Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -60,9 +57,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-            Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
-
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
+        Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -71,9 +66,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-            Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
-
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
+        Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
         Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
 

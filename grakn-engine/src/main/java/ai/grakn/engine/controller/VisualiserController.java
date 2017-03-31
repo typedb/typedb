@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
@@ -109,7 +110,7 @@ public class VisualiserController {
     private String conceptById(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
 
             int offset = (req.queryParams().contains("offset")) ? Integer.parseInt(req.queryParams("offset")) : 0;
             int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
@@ -140,7 +141,7 @@ public class VisualiserController {
         int offset = (req.queryParams().contains("offset")) ? Integer.parseInt(req.queryParams("offset")) : 0;
         int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
             return renderHALConceptOntology(concept, keyspace,offset, limit);
@@ -159,7 +160,7 @@ public class VisualiserController {
     private String ontology(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
             JSONObject responseObj = new JSONObject();
             responseObj.put(ROLES_JSON_FIELD, instances(graph.admin().getMetaRoleType()));
             responseObj.put(ENTITIES_JSON_FIELD, instances(graph.admin().getMetaEntityType()));
@@ -186,7 +187,7 @@ public class VisualiserController {
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));
         boolean materialise = parseBoolean(req.queryParams("materialise"));
 
-        try (GraknGraph graph = getInstance().getGraph(keyspace)) {
+        try (GraknGraph graph = getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
             QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
             Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
             int limit = (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
@@ -219,7 +220,7 @@ public class VisualiserController {
             @ApiImplicitParam(name = "query", value = "Compute query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String compute(Request req, Response res) {
-        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
+        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req), GraknTxType.WRITE)) {
 
             ComputeQuery computeQuery = graph.graql().parse(req.queryParams(QUERY_FIELD));
             JSONObject response = new JSONObject();
@@ -254,7 +255,7 @@ public class VisualiserController {
     @ApiOperation(value = "Pre materialise all the rules on the graph.")
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String preMaterialiseAll(Request req, Response res) {
-        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req))) {
+        try (GraknGraph graph = getInstance().getGraph(getKeyspace(req), GraknTxType.WRITE)) {
             //TODO: Fix ugly casting here
             Reasoner.precomputeInferences(graph);
             return "Done.";

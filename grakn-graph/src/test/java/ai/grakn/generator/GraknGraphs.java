@@ -146,14 +146,6 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             },
             () -> {
                 TypeName typeName = typeName();
-                ResourceType.DataType dataType = gen(ResourceType.DataType.class);
-                ResourceType superType = resourceType();
-                ResourceType resourceType = graph.putResourceTypeUnique(typeName, dataType).superType(superType);
-                summaryAssign(resourceType, "graph", "putResourceTypeUnique", typeName, dataType);
-                summary(resourceType, "superType", superType);
-            },
-            () -> {
-                TypeName typeName = typeName();
                 RoleType superType = roleType();
                 RoleType roleType = graph.putRoleType(typeName).superType(superType);
                 summaryAssign(roleType, "graph", "putRoleType", typeName);

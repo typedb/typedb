@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeName;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
@@ -62,7 +63,7 @@ class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<VarAdmin> patternConjunction) {
+    ConjunctionQuery(Conjunction<VarAdmin> patternConjunction, GraknGraph graph) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -88,12 +89,16 @@ class ConjunctionQuery {
         Set<VarName> validNames = Sets.difference(names, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
-        this.equivalentFragmentSets = fragmentSets.stream()
+        Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
                 .filter(set -> set.stream().anyMatch(
                         fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.getStart())
                 ))
-                .collect(toImmutableSet());
+                .collect(toSet());
 
+        // Apply final optimisations
+        EquivalentFragmentSets.optimiseFragmentSets(initialEquivalentFragmentSets, graph);
+
+        this.equivalentFragmentSets = ImmutableSet.copyOf(initialEquivalentFragmentSets);
     }
 
     ImmutableSet<EquivalentFragmentSet> getEquivalentFragmentSets() {

@@ -19,8 +19,6 @@
 package ai.grakn.exception;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Instance;
-import ai.grakn.concept.Resource;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 
@@ -36,10 +34,6 @@ public class ConceptNotUniqueException extends ConceptException {
 
     public ConceptNotUniqueException(Concept concept, String id){
         super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
-    }
-
-    public ConceptNotUniqueException(Resource resource, Instance instance){
-        super(ErrorMessage.RESOURCE_TYPE_UNIQUE.getMessage(resource.getId(), instance.getId()));
     }
 
     public ConceptNotUniqueException(String message){

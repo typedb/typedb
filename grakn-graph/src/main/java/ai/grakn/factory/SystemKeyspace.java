@@ -19,6 +19,7 @@
 package ai.grakn.factory;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
@@ -90,7 +91,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
      */
     SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
         openSpaces.computeIfAbsent(keyspace, name -> {
-            try (GraknGraph graph = factory.getGraph(false)) {
+            try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
                 Resource<String> resource = keyspaceName.putResource(keyspace);
                 if (resource.owner() == null) {
@@ -111,7 +112,7 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
      * multiple times.
      */
     void loadSystemOntology() {
-        try (GraknGraph graph = factory.getGraph(false)) {
+        try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             if (graph.getType(KEYSPACE_ENTITY) != null) {
                 return;
             }

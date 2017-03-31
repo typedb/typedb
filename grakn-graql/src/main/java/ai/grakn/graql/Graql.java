@@ -29,7 +29,6 @@ import ai.grakn.graql.internal.util.AdminConverter;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -37,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Main class containing static methods for creating Graql queries.
@@ -96,14 +94,6 @@ public class Graql {
      */
     public static ComputeQueryBuilder compute() {
         return withoutGraph().compute();
-    }
-
-    /**
-     * @param inputStream a stream representing a list of patterns
-     * @return a stream of patterns
-     */
-    public static Stream<Pattern> parsePatterns(InputStream inputStream) {
-        return withoutGraph().parsePatterns(inputStream);
     }
 
     /**

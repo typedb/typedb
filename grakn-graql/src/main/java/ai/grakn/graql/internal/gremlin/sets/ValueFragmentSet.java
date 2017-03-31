@@ -26,7 +26,20 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 class ValueFragmentSet extends EquivalentFragmentSet {
 
+    private final VarName resource;
+    private final ValuePredicateAdmin predicate;
+
     ValueFragmentSet(VarName resource, ValuePredicateAdmin predicate) {
         super(Fragments.value(resource, predicate));
+        this.resource = resource;
+        this.predicate = predicate;
+    }
+    
+    VarName resource() {
+        return resource;
+    }
+
+    ValuePredicateAdmin predicate() {
+        return predicate;
     }
 }

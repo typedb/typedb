@@ -33,25 +33,14 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenFactory;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.UnbufferedCharStream;
-import org.antlr.v4.runtime.UnbufferedTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.io.InputStream;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Class for parsing query strings into valid queries
@@ -167,51 +156,6 @@ public class QueryParser {
     }
 
     /**
-     * @param inputStream a stream representing a list of patterns
-     * @return a stream of patterns
-     */
-    public Stream<Pattern> parsePatterns(InputStream inputStream) {
-        GraqlLexer lexer = new GraqlLexer(new UnbufferedCharStream(inputStream));
-        lexer.setTokenFactory(new CommonTokenFactory(true));
-        UnbufferedTokenStream tokens = new UnbufferedTokenStream(lexer);
-
-        // First parse initial 'insert'
-        parseQueryFragment(GraqlParser::insert, QueryVisitor::visitInsert, tokens);
-
-        // Create an iterable that will keep parsing until EOF
-        Iterable<Pattern> iterable = () -> new Iterator<Pattern>() {
-
-            private Pattern pattern = null;
-
-            private Optional<Pattern> getNext() {
-
-                if (pattern == null) {
-                    if (tokens.get(tokens.index()).getType() == Token.EOF) {
-                        return Optional.empty();
-                    }
-
-                    pattern = parseQueryFragment(GraqlParser::patternSep, QueryVisitor::visitPatternSep, tokens);
-                }
-                return Optional.of(pattern);
-            }
-
-            @Override
-            public boolean hasNext() {
-                return getNext().isPresent();
-            }
-
-            @Override
-            public Pattern next() {
-                Optional<Pattern> result = getNext();
-                pattern = null;
-                return result.orElseThrow(NoSuchElementException::new);
-            }
-        };
-
-        return StreamSupport.stream(iterable.spliterator(), false);
-    }
-
-    /**
      * Parse any part of a Graql query
      * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
      * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
@@ -231,39 +175,6 @@ public class QueryParser {
 
         CommonTokenStream tokens = new CommonTokenStream(lexer);
 
-        return parseQueryFragment(parseRule, visit, errorListener, tokens);
-    }
-
-    /**
-     * Parse any part of a Graql query
-     * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
-     * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
-     * @param tokens the token stream to read
-     * @param <T> The type the query is expected to parse to
-     * @param <S> The type of the parse rule being used
-     * @return the parsed result
-     */
-    private <T, S extends ParseTree> T parseQueryFragment(
-            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, TokenStream tokens
-    ) {
-        GraqlErrorListener errorListener = new GraqlErrorListener(tokens.getText());
-        return parseQueryFragment(parseRule, visit, errorListener, tokens);
-    }
-
-    /**
-     * Parse any part of a Graql query
-     * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
-     * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
-     * @param errorListener an object that will listen for errors in the lexer or parser
-     * @param tokens the token stream to read
-     * @param <T> The type the query is expected to parse to
-     * @param <S> The type of the parse rule being used
-     * @return the parsed result
-     */
-    private <T, S extends ParseTree> T parseQueryFragment(
-            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit,
-            GraqlErrorListener errorListener, TokenStream tokens
-    ) {
         GraqlParser parser = new GraqlParser(tokens);
 
         parser.removeErrorListeners();

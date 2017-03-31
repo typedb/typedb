@@ -91,9 +91,9 @@ public class GraknGraphPropertyTest {
     public void whenCallingMostMethodOnAClosedGraph_Throw(
             @Open(false) GraknGraph graph, @MethodOf(GraknGraph.class) Method method) throws Throwable {
 
-        // TODO: Should `admin`, `close`, `commitOnClose`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
+        // TODO: Should `admin`, `close`, `implicitConceptsVisible`, `showImplicitConcepts`, `getKeyspace` and `graql` be here?
         assumeThat(method.getName(), not(isOneOf(
-                "isClosed", "admin", "close", "commit", "abort", "commitOnClose", "implicitConceptsVisible", "showImplicitConcepts",
+                "isClosed", "admin", "close", "commit", "abort", "isReadOnly", "implicitConceptsVisible", "showImplicitConcepts",
                 "getKeyspace", "graql"
         )));
         Object[] params = mockParamsOf(method);
@@ -313,12 +313,6 @@ public class GraknGraphPropertyTest {
         exception.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(resource.getName()));
 
         resource.setRegex(regex);
-    }
-
-    @Property
-    public void whenCallingIsUniqueOnMetaResourceType_ResultIsFalse(@Open GraknGraph graph) {
-        ResourceType resource = graph.admin().getMetaResourceType();
-        assertFalse(resource.isUnique());
     }
 
     @Property

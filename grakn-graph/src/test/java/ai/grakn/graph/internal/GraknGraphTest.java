@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.graql.Graql.var;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -264,6 +265,61 @@ public class GraknGraphTest extends GraphTestBase {
         assertTrue("Graph is still open after commit", graknGraph.isClosed());
         graknGraph.commit();
         assertTrue("Graph is somehow open after 2nd commit", graknGraph.isClosed());
+    }
+
+    @Test
+    public void whenAttemptingToMutateReadOnlyGraph_Throw(){
+        String keyspace = "my-read-only-graph";
+        String entityType = "My Entity Type";
+        String roleType1 = "My Role Type 1";
+        String roleType2 = "My Role Type 2";
+        String relationType1 = "My Relation Type 1";
+        String relationType2 = "My Relation Type 2";
+        String resourceType = "My Resource Type";
+
+        //Fail Some Mutations
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
+        failMutation(graknGraph, () -> graknGraph.putRoleType(roleType1));
+        failMutation(graknGraph, () -> graknGraph.putRelationType(relationType1));
+
+        //Pass some mutations
+        graknGraph.close();
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        EntityType entityT = graknGraph.putEntityType(entityType);
+        entityT.addEntity();
+        RoleType roleT1 = graknGraph.putRoleType(roleType1);
+        RoleType roleT2 = graknGraph.putRoleType(roleType2);
+        RelationType relationT1 = graknGraph.putRelationType(relationType1).hasRole(roleT1);
+        RelationType relationT2 = graknGraph.putRelationType(relationType2).hasRole(roleT2);
+        ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);
+        graknGraph.commit();
+
+        //Fail some mutations again
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.READ);
+        failMutation(graknGraph, entityT::addEntity);
+        failMutation(graknGraph, () -> resourceT.putResource("A resource"));
+        failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
+        failMutation(graknGraph, () -> entityT.playsRole(roleT1));
+        failMutation(graknGraph, () -> relationT1.hasRole(roleT2));
+        failMutation(graknGraph, () -> relationT2.hasRole(roleT1));
+    }
+    private void failMutation(GraknGraph graph, Runnable mutator){
+        int vertexCount = graph.admin().getTinkerTraversal().toList().size();
+        int eddgeCount = graph.admin().getTinkerTraversal().bothE().toList().size();
+
+        Exception caughtException = null;
+        try{
+            mutator.run();
+        } catch (Exception e){
+            caughtException = e;
+        }
+
+        assertNotNull("No exception thrown when attempting to mutate a read only graph", caughtException);
+        assertThat(caughtException, instanceOf(GraphRuntimeException.class));
+        assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
+        assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().toList().size());
+        assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().bothE().toList().size());
     }
 
     @Test

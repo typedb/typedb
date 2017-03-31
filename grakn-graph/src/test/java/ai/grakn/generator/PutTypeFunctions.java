@@ -38,7 +38,6 @@ public class PutTypeFunctions extends AbstractGenerator<BiFunction> {
         return random.choose(ImmutableList.of(
                 GraknGraph::putEntityType,
                 (graph, name) -> graph.putResourceType(name, gen(ResourceType.DataType.class)),
-                (graph, name) -> graph.putResourceTypeUnique(name, gen(ResourceType.DataType.class)),
                 GraknGraph::putRuleType,
                 GraknGraph::putRelationType,
                 GraknGraph::putRoleType

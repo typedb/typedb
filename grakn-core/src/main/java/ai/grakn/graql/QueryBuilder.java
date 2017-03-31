@@ -20,12 +20,10 @@ package ai.grakn.graql;
 
 import ai.grakn.graql.macro.Macro;
 
-import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Starting point for creating queries
@@ -62,12 +60,6 @@ public interface QueryBuilder {
      * @return a compute query builder for building analytics query
      */
     ComputeQueryBuilder compute();
-
-    /**
-     * @param inputStream a stream representing a list of patterns
-     * @return a stream of patterns
-     */
-    Stream<Pattern> parsePatterns(InputStream inputStream);
 
     /**
      * @param patternsString a string representing a list of patterns

@@ -103,6 +103,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeName, Type>> localCloneCache = new ThreadLocal<>();
 
@@ -140,8 +141,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Opens the thread bound transaction
      */
-    public void openTransaction(){
+    public void openTransaction(boolean isReadOnly){
         localIsOpen.set(true);
+        localIsReadOnly.set(isReadOnly);
     }
 
     @Override
@@ -161,6 +163,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public boolean implicitConceptsVisible(){
         return getBooleanFromLocalThread(localShowImplicitStructures);
+    }
+
+    @Override
+    public boolean isReadOnly(){
+        return getBooleanFromLocalThread(localIsReadOnly);
     }
 
     private boolean getBooleanFromLocalThread(ThreadLocal<Boolean> local){
@@ -363,10 +370,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     void checkOntologyMutation(){
+        checkMutation();
         if(isBatchLoadingEnabled()){
             throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
         }
     }
+
+    void checkMutation(){
+        if(isReadOnly()) throw new GraphRuntimeException(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(getKeyspace()));
+    }
+
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
@@ -475,33 +488,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     @Override
     public <V> ResourceType<V> putResourceType(TypeName name, ResourceType.DataType<V> dataType) {
-        return putResourceType(name, dataType, Boolean.FALSE);
-    }
-
-    @Override
-    public <V> ResourceType <V> putResourceTypeUnique(String name, ResourceType.DataType<V> dataType){
-        return putResourceTypeUnique(TypeName.of(name), dataType);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <V> ResourceType<V> putResourceTypeUnique(TypeName name, ResourceType.DataType<V> dataType) {
-        return putResourceType(name, dataType, Boolean.TRUE);
-    }
-
-    private <V> ResourceType <V> putResourceType(TypeName name, ResourceType.DataType<V> dataType, Boolean isUnique){
-
         @SuppressWarnings("unchecked")
         ResourceType<V> resourceType = putType(name, Schema.BaseType.RESOURCE_TYPE,
-                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType, isUnique)).asResourceType();
+                v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType)).asResourceType();
 
         //These checks is needed here because caching will return a type by name without checking the datatype
         if(Schema.MetaSchema.isMetaName(name)) {
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(name));
         } else if(!dataType.equals(resourceType.getDataType())){
             throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
-        } else if(resourceType.isUnique() ^ isUnique){
-            throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.isUnique(), resourceType, isUnique, Schema.ConceptProperty.IS_UNIQUE.name()));
         }
 
         return resourceType;
@@ -738,7 +733,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void commit(){
+    public void commit() throws GraknValidationException{
         close(true);
     }
 
@@ -968,6 +963,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
             ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
             duplicates.remove(mainResource);
+
             Iterator<ResourceImpl> it = duplicates.iterator();
 
             while(it.hasNext()){
@@ -987,6 +983,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 otherResource.castings().forEach(ConceptImpl::deleteNode);
                 otherResource.deleteNode();
             }
+
+            String newIndex = mainResource.getIndex();
+            mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }

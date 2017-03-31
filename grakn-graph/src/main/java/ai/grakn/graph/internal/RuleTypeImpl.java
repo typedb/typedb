@@ -67,13 +67,9 @@ class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(Schema.ConceptProperty.RULE_RHS.name()));
         }
 
-        Rule newRule = getRule(lhs, rhs);
-        if(newRule == null){
-            newRule = addInstance(Schema.BaseType.RULE, (vertex, type) ->
-                    getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
-        }
-
-        return newRule;
+        return putInstance(Schema.BaseType.RULE,
+                () -> getRule(lhs, rhs), (vertex, type) ->
+                getGraknGraph().getElementFactory().buildRule(vertex, type, lhs, rhs));
     }
 
     private Rule getRule(Pattern lhs, Pattern rhs) {
