@@ -704,7 +704,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             else {
                 long dAns = answers.size() - oldAns;
                 if (dAns != 0 || iter == 0) {
-                    System.out.println("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+                    //System.out.println("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                     iter++;
                     answerIterator = new ReasonerQueryImplIterator(new HashSet<>(), cache);
                     oldAns = answers.size();
@@ -746,7 +746,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
 
-
             /*
             System.out.println("Query:");
             getAtoms().forEach(System.out::println);
@@ -755,7 +754,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             System.out.println(topAtom.toString());
             System.out.println();
             */
-
 
             if(!isAtomic()) {
                 atomicQueryIterator = q.iterator(subGoals, cache);
