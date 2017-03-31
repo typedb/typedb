@@ -780,7 +780,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         @Override
         public Answer next() {
             Answer sub = queryIterator.next();
-            return sub.merge(partialSubstitution);
+            sub = sub.merge(partialSubstitution);
+            return sub;
         }
 
         private ReasonerQueryImpl getQueryPrime(Answer sub){

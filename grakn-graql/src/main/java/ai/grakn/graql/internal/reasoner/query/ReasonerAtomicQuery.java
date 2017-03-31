@@ -521,8 +521,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         @Override
         public Answer next() {
-            Answer sub = queryIterator.next()
-                    .merge(partialSubstitution)
+            Answer sub = queryIterator.next();
+            sub = sub//.merge(partialSubstitution)
                     .filterVars(getVarNames());
 
             /*
