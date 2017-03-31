@@ -55,7 +55,7 @@ public class EntityTypePropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenDeletingMetaEntityType_Throw(@Open GraknGraph graph) {
+    public void whenDeletingTheMetaEntityType_Throw(@Open GraknGraph graph) {
         EntityType entity = graph.admin().getMetaEntityType();
 
         exception.expect(ConceptException.class);
@@ -78,7 +78,7 @@ public class EntityTypePropertyTest {
     }
 
     @Property
-    public void whenAddingAnEntityOfAMetaType_Throw(@Meta EntityType type) {
+    public void whenAddingAnEntityOfTheMetaEntityType_Throw(@Meta EntityType type) {
         exception.expect(ConceptException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
         type.addEntity();
@@ -106,7 +106,7 @@ public class EntityTypePropertyTest {
     }
 
     @Property
-    public void whenSettingTheDirectSuperTypeOfAMetaType_Throw(
+    public void whenSettingTheDirectSuperTypeOfTheMetaEntityType_Throw(
             @Meta EntityType subType, @FromGraph EntityType superType) {
         exception.expect(ConceptException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
@@ -134,7 +134,7 @@ public class EntityTypePropertyTest {
     }
 
     @Property
-    public void whenAddingADirectSubTypeThatIsAMetaType_Throw(
+    public void whenAddingADirectSubTypeThatIsTheMetaEntityType_Throw(
             EntityType superType, @Meta @FromGraph EntityType subType) {
         exception.expect(ConceptException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
