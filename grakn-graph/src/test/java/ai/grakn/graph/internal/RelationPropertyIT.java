@@ -51,7 +51,7 @@ public class RelationPropertyIT {
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
             Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
+        //assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -62,7 +62,7 @@ public class RelationPropertyIT {
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
             Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
+        //assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -73,7 +73,7 @@ public class RelationPropertyIT {
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
             Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
-        assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
+        //assumeFalse(rolePlayer.isResource() && rolePlayer.asResource().type().isUnique());
 
         Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
 

@@ -638,7 +638,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .map(QueryAnswer::new);
         }
         //TODO temporary switch
-        if (materialise || (isAtomic() && !selectAtoms().iterator().next().hasSubstitution()) ) {
+        if (materialise
+                || (isAtomic()
+                && ( !getTopAtom().hasSubstitution() || this.hasFullSubstitution() ) )) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             return new QueryAnswerIterator().hasStream();
@@ -780,7 +782,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         @Override
         public Answer next() {
             Answer sub = queryIterator.next();
-            sub = sub.merge(partialSubstitution);
+            sub = sub.merge(partialSubstitution, true);
             return sub;
         }
 
