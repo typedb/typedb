@@ -44,6 +44,22 @@ public interface RelationType extends Type {
     Relation addRelation();
 
     /**
+     * Sets the supertype of the RelationType to be the RelationType specified.
+     *
+     * @param type The supertype of this RelationType
+     * @return  The RelationType itself.
+     */
+    RelationType superType(RelationType type);
+
+    /**
+     * Adds another subtype to this type
+     *
+     * @param type The sub type of this relation type
+     * @return The RelationType itself
+     */
+    RelationType subType(RelationType type);
+
+    /**
      * Classifies the type to a specific scope. This allows you to optionally categorise types.
      *
      * @param scope The category of this Type
@@ -120,14 +136,6 @@ public interface RelationType extends Type {
      * @return The supertype of this RelationType
      */
     RelationType superType();
-
-    /**
-     * Sets the supertype of the RelationType to be the EntityType specified.
-     *
-     * @param type The supertype of this RelationType
-     * @return  The RelationType itself.
-     */
-    RelationType superType(RelationType type);
 
     /**
      * Returns a collection of subtypes of this RelationType.
