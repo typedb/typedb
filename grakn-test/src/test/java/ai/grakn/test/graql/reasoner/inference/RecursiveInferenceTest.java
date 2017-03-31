@@ -345,12 +345,12 @@ public class RecursiveInferenceTest {
      */
     @Test
     public void testNguyen(){
-        final int N = 3;
+        final int N = 9;
         graphContext.load(NguyenGraph.get(N));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
-        String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c';$y has index $i; select $y, $i;";
+        String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
@@ -405,8 +405,13 @@ public class RecursiveInferenceTest {
                 "select $y;";
         String explicitQuery = "match $y isa vertex;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+
+        assertEquals(answers.size(), explicitAnswers.size());
+        assertEquals(answers, answers2);
     }
 
     private Concept getConcept(GraknGraph graph, String typeName, Object val){

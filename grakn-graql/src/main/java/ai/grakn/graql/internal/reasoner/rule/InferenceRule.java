@@ -135,7 +135,7 @@ public class InferenceRule {
     public Atom getRuleConclusionAtom() {
         ReasonerQueryImpl ruleQuery = new ReasonerQueryImpl(head);
         Atom atom = ruleQuery.selectAtoms().iterator().next();
-        body.getAtoms().forEach(at -> ruleQuery.addAtom(at.copy()));
+        body.getAtoms().forEach(at -> ruleQuery.addAtomic(at.copy()));
         return atom;
     }
 
@@ -160,8 +160,8 @@ public class InferenceRule {
         Unifier rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
-            head.removeAtom(childAtom);
-            head.addAtom(newAtom);
+            head.removeAtomic(childAtom);
+            head.addAtomic(newAtom);
             body.unify(rewriteUnifiers);
 
             //resolve captures
@@ -180,8 +180,8 @@ public class InferenceRule {
                 .filter(at -> at.getType().equals(head.getAtom().getType()))
                 .forEach(at -> {
                     Atom rewrite = at.rewriteToUserDefined();
-                    body.removeAtom(at);
-                    body.addAtom(rewrite);
+                    body.removeAtomic(at);
+                    body.addAtomic(rewrite);
                     });
     }
 

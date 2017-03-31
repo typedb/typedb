@@ -96,8 +96,12 @@ public class GeoInferenceTest {
                 "$x isa university;$x has name $name;" +
                 "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
+        assertEquals(answers.size(), explicitAnswers.size());
+        assertEquals(answers, explicitAnswers);
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers, answers2);
     }
 
     @Test

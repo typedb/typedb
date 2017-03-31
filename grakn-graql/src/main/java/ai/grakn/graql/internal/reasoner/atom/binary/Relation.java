@@ -433,11 +433,11 @@ public class Relation extends TypeAtom {
                         answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
 
                 Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
-                parent.removeAtom(hrAtom.getPredicate());
-                parent.removeAtom(hrAtom);
-                parent.removeAtom(this);
-                parent.addAtom(newRelation);
-                parent.addAtom(newPredicate);
+                parent.removeAtomic(hrAtom.getPredicate());
+                parent.removeAtomic(hrAtom);
+                parent.removeAtomic(this);
+                parent.addAtomic(newRelation);
+                parent.addAtomic(newPredicate);
             }
         }
     }

@@ -34,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.Sets;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
@@ -186,6 +187,16 @@ public abstract class Atom extends AtomBase {
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
         return relevantTypes;
+    }
+
+    /**
+     * @return set of constraints of this atom (predicates + types) that are not selectable
+     */
+    public Set<Atomic> getNonSelectableConstraints() {
+        Set<Atom> types = getTypeConstraints().stream()
+                .filter(at -> !at.isSelectable())
+                .collect(Collectors.toSet());
+        return Sets.union(types, getPredicates());
     }
 
     public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}

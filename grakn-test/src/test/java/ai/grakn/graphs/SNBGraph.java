@@ -36,7 +36,7 @@ public class SNBGraph extends TestGraph{
 
     @Override
     protected void buildRules(GraknGraph graph) {
-        loadFromFile(graph, "ldbc-snb-rules.gql");
+        loadFromFile(graph, "ldbc-snb-rule-test.gql");
     }
 
     @Override

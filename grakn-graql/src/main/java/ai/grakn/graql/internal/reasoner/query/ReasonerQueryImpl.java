@@ -93,7 +93,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     public ReasonerQueryImpl(ReasonerQueryImpl q) {
         this.graph = q.graph;
-        q.getAtoms().forEach(at -> addAtom(AtomicFactory.create(at, this)));
+        q.getAtoms().forEach(at -> addAtomic(AtomicFactory.create(at, this)));
         inferTypes();
     }
 
@@ -102,8 +102,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         }
         this.graph = atom.getParentQuery().graph();
-        addAtom(AtomicFactory.create(atom, this));
-        addAtomConstraints(atom);
+        addAtomic(AtomicFactory.create(atom, this));
+        addAtomConstraints(atom.getNonSelectableConstraints());
         inferTypes();
     }
 
@@ -180,6 +180,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return atom that should be prioritised for resolution
      */
     private Atom getTopAtom() {
+        //TODO redo based on priority function
         Set<Atom> atoms = selectAtoms();
 
         //favour atoms with substitutions
@@ -299,9 +300,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
-        toRemove.forEach(this::removeAtom);
+        toRemove.forEach(this::removeAtomic);
         toAdd.forEach(atom -> atom.unify(new UnifierImpl(ImmutableMap.of(from, to))));
-        toAdd.forEach(this::addAtom);
+        toAdd.forEach(this::addAtomic);
     }
 
     /**
@@ -340,9 +341,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 })
                 .forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
-        toRemove.forEach(this::removeAtom);
+        toRemove.forEach(this::removeAtomic);
         toAdd.forEach(atom -> atom.unify(mappings));
-        toAdd.forEach(this::addAtom);
+        toAdd.forEach(this::addAtomic);
 
         //NB:captures not resolved in place as resolution in-place alters respective atom hash
         mappings.merge(resolveCaptures());
@@ -402,7 +403,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom to be added
      * @return true if the atom set did not already contain the specified atom
      */
-    public boolean addAtom(Atomic atom) {
+    public boolean addAtomic(Atomic atom) {
         if (atomSet.add(atom)) {
             atom.setParentQuery(this);
             return true;
@@ -446,15 +447,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom to be removed
      * @return true if the atom set contained the specified atom
      */
-    public boolean removeAtom(Atomic atom) {return atomSet.remove(atom);}
+    public boolean removeAtomic(Atomic atom) {
+        return atomSet.remove(atom);
+    }
 
-    private void addAtomConstraints(Atom atom){
-        addAtomConstraints(atom.getPredicates());
-        Set<Atom> types = atom.getTypeConstraints().stream()
-                .filter(at -> !at.isSelectable())
-                .filter(at -> !at.isRuleResolvable())
-                .collect(Collectors.toSet());
-        addAtomConstraints(types);
+    /**
+     * remove given atom together with its disjoint neigbours (atoms it is connected to)
+     * @param atom to be removed
+     * @return
+     */
+    public ReasonerQueryImpl removeAtom(Atom atom){
+        removeAtomic(atom);
+        atom.getNonSelectableConstraints().stream()
+                .filter(at -> findNextJoinable(atom) == null)
+                .forEach(this::removeAtomic);
+        return this;
     }
 
     /**
@@ -462,7 +469,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param cstrs set of constraints
      */
     public void addAtomConstraints(Set<? extends Atomic> cstrs){
-        cstrs.forEach(con -> addAtom(AtomicFactory.create(con, this)));
+        cstrs.forEach(con -> addAtomic(AtomicFactory.create(con, this)));
     }
 
     private Atom findFirstJoinable(Set<Atom> atoms){
@@ -480,6 +487,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return null;
     }
 
+    //TODO move to Atom
+    /**
+     * @param atom for which the neighbour is to be found
+     * @return neighbour or null if disjoint
+     */
     public Atom findNextJoinable(Atom atom){
         Set<Atom> atoms = getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
@@ -537,6 +549,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             }
         }
         return true;
+    }
+
+    public boolean requiresMaterialisation(){
+        for(Atom atom : selectAtoms()) {
+            if (atom.requiresMaterialisation()) return true;
+        }
+        return false;
     }
 
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
@@ -619,10 +638,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                     .map(QueryAnswer::new);
         }
         //TODO temporary switch
-        if (materialise || isAtomic() ) {
+        if (materialise || (isAtomic() && !selectAtoms().iterator().next().hasSubstitution()) ) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
-            return new ReasonerQueryImplIterator().hasStream();
+            return new QueryAnswerIterator().hasStream();
+            //return new ReasonerQueryImplIterator().hasStream();
         }
     }
 
@@ -656,6 +676,54 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return new ReasonerQueryImplIterator(subGoals, cache);
     }
 
+    private class QueryAnswerIterator extends ReasonerQueryIterator {
+
+        private int iter = 0;
+        private long oldAns = 0;
+        Set<Answer> answers = new HashSet<>();
+
+        private final QueryCache<ReasonerAtomicQuery> cache;
+        private Iterator<Answer> answerIterator;
+
+        QueryAnswerIterator(){ this(new QueryCache<>());}
+        QueryAnswerIterator(QueryCache<ReasonerAtomicQuery> qc){
+            this.cache = qc;
+            this.answerIterator = new ReasonerQueryImplIterator(new HashSet<>(), cache);
+        }
+
+        /**
+         * check whether answers available, if answers not fully computed compute more answers
+         * @return true if answers available
+         */
+        @Override
+        public boolean hasNext() {
+            if (answerIterator.hasNext()) return true;
+                //iter finished
+            else {
+                long dAns = answers.size() - oldAns;
+                if (dAns != 0 || iter == 0) {
+                    System.out.println("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
+                    iter++;
+                    answerIterator = new ReasonerQueryImplIterator(new HashSet<>(), cache);
+                    oldAns = answers.size();
+                    return answerIterator.hasNext();
+                }
+                else return false;
+            }
+        }
+
+        /**
+         * @return single answer to the query
+         */
+        @Override
+        public Answer next() {
+            Answer ans = answerIterator.next();
+            answers.add(ans);
+            return ans;
+        }
+
+    }
+
     private class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         private final Answer partialSubstitution;
@@ -672,7 +740,20 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             this.cache = cache;
 
             //get prioritised atom and construct atomic query from it
-            ReasonerAtomicQuery q = new ReasonerAtomicQuery(getTopAtom());
+            Atom topAtom = getTopAtom();
+
+            ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
+
+
+            /*
+            System.out.println("Query:");
+            getAtoms().forEach(System.out::println);
+            System.out.println();
+            System.out.println("top atom: ");
+            System.out.println(topAtom.toString());
+            System.out.println();
+            */
+
 
             if(!isAtomic()) {
                 atomicQueryIterator = q.iterator(subGoals, cache);
@@ -705,8 +786,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         private ReasonerQueryImpl getQueryPrime(Answer sub){
             //construct new reasoner query with the top atom removed
             ReasonerQueryImpl newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
-            newQuery.removeAtom(newQuery.getTopAtom());
+            Atom topAtom = newQuery.getTopAtom();
+            newQuery.removeAtom(topAtom);
             newQuery.addSubstitution(sub);
+
+
+            //System.out.println("QPrime top atom: ");
+            //System.out.println(topAtom.toString());
+            //System.out.println();
+            //System.out.println("###################################################");
 
             return newQuery.isAtomic()?
                     new ReasonerAtomicQuery(newQuery.selectAtoms().iterator().next()) :

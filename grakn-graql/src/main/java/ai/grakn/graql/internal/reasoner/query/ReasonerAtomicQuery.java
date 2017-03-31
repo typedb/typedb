@@ -125,16 +125,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public boolean addAtom(Atomic at) {
-        if (super.addAtom(at)) {
+    public boolean addAtomic(Atomic at) {
+        if (super.addAtomic(at)) {
             if (atom == null && at.isSelectable()) atom = (Atom) at;
             return true;
         } else return false;
     }
 
     @Override
-    public boolean removeAtom(Atomic at) {
-        if (super.removeAtom(at)) {
+    public boolean removeAtomic(Atomic at) {
+        if (super.removeAtomic(at)) {
             if (at.equals(atom)) atom = null;
             return true;
         } else return false;
@@ -231,11 +231,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 for (Map<VarName, Var> roleMap : roleMaps) {
                     Relation relationWithRoles = new Relation(relAtom.getVarName(), relAtom.getValueVariable(),
                             roleMap, relAtom.getPredicate(), this);
-                    this.removeAtom(relAtom);
-                    this.addAtom(relationWithRoles);
+                    this.removeAtomic(relAtom);
+                    this.addAtomic(relationWithRoles);
                     answerStream = Stream.concat(answerStream, insert());
-                    this.removeAtom(relationWithRoles);
-                    this.addAtom(relAtom);
+                    this.removeAtomic(relationWithRoles);
+                    this.addAtomic(relAtom);
                 }
                 return answerStream;
             } else {
@@ -463,9 +463,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-
         //TODO switch to iterative deepening for queries with no subs
-        return new ReasonerAtomicQueryIterator(subGoals, cache);
+        //if(getAtom().hasSubstitution()) {
+            return new ReasonerAtomicQueryIterator(subGoals, cache);
+        //} else {
+        //    boolean explanation = false;
+        //    return (ReasonerQueryIterator) answerStream(subGoals, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation), false, explanation, false).iterator();
+        //}
     }
 
     private class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
@@ -485,12 +489,19 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : lookup(cache).iterator();
             this.ruleIterator = subGoals.contains(ReasonerAtomicQuery.this)? Collections.emptyIterator() : getRuleIterator();
             if (ruleIterator.hasNext()) subGoals.add(ReasonerAtomicQuery.this);
+
+            /*
+            System.out.println("Atomic query:");
+            getAtoms().forEach(System.out::println);
+            System.out.println();
+            */
         }
 
         private Iterator<InferenceRule> getRuleIterator(){
-            return getAtom().getApplicableRules().stream()
+            Set<InferenceRule> rules = getAtom().getApplicableRules().stream()
                     .map(rule -> rule.unify(ReasonerAtomicQuery.this.getAtom()))
-                    .iterator();
+                    .collect(Collectors.toSet());
+            return rules.iterator();
         }
 
         @Override
@@ -500,6 +511,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 if (ruleIterator.hasNext()) {
                     //TODO add permutation if necessary
                     InferenceRule rule = ruleIterator.next();
+                    //System.out.println("RESOLVING VIA RULE " + rule.getRuleId());
                     queryIterator = rule.getBody().iterator(subGoals, cache);
                     return hasNext();
                 }
@@ -512,6 +524,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Answer sub = queryIterator.next()
                     .merge(partialSubstitution)
                     .filterVars(getVarNames());
+
+            /*
+            System.out.println("ANSWER: ");
+            sub.entrySet().forEach(System.out::println);
+            System.out.println();
+            */
             return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
         }
 

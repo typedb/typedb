@@ -71,10 +71,12 @@ public class TypeAtom extends Binary{
     public boolean isSelectable() {
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         return isRuleResolvable()
-                || getPredicate() == null
+                || getPredicate() == null;
                 //TODO??
-                || (parent.getIdPredicate(getVarName()) != null && getPredicate() != null)
-                || (!(parent instanceof ReasonerAtomicQuery) && parent.findNextJoinable(this) == null);
+                // case of ?
+                //|| (parent.getIdPredicate(getVarName()) != null && getPredicate() != null)
+                // case of disjoint type atom
+                //|| (!(parent instanceof ReasonerAtomicQuery) && parent.findNextJoinable(this) == null);
     }
 
     @Override
