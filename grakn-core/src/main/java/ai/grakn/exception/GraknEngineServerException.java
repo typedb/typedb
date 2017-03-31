@@ -59,7 +59,7 @@ public class GraknEngineServerException extends RuntimeException {
         if(status == 404){
             logger.trace("New Grakn Engine Server exception {}", message);
         } else{
-            logger.error("New Grakn Engine Server exception", message);
+            logger.error("New Grakn Engine Server exception {}", message);
         }
     }
 }

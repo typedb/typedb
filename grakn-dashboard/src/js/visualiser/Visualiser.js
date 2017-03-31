@@ -23,6 +23,7 @@ import vis from 'vis';
 import Style from './Style';
 import User from '../User';
 import NodeSettings from '../NodeSettings';
+import * as API from '../util/HALTerms';
 
 
 /*
@@ -69,6 +70,7 @@ export default class Visualiser {
         hoverWidth: 2,
         selectionWidth: 2,
         arrowStrikethrough: false,
+        arrows: { to: { enabled: true, scaleFactor: 0.7 } },
         smooth: {
           enabled: false,
           forceDirection: 'none',
@@ -87,6 +89,8 @@ export default class Visualiser {
         // Additional properties to show in node label by type.
     this.displayProperties = {};
     this.alreadyFittedToWindow = false;
+    // Structure to hold colour preferences on nodes
+    this.nodeColourProperies = {};
 
         // working on stopping nodes from moving
     this.lastFixTime = 0; // this is needed to stop a redraw loop due to the update of the vis dataset
@@ -282,7 +286,7 @@ export default class Visualiser {
       this.nodes.add({
         id: bp.id,
         href,
-        label: this.generateLabel(bp.type, ap, bp.label),
+        label: this.generateLabel(bp.type, ap, bp.label, bp.baseType),
         baseLabel: bp.label,
         type: bp.type,
         title: bp.type,
@@ -294,7 +298,7 @@ export default class Visualiser {
         shape: this.style.getNodeShape(bp.baseType),
         size: this.style.getNodeSize(bp.baseType),
         selected: false,
-        ontology: bp.ontology,
+        explore: bp.explore,
         properties: ap,
         links: ls,
       });
@@ -312,13 +316,13 @@ export default class Visualiser {
     return this;
   }
 
-  // Given an array of instances refresh all their labels with new resources
+  // Given an array of instances(nodes) refresh all their labels with new resources
   refreshLabels(instances) {
     instances.forEach((instance) => {
       const node = this.getNode(instance.id);
       this.updateNode({
         id: node.id,
-        label: this.generateLabel(node.type, node.properties, node.baseLabel),
+        label: this.generateLabel(node.type, node.properties, node.baseLabel, node.baseType),
       });
     });
   }
@@ -406,6 +410,89 @@ export default class Visualiser {
     return this;
   }
 
+  setDefaultNodeColour(baseType, nodeType) {
+    const colorObj = this.style.getDefaultNodeColour(nodeType, baseType);
+    const highlightObj = {
+      highlight: Object.assign(colorObj.highlight, {
+        border: colorObj.highlight.background,
+      }),
+    };
+    const hoverObj = {
+      hover: highlightObj.highlight,
+    };
+    this.nodes.get().forEach((v) => {
+      if (v.type === nodeType) {
+        this.updateNode({
+          id: v.id,
+          color: Object.assign(colorObj, {
+            border: colorObj.background,
+          }, highlightObj, hoverObj),
+        });
+      }
+    });
+  }
+
+  setColourOnNodeType(baseType, nodeType, colourString) {
+    if (colourString === undefined) {
+      this.setDefaultNodeColour(baseType, nodeType);
+      const t = (nodeType.length) ? nodeType : baseType;
+      NodeSettings.setNodeColour(t);
+      return;
+    }
+    if (nodeType.length) {
+      NodeSettings.setNodeColour(nodeType, {
+        background: colourString,
+        highlight: {
+          background: colourString,
+        } });
+      this.nodes.get().forEach((v) => {
+        if (v.type === nodeType) {
+          this.updateNode({
+            id: v.id,
+            color: {
+              background: colourString,
+              border: colourString,
+              highlight: {
+                background: colourString,
+                border: colourString,
+              },
+              hover: {
+                background: colourString,
+                border: colourString,
+              },
+            },
+          });
+        }
+      });
+    } else {
+      NodeSettings.setNodeColour(baseType, {
+        background: colourString,
+        highlight: {
+          background: colourString,
+        } });
+      // If it's an ontology node
+      this.nodes.get().forEach((v) => {
+        if (v.baseType === baseType) {
+          this.updateNode({
+            id: v.id,
+            color: {
+              background: colourString,
+              border: colourString,
+              highlight: {
+                background: colourString,
+                border: colourString,
+              },
+              hover: {
+                background: colourString,
+                border: colourString,
+              },
+            },
+          });
+        }
+      });
+    }
+  }
+
     /*
     Internal methods
     */
@@ -446,7 +533,8 @@ export default class Visualiser {
     });
   }
 
-  generateLabel(type, properties, label) {
+  generateLabel(type, properties, label, baseType) {
+    if (baseType === API.RELATION || baseType === API.GENERATED_RELATION_TYPE) return '';
     if (NodeSettings.getLabelProperties(type).length) {
       return NodeSettings.getLabelProperties(type).reduce((l, x) => {
         let value;
@@ -467,7 +555,7 @@ export default class Visualiser {
       if (v.type === type) {
         this.updateNode({
           id: k,
-          label: this.generateLabel(type, v.properties, v.baseLabel),
+          label: this.generateLabel(type, v.properties, v.baseLabel, v.baseType),
         });
       }
       return v;

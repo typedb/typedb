@@ -77,7 +77,7 @@ export function defaultProperties(resource) {
     type: resource[API.KEY_TYPE] || '',
     baseType: resource[API.KEY_BASE_TYPE],
     label: buildLabel(resource),
-    ontology: resource[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF],
+    explore: resource[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF],
   };
 }
 /**
@@ -109,6 +109,6 @@ export function extractResources(resource) {
 export function nodeLinks(resource) {
   const linksObject = resource[API.KEY_LINKS];
   return Object.keys(linksObject)
-        .filter(x => (x !== API.KEY_SELF && x !== API.KEY_ONTOLOGY))
+        .filter(x => (x !== API.KEY_SELF && x !== API.KEY_EXPLORE))
         .reduce((newLinksObject, key) => Object.assign({}, newLinksObject, { [key]: linksObject[key].length }), {});
 }
