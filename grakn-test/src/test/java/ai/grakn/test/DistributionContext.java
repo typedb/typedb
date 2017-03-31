@@ -20,8 +20,14 @@ package ai.grakn.test;
 
 import ai.grakn.client.Client;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.util.GraknVersion;
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+import org.junit.rules.ExternalResource;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
@@ -31,9 +37,6 @@ import java.util.EnumSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Stream;
-import net.lingala.zip4j.core.ZipFile;
-import net.lingala.zip4j.exception.ZipException;
-import org.junit.rules.ExternalResource;
 
 import static ai.grakn.engine.GraknEngineConfig.LOGGING_LEVEL;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
@@ -70,18 +73,31 @@ public class DistributionContext extends ExternalResource {
             OWNER_EXECUTE, OWNER_READ, OWNER_WRITE,
             GROUP_EXECUTE, GROUP_WRITE, GROUP_READ,
             OTHERS_EXECUTE, OTHERS_READ, OTHERS_WRITE);
+    private final Class<? extends TaskManager> taskManagerClass;
 
     private Process engineProcess;
     private int port = 4567;
+    private boolean inheritIO = true;
 
-    private DistributionContext(){}
+    private DistributionContext(Class<? extends TaskManager> taskManagerClass){
+        this.taskManagerClass = taskManagerClass;
+    }
 
     public static DistributionContext startSingleQueueEngineProcess(){
-        return new DistributionContext();
+        return new DistributionContext(SingleQueueTaskManager.class);
+    }
+
+    public static DistributionContext startInMemoryEngineProcess(){
+        return new DistributionContext(StandaloneTaskManager.class);
     }
 
     public DistributionContext port(int port) {
         this.port = port;
+        return this;
+    }
+
+    public DistributionContext inheritIO(boolean inheritIO) {
+        this.inheritIO = inheritIO;
         return this;
     }
 
@@ -135,7 +151,7 @@ public class DistributionContext extends ExternalResource {
         Properties properties = GraknEngineConfig.getInstance().getProperties();
         properties.setProperty(LOGGING_LEVEL, "INFO");
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
-        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
+        properties.setProperty(TASK_MANAGER_IMPLEMENTATION, taskManagerClass.getName());
 
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");
@@ -152,7 +168,9 @@ public class DistributionContext extends ExternalResource {
                 "ai.grakn.engine.GraknEngineServer", "&"};
 
         // Start process
-        return new ProcessBuilder(commands).inheritIO().start();
+        ProcessBuilder processBuilder = new ProcessBuilder(commands);
+        if (inheritIO) processBuilder.inheritIO();
+        return processBuilder.start();
     }
 
     /**
