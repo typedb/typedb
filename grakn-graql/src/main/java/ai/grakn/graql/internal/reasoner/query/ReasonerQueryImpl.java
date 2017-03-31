@@ -639,8 +639,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         //TODO temporary switch
         if (materialise
-                || (isAtomic()
-                && ( !getTopAtom().hasSubstitution() || this.hasFullSubstitution() ) )) {
+                || isAtomic()
+                /*&& ( !getTopAtom().hasSubstitution() || this.hasFullSubstitution() ) )*/) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             return new QueryAnswerIterator().hasStream();
