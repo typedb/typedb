@@ -232,10 +232,6 @@ class GraqlSession {
                     sendQueryError(errorMessage);
                 }
 
-                // Refresh the graph, in case it has been closed by analytics
-                // TODO: Handle this elsewhere (analytics or graph factory?)
-                attemptRefresh();
-
                 sendEnd();
             }
         });
