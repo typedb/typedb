@@ -137,6 +137,7 @@ public class Autocomplete {
         if (query == null) return Optional.empty();
 
         return getTokens(query).stream()
+                .filter(t -> t.getChannel() != Token.HIDDEN_CHANNEL)
                 .filter(t -> t.getStartIndex() <= cursorPosition && t.getStopIndex() >= cursorPosition - 1)
                 .findFirst();
     }

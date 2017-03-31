@@ -41,14 +41,12 @@ import ai.grakn.graql.macro.Macro;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * A starting point for creating queries.
@@ -138,15 +136,6 @@ public class QueryBuilderImpl implements QueryBuilder {
     @Override
     public ComputeQueryBuilder compute(){
         return new ComputeQueryBuilderImpl(graph);
-    }
-
-    /**
-     * @param inputStream a stream representing a list of patterns
-     * @return a stream of patterns
-     */
-    @Override
-    public Stream<Pattern> parsePatterns(InputStream inputStream) {
-        return queryParser.parsePatterns(inputStream);
     }
 
     /**

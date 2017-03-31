@@ -646,20 +646,6 @@ class QueryVisitor extends GraqlBaseVisitor {
         return Boolean.valueOf(ctx.BOOLEAN().getText());
     }
 
-    @Override
-    public Pattern visitPatternSep(GraqlParser.PatternSepContext ctx) {
-        return visitPattern(ctx.pattern());
-    }
-
-    @Override
-    public Object visitBatchPattern(GraqlParser.BatchPatternContext ctx) {
-        if (ctx.patternSep() != null) {
-            return visitPatternSep(ctx.patternSep());
-        } else {
-            return ctx.getText();
-        }
-    }
-
     private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
         return (MatchQuery) visit(ctx);
     }

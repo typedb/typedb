@@ -28,8 +28,8 @@ matchQuery     : 'match' patterns                                 # matchBase
 
 askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchInsert | insertOnly ;
-insertOnly     : insert varPatterns ;
-matchInsert    : matchQuery insert varPatterns ;
+insertOnly     : 'insert' varPatterns ;
+matchInsert    : matchQuery 'insert' varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' computeMethod ;
@@ -114,11 +114,6 @@ value          : STRING   # valueString
                | BOOLEAN  # valueBoolean
                ;
 
-// These rules are used for parsing streams of patterns separated by semicolons
-insert         : 'insert' ;
-patternSep     : pattern ';' ;
-batchPattern   : 'match' | 'insert' | patternSep ;
-
 name           : identifier ;
 id             : identifier ;
 
@@ -154,9 +149,9 @@ REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
 
 fragment ESCAPE_SEQ : '\\' . ;
 
-COMMENT : '#' .*? '\r'? ('\n' | EOF) -> skip ;
+COMMENT : '#' .*? '\r'? ('\n' | EOF) -> channel(HIDDEN) ;
 
-WS : [ \t\r\n]+ -> skip ;
+WS : [ \t\r\n]+ -> channel(HIDDEN) ;
 
 // Unused lexer rule to help with autocomplete on variable names
 DOLLAR : '$' ;
