@@ -126,7 +126,7 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingNonUniqueResourceType_ItReturnsThatType(
+    public void whenCallingPutResourceTypeWithThePropertiesOfAnExistingResourceType_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph  ResourceType<?> resourceType) {
         assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
 
