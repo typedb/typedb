@@ -39,7 +39,6 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
 
 @RunWith(JUnitQuickcheck.class)
 public class RelationPropertyTest {
@@ -51,8 +50,6 @@ public class RelationPropertyTest {
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
         Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
-        assumeFalse(rolePlayer.isResource());
-
         relation.addRolePlayer(roleType, rolePlayer);
 
         assertThat(relation.rolePlayers(), hasItem(rolePlayer));
@@ -62,8 +59,6 @@ public class RelationPropertyTest {
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
         Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
 
-        assumeFalse(rolePlayer.isResource());
-
         relation.addRolePlayer(roleType, rolePlayer);
 
         assertThat(relation.rolePlayers(roleType), hasItem(rolePlayer));
@@ -72,8 +67,6 @@ public class RelationPropertyTest {
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
         Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
-
-        assumeFalse(rolePlayer.isResource());
 
         Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
 
