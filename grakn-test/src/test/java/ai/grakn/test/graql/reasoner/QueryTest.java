@@ -42,6 +42,7 @@ import java.util.Map;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -89,17 +90,21 @@ public class QueryTest {
 
     @Test
     public void testAlphaEquivalence() {
-        String patternString = "{$x isa person;$t isa tag;$t value 'Michelangelo';" +
+        String patternString = "{" +
+                "$x isa person;" +
+                "$t isa tag;$t value 'Michelangelo';" +
                 "($x, $t) isa tagging;" +
                 "$y isa product;$y value 'Michelangelo  The Last Judgement';}";
 
-        String patternString2 = "{$x isa person;$y isa tag;$y value 'Michelangelo';" +
+        String patternString2 = "{" +
+                "$pr isa product;$pr value 'Michelangelo  The Last Judgement';" +
                 "($x, $y) isa tagging;" +
-                "$pr isa product;$pr value 'Michelangelo  The Last Judgement';}";
+                "$x isa person;$y isa tag;$y value 'Michelangelo';}";
 
         ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.isEquivalent(query2));
+        assertEquals(query.hashCode(), query2.hashCode());
     }
 
     @Test
@@ -109,6 +114,7 @@ public class QueryTest {
         ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, ancestorGraph.graph()), ancestorGraph.graph());
         ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, ancestorGraph.graph()), ancestorGraph.graph());
         assertTrue(!query.isEquivalent(query2));
+        assertNotEquals(query.hashCode(), query2.hashCode());
     }
 
     @Test

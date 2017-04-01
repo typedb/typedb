@@ -356,7 +356,8 @@ public class RecursiveInferenceTest {
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
         QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
         assertEquals(answers.size(), explicitAnswers.size());
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers, answers2);
     }
 
     /**test 6.6 from Cao p.76*/

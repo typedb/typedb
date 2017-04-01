@@ -88,6 +88,7 @@ public class Relation extends TypeAtom {
 
     private int hashCode = 0;
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
+    private Map<RoleType, String> roleConceptIdMap = null;
 
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
@@ -225,13 +226,14 @@ public class Relation extends TypeAtom {
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
     private Map<RoleType, String> getRoleConceptIdMap() {
-        Map<RoleType, String> roleConceptMap = new HashMap<>();
+        if (roleConceptIdMap != null) return roleConceptIdMap;
+        roleConceptIdMap = new HashMap<>();
         Map<VarName, IdPredicate> varSubMap = getIdPredicates().stream()
                 .collect(Collectors.toMap(AtomBase::getVarName, pred -> pred));
         Map<RoleType, VarName> roleMap = getRoleMap();
 
-        roleMap.forEach((role, var) -> roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : ""));
-        return roleConceptMap;
+        roleMap.forEach((role, var) -> roleConceptIdMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : ""));
+        return roleConceptIdMap;
     }
 
     private Map<RoleType, VarName> getRoleMap() {

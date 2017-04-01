@@ -87,7 +87,6 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.varFilter
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Atom atom;
-
     private static final Logger LOG = LoggerFactory.getLogger(ReasonerAtomicQuery.class);
 
     public ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph) {
@@ -377,6 +376,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
+
+    public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
+        //TODO switch to iterative deepening for queries with no subs
+        //if(getAtom().hasSubstitution()) {
+        return new ReasonerAtomicQueryIterator(subGoals, cache);
+        //} else {
+        //    boolean explanation = false;
+        //    return (ReasonerQueryIterator) answerStream(subGoals, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation), false, explanation, false).iterator();
+        //}
+    }
+
     /**
      *
      * <p>
@@ -462,19 +472,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
-    public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        //TODO switch to iterative deepening for queries with no subs
-        //if(getAtom().hasSubstitution()) {
-            return new ReasonerAtomicQueryIterator(subGoals, cache);
-        //} else {
-        //    boolean explanation = false;
-        //    return (ReasonerQueryIterator) answerStream(subGoals, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation), false, explanation, false).iterator();
-        //}
-    }
-
     private class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
-        //private final Answer partialSubstitution;
         private final QueryCache<ReasonerAtomicQuery> cache;
         private final Set<ReasonerAtomicQuery> subGoals;
         private final Iterator<InferenceRule> ruleIterator;
@@ -483,7 +482,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private InferenceRule currentRule = null;
 
         ReasonerAtomicQueryIterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> qc){
-            //this.partialSubstitution = getSubstitution();
             this.subGoals = subGoals;
             this.cache = qc;
 
@@ -513,7 +511,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 if (ruleIterator.hasNext()) {
                     //TODO add permutation if necessary
                     currentRule = ruleIterator.next();
-                    //System.out.println("RESOLVING VIA RULE " + rule.getRuleId());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                     return hasNext();
                 }
@@ -523,8 +520,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         @Override
         public Answer next() {
-            Answer sub = queryIterator.next();
-            sub = sub.filterVars(getVarNames());
+            Answer sub = queryIterator.next().filterVars(getVarNames());
             if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
             /*
             System.out.println("ANSWER: ");
