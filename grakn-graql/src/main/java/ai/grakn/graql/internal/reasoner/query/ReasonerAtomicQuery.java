@@ -192,7 +192,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
         return cache.record(this, dbStream);
-        //return cache.getAnswerStream(this);
     }
 
     /**
@@ -277,7 +276,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Stream<Answer> getIdPredicateAnswerStream(Stream<Answer> stream){
         Answer idPredicateAnswer = getIdPredicateAnswer();
-        return stream.map(answer -> answer.merge(idPredicateAnswer));
+        return stream.map(answer -> {
+            AnswerExplanation exp = answer.getExplanation();
+            return answer.merge(idPredicateAnswer).explain(exp);
+        });
     }
 
     private Stream<Answer> getFilteredAnswerStream(Stream<Answer> answers, ReasonerAtomicQuery ruleHead){
@@ -369,8 +371,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames()
-                    .map(QueryAnswer::new);
+            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
         } else {
             return new QueryAnswerIterator(materialise, explanation, cache, dCache).hasStream();
         }
