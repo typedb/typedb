@@ -721,7 +721,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         private final Answer partialSubstitution;
-        private final Atom topAtom;
+
+        private final ReasonerQueryImpl newQuery;
 
         private final QueryCache<ReasonerAtomicQuery> cache;
         private final Set<ReasonerAtomicQuery> subGoals;
@@ -738,8 +739,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             ReasonerQueryImpl.this.addSubstitution(sub);
 
             //get prioritised atom and construct atomic query from it
-            this.topAtom = getTopAtom();
+            this.newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
+            Atom topAtom = newQuery.getTopAtom();
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
+            newQuery.removeAtom(topAtom);
 
 
             /*
@@ -778,8 +781,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         private ReasonerQueryImpl getQueryPrime(){
             //construct new reasoner query with the top atom removed
-            ReasonerQueryImpl newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
-            newQuery.removeAtom(topAtom);
+            //ReasonerQueryImpl newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
             return newQuery.isAtomic()? new ReasonerAtomicQuery(newQuery.getTopAtom()) : newQuery;
         }
     }

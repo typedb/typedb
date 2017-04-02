@@ -487,7 +487,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.cache = qc;
 
             boolean hasFullSubstitution = hasFullSubstitution();
-            //this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : lookup(cache).iterator();
             this.queryIterator = lookup(cache).iterator();
 
             //if this already has full substitution and exists in the db then do not resolve further
@@ -500,11 +499,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
             if (ruleIterator.hasNext()) subGoals.add(ReasonerAtomicQuery.this);
 
-            /*
-            System.out.println("Atomic query:");
-            getAtoms().forEach(System.out::println);
-            System.out.println();
-            */
         }
 
         private Iterator<InferenceRule> getRuleIterator(){
