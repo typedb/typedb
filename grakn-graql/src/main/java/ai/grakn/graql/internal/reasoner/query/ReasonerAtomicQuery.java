@@ -497,7 +497,15 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 this.ruleIterator = subGoals.contains(ReasonerAtomicQuery.this)? Collections.emptyIterator() : getRuleIterator();
             }
 
-            if (ruleIterator.hasNext()) subGoals.add(ReasonerAtomicQuery.this);
+            if (ruleIterator.hasNext()){
+                subGoals.add(ReasonerAtomicQuery.this);
+            }
+
+            /*
+            System.out.println("AQ:" + ReasonerAtomicQuery.this.getAtom());
+            ReasonerAtomicQuery.this.getIdPredicates().forEach(System.out::println);
+            System.out.println();
+            */
 
         }
 
@@ -515,6 +523,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 if (ruleIterator.hasNext()) {
                     //TODO add permutation if necessary
                     currentRule = ruleIterator.next();
+                    //System.out.println("Rule: " + currentRule.getHead());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                     return hasNext();
                 }
@@ -528,10 +537,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
 
             /*
-            System.out.println("ANSWER: ");
+            System.out.println("ANSWER to: " + ReasonerAtomicQuery.this.getAtom());
             sub.entrySet().forEach(System.out::println);
             System.out.println();
             */
+
             return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
         }
 

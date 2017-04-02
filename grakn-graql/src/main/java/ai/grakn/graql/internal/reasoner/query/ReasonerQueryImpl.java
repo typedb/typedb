@@ -52,6 +52,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -187,7 +188,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Set<Atom> atoms = selectAtoms();
 
         //favour atoms with substitutions
-        Set<Atom> subbedAtoms = atoms.stream().filter(Atom::hasSubstitution).collect(Collectors.toSet());
+        List<Atom> subbedAtoms = atoms.stream()
+                .filter(Atom::hasSubstitution)
+                .sorted(Comparator.comparing(at -> at.getApplicableRules().size()))
+                .collect(Collectors.toList());
         if (!subbedAtoms.isEmpty()) return subbedAtoms.iterator().next();
 
         //favour resources with value predicates
@@ -736,7 +740,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             this.partialSubstitution = sub;
             this.subGoals = subGoals;
             this.cache = cache;
-            
+
             //get prioritised atom and construct atomic query from it
             this.newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
             newQuery.addSubstitution(sub);
@@ -749,13 +753,22 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             System.out.println("Query:");
             getAtoms().forEach(System.out::println);
             System.out.println();
-            System.out.println("top atom: ");
-            System.out.println(topAtom.toString());
-            System.out.println();
             */
+            //System.out.println("top atom: ");
+            //System.out.println(topAtom.toString());
+            //System.out.println();
+
 
             boolean isAtomic = isAtomic();
             if (!isAtomic) newQuery.removeAtom(topAtom);
+
+            /*
+            System.out.println("newQuery:");
+            newQuery.getAtoms().forEach(System.out::println);
+            System.out.println();
+            */
+
+
             atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(subGoals, cache);
             queryIterator = isAtomic? q.iterator(subGoals, cache) : Collections.emptyIterator();
         }
