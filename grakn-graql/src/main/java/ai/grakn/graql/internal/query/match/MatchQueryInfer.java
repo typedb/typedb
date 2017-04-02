@@ -51,14 +51,14 @@ class MatchQueryInfer extends MatchQueryModifier {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        if (!Reasoner.hasRules(graph)) return inner.stream(optionalGraph);
+        //if (!Reasoner.hasRules(graph)) return inner.stream(optionalGraph);
 
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
         ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise, true);
+        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise, false);
         while(conjIt.hasNext()) {
             conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise, true);
+            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise, false);
             answerStream = Stream.concat(answerStream, localStream);
         }
         return answerStream.map(result -> result.filterVars(getSelectedNames()));

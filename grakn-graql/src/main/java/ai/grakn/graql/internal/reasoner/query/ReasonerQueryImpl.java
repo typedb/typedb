@@ -632,8 +632,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         //TODO temporary switch
         if (materialise
-                || isAtomic()
-                /*&& ( !getTopAtom().hasSubstitution() || this.hasFullSubstitution() ) )*/) {
+                || (isAtomic() && !getTopAtom().hasSubstitution() )) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             //return new QueryAnswerIterator().hasStream();
@@ -722,6 +721,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         private final Answer partialSubstitution;
+        private final Atom topAtom;
+
         private final QueryCache<ReasonerAtomicQuery> cache;
         private final Set<ReasonerAtomicQuery> subGoals;
 
@@ -737,8 +738,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             ReasonerQueryImpl.this.addSubstitution(sub);
 
             //get prioritised atom and construct atomic query from it
-            Atom topAtom = getTopAtom();
+            this.topAtom = getTopAtom();
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
+
 
             /*
             System.out.println("Query:");
@@ -770,23 +772,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         @Override
         public Answer next() {
             Answer sub = queryIterator.next();
-            if (!partialSubstitution.isEmpty()) sub = sub.merge(partialSubstitution, true);
+            sub = sub.merge(partialSubstitution, true);
             return sub;
         }
 
         private ReasonerQueryImpl getQueryPrime(){
             //construct new reasoner query with the top atom removed
             ReasonerQueryImpl newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
-            Atom topAtom = newQuery.getTopAtom();
             newQuery.removeAtom(topAtom);
-
-            //System.out.println("QPrime top atom: ");
-            //System.out.println(topAtom.toString());
-            //System.out.println();
-            //System.out.println("###################################################");
-
             return newQuery.isAtomic()? new ReasonerAtomicQuery(newQuery.getTopAtom()) : newQuery;
         }
-
     }
 }

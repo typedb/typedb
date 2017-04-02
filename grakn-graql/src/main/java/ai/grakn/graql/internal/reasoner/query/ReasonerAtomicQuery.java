@@ -487,8 +487,17 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.cache = qc;
 
             boolean hasFullSubstitution = hasFullSubstitution();
-            this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : lookup(cache).iterator();
-            this.ruleIterator = subGoals.contains(ReasonerAtomicQuery.this)? Collections.emptyIterator() : getRuleIterator();
+            //this.queryIterator = hasFullSubstitution? Iterators.singletonIterator(getSubstitution()) : lookup(cache).iterator();
+            this.queryIterator = lookup(cache).iterator();
+
+            //if this already has full substitution and exists in the db then do not resolve further
+            if(hasFullSubstitution && queryIterator.hasNext()){
+                this.ruleIterator = Collections.emptyIterator();
+            }
+            else {
+                this.ruleIterator = subGoals.contains(ReasonerAtomicQuery.this)? Collections.emptyIterator() : getRuleIterator();
+            }
+
             if (ruleIterator.hasNext()) subGoals.add(ReasonerAtomicQuery.this);
 
             /*
@@ -523,6 +532,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         public Answer next() {
             Answer sub = queryIterator.next().filterVars(getVarNames());
             if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
+
             /*
             System.out.println("ANSWER: ");
             sub.entrySet().forEach(System.out::println);

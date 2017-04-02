@@ -111,6 +111,7 @@ public class QueryAnswer implements Answer {
 
     @Override
     public Answer merge(Answer a2, boolean explanation){
+        if(a2.isEmpty()) return this;
         QueryAnswer merged = new QueryAnswer(a2);
         merged.putAll(this);
 
