@@ -736,13 +736,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             this.partialSubstitution = sub;
             this.subGoals = subGoals;
             this.cache = cache;
-            ReasonerQueryImpl.this.addSubstitution(sub);
-
+            
             //get prioritised atom and construct atomic query from it
             this.newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
+            newQuery.addSubstitution(sub);
             Atom topAtom = newQuery.getTopAtom();
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
-            newQuery.removeAtom(topAtom);
+
 
 
             /*
@@ -755,6 +755,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             */
 
             boolean isAtomic = isAtomic();
+            if (!isAtomic) newQuery.removeAtom(topAtom);
             atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(subGoals, cache);
             queryIterator = isAtomic? q.iterator(subGoals, cache) : Collections.emptyIterator();
         }
