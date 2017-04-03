@@ -79,8 +79,6 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         return FactoryBuilder.getGraknGraphFactory(this.getClass().getName(), SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, properties);
     }
 
-    abstract boolean isClosed(G innerGraph);
-
     abstract M buildGraknGraphFromTinker(G graph, boolean batchLoading);
 
     abstract G buildTinkerPopGraph(boolean batchLoading);
@@ -131,19 +129,13 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     }
     protected G getTinkerPopGraph(G graph, boolean batchLoading){
         if(graph == null){
-            return getGraphWithNewTransaction(buildTinkerPopGraph(batchLoading));
+            return buildTinkerPopGraph(batchLoading);
         }
 
-        synchronized (graph){ //Block here because list of open transactions is not thread safe
-            if(isClosed(graph)){
-                return getGraphWithNewTransaction(buildTinkerPopGraph(batchLoading));
-            } else {
-                return getGraphWithNewTransaction(graph);
-            }
-        }
+        return getGraphWithNewTransaction(graph, batchLoading);
     }
 
     @CheckReturnValue(when=NEVER)
-    protected abstract G getGraphWithNewTransaction(G graph);
+    protected abstract G getGraphWithNewTransaction(G graph, boolean batchloading);
 
 }

@@ -62,11 +62,6 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    boolean isClosed(HadoopGraph innerGraph) {
-        return false;
-    }
-
-    @Override
     AbstractGraknGraph<HadoopGraph> buildGraknGraphFromTinker(HadoopGraph graph, boolean batchLoading) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_GRAPH.getMessage(HadoopGraph.class.getName()));
     }
@@ -78,7 +73,7 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    protected HadoopGraph getGraphWithNewTransaction(HadoopGraph graph) {
+    protected HadoopGraph getGraphWithNewTransaction(HadoopGraph graph, boolean batchloading) {
         return graph;
     }
 }
