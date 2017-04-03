@@ -471,8 +471,8 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
-        String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
-        String explicitQuery = "match $y isa vertex;";
+        String queryString = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;select $y, $ind;";
+        String explicitQuery = "match $y isa vertex;$y has index $ind;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
