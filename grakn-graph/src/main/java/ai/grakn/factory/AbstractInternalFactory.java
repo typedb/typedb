@@ -86,20 +86,17 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     @Override
     public synchronized M open(GraknTxType txType){
         if(GraknTxType.BATCH.equals(txType)){
-            batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, true);
-            batchLoadingGraknGraph.openTransaction(false);
+            batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, txType);
             return batchLoadingGraknGraph;
         } else {
-            graknGraph = getGraph(graknGraph, false);
-            if(GraknTxType.WRITE.equals(txType)) {
-                graknGraph.openTransaction(false);
-            } else if(GraknTxType.READ.equals(txType)) {
-                graknGraph.openTransaction(true);
-            }
+            graknGraph = getGraph(graknGraph, txType);
             return graknGraph;
         }
     }
-    protected M getGraph(M graknGraph, boolean batchLoading){
+    protected M getGraph(M graknGraph, GraknTxType txType){
+        boolean batchLoading = false;
+        if(GraknTxType.BATCH.equals(txType)) batchLoading = true;
+
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
             if (!SystemKeyspace.SYSTEM_GRAPH_NAME.equalsIgnoreCase(this.keyspace)) {
@@ -114,6 +111,8 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
             }
         }
+
+        graknGraph.openTransaction(txType);
         return graknGraph;
     }
 
