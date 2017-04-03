@@ -58,6 +58,9 @@ public class REST {
             public static final String KEYSPACES = "/keyspaces";
         }
 
+        /**
+         * URIs to concept controller endpoints
+         */
         public static class Concept {
             public static final String CONCEPT = "/concept";
         }
@@ -90,11 +93,17 @@ public class REST {
         public static final String COMMIT_LOG_ID = "concept-vertex-id";
         public static final String COMMIT_LOG_INDEX = "concept-index";
 
+        /**
+         * Concept controller request parameters
+         */
         public static final class Concept {
             public static final String LIMIT_EMBEDDED = "limitEmbedded";
             public static final String OFFSET_EMBEDDED = "offsetEmbedded";
         }
 
+        /**
+         * Graql controller request parameters
+         */
         public static final class Graql {
             public static final String QUERY = "query";
             public static final String INFER = "infer";
@@ -141,6 +150,9 @@ public class REST {
             public static final String APPLICATION_HAL ="application/hal+json";
         }
 
+        /**
+         * Graql controller response fields
+         */
         public static class Graql {
             public static final String RESPONSE = "response";
             public static final String IDENTIFIER = "identifier";

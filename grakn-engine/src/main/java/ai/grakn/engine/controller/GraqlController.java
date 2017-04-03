@@ -31,6 +31,9 @@ import ai.grakn.graql.analytics.PathQuery;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import java.util.ArrayList;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
@@ -68,8 +71,8 @@ import static java.lang.Boolean.parseBoolean;
  *
  * @author Marco Scoppetta, alexandraorth
  */
-@Path("/graph")
-@Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
+@Path("/graph/graql")
+@Api(value = "/graph/graql", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
 @Produces({"application/json", "text/plain"})
 public class GraqlController {
 
@@ -84,6 +87,16 @@ public class GraqlController {
     }
 
     @GET
+    @Path("/")
+    @ApiOperation(
+            value = "Executes graql query on the server and build a representation for each concept in the query result. " +
+                    "Return type is determined by the provided accept type: application/graql+json, application/hal+json or application/text")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QUERY,       value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = INFER,       value = "Should reasoner with the current query.", required = true, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
+    })
     private Json executeGraql(Request request, Response response){
         String keyspace = getMandatoryParameter(request, KEYSPACE);
         String queryString = getMandatoryParameter(request, QUERY);

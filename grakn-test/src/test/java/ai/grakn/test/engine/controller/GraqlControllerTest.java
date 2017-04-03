@@ -118,11 +118,6 @@ public class GraqlControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
     }
 
-    //TODO documentation
-    //TODO Remove Utilities
-    //TODO offsetEmbedded
-    //TODO limitEmbedded
-
     @AfterClass
     public static void shutdown(){
         spark.stop();

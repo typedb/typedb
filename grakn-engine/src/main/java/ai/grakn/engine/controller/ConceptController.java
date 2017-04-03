@@ -24,7 +24,11 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.REST;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
 import javax.ws.rs.GET;
+import javax.ws.rs.Path;
 import mjson.Json;
 import spark.Request;
 import spark.Response;
@@ -63,6 +67,13 @@ public class ConceptController {
     }
 
     @GET
+    @Path("/concept/{id}")
+    @ApiOperation(
+            value = "Return the HAL representation of a given concept.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = IDENTIFIER, value = "Identifier of the concept", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = KEYSPACE,   value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
+    })
     private Json conceptByIdentifier(Request request, Response response){
         validateRequest(request);
 
