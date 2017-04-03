@@ -31,16 +31,13 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
 import static ai.grakn.util.REST.WebPath.KEYSPACE_LIST;
 import static com.jayway.restassured.RestAssured.get;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class GraphFactoryControllerTest {
 
@@ -100,17 +97,4 @@ public class GraphFactoryControllerTest {
         batch.close();
         graph2.close();
     }
-
-    @Test
-    public void testGraphSingleton(){
-        assumeTrue(usingTinker());
-        String keyspace = "grakntest";
-        AbstractGraknGraph graphNormal = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE);
-        AbstractGraknGraph graphBatch = (AbstractGraknGraph) Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.BATCH);
-
-        assertNotEquals(graphNormal, graphBatch);
-        //This is only true for tinkergraph
-        assertEquals(graphNormal.getTinkerPopGraph(), graphBatch.getTinkerPopGraph());
-    }
-
 }

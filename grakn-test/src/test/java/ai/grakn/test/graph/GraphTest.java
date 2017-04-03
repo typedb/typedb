@@ -75,6 +75,7 @@ public class GraphTest {
         GraknSession factory = engine.factoryWithNewKeyspace();
 
         GraknGraph graph = factory.open(GraknTxType.READ);
+        graph.close();
         GraknGraph batchGraph = factory.open(GraknTxType.BATCH);
 
         for(int i = 0; i < 6; i ++){
