@@ -144,7 +144,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     public void openTransaction(GraknTxType txType){
         localIsOpen.set(true);
-        if(GraknTxType.READ.equals(txType)) localIsReadOnly.set(true);
+        if(GraknTxType.READ.equals(txType)) {
+            localIsReadOnly.set(true);
+        } else {
+            localIsReadOnly.set(false);
+        }
     }
 
     @Override

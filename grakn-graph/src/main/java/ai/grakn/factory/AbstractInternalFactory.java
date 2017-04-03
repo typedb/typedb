@@ -18,6 +18,7 @@
 
 package ai.grakn.factory;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -86,13 +87,22 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     @Override
     public synchronized M open(GraknTxType txType){
         if(GraknTxType.BATCH.equals(txType)){
+            checkOtherGraphOpen(graknGraph);
             batchLoadingGraknGraph = getGraph(batchLoadingGraknGraph, txType);
             return batchLoadingGraknGraph;
         } else {
+            checkOtherGraphOpen(batchLoadingGraknGraph);
             graknGraph = getGraph(graknGraph, txType);
             return graknGraph;
         }
     }
+
+    private void checkOtherGraphOpen(GraknGraph otherGraph){
+        if(otherGraph != null && !otherGraph.isClosed()){
+            throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(otherGraph.getKeyspace()));
+        }
+    }
+
     protected M getGraph(M graknGraph, GraknTxType txType){
         boolean batchLoading = false;
         if(GraknTxType.BATCH.equals(txType)) batchLoading = true;
@@ -115,6 +125,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         graknGraph.openTransaction(txType);
         return graknGraph;
     }
+
 
     @Override
     public synchronized G getTinkerPopGraph(boolean batchLoading){
