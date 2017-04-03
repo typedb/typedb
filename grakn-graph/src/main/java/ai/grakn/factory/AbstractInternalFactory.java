@@ -46,7 +46,7 @@ import static javax.annotation.meta.When.NEVER;
  * @param <M> A Graph Graph extending {@link AbstractGraknGraph} and wrapping a Tinkerpop Graph
  * @param <G> A vendor implementation of a Tinkerpop {@link Graph}
  */
-abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<M, G> {
+abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements InternalFactory<G> {
 
     protected final String keyspace;
     protected final String engineUrl;
@@ -58,7 +58,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     protected G graph = null;
     private G batchLoadingGraph = null;
 
-    private SystemKeyspace<M, G> systemKeyspace;
+    private SystemKeyspace<G> systemKeyspace;
 
     AbstractInternalFactory(String keyspace, String engineUrl, Properties properties){
         if(keyspace == null) {
@@ -74,7 +74,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
         }
     }
 
-    InternalFactory<M, G> getSystemFactory(){
+    InternalFactory<G> getSystemFactory(){
         //noinspection unchecked
         return FactoryBuilder.getGraknGraphFactory(this.getClass().getName(), SystemKeyspace.SYSTEM_GRAPH_NAME, engineUrl, properties);
     }

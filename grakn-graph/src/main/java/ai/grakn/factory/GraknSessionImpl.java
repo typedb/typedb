@@ -62,8 +62,8 @@ public class GraknSessionImpl implements GraknSession {
     private final String keyspace;
 
     //References so we don't have to open a graph just to check the count of the transactions
-    private GraknGraph graph = null;
-    private GraknGraph graphBatch = null;
+    private AbstractGraknGraph<?> graph = null;
+    private AbstractGraknGraph<?> graphBatch = null;
 
     //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){
@@ -116,9 +116,9 @@ public class GraknSessionImpl implements GraknSession {
         }
     }
 
-    private int openTransactions(GraknGraph graph){
+    private int openTransactions(AbstractGraknGraph<?> graph){
         if(graph == null) return 0;
-        return ((AbstractGraknGraph) graph).numOpenTx();
+        return graph.numOpenTx();
     }
 
     /**
