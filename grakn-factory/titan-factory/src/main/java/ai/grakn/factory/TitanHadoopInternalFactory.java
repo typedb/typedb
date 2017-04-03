@@ -57,7 +57,7 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    InternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> getSystemFactory(){
+    InternalFactory<HadoopGraph> getSystemFactory(){
         return null;
     }
 
