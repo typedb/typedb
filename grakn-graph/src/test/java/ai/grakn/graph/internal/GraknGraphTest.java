@@ -123,6 +123,22 @@ public class GraknGraphTest extends GraphTestBase {
     }
 
     @Test
+    public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
+        assertThat(graknGraph.getCachedOntology().asMap().keySet(), is(empty()));
+        graknGraph.getMetaConcept().subTypes(); //This loads some types into transaction cache
+        graknGraph.abort();
+        assertThat(graknGraph.getCachedOntology().asMap().values(), is(empty())); //Ensure central cache is empty
+
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
+        Collection<? extends Type> types = graknGraph.getMetaConcept().subTypes();
+        graknGraph.abort();
+
+        for (Type type : graknGraph.getCachedOntology().asMap().values()) {
+            assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
+        }
+    }
+
+    @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept(){
         EntityTypeImpl et = (EntityTypeImpl) graknGraph.putEntityType("Sample Entity Type");
         assertEquals(et, graknGraph.admin().buildConcept(et.getVertex()));
