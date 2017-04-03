@@ -90,7 +90,7 @@ public class GraphTest {
             assertEquals(1, openTransactions(graph));
             assertEquals(1, openTransactions(batchGraph));
         } else {
-            assertEquals(7, openTransactions(graph));
+            assertEquals(6, openTransactions(graph));
             assertEquals(3, openTransactions(batchGraph));
         }
     }
