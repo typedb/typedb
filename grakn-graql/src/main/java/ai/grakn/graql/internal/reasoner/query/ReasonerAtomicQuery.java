@@ -253,12 +253,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Set<Unifier> getPermutationUnifiers(Atom headAtom) {
         if (!(atom.isRelation() && headAtom.isRelation())) return new HashSet<>();
-        List<VarName> permuteVars = new ArrayList<>();
+
         //if atom is match all atom, add type from rule head and find unmapped roles
         Relation relAtom = atom.getValueVariable().getValue().isEmpty() ?
                 ((Relation) AtomicFactory.create(atom, atom.getParentQuery())).addType(headAtom.getType()) :
                 (Relation) atom;
-        relAtom.getUnmappedRolePlayers().forEach(permuteVars::add);
+        List<VarName> permuteVars = new ArrayList<>(relAtom.getUnmappedRolePlayers());
 
         List<List<VarName>> varPermutations = getListPermutations(new ArrayList<>(permuteVars)).stream()
                 .filter(l -> !l.isEmpty()).collect(Collectors.toList());
@@ -312,7 +312,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean explanation,
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
-        rule.unify(atom);
+        rule.unify(atom).propagateConstraints(atom);
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
         Set<VarName> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
@@ -486,6 +486,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.subGoals = subGoals;
             this.cache = qc;
 
+            /*
+            System.out.println("AQ:" + ReasonerAtomicQuery.this.getAtom());
+            ReasonerAtomicQuery.this.getIdPredicates().forEach(System.out::println);
+            if (subGoals.contains(ReasonerAtomicQuery.this)) System.out.println("AQ not admissible");
+            System.out.println();
+            */
+
             boolean hasFullSubstitution = hasFullSubstitution();
             this.queryIterator = lookup(cache).iterator();
 
@@ -497,23 +504,22 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 this.ruleIterator = subGoals.contains(ReasonerAtomicQuery.this)? Collections.emptyIterator() : getRuleIterator();
             }
 
-            if (ruleIterator.hasNext()){
-                subGoals.add(ReasonerAtomicQuery.this);
-            }
-
-            /*
-            System.out.println("AQ:" + ReasonerAtomicQuery.this.getAtom());
-            ReasonerAtomicQuery.this.getIdPredicates().forEach(System.out::println);
-            System.out.println();
-            */
-
+            //mark as visited and hence not admissible
+            if (ruleIterator.hasNext()) subGoals.add(ReasonerAtomicQuery.this);
         }
 
         private Iterator<InferenceRule> getRuleIterator(){
-            Set<InferenceRule> rules = getAtom().getApplicableRules().stream()
-                    .map(rule -> rule.unify(ReasonerAtomicQuery.this.getAtom()))
-                    .collect(Collectors.toSet());
-            return rules.iterator();
+            Stream<InferenceRule> rules = getAtom().getApplicableRules().stream()
+                    .map(rule -> rule.unify(getAtom()));
+            if (!getAtom().getUnmappedIdPredicates().isEmpty()) {
+                rules = rules
+                        .flatMap(rule -> {
+                            Set<Unifier> permutationUnifiers = getPermutationUnifiers(rule.getHead().getAtom());
+                            return permutationUnifiers.stream()
+                                    .map(unifier -> new InferenceRule(rule).unify(unifier));
+                        });
+            }
+            return rules.map(rule -> rule.propagateConstraints(getAtom())).iterator();
         }
 
         @Override
@@ -521,7 +527,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             if (queryIterator.hasNext()) return true;
             else{
                 if (ruleIterator.hasNext()) {
-                    //TODO add permutation if necessary
                     currentRule = ruleIterator.next();
                     //System.out.println("Rule: " + currentRule.getHead());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
@@ -535,13 +540,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         public Answer next() {
             Answer sub = queryIterator.next().filterVars(getVarNames());
             if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
-
             /*
             System.out.println("ANSWER to: " + ReasonerAtomicQuery.this.getAtom());
             sub.entrySet().forEach(System.out::println);
             System.out.println();
             */
-
             return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
         }
 

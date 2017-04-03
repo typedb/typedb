@@ -897,6 +897,7 @@ public class ReasonerTest {
         assertEquals(answers.size(), answers2.size());
     }
 
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariable(){
         String queryString = "match $x isa is-located-in;";
@@ -914,6 +915,7 @@ public class ReasonerTest {
         assertEquals(answers2, answers3);
     }
 
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation(){
         String queryString = "match $x isa is-located-in;";
@@ -937,6 +939,7 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
     }
 
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariable2(){
         String queryString = "match $x isa recommendation;";
@@ -952,6 +955,7 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers.size(), answers.size());
     }
 
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation2(){
         String queryString = "match $x isa recommendation;";

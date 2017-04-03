@@ -75,6 +75,12 @@ public class InferenceRule {
         }
     }
 
+    public InferenceRule(InferenceRule r){
+        this.ruleId = r.getRuleId();
+        this.body = new ReasonerQueryImpl(r.getBody());
+        this.head = new ReasonerAtomicQuery(r.getHead());
+    }
+
     @Override
     public String toString(){
         return  "\n" + this.body.toString() + "\n->\n" + this.head.toString() + "\n";
@@ -139,19 +145,25 @@ public class InferenceRule {
         return atom;
     }
 
-    private void propagateConstraints(Atom parentAtom){
+    /**
+     *
+     * @param parentAtom
+     * @return
+     */
+    public  InferenceRule propagateConstraints(Atom parentAtom){
         //only propagate unambiguous constraints
         Set<VarName> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
-                //.filter(pred -> !unmappedVars.contains(pred.getVarName()))
+                .filter(pred -> !unmappedVars.contains(pred.getVarName()))
                 .collect(toSet());
         Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                //.filter(type -> !unmappedVars.contains(type.getVarName()))
+                .filter(type -> !unmappedVars.contains(type.getVarName()))
                 .collect(toSet());
 
         head.addAtomConstraints(predicates);
         body.addAtomConstraints(predicates);
         body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
+        return this;
     }
 
     private void rewriteHead(Atom parentAtom){
@@ -185,13 +197,7 @@ public class InferenceRule {
                     });
     }
 
-    private void unify(Unifier unifier){
-        //do alpha-conversion
-        head.unify(unifier);
-        body.unify(unifier);
-    }
-
-    private void unifyViaAtom(Atom parentAtom) {
+    private InferenceRule unifyViaAtom(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
         if (parentAtom.getType() != null){
@@ -204,7 +210,19 @@ public class InferenceRule {
                     .addType(childAtom.getType());
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
-        unify(unifier);
+        return this.unify(unifier);
+    }
+
+    /**
+     *
+     * @param unifier
+     * @return
+     */
+    public InferenceRule unify(Unifier unifier){
+        //do alpha-conversion
+        head.unify(unifier);
+        body.unify(unifier);
+        return this;
     }
 
     /**
@@ -215,9 +233,11 @@ public class InferenceRule {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
         if (head.getAtom().isUserDefinedName()) rewriteBody();
+        /*
         if (parentAtom.isRelation() || parentAtom.isResource()) {
             propagateConstraints(parentAtom);
         }
+        */
         return this;
     }
 }

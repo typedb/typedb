@@ -68,10 +68,16 @@ public class GeoInferenceTest {
     public void testQueryPrime() {
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
-        String queryString = "match $z1 isa city;"+
-                "($z1, $z2) isa is-located-in;$z2 isa country;$z2 has name 'Poland'; select $z1;";
-        String queryString2 = "match $z2 isa city;$z2 has name $name;"+
-                "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
+        String queryString = "match " +
+                "$z1 isa city;$z1 has name $name;" +
+                "($z1, $z2) isa is-located-in;" +
+                "$z2 isa country;$z2 has name 'Poland';" +
+                "select $z1, $name;";
+        String queryString2 = "match " +
+                "$z1 isa country;$z1 has name 'Poland';" +
+                "$z2 isa city;$z2 has name $name;"+
+                "($z1, $z2) isa is-located-in;" +
+                "select $z2, $name;";
         String explicitQuery = "match " +
                 "$z1 isa city;$z1 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z1, $name;";
         String explicitQuery2 = "match " +
@@ -79,6 +85,7 @@ public class GeoInferenceTest {
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+
         assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
         assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
     }
@@ -163,6 +170,7 @@ public class GeoInferenceTest {
         Concept poland = getConcept(graph, "name", "Poland");
 
         QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        assertEquals(answers.size(), 7);
         answers.forEach(ans -> assertEquals(ans.size(), 2));
         answers.forEach(ans -> assertEquals(ans.get(VarName.of("y")).getId().getValue(), poland.getId().getValue()));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(false).parse(queryString2));

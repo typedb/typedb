@@ -125,7 +125,7 @@ public class ExplanationTest {
     }
 
     @Test
-    public void testExplainingConjunctiveQuery(){
+    public void testExplainingConjunctiveQueryWithTwoIdPredicates(){
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;" +
