@@ -196,7 +196,7 @@ public class InferenceRule {
                     body.addAtomic(rewrite);
                     });
     }
-    
+
     private InferenceRule unifyViaAtom(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
