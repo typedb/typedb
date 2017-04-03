@@ -32,8 +32,8 @@ public class GraknEngineServerException extends RuntimeException {
     final int status;
 
     public GraknEngineServerException(int status, ErrorMessage message, String... args) {
-        super(message.getMessage(new Object[]{args}));
-        log(status, message.getMessage(new Object[]{args}));
+        super(message.getMessage(args));
+        log(status, message.getMessage(args));
         this.status = status;
     }
 
