@@ -109,13 +109,16 @@ public enum ErrorMessage {
     SET_GENERATED_VARIABLE_NAME("cannot set variable name '%s' on a variable without a user-defined name"),
     INSTANCE_OF_ROLE_TYPE("cannot get instances of role type %s"),
     CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
+    NON_POSITIVE_LIMIT("limit %s should be positive"),
+    NEGATIVE_OFFSET("offset %s should be non-negative"),
 
     AGGREGATE_ARGUMENT_NUM("aggregate '%s' takes %s arguments, but got %s"),
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
 
+    VARIABLE_NAME_INVALID("the variable name '%s' is not valid. A variable name should comprise upper and lower alphanumeric characters, underscore and dash."),
     VARIABLE_NOT_IN_QUERY("the variable %s is not in the query"),
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
-    MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
+    NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
     SELECT_VAR_NOT_IN_MATCH("%s does not appear in match query"),
     NO_NAME_SPECIFIED_FOR_HAS_RESOURCE("no name was specified for a resource type in a 'has-resource' property"),

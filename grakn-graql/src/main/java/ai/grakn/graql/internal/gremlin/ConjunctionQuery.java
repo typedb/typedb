@@ -67,7 +67,7 @@ class ConjunctionQuery {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
-            throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
+            throw new IllegalArgumentException(ErrorMessage.NO_PATTERNS.getMessage());
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =

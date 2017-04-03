@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableList;
+import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 
 /**
  * A query that will insert a collection of variables into a graph
@@ -63,6 +64,10 @@ class InsertQueryImpl implements InsertQueryAdmin {
     InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<GraknGraph> graph) {
         // match query and graph should never both be present (should get graph from inner match query)
         assert(!matchQuery.isPresent() || !graph.isPresent());
+
+        if (vars.isEmpty()) {
+            throw new IllegalArgumentException(NO_PATTERNS.getMessage());
+        }
 
         this.matchQuery = matchQuery;
         this.graph = graph;

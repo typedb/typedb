@@ -72,7 +72,7 @@ public class VariableAndPatternTest {
 
     @Ignore //TODO: FIX THIS TEST
     @Test
-    public void testVarNameInvalid() {
+    public void whenCreatingAVarWithAnInvalidName_Throw() {
         assertExceptionThrown(Graql::var, "");
         assertExceptionThrown(Graql::var, " ");
         assertExceptionThrown(Graql::var, "!!!");
@@ -262,7 +262,6 @@ public class VariableAndPatternTest {
         assertEquals(1, result2.size());
     }
 
-    @Ignore
     @Test // TODO: Do we have a negation for this?
     public void testNegationEmpty() {
         Set<Concept> result = graph.graql().match(

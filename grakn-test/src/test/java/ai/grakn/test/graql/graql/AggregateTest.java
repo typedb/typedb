@@ -20,10 +20,10 @@ package ai.grakn.test.graql.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -33,6 +33,7 @@ import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.min;
 import static ai.grakn.graql.Graql.sum;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.junit.Assert.assertEquals;
 
 public class AggregateTest {
@@ -72,17 +73,10 @@ public class AggregateTest {
                 .aggregate(sum("y")).execute();
     }
 
-    @Ignore //TODO
-    @Test(expected = Exception.class)
-    public void testGroupVarNotExist() {
-        System.out.println(graph.graql().match(var("x").isa("movie").has("runtime", var("y")))
-                .aggregate(group("z", count())).execute());
-    }
-
-    @Ignore //TODO
-    @Test(expected = Exception.class)
-    public void testGroupByItself() {
-        System.out.println(graph.graql().match(var("x").isa("movie").has("runtime", var("y")))
-                .aggregate(group("x", count())).execute());
+    @Test
+    public void whenGroupVarIsNotInQuery_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("z")));
+        graph.graql().match(var("x").isa("movie").has("title", var("y"))).aggregate(group("z", count())).execute();
     }
 }
