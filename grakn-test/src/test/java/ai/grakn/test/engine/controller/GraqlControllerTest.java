@@ -110,12 +110,11 @@ public class GraqlControllerTest {
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
     }
 
-    //TODO concept api
-    //TODO ontology api
     //TODO string constants
     //TODO documentation
     //TODO Remove Utilities
-    //TODO Merge common controller methods
+    //TODO offsetEmbedded
+    //TODO limitEmbedded
 
     @AfterClass
     public static void shutdown(){
@@ -520,20 +519,20 @@ public class GraqlControllerTest {
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
     }
 
-    private static String exception(Response response){
+    protected static String exception(Response response){
         return response.getBody().as(Json.class, jsonMapper).at("exception").asString();
     }
 
-    private static String stringResponse(Response response){
+    protected static String stringResponse(Response response){
         return response.getBody().as(Json.class, jsonMapper).at("response").asString();
     }
 
-    private static Json jsonResponse(Response response){
+    protected static Json jsonResponse(Response response){
         System.out.println(response.getBody().as(Json.class, jsonMapper).at("response"));
         return response.getBody().as(Json.class, jsonMapper).at("response");
     }
 
-    private static String originalQuery(Response response){
+    protected static String originalQuery(Response response){
         return response.getBody().as(Json.class, jsonMapper).at("originalQuery").asString();
     }
 }

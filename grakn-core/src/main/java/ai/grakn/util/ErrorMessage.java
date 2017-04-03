@@ -167,7 +167,7 @@ public enum ErrorMessage {
     UNAVAILABLE_TASK_CLASS("Could not find task class [%s]"),
     MISSING_MANDATORY_PARAMETERS("Missing mandatory parameters"),
     UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
-    INVALID_CONTENT_TYPE("Invalid combination of query %s and content type %s"),
+    INVALID_CONTENT_TYPE("Invalid combination of query [%s] and content type [%s]"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),

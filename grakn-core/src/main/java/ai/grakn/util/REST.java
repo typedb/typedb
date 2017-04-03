@@ -29,12 +29,6 @@ public class REST {
      * Class containing URIs to REST endpoints.
      */
     public static class WebPath{
-        public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
-        public static final String GRAPH_ANALYTICS_QUERY_URI = "/graph/analytics";
-        public static final String GRAPH_PRE_MATERIALISE_QUERY_URI = "/graph/preMaterialiseAll";
-        public static final String GRAPH_ONTOLOGY_URI = "/graph/ontology" ;
-        public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
-        public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
 
         public static final String COMMIT_LOG_URI = "/commit_log";
 
@@ -62,6 +56,10 @@ public class REST {
         public static class System {
             public static final String CONFIGURATION = "/configuration";
             public static final String KEYSPACES = "/keyspaces";
+        }
+
+        public static class Concept {
+            public static final String CONCEPT = "/concept";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";

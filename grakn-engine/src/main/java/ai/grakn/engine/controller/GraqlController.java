@@ -103,8 +103,7 @@ public class GraqlController {
      * @param parameter value to retrieve from the HTTP request
      * @return value of the given parameter
      */
-    //TODO Merge this with the one in TasksController
-    private String getMandatoryParameter(Request request, String parameter){
+    static String getMandatoryParameter(Request request, String parameter){
         return getParameter(request, parameter).orElseThrow(() ->
                 new GraknEngineServerException(400, MISSING_MANDATORY_PARAMETERS, parameter));
     }
@@ -115,7 +114,7 @@ public class GraqlController {
      * @param parameter value to retrieve from the HTTP request
      * @return value of the given parameter
      */
-    private Optional<String> getParameter(Request request, String parameter){
+    static Optional<String> getParameter(Request request, String parameter){
         return Optional.ofNullable(request.queryParams(parameter));
     }
 
@@ -242,7 +241,7 @@ public class GraqlController {
         return printer.graqlString( query.execute());
     }
 
-    private static String getAcceptType(Request request){
+    static String getAcceptType(Request request){
         return request.headers("Accept").split(",")[0];
     }
 }

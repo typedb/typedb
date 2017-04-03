@@ -47,7 +47,6 @@ class HALConceptOntology {
 
 
     private final String resourceLinkPrefix;
-    private final String resourceLinkOntologyPrefix;
     private final static String SUB_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
@@ -64,8 +63,7 @@ class HALConceptOntology {
     HALConceptOntology(Concept concept,String keyspace, int offset, int limit) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
-        resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
-        resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
+        resourceLinkPrefix = REST.WebPath.Concept.CONCEPT;
         this.keyspace=keyspace;
         this.offset = offset;
         this.limit = limit;
@@ -85,7 +83,7 @@ class HALConceptOntology {
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
-        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + getURIParams());
+        resource.withLink(ONTOLOGY_LINK, resourceLinkPrefix + concept.getId() + getURIParams());
         generateConceptState(resource,concept);
     }
 

@@ -43,8 +43,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
+import static ai.grakn.engine.controller.GraqlController.getMandatoryParameter;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.LIMIT_PARAM;
@@ -216,20 +216,6 @@ public class TasksController {
         } catch (ClassNotFoundException e) {
             throw new GraknEngineServerException(400, UNAVAILABLE_TASK_CLASS, className);
         }
-    }
-
-
-    /**
-     * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
-     * in the request, return a 404 to the client.
-     *
-     * @param request information about the HTTP request
-     * @param parameter value to retrieve from the HTTP request
-     * @return value of the given parameter
-     */
-    private String getMandatoryParameter(Request request, String parameter){
-        return Optional.ofNullable(request.queryParams(parameter)).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_MANDATORY_PARAMETERS, parameter));
     }
 
     /**

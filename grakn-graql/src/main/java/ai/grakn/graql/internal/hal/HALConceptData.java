@@ -50,7 +50,6 @@ class HALConceptData {
     private final Representation halResource;
 
     private final String resourceLinkPrefix;
-    private final String resourceLinkOntologyPrefix;
     private final String keyspace;
     private final static String ISA_EDGE = "isa";
     private final static String SUB_EDGE = "sub";
@@ -81,8 +80,7 @@ class HALConceptData {
         this.limit = limit;
         this.keyspace = keyspace;
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
-        resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
-        resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
+        resourceLinkPrefix = REST.WebPath.Concept.CONCEPT;
 
         factory = new StandardRepresentationFactory();
 
@@ -154,7 +152,7 @@ class HALConceptData {
     private void generateRuleRHS(Representation halResource, Rule rule) {
         Representation RHS = factory.newRepresentation(resourceLinkPrefix + "RHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
-                .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
+                .withLink(ONTOLOGY_LINK, resourceLinkPrefix)
                 .withProperty(ID_PROPERTY, "RHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "RHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
@@ -165,7 +163,7 @@ class HALConceptData {
     private void generateRuleLHS(Representation halResource, Rule rule) {
         Representation LHS = factory.newRepresentation(resourceLinkPrefix + "LHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
-                .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix)
+                .withLink(ONTOLOGY_LINK, resourceLinkPrefix)
                 .withProperty(ID_PROPERTY, "LHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "LHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
@@ -204,7 +202,7 @@ class HALConceptData {
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
-        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId() + getURIParams(0));
+        resource.withLink(ONTOLOGY_LINK, resourceLinkPrefix + concept.getId() + getURIParams(0));
         generateConceptState(resource, concept);
     }
 
