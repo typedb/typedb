@@ -748,7 +748,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 commit(this::submitCommitLogs);
                 getConceptLog().writeToCentralCache(true);
             } else {
-                getConceptLog().writeToCentralCache(false);
+                getConceptLog().writeToCentralCache(isReadOnly());
             }
         } finally {
             closeTransaction(closeMessage);
