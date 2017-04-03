@@ -32,6 +32,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
 import java.util.Properties;
@@ -173,6 +175,13 @@ public class DistributionContext extends ExternalResource {
         // Start process
         ProcessBuilder processBuilder = new ProcessBuilder(commands);
         if (inheritIO) processBuilder.inheritIO();
+
+        // Start process from an empty directory, this is a work-around for an issue where Titan navigates the entire
+        // file hierarchy.
+        // TODO: Fix this issue and remove work-around
+        Path dir = Files.createTempDirectory("grakn");
+        processBuilder.directory(dir.toFile());
+
         return processBuilder.start();
     }
 
