@@ -196,7 +196,7 @@ public class InferenceRule {
                     body.addAtomic(rewrite);
                     });
     }
-
+    
     private InferenceRule unifyViaAtom(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
@@ -233,11 +233,6 @@ public class InferenceRule {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
         if (head.getAtom().isUserDefinedName()) rewriteBody();
-        /*
-        if (parentAtom.isRelation() || parentAtom.isResource()) {
-            propagateConstraints(parentAtom);
-        }
-        */
         return this;
     }
 }
