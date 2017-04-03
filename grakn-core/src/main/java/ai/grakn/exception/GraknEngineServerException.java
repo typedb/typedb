@@ -32,8 +32,8 @@ public class GraknEngineServerException extends RuntimeException {
     final int status;
 
     public GraknEngineServerException(int status, ErrorMessage message, String... args) {
-        super(message.getMessage(args));
-        log(status, message);
+        super(message.getMessage(new Object[]{args}));
+        log(status, message.getMessage(new Object[]{args}));
         this.status = status;
     }
 
@@ -59,7 +59,7 @@ public class GraknEngineServerException extends RuntimeException {
         if(status == 404){
             logger.trace("New Grakn Engine Server exception {}", message);
         } else{
-            logger.error("New Grakn Engine Server exception", message);
+            logger.error("New Grakn Engine Server exception {}", message);
         }
     }
 }
