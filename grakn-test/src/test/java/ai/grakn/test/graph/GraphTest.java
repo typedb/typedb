@@ -5,8 +5,9 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTinkerGraph;
 import ai.grakn.test.EngineContext;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -19,7 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.util.ErrorMessage.TRANSACTIONS_OPEN;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
@@ -73,28 +73,29 @@ public class GraphTest {
     @Test
     public void checkNumberOfOpenTransactionsChangesAsExpected() throws ExecutionException, InterruptedException {
         GraknSession factory = engine.factoryWithNewKeyspace();
-        assertEquals(0, factory.openGraphTxs());
-        assertEquals(0, factory.openGraphBatchTxs());
 
-        factory.open(GraknTxType.WRITE);
-        assertEquals(1, factory.openGraphTxs());
-        assertEquals(0, factory.openGraphBatchTxs());
+        GraknGraph graph = factory.open(GraknTxType.READ);
+        GraknGraph batchGraph = factory.open(GraknTxType.BATCH);
 
-        factory.open(GraknTxType.BATCH);
-        assertEquals(1, factory.openGraphTxs());
-        assertEquals(1, factory.openGraphBatchTxs());
-
-        int expectedValue = 1;
-
-        for(int i = 0; i < 5; i ++){
+        for(int i = 0; i < 6; i ++){
             Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.WRITE)).get();
-            Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.BATCH)).get();
-
-            if(!usingTinker()) expectedValue++;
-
-            assertEquals(expectedValue, factory.openGraphTxs());
-            assertEquals(expectedValue, factory.openGraphBatchTxs());
         }
+
+        for(int i = 0; i < 2; i ++){
+            Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.BATCH)).get();
+        }
+
+        if(graph instanceof GraknTinkerGraph){
+            assertEquals(1, openTransactions(graph));
+            assertEquals(1, openTransactions(batchGraph));
+        } else {
+            assertEquals(7, openTransactions(graph));
+            assertEquals(3, openTransactions(batchGraph));
+        }
+    }
+    private int openTransactions(GraknGraph graph){
+        if(graph == null) return 0;
+        return ((AbstractGraknGraph) graph).numOpenTx();
     }
 
     @Test
@@ -109,19 +110,5 @@ public class GraphTest {
         expectedException.expectMessage("Graph has been closed");
 
         graph.putEntityType("A Thing");
-    }
-
-    @Test
-    public void attemptToCloseGraphWithOpenTransactionsThenThrowException() throws ExecutionException, InterruptedException {
-        assumeFalse(usingTinker()); //Only tinker really supports transactions
-
-        GraknSession factory = engine.factoryWithNewKeyspace();
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
-        Executors.newSingleThreadExecutor().submit(() -> factory.open(GraknTxType.WRITE)).get();
-
-        expectedException.expect(GraphRuntimeException.class);
-        expectedException.expectMessage(TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), 2));
-
-        factory.close();
     }
 }

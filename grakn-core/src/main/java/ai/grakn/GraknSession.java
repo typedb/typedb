@@ -62,17 +62,4 @@ public interface GraknSession extends AutoCloseable {
      * @throws GraphRuntimeException when more than 1 transaction is open on the graph
      */
     void close() throws GraphRuntimeException;
-
-    /**
-     *
-     * @return The number of transactions open on the graph.
-     */
-    int openGraphTxs();
-
-    /**
-     *
-     * @return The number of batch transactions open on the graph.
-     */
-    int openGraphBatchTxs();
-
 }
