@@ -43,9 +43,17 @@ import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.render
 import static ai.grakn.test.GraknTestEnv.usingTitan;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
+import static ai.grakn.util.REST.Response.EXCEPTION;
+import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
+import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
 import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -104,13 +112,12 @@ public class GraqlControllerTest {
 
         mockGraph = mock(GraknGraph.class, RETURNS_DEEP_STUBS);
 
-        when(mockGraph.getKeyspace()).thenReturn("keyspace");
+        when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
         when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
     }
 
-    //TODO string constants
     //TODO documentation
     //TODO Remove Utilities
     //TODO offsetEmbedded
@@ -175,29 +182,29 @@ public class GraqlControllerTest {
         Response response = with().get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage("keyspace")));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(KEYSPACE)));
     }
 
     @Test
     public void sendingGraqlMatchWithNoQuery_ResponseStatusIs400(){
         Response response = with()
-                .queryParam("keyspace", mockGraph.getKeyspace())
+                .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage("query")));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(QUERY)));
     }
 
     @Test
     public void sendingGraqlMatchNoMaterialise_ResponseStatusIs400(){
-        Response response = with().queryParam("keyspace", mockGraph.getKeyspace())
-                .queryParam("query", "match $x isa person;")
-                .queryParam("materialise", true)
+        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(QUERY, "match $x isa person;")
+                .queryParam(MATERIALISE, true)
                 .accept(APPLICATION_TEXT)
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage("materialise")));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(MATERIALISE)));
     }
 
     @Test
@@ -216,13 +223,13 @@ public class GraqlControllerTest {
 
     @Test
     public void sendingGraqlMatchWithNoInfer_ResponseStatusIs400(){
-        Response response = with().queryParam("keyspace", mockGraph.getKeyspace())
-                .queryParam("query", "match $x isa person;")
+        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(QUERY, "match $x isa person;")
                 .accept(APPLICATION_TEXT)
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage("infer")));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(INFER)));
     }
 
     @Test
@@ -509,30 +516,29 @@ public class GraqlControllerTest {
     }
 
     private Response sendMatch(String match, String acceptType, boolean reasonser,
-                               boolean materialise, int numberEmbeddedComponents){
-        return with().queryParam("keyspace", mockGraph.getKeyspace())
-                .queryParam("query", match)
-                .queryParam("infer", reasonser)
-                .queryParam("materialise", materialise)
-                .queryParam("numberEmbeddedComponents", numberEmbeddedComponents)
+                               boolean materialise, int limitEmbedded){
+        return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .queryParam(QUERY, match)
+                .queryParam(INFER, reasonser)
+                .queryParam(MATERIALISE, materialise)
+                .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
     }
 
     protected static String exception(Response response){
-        return response.getBody().as(Json.class, jsonMapper).at("exception").asString();
+        return response.getBody().as(Json.class, jsonMapper).at(EXCEPTION).asString();
     }
 
     protected static String stringResponse(Response response){
-        return response.getBody().as(Json.class, jsonMapper).at("response").asString();
+        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE).asString();
     }
 
     protected static Json jsonResponse(Response response){
-        System.out.println(response.getBody().as(Json.class, jsonMapper).at("response"));
-        return response.getBody().as(Json.class, jsonMapper).at("response");
+        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE);
     }
 
     protected static String originalQuery(Response response){
-        return response.getBody().as(Json.class, jsonMapper).at("originalQuery").asString();
+        return response.getBody().as(Json.class, jsonMapper).at(ORIGINAL_QUERY).asString();
     }
 }

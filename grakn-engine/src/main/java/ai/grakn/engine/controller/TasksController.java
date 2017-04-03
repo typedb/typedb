@@ -47,8 +47,8 @@ import static ai.grakn.engine.controller.GraqlController.getMandatoryParameter;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
-import static ai.grakn.util.REST.Request.LIMIT_PARAM;
-import static ai.grakn.util.REST.Request.OFFSET_PARAM;
+import static ai.grakn.util.REST.Request.LIMIT;
+import static ai.grakn.util.REST.Request.OFFSET;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
@@ -104,12 +104,12 @@ public class TasksController {
         int limit = 0;
         int offset = 0;
 
-        if(request.queryParams(LIMIT_PARAM) != null) {
-            limit = Integer.parseInt(request.queryParams(LIMIT_PARAM));
+        if(request.queryParams(LIMIT) != null) {
+            limit = Integer.parseInt(request.queryParams(LIMIT));
         }
 
-        if(request.queryParams(OFFSET_PARAM) != null) {
-            offset = Integer.parseInt(request.queryParams(OFFSET_PARAM));
+        if(request.queryParams(OFFSET) != null) {
+            offset = Integer.parseInt(request.queryParams(OFFSET));
         }
 
         if(request.queryParams(TASK_STATUS_PARAMETER) != null) {

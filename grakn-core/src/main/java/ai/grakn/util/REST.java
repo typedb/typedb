@@ -73,9 +73,11 @@ public class REST {
      * Class containing request fields and content types.
      */
     public static class Request {
-        public static final String QUERY_FIELD = "query";
+        public static final String LIMIT = "limit";
+        public static final String OFFSET = "offset";
+        public static final String KEYSPACE = "keyspace";
+
         public static final String ID_PARAMETER = ":id";
-        public static final String KEYSPACE_PARAM = "keyspace";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String TASK_STATUS_PARAMETER = "status";
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
@@ -83,11 +85,22 @@ public class REST {
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_LOADER_INSERTS = "inserts";
-        public static final String LIMIT_PARAM = "limit";
-        public static final String OFFSET_PARAM = "offset";
+
         public static final String COMMIT_LOG_TYPE = "concept-base-type";
         public static final String COMMIT_LOG_ID = "concept-vertex-id";
         public static final String COMMIT_LOG_INDEX = "concept-index";
+
+        public static final class Concept {
+            public static final String LIMIT_EMBEDDED = "limitEmbedded";
+            public static final String OFFSET_EMBEDDED = "offsetEmbedded";
+        }
+
+        public static final class Graql {
+            public static final String QUERY = "query";
+            public static final String INFER = "infer";
+            public static final String MATERIALISE = "materialise";
+            public static final String LIMIT_EMBEDDED = "limitEmbedded";
+        }
     }
 
     /**
@@ -117,6 +130,8 @@ public class REST {
      */
     public static class Response{
 
+        public static final String EXCEPTION = "exception";
+
         /**
          * Response content types
          */
@@ -126,6 +141,11 @@ public class REST {
             public static final String APPLICATION_HAL ="application/hal+json";
         }
 
+        public static class Graql {
+            public static final String RESPONSE = "response";
+            public static final String IDENTIFIER = "identifier";
+            public static final String ORIGINAL_QUERY = "originalQuery";
+        }
     }
 
     /**

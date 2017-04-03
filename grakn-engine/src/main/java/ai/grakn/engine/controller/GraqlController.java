@@ -19,7 +19,6 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.AggregateQuery;
@@ -43,16 +42,23 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
+import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
 import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
+import static ai.grakn.util.REST.Request.Graql.INFER;
+import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
+import static ai.grakn.util.REST.Request.Graql.QUERY;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
+import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
+import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.lang.Boolean.parseBoolean;
 
 /**
@@ -79,12 +85,12 @@ public class GraqlController {
 
     @GET
     private Json executeGraql(Request request, Response response){
-        String keyspace = getMandatoryParameter(request, "keyspace");
-        String queryString = getMandatoryParameter(request, "query");
-        boolean infer = parseBoolean(getMandatoryParameter(request, "infer"));
-        boolean materialise = parseBoolean(getMandatoryParameter(request, "materialise"));
+        String keyspace = getMandatoryParameter(request, KEYSPACE);
+        String queryString = getMandatoryParameter(request, QUERY);
+        boolean infer = parseBoolean(getMandatoryParameter(request, INFER));
+        boolean materialise = parseBoolean(getMandatoryParameter(request, MATERIALISE));
 
-        try(GraknGraph graph = factory.getGraph(keyspace, GraknTxType.READ)){
+        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
             if(!readOnly(query)){
@@ -164,14 +170,14 @@ public class GraqlController {
     /**
      * Format the response with the correct content type based on the request.
      *
-     * @param request
-     * @param query
-     * @param response
-     * @return
+     * @param request information about the HTTP request
+     * @param query query to be executed
+     * @param response response to the client
+     * @return formatted result of the executed query
      */
     private Json respond(Request request, Query<?> query, Response response){
 
-        Json body = Json.object("originalQuery", query.toString());
+        Json body = Json.object(ORIGINAL_QUERY, query.toString());
 
         String acceptType = getAcceptType(request);
         if(!validContentType(acceptType, query)){
@@ -180,17 +186,17 @@ public class GraqlController {
 
         switch (acceptType){
             case APPLICATION_TEXT:
-                body.set("response", formatAsGraql(Printers.graql(), query));
+                body.set(RESPONSE, formatAsGraql(Printers.graql(), query));
                 break;
             case APPLICATION_JSON_GRAQL:
-                body.set("response", Json.read(formatAsGraql(Printers.json(), query)));
+                body.set(RESPONSE, Json.read(formatAsGraql(Printers.json(), query)));
                 break;
             case APPLICATION_HAL:
                 // Extract extra information needed by HAL renderer
-                String keyspace = getMandatoryParameter(request, "keyspace");
-                int numberEmbeddedComponents = getParameter(request, "numberEmbeddedComponents").map(Integer::parseInt).orElse(-1);
+                String keyspace = getMandatoryParameter(request, KEYSPACE);
+                int limitEmbedded = getParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
-                body.set("response", formatAsHAL(query, keyspace, numberEmbeddedComponents));
+                body.set(RESPONSE, formatAsHAL(query, keyspace, limitEmbedded));
                 break;
             default:
                 throw new GraknEngineServerException(406, UNSUPPORTED_CONTENT_TYPE, acceptType);
