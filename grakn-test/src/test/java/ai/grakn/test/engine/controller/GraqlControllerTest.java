@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.factory.EngineGraknGraphFactory;
@@ -106,10 +107,9 @@ public class GraqlControllerTest {
         when(mockGraph.getKeyspace()).thenReturn("keyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace())).thenReturn(mockGraph);
+        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
     }
 
-    //TODO compute
     //TODO concept api
     //TODO ontology api
     //TODO string constants
