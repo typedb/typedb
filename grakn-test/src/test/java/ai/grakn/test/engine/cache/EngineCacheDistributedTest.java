@@ -33,8 +33,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 //NOTE: This test is only in grakn-test because it needs a running ZK
@@ -57,19 +61,68 @@ public class EngineCacheDistributedTest {
     }
 
     @Test
+    public void whenDeletingJobsFromCache_EnsureJobsAreNoLongerInCache(){
+        String keyspace = "my_fake_keyspace";
+
+        //Fake Commit Logs
+        Map<String, Set<ConceptId>> castingsFake = createFakeInternalConceptLog("Casting_Index_", 10, 5);
+        Map<String, Set<ConceptId>> resourcesFake = createFakeInternalConceptLog("Resource_Index_", 6, 11);
+
+        //Add stuff to the cache
+        transferFakeCacheIntoRealCache(castingsFake, (index, id) -> cache.addJobCasting(keyspace, index, id));
+        transferFakeCacheIntoRealCache(resourcesFake, (index, id) -> cache.addJobResource(keyspace, index, id));
+
+        //Delete Random Jobs 1
+        String deletedIndex1 = "Casting_Index_1";
+        cache.deleteJobCasting(keyspace, deletedIndex1, ConceptId.of(0));
+        cache.deleteJobCasting(keyspace, deletedIndex1, ConceptId.of(1));
+        cache.deleteJobCasting(keyspace, deletedIndex1, ConceptId.of(2));
+        cache.deleteJobCasting(keyspace, deletedIndex1, ConceptId.of(3));
+        cache.deleteJobCasting(keyspace, deletedIndex1, ConceptId.of(4));
+        assertThat(cache.getCastingJobs(keyspace).get(deletedIndex1), is(empty()));
+
+        //Delete Random Jobs 2
+        String deletedIndex2 = "Resource_Index_3";
+        ConceptId deletedId1 = ConceptId.of(0);
+        ConceptId deletedId2 = ConceptId.of(4);
+        ConceptId deletedId3 = ConceptId.of(6);
+        cache.deleteJobResource(keyspace, deletedIndex2, deletedId1);
+        cache.deleteJobResource(keyspace, deletedIndex2, deletedId2);
+        cache.deleteJobResource(keyspace, deletedIndex2, deletedId3);
+        assertFalse("Job " + deletedId1 + " was not deleted form cache", cache.getResourceJobs(keyspace).get(deletedIndex2).contains(deletedId1));
+        assertFalse("Job " + deletedId2 + " was not deleted form cache", cache.getResourceJobs(keyspace).get(deletedIndex2).contains(deletedId2));
+        assertFalse("Job " + deletedId3 + " was not deleted form cache", cache.getResourceJobs(keyspace).get(deletedIndex2).contains(deletedId3));
+
+        //Clear Jobs 1
+        String deletedIndex3 = "Casting_Index_2";
+        cache.clearJobSetCastings(keyspace, deletedIndex3);
+        assertFalse("Index [" + deletedIndex3 + "] was not cleared form the cache", cache.getCastingJobs(keyspace).containsKey(deletedIndex3));
+
+        //Clear Jobs 2
+        String deletedIndex4 = "Resource_Index_3";
+        cache.clearJobSetResources(keyspace, deletedIndex4);
+        assertFalse("Index [" + deletedIndex4 + "] was not cleared form the cache", cache.getResourceJobs(keyspace).containsKey(deletedIndex3));
+
+        //Clear all Jobs
+        cache.clearAllJobs(keyspace);
+        assertTrue(cache.getCastingJobs(keyspace).isEmpty());
+        assertTrue(cache.getResourceJobs(keyspace).isEmpty());
+    }
+
+    @Test
     public void whenAddingJobsToCacheOfSameKeyspace_EnsureCacheContainsJobs(){
         String keyspace = "my_fake_keyspace";
 
         //Fake Commit Logs
         Map<String, Set<ConceptId>> castingsFake = createFakeInternalConceptLog("Casting_Index_", 10, 5);
-        Map<String, Set<ConceptId>> resourcesFake = createFakeInternalConceptLog("Casting_Index_", 6, 11);
+        Map<String, Set<ConceptId>> resourcesFake = createFakeInternalConceptLog("Resource_Index_", 6, 11);
 
         long castingsFakeCount = castingsFake.values().stream().mapToLong(Set::size).sum();
         long resourcesFakeCount = resourcesFake.values().stream().mapToLong(Set::size).sum();
 
         //Add stuff to the cache
         transferFakeCacheIntoRealCache(castingsFake, (index, id) -> cache.addJobCasting(keyspace, index, id));
-        transferFakeCacheIntoRealCache(resourcesFake, (index, id) -> cache.addJobCasting(keyspace, index, id));
+        transferFakeCacheIntoRealCache(resourcesFake, (index, id) -> cache.addJobResource(keyspace, index, id));
 
         //Check stuff is in cache
         checkContentsOfCache(castingsFake, cache.getCastingJobs(keyspace));
@@ -88,15 +141,15 @@ public class EngineCacheDistributedTest {
 
         //Fake Commit Logs
         Map<String, Set<ConceptId>> key1_castingsFake = createFakeInternalConceptLog("Casting_Index_", 2, 1);
-        Map<String, Set<ConceptId>> key1_resourcesFake = createFakeInternalConceptLog("Casting_Index_", 3, 6);
+        Map<String, Set<ConceptId>> key1_resourcesFake = createFakeInternalConceptLog("Resource_Index_", 3, 6);
         Map<String, Set<ConceptId>> key2_castingsFake = createFakeInternalConceptLog("Casting_Index_", 8, 5);
-        Map<String, Set<ConceptId>> key2_resourcesFake = createFakeInternalConceptLog("Casting_Index_", 2, 8);
+        Map<String, Set<ConceptId>> key2_resourcesFake = createFakeInternalConceptLog("Resource_Index_", 2, 8);
 
         //Add stuff to the cache
         transferFakeCacheIntoRealCache(key1_castingsFake, (index, id) -> cache.addJobCasting(keyspace1, index, id));
-        transferFakeCacheIntoRealCache(key1_resourcesFake, (index, id) -> cache.addJobCasting(keyspace1, index, id));
+        transferFakeCacheIntoRealCache(key1_resourcesFake, (index, id) -> cache.addJobResource(keyspace1, index, id));
         transferFakeCacheIntoRealCache(key2_castingsFake, (index, id) -> cache.addJobCasting(keyspace2, index, id));
-        transferFakeCacheIntoRealCache(key2_resourcesFake, (index, id) -> cache.addJobCasting(keyspace2, index, id));
+        transferFakeCacheIntoRealCache(key2_resourcesFake, (index, id) -> cache.addJobResource(keyspace2, index, id));
 
         //Check stuff is in graph
         checkContentsOfCache(key1_castingsFake, cache.getCastingJobs(keyspace1));
