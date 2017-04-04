@@ -344,6 +344,21 @@ public class AtomicTest {
         Concept concept = getConcept(graph, "name", "a");
         Concept concept2 = getConcept(graph, "name", "a2");
         String relationString = "{" +
+                "($x, $y) isa relation1;" +
+                "$x id '" + concept.getId().getValue() + "';" +
+                "$y id '" + concept2.getId().getValue() + "';" +
+                "}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(0, relation.getApplicableRules().size());
+    }
+
+    @Ignore
+    @Test
+    public void testRuleApplicabilityViaType_InstancesDoNotMatchRule_NoRelationType(){
+        GraknGraph graph = ruleApplicabilityInstanceTypesSet.graph();
+        Concept concept = getConcept(graph, "name", "a");
+        Concept concept2 = getConcept(graph, "name", "a2");
+        String relationString = "{" +
                 "($x, $y);" +
                 "$x id '" + concept.getId().getValue() + "';" +
                 "$y id '" + concept2.getId().getValue() + "';" +
