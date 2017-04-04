@@ -381,14 +381,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
 
     public ReasonerQueryIterator iterator(Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        //TODO switch to iterative deepening for queries with no subs
-        //if(getAtom().hasSubstitution()) {
+        //TODO switch to iterative deepening for queries with no subs?
         return new ReasonerAtomicQueryIterator(subGoals, cache);
-        //} else {
-        //    boolean explanation = false;
-        //    return (ReasonerQueryIterator) answerStream(subGoals, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation), false, explanation, false).iterator();
-        //}
     }
+
+    public static int materialise = 0;
 
     /**
      *
@@ -546,7 +543,32 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         @Override
         public Answer next() {
             Answer sub = queryIterator.next().filterVars(getVarNames());
-            if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
+            /*
+            if (currentRule != null){
+                ReasonerAtomicQuery ruleHead = currentRule.getHead();
+                Atom headAtom = ruleHead.getAtom();
+                ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(ruleHead);
+                queryToMaterialise.addSubstitution(sub);
+
+                if (headAtom.requiresMaterialisation()
+                        && cache.getAnswers(queryToMaterialise).isEmpty()){
+                    AnswerExplanation exp = sub.getExplanation();
+                    System.out.println("Materialise: " + queryToMaterialise.getAtom());
+                    queryToMaterialise.getIdPredicates().forEach(System.out::println);
+                    materialise++;
+                    System.out.println();
+
+                    sub = queryToMaterialise
+                            .materialiseDirect()
+                            .map(ans -> ans.setExplanation(exp))
+                            .collect(Collectors.toSet()).iterator().next();
+                    cache.recordAnswer(queryToMaterialise, sub);
+                    System.out.println("materialise: " + materialise);
+                }
+
+                sub = sub.explain(new RuleExplanation(currentRule));
+            }
+            */
             /*
             System.out.println("ANSWER to: " + ReasonerAtomicQuery.this.getAtom());
             sub.entrySet().forEach(System.out::println);

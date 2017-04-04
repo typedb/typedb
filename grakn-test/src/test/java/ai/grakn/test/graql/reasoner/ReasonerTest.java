@@ -588,7 +588,7 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    //TODO
+    //TODO takes ages - look at atom selection strategy
     @Ignore
     @Test
     public void testReasoningWithQueryContainingHasResource2(){
@@ -729,6 +729,7 @@ public class ReasonerTest {
         assertEquals(answers.filterVars(Sets.newHashSet(VarName.of("x"))), answers2);
     }
 
+    //TODO loses $rel variable
     @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationTypeVar2(){
@@ -878,7 +879,6 @@ public class ReasonerTest {
         assertEquals(2*answers.size(), answers2.size());
     }
 
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariable(){
         String queryString = "match $x isa is-located-in;";
@@ -896,7 +896,7 @@ public class ReasonerTest {
         assertEquals(answers2, answers3);
     }
 
-    @Ignore
+
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation(){
         String queryString = "match $x isa is-located-in;";
@@ -920,7 +920,6 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
     }
 
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariable2(){
         String queryString = "match $x isa recommendation;";
@@ -936,7 +935,6 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers.size(), answers.size());
     }
 
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation2(){
         String queryString = "match $x isa recommendation;";
@@ -960,7 +958,6 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
     }
 
-    @Ignore
     @Test
     public void testReasoningWithMatchAllQuery(){
         String queryString = "match $y isa product;$r($x, $y);$x isa entity;";

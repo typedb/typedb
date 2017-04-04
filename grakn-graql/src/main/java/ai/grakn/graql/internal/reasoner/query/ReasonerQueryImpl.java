@@ -45,6 +45,7 @@ import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -553,6 +554,15 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
+    boolean requiresMaterialisation(){
+        for(Atom atom : selectAtoms()){
+            if (atom.requiresMaterialisation()) return true;
+            for (InferenceRule rule : atom.getApplicableRules())
+                if (rule.requiresMaterialisation()) return true;
+        }
+        return false;
+    }
+
     private Stream<Answer> fullJoin(Set<ReasonerAtomicQuery> subGoals,
                                     Cache<ReasonerAtomicQuery, ?> cache,
                                     Cache<ReasonerAtomicQuery, ?> dCache,
@@ -629,8 +639,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (!this.isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
         }
-        //TODO temporary switch
-        if (materialise
+        if (materialise || requiresMaterialisation()
                 /*|| (isAtomic() && !getTopAtom().hasSubstitution() ) */) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {

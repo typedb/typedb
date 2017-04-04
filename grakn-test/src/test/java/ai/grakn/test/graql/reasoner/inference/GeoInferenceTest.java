@@ -27,7 +27,9 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GeoGraph;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -250,8 +252,9 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
-        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toSet()));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        System.out.println("materialise: " + ReasonerAtomicQuery.materialise);
         assertEquals(answers.size(), 51);
         assertEquals(answers, answers2);
     }
