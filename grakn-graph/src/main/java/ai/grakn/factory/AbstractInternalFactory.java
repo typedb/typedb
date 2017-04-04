@@ -104,8 +104,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
     }
 
     protected M getGraph(M graknGraph, GraknTxType txType){
-        boolean batchLoading = false;
-        if(GraknTxType.BATCH.equals(txType)) batchLoading = true;
+        boolean batchLoading = GraknTxType.BATCH.equals(txType);
 
         if(graknGraph == null){
             graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);

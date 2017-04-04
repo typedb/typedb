@@ -103,7 +103,7 @@ public class GraknSessionImpl implements GraknSession {
     @Override
     public void close() throws GraphRuntimeException {
         int openTransactions = openTransactions(graph) + openTransactions(graphBatch);
-        if(openTransactions > 1){
+        if(openTransactions > 0){
             LOG.warn(ErrorMessage.TRANSACTIONS_OPEN.getMessage(this.keyspace, openTransactions));
         }
 

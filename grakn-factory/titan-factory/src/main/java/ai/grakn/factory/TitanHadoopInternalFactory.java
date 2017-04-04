@@ -72,6 +72,7 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
         return (HadoopGraph) GraphFactory.open(properties);
     }
 
+    //TODO: Get rid of the need for batch loading parameter
     @Override
     protected HadoopGraph getGraphWithNewTransaction(HadoopGraph graph, boolean batchloading) {
         return graph;
