@@ -214,9 +214,8 @@ public class InferenceRule {
     }
 
     /**
-     *
-     * @param unifier
-     * @return
+     * @param unifier to be applied on this rule
+     * @return unified rule
      */
     public InferenceRule unify(Unifier unifier){
         //do alpha-conversion

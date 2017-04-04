@@ -312,7 +312,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean explanation,
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
-        rule.unify(atom).propagateConstraints(atom);
+        rule.unify(atom);
+        if (atom.isRelation() || atom.isResource()) rule.propagateConstraints(atom);
+
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();
         Set<VarName> varsToRetain = rule.hasDisconnectedHead()? ruleBody.getVarNames() : ruleHead.getVarNames();
@@ -486,12 +488,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.subGoals = subGoals;
             this.cache = qc;
 
-            /*
+/*
             System.out.println("AQ:" + ReasonerAtomicQuery.this.getAtom());
             ReasonerAtomicQuery.this.getIdPredicates().forEach(System.out::println);
             if (subGoals.contains(ReasonerAtomicQuery.this)) System.out.println("AQ not admissible");
             System.out.println();
             */
+
 
             boolean hasFullSubstitution = hasFullSubstitution();
             this.queryIterator = lookup(cache).iterator();

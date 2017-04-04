@@ -305,6 +305,7 @@ public class ReasonerTest {
         assertTrue(query2.equals(query4));
     }
 
+    @Ignore
     @Test
     public void testParsingQueryContainingScope(){
         String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
@@ -727,6 +728,7 @@ public class ReasonerTest {
         assertEquals(answers.filterVars(Sets.newHashSet(VarName.of("x"))), answers2);
     }
 
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationTypeVar2(){
         String queryString = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;";
@@ -792,14 +794,15 @@ public class ReasonerTest {
         String queryString = "match $p isa person, has age $a, has name $n;$pr isa product;($p, $pr) isa recommendation;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
-        final int offset = 3;
+        final int offset = 4;
         List<Map<String, Concept>> fullAnswers = query.execute();
-        List<Map<String, Concept>> answers = query.orderBy(VarName.of("a")).offset(offset).execute();
-        List<Map<String, Concept>> answers2 = query.orderBy(VarName.of("a")).execute();
+        List<Map<String, Concept>> answers = query.orderBy(VarName.of("a")).execute();
+        List<Map<String, Concept>> answers2 = query.orderBy(VarName.of("a")).offset(offset).execute();
 
-        assertEquals(fullAnswers.size(), answers.size() + offset);
-        assertEquals(answers2.size(), answers.size() + offset);
-        assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "23");
+        assertEquals(fullAnswers.size(), answers2.size() + offset);
+        assertEquals(answers.size(), answers2.size() + offset);
+        assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "19");
+        assertEquals(answers2.iterator().next().get("a").asResource().getValue().toString(), "23");
     }
 
     @Test
@@ -872,31 +875,7 @@ public class ReasonerTest {
         assertTrue(answers2.containsAll(answers));
         assertEquals(2*answers.size(), answers2.size());
     }
-
-    @Test
-    public void testReasoningWithQueryContainingAmbiguousRolePlayersWithSub(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match ($x, $y) isa is-located-in;$x id '174';";
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
-        QueryBuilder qb = graph.graql().infer(false);
-        QueryAnswers answers = queryAnswers(iqb.parse(queryString));
-        QueryAnswers answers2 = queryAnswers(qb.parse(queryString));
-        assertEquals(answers, answers2);
-    }
-
-    @Test
-    public void testReasoningWithQueryContainingRelationVariableWithUnspecifiedRoles(){
-        String queryString = "match ($x, $y) isa is-located-in;";
-        String queryString2 = "match $r($x, $y) isa is-located-in;";
-        QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(false);
-        MatchQuery query = iqb.parse(queryString);
-        MatchQuery query2 = iqb.parse(queryString2);
-        QueryAnswers answers = new QueryAnswers(queryAnswers(query));
-        QueryAnswers answers2 = new QueryAnswers(queryAnswers(query2));
-        answers2.forEach(answer -> assertEquals(answer.size(), 3));
-        assertEquals(answers.size(), answers2.size());
-    }
-
+    
     @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariable(){
@@ -944,7 +923,7 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingRelationVariable2(){
         String queryString = "match $x isa recommendation;";
         String queryString2 = "match $x($x1, $x2) isa recommendation;select $x;";
-        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
+        QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
@@ -979,6 +958,7 @@ public class ReasonerTest {
         assertEquals(requeriedAnswers2.size(), requeriedAnswers3.size());
     }
 
+    @Ignore
     @Test
     public void testReasoningWithMatchAllQuery(){
         String queryString = "match $y isa product;$r($x, $y);$x isa entity;";

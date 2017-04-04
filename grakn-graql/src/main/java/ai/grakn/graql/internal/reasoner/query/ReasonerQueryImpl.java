@@ -201,7 +201,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
         if (!resources.isEmpty()) return resources.iterator().next();
 
-
         //favour non-resolvable atoms
         Set<Atom> relations = atoms.stream()
                 .filter(Atom::isRelation)
@@ -465,7 +464,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom for which the neighbour is to be found
      * @return neighbour or null if disjoint
      */
-    private Atom findNextJoinable(Atom atom){
+    public Atom findNextJoinable(Atom atom){
         Set<Atom> atoms = getAtoms().stream()
                 .filter(Atomic::isAtom).map(at -> (Atom) at)
                 .filter(at -> at != atom)
@@ -531,9 +530,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
         predicates.addAll(getIdPredicates());
 
-        if (predicates.stream().map(AtomBase::getVarName).collect(Collectors.toSet()).size() < predicates.size()){
-            System.out.println();
-        }
         return new QueryAnswer(predicates.stream()
                 .collect(Collectors.toMap(IdPredicate::getVarName, p -> graph().getConcept(p.getPredicate())))
         );
@@ -631,8 +627,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
         if (!this.isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames()
-                    .map(QueryAnswer::new);
+            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
         }
         //TODO temporary switch
         if (materialise
@@ -747,7 +742,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             Atom topAtom = newQuery.getTopAtom();
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
 
-
             /*
             System.out.println("Query:");
             getAtoms().forEach(System.out::println);
@@ -793,7 +787,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         private ReasonerQueryImpl getQueryPrime(){
             //construct new reasoner query with the top atom removed
-            //ReasonerQueryImpl newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
             return newQuery.isAtomic()? new ReasonerAtomicQuery(newQuery.getTopAtom()) : newQuery;
         }
     }
