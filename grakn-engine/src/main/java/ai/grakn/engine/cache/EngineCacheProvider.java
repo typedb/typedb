@@ -45,7 +45,7 @@ public class EngineCacheProvider {
         conceptCache = cache;
     }
 
-    public ConceptCache getCache(){
+    public static ConceptCache getCache(){
         if(conceptCache == null) throw new RuntimeException("The engine cache has not been initalised");
         return conceptCache;
     }

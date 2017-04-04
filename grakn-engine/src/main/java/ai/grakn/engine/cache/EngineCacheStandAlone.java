@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -50,31 +49,22 @@ public class EngineCacheStandAlone implements ConceptCache{
     private final Map<String, Map<String, Set<ConceptId>>> castings;
     private final Map<String, Map<String, Set<ConceptId>>> resources;
 
-    private final AtomicBoolean saveInProgress;
     private static EngineCacheStandAlone instance=null;
     private final AtomicLong lastTimeModified;
 
-    public static synchronized EngineCacheStandAlone getInstance(){
-        if(instance==null) instance=new EngineCacheStandAlone();
-        return instance;
-    }
-
     public static EngineCacheStandAlone init(){
         if(instance != null) throw new RuntimeException("Standalone Engine Cache has already been initalised");
-        return new EngineCacheStandAlone();
+        instance = new EngineCacheStandAlone();
+        return instance;
     }
 
     public EngineCacheStandAlone(){
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
-        saveInProgress = new AtomicBoolean(false);
         lastTimeModified = new AtomicLong(System.currentTimeMillis());
     }
 
-    public boolean isSaveInProgress() {
-        return saveInProgress.get();
-    }
-
+    @Override
     public Set<String> getKeyspaces(){
         Set<String> keyspaces = new HashSet<>();
         keyspaces.addAll(castings.keySet());
@@ -82,14 +72,17 @@ public class EngineCacheStandAlone implements ConceptCache{
         return keyspaces;
     }
 
+    @Override
     public long getNumJobs(String keyspace) {
         return getNumCastingJobs(keyspace) + getNumCastingJobs(keyspace);
     }
 
+    @Override
     public long getNumCastingJobs(String keyspace) {
         return getNumJobsCount(getCastingJobs(keyspace));
     }
 
+    @Override
     public long getNumResourceJobs(String keyspace) {
         return getNumJobsCount(getResourceJobs(keyspace));
     }
@@ -99,6 +92,7 @@ public class EngineCacheStandAlone implements ConceptCache{
     }
 
     //-------------------- Casting Jobs
+    @Override
     public Map<String, Set<ConceptId>> getCastingJobs(String keyspace) {
         return castings.computeIfAbsent(keyspace, key -> new ConcurrentHashMap<>());
     }
@@ -114,6 +108,7 @@ public class EngineCacheStandAlone implements ConceptCache{
     }
 
     //-------------------- Resource Jobs
+    @Override
     public Map<String, Set<ConceptId>> getResourceJobs(String keyspace) {
         return resources.computeIfAbsent(keyspace, key -> new ConcurrentHashMap<>());
     }
@@ -173,6 +168,7 @@ public class EngineCacheStandAlone implements ConceptCache{
     /**
      * @return the last time a job was added to the EngineCacheStandAlone.
      */
+    @Override
     public long getLastTimeJobAdded(){
         return lastTimeModified.get();
     }

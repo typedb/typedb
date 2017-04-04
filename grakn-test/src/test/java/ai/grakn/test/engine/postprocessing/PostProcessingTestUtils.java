@@ -1,15 +1,14 @@
 package ai.grakn.test.engine.postprocessing;
 
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.exception.MoreThanOneConceptException;
+import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.Schema;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public class PostProcessingTestUtils {
 
@@ -24,7 +23,7 @@ public class PostProcessingTestUtils {
     }
     
     static <T> String indexOf(GraknGraph graph, Resource<T> resource) {
-        Vertex originalResource = (Vertex) graph.admin().getTinkerTraversal()
+        Vertex originalResource = graph.admin().getTinkerTraversal()
                                         .hasId(resource.getId().getValue()).next();
         return originalResource.value(Schema.ConceptProperty.INDEX.name());
     }
@@ -46,7 +45,7 @@ public class PostProcessingTestUtils {
     }
     
     @SuppressWarnings("unchecked")
-    static <T> Resource<T> createDuplicateResource(GraknGraph graknGraph, EngineCacheStandAlone cache, ResourceType<T> resourceType, Resource<T> resource) {
+    static <T> Resource<T> createDuplicateResource(GraknGraph graknGraph, ConceptCache cache, ResourceType<T> resourceType, Resource<T> resource) {
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
         Vertex originalResource = (Vertex) graph.getTinkerTraversal()
                 .hasId(resource.getId().getValue()).next();

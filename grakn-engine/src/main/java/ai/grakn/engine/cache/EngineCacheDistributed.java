@@ -22,6 +22,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.graph.admin.ConceptCache;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * <p>
  *     Engine's internal Concept ID cache
@@ -54,6 +57,31 @@ public class EngineCacheDistributed implements ConceptCache {
     }
 
     @Override
+    public Set<String> getKeyspaces() {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
+    public long getNumJobs(String keyspace) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
+    public long getNumCastingJobs(String keyspace) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
+    public long getNumResourceJobs(String keyspace) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
+    public Map<String, Set<ConceptId>> getCastingJobs(String keyspace) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
     public void addJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
         throw new UnsupportedOperationException("not yet implemented");
     }
@@ -61,6 +89,11 @@ public class EngineCacheDistributed implements ConceptCache {
     @Override
     public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
         throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
+    public Map<String, Set<ConceptId>> getResourceJobs(String keyspace) {
+        return null;
     }
 
     @Override
@@ -85,6 +118,11 @@ public class EngineCacheDistributed implements ConceptCache {
 
     @Override
     public void clearAllJobs(String keyspace) {
+        throw new UnsupportedOperationException("not yet implemented");
+    }
+
+    @Override
+    public long getLastTimeJobAdded() {
         throw new UnsupportedOperationException("not yet implemented");
     }
 }

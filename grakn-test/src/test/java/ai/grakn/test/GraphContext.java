@@ -20,7 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -71,7 +71,7 @@ public class GraphContext implements TestRule {
 
     public void rollback() {
         if (usingTinker()) {
-            graph.admin().clear(EngineCacheStandAlone.getInstance());
+            graph.admin().clear(EngineCacheProvider.getCache());
             loadGraph();
         } else if (!graph.isClosed()) {
             graph.close();
