@@ -228,6 +228,7 @@ class GraqlSession {
                 if (errorMessage != null) {
                     if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
                         graph.close();
+                        attemptRefresh();
                     }
                     sendQueryError(errorMessage);
                 }
