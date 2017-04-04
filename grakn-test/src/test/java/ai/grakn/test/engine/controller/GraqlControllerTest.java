@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
 import com.jayway.restassured.response.Response;
+import java.util.Collections;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -63,6 +64,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -295,8 +297,8 @@ public class GraqlControllerTest {
         String query = "match $x isa person;";
         Response response = sendMatch(APPLICATION_TEXT);
 
-        String expectedResponse = Printers.graql().graqlString(graphContext.graph().graql().parse(query).execute());
-        assertThat(stringResponse(response), equalTo(expectedResponse));
+        assertThat(stringResponse(response).length(), greaterThan(0));
+        assertThat(stringResponse(response), stringContainsInOrder(Collections.nCopies(10, "isa person")));
     }
 
     @Test

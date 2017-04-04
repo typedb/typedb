@@ -257,7 +257,15 @@ public class GraqlController {
      * @return Graql representation
      */
     private String formatAsGraql(Printer printer, Query<?> query) {
-        return printer.graqlString( query.execute());
+        //TODO Make the Graql printer take in a "should colorize" argument
+        //TODO Frontend does not need to unescape
+
+        String result = printer.graqlString( query.execute());
+
+        // unescape result
+        result = result.replaceAll("\u001B\\[\\d+m", "");
+
+        return result;
     }
 
     static String getAcceptType(Request request){
