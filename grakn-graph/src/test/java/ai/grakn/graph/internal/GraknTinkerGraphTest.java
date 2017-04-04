@@ -46,7 +46,7 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
-        for(int i = 0; i < 100; i ++){
+        for(int i = 0; i < 20; i ++){
             futures.add(pool.submit(this::addRandomEntityType));
         }
 
@@ -57,9 +57,9 @@ public class GraknTinkerGraphTest extends GraphTestBase{
                 ignored.printStackTrace();
             }
         });
-        assertEquals(101, graknGraph.admin().getMetaEntityType().subTypes().size());
+        assertEquals(21, graknGraph.admin().getMetaEntityType().subTypes().size());
     }
-    private void addRandomEntityType(){
+    private synchronized void addRandomEntityType(){
         try(GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){
             graph.putEntityType(UUID.randomUUID().toString());
         }
