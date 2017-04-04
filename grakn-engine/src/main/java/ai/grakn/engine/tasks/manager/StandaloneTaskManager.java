@@ -29,7 +29,6 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +39,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * <p>
@@ -65,8 +62,9 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class StandaloneTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
-    private final Map<TaskId, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
-    private final TaskStateStorage stateStorage;
+    private final Map<TaskId, BackgroundTask> runningTasks;
+
+    private final TaskStateStorage storage;
     private final ReentrantLock stateUpdateLock;
 
     private final ExecutorService executorService;
@@ -75,8 +73,10 @@ public class StandaloneTaskManager implements TaskManager {
 
     public StandaloneTaskManager(EngineID engineId) {
         this.engineID = engineId;
-        instantiatedTasks = new ConcurrentHashMap<>();
-        stateStorage = new TaskStateInMemoryStore();
+
+        runningTasks = new ConcurrentHashMap<>();
+
+        storage = new TaskStateInMemoryStore();
         stateUpdateLock = new ReentrantLock();
 
         GraknEngineConfig properties = GraknEngineConfig.getInstance();
@@ -92,118 +92,108 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
-        instantiatedTasks.clear();
+
+        runningTasks.clear();
     }
 
     @Override
     public void addTask(TaskState taskState){
-        stateStorage.newState(taskState);
+        storage.newState(taskState);
 
         // Schedule task to run.
         Instant now = Instant.now();
         TaskSchedule schedule = taskState.schedule();
-        long delay = Duration.between(now, schedule.runAt()).toMillis();
-        try {
-            stateStorage.updateState(taskState.markScheduled());
+        long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
 
-            // Instantiate task.
-            BackgroundTask task = taskState.taskClass().newInstance();
+        Runnable taskExecution = submitTaskForExecution(taskState);
 
-            ScheduledFuture<?> future = schedule.interval().map(interval ->
-                schedulingService.scheduleAtFixedRate(runTask(taskState.getId(), task, true), delay, interval.toMillis(), MILLISECONDS)
-            ).orElseGet(() ->
-                (ScheduledFuture) schedulingService.schedule(runTask(taskState.getId(), task, false), delay, MILLISECONDS)
-            );
-
-            instantiatedTasks.put(taskState.getId(), new Pair<>(future, task));
-        }
-        catch (Throwable throwable) {
-            LOG.error(getFullStackTrace(throwable));
-            stateStorage.updateState(taskState.markFailed(throwable));
-            instantiatedTasks.remove(taskState.getId());
+        if(schedule.isRecurring()){
+            schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), MILLISECONDS);
+        } else {
+            schedulingService.schedule(taskExecution, delay, MILLISECONDS);
         }
     }
 
     public void stopTask(TaskId id) {
-        stateUpdateLock.lock();
+        TaskState state = storage.getState(id);
 
         try {
-            TaskState state = stateStorage.getState(id);
-            if (state == null) {
-                return;
+
+            // Task has not been run- Mark the task as stopped and it will not run when picked up by the executor
+            if (shouldRunTask(state)) {
+                LOG.info("Stopping a currently scheduled task {}", id);
+
+                state.markStopped();
             }
 
-            Pair<ScheduledFuture<?>, BackgroundTask> pair = instantiatedTasks.get(id);
-            synchronized (pair) {
-                if (state.status() == SCHEDULED || (state.status() == COMPLETED && state.schedule().isRecurring())) {
-                    LOG.info("Stopping a currently scheduled task " + id);
-                    pair.getKey().cancel(true);
-                    state.markStopped();
-                } else if (state.status() == RUNNING) {
-                    LOG.info("Stopping running task " + id);
+            // Kill the currently running task if it is running
+            else if (state.status() == RUNNING && runningTasks.containsKey(id)) {
+                LOG.info("Stopping running task {}", id);
 
-                    BackgroundTask task = pair.getValue();
-                    if (task != null) {
-                        task.stop();
-                    }
+                // Stop the task
+                runningTasks.get(id).stop();
 
-                    state.markStopped();
-                } else {
-                    LOG.warn("Task not running - " + id);
-                }
-
-                stateStorage.updateState(state);
+                state.markStopped();
+            } else {
+                LOG.warn("Task not running {}, was not stopped", id);
             }
+
         } finally {
-            stateUpdateLock.unlock();
+            saveState(state);
         }
     }
 
     public TaskStateStorage storage() {
-        return stateStorage;
+        return storage;
     }
 
-    private Runnable exceptionCatcher(TaskState state, BackgroundTask task) {
+    private Runnable exceptionCatcher(TaskState task) {
         return () -> {
-            stateUpdateLock.lock();
             try {
-                task.start(saveCheckpoint(state), state.configuration());
+                task.markRunning(engineID);
 
-                if(state.status() == RUNNING) {
-                    state.markCompleted();
+                saveState(task);
+
+                BackgroundTask runningTask = task.taskClass().newInstance();
+                runningTasks.put(task.getId(), runningTask);
+
+                boolean completed = runningTask.start(saveCheckpoint(task), task.configuration());
+
+                if (completed) {
+                    task.markCompleted();
+                } else {
+                    task.markStopped();
                 }
             }
             catch (Throwable throwable) {
-                LOG.error(getFullStackTrace(throwable));
-                state.markFailed(throwable);
+                LOG.error("error", throwable);
+                task.markFailed(throwable);
             } finally {
-                stateStorage.updateState(state);
-                stateUpdateLock.unlock();
+                saveState(task);
+                runningTasks.remove(task.getId());
             }
         };
     }
 
-    private Runnable runTask(TaskId id, BackgroundTask task, Boolean recurring) {
+    private Runnable submitTaskForExecution(TaskState taskState) {
         return () -> {
-            stateUpdateLock.lock();
-
-            try {
-                TaskState state = stateStorage.getState(id);
-                if (state.status() == SCHEDULED || (recurring && state.status() == COMPLETED)) {
-                    stateStorage.updateState(state.markRunning(engineID));
-                    executorService.submit(exceptionCatcher(state, task));
-                }
-            } finally {
-                stateUpdateLock.unlock();
+            if (shouldRunTask(storage.getState(taskState.getId()))) {
+                executorService.submit(exceptionCatcher(taskState));
             }
         };
+    }
+
+    private boolean shouldRunTask(TaskState state){
+        return state.status() == CREATED || state.schedule().isRecurring() && state.status() == COMPLETED;
     }
 
     private Consumer<TaskCheckpoint> saveCheckpoint(TaskState state) {
-        return s -> {
-            stateUpdateLock.lock();
-            stateStorage.updateState(state.checkpoint(s));
-            stateUpdateLock.unlock();
-        };
+        return checkpoint -> saveState(state.checkpoint(checkpoint));
+    }
+
+    private void saveState(TaskState taskState){
+        stateUpdateLock.lock();
+        storage.updateState(taskState);
+        stateUpdateLock.unlock();
     }
 }
