@@ -59,7 +59,12 @@ public class EngineCacheStandAlone implements ConceptCache{
         return instance;
     }
 
-    private EngineCacheStandAlone(){
+    public static EngineCacheStandAlone init(){
+        if(instance != null) throw new RuntimeException("Standalone Engine Cache has already been initalised");
+        return new EngineCacheStandAlone();
+    }
+
+    public EngineCacheStandAlone(){
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);

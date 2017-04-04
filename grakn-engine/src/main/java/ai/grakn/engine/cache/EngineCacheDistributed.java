@@ -19,6 +19,7 @@
 package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.graph.admin.ConceptCache;
 
 /**
@@ -39,6 +40,19 @@ import ai.grakn.graph.admin.ConceptCache;
  * @author fppt
  */
 public class EngineCacheDistributed implements ConceptCache {
+    private static EngineCacheDistributed instance = null;
+    private ZookeeperConnection connection;
+
+
+    private EngineCacheDistributed(ZookeeperConnection connection){
+        this.connection = connection;
+    }
+
+    public static EngineCacheDistributed init(ZookeeperConnection connection){
+        if(instance != null) throw new RuntimeException("Distributed Engine Cache has already been initalised");
+        return new EngineCacheDistributed(connection);
+    }
+
     @Override
     public void addJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
         throw new UnsupportedOperationException("not yet implemented");

@@ -26,7 +26,7 @@ import ai.grakn.graph.admin.ConceptCache;
  * </p>
  *
  * <p>
- *     This class provides the correct {@link ai.grakn.graph.admin.ConceptCache} based on how it was initliased.
+ *     This class provides the correct {@link ai.grakn.graph.admin.ConceptCache} based on how it was initialised.
  *
  *     If initialised by {@link ai.grakn.engine.tasks.manager.StandaloneTaskManager} then it provides the in memory
  *     cache {@link EngineCacheStandAlone}.
@@ -38,15 +38,15 @@ import ai.grakn.graph.admin.ConceptCache;
  * @author fppt
  */
 public class EngineCacheProvider {
-    private ConceptCache conceptCache;
-    private static EngineCacheProvider instance=null;
+    private static ConceptCache conceptCache = null;
 
-    public EngineCacheProvider (ConceptCache conceptCache){
-        this.conceptCache = conceptCache;
+    public static void init(ConceptCache cache){
+        if(conceptCache != null) throw new RuntimeException("The engine cache has already been initialised");
+        conceptCache = cache;
     }
 
-    public static synchronized EngineCacheProvider getInstance(){
-        if(instance==null) throw new RuntimeException("Cache has not been initialised");
-        return instance;
+    public ConceptCache getCache(){
+        if(conceptCache == null) throw new RuntimeException("The engine cache has not been initalised");
+        return conceptCache;
     }
 }

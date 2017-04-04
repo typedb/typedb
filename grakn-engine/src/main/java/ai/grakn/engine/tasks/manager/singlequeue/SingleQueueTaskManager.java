@@ -20,6 +20,8 @@
 package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.cache.EngineCacheDistributed;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
@@ -128,6 +130,8 @@ public class SingleQueueTaskManager implements TaskManager {
         // Create and start the task runners
         this.taskRunners = generate(() -> newTaskRunner(engineId)).limit(CAPACITY).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
+
+        EngineCacheProvider.init(EngineCacheDistributed.init(zookeeper));
 
         LOG.debug("TaskManager started");
     }
