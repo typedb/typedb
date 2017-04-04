@@ -18,6 +18,7 @@
 
 package ai.grakn.graph.internal;
 
+import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknLockingException;
 import com.thinkaurelius.titan.core.TitanException;
@@ -64,9 +65,14 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public void openTransaction(boolean isReadOnly){
-        super.openTransaction(isReadOnly);
+    public void openTransaction(GraknTxType txType){
+        super.openTransaction(txType);
         if(getTinkerPopGraph().isOpen() && !getTinkerPopGraph().tx().isOpen()) getTinkerPopGraph().tx().open();
+    }
+
+    @Override
+    public boolean isConnectionClosed() {
+        return rootGraph.isClosed();
     }
 
     @Override

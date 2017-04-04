@@ -32,8 +32,6 @@ import org.junit.rules.ExpectedException;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static ai.grakn.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -59,10 +57,13 @@ public class GraknTinkerGraphFactoryTest {
     @Test
     public void whenBuildingGraphFromTheSameFactory_ReturnSingletonGraphs(){
         GraknGraph graph1 = tinkerGraphFactory.open(GraknTxType.WRITE);
+        TinkerGraph tinkerGraph1 = ((GraknTinkerGraph) graph1).getTinkerPopGraph();
         graph1.close();
         GraknGraph graph1_copy = tinkerGraphFactory.open(GraknTxType.WRITE);
+        graph1_copy.close();
 
         GraknGraph graph2 = tinkerGraphFactory.open(GraknTxType.BATCH);
+        TinkerGraph tinkerGraph2 = ((GraknTinkerGraph) graph2).getTinkerPopGraph();
         graph2.close();
         GraknGraph graph2_copy = tinkerGraphFactory.open(GraknTxType.BATCH);
 
@@ -70,21 +71,7 @@ public class GraknTinkerGraphFactoryTest {
         assertEquals(graph2, graph2_copy);
 
         assertNotEquals(graph1, graph2);
-
-        TinkerGraph tinkerGraph1 = ((GraknTinkerGraph) graph1).getTinkerPopGraph();
-        TinkerGraph tinkerGraph2 = ((GraknTinkerGraph) graph2).getTinkerPopGraph();
         assertEquals(tinkerGraph1, tinkerGraph2);
-    }
-
-    @Test
-    public void testSimpleBuild(){
-        GraknTinkerGraph mg1 = (GraknTinkerGraph) tinkerGraphFactory.open(GraknTxType.BATCH);
-        GraknTinkerGraph mg2 = (GraknTinkerGraph) tinkerGraphFactory.open(GraknTxType.WRITE);
-
-        assertTrue(mg1.isBatchLoadingEnabled());
-        assertFalse(mg2.isBatchLoadingEnabled());
-        assertNotEquals(mg1, mg2);
-        assertEquals(mg1.getTinkerPopGraph(), mg2.getTinkerPopGraph());
     }
 
     @Test

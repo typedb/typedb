@@ -29,6 +29,8 @@ import ai.grakn.graph.internal.GraknComputerImpl;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
@@ -53,14 +55,15 @@ import static mjson.Json.read;
  * @author fppt
  */
 public class GraknSessionImpl implements GraknSession {
+    private final Logger LOG = LoggerFactory.getLogger(GraknSessionImpl.class);
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private static final String COMPUTER = "graph.computer";
     private final String location;
     private final String keyspace;
 
     //References so we don't have to open a graph just to check the count of the transactions
-    private GraknGraph graph = null;
-    private GraknGraph graphBatch = null;
+    private AbstractGraknGraph<?> graph = null;
+    private AbstractGraknGraph<?> graphBatch = null;
 
     //This constructor must remain public because it is accessed via reflection
     public GraknSessionImpl(String keyspace, String location){
@@ -99,8 +102,10 @@ public class GraknSessionImpl implements GraknSession {
 
     @Override
     public void close() throws GraphRuntimeException {
-        checkClosure(openGraphTxs(), graph);
-        checkClosure(openGraphBatchTxs(), graphBatch);
+        int openTransactions = openTransactions(graph) + openTransactions(graphBatch);
+        if(openTransactions > 0){
+            LOG.warn(ErrorMessage.TRANSACTIONS_OPEN.getMessage(this.keyspace, openTransactions));
+        }
 
         //Close the main graph connections
         try {
@@ -110,23 +115,10 @@ public class GraknSessionImpl implements GraknSession {
             throw new GraphRuntimeException("Could not close graph.", e);
         }
     }
-    private void checkClosure(int numOpenTransactions, GraknGraph graph){
-        if(numOpenTransactions > 1){
-            throw new GraphRuntimeException(ErrorMessage.TRANSACTIONS_OPEN.getMessage(graph, graph.getKeyspace(), numOpenTransactions));
-        }
-    }
 
-
-    @Override
-    public int openGraphTxs() {
+    private int openTransactions(AbstractGraknGraph<?> graph){
         if(graph == null) return 0;
-        return ((AbstractGraknGraph) graph).numOpenTx();
-    }
-
-    @Override
-    public int openGraphBatchTxs() {
-        if(graphBatch == null) return 0;
-        return ((AbstractGraknGraph) graphBatch).numOpenTx();
+        return graph.numOpenTx();
     }
 
     /**

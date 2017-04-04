@@ -57,13 +57,8 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
     }
 
     @Override
-    InternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> getSystemFactory(){
+    InternalFactory<HadoopGraph> getSystemFactory(){
         return null;
-    }
-
-    @Override
-    boolean isClosed(HadoopGraph innerGraph) {
-        return false;
     }
 
     @Override
@@ -77,8 +72,9 @@ public class TitanHadoopInternalFactory extends AbstractInternalFactory<Abstract
         return (HadoopGraph) GraphFactory.open(properties);
     }
 
+    //TODO: Get rid of the need for batch loading parameter
     @Override
-    protected HadoopGraph getGraphWithNewTransaction(HadoopGraph graph) {
+    protected HadoopGraph getGraphWithNewTransaction(HadoopGraph graph, boolean batchloading) {
         return graph;
     }
 }

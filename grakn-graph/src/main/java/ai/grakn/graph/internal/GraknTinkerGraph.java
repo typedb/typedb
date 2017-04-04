@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -36,8 +37,11 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  * @author fppt
  */
 public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
+    private final TinkerGraph rootGraph;
+
     public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){
         super(tinkerGraph, name, engineUrl, batchLoading);
+        rootGraph = tinkerGraph;
     }
 
     /**
@@ -54,6 +58,11 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
     @Override
     public int numOpenTx() {
         return 1;
+    }
+
+    @Override
+    public boolean isConnectionClosed() {
+        return !rootGraph.traversal().V().has(Schema.ConceptProperty.NAME.name(), Schema.MetaSchema.ENTITY.getName().getValue()).hasNext();
     }
 
     @Override

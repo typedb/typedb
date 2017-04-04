@@ -61,6 +61,12 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
     }
 
     @Override
+    public boolean isConnectionClosed() {
+        //TODO: determine if the connection is closed
+        return false;
+    }
+
+    @Override
     protected void commitTransactionInternal(){
         getTinkerPopGraph().commit();
     }
