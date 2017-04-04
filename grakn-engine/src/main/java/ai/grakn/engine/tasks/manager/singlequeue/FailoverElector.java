@@ -20,7 +20,6 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.tasks.manager.multiqueue.TaskFailover;
 import ai.grakn.engine.util.EngineID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.curator.framework.CuratorFramework;
