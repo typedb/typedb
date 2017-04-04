@@ -62,7 +62,7 @@ public class PostProcessingTestIT {
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startSingleQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() throws Exception {
