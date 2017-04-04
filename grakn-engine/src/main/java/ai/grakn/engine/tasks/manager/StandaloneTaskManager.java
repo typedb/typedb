@@ -193,7 +193,10 @@ public class StandaloneTaskManager implements TaskManager {
 
     private void saveState(TaskState taskState){
         stateUpdateLock.lock();
-        storage.updateState(taskState);
-        stateUpdateLock.unlock();
+        try {
+            storage.updateState(taskState);
+        } finally {
+            stateUpdateLock.unlock();
+        }
     }
 }
