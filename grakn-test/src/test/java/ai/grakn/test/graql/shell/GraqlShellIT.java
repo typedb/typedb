@@ -29,11 +29,10 @@ import com.google.common.collect.Sets;
 import mjson.Json;
 import org.apache.commons.io.output.TeeOutputStream;
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -64,8 +63,8 @@ import static org.junit.Assume.assumeFalse;
 
 public class GraqlShellIT {
 
-    @ClassRule
-    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(false);
+    @Rule
+    public final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(false);
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -73,21 +72,11 @@ public class GraqlShellIT {
     private static final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
 
-    private static final ImmutableList<String> keyspaces =
-            ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar", "batch");
-
     @BeforeClass
     public static void setUpClass() throws Exception {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        for (String keyspace : keyspaces){
-            testShellAllowErrors("clean\nconfirm\n", "-k", keyspace);
-        }
     }
 
     @AfterClass
