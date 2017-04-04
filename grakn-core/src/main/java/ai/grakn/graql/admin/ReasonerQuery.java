@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
