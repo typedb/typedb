@@ -21,7 +21,6 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
@@ -93,6 +92,9 @@ public class ReasoningTests {
 
     @ClassRule
     public static final GraphContext testSet17 = GraphContext.preLoad("testSet17.gql");
+
+    @ClassRule
+    public static final GraphContext testSet18 = GraphContext.preLoad("testSet18.gql");
 
     @Before
     public void onStartup() throws Exception {
@@ -302,7 +304,15 @@ public class ReasoningTests {
         String queryString1 = "match $x isa general-entity has res2 $r;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString1));
         assertEquals(answers.size(), 1);
-        System.out.println();
+    }
+
+    @Ignore
+    @Test //Expected result: Two answers with obtained only if checked the instance type compatible with the one specified with rule body.
+    public void instanceTypeHierarchyRespected(){
+        QueryBuilder qb = testSet18.graph().graql().infer(true);
+        String queryString1 = "match $x isa entity1;(role1: $x, role2: $y) isa relation1;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString1));
+        assertEquals(answers.size(), 2);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {

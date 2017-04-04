@@ -19,9 +19,11 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeName;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -44,6 +46,7 @@ import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -74,6 +77,9 @@ public class AtomicTest {
 
     @ClassRule
     public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql");
+
+    @ClassRule
+    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet18.gql");
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -324,6 +330,29 @@ public class AtomicTest {
     }
 
     @Test
+    public void testRuleApplicabilityViaType_InstanceSubTypeMatchesRule(){
+        GraknGraph graph = ruleApplicabilityInstanceTypesSet.graph();
+        String relationString = "{$x isa entity1;(role1: $x, role2: $y) isa relation1;}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(1, relation.getApplicableRules().size());
+    }
+
+    @Ignore
+    @Test
+    public void testRuleApplicabilityViaType_InstancesDoNotMatchRule(){
+        GraknGraph graph = ruleApplicabilityInstanceTypesSet.graph();
+        Concept concept = getConcept(graph, "name", "a");
+        Concept concept2 = getConcept(graph, "name", "a2");
+        String relationString = "{" +
+                "($x, $y);" +
+                "$x id '" + concept.getId().getValue() + "';" +
+                "$y id '" + concept2.getId().getValue() + "';" +
+                "}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(0, relation.getApplicableRules().size());
+    }
+
+    @Test
     public void testTypeInference(){
         String typeId = snbGraph.graph().getType(TypeName.of("recommendation")).getId().getValue();
         String patternString = "{($x, $y); $x isa person; $y isa product;}";
@@ -534,6 +563,10 @@ public class AtomicTest {
         String patternString = "{$x isa someType;}";
         exception.expect(IllegalArgumentException.class);
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
+    }
+
+    private Concept getConcept(GraknGraph graph, String typeName, Object val){
+        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 
     private Map<RoleType, VarName> roleMap(Map<RoleType, Pair<VarName, Type>> roleVarTypeMap) {
