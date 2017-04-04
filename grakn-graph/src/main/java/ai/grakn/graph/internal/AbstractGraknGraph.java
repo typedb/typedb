@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.EntityType;
@@ -141,9 +142,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * Opens the thread bound transaction
      */
-    public void openTransaction(boolean isReadOnly){
+    public void openTransaction(GraknTxType txType){
         localIsOpen.set(true);
-        localIsReadOnly.set(isReadOnly);
+        if(GraknTxType.READ.equals(txType)) {
+            localIsReadOnly.set(true);
+        } else {
+            localIsReadOnly.set(false);
+        }
     }
 
     @Override
@@ -159,6 +164,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean isClosed(){
         return !getBooleanFromLocalThread(localIsOpen);
     }
+    public abstract boolean isConnectionClosed();
 
     @Override
     public boolean implicitConceptsVisible(){
@@ -748,7 +754,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 commit(this::submitCommitLogs);
                 getConceptLog().writeToCentralCache(true);
             } else {
-                getConceptLog().writeToCentralCache(false);
+                getConceptLog().writeToCentralCache(isReadOnly());
             }
         } finally {
             closeTransaction(closeMessage);
@@ -963,6 +969,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
             ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
             duplicates.remove(mainResource);
+
             Iterator<ResourceImpl> it = duplicates.iterator();
 
             while(it.hasNext()){
@@ -982,6 +989,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 otherResource.castings().forEach(ConceptImpl::deleteNode);
                 otherResource.deleteNode();
             }
+
+            String newIndex = mainResource.getIndex();
+            mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }

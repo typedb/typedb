@@ -92,7 +92,7 @@ class FactoryBuilder {
      * @return A new factory bound to a specific keyspace
      */
     private static synchronized InternalFactory newFactory(String key, String factoryType, String keyspace, String engineUrl, Properties properties){
-        InternalFactory<?, ?> internalFactory;
+        InternalFactory<?> internalFactory;
         try {
             internalFactory = (InternalFactory) Class.forName(factoryType)
                     .getDeclaredConstructor(String.class, String.class, Properties.class)

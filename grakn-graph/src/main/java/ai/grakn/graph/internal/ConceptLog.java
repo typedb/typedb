@@ -70,16 +70,16 @@ class ConceptLog {
     /**
      * A helper method which writes back into the central cache at the end of a transaction.
      *
-     * @param committed true if a commit has occurred
+     * @param isSafe true only if it is safe to copy the cache completely without any checks
      */
-    void writeToCentralCache(boolean committed){
-        //When a commit has occurred all types can be overridden this is because we know they are valid
-        //If a commit has not occurred we can only safely push types to the central cache if no modifications have occurred.
-        if(committed){
+    void writeToCentralCache(boolean isSafe){
+        //When a commit has occurred or a graph is read only all types can be overridden this is because we know they are valid.
+        if(isSafe){
             graknGraph.getCachedOntology().putAll(typeCache);
         }
 
-        //TODO: Fill our cache when not committing
+        //When a commit has not occurred some checks are required
+        //TODO: Fill our cache when not committing and when not read only graph.
     }
 
     /**

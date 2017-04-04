@@ -65,12 +65,9 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
     }
 
     @Override
-    boolean isClosed(TitanGraph innerGraph) {
-        return innerGraph.isClosed();
-    }
+    public TitanGraph getGraphWithNewTransaction(TitanGraph graph, boolean batchloading){
+        if(graph.isClosed()) graph = buildTinkerPopGraph(batchloading);
 
-    @Override
-    public TitanGraph getGraphWithNewTransaction(TitanGraph graph){
         if(!graph.tx().isOpen()){
             graph.tx().open();
         }

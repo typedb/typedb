@@ -2,6 +2,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Entity;
@@ -120,6 +121,22 @@ public class GraknGraphTest extends GraphTestBase {
                 sampleRelationType,
                 sampleRoleType
         ));
+    }
+
+    @Test
+    public void whenClosingReadOnlyGraph_EnsureTypesAreCached(){
+        assertThat(graknGraph.getCachedOntology().asMap().keySet(), is(empty()));
+        graknGraph.getMetaConcept().subTypes(); //This loads some types into transaction cache
+        graknGraph.abort();
+        assertThat(graknGraph.getCachedOntology().asMap().values(), is(empty())); //Ensure central cache is empty
+
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.READ);
+        Collection<? extends Type> types = graknGraph.getMetaConcept().subTypes();
+        graknGraph.abort();
+
+        for (Type type : graknGraph.getCachedOntology().asMap().values()) {
+            assertTrue("Type [" + type + "] is missing from central cache after closing read only graph", types.contains(type));
+        }
     }
 
     @Test
@@ -320,6 +337,32 @@ public class GraknGraphTest extends GraphTestBase {
         assertEquals(caughtException.getMessage(), ErrorMessage.TRANSACTION_READ_ONLY.getMessage(graph.getKeyspace()));
         assertEquals("A concept was added/removed using a read only graph", vertexCount, graph.admin().getTinkerTraversal().toList().size());
         assertEquals("An edge was added/removed using a read only graph", eddgeCount, graph.admin().getTinkerTraversal().bothE().toList().size());
+    }
+
+    @Test
+    public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw(){
+        String keyspace = "akeyspacewithkeys";
+        GraknSession session = Grakn.session(Grakn.IN_MEMORY, keyspace);
+
+        GraknGraph graph = session.open(GraknTxType.READ);
+        failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
+        failAtOpeningGraph(session, GraknTxType.BATCH, keyspace);
+        graph.close();
+
+        session.open(GraknTxType.BATCH);
+        failAtOpeningGraph(session, GraknTxType.WRITE, keyspace);
+        failAtOpeningGraph(session, GraknTxType.READ, keyspace);
+    }
+    private void failAtOpeningGraph(GraknSession session, GraknTxType txType, String keyspace){
+        Exception exception = null;
+        try{
+            session.open(txType);
+        } catch (GraphRuntimeException e){
+            exception = e;
+        }
+        assertNotNull(exception);
+        assertThat(exception, instanceOf(GraphRuntimeException.class));
+        assertEquals(exception.getMessage(), ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(keyspace));
     }
 
     @Test

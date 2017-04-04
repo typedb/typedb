@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.exception.ConceptException;
+
 import java.util.Collection;
 
 /**
@@ -45,10 +47,13 @@ public interface EntityType extends Type{
     EntityType setAbstract(Boolean isAbstract);
 
     /**
-     * Sets the supertype of the EntityType to be the EntityType specified.
+     * Sets the direct supertype of the EntityType to be the EntityType specified.
      *
      * @param type The supertype of this EntityType
      * @return The EntityType itself
+     *
+     * @throws ConceptException if this is a meta type
+     * @throws ConceptException if the given supertype is already an indirect subtype of this type
      */
     EntityType superType(EntityType type);
 
@@ -57,6 +62,9 @@ public interface EntityType extends Type{
      *
      * @param type The sub type of this entity type
      * @return The EntityType itself
+     *
+     * @throws ConceptException if the sub type is a meta type
+     * @throws ConceptException if the given subtype is already an indirect supertype of this type
      */
     EntityType subType(EntityType type);
 
@@ -77,10 +85,12 @@ public interface EntityType extends Type{
     EntityType deletePlaysRole(RoleType roleType);
 
     /**
-     * Creates and returns a new Entity instance.
+     * Creates and returns a new Entity instance, whose direct type will be this type.
      * @see Entity
      *
      * @return a new empty entity.
+     *
+     * @throws ConceptException if this is a meta type
      */
     Entity addEntity();
 

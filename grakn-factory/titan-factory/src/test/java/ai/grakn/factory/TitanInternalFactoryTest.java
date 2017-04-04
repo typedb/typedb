@@ -97,21 +97,24 @@ public class TitanInternalFactoryTest extends TitanTestBase{
     public void testSingleton(){
         TitanInternalFactory factory = new TitanInternalFactory("anothertest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknTitanGraph mg1 = factory.open(GraknTxType.BATCH);
+        TitanGraph tinkerGraphMg1 = mg1.getTinkerPopGraph();
         mg1.close();
         GraknTitanGraph mg2 = factory.open(GraknTxType.WRITE);
+        TitanGraph tinkerGraphMg2 = mg2.getTinkerPopGraph();
+        mg2.close();
         GraknTitanGraph mg3 = factory.open(GraknTxType.BATCH);
 
         assertEquals(mg1, mg3);
-        assertEquals(mg1.getTinkerPopGraph(), mg3.getTinkerPopGraph());
+        assertEquals(tinkerGraphMg1, mg3.getTinkerPopGraph());
 
         assertTrue(mg1.isBatchLoadingEnabled());
         assertFalse(mg2.isBatchLoadingEnabled());
 
         assertNotEquals(mg1, mg2);
-        assertNotEquals(mg1.getTinkerPopGraph(), mg2.getTinkerPopGraph());
+        assertNotEquals(tinkerGraphMg1, tinkerGraphMg2);
 
-        StandardTitanGraph standardTitanGraph1 = (StandardTitanGraph) mg1.getTinkerPopGraph();
-        StandardTitanGraph standardTitanGraph2 = (StandardTitanGraph) mg2.getTinkerPopGraph();
+        StandardTitanGraph standardTitanGraph1 = (StandardTitanGraph) tinkerGraphMg1;
+        StandardTitanGraph standardTitanGraph2 = (StandardTitanGraph) tinkerGraphMg2;
 
         assertTrue(standardTitanGraph1.getConfiguration().isBatchLoading());
         assertFalse(standardTitanGraph2.getConfiguration().isBatchLoading());

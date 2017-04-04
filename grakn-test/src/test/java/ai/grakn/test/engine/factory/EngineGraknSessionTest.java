@@ -32,6 +32,7 @@ public class EngineGraknSessionTest {
     public void testBatchLoadingGraphsInitialisedCorrectly(){
         String keyspace = "mykeyspace";
         GraknGraph graph1 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE);
+        graph1.close();
         GraknGraph graph2 = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH);
 
         assertFalse(graph1.admin().isBatchLoadingEnabled());
