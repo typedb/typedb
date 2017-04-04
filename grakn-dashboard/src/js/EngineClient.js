@@ -139,7 +139,7 @@ export default {
              */
   getConfig() {
     return this.request({
-      url: '/status/config',
+      url: '/configuration',
     });
   },
             /**

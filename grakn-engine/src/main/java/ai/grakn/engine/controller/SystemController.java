@@ -94,7 +94,7 @@ public class SystemController {
                 properties.setProperty(FACTORY_INTERNAL, properties.get(FACTORY_ANALYTICS).toString());
                 break;
             default:
-                throw new RuntimeException("Unrecognised graph config: " + graphConfig);
+                throw new GraknEngineServerException(500, "Unrecognised graph config: " + graphConfig);
         }
 
         // Turn the properties into a Json object

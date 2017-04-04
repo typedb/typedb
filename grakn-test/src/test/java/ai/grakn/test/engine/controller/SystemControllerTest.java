@@ -21,6 +21,7 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
@@ -59,6 +60,7 @@ public class SystemControllerTest {
         Response response = get(CONFIGURATION).then().statusCode(200).extract().response().andReturn();
         String config = response.getBody().asString();
         assertTrue(config.contains("factory"));
+        assertFalse(config.contains(GraknEngineConfig.JWT_SECRET_PROPERTY));
     }
 
     @Test
@@ -73,6 +75,7 @@ public class SystemControllerTest {
 
         assertNotEquals(responseDefault, responseComputer);
     }
+
 
     @Test
     public void testGraknClientBatch() {
