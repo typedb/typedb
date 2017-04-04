@@ -33,6 +33,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import static ai.grakn.graph.property.PropertyUtil.choose;
+import static ai.grakn.graph.property.PropertyUtil.directSubTypes;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static ai.grakn.util.ErrorMessage.SUPER_TYPE_LOOP_DETECTED;
 import static org.hamcrest.Matchers.contains;
@@ -140,32 +141,31 @@ public class RelationTypePropertyTest {
         assertEquals(superType, subType.superType());
     }
 
-    // TODO: Wait until we have the right method to call
-//    @Property
-//    public void whenAddingADirectSubTypeThatIsAMetaType_Throw(
-//            RelationType superType, @Meta @FromGraph RelationType subType) {
-//        exception.expect(ConceptException.class);
-//        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
-//        superType.subType(subType);
-//    }
-//
-//    @Property
-//    public void whenAddingADirectSubTypeWhichIsAnIndirectSuperType_Throw(
-//            @Meta(false) RelationType newSubType, long seed) {
-//        RelationType type = choose(newSubType.subTypes(), seed);
-//
-//        exception.expect(ConceptException.class);
-//        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getName(), type.getName()));
-//        type.subType(newSubType);
-//    }
-//
-//    @Property
-//    public void whenAddingADirectSubType_TheDirectSubTypeIsAdded(
-//            @Open GraknGraph graph, @FromGraph RelationType superType, @Meta(false) @FromGraph RelationType subType) {
-//        assumeThat(subType.subTypes(), not(hasItem(superType)));
-//
-//        superType.subType(subType);
-//
-//        assertThat(directSubTypes(graph, superType), hasItem(subType));
-//    }
+    @Property
+    public void whenAddingADirectSubTypeThatIsAMetaType_Throw(
+            RelationType superType, @Meta @FromGraph RelationType subType) {
+        exception.expect(ConceptException.class);
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
+        superType.subType(subType);
+    }
+
+    @Property
+    public void whenAddingADirectSubTypeWhichIsAnIndirectSuperType_Throw(
+            @Meta(false) RelationType newSubType, long seed) {
+        RelationType type = choose(newSubType.subTypes(), seed);
+
+        exception.expect(ConceptException.class);
+        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getName(), type.getName()));
+        type.subType(newSubType);
+    }
+
+    @Property
+    public void whenAddingADirectSubType_TheDirectSubTypeIsAdded(
+            @Open GraknGraph graph, @FromGraph RelationType superType, @Meta(false) @FromGraph RelationType subType) {
+        assumeThat(subType.subTypes(), not(hasItem(superType)));
+
+        superType.subType(subType);
+
+        assertThat(directSubTypes(graph, superType), hasItem(subType));
+    }
 }
