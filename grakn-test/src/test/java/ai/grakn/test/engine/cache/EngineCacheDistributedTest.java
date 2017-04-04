@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 //NOTE: This test is only in grakn-test because it needs a running ZK
@@ -56,27 +57,54 @@ public class EngineCacheDistributedTest {
     }
 
     @Test
-    public void whenAddingJobsToCache_EnsureCachContainsJobs(){
+    public void whenAddingJobsToCacheOfSameKeyspace_EnsureCacheContainsJobs(){
         String keyspace = "my_fake_keyspace";
 
         //Fake Commit Logs
         Map<String, Set<ConceptId>> castingsFake = createFakeInternalConceptLog("Casting_Index_", 10, 5);
         Map<String, Set<ConceptId>> resourcesFake = createFakeInternalConceptLog("Casting_Index_", 6, 11);
 
+        long castingsFakeCount = castingsFake.values().stream().mapToLong(Set::size).sum();
+        long resourcesFakeCount = resourcesFake.values().stream().mapToLong(Set::size).sum();
+
         //Add stuff to the cache
         transferFakeCacheIntoRealCache(castingsFake, (index, id) -> cache.addJobCasting(keyspace, index, id));
         transferFakeCacheIntoRealCache(resourcesFake, (index, id) -> cache.addJobCasting(keyspace, index, id));
 
         //Check stuff is in cache
-        Map<String, Set<ConceptId>> castingsReal = cache.getCastingJobs(keyspace);
-        Map<String, Set<ConceptId>> resourcesReal = cache.getResourceJobs(keyspace);
+        checkContentsOfCache(castingsFake, cache.getCastingJobs(keyspace));
+        checkContentsOfCache(resourcesFake, cache.getResourceJobs(keyspace));
 
-        assertThat(castingsReal.keySet(), containsInAnyOrder(castingsFake.keySet()));
-        assertThat(resourcesReal.keySet(), containsInAnyOrder(resourcesFake.keySet()));
-
-        checkContentsOfCache(castingsFake, castingsReal);
-        checkContentsOfCache(resourcesFake, resourcesReal);
+        //Check counts
+        assertEquals(castingsFakeCount, cache.getNumCastingJobs(keyspace));
+        assertEquals(resourcesFakeCount, cache.getNumResourceJobs(keyspace));
+        assertEquals(castingsFakeCount + resourcesFakeCount, cache.getNumJobs(keyspace));
     }
+
+    @Test
+    public void whenAddingJobsToCacheOfDifferentKeySpaces_EnsureCacheContainsJob(){
+        String keyspace1 = "key1";
+        String keyspace2 = "key2";
+
+        //Fake Commit Logs
+        Map<String, Set<ConceptId>> key1_castingsFake = createFakeInternalConceptLog("Casting_Index_", 2, 1);
+        Map<String, Set<ConceptId>> key1_resourcesFake = createFakeInternalConceptLog("Casting_Index_", 3, 6);
+        Map<String, Set<ConceptId>> key2_castingsFake = createFakeInternalConceptLog("Casting_Index_", 8, 5);
+        Map<String, Set<ConceptId>> key2_resourcesFake = createFakeInternalConceptLog("Casting_Index_", 2, 8);
+
+        //Add stuff to the cache
+        transferFakeCacheIntoRealCache(key1_castingsFake, (index, id) -> cache.addJobCasting(keyspace1, index, id));
+        transferFakeCacheIntoRealCache(key1_resourcesFake, (index, id) -> cache.addJobCasting(keyspace1, index, id));
+        transferFakeCacheIntoRealCache(key2_castingsFake, (index, id) -> cache.addJobCasting(keyspace2, index, id));
+        transferFakeCacheIntoRealCache(key2_resourcesFake, (index, id) -> cache.addJobCasting(keyspace2, index, id));
+
+        //Check stuff is in graph
+        checkContentsOfCache(key1_castingsFake, cache.getCastingJobs(keyspace1));
+        checkContentsOfCache(key1_resourcesFake, cache.getResourceJobs(keyspace1));
+        checkContentsOfCache(key2_castingsFake, cache.getCastingJobs(keyspace2));
+        checkContentsOfCache(key2_resourcesFake, cache.getResourceJobs(keyspace2));
+    }
+
     private Map<String, Set<ConceptId>> createFakeInternalConceptLog(String indexPrefix, int numIndex, int numJobs){
         Map<String, Set<ConceptId>> internalCache = new HashMap<>();
         for(int i = 0; i < numIndex; i ++){
@@ -93,7 +121,11 @@ public class EngineCacheDistributedTest {
         });
     }
     private void checkContentsOfCache(Map<String, Set<ConceptId>> realCache, Map<String, Set<ConceptId>> fakeCache){
+        assertThat(realCache.keySet(), containsInAnyOrder(fakeCache.keySet()));
         fakeCache.keySet().forEach(key-> assertThat(realCache.get(key), containsInAnyOrder(fakeCache.get(key))));
     }
+
+
+
 
 }
