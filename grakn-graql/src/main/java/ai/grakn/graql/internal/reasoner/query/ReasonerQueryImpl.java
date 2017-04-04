@@ -556,7 +556,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
-            if (atom.requiresMaterialisation()) return true;
+            if (atom.requiresMaterialisation() && atom.isRuleResolvable()) return true;
             for (InferenceRule rule : atom.getApplicableRules())
                 if (rule.requiresMaterialisation()) return true;
         }
@@ -749,16 +749,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             Atom topAtom = newQuery.getTopAtom();
             ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
 
-            /*
-            System.out.println("Query:");
-            getAtoms().forEach(System.out::println);
-            System.out.println();
-            */
-            //System.out.println("top atom: ");
-            //System.out.println(topAtom.toString());
-            //System.out.println();
-
-
             boolean isAtomic = isAtomic();
             if (!isAtomic) newQuery.removeAtom(topAtom);
 
@@ -787,7 +777,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
 
         private ReasonerQueryImpl getQueryPrime(){
-            //construct new reasoner query with the top atom removed
             return newQuery.isAtomic()? new ReasonerAtomicQuery(newQuery.getTopAtom()) : newQuery;
         }
     }

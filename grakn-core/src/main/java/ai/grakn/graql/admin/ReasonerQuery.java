@@ -101,8 +101,4 @@ public interface ReasonerQuery{
      * @return map of variable name - corresponding type pairs
      */
     Map<VarName, Type> getVarTypeMap();
-
-    //Iterator<Answer> iterator(Answer sub);
-
-
 }

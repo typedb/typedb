@@ -485,23 +485,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.subGoals = subGoals;
             this.cache = qc;
 
-/*
-            System.out.println("AQ:" + ReasonerAtomicQuery.this.getAtom());
-            ReasonerAtomicQuery.this.getIdPredicates().forEach(System.out::println);
-            if (subGoals.contains(ReasonerAtomicQuery.this)) System.out.println("AQ not admissible");
-            System.out.println();
-            */
-
-
             boolean hasFullSubstitution = hasFullSubstitution();
             this.queryIterator = lookup(cache).iterator();
 
             //if this already has full substitution and exists in the db then do not resolve further
-            if(hasFullSubstitution && queryIterator.hasNext()){
+            if(subGoals.contains(ReasonerAtomicQuery.this)
+                || (hasFullSubstitution && queryIterator.hasNext() ) ){
                 this.ruleIterator = Collections.emptyIterator();
             }
             else {
-                this.ruleIterator = subGoals.contains(ReasonerAtomicQuery.this)? Collections.emptyIterator() : getRuleIterator();
+                this.ruleIterator = getRuleIterator();
             }
 
             //mark as visited and hence not admissible
@@ -532,7 +525,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             else{
                 if (ruleIterator.hasNext()) {
                     currentRule = ruleIterator.next();
-                    //System.out.println("Rule: " + currentRule.getHead());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                     return hasNext();
                 }
@@ -543,37 +535,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         @Override
         public Answer next() {
             Answer sub = queryIterator.next().filterVars(getVarNames());
-            /*
-            if (currentRule != null){
-                ReasonerAtomicQuery ruleHead = currentRule.getHead();
-                Atom headAtom = ruleHead.getAtom();
-                ReasonerAtomicQuery queryToMaterialise = new ReasonerAtomicQuery(ruleHead);
-                queryToMaterialise.addSubstitution(sub);
-
-                if (headAtom.requiresMaterialisation()
-                        && cache.getAnswers(queryToMaterialise).isEmpty()){
-                    AnswerExplanation exp = sub.getExplanation();
-                    System.out.println("Materialise: " + queryToMaterialise.getAtom());
-                    queryToMaterialise.getIdPredicates().forEach(System.out::println);
-                    materialise++;
-                    System.out.println();
-
-                    sub = queryToMaterialise
-                            .materialiseDirect()
-                            .map(ans -> ans.setExplanation(exp))
-                            .collect(Collectors.toSet()).iterator().next();
-                    cache.recordAnswer(queryToMaterialise, sub);
-                    System.out.println("materialise: " + materialise);
-                }
-
-                sub = sub.explain(new RuleExplanation(currentRule));
-            }
-            */
-            /*
-            System.out.println("ANSWER to: " + ReasonerAtomicQuery.this.getAtom());
-            sub.entrySet().forEach(System.out::println);
-            System.out.println();
-            */
+            if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
             return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
         }
 
