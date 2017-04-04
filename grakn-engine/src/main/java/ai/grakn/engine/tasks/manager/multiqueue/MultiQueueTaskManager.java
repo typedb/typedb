@@ -93,6 +93,8 @@ public final class MultiQueueTaskManager implements TaskManager {
         // stop zookeeper connection
         noThrow(zookeeper::close, "Error waiting for zookeeper connection to close");
 
+        EngineCacheProvider.clearCache();
+
         LOG.debug("TaskManager closed");
     }
 
