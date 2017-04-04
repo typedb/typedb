@@ -85,7 +85,7 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-        EngineCacheProvider.init(EngineCacheStandAlone.init());
+        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
     }
 
     public TaskManager open() {
@@ -96,8 +96,8 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
-
         runningTasks.clear();
+        EngineCacheProvider.clearCache();
     }
 
     @Override

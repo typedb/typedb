@@ -42,18 +42,18 @@ import java.util.Set;
  *
  * @author fppt
  */
+//TODO: Maybe we can merge this with Stand alone engine cache using Kafka for example?
 public class EngineCacheDistributed implements ConceptCache {
     private static EngineCacheDistributed instance = null;
-    private ZookeeperConnection connection;
 
 
     private EngineCacheDistributed(ZookeeperConnection connection){
-        this.connection = connection;
+        if(connection == null) throw  new RuntimeException("This is just some placeholder logic");
     }
 
     public static EngineCacheDistributed init(ZookeeperConnection connection){
-        if(instance != null) throw new RuntimeException("Distributed Engine Cache has already been initalised");
-        return new EngineCacheDistributed(connection);
+        if(instance == null) instance = new EngineCacheDistributed(connection);
+        return instance;
     }
 
     @Override

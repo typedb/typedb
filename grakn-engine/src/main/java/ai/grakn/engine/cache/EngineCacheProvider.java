@@ -41,12 +41,18 @@ public class EngineCacheProvider {
     private static ConceptCache conceptCache = null;
 
     public static void init(ConceptCache cache){
-        if(conceptCache != null) throw new RuntimeException("The engine cache has already been initialised");
+        if(conceptCache != null && !conceptCache.equals(cache)) {
+            throw new RuntimeException("The engine cache has already been initialised with another cache");
+        }
         conceptCache = cache;
     }
 
     public static ConceptCache getCache(){
-        if(conceptCache == null) throw new RuntimeException("The engine cache has not been initalised");
+        if(conceptCache == null) throw new RuntimeException("The engine cache has not been initialised");
         return conceptCache;
+    }
+
+    public static void clearCache(){
+        conceptCache = null;
     }
 }

@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author fppt
  */
+//TODO: Maybe we can merge this with distributed engine cache using Kafka for example?
 public class EngineCacheStandAlone implements ConceptCache{
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
@@ -52,9 +53,8 @@ public class EngineCacheStandAlone implements ConceptCache{
     private static EngineCacheStandAlone instance=null;
     private final AtomicLong lastTimeModified;
 
-    public static EngineCacheStandAlone init(){
-        if(instance != null) throw new RuntimeException("Standalone Engine Cache has already been initalised");
-        instance = new EngineCacheStandAlone();
+    public static EngineCacheStandAlone getCache(){
+        if(instance == null) instance = new EngineCacheStandAlone();
         return instance;
     }
 
