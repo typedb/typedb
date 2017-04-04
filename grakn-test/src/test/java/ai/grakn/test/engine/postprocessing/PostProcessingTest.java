@@ -69,6 +69,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
+        EngineCacheProvider.getCache().getKeyspaces().forEach(k -> EngineCacheProvider.getCache().clearAllJobs(k));
         graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
     }
 
