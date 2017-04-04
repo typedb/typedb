@@ -147,7 +147,7 @@ public class StandaloneTaskManager implements TaskManager {
         return storage;
     }
 
-    private Runnable exceptionCatcher(TaskState task) {
+    private Runnable executeTask(TaskState task) {
         return () -> {
             try {
                 task.markRunning(engineID);
@@ -178,7 +178,7 @@ public class StandaloneTaskManager implements TaskManager {
     private Runnable submitTaskForExecution(TaskState taskState) {
         return () -> {
             if (shouldRunTask(storage.getState(taskState.getId()))) {
-                executorService.submit(exceptionCatcher(taskState));
+                executorService.submit(executeTask(taskState));
             }
         };
     }
