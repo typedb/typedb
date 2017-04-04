@@ -180,20 +180,8 @@ public class MatchQueryTest {
     }
 
     @Test(expected = Exception.class)
-    //TODO: this can cause problems on a big graph
     public void testOrderBy8() {
-        graph.graql().match(var("x").isa("movie"),
-                var("y").isa("name")).orderBy("y", Order.asc).execute();
-    }
-
-    @Test(expected = Exception.class)
-    public void testOrderBy9() {
         graph.graql().match(var("x").isa("movie")).orderBy("x", Order.asc).execute();
-    }
-
-    @Test(expected = Exception.class) //TODO: I don't think this should be allowed
-    public void testOrderBy10() {
-        graph.graql().match(var("x").isa("name")).orderBy("x", Order.asc).execute();
     }
 
 }
