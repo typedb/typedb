@@ -247,15 +247,8 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenTypePlaysARole_ThatRoleIsPlayedByTheType(Type type, long seed) {
-        RoleType roleType = choose(type.playsRoles(), seed);
-        assertThat(roleType.playedByTypes(), hasItem(type));
-    }
-
-    @Property
-    public void whenARoleIsPlayedByAType_TheTypePlaysThatRole(RoleType roleType, long seed) {
-        Type type = choose(roleType.playedByTypes(), seed);
-        assertThat(type.playsRoles(), hasItem(roleType));
+    public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph RoleType roleType) {
+        assertEquals(type.playsRoles().contains(roleType), roleType.playedByTypes().contains(type));
     }
 
     @Property
