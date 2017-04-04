@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeName;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
@@ -76,7 +76,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
 
             InsertQuery query = graph.graql().insert(user);
             query.execute();
-            graph.admin().commit(EngineCache.getInstance());
+            graph.admin().commit(EngineCacheStandAlone.getInstance());
             LOG.debug("Created user " + userJson);
             return true;
         } catch (Throwable t) {
@@ -210,7 +210,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             });
 
             if(exists){
-                graph.admin().commit(EngineCache.getInstance());
+                graph.admin().commit(EngineCacheStandAlone.getInstance());
             }
 
             return exists;

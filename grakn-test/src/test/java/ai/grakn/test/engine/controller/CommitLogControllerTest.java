@@ -27,7 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.test.EngineContext;
@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 
 public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
-    private final EngineCache cache = EngineCache.getInstance();
+    private final EngineCacheStandAlone cache = EngineCacheStandAlone.getInstance();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -82,7 +82,7 @@ public class CommitLogControllerTest {
     @Test
     public void checkDirectClearWorks(){
         GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, KEYSPACE).open(GraknTxType.WRITE);
-        test.admin().clear(EngineCache.getInstance());
+        test.admin().clear(EngineCacheStandAlone.getInstance());
         assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
     }

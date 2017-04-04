@@ -6,7 +6,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.Schema;
@@ -46,7 +46,7 @@ public class PostProcessingTestUtils {
     }
     
     @SuppressWarnings("unchecked")
-    static <T> Resource<T> createDuplicateResource(GraknGraph graknGraph, EngineCache cache, ResourceType<T> resourceType, Resource<T> resource) {
+    static <T> Resource<T> createDuplicateResource(GraknGraph graknGraph, EngineCacheStandAlone cache, ResourceType<T> resourceType, Resource<T> resource) {
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
         Vertex originalResource = (Vertex) graph.getTinkerTraversal()
                 .hasId(resource.getId().getValue()).next();

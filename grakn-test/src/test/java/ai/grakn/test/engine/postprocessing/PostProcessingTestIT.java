@@ -25,7 +25,7 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
@@ -55,7 +55,7 @@ import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private EngineCache cache = EngineCache.getInstance();
+    private EngineCacheStandAlone cache = EngineCacheStandAlone.getInstance();
 
     private GraknSession factory;
     private GraknGraph graph;

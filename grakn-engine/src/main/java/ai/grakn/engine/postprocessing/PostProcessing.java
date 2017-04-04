@@ -19,6 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,12 +60,12 @@ public class PostProcessing {
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
-    private final EngineCache cache;
+    private final EngineCacheStandAlone cache;
 
     private PostProcessing() {
         postpool = Executors.newFixedThreadPool(Integer.parseInt(GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
-        cache = EngineCache.getInstance();
+        cache = EngineCacheStandAlone.getInstance();
         futures = ConcurrentHashMap.newKeySet();
         isRunning.set(false);
     }

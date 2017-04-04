@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.postprocessing;
+package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graph.admin.ConceptCache;
@@ -43,32 +43,32 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author fppt
  */
-public class EngineCache implements ConceptCache{
+public class EngineCacheStandAlone implements ConceptCache{
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
     private final Map<String, Map<String, Set<ConceptId>>> resources;
 
     private final AtomicBoolean saveInProgress;
-    private static EngineCache instance=null;
+    private static EngineCacheStandAlone instance=null;
     private final AtomicLong lastTimeModified;
 
-    public static synchronized EngineCache getInstance(){
-        if(instance==null) instance=new EngineCache();
+    public static synchronized EngineCacheStandAlone getInstance(){
+        if(instance==null) instance=new EngineCacheStandAlone();
         return instance;
     }
 
-    private EngineCache(){
+    private EngineCacheStandAlone(){
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);
         lastTimeModified = new AtomicLong(System.currentTimeMillis());
     }
 
-    boolean isSaveInProgress() {
+    public boolean isSaveInProgress() {
         return saveInProgress.get();
     }
 
-    Set<String> getKeyspaces(){
+    public Set<String> getKeyspaces(){
         Set<String> keyspaces = new HashSet<>();
         keyspaces.addAll(castings.keySet());
         keyspaces.addAll(resources.keySet());
@@ -164,14 +164,14 @@ public class EngineCache implements ConceptCache{
     }
 
     /**
-     * @return the last time a job was added to the EngineCache.
+     * @return the last time a job was added to the EngineCacheStandAlone.
      */
-    long getLastTimeJobAdded(){
+    public long getLastTimeJobAdded(){
         return lastTimeModified.get();
     }
 
     /**
-     * Keep a record of the last time something was added to the EngineCache.
+     * Keep a record of the last time something was added to the EngineCacheStandAlone.
      */
     private void updateLastTimeJobAdded(){
         lastTimeModified.set(System.currentTimeMillis());

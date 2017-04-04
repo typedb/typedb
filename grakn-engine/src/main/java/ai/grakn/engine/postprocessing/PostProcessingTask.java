@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
@@ -44,7 +45,7 @@ public class PostProcessingTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
-    private static final EngineCache cache = EngineCache.getInstance();
+    private static final EngineCacheStandAlone cache = EngineCacheStandAlone.getInstance();
 
     private static final long timeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
