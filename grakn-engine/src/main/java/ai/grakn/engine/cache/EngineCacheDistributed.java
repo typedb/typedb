@@ -51,7 +51,7 @@ public class EngineCacheDistributed implements ConceptCache {
         if(connection == null) throw  new RuntimeException("This is just some placeholder logic");
     }
 
-    public static EngineCacheDistributed init(ZookeeperConnection connection){
+    public static synchronized EngineCacheDistributed init(ZookeeperConnection connection){
         if(instance == null) instance = new EngineCacheDistributed(connection);
         return instance;
     }

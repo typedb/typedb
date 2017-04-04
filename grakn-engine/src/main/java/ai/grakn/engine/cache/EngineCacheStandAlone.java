@@ -53,7 +53,7 @@ public class EngineCacheStandAlone implements ConceptCache{
     private static EngineCacheStandAlone instance=null;
     private final AtomicLong lastTimeModified;
 
-    public static EngineCacheStandAlone getCache(){
+    public static synchronized EngineCacheStandAlone getCache(){
         if(instance == null) instance = new EngineCacheStandAlone();
         return instance;
     }
