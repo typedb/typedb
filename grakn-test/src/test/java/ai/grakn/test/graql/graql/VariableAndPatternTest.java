@@ -262,17 +262,6 @@ public class VariableAndPatternTest {
         assertEquals(1, result2.size());
     }
 
-    @Test // TODO: Do we have a negation for this?
-    public void testNegationEmpty() {
-        Set<Concept> result = graph.graql().match(
-                var("x").isa("movie").has("title", var("y")),
-                var("y").value(neq(var()))).select("x").execute()
-                .stream()
-                .map(stringConceptMap -> stringConceptMap.get("x"))
-                .collect(Collectors.toSet());
-        assertTrue(result.isEmpty());
-    }
-
     @Test(expected = Exception.class)
     public void testNegationNull() {
         Var var = null;
