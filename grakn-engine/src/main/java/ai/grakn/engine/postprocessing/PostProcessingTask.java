@@ -19,7 +19,6 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
