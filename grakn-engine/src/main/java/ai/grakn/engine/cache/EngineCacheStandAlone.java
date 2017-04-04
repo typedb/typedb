@@ -39,6 +39,8 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  *    We cannot relay on {@link ai.grakn.concept.ConceptId}s because the indexed lookup maybe faulty with
  *    vertices in need of post processing.
+ *
+ *    This stand alone version keeps everything in memory when running a single engine.
  * </p>
  *
  * @author fppt
