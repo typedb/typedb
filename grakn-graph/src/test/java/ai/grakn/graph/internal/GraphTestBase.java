@@ -28,7 +28,7 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 public class GraphTestBase {
-    protected AbstractGraknGraph<?> graknGraphBatch;
+    private AbstractGraknGraph<?> graknGraphBatch;
     protected AbstractGraknGraph<?> graknGraph;
 
     @Rule
@@ -37,12 +37,19 @@ public class GraphTestBase {
     @Before
     public void setUpGraph() {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
         graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
+        graknGraphBatch.close();
+        graknGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
     }
 
     @After
     public void destroyGraphAccessManager() throws Exception {
         graknGraph.close();
+    }
+
+    public AbstractGraknGraph<?> switchToBatchGraph(){
+        graknGraph.close();
+        graknGraphBatch = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, graknGraphBatch.getKeyspace()).open(GraknTxType.BATCH);
+        return graknGraphBatch;
     }
 }

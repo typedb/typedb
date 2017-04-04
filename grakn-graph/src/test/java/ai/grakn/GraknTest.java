@@ -20,6 +20,7 @@ package ai.grakn;
 
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -50,7 +51,7 @@ public class GraknTest {
     public void testInMemoryClear(){
         GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.clear();
-        graph =  Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
+        graph = Grakn.session(Grakn.IN_MEMORY, "default").open(GraknTxType.WRITE);
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
@@ -64,10 +65,12 @@ public class GraknTest {
     public void testSingletonBetweenBatchAndNormalInMemory(){
         String keyspace = "test1";
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.WRITE);
+        Graph tinkerGraph = graph.getTinkerPopGraph();
+        graph.close();
         AbstractGraknGraph batchGraph = (AbstractGraknGraph) Grakn.session(Grakn.IN_MEMORY, keyspace).open(GraknTxType.BATCH);
 
         assertNotEquals(graph, batchGraph);
-        assertEquals(graph.getTinkerPopGraph(), batchGraph.getTinkerPopGraph());
+        assertEquals(tinkerGraph, batchGraph.getTinkerPopGraph());
 
         graph.close();
         batchGraph.close();

@@ -64,10 +64,9 @@ import java.util.stream.Collectors;
  * 
  * @author borislav, fppt
  *
- * @param <M>
  * @param <T>
  */
-public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
+public class SystemKeyspace<T extends Graph> {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from engine. For now, we just make sure Engine and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there! (Boris)
@@ -80,16 +79,16 @@ public class SystemKeyspace<M extends GraknGraph, T extends Graph> {
     protected final Logger LOG = LoggerFactory.getLogger(SystemKeyspace.class);
 
     private static final ConcurrentHashMap<String, Boolean> openSpaces = new ConcurrentHashMap<>();
-    private final InternalFactory<M, T> factory;
+    private final InternalFactory<T> factory;
 
-    public SystemKeyspace(InternalFactory<M, T> factory){
+    public SystemKeyspace(InternalFactory<T> factory){
         this.factory = factory;
     }
 
     /**
      * Notify that we just opened a keyspace with the same engineUrl & config.
      */
-    SystemKeyspace<M, T> keyspaceOpened(String keyspace) {
+    SystemKeyspace<T> keyspaceOpened(String keyspace) {
         openSpaces.computeIfAbsent(keyspace, name -> {
             try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
                 ResourceType<String> keyspaceName = graph.getType(KEYSPACE_RESOURCE);
