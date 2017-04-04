@@ -258,7 +258,6 @@ public class GeoInferenceTest {
 
         QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toSet()));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
-        System.out.println("materialise: " + ReasonerAtomicQuery.materialise);
         assertEquals(answers.size(), 51);
         assertEquals(answers, answers2);
     }

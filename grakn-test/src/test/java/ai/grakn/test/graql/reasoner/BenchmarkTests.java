@@ -124,7 +124,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 500;
+        final int N = 20;
 
         // DJ - differential joins
         // IC - inverse cache

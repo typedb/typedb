@@ -524,7 +524,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return true;
     }
 
-    Answer getSubstitution(){
+    private Answer getSubstitution(){
         Set<IdPredicate> predicates = this.getTypeConstraints().stream()
                 .map(TypeAtom::getPredicate)
                 .filter(Objects::nonNull)
@@ -554,7 +554,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getSubstitution().keySet().containsAll(getVarNames());
     }
 
-    boolean requiresMaterialisation(){
+    private boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
             if (atom.requiresMaterialisation() && atom.isRuleResolvable()) return true;
             for (InferenceRule rule : atom.getApplicableRules())

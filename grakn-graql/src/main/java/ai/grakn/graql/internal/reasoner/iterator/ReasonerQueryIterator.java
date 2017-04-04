@@ -26,7 +26,7 @@ import java.util.stream.StreamSupport;
 /**
  *
  * <p>
- * ReasonerQueryIterator
+ * Convenience base class for reasoner iterators.
  * </p>
   *
  * @author Kasper Piskorski

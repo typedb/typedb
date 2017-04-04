@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.cache;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import javafx.util.Pair;
 

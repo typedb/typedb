@@ -384,8 +384,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return new ReasonerAtomicQueryIterator(subGoals, cache);
     }
 
-    public static int materialise = 0;
-
     /**
      *
      * <p>

@@ -308,27 +308,13 @@ public class GenealogyTest {
 
     @Test
     public void testSiblings() {
-        Concept Titus = iqb.<MatchQuery>parse("match $x has surname 'Titus';").execute().iterator().next().get("x");
-        String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;$x id '" + Titus.getId().getValue() + "';";
-
-        MatchQuery query = iqb.materialise(false).parse(queryString);
+        String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
+        MatchQuery query = iqb.materialise(true).parse(queryString);
 
         QueryAnswers answers = new QueryAnswers(query.admin().streamWithAnswers().collect(Collectors.toSet()));
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
-    }
-
-    @Test
-    public void testParentshipNew() {
-        Concept Titus = iqb.<MatchQuery>parse("match $x has surname 'Titus';").execute().iterator().next().get("x");
-        String queryString = "match (child: $c, parent: $p) isa parentship;$c id '" + Titus.getId().getValue() + "';";
-
-        MatchQuery query = iqb.materialise(false).parse(queryString);
-        QueryAnswers answers = new QueryAnswers(query.admin().streamWithAnswers().collect(Collectors.toSet()));
-        assertEquals(answers.size(), 76);
-        assertTrue(!hasDuplicates(answers));
-        answers.forEach(answer -> assertEquals(answer.size(), 2));
     }
 
     @Test
