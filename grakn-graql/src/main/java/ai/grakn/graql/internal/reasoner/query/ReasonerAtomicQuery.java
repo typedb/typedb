@@ -312,8 +312,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                           boolean explanation,
                                           boolean differentialJoin){
         Atom atom = this.getAtom();
-        rule.unify(atom);
-        if (atom.isRelation() || atom.isResource()) rule.propagateConstraints(atom);
+        rule.unify(atom).propagateConstraints(atom);
 
         ReasonerQueryImpl ruleBody = rule.getBody();
         ReasonerAtomicQuery ruleHead = rule.getHead();

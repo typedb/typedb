@@ -150,6 +150,7 @@ public class InferenceRule {
      * @return the inference rule with constraints
      */
     public  InferenceRule propagateConstraints(Atom parentAtom){
+        if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
                 .collect(toSet());
         Set<Atom> types = parentAtom.getTypeConstraints().stream()
