@@ -631,11 +631,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         }
         //TODO temporary switch
         if (materialise
-                || (isAtomic() && !getTopAtom().hasSubstitution() )) {
+                /*|| (isAtomic() && !getTopAtom().hasSubstitution() ) */) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             return new QueryAnswerIterator().hasStream();
-            //return new ReasonerQueryImplIterator().hasStream();
         }
     }
 
@@ -720,7 +719,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     private class ReasonerQueryImplIterator extends ReasonerQueryIterator {
 
         private final Answer partialSubstitution;
-
         private final ReasonerQueryImpl newQuery;
 
         private final QueryCache<ReasonerAtomicQuery> cache;
@@ -754,12 +752,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
             boolean isAtomic = isAtomic();
             if (!isAtomic) newQuery.removeAtom(topAtom);
-
-            /*
-            System.out.println("newQuery:");
-            newQuery.getAtoms().forEach(System.out::println);
-            System.out.println();
-            */
 
             atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(subGoals, cache);
             queryIterator = isAtomic? q.iterator(subGoals, cache) : Collections.emptyIterator();

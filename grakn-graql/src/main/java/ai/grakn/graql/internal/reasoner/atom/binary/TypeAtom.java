@@ -72,9 +72,8 @@ public class TypeAtom extends Binary{
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         return isRuleResolvable()
                 || getPredicate() == null
-                //TODO??
-                // case of ?
-                || (parent.getIdPredicate(getVarName()) != null && getPredicate() != null)
+                // case of the predicate provided by user (user defined value variable)
+                || (parent.getIdPredicate(getValueVariable()) != null && getPredicate() != null)
                 // case of disjoint type atom
                 || (!(parent instanceof ReasonerAtomicQuery) && parent.findNextJoinable(this) == null);
     }

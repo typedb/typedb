@@ -146,18 +146,13 @@ public class InferenceRule {
     }
 
     /**
-     *
-     * @param parentAtom
-     * @return
+     * @param parentAtom from which constrained are propagated
+     * @return the inference rule with constraints
      */
     public  InferenceRule propagateConstraints(Atom parentAtom){
-        //only propagate unambiguous constraints
-        Set<VarName> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
-                //.filter(pred -> !unmappedVars.contains(pred.getVarName()))
                 .collect(toSet());
         Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                //.filter(type -> !unmappedVars.contains(type.getVarName()))
                 .collect(toSet());
 
         head.addAtomConstraints(predicates);

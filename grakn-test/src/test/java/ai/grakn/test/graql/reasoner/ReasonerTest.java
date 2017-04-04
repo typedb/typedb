@@ -305,7 +305,6 @@ public class ReasonerTest {
         assertTrue(query2.equals(query4));
     }
 
-    @Ignore
     @Test
     public void testParsingQueryContainingScope(){
         String queryString = "match $r ($p, $pr) isa recommendation;$r has-scope $s;";
@@ -408,8 +407,6 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    //TODO freezes
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingTypeVar(){
         String queryString = "match $x isa person;$y isa $type;($x, $y) isa recommendation;";
@@ -523,7 +520,9 @@ public class ReasonerTest {
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertQueriesEqual(query, query2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers, answers2);
     }
 
     @Test
@@ -571,7 +570,9 @@ public class ReasonerTest {
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
-        assertQueriesEqual(query, query2);
+        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers2 = queryAnswers(query2);
+        assertEquals(answers, answers2);
     }
 
     @Test
@@ -800,6 +801,7 @@ public class ReasonerTest {
         List<Map<String, Concept>> answers2 = query.orderBy(VarName.of("a")).offset(offset).execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
+        fullAnswers.forEach(System.out::println);
         assertEquals(answers.size(), answers2.size() + offset);
         assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "19");
         assertEquals(answers2.iterator().next().get("a").asResource().getValue().toString(), "23");
@@ -875,7 +877,7 @@ public class ReasonerTest {
         assertTrue(answers2.containsAll(answers));
         assertEquals(2*answers.size(), answers2.size());
     }
-    
+
     @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationVariable(){

@@ -19,10 +19,10 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.graphs.AdmissionsGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Unifier;
@@ -36,8 +36,6 @@ import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
@@ -53,6 +51,9 @@ public class QueryTest {
 
     @ClassRule
     public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
+
+    @ClassRule
+    public static final GraphContext admissionsGraph = GraphContext.preLoad(AdmissionsGraph.get());
 
     @ClassRule
     public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
@@ -149,6 +150,25 @@ public class QueryTest {
         ReasonerQueryImpl query8 = new ReasonerQueryImpl(conjunction(patternString8, graph), graph);
         assertTrue(query5.isEquivalent(query6));
         assertTrue(query7.isEquivalent(query8));
+    }
+
+    @Test
+    public void testResourceEquivalence() {
+        String patternString = "{$x isa $x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680;" +
+                "$x has GRE $x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45;" +
+                "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 type-name 'applicant';" +
+                "$x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45 value > 1099;}";
+
+        String patternString2 = "{$x isa $x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6;" +
+                "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
+                "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 type-name 'applicant';" +
+                "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, admissionsGraph.graph());
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, admissionsGraph.graph());
+        ReasonerQueryImpl parentQuery = new ReasonerQueryImpl(pattern, admissionsGraph.graph());
+        ReasonerQueryImpl childQuery = new ReasonerQueryImpl(pattern2, admissionsGraph.graph());
+        assertEquals(parentQuery, childQuery);
+        assertEquals(parentQuery.hashCode(), childQuery.hashCode());
     }
 
     @Test

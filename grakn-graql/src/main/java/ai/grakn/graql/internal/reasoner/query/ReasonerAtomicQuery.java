@@ -512,17 +512,21 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
 
         private Iterator<InferenceRule> getRuleIterator(){
-            Stream<InferenceRule> rules = getAtom().getApplicableRules().stream()
-                    .map(rule -> rule.unify(getAtom()));
-            if (!getAtom().getUnmappedIdPredicates().isEmpty()) {
-                rules = rules
+            Atom atom = getAtom();
+            //list cause rules with permuted role types are alpha-equivalent
+            List<InferenceRule> rules = getAtom().getApplicableRules().stream()
+                    .map(rule -> rule.unify(atom))
+                    .collect(Collectors.toList());
+            if (atom.isRelation()
+                    && !((Relation)atom).getUnmappedRolePlayers().isEmpty()) {
+                rules = rules.stream()
                         .flatMap(rule -> {
                             Set<Unifier> permutationUnifiers = getPermutationUnifiers(rule.getHead().getAtom());
                             return permutationUnifiers.stream()
                                     .map(unifier -> new InferenceRule(rule).unify(unifier));
-                        });
+                        }).collect(Collectors.toList());
             }
-            return rules.map(rule -> rule.propagateConstraints(getAtom())).iterator();
+            return rules.stream().map(rule -> rule.propagateConstraints(getAtom())).iterator();
         }
 
         @Override

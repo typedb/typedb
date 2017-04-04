@@ -124,7 +124,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 500;
+        final int N = 100;
 
         // DJ - differential joins
         // IC - inverse cache
@@ -205,7 +205,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveMatrix(){
-        final int N = 30;
+        final int N = 5;
 
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -239,8 +239,6 @@ public class BenchmarkTests {
         List<Map<String, Concept>> execute = query.execute();
         System.out.println("full result computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
 
-        /*
-
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute2 = query2.execute();
         System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
@@ -248,7 +246,7 @@ public class BenchmarkTests {
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute3 = query3.execute();
         System.out.println("computeTime with specific substitution: " + (System.currentTimeMillis() - startTime) + " results: " + execute3.size());
-        */
+
         int limit = 100;
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> results = query.limit(limit).execute();
@@ -302,7 +300,7 @@ public class BenchmarkTests {
         List<Map<String, Concept>> execute = query.execute();
         System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
 
-        int limit = 100;
+        int limit = 10;
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
