@@ -87,12 +87,6 @@ public class TaskState implements Serializable {
      */
     private Json configuration;
 
-    public static TaskState of(TaskId id) {
-        // TODO: Figure out a nicer way than all these nulls...
-        // This method is necessary in order to stop tasks that haven't been added to storage yet
-        return new TaskState(null, null, null, null, id);
-    }
-
     public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration) {
         return of(taskClass, creator, schedule, configuration, TaskId.generate());
     }

@@ -396,7 +396,7 @@ public class SingleQueueTaskRunnerTest {
 
         setUpTasks(ImmutableList.of(ImmutableList.of(task)));
 
-        storage.newState(TaskState.of(task.getId()).markStopped());
+        storage.newState(task.markStopped());
 
         taskRunner.run();
 
