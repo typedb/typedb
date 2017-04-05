@@ -24,9 +24,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.util.Schema.EdgeLabel.HAS_ROLE;
 
-class InHasRoleFragment extends AbstractFragment {
+class InRelatesFragment extends AbstractFragment {
 
-    InHasRoleFragment(VarName start, VarName end) {
+    InRelatesFragment(VarName start, VarName end) {
         super(start, end);
     }
 

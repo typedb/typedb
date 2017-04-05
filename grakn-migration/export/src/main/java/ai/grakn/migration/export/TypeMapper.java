@@ -117,7 +117,7 @@ public class TypeMapper {
      */
     private static Var relates(Var var, RelationType type){
         for(RoleType role:type.relates()){
-            var = var.hasRole(name(role.getName()));
+            var = var.relates(name(role.getName()));
         }
         return var;
     }

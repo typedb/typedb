@@ -527,11 +527,11 @@ public class MatchQueryTest {
     @Test
     public void testSubRelationType() {
         qb.insert(
-                name("ownership").sub("relation").hasRole("owner").hasRole("possession"),
+                name("ownership").sub("relation").relates("owner").relates("possession"),
                 name("organization-with-shares").sub("possession"),
                 name("possession").sub("role"),
 
-                name("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
+                name("share-ownership").sub("ownership").relates("shareholder").relates("organization-with-shares"),
                 name("shareholder").sub("owner"),
                 name("owner").sub("role"),
 

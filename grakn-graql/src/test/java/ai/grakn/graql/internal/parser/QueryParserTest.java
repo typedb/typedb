@@ -254,7 +254,7 @@ public class QueryParserTest {
                 var("x").isa(var("z")),
                 var("y").value("crime"),
                 var("z").sub("production"),
-                name("has-genre").hasRole(var("p"))
+                name("has-genre").relates(var("p"))
         );
 
         MatchQuery parsed = parse(
@@ -321,7 +321,7 @@ public class QueryParserTest {
                 name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue()),
                 name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
-                name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
+                name("evolution").relates("evolves-from").relates("evolves-to"),
                 name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),

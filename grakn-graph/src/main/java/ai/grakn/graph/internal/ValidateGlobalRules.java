@@ -58,7 +58,7 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     This class contains the implementation for the following validation rules:
  *     1. Plays Role Validation which ensures that a {@link Instance} is allowed to play the {@link RoleType}
  *        it has been assigned to.
- *     2. Has Role Validation which ensures that every {@link RoleType} which is not abstract is
+ *     2. Relates Validation which ensures that every {@link RoleType} which is not abstract is
  *        assigned to a {@link RelationType} via {@link RelationType#relates(RoleType)}.
  *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link RoleType}
  *        assigned to it via {@link RelationType#relates(RoleType)}.

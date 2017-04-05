@@ -48,13 +48,13 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -785,7 +785,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingHasRole() {
+    public void testReasoningWithQueryContainingRelates() {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match ($x, $y) isa $rel-type;$rel-type relates geo-entity;" +
                 "$y isa country;$y has name 'Poland';select $x;";
@@ -798,7 +798,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingHasRole2() {
+    public void testReasoningWithQueryContainingRelates2() {
         String queryString = "match ($x, $y) isa $rel;$rel relates $role;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
         QueryBuilder qb = geoGraph.graph().graql().infer(false);

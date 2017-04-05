@@ -212,7 +212,7 @@ public class InsertQueryTest {
                 name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue()),
                 name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
-                name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
+                name("evolution").relates("evolves-from").relates("evolves-to"),
                 name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
 
                 var("x").has("name", "Pichu").isa("pokemon"),
@@ -226,7 +226,7 @@ public class InsertQueryTest {
         assertTrue(qb.match(name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue())).ask().execute());
         assertTrue(qb.match(name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
         assertTrue(qb.match(name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue())).ask().execute());
-        assertTrue(qb.match(name("evolution").hasRole("evolves-from").hasRole("evolves-to")).ask().execute());
+        assertTrue(qb.match(name("evolution").relates("evolves-from").relates("evolves-to")).ask().execute());
         assertTrue(qb.match(name("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
         assertTrue(qb.match(
@@ -287,7 +287,7 @@ public class InsertQueryTest {
     @Test
     public void testInsertSubRoleType() {
         qb.insert(
-                name("marriage").sub(Schema.MetaSchema.RELATION.getName().getValue()).hasRole("spouse1").hasRole("spouse2"),
+                name("marriage").sub(Schema.MetaSchema.RELATION.getName().getValue()).relates("spouse1").relates("spouse2"),
                 name("spouse").sub(Schema.MetaSchema.ROLE.getName().getValue()).isAbstract(),
                 name("spouse1").sub("spouse"),
                 name("spouse2").sub("spouse")
@@ -489,8 +489,8 @@ public class InsertQueryTest {
         assertTrue(qb.match(hasResource.sub("relation")).ask().execute());
         assertTrue(qb.match(hasResourceOwner.sub("role")).ask().execute());
         assertTrue(qb.match(hasResourceValue.sub("role")).ask().execute());
-        assertTrue(qb.match(hasResource.hasRole(hasResourceOwner)).ask().execute());
-        assertTrue(qb.match(hasResource.hasRole(hasResourceValue)).ask().execute());
+        assertTrue(qb.match(hasResource.relates(hasResourceOwner)).ask().execute());
+        assertTrue(qb.match(hasResource.relates(hasResourceValue)).ask().execute());
         assertTrue(qb.match(name("a-new-type").playsRole(hasResourceOwner)).ask().execute());
         assertTrue(qb.match(name(resourceType).playsRole(hasResourceValue)).ask().execute());
     }
@@ -518,8 +518,8 @@ public class InsertQueryTest {
         assertTrue(qb.match(hasKey.sub("relation")).ask().execute());
         assertTrue(qb.match(hasKeyOwner.sub("role")).ask().execute());
         assertTrue(qb.match(hasKeyValue.sub("role")).ask().execute());
-        assertTrue(qb.match(hasKey.hasRole(hasKeyOwner)).ask().execute());
-        assertTrue(qb.match(hasKey.hasRole(hasKeyValue)).ask().execute());
+        assertTrue(qb.match(hasKey.relates(hasKeyOwner)).ask().execute());
+        assertTrue(qb.match(hasKey.relates(hasKeyValue)).ask().execute());
         assertTrue(qb.match(name("a-new-type").playsRole(hasKeyOwner)).ask().execute());
         assertTrue(qb.match(name(resourceType).playsRole(hasKeyValue)).ask().execute());
     }
