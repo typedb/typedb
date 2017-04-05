@@ -18,6 +18,8 @@
 
 package ai.grakn.concept;
 
+import ai.grakn.exception.ConceptException;
+
 import java.util.Collection;
 
 /**
@@ -36,10 +38,12 @@ import java.util.Collection;
 public interface RelationType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * Adds a new empty Relation.
+     * Creates and returns a new {@link Relation} instance, whose direct type will be this type.
      * @see Relation
      *
      * @return a new empty relation.
+     *
+     * @throws ConceptException if this is a meta type
      */
     Relation addRelation();
 
@@ -132,8 +136,8 @@ public interface RelationType extends Type {
     RelationType setAbstract(Boolean isAbstract);
 
     /**
-     * Returns the supertype of this RelationType.
-     * @return The supertype of this RelationType
+     * Returns the direct supertype of this RelationType.
+     * @return The direct supertype of this RelationType
      */
     RelationType superType();
 
