@@ -103,7 +103,7 @@ public class QueryParserTest {
 
         MatchQuery parsed = parse(
                 "match\n" +
-                        "$brando value \"Marl B\" isa person;\n" +
+                        "$brando val \"Marl B\" isa person;\n" +
                         "(actor: $brando, $char, production-with-cast: $prod);\n" +
                         "select $char, $prod;"
         );
@@ -128,8 +128,8 @@ public class QueryParserTest {
         MatchQuery parsed = parse(
                 "match\n" +
                 "$x isa movie, has title $t;\n" +
-                "$t value = \"Apocalypse Now\" or {$t value < 'Juno'; $t value > 'Godfather';} or $t value 'Spy';" +
-                "$t value !='Apocalypse Now';\n"
+                "$t val = \"Apocalypse Now\" or {$t val < 'Juno'; $t val > 'Godfather';} or $t val 'Spy';" +
+                "$t val !='Apocalypse Now';\n"
         );
 
         assertEquals(expected, parsed);
@@ -147,7 +147,7 @@ public class QueryParserTest {
 
         MatchQuery parsed = parse(
                 "match $x isa movie, has title $t;" +
-                "{$t value <= 'Juno'; $t value >= 'Godfather'; $t value != 'Heat';} or $t value = 'The Muppets';"
+                "{$t val <= 'Juno'; $t val >= 'Godfather'; $t val != 'Heat';} or $t val = 'The Muppets';"
         );
 
         assertEquals(expected, parsed);
@@ -163,7 +163,7 @@ public class QueryParserTest {
 
         MatchQuery parsed = parse(
                 "match ($x, $y); $y isa person, has name $n;" +
-                "$n value contains 'ar' or $n value /^M.*$/;"
+                "$n val contains 'ar' or $n val /^M.*$/;"
         );
 
         assertEquals(expected, parsed);
@@ -173,7 +173,7 @@ public class QueryParserTest {
     public void testValueEqualsVariableQuery() {
         MatchQuery expected = match(var("s1").val(var("s2")));
 
-        MatchQuery parsed = parse("match $s1 value = $s2;");
+        MatchQuery parsed = parse("match $s1 val = $s2;");
 
         assertEquals(expected, parsed);
     }
@@ -261,7 +261,7 @@ public class QueryParserTest {
                 "match" +
                         "($p: $x, $y);" +
                         "$x isa $z;" +
-                        "$y value 'crime';" +
+                        "$y val 'crime';" +
                         "$z sub production;" +
                         "has-genre has-role $p;"
         );
@@ -280,7 +280,7 @@ public class QueryParserTest {
         );
 
         MatchQuery parsed = parse(
-                "match $x isa movie; { $y isa genre value 'drama'; ($x, $y); } or $x value 'The Muppets';"
+                "match $x isa movie; { $y isa genre val 'drama'; ($x, $y); } or $x val 'The Muppets';"
         );
 
         assertEquals(expected, parsed);
