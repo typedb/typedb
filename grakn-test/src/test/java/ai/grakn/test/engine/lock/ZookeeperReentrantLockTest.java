@@ -16,36 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.lock;
+package ai.grakn.test.engine.lock;
 
-import java.util.concurrent.locks.Lock;
-
-/**
- * <p>
- *     This class provides the correct {@link Lock} based on how it was initialised.
- * </p>
- *
- * @author alexandraorth
- */
-public class LockProvider {
-
-    private static Lock lock = null;
-
-    private LockProvider(){}
-
-    public static void init(Lock providedLock){
-        if(lock != null){
-            throw new RuntimeException("Lock class has already been initialised with another lock.");
-        }
-
-        lock = providedLock;
-    }
-
-    public static Lock getLock(){
-        return lock;
-    }
-
-    public static void clearLock(){
-        lock = null;
-    }
+public class ZookeeperReentrantLockTest {
 }
