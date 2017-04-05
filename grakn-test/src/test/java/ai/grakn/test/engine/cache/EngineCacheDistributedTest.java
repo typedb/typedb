@@ -35,7 +35,6 @@ import java.util.function.BiConsumer;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -125,8 +124,8 @@ public class EngineCacheDistributedTest {
         transferFakeCacheIntoRealCache(resourcesFake, (index, id) -> cache.addJobResource(keyspace, index, id));
 
         //Check stuff is in cache
-        checkContentsOfCache(castingsFake, cache.getCastingJobs(keyspace));
-        checkContentsOfCache(resourcesFake, cache.getResourceJobs(keyspace));
+        checkContentsOfCache(cache.getCastingJobs(keyspace), castingsFake);
+        checkContentsOfCache(cache.getResourceJobs(keyspace), resourcesFake);
 
         //Check counts
         assertEquals(castingsFakeCount, cache.getNumCastingJobs(keyspace));
@@ -152,10 +151,10 @@ public class EngineCacheDistributedTest {
         transferFakeCacheIntoRealCache(key2_resourcesFake, (index, id) -> cache.addJobResource(keyspace2, index, id));
 
         //Check stuff is in graph
-        checkContentsOfCache(key1_castingsFake, cache.getCastingJobs(keyspace1));
-        checkContentsOfCache(key1_resourcesFake, cache.getResourceJobs(keyspace1));
-        checkContentsOfCache(key2_castingsFake, cache.getCastingJobs(keyspace2));
-        checkContentsOfCache(key2_resourcesFake, cache.getResourceJobs(keyspace2));
+        checkContentsOfCache(cache.getCastingJobs(keyspace1), key1_castingsFake);
+        checkContentsOfCache(cache.getResourceJobs(keyspace1), key1_resourcesFake);
+        checkContentsOfCache(cache.getCastingJobs(keyspace2), key2_castingsFake);
+        checkContentsOfCache(cache.getResourceJobs(keyspace2), key2_resourcesFake);
     }
 
     private Map<String, Set<ConceptId>> createFakeInternalConceptLog(String indexPrefix, int numIndex, int numJobs){
@@ -174,8 +173,8 @@ public class EngineCacheDistributedTest {
         });
     }
     private void checkContentsOfCache(Map<String, Set<ConceptId>> realCache, Map<String, Set<ConceptId>> fakeCache){
-        assertThat(realCache.keySet(), containsInAnyOrder(fakeCache.keySet()));
-        fakeCache.keySet().forEach(key-> assertThat(realCache.get(key), containsInAnyOrder(fakeCache.get(key))));
+        assertEquals(realCache.keySet(), fakeCache.keySet());
+        fakeCache.keySet().forEach(key-> assertEquals(realCache.get(key), fakeCache.get(key)));
     }
 
 

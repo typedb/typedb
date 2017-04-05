@@ -20,10 +20,21 @@ package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.graph.admin.ConceptCache;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_JOBS;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_KEYSPACES;
+import static java.lang.String.format;
+import static org.apache.commons.lang.SerializationUtils.deserialize;
+import static org.apache.spark.util.Utils.serialize;
 
 /**
  * <p>
@@ -43,12 +54,15 @@ import java.util.Set;
  * @author fppt
  */
 //TODO: Maybe we can merge this with Stand alone engine cache using Kafka for example?
+//TODO: This class may be in need of sever optimisation. Constantly serialising and deserialising maps and sets is likely to be slow.
 public class EngineCacheDistributed implements ConceptCache {
     private static EngineCacheDistributed instance = null;
+    private final ZookeeperConnection zookeeper;
+    private final AtomicLong lastTimeModified = new AtomicLong(0L);
 
 
-    private EngineCacheDistributed(ZookeeperConnection connection){
-        if(connection == null) throw  new RuntimeException("This is just some placeholder logic");
+    private EngineCacheDistributed(ZookeeperConnection zookeeper){
+        this.zookeeper = zookeeper;
     }
 
     public static synchronized EngineCacheDistributed init(ZookeeperConnection connection){
@@ -56,9 +70,49 @@ public class EngineCacheDistributed implements ConceptCache {
         return instance;
     }
 
+    private String getPathCastings(String keyspace){
+        return format(ENGINE_CACHE_JOBS, keyspace, "castings");
+    }
+
+    private String getPathResources(String keyspace){
+        return format(ENGINE_CACHE_JOBS, keyspace, "resources");
+    }
+
     @Override
     public Set<String> getKeyspaces() {
-        throw new UnsupportedOperationException("not yet implemented");
+        //noinspection unchecked
+        return (Set<String>) getObjectFromZookeeper(ENGINE_CACHE_KEYSPACES).orElse(new HashSet<>());
+    }
+
+    private void updateKeyspaces(String newKeyspace){
+        Set<String> currentKeyspaces = getKeyspaces();
+        if(!currentKeyspaces.contains(newKeyspace)){
+            currentKeyspaces.add(newKeyspace);
+            synchronized (this) {
+                writeObjectToZookeeper(ENGINE_CACHE_KEYSPACES, currentKeyspaces);
+            }
+        }
+    }
+
+    private void writeObjectToZookeeper(String path, Object object){
+        try{
+            if(zookeeper.connection().checkExists().forPath(path) == null) {
+                zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(path, serialize(object));
+            } else {
+                zookeeper.connection().inTransaction().setData().forPath(path, serialize(object)).and().commit();
+            }
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
+    }
+
+    private Optional<Object> getObjectFromZookeeper(String path){
+        try {
+            if(zookeeper.connection().checkExists().forPath(path) == null) return Optional.empty();
+            return Optional.of(deserialize(zookeeper.connection().getData().forPath(path)));
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
     }
 
     @Override
@@ -76,15 +130,6 @@ public class EngineCacheDistributed implements ConceptCache {
         throw new UnsupportedOperationException("not yet implemented");
     }
 
-    @Override
-    public Map<String, Set<ConceptId>> getCastingJobs(String keyspace) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    @Override
-    public void addJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
 
     @Override
     public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
@@ -92,13 +137,36 @@ public class EngineCacheDistributed implements ConceptCache {
     }
 
     @Override
+    public Map<String, Set<ConceptId>> getCastingJobs(String keyspace) {
+        return getJobs(getPathCastings(keyspace));
+    }
+    @Override
     public Map<String, Set<ConceptId>> getResourceJobs(String keyspace) {
-        return null;
+        return getJobs(getPathResources(keyspace));
+    }
+    private Map<String, Set<ConceptId>> getJobs(String path){
+        //noinspection unchecked
+        return (Map<String, Set<ConceptId>>) getObjectFromZookeeper(path).orElse(new HashMap<>());
     }
 
     @Override
+    public void addJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
+        addJob(getPathCastings(keyspace), keyspace, castingIndex, castingId);
+    }
+    @Override
     public void addJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
-        throw new UnsupportedOperationException("not yet implemented");
+        addJob(getPathResources(keyspace), keyspace, resourceIndex, resourceId);
+    }
+    private void addJob(String jobPath, String keyspace, String index, ConceptId id){
+        updateKeyspaces(keyspace);
+        Map<String, Set<ConceptId>> currentJobs = getJobs(jobPath);
+        Set<ConceptId> currentIds = currentJobs.computeIfAbsent(index, (k) -> new HashSet<>());
+        if(!currentIds.contains(id)){
+            currentIds.add(id);
+            synchronized (this) {
+                writeObjectToZookeeper(jobPath, currentJobs);
+            }
+        }
     }
 
     @Override
@@ -123,6 +191,10 @@ public class EngineCacheDistributed implements ConceptCache {
 
     @Override
     public long getLastTimeJobAdded() {
-        throw new UnsupportedOperationException("not yet implemented");
+        return lastTimeModified.get();
+    }
+
+    private void updateLastTimeJobAdded(){
+        lastTimeModified.set(System.currentTimeMillis());
     }
 }
