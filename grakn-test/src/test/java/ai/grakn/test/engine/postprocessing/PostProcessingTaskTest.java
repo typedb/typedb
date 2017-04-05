@@ -47,7 +47,6 @@ public class PostProcessingTaskTest {
     public void testStart() throws Exception {
         TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
         taskManager.addTask(task);
-        Assert.assertNotEquals(CREATED, taskManager.storage().getState(task.getId()).status());
 
         // Wait for supervisor thread to mark task as completed
         final long initial = new Date().getTime();
