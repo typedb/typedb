@@ -144,7 +144,7 @@ class HALConceptOntology {
     }
 
     private void relationTypeOntology(Representation halResource, RelationType relationType) {
-        relationType.hasRoles().forEach(role -> {
+        relationType.relates().forEach(role -> {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId()+getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, role);

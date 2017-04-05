@@ -79,7 +79,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      * @return A list of the Role Types which make up this Relation Type.
      */
     @Override
-    public Collection<RoleType> hasRoles() {
+    public Collection<RoleType> relates() {
         return Collections.unmodifiableCollection(cachedHasRoles.get());
     }
 

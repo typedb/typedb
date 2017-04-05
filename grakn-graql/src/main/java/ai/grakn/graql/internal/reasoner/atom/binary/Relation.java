@@ -556,7 +556,7 @@ public class Relation extends TypeAtom {
 
         GraknGraph graph = getParentQuery().graph();
         RelationType relType = (RelationType) getType();
-        Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
+        Set<RoleType> roles = Sets.newHashSet(relType.relates());
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<RelationPlayer> allocatedRelationPlayers = new HashSet<>();
         Set<RoleType> allocatedRoles = new HashSet<>();

@@ -116,7 +116,7 @@ public class TypeMapper {
      * @return var with appropriate has-role edges
      */
     private static Var hasRoles(Var var, RelationType type){
-        for(RoleType role:type.hasRoles()){
+        for(RoleType role:type.relates()){
             var = var.hasRole(name(role.getName()));
         }
         return var;

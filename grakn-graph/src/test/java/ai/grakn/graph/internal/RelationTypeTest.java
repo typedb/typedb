@@ -69,7 +69,7 @@ public class RelationTypeTest extends GraphTestBase{
 
     @Test
     public void testGetRoles() throws Exception {
-        Collection<RoleType> roles = relationType.hasRoles();
+        Collection<RoleType> roles = relationType.relates();
         assertEquals(3, roles.size());
         assertTrue(roles.contains(role1));
         assertTrue(roles.contains(role2));
@@ -85,12 +85,12 @@ public class RelationTypeTest extends GraphTestBase{
 
         c1.relates(c2);
         c1.relates(c3);
-        assertTrue(c1.hasRoles().contains(c2));
-        assertTrue(c1.hasRoles().contains(c3));
+        assertTrue(c1.relates().contains(c2));
+        assertTrue(c1.relates().contains(c3));
 
         c1.deleteRelates(c2);
-        assertFalse(c1.hasRoles().contains(c2));
-        assertTrue(c1.hasRoles().contains(c3));
+        assertFalse(c1.relates().contains(c2));
+        assertTrue(c1.relates().contains(c3));
     }
 
 

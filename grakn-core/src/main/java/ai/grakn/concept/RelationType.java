@@ -98,7 +98,7 @@ public interface RelationType extends Type {
      *
      * @return A list of the RoleTypes which make up this RelationType.
      */
-    Collection<RoleType> hasRoles();
+    Collection<RoleType> relates();
 
     //------------------------------------- Edge Handling ----------------------------------
 
