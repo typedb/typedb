@@ -47,8 +47,8 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
     Set<TypeLabel> statisticsResourceTypeLabels = new HashSet<>();
     private final Map<TypeLabel, String> resourceTypesDataTypeMap = new HashMap<>();
 
-    AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeNames) {
-        this.statisticsResourceTypeLabels = Arrays.stream(statisticsResourceTypeNames).map(TypeLabel::of).collect(Collectors.toSet());
+    AbstractStatisticsQuery<T> setStatisticsResourceType(String... statisticsResourceTypeLabels) {
+        this.statisticsResourceTypeLabels = Arrays.stream(statisticsResourceTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
         return this;
     }
 
@@ -77,7 +77,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     private String resourcesString() {
         return " of " + statisticsResourceTypeLabels.stream()
-                .map(StringConverter::typeNameToString).collect(joining(", "));
+                .map(StringConverter::typeLabelToString).collect(joining(", "));
     }
 
     private void getResourceTypes(GraknGraph graph) {

@@ -81,7 +81,7 @@ public class InsertQueryExecutor {
     private final Map<VarName, Concept> namedConcepts = new HashMap<>();
     private final Stack<VarName> visitedVars = new Stack<>();
     private final ImmutableMap<VarName, List<VarAdmin>> varsByVarName;
-    private final ImmutableMap<TypeLabel, List<VarAdmin>> varsByTypeName;
+    private final ImmutableMap<TypeLabel, List<VarAdmin>> varsByTypeLabel;
     private final ImmutableMap<ConceptId, List<VarAdmin>> varsById;
 
     InsertQueryExecutor(Collection<VarAdmin> vars, GraknGraph graph) {
@@ -105,10 +105,10 @@ public class InsertQueryExecutor {
         // Group variables by type name (if they have one defined)
         // the 'filter' step guarantees the remaining have a name
         //noinspection OptionalGetWithoutIsPresent
-        varsByTypeName = ImmutableMap.copyOf(
+        varsByTypeLabel = ImmutableMap.copyOf(
                 vars.stream()
-                        .filter(var -> var.getTypeName().isPresent())
-                        .collect(Collectors.groupingBy(var -> var.getTypeName().get()))
+                        .filter(var -> var.getTypeLabel().isPresent())
+                        .collect(Collectors.groupingBy(var -> var.getTypeLabel().get()))
         );
     }
 
@@ -177,10 +177,10 @@ public class InsertQueryExecutor {
             throw new IllegalStateException(INSERT_ISA_AND_SUB.getMessage(printableName));
         }
 
-        Optional<TypeLabel> typeName = var.getTypeName();
+        Optional<TypeLabel> typeLabel = var.getTypeLabel();
         Optional<ConceptId> id = var.getId();
 
-        typeName.ifPresent(name -> {
+        typeLabel.ifPresent(name -> {
             if (type.isPresent()) {
                 throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(name));
             }
@@ -188,7 +188,7 @@ public class InsertQueryExecutor {
 
         // If type provided, then 'put' the concept, else 'get' it by ID or name
         if (sub.isPresent()) {
-            TypeLabel name = getTypeNameOrThrow(typeName);
+            TypeLabel name = getTypeLabelOrThrow(typeLabel);
             return putType(name, var, sub.get());
         } else if (type.isPresent()) {
             return putInstance(id, var, type.get());
@@ -196,9 +196,9 @@ public class InsertQueryExecutor {
             Concept concept = graph.getConcept(id.get());
             if (concept == null) throw new IllegalStateException(INSERT_WITHOUT_TYPE.getMessage(id.get()));
             return concept;
-        } else if (typeName.isPresent()) {
-            Concept concept = graph.getType(typeName.get());
-            if (concept == null) throw new IllegalStateException(NAME_NOT_FOUND.getMessage(typeName.get()));
+        } else if (typeLabel.isPresent()) {
+            Concept concept = graph.getType(typeLabel.get());
+            if (concept == null) throw new IllegalStateException(NAME_NOT_FOUND.getMessage(typeLabel.get()));
             return concept;
         } else {
             throw new IllegalStateException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
@@ -230,10 +230,10 @@ public class InsertQueryExecutor {
             var = Patterns.mergeVars(varsToMerge);
 
             // And finally merge variables referred to by type name...
-            boolean byTypeNameChange = var.getTypeName().map(id -> varsToMerge.addAll(varsByTypeName.get(id))).orElse(false);
+            boolean byTypeLabelChange = var.getTypeLabel().map(id -> varsToMerge.addAll(varsByTypeLabel.get(id))).orElse(false);
             var = Patterns.mergeVars(varsToMerge);
 
-            changed = byVarNameChange | byIdChange | byTypeNameChange;
+            changed = byVarNameChange | byIdChange | byTypeLabelChange;
         }
 
         return var;
@@ -314,7 +314,7 @@ public class InsertQueryExecutor {
      * @return the name, if present
      * @throws IllegalStateException if the name was not present
      */
-    private TypeLabel getTypeNameOrThrow(Optional<TypeLabel> name) throws IllegalStateException {
+    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> name) throws IllegalStateException {
         return name.orElseThrow(() -> new IllegalStateException(INSERT_TYPE_WITHOUT_NAME.getMessage()));
     }
 

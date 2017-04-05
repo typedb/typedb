@@ -58,8 +58,8 @@ class CountQueryImpl extends AbstractComputeQuery<Long> implements CountQuery {
     }
 
     @Override
-    public CountQuery in(String... subTypeNames) {
-        return (CountQuery) super.in(subTypeNames);
+    public CountQuery in(String... subTypeLabels) {
+        return (CountQuery) super.in(subTypeLabels);
     }
 
     @Override

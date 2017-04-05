@@ -59,8 +59,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery of(String... resourceTypeNames) {
-        return (MaxQuery) setStatisticsResourceType(resourceTypeNames);
+    public MaxQuery of(String... resourceTypeLabels) {
+        return (MaxQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
@@ -69,8 +69,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery in(String... subTypeNames) {
-        return (MaxQuery) super.in(subTypeNames);
+    public MaxQuery in(String... subTypeLabels) {
+        return (MaxQuery) super.in(subTypeLabels);
     }
 
     @Override

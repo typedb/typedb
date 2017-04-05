@@ -74,7 +74,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
         this.pattern = pattern;
 
-        this.typeLabels = getAllTypeNames();
+        this.typeLabels = getAllTypeLabels();
     }
 
 
@@ -147,10 +147,10 @@ public class MatchQueryBase extends AbstractMatchQuery {
         return new MatchQueryInfer(this, materialise);
     }
 
-    private ImmutableSet<TypeLabel> getAllTypeNames() {
+    private ImmutableSet<TypeLabel> getAllTypeLabels() {
         return pattern.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
-                .map(VarAdmin::getTypeName)
+                .map(VarAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .collect(toImmutableSet());
     }

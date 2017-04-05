@@ -107,8 +107,8 @@ class ClusterQueryImpl<T> extends AbstractComputeQuery<T> implements ClusterQuer
     }
 
     @Override
-    public ClusterQuery<T> in(String... subTypeNames) {
-        return (ClusterQuery<T>) super.in(subTypeNames);
+    public ClusterQuery<T> in(String... subTypeLabels) {
+        return (ClusterQuery<T>) super.in(subTypeLabels);
     }
 
     @Override

@@ -289,7 +289,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testTypeNameQuery() {
+    public void testTypeLabelQuery() {
         MatchQuery query = qb.match(or(var("x").name("character"), var("x").name("person")));
 
         assertThat(query, variable("x", containsInAnyOrder(character, person)));

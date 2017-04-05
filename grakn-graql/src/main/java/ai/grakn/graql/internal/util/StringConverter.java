@@ -107,7 +107,7 @@ public class StringConverter {
      * If the name doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
-    public static String typeNameToString(TypeLabel typeLabel) {
+    public static String typeLabelToString(TypeLabel typeLabel) {
         return escapeNameOrId(typeLabel.getValue());
     }
 

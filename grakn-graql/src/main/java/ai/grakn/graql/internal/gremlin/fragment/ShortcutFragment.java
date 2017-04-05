@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.UUID;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_LABEL;
@@ -63,9 +63,9 @@ class ShortcutFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        String start = roleStart.map(rs -> typeNameToString(rs) + " ").orElse("");
-        String type = relationType.map(rt -> ":" + typeNameToString(rt)).orElse("");
-        String end = roleEnd.map(re -> " " + typeNameToString(re)).orElse("");
+        String start = roleStart.map(rs -> typeLabelToString(rs) + " ").orElse("");
+        String type = relationType.map(rt -> ":" + typeLabelToString(rt)).orElse("");
+        String end = roleEnd.map(re -> " " + typeLabelToString(re)).orElse("");
         return "-[" + start + "shortcut" + type + end + "]->";
     }
 

@@ -92,10 +92,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
             if (roleType.isPresent()) {
-                Optional<TypeLabel> roleTypeName = roleType.get().getTypeName();
+                Optional<TypeLabel> roleTypeLabel = roleType.get().getTypeLabel();
 
-                if (roleTypeName.isPresent()) {
-                    shortcutTraversal.addRel(roleTypeName.get(), relationPlayer.getRolePlayer().getVarName());
+                if (roleTypeLabel.isPresent()) {
+                    shortcutTraversal.addRel(roleTypeLabel.get(), relationPlayer.getRolePlayer().getVarName());
                 } else {
                     shortcutTraversal.setInvalid();
                 }
@@ -181,11 +181,11 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         Set<TypeLabel> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
-                .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)
+                .map(VarAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
         Optional<TypeLabel> maybeName =
-                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeName);
+                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeLabel);
 
         maybeName.ifPresent(name -> {
             Type type = graph.getType(name);
@@ -272,7 +272,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //Isa present
         if (isaProp != null) {
             VarAdmin isaVar = isaProp.getType();
-            TypeLabel typeLabel = isaVar.getTypeName().orElse(null);
+            TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
             VarName typeVariable = typeLabel == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
             relVar = relVar.isa(Graql.var(typeVariable));
             if (typeLabel != null) {

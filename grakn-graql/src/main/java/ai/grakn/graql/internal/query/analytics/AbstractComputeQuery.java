@@ -69,8 +69,8 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     @Override
-    public ComputeQuery<T> in(String... subTypeNames) {
-        this.subTypeLabels = Arrays.stream(subTypeNames).map(TypeLabel::of).collect(Collectors.toSet());
+    public ComputeQuery<T> in(String... subTypeLabels) {
+        this.subTypeLabels = Arrays.stream(subTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
         return this;
     }
 
@@ -172,7 +172,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
             return ";";
         } else {
             return " in "
-                    + subTypeLabels.stream().map(StringConverter::typeNameToString).collect(joining(", ")) + ";";
+                    + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
         }
     }
 

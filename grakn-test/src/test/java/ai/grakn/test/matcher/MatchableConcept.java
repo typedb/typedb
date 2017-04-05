@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 
 /**
  * Wraps a {@link Concept} in order to provide a prettier {@link Object#toString()} representation. This is done using
@@ -59,7 +59,7 @@ public class MatchableConcept {
 
             return "instance(" + value.map(StringConverter::valueToString).orElse("") + ")";
         } else {
-            return "type(" + typeNameToString(concept.asType().getName()) + ")";
+            return "type(" + typeLabelToString(concept.asType().getName()) + ")";
         }
     }
 }

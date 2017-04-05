@@ -59,8 +59,8 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery of(String... resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MinQuery of(String... resourceTypeLabels) {
+        return (MinQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
@@ -69,8 +69,8 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery in(String... subTypeNames) {
-        return (MinQuery) super.in(subTypeNames);
+    public MinQuery in(String... subTypeLabels) {
+        return (MinQuery) super.in(subTypeLabels);
     }
 
     @Override

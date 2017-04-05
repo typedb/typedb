@@ -58,7 +58,7 @@ public interface Namer {
     /**
      * Generate the name of a Grakn entity type from the IRI of an OWL class
      */
-    default String classEntityTypeName(IRI classIri) {
+    default String classEntityTypeLabel(IRI classIri) {
         return "t" + fromIri(classIri);
     }
     /**

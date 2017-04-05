@@ -93,14 +93,14 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutEntityTypeWithAnExistingEntityTypeName_ItReturnsThatType(
+    public void whenCallingPutEntityTypeWithAnExistingEntityTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph EntityType entityType) {
         EntityType newType = graph.putEntityType(entityType.getName());
         assertEquals(entityType, newType);
     }
 
     @Property
-    public void whenCallingPutEntityTypeWithAnExistingNonEntityTypeName_Throw(
+    public void whenCallingPutEntityTypeWithAnExistingNonEntityTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isEntityType());
 
@@ -140,7 +140,7 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeName_Throw(
+    public void whenCallingPutResourceTypeWithAnExistingNonResourceTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type, ResourceType.DataType<?> dataType) {
         assumeFalse(type.isResourceType());
 
@@ -151,7 +151,7 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeNameButADifferentDataType_Throw(
+    public void whenCallingPutResourceTypeWithAnExistingNonUniqueResourceTypeLabelButADifferentDataType_Throw(
             @Open GraknGraph graph, @FromGraph ResourceType<?> resourceType,
             ResourceType.DataType<?> dataType) {
         assumeThat(dataType, not(is(resourceType.getDataType())));
@@ -174,14 +174,14 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingRuleTypeName_ItReturnsThatType(
+    public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RuleType ruleType) {
         RuleType newType = graph.putRuleType(ruleType.getName());
         assertEquals(ruleType, newType);
     }
 
     @Property
-    public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeName_Throw(
+    public void whenCallingPutRuleTypeWithAnExistingNonRuleTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRuleType());
 
@@ -207,14 +207,14 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRelationTypeWithAnExistingRelationTypeName_ItReturnsThatType(
+    public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RelationType relationType) {
         RelationType newType = graph.putRelationType(relationType.getName());
         assertEquals(relationType, newType);
     }
 
     @Property
-    public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeName_Throw(
+    public void whenCallingPutRelationTypeWithAnExistingNonRelationTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRelationType());
 
@@ -240,14 +240,14 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleTypeWithAnExistingRoleTypeName_ItReturnsThatType(
+    public void whenCallingPutRoleTypeWithAnExistingRoleTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RoleType roleType) {
         RoleType newType = graph.putRoleType(roleType.getName());
         assertEquals(roleType, newType);
     }
 
     @Property
-    public void whenCallingPutRoleTypeWithAnExistingNonRoleTypeName_Throw(
+    public void whenCallingPutRoleTypeWithAnExistingNonRoleTypeLabel_Throw(
             @Open GraknGraph graph, @FromGraph Type type) {
         assumeFalse(type.isRoleType());
 

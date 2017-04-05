@@ -51,7 +51,7 @@ class HALGeneratedRelation {
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE)
                 .withLink(ONTOLOGY_LINK, "");
 
-        relationType.ifPresent(typeName -> representation.withProperty(TYPE_PROPERTY, typeName.getValue()));
+        relationType.ifPresent(typeLabel -> representation.withProperty(TYPE_PROPERTY, typeLabel.getValue()));
 
         return representation;
     }

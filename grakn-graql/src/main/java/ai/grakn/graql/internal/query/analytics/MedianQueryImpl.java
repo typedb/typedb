@@ -55,8 +55,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery of(String... resourceTypeNames) {
-        return (MedianQuery) setStatisticsResourceType(resourceTypeNames);
+    public MedianQuery of(String... resourceTypeLabels) {
+        return (MedianQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
@@ -65,8 +65,8 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery in(String... subTypeNames) {
-        return (MedianQuery) super.in(subTypeNames);
+    public MedianQuery in(String... subTypeLabels) {
+        return (MedianQuery) super.in(subTypeLabels);
     }
 
     @Override

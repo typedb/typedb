@@ -120,7 +120,7 @@ public class OWLMigrator {
     
     public EntityType owlThingEntityType() {
         return graph.putEntityType(
-                namer.classEntityTypeName(
+                namer.classEntityTypeLabel(
                         ontology.getOWLOntologyManager().getOWLDataFactory().getOWLClass(
                                 OwlModel.THING.owlname()).getIRI()));
     }
@@ -155,7 +155,7 @@ public class OWLMigrator {
     }
     
     public EntityType entityType(OWLClass owlclass) {
-        EntityType type = graph.putEntityType(namer.classEntityTypeName(owlclass.getIRI()));
+        EntityType type = graph.putEntityType(namer.classEntityTypeLabel(owlclass.getIRI()));
         EntityType thing = owlThingEntityType();
         if (Schema.MetaSchema.isMetaName(type.superType().getName()) && !type.equals(thing)) {
             type.superType(thing);

@@ -49,7 +49,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.Utility.getValuePredicates;
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -110,7 +110,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
-        resourceType.ifPresent(type -> repr.add(typeNameToString(type)));
+        resourceType.ifPresent(type -> repr.add(typeLabelToString(type)));
 
         if (resource.isUserDefinedName()) {
             repr.add(resource.getPrintableName());

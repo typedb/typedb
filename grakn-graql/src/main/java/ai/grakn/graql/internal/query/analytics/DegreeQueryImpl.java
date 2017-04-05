@@ -41,7 +41,7 @@ import static java.util.stream.Collectors.joining;
 
 class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> implements DegreeQuery {
 
-    private boolean ofTypeNamesSet = false;
+    private boolean ofTypeLabelsSet = false;
     private Set<TypeLabel> ofTypeLabels = new HashSet<>();
 
     DegreeQueryImpl(Optional<GraknGraph> graph) {
@@ -83,8 +83,8 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public DegreeQuery in(String... subTypeNames) {
-        return (DegreeQuery) super.in(subTypeNames);
+    public DegreeQuery in(String... subTypeLabels) {
+        return (DegreeQuery) super.in(subTypeLabels);
     }
 
     @Override
@@ -93,10 +93,10 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     }
 
     @Override
-    public DegreeQuery of(String... ofTypeNames) {
-        if (ofTypeNames.length > 0) {
-            ofTypeNamesSet = true;
-            this.ofTypeLabels = Arrays.stream(ofTypeNames).map(TypeLabel::of).collect(Collectors.toSet());
+    public DegreeQuery of(String... ofTypeLabels) {
+        if (ofTypeLabels.length > 0) {
+            ofTypeLabelsSet = true;
+            this.ofTypeLabels = Arrays.stream(ofTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
         }
         return this;
     }
@@ -104,7 +104,7 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     @Override
     public DegreeQuery of(Collection<TypeLabel> ofTypeLabels) {
         if (!ofTypeLabels.isEmpty()) {
-            ofTypeNamesSet = true;
+            ofTypeLabelsSet = true;
             this.ofTypeLabels = Sets.newHashSet(ofTypeLabels);
         }
         return this;
@@ -113,9 +113,9 @@ class DegreeQueryImpl extends AbstractComputeQuery<Map<Long, Set<String>>> imple
     @Override
     String graqlString() {
         String string = "degrees";
-        if (ofTypeNamesSet) {
+        if (ofTypeLabelsSet) {
             string += " of " + ofTypeLabels.stream()
-                    .map(StringConverter::typeNameToString)
+                    .map(StringConverter::typeLabelToString)
                     .collect(joining(", "));
         }
         string += subtypeString();

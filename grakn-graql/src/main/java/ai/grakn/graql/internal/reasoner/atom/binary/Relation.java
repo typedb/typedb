@@ -367,7 +367,7 @@ public class Relation extends TypeAtom {
         getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(VarAdmin::getTypeName)
+                .map(VarAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(graph::<RoleType>getType)
                 .forEach(roleTypes::add);
@@ -569,7 +569,7 @@ public class Relation extends TypeAtom {
                 Type type = varTypeMap.get(var);
                 roleVarMap.put(role, new Pair<>(var, type));
                 //try directly
-                TypeLabel typeLabel = role.getTypeName().orElse(null);
+                TypeLabel typeLabel = role.getTypeLabel().orElse(null);
                 RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {

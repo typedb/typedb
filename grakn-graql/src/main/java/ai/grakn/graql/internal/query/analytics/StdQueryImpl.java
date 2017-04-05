@@ -65,8 +65,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery of(String... resourceTypeNames) {
-        return (StdQuery) setStatisticsResourceType(resourceTypeNames);
+    public StdQuery of(String... resourceTypeLabels) {
+        return (StdQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
@@ -75,8 +75,8 @@ class StdQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements 
     }
 
     @Override
-    public StdQuery in(String... subTypeNames) {
-        return (StdQuery) super.in(subTypeNames);
+    public StdQuery in(String... subTypeLabels) {
+        return (StdQuery) super.in(subTypeLabels);
     }
 
     @Override

@@ -76,7 +76,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.resourceType = resourceType;
         this.required = required;
 
-        TypeLabel resourceTypeLabel = resourceType.getTypeName().orElseThrow(
+        TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
@@ -173,7 +173,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         //TODO NB: HasResourceType is a special case and it doesn't allow variables as resource types
         VarName varName = var.getVarName();
-        TypeLabel typeLabel = this.getResourceType().getTypeName().orElse(null);
+        TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
         VarAdmin resVar = var(varName).hasResource(name(typeLabel)).admin();
         return new TypeAtom(resVar, parent);

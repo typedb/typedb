@@ -329,7 +329,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Optional<TypeLabel> getTypeName() {
+    public Optional<TypeLabel> getTypeLabel() {
         return getProperty(NameProperty.class).map(NameProperty::getNameValue);
     }
 
@@ -349,7 +349,7 @@ class VarImpl implements VarAdmin {
         if (userDefinedName) {
             return name.toString();
         } else {
-            return getTypeName().map(StringConverter::typeNameToString).orElse("'" + toString() + "'");
+            return getTypeLabel().map(StringConverter::typeLabelToString).orElse("'" + toString() + "'");
         }
     }
 
@@ -422,7 +422,7 @@ class VarImpl implements VarAdmin {
     public Set<TypeLabel> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
-                .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)
+                .map(VarAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
     }
 

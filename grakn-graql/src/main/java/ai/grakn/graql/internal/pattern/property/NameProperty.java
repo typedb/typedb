@@ -60,7 +60,7 @@ public class NameProperty extends AbstractVarProperty implements NamedProperty, 
 
     @Override
     public String getProperty() {
-        return StringConverter.typeNameToString(name);
+        return StringConverter.typeLabelToString(name);
     }
 
     @Override

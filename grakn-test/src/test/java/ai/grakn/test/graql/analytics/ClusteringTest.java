@@ -144,14 +144,14 @@ public class ClusteringTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        String aResourceTypeName = "aResourceTypeName";
+        String aResourceTypeLabel = "aResourceTypeLabel";
 
         addOntologyAndEntities();
         addResourceRelations();
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             ResourceType<String> resourceType =
-                    graph.putResourceType(aResourceTypeName, ResourceType.DataType.STRING);
+                    graph.putResourceType(aResourceTypeLabel, ResourceType.DataType.STRING);
             graph.getEntityType(thing).resource(resourceType);
             graph.getEntityType(anotherThing).resource(resourceType);
             Resource aResource = resourceType.putResource("blah");
@@ -162,12 +162,12 @@ public class ClusteringTest {
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             Map<String, Set<String>> result = graph.graql().compute()
-                    .cluster().in(thing, anotherThing, aResourceTypeName).members().execute();
+                    .cluster().in(thing, anotherThing, aResourceTypeLabel).members().execute();
             assertEquals(1, result.size());
             assertEquals(5, result.values().iterator().next().size());
 
             assertEquals(1, graph.graql().compute()
-                    .cluster().in(thing, anotherThing, aResourceTypeName).members().execute().size());
+                    .cluster().in(thing, anotherThing, aResourceTypeLabel).members().execute().size());
         }
     }
 
