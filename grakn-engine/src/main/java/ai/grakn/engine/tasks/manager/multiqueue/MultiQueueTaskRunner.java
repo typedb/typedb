@@ -235,7 +235,6 @@ public class MultiQueueTaskRunner implements Runnable, AutoCloseable {
             }
 
             // remove the configuration and mark as COMPLETED
-            state.clearConfiguration();
             state.markCompleted();
         } catch(Throwable throwable) {
             state.markFailed(throwable);
