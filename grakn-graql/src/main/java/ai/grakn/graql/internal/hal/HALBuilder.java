@@ -156,7 +156,7 @@ public class HALBuilder {
             // Generated relation ID
             String relationId = "temp-assertion-" + idsList;
             String relationType = currentEntry.getValue().getValue();
-            boolean isInferred = (inferredRelations.containsKey(currentEntry.getKey())) ? inferredRelations.get(currentEntry.getKey()) : false;
+            boolean isInferred = inferredRelations.containsKey(currentEntry.getKey()) && inferredRelations.get(currentEntry.getKey());
             // This string contains the match query to execute when double clicking on the 'generated-relation' node from Dashboard
             // It will be an 'explain-query' if the current relation is inferred
             String relationHref = computeRelationHref(relationType, varNamesInCurrentRelation, resultLine, currentEntry.getValue().getKey(), keyspace, limit,isInferred);
