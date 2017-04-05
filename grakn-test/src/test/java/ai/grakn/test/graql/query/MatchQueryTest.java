@@ -27,7 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
@@ -565,12 +565,12 @@ public class MatchQueryTest {
 
     @Test
     public void testGraqlPlaysRoleSemanticsMatchGraphAPI() {
-        TypeName a = TypeName.of("a");
-        TypeName b = TypeName.of("b");
-        TypeName c = TypeName.of("c");
-        TypeName d = TypeName.of("d");
-        TypeName e = TypeName.of("e");
-        TypeName f = TypeName.of("f");
+        TypeLabel a = TypeLabel.of("a");
+        TypeLabel b = TypeLabel.of("b");
+        TypeLabel c = TypeLabel.of("c");
+        TypeLabel d = TypeLabel.of("d");
+        TypeLabel e = TypeLabel.of("e");
+        TypeLabel f = TypeLabel.of("f");
 
         qb.insert(
                 name(c).sub(name(b).sub(name(a).sub("entity"))),

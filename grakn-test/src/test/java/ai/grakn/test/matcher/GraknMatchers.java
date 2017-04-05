@@ -21,7 +21,7 @@ package ai.grakn.test.matcher;
 
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -192,14 +192,14 @@ public class GraknMatchers {
      * Create a matcher to test that the concept has the given type name.
      */
     static Matcher<MatchableConcept> type(String type) {
-        return type(TypeName.of(type));
+        return type(TypeLabel.of(type));
     }
 
     /**
      * Create a matcher to test that the concept has the given type name.
      */
-    static Matcher<MatchableConcept> type(TypeName expectedName) {
-        return new PropertyEqualsMatcher<MatchableConcept, TypeName>(expectedName) {
+    static Matcher<MatchableConcept> type(TypeLabel expectedName) {
+        return new PropertyEqualsMatcher<MatchableConcept, TypeLabel>(expectedName) {
 
             @Override
             public String getName() {
@@ -207,7 +207,7 @@ public class GraknMatchers {
             }
 
             @Override
-            TypeName transform(MatchableConcept item) {
+            TypeLabel transform(MatchableConcept item) {
                 return item.get().asType().getName();
             }
         };

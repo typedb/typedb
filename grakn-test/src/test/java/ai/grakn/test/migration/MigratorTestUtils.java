@@ -29,7 +29,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
@@ -81,7 +81,7 @@ public class MigratorTestUtils {
                 .findFirst().get());
     }
 
-    public static void assertRelationBetweenInstancesExists(GraknGraph graph, Instance instance1, Instance instance2, TypeName relation){
+    public static void assertRelationBetweenInstancesExists(GraknGraph graph, Instance instance1, Instance instance2, TypeLabel relation){
         RelationType relationType = graph.getType(relation);
 
         RoleType role1 = instance1.playsRoles().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
@@ -107,12 +107,12 @@ public class MigratorTestUtils {
         return instances;
     }
 
-    public static Resource getResource(GraknGraph graph, Instance instance, TypeName name) {
+    public static Resource getResource(GraknGraph graph, Instance instance, TypeLabel name) {
         assertEquals(getResources(graph, instance, name).count(), 1);
         return getResources(graph, instance, name).findAny().get();
     }
 
-    public static Stream<Resource> getResources(GraknGraph graph, Instance instance, TypeName name) {
+    public static Stream<Resource> getResources(GraknGraph graph, Instance instance, TypeLabel name) {
         RoleType roleOwner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(name));
         RoleType roleOther = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(name));
 

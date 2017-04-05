@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -40,11 +40,11 @@ public interface CountQuery extends ComputeQuery<Long> {
     CountQuery in(String... subTypeNames);
 
     /**
-     * @param subTypeNames a collection of types to include in the subgraph
-     * @return a CountQuery with the subTypeNames set
+     * @param subTypeLabels a collection of types to include in the subgraph
+     * @return a CountQuery with the subTypeLabels set
      */
     @Override
-    CountQuery in(Collection<TypeName> subTypeNames);
+    CountQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * Execute the query.

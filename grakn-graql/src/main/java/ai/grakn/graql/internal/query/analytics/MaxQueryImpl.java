@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MaxQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.MaxMapReduce;
@@ -44,13 +44,13 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<TypeName> allSubTypes = getCombinedSubTypes();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
+        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeNames),
-                new MaxMapReduce(statisticsResourceTypeNames, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
+                new MaxMapReduce(statisticsResourceTypeLabels, dataType));
         Map<Serializable, Number> max = result.memory().get(MaxMapReduce.class.getName());
 
         LOGGER.debug("Max = " + max.get(MapReduce.NullObject.instance()));
@@ -64,8 +64,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery of(Collection<TypeName> resourceTypeNames) {
-        return (MaxQuery) setStatisticsResourceType(resourceTypeNames);
+    public MaxQuery of(Collection<TypeLabel> resourceTypeLabels) {
+        return (MaxQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
@@ -74,8 +74,8 @@ class MaxQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MaxQuery in(Collection<TypeName> subTypeNames) {
-        return (MaxQuery) super.in(subTypeNames);
+    public MaxQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (MaxQuery) super.in(subTypeLabels);
     }
 
     @Override

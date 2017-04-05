@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
 import java.lang.annotation.Retention;
@@ -35,20 +35,20 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Generator that generates totally random type names
  */
-public class TypeNames extends FromGraphGenerator<TypeName> {
+public class TypeLabels extends FromGraphGenerator<TypeLabel> {
 
     private boolean mustBeUnused = false;
 
-    public TypeNames() {
-        super(TypeName.class);
+    public TypeLabels() {
+        super(TypeLabel.class);
         this.fromLastGeneratedGraph();
     }
 
     @Override
-    public TypeName generateFromGraph() {
+    public TypeLabel generateFromGraph() {
         if (mustBeUnused) {
             return withImplicitConceptsVisible(graph(), graph -> {
-                TypeName name;
+                TypeLabel name;
 
                 int attempts = 0;
                 do {
@@ -72,17 +72,17 @@ public class TypeNames extends FromGraphGenerator<TypeName> {
         mustBeUnused();
     }
 
-    TypeNames mustBeUnused() {
+    TypeLabels mustBeUnused() {
         mustBeUnused = true;
         return this;
     }
 
-    private TypeName metaSyntacticName() {
-        return TypeName.of(gen().make(MetasyntacticStrings.class).generate(random, status));
+    private TypeLabel metaSyntacticName() {
+        return TypeLabel.of(gen().make(MetasyntacticStrings.class).generate(random, status));
     }
 
-    private TypeName trueRandomName() {
-        return TypeName.of(gen(String.class));
+    private TypeLabel trueRandomName() {
+        return TypeLabel.of(gen(String.class));
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

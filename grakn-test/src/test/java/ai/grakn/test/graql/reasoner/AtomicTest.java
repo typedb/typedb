@@ -21,7 +21,7 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
@@ -47,8 +47,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -325,7 +323,7 @@ public class AtomicTest {
 
     @Test
     public void testTypeInference(){
-        String typeId = snbGraph.graph().getType(TypeName.of("recommendation")).getId().getValue();
+        String typeId = snbGraph.graph().getType(TypeLabel.of("recommendation")).getId().getValue();
         String patternString = "{($x, $y); $x isa person; $y isa product;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         Atom atom = query.getAtom();
@@ -334,7 +332,7 @@ public class AtomicTest {
 
     @Test
     public void testTypeInference2(){
-        String typeId = cwGraph.graph().getType(TypeName.of("transaction")).getId().getValue();
+        String typeId = cwGraph.graph().getType(TypeLabel.of("transaction")).getId().getValue();
         String patternString = "{($z, $y, $x);$z isa country;$x isa rocket;$y isa person;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, cwGraph.graph()), cwGraph.graph());
         Atom atom = query.getAtom();

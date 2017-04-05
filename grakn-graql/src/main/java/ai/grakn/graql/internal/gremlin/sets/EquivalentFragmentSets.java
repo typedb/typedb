@@ -22,7 +22,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -86,8 +86,8 @@ public class EquivalentFragmentSets {
      * @param relationType an optional relation-type for the shortcut
      */
     public static EquivalentFragmentSet shortcut(
-            Optional<TypeName> roleTypeA, VarName rolePlayerA,
-            Optional<TypeName> roleTypeB, VarName rolePlayerB, Optional<TypeName> relationType) {
+            Optional<TypeLabel> roleTypeA, VarName rolePlayerA,
+            Optional<TypeLabel> roleTypeB, VarName rolePlayerB, Optional<TypeLabel> relationType) {
         return new ShortcutFragmentSet(roleTypeA, rolePlayerA, roleTypeB, rolePlayerB, relationType);
     }
 
@@ -157,7 +157,7 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular name.
      */
-    public static EquivalentFragmentSet name(VarName type, TypeName name) {
+    public static EquivalentFragmentSet name(VarName type, TypeLabel name) {
         return new NameFragmentSet(type, name);
     }
 

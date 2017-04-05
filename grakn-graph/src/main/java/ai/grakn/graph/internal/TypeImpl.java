@@ -25,7 +25,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -65,7 +65,7 @@ import java.util.stream.Collectors;
 class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implements Type{
     protected final Logger LOG = LoggerFactory.getLogger(TypeImpl.class);
 
-    private TypeName cachedTypeName;
+    private TypeLabel cachedTypeLabel;
     private ComponentCache<Boolean> cachedIsImplicit = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT));
     private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
     private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
@@ -86,7 +86,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        cachedTypeName = TypeName.of(v.value(Schema.ConceptProperty.NAME.name()));
+        cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.NAME.name()));
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
@@ -102,7 +102,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(TypeImpl<T, V> type) {
         super(type);
-        this.cachedTypeName = type.getName();
+        this.cachedTypeLabel = type.getName();
         type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
@@ -598,16 +598,16 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resourceType.getName()));
         }
 
-        TypeName resourceTypeName = resourceType.getName();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(resourceTypeName));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(hasValue.getName(resourceTypeName));
-        RelationType relationType = getGraknGraph().putRelationTypeImplicit(has.getName(resourceTypeName)).
+        TypeLabel resourceTypeLabel = resourceType.getName();
+        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(resourceTypeLabel));
+        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(hasValue.getName(resourceTypeLabel));
+        RelationType relationType = getGraknGraph().putRelationTypeImplicit(has.getName(resourceTypeLabel)).
                 hasRole(ownerRole).
                 hasRole(valueRole);
 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
-        TypeName superName = resourceTypeSuper.getName();
+        TypeLabel superName = resourceTypeSuper.getName();
         if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
             RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(superName));
             RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getName(superName));
@@ -635,8 +635,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The name of this type
      */
     @Override
-    public TypeName getName() {
-        return cachedTypeName;
+    public TypeLabel getName() {
+        return cachedTypeLabel;
     }
 
     /**

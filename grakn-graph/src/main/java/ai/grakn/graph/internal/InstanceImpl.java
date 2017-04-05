@@ -27,7 +27,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
-    private ComponentCache<TypeName> cachedInternalType = new ComponentCache<>(() -> TypeName.of(getProperty(Schema.ConceptProperty.TYPE)));
+    private ComponentCache<TypeLabel> cachedInternalType = new ComponentCache<>(() -> TypeLabel.of(getProperty(Schema.ConceptProperty.TYPE)));
     private ComponentCache<V> cachedType = new ComponentCache<>(() -> this.<V>getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null));
 
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
@@ -152,14 +152,14 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<TypeName> roleTypeNames = Arrays.stream(roleTypes).map(RoleType::getName).collect(Collectors.toSet());
+        Set<TypeLabel> roleTypeLabels = Arrays.stream(roleTypes).map(RoleType::getName).collect(Collectors.toSet());
 
         InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
             CastingImpl casting = c.asCasting();
-            if (roleTypeNames.size() != 0) {
-                if (roleTypeNames.contains(casting.getInternalType())) {
+            if (roleTypeLabels.size() != 0) {
+                if (roleTypeLabels.contains(casting.getInternalType())) {
                     relations.addAll(casting.getRelations());
                 }
             } else {
@@ -204,7 +204,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         }
 
 
-        TypeName name = resource.type().getName();
+        TypeLabel name = resource.type().getName();
         RelationType hasResource = getGraknGraph().getType(has.getName(name));
         RoleType hasResourceTarget = getGraknGraph().getType(hasOwner.getName(name));
         RoleType hasResourceValue = getGraknGraph().getType(hasValue.getName(name));
@@ -247,7 +247,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
-    private T setInternalType(TypeName type){
+    private T setInternalType(TypeLabel type){
         cachedInternalType.set(type);
         return setProperty(Schema.ConceptProperty.TYPE, type.getValue());
     }
@@ -256,7 +256,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
-    public TypeName getInternalType(){
+    public TypeLabel getInternalType(){
         return cachedInternalType.get();
     }
 }

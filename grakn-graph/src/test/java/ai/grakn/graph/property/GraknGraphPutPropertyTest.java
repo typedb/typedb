@@ -26,13 +26,13 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.ConceptException;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
 import ai.grakn.generator.PutTypeFunctions;
-import ai.grakn.generator.TypeNames.Unused;
+import ai.grakn.generator.TypeLabels.Unused;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.pholser.junit.quickcheck.From;
@@ -65,16 +65,16 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingAnyPutTypeMethod_CreateATypeWithTheGivenName(
             @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
-        assertEquals(typeName, type.getName());
+            @Unused TypeLabel typeLabel, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeLabel, Type> putType) {
+        Type type = putType.apply(graph, typeLabel);
+        assertEquals(typeLabel, type.getName());
     }
 
     @Property
     public void whenCallingAnyPutTypeMethod_CreateATypeWithDefaultProperties(
             @Open GraknGraph graph,
-            @Unused TypeName typeName, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeName, Type> putType) {
-        Type type = putType.apply(graph, typeName);
+            @Unused TypeLabel typeLabel, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeLabel, Type> putType) {
+        Type type = putType.apply(graph, typeLabel);
 
         assertThat("Type should only have one sub-type: itself", type.subTypes(), contains(type));
         assertThat("Type should not play any roles", type.playsRoles(), empty());
@@ -87,8 +87,8 @@ public class GraknGraphPutPropertyTest {
 
     @Property
     public void whenCallingPutEntityType_CreateATypeWithSuperTypeEntity(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        EntityType entityType = graph.putEntityType(typeName);
+            @Open GraknGraph graph, @Unused TypeLabel typeLabel) {
+        EntityType entityType = graph.putEntityType(typeLabel);
         assertEquals(graph.admin().getMetaEntityType(), entityType.superType());
     }
 
@@ -112,15 +112,15 @@ public class GraknGraphPutPropertyTest {
 
     @Property
     public void whenCallingPutResourceType_CreateATypeWithSuperTypeResource(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
+            @Open GraknGraph graph, @Unused TypeLabel typeLabel, ResourceType.DataType<?> dataType) {
+        ResourceType<?> resourceType = graph.putResourceType(typeLabel, dataType);
         assertEquals(graph.admin().getMetaResourceType(), resourceType.superType());
     }
 
     @Property
     public void whenCallingPutResourceType_CreateATypeWithDefaultProperties(
-            @Open GraknGraph graph, @Unused TypeName typeName, ResourceType.DataType<?> dataType) {
-        ResourceType<?> resourceType = graph.putResourceType(typeName, dataType);
+            @Open GraknGraph graph, @Unused TypeLabel typeLabel, ResourceType.DataType<?> dataType) {
+        ResourceType<?> resourceType = graph.putResourceType(typeLabel, dataType);
 
         assertEquals("The data-type should be as specified", dataType, resourceType.getDataType());
         assertNull("The resource type should have no regex constraint", resourceType.getRegex());
@@ -131,10 +131,10 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph  ResourceType<?> resourceType) {
         assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
 
-        TypeName typeName = resourceType.getName();
+        TypeLabel typeLabel = resourceType.getName();
         ResourceType.DataType<?> dataType = resourceType.getDataType();
 
-        ResourceType<?> newType = graph.putResourceType(typeName, dataType);
+        ResourceType<?> newType = graph.putResourceType(typeLabel, dataType);
 
         assertEquals(resourceType, newType);
     }
@@ -155,21 +155,21 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph ResourceType<?> resourceType,
             ResourceType.DataType<?> dataType) {
         assumeThat(dataType, not(is(resourceType.getDataType())));
-        TypeName typeName = resourceType.getName();
+        TypeLabel typeLabel = resourceType.getName();
 
         exception.expect(ConceptException.class);
-        if(isMetaName(typeName)) {
-            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeName));
+        if(isMetaName(typeLabel)) {
+            exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeLabel));
         } else {
             exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
         }
 
-        graph.putResourceType(typeName, dataType);
+        graph.putResourceType(typeLabel, dataType);
     }
 
     @Property
-    public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknGraph graph, @Unused TypeName typeName) {
-        RuleType ruleType = graph.putRuleType(typeName);
+    public void whenCallingPutRuleType_CreateATypeWithSuperTypeRule(@Open GraknGraph graph, @Unused TypeLabel typeLabel) {
+        RuleType ruleType = graph.putRuleType(typeLabel);
         assertEquals(graph.admin().getMetaRuleType(), ruleType.superType());
     }
 
@@ -193,15 +193,15 @@ public class GraknGraphPutPropertyTest {
 
     @Property
     public void whenCallingPutRelationType_CreateATypeWithSuperTypeRelation(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        RelationType relationType = graph.putRelationType(typeName);
+            @Open GraknGraph graph, @Unused TypeLabel typeLabel) {
+        RelationType relationType = graph.putRelationType(typeLabel);
         assertEquals(graph.admin().getMetaRelationType(), relationType.superType());
     }
 
     @Property
     public void whenCallingPutRelationType_CreateATypeThatOwnsNoRoles(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        RelationType relationType = graph.putRelationType(typeName);
+            @Open GraknGraph graph, @Unused TypeLabel typeLabel) {
+        RelationType relationType = graph.putRelationType(typeLabel);
         graph.showImplicitConcepts(true);
         assertThat(relationType.hasRoles(), empty());
     }
@@ -225,15 +225,15 @@ public class GraknGraphPutPropertyTest {
     }
 
     @Property
-    public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused TypeName typeName) {
-        RoleType roleType = graph.putRoleType(typeName);
+    public void whenCallingPutRoleType_CreateATypeWithSuperTypeRole(@Open GraknGraph graph, @Unused TypeLabel typeLabel) {
+        RoleType roleType = graph.putRoleType(typeLabel);
         assertEquals(graph.admin().getMetaRoleType(), roleType.superType());
     }
 
     @Property
     public void whenCallingPutRoleType_CreateATypeWithDefaultProperties(
-            @Open GraknGraph graph, @Unused TypeName typeName) {
-        RoleType roleType = graph.putRoleType(typeName);
+            @Open GraknGraph graph, @Unused TypeLabel typeLabel) {
+        RoleType roleType = graph.putRoleType(typeLabel);
 
         assertThat("The role type should be played by no types", roleType.playedByTypes(), empty());
         assertThat("The role type should be owned by no relation types", roleType.relationTypes(), empty());

@@ -23,7 +23,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.Query;
 import com.google.common.io.Files;
@@ -56,7 +56,7 @@ public abstract class TestGraph {
         };
     }
 
-    static Instance putEntity(GraknGraph graph, String id, EntityType type, TypeName key) {
+    static Instance putEntity(GraknGraph graph, String id, EntityType type, TypeLabel key) {
         Instance inst = type.addEntity();
         putResource(inst, graph.getType(key), id);
         return inst;

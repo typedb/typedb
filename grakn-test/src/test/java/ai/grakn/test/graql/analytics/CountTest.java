@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.Graql;
 import ai.grakn.test.EngineContext;
@@ -79,7 +79,7 @@ public class CountTest {
         // assert computer returns the correct count of instances
         startTime = System.currentTimeMillis();
         Assert.assertEquals(2L,
-                graph.graql().compute().count().in(Collections.singleton(TypeName.of(nameThing))).execute().longValue());
+                graph.graql().compute().count().in(Collections.singleton(TypeLabel.of(nameThing))).execute().longValue());
         System.out.println(System.currentTimeMillis() - startTime + " ms");
         startTime = System.currentTimeMillis();
         Assert.assertEquals(2L,

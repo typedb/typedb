@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.parser;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.AskQuery;
@@ -337,17 +337,17 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Set<TypeName> visitInList(GraqlParser.InListContext ctx) {
+    public Set<TypeLabel> visitInList(GraqlParser.InListContext ctx) {
         return visitNameList(ctx.nameList());
     }
 
     @Override
-    public Set<TypeName> visitOfList(GraqlParser.OfListContext ctx) {
+    public Set<TypeLabel> visitOfList(GraqlParser.OfListContext ctx) {
         return visitNameList(ctx.nameList());
     }
 
     @Override
-    public Set<TypeName> visitNameList(GraqlParser.NameListContext ctx) {
+    public Set<TypeLabel> visitNameList(GraqlParser.NameListContext ctx) {
         return ctx.name().stream().map(this::visitName).collect(toSet());
     }
 
@@ -458,7 +458,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         Var resource = var(getVariable(ctx.VARIABLE()));
 
         if (ctx.name() != null) {
-            TypeName type = visitName(ctx.name());
+            TypeLabel type = visitName(ctx.name());
             return var -> var.has(type, resource);
         } else {
             return var -> var.has(resource);
@@ -467,7 +467,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
-        TypeName type = visitName(ctx.name());
+        TypeLabel type = visitName(ctx.name());
         Var resource = var().value(visitPredicate(ctx.predicate()));
         return var -> var.has(type, resource);
     }
@@ -547,8 +547,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public TypeName visitName(GraqlParser.NameContext ctx) {
-        return TypeName.of(visitIdentifier(ctx.identifier()));
+    public TypeLabel visitName(GraqlParser.NameContext ctx) {
+        return TypeLabel.of(visitIdentifier(ctx.identifier()));
     }
 
     @Override

@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.reasoner;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Rule;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.admin.Answer;
@@ -77,7 +77,7 @@ public class Reasoner {
      * @return true if at least one inference rule is present in the graph
      */
     public static boolean hasRules(GraknGraph graph) {
-        TypeName inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
+        TypeLabel inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getName();
         return graph.graql().infer(false).match(var("x").isa(name(inferenceRule))).ask().execute();
     }
 

@@ -35,7 +35,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraphRuntimeException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -146,32 +146,32 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     // A list of methods that will mutate the graph in some random way when called
     private final ImmutableList<Runnable> mutators = ImmutableList.of(
             () -> {
-                TypeName typeName = typeName();
+                TypeLabel typeLabel = typeName();
                 EntityType superType = entityType();
-                EntityType entityType = graph.putEntityType(typeName).superType(superType);
-                summaryAssign(entityType, "graph", "putEntityType", typeName);
+                EntityType entityType = graph.putEntityType(typeLabel).superType(superType);
+                summaryAssign(entityType, "graph", "putEntityType", typeLabel);
                 summary(entityType, "superType", superType);
             },
             () -> {
-                TypeName typeName = typeName();
+                TypeLabel typeLabel = typeName();
                 ResourceType.DataType dataType = gen(ResourceType.DataType.class);
                 ResourceType superType = resourceType();
-                ResourceType resourceType = graph.putResourceType(typeName, dataType).superType(superType);
-                summaryAssign(resourceType, "graph", "putResourceType", typeName, dataType);
+                ResourceType resourceType = graph.putResourceType(typeLabel, dataType).superType(superType);
+                summaryAssign(resourceType, "graph", "putResourceType", typeLabel, dataType);
                 summary(resourceType, "superType", superType);
             },
             () -> {
-                TypeName typeName = typeName();
+                TypeLabel typeLabel = typeName();
                 RoleType superType = roleType();
-                RoleType roleType = graph.putRoleType(typeName).superType(superType);
-                summaryAssign(roleType, "graph", "putRoleType", typeName);
+                RoleType roleType = graph.putRoleType(typeLabel).superType(superType);
+                summaryAssign(roleType, "graph", "putRoleType", typeLabel);
                 summary(roleType, "superType", superType);
             },
             () -> {
-                TypeName typeName = typeName();
+                TypeLabel typeLabel = typeName();
                 RelationType superType = relationType();
-                RelationType relationType = graph.putRelationType(typeName).superType(superType);
-                summaryAssign(relationType, "graph", "putRelationType", typeName);
+                RelationType relationType = graph.putRelationType(typeLabel).superType(superType);
+                summaryAssign(relationType, "graph", "putRelationType", typeLabel);
                 summary(relationType, "superType", superType);
             },
             () -> {
@@ -297,15 +297,15 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         } else if (object instanceof Instance) {
             Instance instance = (Instance) object;
             return summaryFormat(instance.type()) + instance.getId().getValue();
-        } else if (object instanceof TypeName) {
-            return valueToString(((TypeName) object).getValue());
+        } else if (object instanceof TypeLabel) {
+            return valueToString(((TypeLabel) object).getValue());
         } else {
             return object.toString();
         }
     }
 
-    private TypeName typeName() {
-        return gen().make(TypeNames.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
+    private TypeLabel typeName() {
+        return gen().make(TypeLabels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 
     private Type type() {

@@ -29,7 +29,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 import java.util.Date;
 
@@ -92,17 +92,17 @@ public final class Schema {
         CONSTRAINT_RULE("constraint-rule");
 
 
-        private final TypeName name;
+        private final TypeLabel name;
 
         MetaSchema(String i) {
-            name = TypeName.of(i);
+            name = TypeLabel.of(i);
         }
 
-        public TypeName getName() {
+        public TypeLabel getName() {
             return name;
         }
 
-        public static boolean isMetaName(TypeName name) {
+        public static boolean isMetaName(TypeLabel name) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
                 if (metaSchema.getName().equals(name)) return true;
             }
@@ -228,12 +228,12 @@ public final class Schema {
             this.name = name;
         }
 
-        public TypeName getName(TypeName resourceType) {
+        public TypeLabel getName(TypeLabel resourceType) {
             return resourceType.map(resource -> String.format(name, resource));
         }
 
-        public TypeName getName(String resourceType) {
-            return TypeName.of(String.format(name, resourceType));
+        public TypeLabel getName(String resourceType) {
+            return TypeLabel.of(String.format(name, resourceType));
         }
     }
 
@@ -251,18 +251,18 @@ public final class Schema {
             this.name = name;
         }
 
-        public TypeName getName() {
-            return TypeName.of(name);
+        public TypeLabel getName() {
+            return TypeLabel.of(name);
         }
     }
 
     /**
      *
-     * @param typeName The resource type name
+     * @param typeLabel The resource type name
      * @param value The value of the resource
      * @return A unique id for the resource
      */
-    public static String generateResourceIndex(TypeName typeName, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + typeName + "-" + value;
+    public static String generateResourceIndex(TypeLabel typeLabel, String value){
+        return Schema.BaseType.RESOURCE.name() + "-" + typeLabel + "-" + value;
     }
 }

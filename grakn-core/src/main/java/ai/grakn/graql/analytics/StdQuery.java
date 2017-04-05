@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,10 +39,10 @@ public interface StdQuery extends ComputeQuery<Optional<Double>> {
     StdQuery of(String... resourceTypeNames);
 
     /**
-     * @param resourceTypeNames a collection of types of resources to execute the query on
+     * @param resourceTypeLabels a collection of types of resources to execute the query on
      * @return a StdQuery with the subTypeNames set
      */
-    StdQuery of(Collection<TypeName> resourceTypeNames);
+    StdQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
@@ -52,11 +52,11 @@ public interface StdQuery extends ComputeQuery<Optional<Double>> {
     StdQuery in(String... subTypeNames);
 
     /**
-     * @param subTypeNames a collection of types to include in the subgraph
-     * @return a StdQuery with the subTypeNames set
+     * @param subTypeLabels a collection of types to include in the subgraph
+     * @return a StdQuery with the subTypeLabels set
      */
     @Override
-    StdQuery in(Collection<TypeName> subTypeNames);
+    StdQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * Execute the query.

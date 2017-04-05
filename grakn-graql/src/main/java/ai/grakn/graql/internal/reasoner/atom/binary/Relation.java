@@ -22,7 +22,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -569,8 +569,8 @@ public class Relation extends TypeAtom {
                 Type type = varTypeMap.get(var);
                 roleVarMap.put(role, new Pair<>(var, type));
                 //try directly
-                TypeName typeName = role.getTypeName().orElse(null);
-                RoleType roleType = typeName != null ? graph.getType(typeName) : null;
+                TypeLabel typeLabel = role.getTypeName().orElse(null);
+                RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());

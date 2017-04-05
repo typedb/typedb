@@ -29,7 +29,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.test.EngineContext;
@@ -213,7 +213,7 @@ public class DegreeTest {
         graph = factory.open(GraknTxType.WRITE);
 
         // set subgraph
-        HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("person"), TypeName.of("animal"), TypeName.of("mans-best-friend"));
+        HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("person"), TypeLabel.of("animal"), TypeLabel.of("mans-best-friend"));
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
 
         // check that dog has a degree to confirm sub has been inferred
@@ -276,7 +276,7 @@ public class DegreeTest {
         graph = factory.open(GraknTxType.WRITE);
 
         // create a subgraph excluding resources and the relationship
-        HashSet<TypeName> subGraphTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"));
+        HashSet<TypeLabel> subGraphTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"), TypeLabel.of("mans-best-friend"));
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(subGraphTypes).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -287,7 +287,7 @@ public class DegreeTest {
         ));
 
         // create a subgraph excluding resource type only
-        HashSet<TypeName> almostFullTypes = Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"), TypeName.of("has-name"), TypeName.of("name"));
+        HashSet<TypeLabel> almostFullTypes = Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"), TypeLabel.of("mans-best-friend"), TypeLabel.of("has-name"), TypeLabel.of("name"));
         degrees = graph.graql().compute().degree().in(almostFullTypes).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -404,8 +404,8 @@ public class DegreeTest {
         graph = factory.open(GraknTxType.WRITE);
 
         // create a subgraph with assertion on assertion
-        HashSet<TypeName> ct =
-                Sets.newHashSet(TypeName.of("animal"), TypeName.of("person"), TypeName.of("mans-best-friend"), TypeName.of("start-date"), TypeName.of("has-ownership-resource"));
+        HashSet<TypeLabel> ct =
+                Sets.newHashSet(TypeLabel.of("animal"), TypeLabel.of("person"), TypeLabel.of("mans-best-friend"), TypeLabel.of("start-date"), TypeLabel.of("has-ownership-resource"));
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
         assertTrue(!degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -417,9 +417,9 @@ public class DegreeTest {
 
         // create subgraph without assertion on assertion
         ct.clear();
-        ct.add(TypeName.of("animal"));
-        ct.add(TypeName.of("person"));
-        ct.add(TypeName.of("mans-best-friend"));
+        ct.add(TypeLabel.of("animal"));
+        ct.add(TypeLabel.of("person"));
+        ct.add(TypeLabel.of("mans-best-friend"));
         degrees = graph.graql().compute().degree().in(ct).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(
@@ -549,7 +549,7 @@ public class DegreeTest {
 
         // check degree for dave owning cats
         //TODO: should we count the relationship even if there is no cat attached?
-        HashSet<TypeName> ct = Sets.newHashSet(TypeName.of("mans-best-friend"), TypeName.of("cat"), TypeName.of("person"));
+        HashSet<TypeLabel> ct = Sets.newHashSet(TypeLabel.of("mans-best-friend"), TypeLabel.of("cat"), TypeLabel.of("person"));
         Map<Long, Set<String>> degrees = graph.graql().compute().degree().in(ct).execute();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> entry.getValue().forEach(

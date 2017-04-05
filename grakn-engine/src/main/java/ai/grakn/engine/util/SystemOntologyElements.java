@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.util;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 /**
  * <p>
@@ -28,20 +28,20 @@ import ai.grakn.concept.TypeName;
  * @author Denis Lobanov
  */
 public interface SystemOntologyElements {
-    TypeName TASK_ID = TypeName.of("task-id");
-    TypeName SCHEDULED_TASK = TypeName.of("scheduled-task");
-    TypeName STATUS = TypeName.of("status");
-    TypeName STATUS_CHANGE_TIME = TypeName.of("status-change-time");
-    TypeName STATUS_CHANGE_BY = TypeName.of("status-change-by");
-    TypeName TASK_CLASS_NAME = TypeName.of("task-class-name");
-    TypeName CREATED_BY = TypeName.of("created-by");
-    TypeName ENGINE_ID = TypeName.of("engine-id");
-    TypeName RUN_AT = TypeName.of("run-at");
-    TypeName RECURRING = TypeName.of("recurring");
-    TypeName RECUR_INTERVAL = TypeName.of("recur-interval");
-    TypeName STACK_TRACE = TypeName.of("stack-trace");
-    TypeName TASK_EXCEPTION = TypeName.of("task-exception");
-    TypeName TASK_CHECKPOINT = TypeName.of("task-checkpoint");
-    TypeName TASK_CONFIGURATION = TypeName.of("task-configuration");
-    TypeName SERIALISED_TASK = TypeName.of("task-serialized");
+    TypeLabel TASK_ID = TypeLabel.of("task-id");
+    TypeLabel SCHEDULED_TASK = TypeLabel.of("scheduled-task");
+    TypeLabel STATUS = TypeLabel.of("status");
+    TypeLabel STATUS_CHANGE_TIME = TypeLabel.of("status-change-time");
+    TypeLabel STATUS_CHANGE_BY = TypeLabel.of("status-change-by");
+    TypeLabel TASK_CLASS_NAME = TypeLabel.of("task-class-name");
+    TypeLabel CREATED_BY = TypeLabel.of("created-by");
+    TypeLabel ENGINE_ID = TypeLabel.of("engine-id");
+    TypeLabel RUN_AT = TypeLabel.of("run-at");
+    TypeLabel RECURRING = TypeLabel.of("recurring");
+    TypeLabel RECUR_INTERVAL = TypeLabel.of("recur-interval");
+    TypeLabel STACK_TRACE = TypeLabel.of("stack-trace");
+    TypeLabel TASK_EXCEPTION = TypeLabel.of("task-exception");
+    TypeLabel TASK_CHECKPOINT = TypeLabel.of("task-checkpoint");
+    TypeLabel TASK_CONFIGURATION = TypeLabel.of("task-configuration");
+    TypeLabel SERIALISED_TASK = TypeLabel.of("task-serialized");
 }

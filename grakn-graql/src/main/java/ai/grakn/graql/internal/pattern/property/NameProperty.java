@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -43,13 +43,13 @@ import java.util.Set;
  */
 public class NameProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final TypeName name;
+    private final TypeLabel name;
 
-    public NameProperty(TypeName name) {
+    public NameProperty(TypeLabel name) {
         this.name = name;
     }
 
-    public TypeName getNameValue() {
+    public TypeLabel getNameValue() {
         return name;
     }
 

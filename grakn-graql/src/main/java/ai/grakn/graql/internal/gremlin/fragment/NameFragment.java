@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -28,9 +28,9 @@ import static ai.grakn.util.Schema.ConceptProperty.NAME;
 
 class NameFragment extends AbstractFragment {
 
-    private final TypeName name;
+    private final TypeLabel name;
 
-    NameFragment(VarName start, TypeName name) {
+    NameFragment(VarName start, TypeLabel name) {
         super(start);
         this.name = name;
     }

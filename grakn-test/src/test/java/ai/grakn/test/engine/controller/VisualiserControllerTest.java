@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknSession;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -206,7 +206,7 @@ public class VisualiserControllerTest {
     @Test
     public void testOntologyConceptHAL() {
 
-        Type protagonistType = graph.getType(TypeName.of("protagonist"));
+        Type protagonistType = graph.getType(TypeLabel.of("protagonist"));
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
                 .get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + protagonistType.getId().getValue())
@@ -258,7 +258,7 @@ public class VisualiserControllerTest {
 
     @Test
     public void retrieveConceptByIdWithOffsetAndLimit() {
-        Type personType = graph.getType(TypeName.of("person"));
+        Type personType = graph.getType(TypeLabel.of("person"));
 
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
@@ -314,7 +314,7 @@ public class VisualiserControllerTest {
 
     @Test
     public void getTypeByID() {
-        Type personType = graph.getType(TypeName.of("person"));
+        Type personType = graph.getType(TypeLabel.of("person"));
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
                 .get(REST.WebPath.CONCEPT_BY_ID_URI + personType.getId().getValue())
@@ -324,7 +324,7 @@ public class VisualiserControllerTest {
         assertEquals(message.at("_id").asString(), personType.getId().getValue());
         assertEquals(message.at("_name").asString(), "person");
         assertEquals(Schema.BaseType.ENTITY_TYPE.name(), message.at("_baseType").asString());
-        assertEquals(message.at("_links").at("self").at("href").asString(), "/graph/concept/" + graph.getType(TypeName.of("person")).getId().getValue() + "?keyspace=" + graph.getKeyspace()+"&offset=0");
+        assertEquals(message.at("_links").at("self").at("href").asString(), "/graph/concept/" + graph.getType(TypeLabel.of("person")).getId().getValue() + "?keyspace=" + graph.getKeyspace()+"&offset=0");
         assertEquals(60, message.at("_embedded").at("isa").asJsonList().size());
     }
 

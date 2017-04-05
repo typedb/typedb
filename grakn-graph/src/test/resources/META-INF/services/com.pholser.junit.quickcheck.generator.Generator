@@ -19,7 +19,7 @@
 
 ai.grakn.generator.GraknGraphs
 ai.grakn.generator.DataTypes
-ai.grakn.generator.TypeNames
+ai.grakn.generator.TypeLabels
 ai.grakn.generator.ConceptIds
 ai.grakn.generator.EntityTypes
 ai.grakn.generator.RelationTypes

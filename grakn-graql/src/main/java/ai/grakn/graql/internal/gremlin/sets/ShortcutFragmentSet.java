@@ -19,7 +19,7 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -32,8 +32,8 @@ import java.util.Optional;
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
-            Optional<TypeName> roleTypeA, VarName rolePlayerA,
-            Optional<TypeName> roleTypeB, VarName rolePlayerB, Optional<TypeName> relationType) {
+            Optional<TypeLabel> roleTypeA, VarName rolePlayerA,
+            Optional<TypeLabel> roleTypeB, VarName rolePlayerB, Optional<TypeLabel> relationType) {
         super(
                 Fragments.shortcut(relationType, roleTypeA, roleTypeB, rolePlayerA, rolePlayerB),
                 Fragments.shortcut(relationType, roleTypeB, roleTypeA, rolePlayerB, rolePlayerA)

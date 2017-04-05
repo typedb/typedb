@@ -24,7 +24,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -340,7 +340,7 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, TypeLabel fromRoleName, TypeLabel toRoleName, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
@@ -359,7 +359,7 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createReflexiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
+    public static Rule createReflexiveRule(RelationType relType, TypeLabel fromRoleName, TypeLabel toRoleName, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
@@ -376,7 +376,7 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeName, TypeName> roleMappings,
+    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeLabel, TypeLabel> roleMappings,
                                              GraknGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
@@ -386,7 +386,7 @@ public class Utility {
         Var parentVar = var().isa(name(parent.getName()));
         Var childVar = var().isa(name(child.getName()));
 
-        for (Map.Entry<TypeName, TypeName> entry : roleMappings.entrySet()) {
+        for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
             VarName varName = VarName.anon();
             parentVar = parentVar.rel(name(entry.getKey()), var(varName));
             childVar = childVar.rel(name(entry.getValue()), var(varName));
@@ -403,8 +403,8 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createPropertyChainRule(RelationType relation, TypeName fromRoleName, TypeName toRoleName,
-                                             LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain, GraknGraph graph){
+    public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleName, TypeLabel toRoleName,
+                                               LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<VarName> varNames = new Stack<>();
         varNames.push(VarName.of("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();

@@ -21,7 +21,7 @@ package ai.grakn.test.matcher;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
@@ -36,7 +36,7 @@ import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
  */
 public class MatchableConcept {
 
-    static final ImmutableSet<TypeName> NAME_TYPES = ImmutableSet.of(TypeName.of("name"), TypeName.of("title"));
+    static final ImmutableSet<TypeLabel> NAME_TYPES = ImmutableSet.of(TypeLabel.of("name"), TypeLabel.of("title"));
 
     private final Concept concept;
 

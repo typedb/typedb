@@ -21,7 +21,7 @@ package ai.grakn.engine.user;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -119,7 +119,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
             }
             Json user = Json.object();
             L.forEach(property -> {
-                TypeName name = property.get("property").asInstance().type().getName();
+                TypeLabel name = property.get("property").asInstance().type().getName();
                 Object value = property.get("property").asResource().getValue();
                 user.set(name.getValue(), value);
             });

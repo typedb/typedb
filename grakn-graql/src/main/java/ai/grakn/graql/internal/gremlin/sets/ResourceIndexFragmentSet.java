@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
@@ -46,8 +46,8 @@ import java.util.stream.Stream;
  */
 class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
-    private ResourceIndexFragmentSet(VarName start, TypeName typeName, Object value) {
-        super(Fragments.resourceIndex(start, typeName, value));
+    private ResourceIndexFragmentSet(VarName start, TypeLabel typeLabel, Object value) {
+        super(Fragments.resourceIndex(start, typeLabel, value));
     }
 
     static boolean applyResourceIndexOptimisation(
@@ -66,9 +66,9 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         NameFragmentSet nameSet = typeNameOf(type, fragmentSets);
         if (nameSet == null) return false;
 
-        TypeName typeName = nameSet.name();
+        TypeLabel typeLabel = nameSet.name();
 
-        Type typeConcept = graph.getType(typeName);
+        Type typeConcept = graph.getType(typeLabel);
         if (typeConcept != null && typeConcept.subTypes().size() > 1) return false;
 
         optimise(fragmentSets, valueSet, isaSet, nameSet.name());
@@ -78,7 +78,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
     private static void optimise(
             Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
-            TypeName typeName
+            TypeLabel typeLabel
     ) {
         // Remove fragment sets we are going to replace
         fragmentSets.remove(valueSet);
@@ -87,7 +87,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         // Add a new fragment set to replace the old ones
         VarName resource = valueSet.resource();
         Object value = valueSet.predicate().equalsValue().get();
-        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(resource, typeName, value);
+        ResourceIndexFragmentSet indexFragmentSet = new ResourceIndexFragmentSet(resource, typeLabel, value);
         fragmentSets.add(indexFragmentSet);
     }
 

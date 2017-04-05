@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
@@ -124,7 +124,7 @@ class ConjunctionQuery {
     /**
      * @return a stream of concept names mentioned in the query
      */
-    Stream<TypeName> getTypes() {
+    Stream<TypeLabel> getTypes() {
         return vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeNames().stream());

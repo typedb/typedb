@@ -106,7 +106,7 @@ public interface Type extends Concept {
      *
      * @return The unique name of this type
      */
-    TypeName getName();
+    TypeLabel getName();
 
     /**
      *

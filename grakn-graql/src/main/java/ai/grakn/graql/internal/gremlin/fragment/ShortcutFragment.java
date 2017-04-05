@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin.fragment;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -35,12 +35,12 @@ import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_NAME;
 
 class ShortcutFragment extends AbstractFragment {
 
-    private final Optional<TypeName> relationType;
-    private final Optional<TypeName> roleStart;
-    private final Optional<TypeName> roleEnd;
+    private final Optional<TypeLabel> relationType;
+    private final Optional<TypeLabel> roleStart;
+    private final Optional<TypeLabel> roleEnd;
 
     ShortcutFragment(
-            Optional<TypeName> relationType, Optional<TypeName> roleStart, Optional<TypeName> roleEnd,
+            Optional<TypeLabel> relationType, Optional<TypeLabel> roleStart, Optional<TypeLabel> roleEnd,
             VarName start, VarName end
     ) {
         super(start, end);

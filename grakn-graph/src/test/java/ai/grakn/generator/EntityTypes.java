@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.EntityType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 public class EntityTypes extends AbstractTypeGenerator<EntityType> {
 
@@ -29,7 +29,7 @@ public class EntityTypes extends AbstractTypeGenerator<EntityType> {
     }
 
     @Override
-    protected EntityType newType(TypeName name) {
+    protected EntityType newType(TypeLabel name) {
         return graph().putEntityType(name);
     }
 

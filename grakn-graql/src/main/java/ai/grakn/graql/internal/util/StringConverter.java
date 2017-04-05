@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.util;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -101,14 +101,14 @@ public class StringConverter {
     }
 
     /**
-     * @param typeName a name of a type
+     * @param typeLabel a name of a type
      * @return
      * The name of the type correctly escaped in graql.
      * If the name doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
-    public static String typeNameToString(TypeName typeName) {
-        return escapeNameOrId(typeName.getValue());
+    public static String typeNameToString(TypeLabel typeLabel) {
+        return escapeNameOrId(typeLabel.getValue());
     }
 
     private static String escapeNameOrId(String name) {

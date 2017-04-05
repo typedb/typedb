@@ -33,11 +33,11 @@ import java.util.function.Function;
  *
  * @author fppt
  */
-public class TypeName implements Comparable<TypeName>, Serializable {
+public class TypeLabel implements Comparable<TypeLabel>, Serializable {
     private static final long serialVersionUID = 2051578406740868932L;
 
     private String name;
-    private TypeName(String name){
+    private TypeLabel(String name){
         this.name = name;
     }
 
@@ -46,12 +46,12 @@ public class TypeName implements Comparable<TypeName>, Serializable {
     }
 
     /**
-     * Rename a type name (does not modify the original {@code TypeName})
+     * Rename a {@link TypeLabel} (does not modify the original {@link TypeLabel})
      * @param mapper a function to apply to the underlying type name
      * @return the new type name
      */
-    public TypeName map(Function<String, String> mapper) {
-        return TypeName.of(mapper.apply(name));
+    public TypeLabel map(Function<String, String> mapper) {
+        return TypeLabel.of(mapper.apply(name));
     }
 
     @Override
@@ -59,9 +59,9 @@ public class TypeName implements Comparable<TypeName>, Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        TypeName typeName = (TypeName) o;
+        TypeLabel typeLabel = (TypeLabel) o;
 
-        return name.equals(typeName.name);
+        return name.equals(typeLabel.name);
     }
 
     @Override
@@ -70,7 +70,7 @@ public class TypeName implements Comparable<TypeName>, Serializable {
     }
 
     @Override
-    public int compareTo(TypeName o) {
+    public int compareTo(TypeLabel o) {
         return getValue().compareTo(o.getValue());
     }
 
@@ -84,7 +84,7 @@ public class TypeName implements Comparable<TypeName>, Serializable {
      * @param value The string which potentially represents a Type
      * @return The matching Type Name
      */
-    public static TypeName of(String value){
-        return new TypeName(value);
+    public static TypeLabel of(String value){
+        return new TypeLabel(value);
     }
 }

@@ -17,7 +17,7 @@
  */
 package ai.grakn.migration.owl;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import org.semanticweb.owlapi.model.IRI;
 
@@ -80,7 +80,7 @@ public interface Namer {
      *  
      * @param relationName The name of the Grakn <code>RelationType</code>.
      */
-    default TypeName objectRole(TypeName relationName) {
+    default TypeLabel objectRole(TypeLabel relationName) {
         return relationName.map(relation -> OwlModel.OBJECT.owlname() + "-" + relation);
     }
     /**
@@ -89,25 +89,25 @@ public interface Namer {
      *  
      * @param relationName The name of the Grakn <code>RelationType</code>.
      */
-    default TypeName subjectRole(TypeName relationName) {
+    default TypeLabel subjectRole(TypeLabel relationName) {
         return relationName.map(relation -> OwlModel.SUBJECT.owlname() + "-" + relation);
     }
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
-    default TypeName entityRole(TypeName resourceTypeName) {
-        return Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName);
+    default TypeLabel entityRole(TypeLabel resourceTypeLabel) {
+        return Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeLabel);
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
      */
-    default TypeName resourceRelation(TypeName resourceTypeName) {
-        return Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName);
+    default TypeLabel resourceRelation(TypeLabel resourceTypeLabel) {
+        return Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeLabel);
     }
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
-    default TypeName resourceRole(TypeName resourceTypeName) {
-        return Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName);
+    default TypeLabel resourceRole(TypeLabel resourceTypeLabel) {
+        return Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeLabel);
     }
 }

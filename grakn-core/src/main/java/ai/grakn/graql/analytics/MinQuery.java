@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -39,10 +39,10 @@ public interface MinQuery extends ComputeQuery<Optional<Number>> {
     MinQuery of(String... resourceTypeNames);
 
     /**
-     * @param resourceTypeNames a collection of types of resources to execute the query on
+     * @param resourceTypeLabels a collection of types of resources to execute the query on
      * @return a MinQuery with the subTypeNames set
      */
-    MinQuery of(Collection<TypeName> resourceTypeNames);
+    MinQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
      * @param subTypeNames an array of types to include in the subgraph
@@ -52,11 +52,11 @@ public interface MinQuery extends ComputeQuery<Optional<Number>> {
     MinQuery in(String... subTypeNames);
 
     /**
-     * @param subTypeNames a collection of types to include in the subgraph
-     * @return a MinQuery with the subTypeNames set
+     * @param subTypeLabels a collection of types to include in the subgraph
+     * @return a MinQuery with the subTypeLabels set
      */
     @Override
-    MinQuery in(Collection<TypeName> subTypeNames);
+    MinQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * Execute the query.

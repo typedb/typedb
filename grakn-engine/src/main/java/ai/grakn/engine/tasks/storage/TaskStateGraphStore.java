@@ -25,7 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.EngineCache;
@@ -129,7 +129,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     @Override
     public Boolean updateState(TaskState task) {
         // Existing resource relations to remove
-        final Set<TypeName> resourcesToDettach = new HashSet<>();
+        final Set<TypeLabel> resourcesToDettach = new HashSet<>();
         
         // New resources to add
         Var resources = var(TASK_VAR);

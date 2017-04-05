@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -257,9 +257,9 @@ public class GraqlTraversalTest {
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
-        Fragment xMarriesY = shortcut(Optional.of(TypeName.of("marriage")), Optional.empty(), Optional.empty(), x, y);
-        Fragment yMarriesX = shortcut(Optional.of(TypeName.of("marriage")), Optional.empty(), Optional.empty(), y, x);
-        Fragment marriageFragment = name(marriageName, TypeName.of("marriage"));
+        Fragment xMarriesY = shortcut(Optional.of(TypeLabel.of("marriage")), Optional.empty(), Optional.empty(), x, y);
+        Fragment yMarriesX = shortcut(Optional.of(TypeLabel.of("marriage")), Optional.empty(), Optional.empty(), y, x);
+        Fragment marriageFragment = name(marriageName, TypeLabel.of("marriage"));
 
         assertThat(graqlTraversal, anyOf(
                 is(traversal(xMarriesY, marriageFragment)),
@@ -279,9 +279,9 @@ public class GraqlTraversalTest {
 
         GraqlTraversal graqlTraversal = semiOptimal(rel);
 
-        Fragment xMarriesY = shortcut(Optional.empty(), Optional.empty(), Optional.of(TypeName.of("wife")), x, y);
-        Fragment yMarriesX = shortcut(Optional.empty(), Optional.of(TypeName.of("wife")), Optional.empty(), y, x);
-        Fragment wifeFragment = name(wifeName, TypeName.of("wife"));
+        Fragment xMarriesY = shortcut(Optional.empty(), Optional.empty(), Optional.of(TypeLabel.of("wife")), x, y);
+        Fragment yMarriesX = shortcut(Optional.empty(), Optional.of(TypeLabel.of("wife")), Optional.empty(), y, x);
+        Fragment wifeFragment = name(wifeName, TypeLabel.of("wife"));
 
         assertThat(graqlTraversal, anyOf(
                 is(traversal(xMarriesY, wifeFragment)),
