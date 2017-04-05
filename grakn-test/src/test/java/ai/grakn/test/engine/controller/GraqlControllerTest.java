@@ -20,8 +20,8 @@ package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.controller.GraphFactoryController;
 import ai.grakn.engine.controller.GraqlController;
+import ai.grakn.engine.controller.SystemController;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
@@ -97,7 +97,7 @@ public class GraqlControllerTest {
 
         mockFactory = mock(EngineGraknGraphFactory.class);
 
-        new GraphFactoryController(spark);
+        new SystemController(spark);
         new GraqlController(mockFactory, spark);
 
         spark.awaitInitialization();

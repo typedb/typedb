@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.engine.controller.ConceptController;
-import ai.grakn.engine.controller.GraphFactoryController;
+import ai.grakn.engine.controller.SystemController;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.test.GraphContext;
@@ -77,7 +77,7 @@ public class ConceptControllerTest {
 
         mockFactory = mock(EngineGraknGraphFactory.class);
 
-        new GraphFactoryController(spark);
+        new SystemController(spark);
         new ConceptController(mockFactory, spark);
 
         spark.awaitInitialization();
