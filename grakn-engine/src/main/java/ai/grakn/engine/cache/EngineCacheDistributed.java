@@ -24,11 +24,14 @@ import ai.grakn.exception.EngineStorageException;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_JOBS;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_CONCEPT_IDS;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_EXACT_JOB;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_INDICES;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_KEYSPACES;
 import static java.lang.String.format;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
@@ -51,12 +54,11 @@ import static org.apache.spark.util.Utils.serialize;
  *
  * @author fppt
  */
-//TODO: Maybe we can merge this with Stand alone engine cache using Kafka for example?
-//TODO: This class may be in need of sever optimisation. Constantly serialising and deserialising maps and sets is likely to be slow.
 public class EngineCacheDistributed extends EngineCacheAbstract{
+    private static final String RESOURCE_JOB = "resources";
+    private static final String CASTING_JOB = "castings";
     private static EngineCacheDistributed instance = null;
     private final ZookeeperConnection zookeeper;
-
 
     private EngineCacheDistributed(ZookeeperConnection zookeeper){
         this.zookeeper = zookeeper;
@@ -67,12 +69,14 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         return instance;
     }
 
-    private String getPathCastings(String keyspace){
-        return format(ENGINE_CACHE_JOBS, keyspace, "castings");
+    private String getPathIndices(String jobType, String keyspace){
+        return format(ENGINE_CACHE_INDICES, keyspace, jobType);
     }
-
-    private String getPathResources(String keyspace){
-        return format(ENGINE_CACHE_JOBS, keyspace, "resources");
+    private String getPathConceptIds(String jobType, String keyspace, String index){
+        return format(ENGINE_CACHE_CONCEPT_IDS, keyspace, jobType, index);
+    }
+    private String getPathExactJob(String jobType, String keyspace, String index, ConceptId conceptId){
+        return format(ENGINE_CACHE_EXACT_JOB, keyspace, jobType, index, conceptId.getValue());
     }
 
     @Override
@@ -101,6 +105,16 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         }
     }
 
+    private void deleteObjectFromZookeeper(String path){
+        try{
+            if(zookeeper.connection().checkExists().forPath(path) != null) {
+                zookeeper.connection().delete().forPath(path);
+            }
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
+    }
+
     private Optional<Object> getObjectFromZookeeper(String path){
         try {
             if(zookeeper.connection().checkExists().forPath(path) == null) return Optional.empty();
@@ -110,76 +124,98 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         }
     }
 
+    private Optional<List<String>> getChildrenFromZookeeper(String path){
+        try {
+            if(zookeeper.connection().checkExists().forPath(path) == null) return Optional.empty();
+            return Optional.of(zookeeper.connection().getChildren().forPath(path));
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
+    }
+
     @Override
     public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
-        deleteJob(getPathCastings(keyspace), castingIndex, castingId);
+        deleteJob(CASTING_JOB, keyspace, castingIndex, castingId);
     }
     @Override
     public void deleteJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
-        deleteJob(getPathResources(keyspace), resourceIndex, resourceId);
+        deleteJob(RESOURCE_JOB, keyspace, resourceIndex, resourceId);
     }
-    private void deleteJob(String path, String index, ConceptId id){
-        Map<String, Set<ConceptId>> currentJobs = getJobs(path);
-        if(currentJobs.containsKey(index) && currentJobs.get(index).contains(id)){
-            currentJobs.get(index).remove(id);
-            writeObjectToZookeeper(path, currentJobs);
-        }
+    private void deleteJob(String jobType, String keyspace, String index, ConceptId id){
+        updateLastTimeJobAdded();
+        deleteObjectFromZookeeper(getPathExactJob(jobType, keyspace, index, id));
     }
 
     @Override
     public Map<String, Set<ConceptId>> getCastingJobs(String keyspace) {
-        return getJobs(getPathCastings(keyspace));
+        return getJobs(CASTING_JOB, keyspace);
     }
     @Override
     public Map<String, Set<ConceptId>> getResourceJobs(String keyspace) {
-        return getJobs(getPathResources(keyspace));
+        return getJobs(RESOURCE_JOB, keyspace);
     }
-    private Map<String, Set<ConceptId>> getJobs(String path){
-        //noinspection unchecked
-        return (Map<String, Set<ConceptId>>) getObjectFromZookeeper(path).orElse(new HashMap<>());
+    private Map<String, Set<ConceptId>> getJobs(String jopType, String keyspace){
+        Map<String, Set<ConceptId>> jobs = new HashMap<>();
+        Optional<List<String>> indices = getChildrenFromZookeeper(getPathIndices(jopType, keyspace));
+
+        if(indices.isPresent()){
+            for (String index : indices.get()) {
+                jobs.put(index, new HashSet<>());
+                Optional<List<String>> ids = getChildrenFromZookeeper(getPathConceptIds(jopType, keyspace, index));
+                if(ids.isPresent()){
+                    ids.get().forEach(id -> jobs.get(index).add(ConceptId.of(id)));
+                } else {
+                    cleanJobSet(jopType, keyspace, index); //Have an empty index. Time to kill it.
+                }
+            }
+        }
+
+        return jobs;
     }
 
     @Override
     public void addJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
-        addJob(getPathCastings(keyspace), keyspace, castingIndex, castingId);
+        addJob(CASTING_JOB, keyspace, castingIndex, castingId);
     }
     @Override
     public void addJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
-        addJob(getPathResources(keyspace), keyspace, resourceIndex, resourceId);
+        addJob(RESOURCE_JOB, keyspace, resourceIndex, resourceId);
     }
-    private void addJob(String jobPath, String keyspace, String index, ConceptId id){
+    private void addJob(String jobType, String keyspace, String index, ConceptId id){
         updateLastTimeJobAdded();
         updateKeyspaces(keyspace);
-        Map<String, Set<ConceptId>> currentJobs = getJobs(jobPath);
-        Set<ConceptId> currentIds = currentJobs.computeIfAbsent(index, (k) -> new HashSet<>());
-        if(!currentIds.contains(id)){
-            currentIds.add(id);
-            writeObjectToZookeeper(jobPath, currentJobs);
-        }
+        writeObjectToZookeeper(getPathExactJob(jobType, keyspace, index, id), id.getValue());
     }
 
     @Override
     public void clearJobSetResources(String keyspace, String conceptIndex) {
-        cleanJobSet(getPathResources(keyspace), conceptIndex);
+        cleanJobSet(RESOURCE_JOB, keyspace, conceptIndex);
     }
     @Override
     public void clearJobSetCastings(String keyspace, String conceptIndex) {
-        cleanJobSet(getPathCastings(keyspace), conceptIndex);
+        cleanJobSet(CASTING_JOB, keyspace, conceptIndex);
     }
-    private void cleanJobSet(String path, String index){
-        Map<String, Set<ConceptId>> currentJobs = getJobs(path);
-        if(currentJobs.containsKey(index)){
-            currentJobs.remove(index);
-            writeObjectToZookeeper(path, currentJobs);
+    private void cleanJobSet(String jobType, String keyspace, String index){
+        String idPath = getPathConceptIds(jobType, keyspace, index);
+        Optional<List<String>> ids = getChildrenFromZookeeper(idPath);
+
+        if(ids.isPresent()){
+            ids.get().forEach(id -> deleteJob(jobType, keyspace, index, ConceptId.of(id)));
         }
+
+        deleteObjectFromZookeeper(idPath);
     }
 
     @Override
     public void clearAllJobs(String keyspace) {
         updateLastTimeJobAdded();
-        synchronized (this) {
-            writeObjectToZookeeper(getPathResources(keyspace), new HashMap<>());
-            writeObjectToZookeeper(getPathCastings(keyspace), new HashMap<>());
+        clearAllJobs(RESOURCE_JOB, keyspace);
+        clearAllJobs(CASTING_JOB, keyspace);
+    }
+    private void clearAllJobs(String jobType, String keyspace){
+        Optional<List<String>> indices = getChildrenFromZookeeper(getPathIndices(jobType, keyspace));
+        if(indices.isPresent()){
+            indices.get().forEach(index -> cleanJobSet(jobType, keyspace, index));
         }
     }
 }
