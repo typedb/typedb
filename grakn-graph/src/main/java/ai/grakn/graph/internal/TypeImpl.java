@@ -86,7 +86,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.NAME.name()));
+        cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.LABEL.name()));
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
@@ -102,7 +102,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(TypeImpl<T, V> type) {
         super(type);
-        this.cachedTypeLabel = type.getName();
+        this.cachedTypeLabel = type.getLabel();
         type.cachedIsImplicit.ifPresent(value -> this.cachedIsImplicit.set(value));
         type.cachedIsAbstract.ifPresent(value -> this.cachedIsAbstract.set(value));
     }
@@ -145,8 +145,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<Vertex, T, V> producer){
         getGraknGraph().checkMutation();
 
-        if(Schema.MetaSchema.isMetaName(getName()) && !Schema.MetaSchema.INFERENCE_RULE.getName().equals(getName()) && !Schema.MetaSchema.CONSTRAINT_RULE.getName().equals(getName())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
+        if(Schema.MetaSchema.isMetaLabel(getLabel()) && !Schema.MetaSchema.INFERENCE_RULE.getLabel().equals(getLabel()) && !Schema.MetaSchema.CONSTRAINT_RULE.getLabel().equals(getLabel())){
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getLabel()));
         }
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
@@ -188,7 +188,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         boolean implicitFlag = getGraknGraph().implicitConceptsVisible();
 
         //TODO: Make this less convoluted
-        String [] implicitIdentifiers = implicitType.getName("").getValue().split("--");
+        String [] implicitIdentifiers = implicitType.getLabel("").getValue().split("--");
         String prefix = implicitIdentifiers[0] + "-";
         String suffix = "-" + implicitIdentifiers[1];
 
@@ -197,7 +197,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<ResourceType> resourceTypes = new HashSet<>();
         //A traversal is not used in this caching so that ontology caching can be taken advantage of.
         playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            String roleTypeLabel = roleType.getName().getValue();
+            String roleTypeLabel = roleType.getLabel().getValue();
             if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
                 String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
                 resourceTypes.add(getGraknGraph().getResourceType(resourceTypeLabel));
@@ -229,7 +229,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         boolean hasInstances = getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
 
         if(hasSubs || hasInstances){
-            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
+            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getLabel()));
         } else {
             //Force load of linked concepts whose caches need to be updated
             cachedSuperType.get();
@@ -271,7 +271,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         superSet.add(getThis());
         T superParent = superType();
 
-        while(superParent != null && !Schema.MetaSchema.CONCEPT.getName().equals(superParent.getName())){
+        while(superParent != null && !Schema.MetaSchema.CONCEPT.getLabel().equals(superParent.getLabel())){
             superSet.add(superParent);
             //noinspection unchecked
             superParent = (T) superParent.superType();
@@ -336,7 +336,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         //noinspection unchecked
         GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                .has(Schema.ConceptProperty.NAME.name(), getName().getValue())
+                .has(Schema.ConceptProperty.NAME.name(), getLabel().getValue())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel());
 
@@ -438,7 +438,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             //Note the check before the actual construction
             if(superTypeLoops()){
                 cachedSuperType.set(oldSuperType); //Reset if the new super type causes a loop
-                throw new ConceptException(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(getName(), newSuperType.getName()));
+                throw new ConceptException(ErrorMessage.SUPER_TYPE_LOOP_DETECTED.getMessage(getLabel(), newSuperType.getLabel()));
             }
 
             //Modify the graph once we have checked no loop occurs
@@ -545,7 +545,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public String innerToString(){
         String message = super.innerToString();
-        message = message + " - Name [" + getName() + "] - Abstract [" + isAbstract() + "] ";
+        message = message + " - Name [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
         return message;
     }
 
@@ -575,8 +575,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     void checkTypeMutation(){
         getGraknGraph().checkOntologyMutation();
-        if(Schema.MetaSchema.isMetaName(getName())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getName()));
+        if(Schema.MetaSchema.isMetaLabel(getLabel())){
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getLabel()));
         }
     }
 
@@ -594,24 +594,24 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
 
         //Check if resource type is the meta
-        if(Schema.MetaSchema.RESOURCE.getName().equals(resourceType.getName())){
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resourceType.getName()));
+        if(Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())){
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(resourceType.getLabel()));
         }
 
-        TypeLabel resourceTypeLabel = resourceType.getName();
-        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(resourceTypeLabel));
-        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(hasValue.getName(resourceTypeLabel));
-        RelationType relationType = getGraknGraph().putRelationTypeImplicit(has.getName(resourceTypeLabel)).
+        TypeLabel resourceTypeLabel = resourceType.getLabel();
+        RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(hasOwner.getLabel(resourceTypeLabel));
+        RoleType valueRole = getGraknGraph().putRoleTypeImplicit(hasValue.getLabel(resourceTypeLabel));
+        RelationType relationType = getGraknGraph().putRelationTypeImplicit(has.getLabel(resourceTypeLabel)).
                 hasRole(ownerRole).
                 hasRole(valueRole);
 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
-        TypeLabel superName = resourceTypeSuper.getName();
-        if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
-            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(superName));
-            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getName(superName));
-            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(has.getName(superName)).
+        TypeLabel superLabel = resourceTypeSuper.getLabel();
+        if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays role edges to meta types accidentally
+            RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+            RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
+            RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(has.getLabel(superLabel)).
                     hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
@@ -635,7 +635,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The name of this type
      */
     @Override
-    public TypeLabel getName() {
+    public TypeLabel getLabel() {
         return cachedTypeLabel;
     }
 
@@ -666,7 +666,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     private void checkNonOverlapOfImplicitRelations(Schema.ImplicitType implicitType, ResourceType resourceType){
         if(resources(implicitType).contains(resourceType)) {
-            throw new ConceptException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(getName(), resourceType.getName()));
+            throw new ConceptException(ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE.getMessage(getLabel(), resourceType.getLabel()));
         }
     }
 }

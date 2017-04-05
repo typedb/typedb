@@ -34,8 +34,8 @@ import java.util.stream.Stream;
  * A query can use a more-efficient resource index traversal when the following criteria are met:
  *
  * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link VarName}.
- * 2. The {@link IsaFragmentSet} refers to a type {@link VarName} with a {@link NameFragmentSet}.
- * 3. The {@link NameFragmentSet} refers to a type in the graph without direct sub-types.
+ * 2. The {@link IsaFragmentSet} refers to a type {@link VarName} with a {@link LabelFragmentSet}.
+ * 3. The {@link LabelFragmentSet} refers to a type in the graph without direct sub-types.
  * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
  *
  * When all these criteria are met, the fragments representing the {@link IsaFragmentSet} and the
@@ -63,15 +63,15 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
         VarName type = isaSet.type();
 
-        NameFragmentSet nameSet = typeLabelOf(type, fragmentSets);
+        LabelFragmentSet nameSet = typeLabelOf(type, fragmentSets);
         if (nameSet == null) return false;
 
-        TypeLabel typeLabel = nameSet.name();
+        TypeLabel typeLabel = nameSet.label();
 
         Type typeConcept = graph.getType(typeLabel);
         if (typeConcept != null && typeConcept.subTypes().size() > 1) return false;
 
-        optimise(fragmentSets, valueSet, isaSet, nameSet.name());
+        optimise(fragmentSets, valueSet, isaSet, nameSet.label());
 
         return true;
     }
@@ -107,9 +107,9 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
                 .orElse(null);
     }
 
-    private static NameFragmentSet typeLabelOf(VarName type, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSetOfType(NameFragmentSet.class, fragmentSets)
-                .filter(nameFragmentSet -> nameFragmentSet.type().equals(type))
+    private static LabelFragmentSet typeLabelOf(VarName type, Collection<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
+                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
                 .findAny()
                 .orElse(null);
     }

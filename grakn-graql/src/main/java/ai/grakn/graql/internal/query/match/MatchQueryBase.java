@@ -182,7 +182,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
         Type type = concept.asType();
 
-        return !type.isImplicit() || typeLabels.contains(type.getName());
+        return !type.isImplicit() || typeLabels.contains(type.getLabel());
     }
 
     @Override

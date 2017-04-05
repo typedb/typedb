@@ -89,13 +89,13 @@ public class MigratorTestUtils {
     }
 
 
-    public static Instance getProperty(GraknGraph graph, Instance instance, String name) {
-        assertEquals(getProperties(graph, instance, name).size(), 1);
-        return getProperties(graph, instance, name).iterator().next();
+    public static Instance getProperty(GraknGraph graph, Instance instance, String label) {
+        assertEquals(getProperties(graph, instance, label).size(), 1);
+        return getProperties(graph, instance, label).iterator().next();
     }
 
-    public static Collection<Instance> getProperties(GraknGraph graph, Instance instance, String name) {
-        RelationType relation = graph.getRelationType(name);
+    public static Collection<Instance> getProperties(GraknGraph graph, Instance instance, String label) {
+        RelationType relation = graph.getRelationType(label);
 
         Set<Instance> instances = new HashSet<>();
 
@@ -107,14 +107,14 @@ public class MigratorTestUtils {
         return instances;
     }
 
-    public static Resource getResource(GraknGraph graph, Instance instance, TypeLabel name) {
-        assertEquals(getResources(graph, instance, name).count(), 1);
-        return getResources(graph, instance, name).findAny().get();
+    public static Resource getResource(GraknGraph graph, Instance instance, TypeLabel label) {
+        assertEquals(getResources(graph, instance, label).count(), 1);
+        return getResources(graph, instance, label).findAny().get();
     }
 
-    public static Stream<Resource> getResources(GraknGraph graph, Instance instance, TypeLabel name) {
-        RoleType roleOwner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(name));
-        RoleType roleOther = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(name));
+    public static Stream<Resource> getResources(GraknGraph graph, Instance instance, TypeLabel label) {
+        RoleType roleOwner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(label));
+        RoleType roleOther = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(label));
 
         Collection<Relation> relations = instance.relations(roleOwner);
         return relations.stream().flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);
@@ -162,7 +162,7 @@ public class MigratorTestUtils {
         assertNotNull(poison);
         assertNotNull(bulbasaur);
 
-        assertRelationBetweenInstancesExists(graph, bulbasaur, grass, relation.getName());
-        assertRelationBetweenInstancesExists(graph, bulbasaur, poison, relation.getName());
+        assertRelationBetweenInstancesExists(graph, bulbasaur, grass, relation.getLabel());
+        assertRelationBetweenInstancesExists(graph, bulbasaur, poison, relation.getLabel());
     }
 }

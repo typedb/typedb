@@ -30,6 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
@@ -64,7 +65,7 @@ import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.gte;
 import static ai.grakn.graql.Graql.lt;
 import static ai.grakn.graql.Graql.lte;
-import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
@@ -290,7 +291,7 @@ public class MatchQueryTest {
 
     @Test
     public void testTypeLabelQuery() {
-        MatchQuery query = qb.match(or(var("x").name("character"), var("x").name("person")));
+        MatchQuery query = qb.match(or(var("x").label("character"), var("x").label("person")));
 
         assertThat(query, variable("x", containsInAnyOrder(character, person)));
     }
@@ -399,13 +400,13 @@ public class MatchQueryTest {
 
     @Test
     public void testTypeAsVariable() {
-        MatchQuery query = qb.match(name("genre").playsRole(var("x")));
+        MatchQuery query = qb.match(label("genre").playsRole(var("x")));
         assertThat(query, variable("x", contains(genreOfProduction)));
     }
 
     @Test
     public void testVariableAsRoleType() {
-        MatchQuery query = qb.match(var().rel(var().name("genre-of-production"), "y")).distinct();
+        MatchQuery query = qb.match(var().rel(var().label("genre-of-production"), "y")).distinct();
 
         assertThat(query, variable("y", containsInAnyOrder(
                 crime, drama, war, action, comedy, family, musical, fantasy
@@ -425,7 +426,7 @@ public class MatchQueryTest {
     public void testVariablesEverywhere() {
         MatchQuery query = qb.match(
                 var()
-                        .rel(name("production-with-genre"), var("x").isa(var("y").sub(name("production"))))
+                        .rel(label("production-with-genre"), var("x").isa(var("y").sub(label("production"))))
                         .rel(var().has("name", "crime"))
         );
 
@@ -439,7 +440,7 @@ public class MatchQueryTest {
 
     @Test
     public void testSubSelf() {
-        MatchQuery query = qb.match(name("movie").sub(var("x")));
+        MatchQuery query = qb.match(label("movie").sub(var("x")));
 
         assertThat(query, variable("x", containsInAnyOrder(movie, production, entity, concept)));
     }
@@ -501,7 +502,7 @@ public class MatchQueryTest {
 
     @Test
     public void testSelectRuleTypes() {
-        MatchQuery query = qb.match(var("x").sub(RULE.getName().getValue()));
+        MatchQuery query = qb.match(var("x").sub(RULE.getLabel().getValue()));
         assertThat(query, variable("x", containsInAnyOrder(
                 rule, aRuleType, inferenceRule, constraintRule
         )));
@@ -527,16 +528,16 @@ public class MatchQueryTest {
     @Test
     public void testSubRelationType() {
         qb.insert(
-                name("ownership").sub("relation").hasRole("owner").hasRole("possession"),
-                name("organization-with-shares").sub("possession"),
-                name("possession").sub("role"),
+                label("ownership").sub("relation").hasRole("owner").hasRole("possession"),
+                label("organization-with-shares").sub("possession"),
+                label("possession").sub("role"),
 
-                name("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
-                name("shareholder").sub("owner"),
-                name("owner").sub("role"),
+                label("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
+                label("shareholder").sub("owner"),
+                label("owner").sub("role"),
 
-                name("person").sub("entity").playsRole("shareholder"),
-                name("company").sub("entity").playsRole("organization-with-shares"),
+                label("person").sub("entity").playsRole("shareholder"),
+                label("company").sub("entity").playsRole("organization-with-shares"),
 
                 var("apple").isa("company"),
                 var("bob").isa("person"),
@@ -573,22 +574,22 @@ public class MatchQueryTest {
         TypeLabel f = TypeLabel.of("f");
 
         qb.insert(
-                name(c).sub(name(b).sub(name(a).sub("entity"))),
-                name(f).sub(name(e).sub(name(d).sub("role"))),
-                name(b).playsRole(name(e))
+                Graql.label(c).sub(Graql.label(b).sub(Graql.label(a).sub("entity"))),
+                Graql.label(f).sub(Graql.label(e).sub(Graql.label(d).sub("role"))),
+                Graql.label(b).playsRole(Graql.label(e))
         ).execute();
 
         GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
-            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
+            Set<Concept> graqlPlaysRoles = qb.match(Graql.label(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
             Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).playsRoles());
 
             assertEquals(graqlPlaysRoles, graphAPIPlaysRoles);
         });
 
         Stream.of(d, e, f).forEach(type -> {
-            Set<Concept> graqlPlayedBy = qb.match(var("x").playsRole(name(type))).get("x").collect(toSet());
+            Set<Concept> graqlPlayedBy = qb.match(var("x").playsRole(Graql.label(type))).get("x").collect(toSet());
             Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getType(type).playedByTypes());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
@@ -638,7 +639,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchAllInstances() {
-        MatchQuery query = qb.match(var("x").isa(Schema.MetaSchema.CONCEPT.getName().getValue()));
+        MatchQuery query = qb.match(var("x").isa(Schema.MetaSchema.CONCEPT.getLabel().getValue()));
 
         // Make sure there a reasonable number of results
         assertThat(query.execute(), hasSize(greaterThan(10)));
@@ -736,13 +737,13 @@ public class MatchQueryTest {
 
     @Test
     public void testNoInstancesOfRoleType() {
-        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").name("actor"));
+        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").label("actor"));
         assertThat(query.execute(), empty());
     }
 
     @Test
     public void testNoInstancesOfRoleTypeUnselectedVariable() {
-        MatchQuery query = qb.match(var().isa(var("y")), var("y").name("actor"));
+        MatchQuery query = qb.match(var().isa(var("y")), var("y").label("actor"));
         assertThat(query.execute(), empty());
     }
 
@@ -793,7 +794,7 @@ public class MatchQueryTest {
     @Test
     public void testPlaysQueryVariable() {
         MatchQuery query = qb.match(var().has("title", "Godfather").plays(var("x")));
-        Set<String> roles = query.get("x").map(concept -> concept.asType().getName().getValue()).collect(toSet());
+        Set<String> roles = query.get("x").map(concept -> concept.asType().getLabel().getValue()).collect(toSet());
 
         assertEquals(
                 Sets.newHashSet("production-with-cast", "production-with-genre", "production-with-cluster", "concept", "role"),
@@ -831,7 +832,7 @@ public class MatchQueryTest {
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
-        MatchQuery query = qb.match(var("x").sub("concept").name(HAS_RESOURCE.getName("title")));
+        MatchQuery query = qb.match(var("x").sub("concept").label(HAS_RESOURCE.getLabel("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
     }
 

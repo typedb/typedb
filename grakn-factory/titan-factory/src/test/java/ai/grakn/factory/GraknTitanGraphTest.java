@@ -83,11 +83,11 @@ public class GraknTitanGraphTest extends TitanTestBase{
 
     @Test
     public void whenAbortingTransaction_ChangesNotCommitted(){
-        String name = "My New Type";
-        graknGraph.putEntityType(name);
+        String label = "My New Type";
+        graknGraph.putEntityType(label);
         graknGraph.abort();
         graknGraph = titanGraphFactory.open(GraknTxType.WRITE);
-        assertNull(graknGraph.getEntityType(name));
+        assertNull(graknGraph.getEntityType(label));
     }
 
     @Test

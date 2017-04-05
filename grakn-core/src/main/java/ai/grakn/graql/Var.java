@@ -49,18 +49,18 @@ public interface Var extends Pattern {
     Var id(ConceptId id);
 
     /**
-     * @param name a string that this variable's name must match
+     * @param label a string that this variable's label must match
      * @return this
      */
     @CheckReturnValue
-    Var name(String name);
+    Var label(String label);
 
     /**
-     * @param name a type name that this variable's name must match
+     * @param label a type label that this variable's label must match
      * @return this
      */
     @CheckReturnValue
-    Var name(TypeLabel name);
+    Var label(TypeLabel label);
 
     /**
      * @param value a value that this variable's value must exactly match
@@ -84,7 +84,7 @@ public interface Var extends Pattern {
     Var has(Var var);
 
     /**
-     * the variable must have a resource or name of the given type with an exact matching value
+     * the variable must have a resource of the given type with an exact matching value
      *
      * @param type a resource type in the ontology
      * @param value a value of a resource
@@ -94,7 +94,7 @@ public interface Var extends Pattern {
     Var has(String type, Object value);
 
     /**
-     * the variable must have a resource or name of the given type that matches the given atom
+     * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
      * @param predicate a atom on the value of a resource
@@ -104,7 +104,7 @@ public interface Var extends Pattern {
     Var has(String type, ValuePredicate predicate);
 
     /**
-     * the variable must have a resource or name of the given type that matches the given atom
+     * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
      * @param var a variable representing a resource
@@ -114,7 +114,7 @@ public interface Var extends Pattern {
     Var has(String type, Var var);
 
     /**
-     * the variable must have a resource or name of the given type that matches the given atom
+     * the variable must have a resource of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
      * @param var a variable representing a resource

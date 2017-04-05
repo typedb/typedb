@@ -51,7 +51,7 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inHasRole;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.name;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.label;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outHasRole;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
@@ -230,7 +230,7 @@ public class GraqlTraversalTest {
         assertNearlyOptimal(and(
                 var(x).id(ConceptId.of("xid")),
                 var().rel(var(x)).rel(var(y)),
-                var(y).isa(var(b).name("person")),
+                var(y).isa(var(b).label("person")),
                 var().rel(var(y)).rel(var(z))
         ));
     }
@@ -251,7 +251,7 @@ public class GraqlTraversalTest {
     public void testShortcutOptimisationWithType() {
         VarName marriageName = VarName.of("m");
 
-        Var marriage = var(marriageName).name("marriage");
+        Var marriage = var(marriageName).label("marriage");
 
         Var rel = var().rel("x").rel("y").isa(marriage);
 
@@ -259,7 +259,7 @@ public class GraqlTraversalTest {
 
         Fragment xMarriesY = shortcut(Optional.of(TypeLabel.of("marriage")), Optional.empty(), Optional.empty(), x, y);
         Fragment yMarriesX = shortcut(Optional.of(TypeLabel.of("marriage")), Optional.empty(), Optional.empty(), y, x);
-        Fragment marriageFragment = name(marriageName, TypeLabel.of("marriage"));
+        Fragment marriageFragment = label(marriageName, TypeLabel.of("marriage"));
 
         assertThat(graqlTraversal, anyOf(
                 is(traversal(xMarriesY, marriageFragment)),
@@ -273,7 +273,7 @@ public class GraqlTraversalTest {
     public void testShortcutOptimisationWithRoles() {
         VarName wifeName = VarName.of("w");
 
-        Var wife = var(wifeName).name("wife");
+        Var wife = var(wifeName).label("wife");
 
         Var rel = var().rel("x").rel(wife, "y");
 
@@ -281,7 +281,7 @@ public class GraqlTraversalTest {
 
         Fragment xMarriesY = shortcut(Optional.empty(), Optional.empty(), Optional.of(TypeLabel.of("wife")), x, y);
         Fragment yMarriesX = shortcut(Optional.empty(), Optional.of(TypeLabel.of("wife")), Optional.empty(), y, x);
-        Fragment wifeFragment = name(wifeName, TypeLabel.of("wife"));
+        Fragment wifeFragment = label(wifeName, TypeLabel.of("wife"));
 
         assertThat(graqlTraversal, anyOf(
                 is(traversal(xMarriesY, wifeFragment)),

@@ -41,7 +41,7 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
-import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
@@ -129,13 +129,13 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var name(String name) {
-        return name(TypeLabel.of(name));
+    public Var label(String label) {
+        return label(TypeLabel.of(label));
     }
 
     @Override
-    public Var name(TypeLabel name) {
-        return addProperty(new NameProperty(name));
+    public Var label(TypeLabel label) {
+        return addProperty(new LabelProperty(label));
     }
 
     @Override
@@ -175,7 +175,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var isa(String type) {
-        return isa(Graql.name(type));
+        return isa(Graql.label(type));
     }
 
     @Override
@@ -185,7 +185,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var sub(String type) {
-        return sub(Graql.name(type));
+        return sub(Graql.label(type));
     }
 
     @Override
@@ -195,7 +195,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasRole(String type) {
-        return hasRole(Graql.name(type));
+        return hasRole(Graql.label(type));
     }
 
     @Override
@@ -205,7 +205,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var playsRole(String type) {
-        return playsRole(Graql.name(type));
+        return playsRole(Graql.label(type));
     }
 
     @Override
@@ -220,7 +220,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasResource(String type) {
-        return hasResource(Graql.name(type));
+        return hasResource(Graql.label(type));
     }
 
     @Override
@@ -230,7 +230,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var hasKey(String type) {
-        return hasKey(Graql.var().name(type));
+        return hasKey(Graql.var().label(type));
     }
 
     @Override
@@ -250,7 +250,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(String roletype, String roleplayer) {
-        return rel(Graql.name(roletype), Graql.var(roleplayer));
+        return rel(Graql.label(roletype), Graql.var(roleplayer));
     }
 
     @Override
@@ -260,7 +260,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var rel(String roletype, Var roleplayer) {
-        return rel(Graql.name(roletype), roleplayer);
+        return rel(Graql.label(roletype), roleplayer);
     }
 
     @Override
@@ -270,7 +270,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var plays(String roleType) {
-        return plays(Graql.name(roleType));
+        return plays(Graql.label(roleType));
     }
 
     @Override
@@ -330,7 +330,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Optional<TypeLabel> getTypeLabel() {
-        return getProperty(NameProperty.class).map(NameProperty::getNameValue);
+        return getProperty(LabelProperty.class).map(LabelProperty::getLabelValue);
     }
 
     @Override
@@ -474,7 +474,7 @@ class VarImpl implements VarAdmin {
     }
 
     private static boolean invalidInnerVariable(VarAdmin var) {
-        return var.getProperties().anyMatch(p -> !(p instanceof NameProperty));
+        return var.getProperties().anyMatch(p -> !(p instanceof LabelProperty));
     }
 
     private VarImpl addProperty(VarProperty property) {

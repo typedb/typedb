@@ -29,8 +29,8 @@ public class EntityTypes extends AbstractTypeGenerator<EntityType> {
     }
 
     @Override
-    protected EntityType newType(TypeLabel name) {
-        return graph().putEntityType(name);
+    protected EntityType newType(TypeLabel label) {
+        return graph().putEntityType(label);
     }
 
     @Override

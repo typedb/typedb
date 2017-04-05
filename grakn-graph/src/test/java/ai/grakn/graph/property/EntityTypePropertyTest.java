@@ -59,7 +59,7 @@ public class EntityTypePropertyTest {
         EntityType entity = graph.admin().getMetaEntityType();
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(entity.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(entity.getLabel()));
 
         entity.delete();
     }
@@ -74,13 +74,13 @@ public class EntityTypePropertyTest {
 
         type.delete();
 
-        assertNull(graph.getType(type.getName()));
+        assertNull(graph.getType(type.getLabel()));
     }
 
     @Property
     public void whenAddingAnEntityOfTheMetaEntityType_Throw(@Meta EntityType type) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.addEntity();
     }
 
@@ -109,7 +109,7 @@ public class EntityTypePropertyTest {
     public void whenSettingTheDirectSuperTypeOfTheMetaEntityType_Throw(
             @Meta EntityType subType, @FromGraph EntityType superType) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getLabel()));
         subType.superType(superType);
     }
 
@@ -119,7 +119,7 @@ public class EntityTypePropertyTest {
         EntityType newSuperType = choose(type.subTypes(), seed);
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getName(), newSuperType.getName()));
+        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
         type.superType(newSuperType);
     }
 
@@ -137,7 +137,7 @@ public class EntityTypePropertyTest {
     public void whenAddingADirectSubTypeThatIsTheMetaEntityType_Throw(
             EntityType superType, @Meta @FromGraph EntityType subType) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getLabel()));
         superType.subType(subType);
     }
 
@@ -147,7 +147,7 @@ public class EntityTypePropertyTest {
         EntityType type = choose(newSubType.subTypes(), seed);
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getName(), type.getName()));
+        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
         type.subType(newSubType);
     }
 

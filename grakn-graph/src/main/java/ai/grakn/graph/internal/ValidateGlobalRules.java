@@ -99,12 +99,12 @@ class ValidateGlobalRules {
             for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
                 RoleType playsRole = playsRoleEntry.getKey();
                 Boolean required = playsRoleEntry.getValue();
-                if(playsRole.getName().equals(roleType.getName())){
+                if(playsRole.getLabel().equals(roleType.getLabel())){
                     satisfiesPlaysRole = true;
 
                     // Assert unique relation for this role type
                     if (required && rolePlayer.relations(roleType).size() != 1) {
-                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(rolePlayer.getId(), rolePlayer.type().getName(), roleType.getName(), rolePlayer.relations(roleType).size()));
+                        return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(rolePlayer.getId(), rolePlayer.type().getLabel(), roleType.getLabel(), rolePlayer.relations(roleType).size()));
                     }
                 }
             }
@@ -114,7 +114,7 @@ class ValidateGlobalRules {
         if(satisfiesPlaysRole) {
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
+            return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getLabel(), rolePlayer.getId(), casting.getRole().getLabel()));
         }
     }
 
@@ -128,7 +128,7 @@ class ValidateGlobalRules {
             return Optional.empty();
         }
         if(roleType.relationTypes().isEmpty()) {
-            return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getName()));
+            return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(roleType.getLabel()));
         }
         return Optional.empty();
     }
@@ -142,7 +142,7 @@ class ValidateGlobalRules {
         if(relationType.isAbstract() || relationType.hasRoles().size() >= 1){
             return Optional.empty();
         } else {
-            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getName()));
+            return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getLabel()));
         }
     }
 
@@ -160,20 +160,20 @@ class ValidateGlobalRules {
         Set<RoleType> rolesViaCastings = castings.stream().map(CastingImpl::getRole).collect(Collectors.toSet());
 
         if(rolesViaCastings.size() > roleTypes.size()) {
-            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getName(), roleTypes.size()));
+            return Optional.of(VALIDATION_RELATION_MORE_CASTING_THAN_ROLES.getMessage(relation.getId(), castings.size(), relationType.getLabel(), roleTypes.size()));
         }
 
         for(CastingImpl casting: castings){
             boolean notFound = true;
             for (RelationType innerRelationType : casting.getRole().relationTypes()) {
-                if(innerRelationType.getName().equals(relationType.getName())){
+                if(innerRelationType.getLabel().equals(relationType.getLabel())){
                     notFound = false;
                     break;
                 }
             }
 
             if(notFound) {
-                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getName(), relationType.getName()));
+                return Optional.of(VALIDATION_RELATION_CASTING_LOOP_FAIL.getMessage(relation.getId(), casting.getRole().getLabel(), relationType.getLabel()));
             }
         }
 
@@ -187,7 +187,7 @@ class ValidateGlobalRules {
      */
     static Optional<String> validateIsAbstractHasNoIncomingIsaEdges(TypeImpl conceptType){
         if(conceptType.isAbstract() && conceptType.getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext()){
-            return Optional.of(VALIDATION_IS_ABSTRACT.getMessage(conceptType.getName()));
+            return Optional.of(VALIDATION_IS_ABSTRACT.getMessage(conceptType.getLabel()));
         }
         return Optional.empty();
     }
@@ -199,7 +199,7 @@ class ValidateGlobalRules {
      */
     static Set<String> validateRelationTypesToRolesSchema(RelationTypeImpl relationType){
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.superType();
-        if(Schema.MetaSchema.isMetaName(superRelationType.getName())){ //If super type is a meta type no validation needed
+        if(Schema.MetaSchema.isMetaLabel(superRelationType.getLabel())){ //If super type is a meta type no validation needed
             return Collections.emptySet();
         }
 
@@ -207,26 +207,26 @@ class ValidateGlobalRules {
 
         Collection<RoleType> superHasRoles = superRelationType.hasRoles();
         Collection<RoleType> hasRoles = relationType.hasRoles();
-        Set<TypeLabel> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
+        Set<TypeLabel> hasRolesLabels = hasRoles.stream().map(Type::getLabel).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
         if(!superRelationType.isAbstract()) {
             Set<TypeLabel> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.superTypeSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
+            superRelationType.superTypeSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getLabel())));
 
             for (RoleType hasRole : hasRoles) {
                 boolean validRoleTypeFound = false;
                 Set<RoleType> superRoleTypes = ((RoleTypeImpl) hasRole).superTypeSet();
                 for (RoleType superRoleType : superRoleTypes) {
-                    if(allSuperRolesPlayed.contains(superRoleType.getName())){
+                    if(allSuperRolesPlayed.contains(superRoleType.getLabel())){
                         validRoleTypeFound = true;
                         break;
                     }
                 }
 
                 if(!validRoleTypeFound){
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(hasRole.getName(), relationType.getName(), "super", "super", superRelationType.getName()));
+                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(hasRole.getLabel(), relationType.getLabel(), "super", "super", superRelationType.getLabel()));
                 }
             }
         }
@@ -236,14 +236,14 @@ class ValidateGlobalRules {
             boolean subRoleNotFoundInHasRoles = true;
 
             for (RoleType subRoleType : superHasRole.subTypes()) {
-                if(hasRolesNames.contains(subRoleType.getName())){
+                if(hasRolesLabels.contains(subRoleType.getLabel())){
                     subRoleNotFoundInHasRoles = false;
                     break;
                 }
             }
 
             if(subRoleNotFoundInHasRoles){
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superHasRole.getName(), superRelationType.getName(), "sub", "sub", relationType.getName()));
+                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superHasRole.getLabel(), superRelationType.getLabel(), "sub", "sub", relationType.getLabel()));
             }
         }
 
@@ -266,7 +266,7 @@ class ValidateGlobalRules {
                     RoleType roleType = playsRoleEntry.getKey();
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
-                        return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId(), instance.type().getName(), roleType.getName()));
+                        return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId(), instance.type().getLabel(), roleType.getLabel()));
                     }
                 }
             }
@@ -317,7 +317,7 @@ class ValidateGlobalRules {
                 .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
                     Type type = graph.getType(typeLabel);
                     if(type == null){
-                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getName(), typeLabel));
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getLabel(), typeLabel));
                     } else {
                         if(side.equalsIgnoreCase("LHS")){
                             rule.addHypothesis(type);

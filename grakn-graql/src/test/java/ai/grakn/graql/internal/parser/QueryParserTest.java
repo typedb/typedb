@@ -59,10 +59,10 @@ import static ai.grakn.graql.Graql.group;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.gte;
 import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.lt;
 import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.parse;
@@ -254,7 +254,7 @@ public class QueryParserTest {
                 var("x").isa(var("z")),
                 var("y").value("crime"),
                 var("z").sub("production"),
-                name("has-genre").hasRole(var("p"))
+                label("has-genre").hasRole(var("p"))
         );
 
         MatchQuery parsed = parse(
@@ -317,12 +317,12 @@ public class QueryParserTest {
     @Test
     public void testInsertOntologyQuery() {
         InsertQuery expected = insert(
-                name("pokemon").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
-                name("evolution").sub(Schema.MetaSchema.RELATION.getName().getValue()),
-                name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
-                name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
-                name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
-                name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
+                label("pokemon").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
+                label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue()),
+                label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
+                label("evolution").hasRole("evolves-from").hasRole("evolves-to"),
+                label("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),
@@ -334,7 +334,7 @@ public class QueryParserTest {
                 "'pokemon' sub entity;" +
                 "evolution sub relation;" +
                 "evolves-from sub role;" +
-                "type-name \"evolves-to\" sub role;" +
+                "label \"evolves-to\" sub role;" +
                 "evolution has-role evolves-from, has-role evolves-to;" +
                 "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
                 "$x has name 'Pichu' isa pokemon;" +
@@ -357,8 +357,8 @@ public class QueryParserTest {
     @Test
     public void testInsertIsAbstractQuery() {
         InsertQuery expected = insert(
-                name("concrete-type").sub("entity"),
-                name("abstract-type").isAbstract().sub("entity")
+                label("concrete-type").sub("entity"),
+                label("abstract-type").isAbstract().sub("entity")
         );
 
         InsertQuery parsed = parse(
@@ -378,7 +378,7 @@ public class QueryParserTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        InsertQuery expected = insert(name("my-type").sub("resource").datatype(ResourceType.DataType.LONG));
+        InsertQuery expected = insert(label("my-type").sub("resource").datatype(ResourceType.DataType.LONG));
         InsertQuery parsed = parse("insert my-type sub resource, datatype long;");
         assertEquals(expected, parsed);
     }
@@ -410,7 +410,7 @@ public class QueryParserTest {
         Pattern rhsPattern = and(parsePatterns(rhs));
 
         InsertQuery expected = insert(
-                name("my-rule-thing").sub("rule"), var().isa("my-rule-thing").lhs(lhsPattern).rhs(rhsPattern)
+                label("my-rule-thing").sub("rule"), var().isa("my-rule-thing").lhs(lhsPattern).rhs(rhsPattern)
         );
 
         InsertQuery parsed = parse(

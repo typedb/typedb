@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -68,6 +68,6 @@ public class AskQueryTest {
 
     @Test
     public void testAskNoVariables() {
-        assertTrue(qb.match(name("person").playsRole("actor")).ask().execute());
+        assertTrue(qb.match(label("person").playsRole("actor")).ask().execute());
     }
 }

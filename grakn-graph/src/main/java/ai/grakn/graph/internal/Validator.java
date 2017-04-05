@@ -73,7 +73,7 @@ class Validator {
                 }
             } else if (nextToValidate.isCasting()) {
                 validateCasting((CastingImpl) nextToValidate);
-            } else if (nextToValidate.isType() && !Schema.MetaSchema.isMetaName(nextToValidate.asType().getName())) {
+            } else if (nextToValidate.isType() && !Schema.MetaSchema.isMetaLabel(nextToValidate.asType().getLabel())) {
                 validateType((TypeImpl) nextToValidate);
 
                 if (nextToValidate.isRoleType()) {

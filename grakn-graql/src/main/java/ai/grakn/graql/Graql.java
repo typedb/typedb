@@ -157,19 +157,19 @@ public class Graql {
     }
 
     /**
-     * @param name the name of a concept
-     * @return a query variable that identifies a concept by name
+     * @param label the label of a concept
+     * @return a query variable that identifies a concept by label
      */
-    public static Var name(TypeLabel name) {
-        return var().name(name);
+    public static Var label(TypeLabel label) {
+        return var().label(label);
     }
 
     /**
-     * @param name the name of a concept
-     * @return a query variable that identifies a concept by name
+     * @param label the label of a concept
+     * @return a query variable that identifies a concept by label
      */
-    public static Var name(String name) {
-        return var().name(name);
+    public static Var label(String label) {
+        return var().label(label);
     }
 
     /**

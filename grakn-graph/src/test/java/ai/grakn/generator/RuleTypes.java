@@ -32,8 +32,8 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
     }
 
     @Override
-    protected RuleType newType(TypeLabel name) {
-        return graph().putRuleType(name);
+    protected RuleType newType(TypeLabel label) {
+        return graph().putRuleType(label);
     }
 
     @Override

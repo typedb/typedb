@@ -48,7 +48,7 @@ import static ai.grakn.graph.property.PropertyUtil.directSubTypes;
 import static ai.grakn.graph.property.PropertyUtil.indirectSuperTypes;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.Schema.MetaSchema.isMetaName;
+import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -73,7 +73,7 @@ public class TypePropertyTest {
     @Property
     public void whenSettingAMetaTypeAsAbstract_Throw(@Meta Type type, boolean isAbstract) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.setAbstract(isAbstract);
     }
 
@@ -82,21 +82,21 @@ public class TypePropertyTest {
         assumeThat(type, not(is(roleType)));
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.playsRole(roleType);
     }
 
     @Property
     public void whenGivingAMetaTypeAKey_Throw(@Meta Type type, ResourceType resourceType) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.key(resourceType);
     }
 
     @Property
     public void whenGivingAMetaTypeAResource_Throw(@Meta Type type, ResourceType resourceType) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.resource(resourceType);
     }
 
@@ -104,8 +104,8 @@ public class TypePropertyTest {
     public void whenDeletingAMetaType_Throw(@Meta Type type) {
         exception.expect(ConceptException.class);
         exception.expectMessage(isOneOf(
-                META_TYPE_IMMUTABLE.getMessage(type.getName()),
-                CANNOT_DELETE.getMessage(type.getName())
+                META_TYPE_IMMUTABLE.getMessage(type.getLabel()),
+                CANNOT_DELETE.getMessage(type.getLabel())
         ));
         type.delete();
     }
@@ -113,10 +113,10 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingATypeWithDirectSubTypes_Throw(@Meta(false) Type type) {
         Type superType = type.superType();
-        assumeFalse(isMetaName(superType.getName()));
+        assumeFalse(isMetaLabel(superType.getLabel()));
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(superType.getName()));
+        exception.expectMessage(CANNOT_DELETE.getMessage(superType.getLabel()));
         superType.delete();
     }
 
@@ -125,7 +125,7 @@ public class TypePropertyTest {
         assumeThat(type.instances(), not(empty()));
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getName()));
+        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
         type.delete();
     }
 
@@ -135,7 +135,7 @@ public class TypePropertyTest {
         assumeThat(type.getRulesOfHypothesis(), not(empty()));
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getName()));
+        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
         type.delete();
     }
 
@@ -145,21 +145,21 @@ public class TypePropertyTest {
         assumeThat(type.getRulesOfConclusion(), not(empty()));
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(CANNOT_DELETE.getMessage(type.getName()));
+        exception.expectMessage(CANNOT_DELETE.getMessage(type.getLabel()));
         type.delete();
     }
 
     @Property
     public void whenCallingGetName_TheResultIsUnique(Type type1, @FromGraph Type type2) {
         assumeThat(type1, not(is(type2)));
-        assertNotEquals(type1.getName(), type2.getName());
+        assertNotEquals(type1.getLabel(), type2.getLabel());
     }
 
     @Property
-    public void whenCallingGetName_TheResultCanBeUsedToRetrieveTheSameType(
+    public void whenCallingGetLabel_TheResultCanBeUsedToRetrieveTheSameType(
             @Open GraknGraph graph, @FromGraph Type type) {
-        TypeLabel name = type.getName();
-        assertEquals(type, graph.getType(name));
+        TypeLabel label = type.getLabel();
+        assertEquals(type, graph.getType(label));
     }
 
     @Ignore // TODO: Make this pass!
@@ -275,7 +275,7 @@ public class TypePropertyTest {
             Type type, @FromGraph RoleType roleType, long seed) {
         Type superType = choose(indirectSuperTypes(type), seed);
 
-        assumeFalse(isMetaName(superType.getName()));
+        assumeFalse(isMetaLabel(superType.getLabel()));
         assumeThat(superType, not(is(roleType)));
 
         Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.playsRoles());

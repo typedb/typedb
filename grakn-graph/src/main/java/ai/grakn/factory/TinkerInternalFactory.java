@@ -44,7 +44,7 @@ class TinkerInternalFactory extends AbstractInternalFactory<GraknTinkerGraph, Ti
     }
 
     boolean isClosed(TinkerGraph innerGraph) {
-        return !innerGraph.traversal().V().has(Schema.ConceptProperty.NAME.name(), Schema.MetaSchema.ENTITY.getName().getValue()).hasNext();
+        return !innerGraph.traversal().V().has(Schema.ConceptProperty.NAME.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
     }
 
     @Override

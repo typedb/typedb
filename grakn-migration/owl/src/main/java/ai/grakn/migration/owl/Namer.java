@@ -78,36 +78,36 @@ public interface Namer {
      * Make a name for the role type corresponding to the object (i.e. range) of an OWL object
      * property.
      *  
-     * @param relationName The name of the Grakn <code>RelationType</code>.
+     * @param relationLabel The label of the Grakn <code>RelationType</code>.
      */
-    default TypeLabel objectRole(TypeLabel relationName) {
-        return relationName.map(relation -> OwlModel.OBJECT.owlname() + "-" + relation);
+    default TypeLabel objectRole(TypeLabel relationLabel) {
+        return relationLabel.map(relation -> OwlModel.OBJECT.owlname() + "-" + relation);
     }
     /**
      * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
      * property.
      *  
-     * @param relationName The name of the Grakn <code>RelationType</code>.
+     * @param relationLabel The label of the Grakn <code>RelationType</code>.
      */
-    default TypeLabel subjectRole(TypeLabel relationName) {
-        return relationName.map(relation -> OwlModel.SUBJECT.owlname() + "-" + relation);
+    default TypeLabel subjectRole(TypeLabel relationLabel) {
+        return relationLabel.map(relation -> OwlModel.SUBJECT.owlname() + "-" + relation);
     }
     /**
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
     default TypeLabel entityRole(TypeLabel resourceTypeLabel) {
-        return Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeLabel);
+        return Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(resourceTypeLabel);
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
      */
     default TypeLabel resourceRelation(TypeLabel resourceTypeLabel) {
-        return Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeLabel);
+        return Schema.ImplicitType.HAS_RESOURCE.getLabel(resourceTypeLabel);
     }
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
     default TypeLabel resourceRole(TypeLabel resourceTypeLabel) {
-        return Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeLabel);
+        return Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(resourceTypeLabel);
     }
 }

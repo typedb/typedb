@@ -184,14 +184,14 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 .map(VarAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
-        Optional<TypeLabel> maybeName =
+        Optional<TypeLabel> maybeLabel =
                 var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeLabel);
 
-        maybeName.ifPresent(name -> {
-            Type type = graph.getType(name);
+        maybeLabel.ifPresent(label -> {
+            Type type = graph.getType(label);
 
             if (type == null || !type.isRelationType()) {
-                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(name));
+                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
             }
         });
 

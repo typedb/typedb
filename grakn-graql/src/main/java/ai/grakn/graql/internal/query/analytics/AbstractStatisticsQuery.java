@@ -22,6 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.internal.util.StringConverter;
 import ai.grakn.util.ErrorMessage;
@@ -37,7 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
@@ -85,20 +85,20 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
             throw new IllegalStateException(ErrorMessage.RESOURCE_TYPE_NOT_SPECIFIED.getMessage());
         }
 
-        Set<Type> statisticsResourceTypes = statisticsResourceTypeLabels.stream().map((name) -> {
-            Type type = graph.getType(name);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(name));
+        Set<Type> statisticsResourceTypes = statisticsResourceTypeLabels.stream().map((label) -> {
+            Type type = graph.getType(label);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
             return type;
         }).collect(Collectors.toSet());
         for (Type type : statisticsResourceTypes) {
-            type.subTypes().forEach(subtype -> this.statisticsResourceTypeLabels.add(subtype.getName()));
+            type.subTypes().forEach(subtype -> this.statisticsResourceTypeLabels.add(subtype.getLabel()));
         }
 
         ResourceType<?> metaResourceType = graph.admin().getMetaResourceType();
         metaResourceType.subTypes().stream()
                 .filter(type -> !type.equals(metaResourceType))
                 .forEach(type -> resourceTypesDataTypeMap
-                        .put(type.asType().getName(), type.asResourceType().getDataType().getName()));
+                        .put(type.asType().getLabel(), type.asResourceType().getDataType().getName()));
     }
 
     String checkSelectedResourceTypesHaveCorrectDataType(Set<TypeLabel> types) {
@@ -140,7 +140,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
         List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
                 .map(type -> var("x").has(type, var())).collect(Collectors.toList());
         List<Pattern> checkSubtypes = subTypeLabels.stream()
-                .map(type -> var("x").isa(name(type))).collect(Collectors.toList());
+                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
 
         if(graph.isPresent()) {
             return graph.get().graql().infer(false).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
@@ -151,7 +151,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<TypeLabel> getCombinedSubTypes() {
         Set<TypeLabel> allSubTypes = statisticsResourceTypeLabels.stream()
-                .map(Schema.ImplicitType.HAS_RESOURCE::getName).collect(Collectors.toSet());
+                .map(Schema.ImplicitType.HAS_RESOURCE::getLabel).collect(Collectors.toSet());
         allSubTypes.addAll(subTypeLabels);
         allSubTypes.addAll(statisticsResourceTypeLabels);
         return allSubTypes;

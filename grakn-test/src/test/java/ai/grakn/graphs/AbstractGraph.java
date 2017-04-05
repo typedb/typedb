@@ -71,9 +71,9 @@ public class AbstractGraph extends TestGraph {
 
     @Override
     protected void buildInstances(GraknGraph graph) {
-        instanceU = putEntity(graph, "instanceU", u, key.getName());
-        instanceT = putEntity(graph, "instanceT", t, key.getName());
-        instanceP = putEntity(graph, "instanceP", P, key.getName());
+        instanceU = putEntity(graph, "instanceU", u, key.getLabel());
+        instanceT = putEntity(graph, "instanceT", t, key.getLabel());
+        instanceP = putEntity(graph, "instanceP", P, key.getLabel());
     }
 
     @Override

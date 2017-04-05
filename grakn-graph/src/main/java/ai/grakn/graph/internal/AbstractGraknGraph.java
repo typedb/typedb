@@ -208,14 +208,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings("unchecked")
     private boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
-            Vertex type = putVertex(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
-            Vertex entityType = putVertex(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
-            Vertex relationType = putVertex(Schema.MetaSchema.RELATION.getName(), Schema.BaseType.RELATION_TYPE);
-            Vertex resourceType = putVertex(Schema.MetaSchema.RESOURCE.getName(), Schema.BaseType.RESOURCE_TYPE);
-            Vertex roleType = putVertex(Schema.MetaSchema.ROLE.getName(), Schema.BaseType.ROLE_TYPE);
-            Vertex ruleType = putVertex(Schema.MetaSchema.RULE.getName(), Schema.BaseType.RULE_TYPE);
-            Vertex inferenceRuleType = putVertex(Schema.MetaSchema.INFERENCE_RULE.getName(), Schema.BaseType.RULE_TYPE);
-            Vertex constraintRuleType = putVertex(Schema.MetaSchema.CONSTRAINT_RULE.getName(), Schema.BaseType.RULE_TYPE);
+            Vertex type = putVertex(Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
+            Vertex entityType = putVertex(Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+            Vertex relationType = putVertex(Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+            Vertex resourceType = putVertex(Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
+            Vertex roleType = putVertex(Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE_TYPE);
+            Vertex ruleType = putVertex(Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            Vertex inferenceRuleType = putVertex(Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
+            Vertex constraintRuleType = putVertex(Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
 
             relationType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
             roleType.property(Schema.ConceptProperty.IS_ABSTRACT.name(), true);
@@ -336,7 +336,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
         for (Type type : getCloneCache().values()) {
             //noinspection unchecked
-            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getName()));
+            ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
         }
 
         //Purge clone cache to save memory
@@ -352,15 +352,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     <X extends Type> X clone(X type){
         //Is a cloning even needed?
-        if(getCloneCache().containsKey(type.getName())){
-            return (X) getCloneCache().get(type.getName());
+        if(getCloneCache().containsKey(type.getLabel())){
+            return (X) getCloneCache().get(type.getLabel());
         }
 
         //If the clone has not happened then make a new one
         Type clonedType = type.copy();
 
         //Update clone cache so we don't clone multiple concepts in the same transaction
-        getCloneCache().put(clonedType.getName(), clonedType);
+        getCloneCache().put(clonedType.getLabel(), clonedType);
 
         return (X) clonedType;
     }
@@ -395,15 +395,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return vertex;
     }
 
-    private Vertex putVertex(TypeLabel name, Schema.BaseType baseType){
+    private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        ConceptImpl concept = getConcept(Schema.ConceptProperty.NAME, name.getValue());
+        ConceptImpl concept = getConcept(Schema.ConceptProperty.NAME, label.getValue());
         if(concept == null) {
             vertex = addVertex(baseType);
-            vertex.property(Schema.ConceptProperty.NAME.name(), name.getValue());
+            vertex.property(Schema.ConceptProperty.NAME.name(), label.getValue());
         } else {
             if(!baseType.name().equals(concept.getBaseType())) {
-                throw new ConceptNotUniqueException(concept, name.getValue());
+                throw new ConceptNotUniqueException(concept, label.getValue());
             }
             vertex = concept.getVertex();
         }
@@ -411,21 +411,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public EntityType putEntityType(String name) {
-        return putEntityType(TypeLabel.of(name));
+    public EntityType putEntityType(String label) {
+        return putEntityType(TypeLabel.of(label));
     }
 
     @Override
-    public EntityType putEntityType(TypeLabel name) {
-        return putType(name, Schema.BaseType.ENTITY_TYPE,
+    public EntityType putEntityType(TypeLabel label) {
+        return putType(label, Schema.BaseType.ENTITY_TYPE,
                 v -> getElementFactory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends Type> T putType(TypeLabel name, Schema.BaseType baseType, Function<Vertex, T> factory){
+    private <T extends Type> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
         checkOntologyMutation();
-        Type type = buildType(name, () -> factory.apply(putVertex(name, baseType)));
+        Type type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
         return validateConceptType(type, baseType, () -> {
-            throw new ConceptNotUniqueException(type, name.getValue());
+            throw new ConceptNotUniqueException(type, label.getValue());
         });
     }
 
@@ -441,66 +441,66 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     /**
      * A helper method which either retrieves the type from the cache or builds it using a provided supplier
      *
-     * @param name The name of the type to retrieve or build
+     * @param label The label of the type to retrieve or build
      * @param dbBuilder A method which builds the type via a DB read or write
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private Type buildType(TypeLabel name, Supplier<Type> dbBuilder){
-        if(getConceptLog().isTypeCached(name)){
-            return getConceptLog().getCachedType(name);
+    private Type buildType(TypeLabel label, Supplier<Type> dbBuilder){
+        if(getConceptLog().isTypeCached(label)){
+            return getConceptLog().getCachedType(label);
         } else {
             return dbBuilder.get();
         }
     }
 
     @Override
-    public RelationType putRelationType(String name) {
-        return putRelationType(TypeLabel.of(name));
+    public RelationType putRelationType(String label) {
+        return putRelationType(TypeLabel.of(label));
     }
 
     @Override
-    public RelationType putRelationType(TypeLabel name) {
-        return putType(name, Schema.BaseType.RELATION_TYPE,
+    public RelationType putRelationType(TypeLabel label) {
+        return putType(label, Schema.BaseType.RELATION_TYPE,
                 v -> getElementFactory().buildRelationType(v, getMetaRelationType(), Boolean.FALSE)).asRelationType();
     }
 
-    RelationType putRelationTypeImplicit(TypeLabel name) {
-        return putType(name, Schema.BaseType.RELATION_TYPE,
+    RelationType putRelationTypeImplicit(TypeLabel label) {
+        return putType(label, Schema.BaseType.RELATION_TYPE,
                 v -> getElementFactory().buildRelationType(v, getMetaRelationType(), Boolean.TRUE)).asRelationType();
     }
 
     @Override
-    public RoleType putRoleType(String name) {
-        return putRoleType(TypeLabel.of(name));
+    public RoleType putRoleType(String label) {
+        return putRoleType(TypeLabel.of(label));
     }
 
     @Override
-    public RoleType putRoleType(TypeLabel name) {
-        return putType(name, Schema.BaseType.ROLE_TYPE,
+    public RoleType putRoleType(TypeLabel label) {
+        return putType(label, Schema.BaseType.ROLE_TYPE,
                 v -> getElementFactory().buildRoleType(v, getMetaRoleType(), Boolean.FALSE)).asRoleType();
     }
 
-    RoleType putRoleTypeImplicit(TypeLabel name) {
-        return putType(name, Schema.BaseType.ROLE_TYPE,
+    RoleType putRoleTypeImplicit(TypeLabel label) {
+        return putType(label, Schema.BaseType.ROLE_TYPE,
                 v -> getElementFactory().buildRoleType(v, getMetaRoleType(), Boolean.TRUE)).asRoleType();
     }
 
     @Override
-    public <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType) {
-        return putResourceType(TypeLabel.of(name), dataType);
+    public <V> ResourceType<V> putResourceType(String label, ResourceType.DataType<V> dataType) {
+        return putResourceType(TypeLabel.of(label), dataType);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public <V> ResourceType<V> putResourceType(TypeLabel name, ResourceType.DataType<V> dataType) {
+    public <V> ResourceType<V> putResourceType(TypeLabel label, ResourceType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        ResourceType<V> resourceType = putType(name, Schema.BaseType.RESOURCE_TYPE,
+        ResourceType<V> resourceType = putType(label, Schema.BaseType.RESOURCE_TYPE,
                 v -> getElementFactory().buildResourceType(v, getMetaResourceType(), dataType)).asResourceType();
 
-        //These checks is needed here because caching will return a type by name without checking the datatype
-        if(Schema.MetaSchema.isMetaName(name)) {
-            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(name));
+        //These checks is needed here because caching will return a type by label without checking the datatype
+        if(Schema.MetaSchema.isMetaLabel(label)) {
+            throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(label));
         } else if(!dataType.equals(resourceType.getDataType())){
             throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
         }
@@ -509,13 +509,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public RuleType putRuleType(String name) {
-        return putRuleType(TypeLabel.of(name));
+    public RuleType putRuleType(String label) {
+        return putRuleType(TypeLabel.of(label));
     }
 
     @Override
-    public RuleType putRuleType(TypeLabel name) {
-        return putType(name, Schema.BaseType.RULE_TYPE,
+    public RuleType putRuleType(TypeLabel label) {
+        return putType(label, Schema.BaseType.RULE_TYPE,
                 v ->  getElementFactory().buildRuleType(v, getMetaRuleType()));
     }
 
@@ -544,8 +544,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             return getConcept(Schema.ConceptProperty.ID, id.getValue());
         }
     }
-    private <T extends Type> T getTypeByName(TypeLabel name, Schema.BaseType baseType){
-        Type type = buildType(name, ()->getConcept(Schema.ConceptProperty.NAME, name.getValue()));
+    private <T extends Type> T getTypeByLabel(TypeLabel label, Schema.BaseType baseType){
+        Type type = buildType(label, ()->getConcept(Schema.ConceptProperty.NAME, label.getValue()));
         return validateConceptType(type, baseType, () -> null);
     }
 
@@ -574,73 +574,73 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends Type> T getType(TypeLabel name) {
-        return getTypeByName(name, Schema.BaseType.TYPE);
+    public <T extends Type> T getType(TypeLabel label) {
+        return getTypeByLabel(label, Schema.BaseType.TYPE);
     }
 
     @Override
-    public EntityType getEntityType(String name) {
-        return getTypeByName(TypeLabel.of(name), Schema.BaseType.ENTITY_TYPE);
+    public EntityType getEntityType(String label) {
+        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
-    public RelationType getRelationType(String name) {
-        return getTypeByName(TypeLabel.of(name), Schema.BaseType.RELATION_TYPE);
+    public RelationType getRelationType(String label) {
+        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override
-    public <V> ResourceType<V> getResourceType(String name) {
-        return getTypeByName(TypeLabel.of(name), Schema.BaseType.RESOURCE_TYPE);
+    public <V> ResourceType<V> getResourceType(String label) {
+        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.RESOURCE_TYPE);
     }
 
     @Override
-    public RoleType getRoleType(String name) {
-        return getTypeByName(TypeLabel.of(name), Schema.BaseType.ROLE_TYPE);
+    public RoleType getRoleType(String label) {
+        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.ROLE_TYPE);
     }
 
     @Override
-    public RuleType getRuleType(String name) {
-        return getTypeByName(TypeLabel.of(name), Schema.BaseType.RULE_TYPE);
+    public RuleType getRuleType(String label) {
+        return getTypeByLabel(TypeLabel.of(label), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public Type getMetaConcept() {
-        return getTypeByName(Schema.MetaSchema.CONCEPT.getName(), Schema.BaseType.TYPE);
+        return getTypeByLabel(Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
     }
 
     @Override
     public RelationType getMetaRelationType() {
-        return getTypeByName(Schema.MetaSchema.RELATION.getName(), Schema.BaseType.RELATION_TYPE);
+        return getTypeByLabel(Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
     }
 
     @Override
     public RoleType getMetaRoleType() {
-        return getTypeByName(Schema.MetaSchema.ROLE.getName(), Schema.BaseType.ROLE_TYPE);
+        return getTypeByLabel(Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE_TYPE);
     }
 
     @Override
     public ResourceType getMetaResourceType() {
-        return getTypeByName(Schema.MetaSchema.RESOURCE.getName(), Schema.BaseType.RESOURCE_TYPE);
+        return getTypeByLabel(Schema.MetaSchema.RESOURCE.getLabel(), Schema.BaseType.RESOURCE_TYPE);
     }
 
     @Override
     public EntityType getMetaEntityType() {
-        return getTypeByName(Schema.MetaSchema.ENTITY.getName(), Schema.BaseType.ENTITY_TYPE);
+        return getTypeByLabel(Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleType(){
-        return getTypeByName(Schema.MetaSchema.RULE.getName(), Schema.BaseType.RULE_TYPE);
+        return getTypeByLabel(Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getTypeByName(Schema.MetaSchema.INFERENCE_RULE.getName(), Schema.BaseType.RULE_TYPE);
+        return getTypeByLabel(Schema.MetaSchema.INFERENCE_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getTypeByName(Schema.MetaSchema.CONSTRAINT_RULE.getName(), Schema.BaseType.RULE_TYPE);
+        return getTypeByLabel(Schema.MetaSchema.CONSTRAINT_RULE.getLabel(), Schema.BaseType.RULE_TYPE);
     }
 
     //-----------------------------------------------Casting Functionality----------------------------------------------
@@ -682,14 +682,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_LABEL.name(), fromRelation.type().getName().getValue()).
-                has(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), roleType.getName().getValue()).inV().
+                has(Schema.EdgeProperty.RELATION_TYPE_LABEL.name(), fromRelation.type().getLabel().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), roleType.getLabel().getValue()).inV().
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
             EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_LABEL, fromRelation.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, roleType.getName().getValue());
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_LABEL, fromRelation.type().getLabel().getValue());
+            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, roleType.getLabel().getValue());
         }
     }
 

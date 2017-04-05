@@ -97,8 +97,8 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        TypeLabel roleName = role.getTypeLabel().orElseThrow(() -> failDelete(this));
-        concept.asRelationType().deleteHasRole(graph.getType(roleName));
+        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> failDelete(this));
+        concept.asRelationType().deleteHasRole(graph.getType(roleLabel));
     }
 
     @Override

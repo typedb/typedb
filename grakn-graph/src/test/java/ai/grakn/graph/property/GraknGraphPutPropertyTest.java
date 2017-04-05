@@ -44,7 +44,7 @@ import org.junit.runner.RunWith;
 
 import java.util.function.BiFunction;
 
-import static ai.grakn.util.Schema.MetaSchema.isMetaName;
+import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -67,7 +67,7 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph,
             @Unused TypeLabel typeLabel, @From(PutTypeFunctions.class) BiFunction<GraknGraph, TypeLabel, Type> putType) {
         Type type = putType.apply(graph, typeLabel);
-        assertEquals(typeLabel, type.getName());
+        assertEquals(typeLabel, type.getLabel());
     }
 
     @Property
@@ -95,7 +95,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutEntityTypeWithAnExistingEntityTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph EntityType entityType) {
-        EntityType newType = graph.putEntityType(entityType.getName());
+        EntityType newType = graph.putEntityType(entityType.getLabel());
         assertEquals(entityType, newType);
     }
 
@@ -105,9 +105,9 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isEntityType());
 
         exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
 
-        graph.putEntityType(type.getName());
+        graph.putEntityType(type.getLabel());
     }
 
     @Property
@@ -131,7 +131,7 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph  ResourceType<?> resourceType) {
         assumeFalse(resourceType.equals(graph.admin().getMetaResourceType()));
 
-        TypeLabel typeLabel = resourceType.getName();
+        TypeLabel typeLabel = resourceType.getLabel();
         ResourceType.DataType<?> dataType = resourceType.getDataType();
 
         ResourceType<?> newType = graph.putResourceType(typeLabel, dataType);
@@ -145,9 +145,9 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isResourceType());
 
         exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
 
-        graph.putResourceType(type.getName(), dataType);
+        graph.putResourceType(type.getLabel(), dataType);
     }
 
     @Property
@@ -155,10 +155,10 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @FromGraph ResourceType<?> resourceType,
             ResourceType.DataType<?> dataType) {
         assumeThat(dataType, not(is(resourceType.getDataType())));
-        TypeLabel typeLabel = resourceType.getName();
+        TypeLabel typeLabel = resourceType.getLabel();
 
         exception.expect(ConceptException.class);
-        if(isMetaName(typeLabel)) {
+        if(isMetaLabel(typeLabel)) {
             exception.expectMessage(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(typeLabel));
         } else {
             exception.expectMessage(ErrorMessage.IMMUTABLE_VALUE.getMessage(resourceType.getDataType(), resourceType, dataType, Schema.ConceptProperty.DATA_TYPE.name()));
@@ -176,7 +176,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRuleTypeWithAnExistingRuleTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RuleType ruleType) {
-        RuleType newType = graph.putRuleType(ruleType.getName());
+        RuleType newType = graph.putRuleType(ruleType.getLabel());
         assertEquals(ruleType, newType);
     }
 
@@ -186,9 +186,9 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isRuleType());
 
         exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
 
-        graph.putRuleType(type.getName());
+        graph.putRuleType(type.getLabel());
     }
 
     @Property
@@ -209,7 +209,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRelationTypeWithAnExistingRelationTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RelationType relationType) {
-        RelationType newType = graph.putRelationType(relationType.getName());
+        RelationType newType = graph.putRelationType(relationType.getLabel());
         assertEquals(relationType, newType);
     }
 
@@ -219,9 +219,9 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isRelationType());
 
         exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
 
-        graph.putRelationType(type.getName());
+        graph.putRelationType(type.getLabel());
     }
 
     @Property
@@ -242,7 +242,7 @@ public class GraknGraphPutPropertyTest {
     @Property
     public void whenCallingPutRoleTypeWithAnExistingRoleTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph RoleType roleType) {
-        RoleType newType = graph.putRoleType(roleType.getName());
+        RoleType newType = graph.putRoleType(roleType.getLabel());
         assertEquals(roleType, newType);
     }
 
@@ -252,8 +252,8 @@ public class GraknGraphPutPropertyTest {
         assumeFalse(type.isRoleType());
 
         exception.expect(ConceptNotUniqueException.class);
-        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getName(), type));
+        exception.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage(type.getLabel(), type));
 
-        graph.putRoleType(type.getName());
+        graph.putRoleType(type.getLabel());
     }
 }

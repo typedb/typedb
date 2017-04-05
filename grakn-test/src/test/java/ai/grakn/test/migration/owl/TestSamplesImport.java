@@ -95,7 +95,7 @@ public class TestSamplesImport extends TestOwlGraknBase {
             Assert.assertNotNull(type);
             Assert.assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
             Assert.assertNotNull(type.superType());
-            Assert.assertEquals("tPerson", type.superType().getName());
+            Assert.assertEquals("tPerson", type.superType().getLabel());
             Assert.assertEquals(top, type.superType().superType());
             assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
             Assert.assertNotEquals(0, type.instances().size());

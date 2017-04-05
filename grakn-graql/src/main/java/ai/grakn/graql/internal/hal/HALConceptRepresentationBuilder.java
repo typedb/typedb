@@ -78,7 +78,7 @@ public class HALConceptRepresentationBuilder {
 
 
         //Collect all the types explicitly asked in the match query
-        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
+        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getLabel()).collect(Collectors.toSet());
 
 
         return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, roleTypes, keyspace, offset, limit);
@@ -225,7 +225,7 @@ public class HALConceptRepresentationBuilder {
             return Schema.BaseType.RULE_TYPE;
         } else if (type.isRoleType()) {
             return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
+        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
             throw new RuntimeException("Unrecognized base type of " + type);
@@ -238,7 +238,7 @@ public class HALConceptRepresentationBuilder {
 
         if (concept.isInstance()) {
             Instance instance = concept.asInstance();
-            resource.withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
+            resource.withProperty(TYPE_PROPERTY, instance.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else {
             resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
@@ -248,7 +248,7 @@ public class HALConceptRepresentationBuilder {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
         }
         if(concept.isType()){
-            resource.withProperty(NAME_PROPERTY, concept.asType().getName().getValue());
+            resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
         }
     }
 }

@@ -102,11 +102,11 @@ public interface Type extends Concept {
     //------------------------------------- Accessors ---------------------------------
 
     /**
-     * Returns the unique name of this Type.
+     * Returns the unique label of this Type.
      *
-     * @return The unique name of this type
+     * @return The unique label of this type
      */
-    TypeLabel getName();
+    TypeLabel getLabel();
 
     /**
      *

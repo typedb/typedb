@@ -54,12 +54,12 @@ public class MatchableConcept {
 
             Collection<Resource<?>> resources = concept.asInstance().resources();
             Optional<?> value = resources.stream()
-                    .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
+                    .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Resource::getValue).findFirst();
 
             return "instance(" + value.map(StringConverter::valueToString).orElse("") + ")";
         } else {
-            return "type(" + typeLabelToString(concept.asType().getName()) + ")";
+            return "type(" + typeLabelToString(concept.asType().getLabel()) + ")";
         }
     }
 }

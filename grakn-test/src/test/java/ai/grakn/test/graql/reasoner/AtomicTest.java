@@ -429,8 +429,8 @@ public class AtomicTest {
     @Test
     public void testIndirectRoleUnification(){
         GraknGraph graph = genealogyOntology.graph();
-        String childRelation = "{($r1: $x1, $r2: $x2) isa parentship;$r1 type-name 'father';$r2 type-name 'daughter';}";
-        String parentRelation = "{($R1: $x, $R2: $y) isa parentship;$R1 type-name 'father';$R2 type-name 'daughter';}";
+        String childRelation = "{($r1: $x1, $r2: $x2) isa parentship;$r1 label 'father';$r2 label 'daughter';}";
+        String parentRelation = "{($R1: $x, $R2: $y) isa parentship;$R1 label 'father';$R2 label 'daughter';}";
         Atom childAtom = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph).getAtom();
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
 
@@ -451,8 +451,8 @@ public class AtomicTest {
     @Test
     public void testIndirectRoleUnification2(){
         GraknGraph graph = genealogyOntology.graph();
-        String childRelation = "{($r1: $x1, $r2: $x2);$r1 type-name 'father';$r2 type-name 'daughter';}";
-        String parentRelation = "{($R1: $x, $R2: $y);$R1 type-name 'father';$R2 type-name 'daughter';}";
+        String childRelation = "{($r1: $x1, $r2: $x2);$r1 label 'father';$r2 label 'daughter';}";
+        String parentRelation = "{($R1: $x, $R2: $y);$R1 label 'father';$R2 label 'daughter';}";
 
         Atom childAtom = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph).getAtom();
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();

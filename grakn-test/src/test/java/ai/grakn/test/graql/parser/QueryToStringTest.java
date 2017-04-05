@@ -31,9 +31,9 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.and;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.lte;
 import static ai.grakn.graql.Graql.match;
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
@@ -53,7 +53,7 @@ public class QueryToStringTest {
 
     @Test
     public void testSimpleMatchQueryToString() {
-        assertSameResults(qb.match(var("x").isa("movie").name("Godfather")));
+        assertSameResults(qb.match(var("x").isa("movie").label("Godfather")));
     }
 
     @Test
@@ -135,7 +135,7 @@ public class QueryToStringTest {
     public void testQuoteIds() {
         assertEquals(
                 "match $a (\"hello\\tworld\");",
-                match(var("a").rel(name("hello\tworld"))).toString()
+                match(var("a").rel(label("hello\tworld"))).toString()
         );
     }
 
@@ -143,7 +143,7 @@ public class QueryToStringTest {
     public void testQuoteIdsNumbers() {
         assertEquals(
                 "match $a (\"1hi\");",
-                match(var("a").rel(name("1hi"))).toString()
+                match(var("a").rel(label("1hi"))).toString()
         );
     }
 

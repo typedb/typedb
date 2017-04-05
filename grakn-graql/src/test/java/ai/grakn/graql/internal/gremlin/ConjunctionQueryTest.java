@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -40,7 +41,6 @@ import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.gt;
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
@@ -52,10 +52,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConjunctionQueryTest {
-    private TypeLabel resourceTypeWithoutSubTypesName = TypeLabel.of("name");
-    private TypeLabel resourceTypeWithSubTypesName = TypeLabel.of("resource");
-    private Var resourceTypeWithoutSubTypes = name(resourceTypeWithoutSubTypesName);
-    private Var resourceTypeWithSubTypes = name(resourceTypeWithSubTypesName);
+    private TypeLabel resourceTypeWithoutSubTypesLabel = TypeLabel.of("name");
+    private TypeLabel resourceTypeWithSubTypesLabel = TypeLabel.of("resource");
+    private Var resourceTypeWithoutSubTypes = Graql.label(resourceTypeWithoutSubTypesLabel);
+    private Var resourceTypeWithSubTypes = Graql.label(resourceTypeWithSubTypesLabel);
     private String literalValue = "Bob";
     private GraknGraph graph;
     private VarName x = VarName.of("x");
@@ -72,8 +72,8 @@ public class ConjunctionQueryTest {
         doReturn(ImmutableList.of(resourceTypeWithoutSubTypesMock, resourceTypeWithSubTypesMock))
                 .when(resourceTypeWithSubTypesMock).subTypes();
 
-        when(graph.getType(resourceTypeWithoutSubTypesName)).thenReturn(resourceTypeWithoutSubTypesMock);
-        when(graph.getType(resourceTypeWithSubTypesName)).thenReturn(resourceTypeWithSubTypesMock);
+        when(graph.getType(resourceTypeWithoutSubTypesLabel)).thenReturn(resourceTypeWithoutSubTypesMock);
+        when(graph.getType(resourceTypeWithSubTypesLabel)).thenReturn(resourceTypeWithSubTypesMock);
     }
 
     @Test
@@ -93,13 +93,13 @@ public class ConjunctionQueryTest {
 
     @Test
     public void whenVarRefersToATypeWithAnExplicitVarName_UseResourceIndex() {
-        assertThat(var(x).isa(var(y).name(resourceTypeWithoutSubTypesName)).value(literalValue), usesResourceIndex());
+        assertThat(var(x).isa(var(y).label(resourceTypeWithoutSubTypesLabel)).value(literalValue), usesResourceIndex());
     }
 
     @Test
     public void whenQueryUsesHasSyntax_UseResourceIndex() {
         assertThat(
-                var(x).has(resourceTypeWithoutSubTypesName, var(y).value(literalValue)),
+                var(x).has(resourceTypeWithoutSubTypesLabel, var(y).value(literalValue)),
                 usesResourceIndex(y, literalValue)
         );
     }
@@ -137,7 +137,7 @@ public class ConjunctionQueryTest {
     }
 
     private Matcher<Pattern> usesResourceIndex(VarName varName, Object value) {
-        Fragment resourceIndexFragment = Fragments.resourceIndex(varName, resourceTypeWithoutSubTypesName, value);
+        Fragment resourceIndexFragment = Fragments.resourceIndex(varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<VarAdmin> conjunction = pattern.admin().getDisjunctiveNormalForm().getPatterns().iterator().next();

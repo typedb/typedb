@@ -150,7 +150,7 @@ public class GraknGraphTest extends GraphTestBase {
         EntityType type = graknGraph.putEntityType("Concept Type");
         Entity entity = type.addEntity();
 
-        Collection<Concept> results = graknGraph.graql().match(var("x").isa(type.getName().getValue())).
+        Collection<Concept> results = graknGraph.graql().match(var("x").isa(type.getLabel().getValue())).
                 execute().iterator().next().values();
 
         assertThat(results, containsInAnyOrder(entity));
@@ -176,9 +176,9 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType));
 
         //Check things are still returned when explicitly asking for them
-        RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceType.getName()).getValue());
-        RoleType hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceType.getName()).getValue());
-        RoleType hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceType.getName()).getValue());
+        RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(resourceType.getLabel()).getValue());
+        RoleType hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(resourceType.getLabel()).getValue());
+        RoleType hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(resourceType.getLabel()).getValue());
         assertNotNull(hasOwner);
         assertNotNull(hasValue);
         assertNotNull(has);
@@ -264,7 +264,7 @@ public class GraknGraphTest extends GraphTestBase {
         }).get();
 
         //Check the above mutation did not affect central repo
-        Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
+        Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getLabel());
         assertTrue("Main cache was affected by transaction", foundE1.playsRoles().contains(r1));
     }
 

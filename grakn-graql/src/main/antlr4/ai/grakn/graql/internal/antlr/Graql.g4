@@ -47,9 +47,9 @@ cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (SI
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
-ofList         : nameList ;
-inList         : nameList ;
-nameList       : name (',' name)* ;
+ofList         : labelList ;
+inList         : labelList ;
+labelList      : label (',' label)* ;
 
 aggregate      : identifier argument*             # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
@@ -74,12 +74,12 @@ property       : 'isa' variable                 # isa
                | 'plays-role' variable          # playsRole
                | 'has-scope' VARIABLE           # hasScope
                | 'id' id                        # propId
-               | 'type-name' name               # propName
+               | 'label' label                  # propLabel
                | 'value' predicate              # propValue
                | 'lhs' '{' patterns '}'         # propLhs
                | 'rhs' '{' varPatterns '}'      # propRhs
-               | 'has' name? VARIABLE           # propHasVariable
-               | 'has' name predicate           # propHas
+               | 'has' label? VARIABLE          # propHasVariable
+               | 'has' label predicate          # propHas
                | 'has-resource' variable        # propResource
                | 'has-key' variable             # propKey
                | '(' casting (',' casting)* ')' # propRel
@@ -93,7 +93,7 @@ property       : 'isa' variable                 # isa
 casting        : variable (':' VARIABLE)?
                | variable VARIABLE         {notifyErrorListeners("expecting {',', ':'}");};
 
-variable       : name | VARIABLE ;
+variable       : label | VARIABLE ;
 
 predicate      : '='? value        # predicateEq
                | '=' VARIABLE      # predicateVariable
@@ -114,7 +114,7 @@ value          : STRING   # valueString
                | BOOLEAN  # valueBoolean
                ;
 
-name           : identifier ;
+label          : identifier ;
 id             : identifier ;
 
 // Some keywords can also be used as identifiers

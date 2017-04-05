@@ -152,7 +152,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<TypeLabel> roleTypeLabels = Arrays.stream(roleTypes).map(RoleType::getName).collect(Collectors.toSet());
+        Set<TypeLabel> roleTypeLabels = Arrays.stream(roleTypes).map(RoleType::getLabel).collect(Collectors.toSet());
 
         InstanceImpl<?, ?> parent = this;
 
@@ -204,13 +204,13 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         }
 
 
-        TypeLabel name = resource.type().getName();
-        RelationType hasResource = getGraknGraph().getType(has.getName(name));
-        RoleType hasResourceTarget = getGraknGraph().getType(hasOwner.getName(name));
-        RoleType hasResourceValue = getGraknGraph().getType(hasValue.getName(name));
+        TypeLabel label = resource.type().getLabel();
+        RelationType hasResource = getGraknGraph().getType(has.getLabel(label));
+        RoleType hasResourceTarget = getGraknGraph().getType(hasOwner.getLabel(label));
+        RoleType hasResourceValue = getGraknGraph().getType(hasValue.getLabel(label));
 
         if(hasResource == null || hasResourceTarget == null || hasResourceValue == null){
-            throw new ConceptException(ErrorMessage.HAS_INVALID.getMessage(type().getName(), type, resource.type().getName()));
+            throw new ConceptException(ErrorMessage.HAS_INVALID.getMessage(type().getLabel(), type, resource.type().getLabel()));
         }
 
         Relation relation = hasResource.addRelation();
@@ -235,7 +235,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     protected T type(V type) {
         if(type != null){
-            setInternalType(type.getName());
+            setInternalType(type.getLabel());
             putEdge(type, Schema.EdgeLabel.ISA);
             cachedType.set(type);
         }

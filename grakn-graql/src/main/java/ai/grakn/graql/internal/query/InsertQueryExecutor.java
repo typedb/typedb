@@ -61,10 +61,10 @@ import static ai.grakn.util.ErrorMessage.INSERT_RECURSIVE;
 import static ai.grakn.util.ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE;
 import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_LHS;
 import static ai.grakn.util.ErrorMessage.INSERT_RULE_WITHOUT_RHS;
-import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_NAME;
+import static ai.grakn.util.ErrorMessage.INSERT_TYPE_WITHOUT_LABEL;
 import static ai.grakn.util.ErrorMessage.INSERT_UNDEFINED_VARIABLE;
 import static ai.grakn.util.ErrorMessage.INSERT_WITHOUT_TYPE;
-import static ai.grakn.util.ErrorMessage.NAME_NOT_FOUND;
+import static ai.grakn.util.ErrorMessage.LABEL_NOT_FOUND;
 
 /**
  * A class for executing insert queries.
@@ -180,16 +180,16 @@ public class InsertQueryExecutor {
         Optional<TypeLabel> typeLabel = var.getTypeLabel();
         Optional<ConceptId> id = var.getId();
 
-        typeLabel.ifPresent(name -> {
+        typeLabel.ifPresent(label -> {
             if (type.isPresent()) {
-                throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(name));
+                throw new IllegalStateException(INSERT_INSTANCE_WITH_NAME.getMessage(label));
             }
         });
 
-        // If type provided, then 'put' the concept, else 'get' it by ID or name
+        // If type provided, then 'put' the concept, else 'get' it by ID or label
         if (sub.isPresent()) {
-            TypeLabel name = getTypeLabelOrThrow(typeLabel);
-            return putType(name, var, sub.get());
+            TypeLabel label = getTypeLabelOrThrow(typeLabel);
+            return putType(label, var, sub.get());
         } else if (type.isPresent()) {
             return putInstance(id, var, type.get());
         } else if (id.isPresent()) {
@@ -198,7 +198,7 @@ public class InsertQueryExecutor {
             return concept;
         } else if (typeLabel.isPresent()) {
             Concept concept = graph.getType(typeLabel.get());
-            if (concept == null) throw new IllegalStateException(NAME_NOT_FOUND.getMessage(typeLabel.get()));
+            if (concept == null) throw new IllegalStateException(LABEL_NOT_FOUND.getMessage(typeLabel.get()));
             return concept;
         } else {
             throw new IllegalStateException(INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
@@ -264,34 +264,34 @@ public class InsertQueryExecutor {
                         .orElseThrow(() -> new IllegalStateException(INSERT_RULE_WITHOUT_RHS.getMessage(var)));
                 return type.asRuleType().putRule(lhs.getPattern(), rhs.getPattern());
             });
-        } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
-            throw new IllegalStateException(var + " cannot be an instance of meta-type " + type.getName());
+        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
+            throw new IllegalStateException(var + " cannot be an instance of meta-type " + type.getLabel());
         } else {
-            throw new RuntimeException("Unrecognized type " + type.getName());
+            throw new RuntimeException("Unrecognized type " + type.getLabel());
         }
     }
 
     /**
-     * @param name the name of the concept
+     * @param label the label of the concept
      * @param var the Var representing the concept in the insert query
      * @param sub the supertype property of the var
      * @return a concept with the given ID and the specified type
      */
-    private Type putType(TypeLabel name, VarAdmin var, SubProperty sub) {
+    private Type putType(TypeLabel label, VarAdmin var, SubProperty sub) {
         Type superType = getConcept(sub.getSuperType()).asType();
 
         if (superType.isEntityType()) {
-            return graph.putEntityType(name).superType(superType.asEntityType());
+            return graph.putEntityType(label).superType(superType.asEntityType());
         } else if (superType.isRelationType()) {
-            return graph.putRelationType(name).superType(superType.asRelationType());
+            return graph.putRelationType(label).superType(superType.asRelationType());
         } else if (superType.isRoleType()) {
-            return graph.putRoleType(name).superType(superType.asRoleType());
+            return graph.putRoleType(label).superType(superType.asRoleType());
         } else if (superType.isResourceType()) {
-            return graph.putResourceType(name, getDataType(var)).superType(superType.asResourceType());
+            return graph.putResourceType(label, getDataType(var)).superType(superType.asResourceType());
         } else if (superType.isRuleType()) {
-            return graph.putRuleType(name).superType(superType.asRuleType());
+            return graph.putRuleType(label).superType(superType.asRuleType());
         } else {
-            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(name, superType.getName()));
+            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(label, superType.getLabel()));
         }
     }
 
@@ -308,14 +308,14 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * Get a name from an optional for a type, throwing an exception if it is not present.
-     * This is because types must have specified names.
-     * @param name an optional name to get
-     * @return the name, if present
-     * @throws IllegalStateException if the name was not present
+     * Get a label from an optional for a type, throwing an exception if it is not present.
+     * This is because types must have specified labels.
+     * @param label an optional label to get
+     * @return the label, if present
+     * @throws IllegalStateException if the label was not present
      */
-    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> name) throws IllegalStateException {
-        return name.orElseThrow(() -> new IllegalStateException(INSERT_TYPE_WITHOUT_NAME.getMessage()));
+    private TypeLabel getTypeLabelOrThrow(Optional<TypeLabel> label) throws IllegalStateException {
+        return label.orElseThrow(() -> new IllegalStateException(INSERT_TYPE_WITHOUT_LABEL.getMessage()));
     }
 
     private Object getValue(VarAdmin var) {

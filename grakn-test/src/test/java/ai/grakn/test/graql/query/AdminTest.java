@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
@@ -61,7 +61,7 @@ public class AdminTest {
     @Test
     public void testGetTypesInQuery() {
         MatchQuery query = qb.match(
-                var("x").isa(name("movie").sub("production")).has("tmdb-vote-count", 400),
+                var("x").isa(label("movie").sub("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
         );

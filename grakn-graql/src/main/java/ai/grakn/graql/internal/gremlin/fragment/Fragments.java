@@ -125,8 +125,8 @@ public class Fragments {
         return new IdFragment(start, id);
     }
 
-    public static Fragment name(VarName start, TypeLabel name) {
-        return new NameFragment(start, name);
+    public static Fragment label(VarName start, TypeLabel label) {
+        return new LabelFragment(start, label);
     }
 
     public static Fragment value(VarName start, ValuePredicateAdmin predicate) {

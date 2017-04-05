@@ -65,7 +65,6 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.eq;
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -338,17 +337,17 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Set<TypeLabel> visitInList(GraqlParser.InListContext ctx) {
-        return visitNameList(ctx.nameList());
+        return visitLabelList(ctx.labelList());
     }
 
     @Override
     public Set<TypeLabel> visitOfList(GraqlParser.OfListContext ctx) {
-        return visitNameList(ctx.nameList());
+        return visitLabelList(ctx.labelList());
     }
 
     @Override
-    public Set<TypeLabel> visitNameList(GraqlParser.NameListContext ctx) {
-        return ctx.name().stream().map(this::visitName).collect(toSet());
+    public Set<TypeLabel> visitLabelList(GraqlParser.LabelListContext ctx) {
+        return ctx.label().stream().map(this::visitLabel).collect(toSet());
     }
 
     @Override
@@ -434,8 +433,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitPropName(GraqlParser.PropNameContext ctx) {
-        return var -> var.name(visitName(ctx.name()));
+    public UnaryOperator<Var> visitPropLabel(GraqlParser.PropLabelContext ctx) {
+        return var -> var.label(visitLabel(ctx.label()));
     }
 
     @Override
@@ -457,8 +456,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<Var> visitPropHasVariable(GraqlParser.PropHasVariableContext ctx) {
         Var resource = var(getVariable(ctx.VARIABLE()));
 
-        if (ctx.name() != null) {
-            TypeLabel type = visitName(ctx.name());
+        if (ctx.label() != null) {
+            TypeLabel type = visitLabel(ctx.label());
             return var -> var.has(type, resource);
         } else {
             return var -> var.has(resource);
@@ -467,7 +466,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
-        TypeLabel type = visitName(ctx.name());
+        TypeLabel type = visitLabel(ctx.label());
         Var resource = var().value(visitPredicate(ctx.predicate()));
         return var -> var.has(type, resource);
     }
@@ -547,7 +546,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public TypeLabel visitName(GraqlParser.NameContext ctx) {
+    public TypeLabel visitLabel(GraqlParser.LabelContext ctx) {
         return TypeLabel.of(visitIdentifier(ctx.identifier()));
     }
 
@@ -569,8 +568,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     public Var visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
             return var();
-        } else if (ctx.name() != null) {
-            return name(visitName(ctx.name()));
+        } else if (ctx.label() != null) {
+            return Graql.label(visitLabel(ctx.label()));
         } else {
             return var(getVariable(ctx.VARIABLE()));
         }

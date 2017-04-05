@@ -24,25 +24,25 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.util.Schema.ConceptProperty.NAME;
+import static ai.grakn.util.Schema.ConceptProperty.LABEL;
 
-class NameFragment extends AbstractFragment {
+class LabelFragment extends AbstractFragment {
 
-    private final TypeLabel name;
+    private final TypeLabel label;
 
-    NameFragment(VarName start, TypeLabel name) {
+    LabelFragment(VarName start, TypeLabel label) {
         super(start);
-        this.name = name;
+        this.label = label;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(NAME.name(), name.getValue());
+        traversal.has(LABEL.name(), label.getValue());
     }
 
     @Override
     public String getName() {
-        return "[name:" + typeLabelToString(name) + "]";
+        return "[label:" + typeLabelToString(label) + "]";
     }
 
     @Override
@@ -56,16 +56,16 @@ class NameFragment extends AbstractFragment {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        NameFragment that = (NameFragment) o;
+        LabelFragment that = (LabelFragment) o;
 
-        return name != null ? name.equals(that.name) : that.name == null;
+        return label != null ? label.equals(that.label) : that.label == null;
 
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + (label != null ? label.hashCode() : 0);
         return result;
     }
 }

@@ -694,21 +694,21 @@ public class TemplateParserTest {
     @Test
     public void doubleQuotesInSingleQuotesTest(){
         String template = "insert thing has quotes \"'in' quotes\";";
-        String expected = "insert type-name thing has quotes \"\\'in\\' quotes\";";
+        String expected = "insert label thing has quotes \"\\'in\\' quotes\";";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void singleQuotesInSingleQuotesTest(){
         String template = "insert thing has quotes '\"in\" quotes';";
-        String expected = "insert has quotes \"\\\"in\\\" quotes\" type-name thing;";
+        String expected = "insert has quotes \"\\\"in\\\" quotes\" label thing;";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 
     @Test
     public void escapedDoubleQuotesInDoubleQuotesTest(){
         String template = "insert thing has quotes \"\\\"in\\\" quotes\";";
-        String expected = "insert has quotes \"\\\"in\\\" quotes\" type-name thing;";
+        String expected = "insert has quotes \"\\\"in\\\" quotes\" label thing;";
         assertParseEquals(template, new HashMap<>(), expected);
     }
 

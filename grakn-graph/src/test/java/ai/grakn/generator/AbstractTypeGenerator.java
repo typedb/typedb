@@ -64,15 +64,15 @@ public abstract class AbstractTypeGenerator<T extends Type> extends FromGraphGen
         }
         
         if (types.isEmpty() && includeNonMeta()) {
-            TypeLabel name = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
-            assert graph().getType(name) == null;
-            return newType(name);
+            TypeLabel label = genFromGraph(TypeLabels.class).mustBeUnused().generate(random, status);
+            assert graph().getType(label) == null;
+            return newType(label);
         } else {
             return random.choose(types);
         }
     }
 
-    protected abstract T newType(TypeLabel name);
+    protected abstract T newType(TypeLabel label);
 
     protected abstract T metaType();
 

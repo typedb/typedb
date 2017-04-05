@@ -46,7 +46,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.Utility.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
@@ -62,8 +61,8 @@ import static java.util.stream.Collectors.joining;
  *
  * When matching, shortcut edges are used to speed up the traversal. The type of the relationship does not matter.
  *
- * When inserting, an implicit relation is created between the instance and the resource, using type names derived from
- * the name of the resource type.
+ * When inserting, an implicit relation is created between the instance and the resource, using type labels derived from
+ * the label of the resource type.
  *
  * @author Felix Chapman
  */
@@ -78,12 +77,12 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     public static HasResourceProperty of(VarAdmin resource) {
-        resource = resource.isa(name(Schema.MetaSchema.RESOURCE.getName())).admin();
+        resource = resource.isa(Graql.label(Schema.MetaSchema.RESOURCE.getLabel())).admin();
         return new HasResourceProperty(Optional.empty(), resource);
     }
 
     public static HasResourceProperty of(TypeLabel resourceType, VarAdmin resource) {
-        resource = resource.isa(name(resourceType)).admin();
+        resource = resource.isa(Graql.label(resourceType)).admin();
         return new HasResourceProperty(Optional.of(resourceType), resource);
     }
 
@@ -156,8 +155,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         TypeLabel type = resourceType.orElseThrow(() -> failDelete(this));
 
-        RoleType owner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(type));
-        RoleType value = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(type));
+        RoleType owner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(type));
+        RoleType value = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(type));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
@@ -176,7 +175,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Stream<VarAdmin> getTypes() {
         if (resourceType.isPresent()) {
-            return Stream.of(name(resourceType.get()).admin());
+            return Stream.of(Graql.label(resourceType.get()).admin());
         } else {
             return Stream.empty();
         }

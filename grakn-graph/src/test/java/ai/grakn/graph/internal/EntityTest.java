@@ -136,7 +136,7 @@ public class EntityTest extends GraphTestBase{
 
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(
-                ErrorMessage.HAS_INVALID.getMessage(entityType.getName(), "resource", resourceType.getName())
+                ErrorMessage.HAS_INVALID.getMessage(entityType.getLabel(), "resource", resourceType.getLabel())
         );
 
         entity.resource(resource);
@@ -193,15 +193,15 @@ public class EntityTest extends GraphTestBase{
 
     private void checkImplicitStructure(ResourceType<?> resourceType, Relation relation, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
         assertEquals(2, relation.allRolePlayers().size());
-        assertEquals(has.getName(resourceType.getName()), relation.type().getName());
+        assertEquals(has.getLabel(resourceType.getLabel()), relation.type().getLabel());
         relation.allRolePlayers().entrySet().forEach(entry -> {
             RoleType roleType = entry.getKey();
             assertEquals(1, entry.getValue().size());
             entry.getValue().forEach(instance -> {
                 if(instance.equals(entity)){
-                    assertEquals(hasOwner.getName(resourceType.getName()), roleType.getName());
+                    assertEquals(hasOwner.getLabel(resourceType.getLabel()), roleType.getLabel());
                 } else {
-                    assertEquals(hasValue.getName(resourceType.getName()), roleType.getName());
+                    assertEquals(hasValue.getLabel(resourceType.getLabel()), roleType.getLabel());
                 }
             });
         });
@@ -231,7 +231,7 @@ public class EntityTest extends GraphTestBase{
         relationType.addRelation().addRolePlayer(role1, entityToDelete).addRolePlayer(role2, entityOther);
 
         //Check Relation Counts
-        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceType.getName()).getValue());
+        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(resourceType.getLabel()).getValue());
         assertEquals(1, relationType.instances().size());
         assertEquals(3, implicitRelationType.instances().size());
 

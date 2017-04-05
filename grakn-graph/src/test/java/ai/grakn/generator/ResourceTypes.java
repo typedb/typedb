@@ -29,10 +29,10 @@ public class ResourceTypes extends AbstractTypeGenerator<ResourceType> {
     }
 
     @Override
-    protected ResourceType newType(TypeLabel name) {
+    protected ResourceType newType(TypeLabel label) {
         ResourceType.DataType<?> dataType = gen(ResourceType.DataType.class);
 
-        return graph().putResourceType(name, dataType);
+        return graph().putResourceType(label, dataType);
     }
 
     @Override

@@ -46,10 +46,10 @@ public abstract class CommonOLAP {
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
     static final Set<TypeLabel> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
-            Schema.Analytics.DEGREE.getName(),
-            Schema.ImplicitType.HAS_RESOURCE.getName(Schema.Analytics.DEGREE.getName()),
-            Schema.Analytics.CLUSTER.getName(),
-            Schema.ImplicitType.HAS_RESOURCE.getName(Schema.Analytics.CLUSTER.getName())));
+            Schema.Analytics.DEGREE.getLabel(),
+            Schema.ImplicitType.HAS_RESOURCE.getLabel(Schema.Analytics.DEGREE.getLabel()),
+            Schema.Analytics.CLUSTER.getLabel(),
+            Schema.ImplicitType.HAS_RESOURCE.getLabel(Schema.Analytics.CLUSTER.getLabel())));
 
     /**
      * The concepts that can be "seen" by analytics by default.

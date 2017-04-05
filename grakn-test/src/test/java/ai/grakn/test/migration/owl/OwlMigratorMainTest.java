@@ -80,7 +80,7 @@ public class OwlMigratorMainTest extends TestOwlGraknBase {
         assertNotNull(type);
         assertNull(graph.getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
         assertNotNull(type.superType());
-        assertEquals("tPerson", type.superType().getName().getValue());
+        assertEquals("tPerson", type.superType().getLabel().getValue());
         assertEquals(top, type.superType().superType());
         assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
         assertNotEquals(0, type.instances().size());

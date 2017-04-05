@@ -250,7 +250,7 @@ public class Relation extends TypeAtom {
         int roleWildcards = 0;
         for (VarName rolePlayer : getRolePlayers()){
             Type type = varTypeMap.get(rolePlayer);
-            if (type != null && !Schema.MetaSchema.isMetaName(type.getName())) {
+            if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
                 Set<RoleType> roleIntersection = new HashSet<>(roles);
                 roleIntersection.retainAll(type.playsRoles());
                 if (roleIntersection.isEmpty()){
@@ -596,7 +596,7 @@ public class Relation extends TypeAtom {
                 .forEach(casting -> {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
-                    if (type != null && !Schema.MetaSchema.isMetaName(type.getName())) {
+                    if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
                         mappings.put(casting, Utility.getCompatibleRoleTypes(type, possibleRoles));
                     } else {
                         mappings.put(casting, Utility.getTopRoles(possibleRoles));
@@ -612,7 +612,7 @@ public class Relation extends TypeAtom {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
                     RoleType roleType = entry.getValue().iterator().next();
-                    VarAdmin roleVar = Graql.var().name(roleType.getName()).admin();
+                    VarAdmin roleVar = Graql.var().label(roleType.getLabel()).admin();
                     mappings.values().forEach(s -> s.remove(roleType));
                     roleVarMap.put(roleVar, new Pair<>(varName, type));
                     roleVarTypeMap.put(roleType, new Pair<>(varName, type));

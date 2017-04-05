@@ -293,7 +293,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
 
     private String summaryFormat(Object object) {
         if (object instanceof Type) {
-            return ((Type) object).getName().getValue().replaceAll("-", "_");
+            return ((Type) object).getLabel().getValue().replaceAll("-", "_");
         } else if (object instanceof Instance) {
             Instance instance = (Instance) object;
             return summaryFormat(instance.type()) + instance.getId().getValue();

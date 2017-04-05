@@ -48,23 +48,23 @@ public class TypeLabels extends FromGraphGenerator<TypeLabel> {
     public TypeLabel generateFromGraph() {
         if (mustBeUnused) {
             return withImplicitConceptsVisible(graph(), graph -> {
-                TypeLabel name;
+                TypeLabel label;
 
                 int attempts = 0;
                 do {
                     // After a certain number of attempts, generate truly random strings instead
                     if (attempts < 100) {
-                        name = metaSyntacticName();
+                        label = metaSyntacticLabel();
                     } else {
-                        name = trueRandomName();
+                        label = trueRandomLabel();
                     }
                     attempts += 1;
-                } while (graph.getType(name) != null);
+                } while (graph.getType(label) != null);
 
-                return name;
+                return label;
             });
         } else {
-            return metaSyntacticName();
+            return metaSyntacticLabel();
         }
     }
 
@@ -77,11 +77,11 @@ public class TypeLabels extends FromGraphGenerator<TypeLabel> {
         return this;
     }
 
-    private TypeLabel metaSyntacticName() {
+    private TypeLabel metaSyntacticLabel() {
         return TypeLabel.of(gen().make(MetasyntacticStrings.class).generate(random, status));
     }
 
-    private TypeLabel trueRandomName() {
+    private TypeLabel trueRandomLabel() {
         return TypeLabel.of(gen(String.class));
     }
 

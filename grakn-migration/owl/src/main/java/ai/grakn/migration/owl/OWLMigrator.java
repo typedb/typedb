@@ -157,7 +157,7 @@ public class OWLMigrator {
     public EntityType entityType(OWLClass owlclass) {
         EntityType type = graph.putEntityType(namer.classEntityTypeLabel(owlclass.getIRI()));
         EntityType thing = owlThingEntityType();
-        if (Schema.MetaSchema.isMetaName(type.superType().getName()) && !type.equals(thing)) {
+        if (Schema.MetaSchema.isMetaLabel(type.superType().getLabel()) && !type.equals(thing)) {
             type.superType(thing);
         }
         return type;
@@ -208,21 +208,21 @@ public class OWLMigrator {
     }
     
     public RoleType subjectRole(RelationType relType) {
-        return graph.putRoleType(namer.subjectRole(relType.getName()));
+        return graph.putRoleType(namer.subjectRole(relType.getLabel()));
     }
 
     public RoleType objectRole(RelationType relType) {
-        return graph.putRoleType(namer.objectRole(relType.getName()));
+        return graph.putRoleType(namer.objectRole(relType.getLabel()));
     }
 
     public RoleType entityRole(EntityType entityType, ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getName()));
+        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getLabel()));
         entityType.playsRole(roleType);
         return roleType;
     }
     
     public RoleType resourceRole(ResourceType<?> resourceType) {
-        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getName()));
+        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getLabel()));
         resourceType.playsRole(roleType);
         return roleType;
     }

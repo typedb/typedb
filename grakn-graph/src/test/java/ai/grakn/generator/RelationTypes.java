@@ -29,8 +29,8 @@ public class RelationTypes extends AbstractTypeGenerator<RelationType> {
     }
 
     @Override
-    protected RelationType newType(TypeLabel name) {
-        return graph().putRelationType(name);
+    protected RelationType newType(TypeLabel label) {
+        return graph().putRelationType(label);
     }
 
     @Override

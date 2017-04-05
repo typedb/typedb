@@ -53,140 +53,140 @@ import java.util.Collection;
 public interface GraknGraph extends AutoCloseable{
 
     //------------------------------------- Concept Construction ----------------------------------
-    // TODO: For all 'put' methods state the expected behaviour when there is a type with the same name but a different
+    // TODO: For all 'put' methods state the expected behaviour when there is a type with the same label but a different
     // kind or params (e.g. putRelationType("person"), putResourceType("name", BOOLEAN))
 
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
-     * with the specified name.
+     * with the specified label.
      *
-     * @param name A unique name for the {@link EntityType}
-     * @return A new or existing {@link EntityType} with the provided name
+     * @param label A unique label for the {@link EntityType}
+     * @return A new or existing {@link EntityType} with the provided label
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link EntityType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
-    EntityType putEntityType(String name);
+    EntityType putEntityType(String label);
 
     /**
      * Create a new {@link EntityType} with super-type {@code entity}, or return a pre-existing {@link EntityType},
-     * with the specified name.
+     * with the specified label.
      *
-     * @param name A unique name for the {@link EntityType}
-     * @return A new or existing {@link EntityType} with the provided name
+     * @param label A unique label for the {@link EntityType}
+     * @return A new or existing {@link EntityType} with the provided label
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link EntityType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link EntityType}.
      */
-    EntityType putEntityType(TypeLabel name);
+    EntityType putEntityType(TypeLabel label);
 
     /**
      * Create a new non-unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
-     * non-unique {@link ResourceType}, with the specified name and data type.
+     * non-unique {@link ResourceType}, with the specified label and data type.
      *
-     * @param name A unique name for the {@link ResourceType}
+     * @param label A unique label for the {@link ResourceType}
      * @param dataType The data type of the {@link ResourceType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing {@link ResourceType} with the provided name and data type.
+     * @return A new or existing {@link ResourceType} with the provided label and data type.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
-     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
+     * @throws ConceptException if the {@param label} is already in use by an existing {@link ResourceType} which is
      *                          unique or has a different datatype.
      */
-    <V> ResourceType<V> putResourceType(String name, ResourceType.DataType<V> dataType);
+    <V> ResourceType<V> putResourceType(String label, ResourceType.DataType<V> dataType);
 
     /**
      * Create a new non-unique {@link ResourceType} with super-type {@code resource}, or return a pre-existing
-     * non-unique {@link ResourceType}, with the specified name and data type.
+     * non-unique {@link ResourceType}, with the specified label and data type.
      *
-     * @param name A unique name for the {@link ResourceType}
+     * @param label A unique label for the {@link ResourceType}
      * @param dataType The data type of the {@link ResourceType}.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
-     * @return A new or existing {@link ResourceType} with the provided name and data type.
+     * @return A new or existing {@link ResourceType} with the provided label and data type.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link ResourceType}.
-     * @throws ConceptException if the {@param name} is already in use by an existing {@link ResourceType} which is
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link ResourceType}.
+     * @throws ConceptException if the {@param label} is already in use by an existing {@link ResourceType} which is
      *                          unique or has a different datatype.
      */
-    <V> ResourceType<V> putResourceType(TypeLabel name, ResourceType.DataType<V> dataType);
+    <V> ResourceType<V> putResourceType(TypeLabel label, ResourceType.DataType<V> dataType);
 
     /**
      * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
-     * specified name.
+     * specified label.
      *
-     * @param name A unique name for the {@link RuleType}
-     * @return new or existing {@link RuleType} with the provided name.
+     * @param label A unique label for the {@link RuleType}
+     * @return new or existing {@link RuleType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RuleType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
-    RuleType putRuleType(String name);
+    RuleType putRuleType(String label);
 
     /**
      * Create a {@link RuleType} with super-type {@code rule}, or return a pre-existing {@link RuleType}, with the
-     * specified name.
+     * specified label.
      *
-     * @param name A unique name for the {@link RuleType}
-     * @return new or existing {@link RuleType} with the provided name.
+     * @param label A unique label for the {@link RuleType}
+     * @return new or existing {@link RuleType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RuleType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RuleType}.
      */
-    RuleType putRuleType(TypeLabel name);
+    RuleType putRuleType(TypeLabel label);
 
     /**
      * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
-     * with the specified name.
+     * with the specified label.
      *
-     * @param name A unique name for the {@link RelationType}
-     * @return A new or existing {@link RelationType} with the provided name.
+     * @param label A unique label for the {@link RelationType}
+     * @return A new or existing {@link RelationType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RelationType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
-    RelationType putRelationType(String name);
+    RelationType putRelationType(String label);
 
     /**
      * Create a {@link RelationType} with super-type {@code relation}, or return a pre-existing {@link RelationType},
-     * with the specified name.
+     * with the specified label.
      *
-     * @param name A unique name for the {@link RelationType}
-     * @return A new or existing {@link RelationType} with the provided name.
+     * @param label A unique label for the {@link RelationType}
+     * @return A new or existing {@link RelationType} with the provided label.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RelationType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RelationType}.
      */
-    RelationType putRelationType(TypeLabel name);
+    RelationType putRelationType(TypeLabel label);
 
     /**
      * Create a {@link RoleType} with super-type {@code role}, or return a pre-existing {@link RoleType}, with the
-     * specified name.
+     * specified label.
      *
-     * @param name A unique name for the {@link RoleType}
+     * @param label A unique label for the {@link RoleType}
      * @return new or existing {@link RoleType} with the provided Id.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RoleType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
      */
-    RoleType putRoleType(String name);
+    RoleType putRoleType(String label);
 
     /**
      * Create a {@link RoleType} with super-type {@code role}, or return a pre-existing {@link RoleType}, with the
-     * specified name.
+     * specified label.
      *
-     * @param name A unique name for the {@link RoleType}
+     * @param label A unique label for the {@link RoleType}
      * @return new or existing {@link RoleType} with the provided Id.
      *
      * @throws GraphRuntimeException if the graph is closed
-     * @throws ConceptNotUniqueException if the {@param name} is already in use by an existing non-{@link RoleType}.
+     * @throws ConceptNotUniqueException if the {@param label} is already in use by an existing non-{@link RoleType}.
      */
-    RoleType putRoleType(TypeLabel name);
+    RoleType putRoleType(TypeLabel label);
 
     //------------------------------------- Concept Lookup ----------------------------------
     /**
@@ -201,15 +201,15 @@ public interface GraknGraph extends AutoCloseable{
     <T extends Concept> T getConcept(ConceptId id);
 
     /**
-     * Get the {@link Type} with the name provided, if it exists.
+     * Get the {@link Type} with the label provided, if it exists.
      *
-     * @param name A unique name which identifies the {@link Type} in the graph.
-     * @return The {@link Type} with the provided name or null if no such {@link Type} exists.
+     * @param label A unique label which identifies the {@link Type} in the graph.
+     * @return The {@link Type} with the provided label or null if no such {@link Type} exists.
      *
      * @throws GraphRuntimeException if the graph is closed
      * @throws ClassCastException if the type is not an instance of {@link T}
      */
-    <T extends Type> T getType(TypeLabel name);
+    <T extends Type> T getType(TypeLabel label);
 
     /**
      * Get all Resources holding the value provided, if they exist.
@@ -223,55 +223,55 @@ public interface GraknGraph extends AutoCloseable{
     <V> Collection<Resource<V>> getResourcesByValue(V value);
 
     /**
-     * Get the Entity Type with the name provided, if it exists.
+     * Get the Entity Type with the label provided, if it exists.
      *
-     * @param name A unique name which identifies the Entity Type in the graph.
-     * @return The Entity Type  with the provided name or null if no such Entity Type exists.
-     *
-     * @throws GraphRuntimeException if the graph is closed
-     */
-    EntityType getEntityType(String name);
-
-    /**
-     * Get the Relation Type with the name provided, if it exists.
-     *
-     * @param name A unique name which identifies the Relation Type in the graph.
-     * @return The Relation Type with the provided name or null if no such Relation Type exists.
+     * @param label A unique label which identifies the Entity Type in the graph.
+     * @return The Entity Type  with the provided label or null if no such Entity Type exists.
      *
      * @throws GraphRuntimeException if the graph is closed
      */
-    RelationType getRelationType(String name);
+    EntityType getEntityType(String label);
 
     /**
-     * Get the Resource Type with the name provided, if it exists.
+     * Get the Relation Type with the label provided, if it exists.
      *
-     * @param name A unique name which identifies the Resource Type in the graph.
+     * @param label A unique label which identifies the Relation Type in the graph.
+     * @return The Relation Type with the provided label or null if no such Relation Type exists.
+     *
+     * @throws GraphRuntimeException if the graph is closed
+     */
+    RelationType getRelationType(String label);
+
+    /**
+     * Get the Resource Type with the label provided, if it exists.
+     *
+     * @param label A unique label which identifies the Resource Type in the graph.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource Type with the provided name or null if no such Resource Type exists.
+     * @return The Resource Type with the provided label or null if no such Resource Type exists.
      *
      * @throws GraphRuntimeException if the graph is closed
      */
-    <V> ResourceType<V> getResourceType(String name);
+    <V> ResourceType<V> getResourceType(String label);
 
     /**
-     * Get the Role Type with the name provided, if it exists.
+     * Get the Role Type with the label provided, if it exists.
      *
-     * @param name A unique name which identifies the Role Type in the graph.
-     * @return The Role Type  with the provided name or null if no such Role Type exists.
+     * @param label A unique label which identifies the Role Type in the graph.
+     * @return The Role Type  with the provided label or null if no such Role Type exists.
      *
      * @throws GraphRuntimeException if the graph is closed
      */
-    RoleType getRoleType(String name);
+    RoleType getRoleType(String label);
 
     /**
-     * Get the Rule Type with the name provided, if it exists.
+     * Get the Rule Type with the label provided, if it exists.
      *
-     * @param name A unique name which identifies the Rule Type in the graph.
-     * @return The Rule Type with the provided name or null if no such Rule Type exists.
+     * @param label A unique label which identifies the Rule Type in the graph.
+     * @return The Rule Type with the provided label or null if no such Rule Type exists.
      *
      * @throws GraphRuntimeException if the graph is closed
      */
-    RuleType getRuleType(String name);
+    RuleType getRuleType(String label);
 
     //------------------------------------- Utilities ----------------------------------
     // TODO: what does this do when the graph is closed?
