@@ -22,7 +22,6 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Unifier;
@@ -37,7 +36,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Map;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
