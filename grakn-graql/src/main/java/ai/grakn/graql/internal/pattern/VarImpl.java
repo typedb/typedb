@@ -419,7 +419,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Set<TypeLabel> getTypeNames() {
+    public Set<TypeLabel> getTypeLabels() {
         return getProperties()
                 .flatMap(VarProperty::getTypes)
                 .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)

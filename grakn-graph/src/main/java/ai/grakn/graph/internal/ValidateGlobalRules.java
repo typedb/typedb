@@ -314,10 +314,10 @@ class ValidateGlobalRules {
 
         pattern.admin().getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .flatMap(v -> v.getTypeNames().stream()).forEach(typeName -> {
-                    Type type = graph.getType(typeName);
+                .flatMap(v -> v.getTypeLabels().stream()).forEach(typeLabel -> {
+                    Type type = graph.getType(typeLabel);
                     if(type == null){
-                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getName(), typeName));
+                        errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.getId(), rule.type().getName(), typeLabel));
                     } else {
                         if(side.equalsIgnoreCase("LHS")){
                             rule.addHypothesis(type);

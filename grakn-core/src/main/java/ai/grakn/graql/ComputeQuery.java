@@ -40,10 +40,10 @@ public interface ComputeQuery<T> extends Query<T> {
     ComputeQuery<T> withGraph(GraknGraph graph);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a ComputeQuery with the subTypeNames set
+     * @param subTypelabels an array of types to include in the subgraph
+     * @return a ComputeQuery with the subTypelabels set
      */
-    ComputeQuery<T> in(String... subTypeNames);
+    ComputeQuery<T> in(String... subTypelabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

@@ -122,7 +122,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
         statisticsResourceTypes.forEach(
-                typeName -> configuration.addProperty(RESOURCE_TYPE + "." + typeName.getValue(), typeName.getValue()));
+                typeLabel -> configuration.addProperty(RESOURCE_TYPE + "." + typeLabel.getValue(), typeLabel.getValue()));
     }
 
     @Override

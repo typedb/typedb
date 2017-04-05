@@ -28,7 +28,7 @@ import java.util.function.Function;
  *
  * <p>
  *     A class which represents the unique name of any {@link Type} in the {@link ai.grakn.GraknGraph}.
- *     Also contains a static method for producing TypeNames from Strings.
+ *     Also contains a static method for producing {@link TypeLabel}s from Strings.
  * </p>
  *
  * @author fppt

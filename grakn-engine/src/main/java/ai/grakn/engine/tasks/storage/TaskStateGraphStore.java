@@ -171,8 +171,8 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             Instance taskConcept = graph.getResourcesByValue(task.getId().getValue()).iterator().next().owner();
             // Remove relations to any resources we want to currently update
-            resourcesToDettach.forEach(typeName -> {
-                RoleType roleType = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(typeName));
+            resourcesToDettach.forEach(typeLabel -> {
+                RoleType roleType = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(typeLabel));
                 taskConcept.relations(roleType).forEach(Concept::delete);
             });
 

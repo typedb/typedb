@@ -48,11 +48,11 @@ public interface PathQuery extends ComputeQuery<Optional<List<Concept>>> {
     PathQuery to(ConceptId destinationId);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a PathQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a PathQuery with the subTypeLabels set
      */
     @Override
-    PathQuery in(String... subTypeNames);
+    PathQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

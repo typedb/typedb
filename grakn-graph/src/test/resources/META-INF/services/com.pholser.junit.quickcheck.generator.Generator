@@ -30,6 +30,6 @@ ai.grakn.generator.Entities
 ai.grakn.generator.Relations
 ai.grakn.generator.Rules
 ai.grakn.generator.Resources
-ai.grakn.generator.MetaTypeNames
+ai.grakn.generator.MetaTypeLabels
 ai.grakn.generator.Methods
 ai.grakn.generator.MetasyntacticStrings

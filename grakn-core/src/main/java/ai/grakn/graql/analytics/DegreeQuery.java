@@ -34,11 +34,11 @@ import java.util.Set;
 public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a DegreeQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a DegreeQuery with the subTypeLabels set
      */
     @Override
-    DegreeQuery in(String... subTypeNames);
+    DegreeQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph
@@ -48,16 +48,16 @@ public interface DegreeQuery extends ComputeQuery<Map<Long, Set<String>>> {
     DegreeQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
-     * @param ofTypeNames an array of types in the subgraph to compute degree of. By default the degrees of all the
+     * @param ofTypeLabels an array of types in the subgraph to compute degree of. By default the degrees of all the
      *                    types in the graph will be computed
-     * @return a DegreeQuery with the subTypeNames set
+     * @return a DegreeQuery with the subTypeLabels set
      */
-    DegreeQuery of(String... ofTypeNames);
+    DegreeQuery of(String... ofTypeLabels);
 
     /**
      * @param ofTypeLabels a collection of types in the subgraph to compute degree of. By default the degrees of all the
      *                    types in the graph will be computed
-     * @return a DegreeQuery with the subTypeNames set
+     * @return a DegreeQuery with the subTypeLabels set
      */
     DegreeQuery of(Collection<TypeLabel> ofTypeLabels);
 

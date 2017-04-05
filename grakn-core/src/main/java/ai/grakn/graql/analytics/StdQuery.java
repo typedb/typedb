@@ -33,23 +33,23 @@ import java.util.Optional;
 public interface StdQuery extends ComputeQuery<Optional<Double>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a StdQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a StdQuery with the subTypeLabels set
      */
-    StdQuery of(String... resourceTypeNames);
+    StdQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceTypeLabels a collection of types of resources to execute the query on
-     * @return a StdQuery with the subTypeNames set
+     * @return a StdQuery with the subTypeLabels set
      */
     StdQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a StdQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a StdQuery with the subTypeLabels set
      */
     @Override
-    StdQuery in(String... subTypeNames);
+    StdQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

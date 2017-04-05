@@ -197,10 +197,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<ResourceType> resourceTypes = new HashSet<>();
         //A traversal is not used in this caching so that ontology caching can be taken advantage of.
         playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
-            String roleTypeName = roleType.getName().getValue();
-            if(roleTypeName.startsWith(prefix) && roleTypeName.endsWith(suffix)){ //This is the implicit type we want
-                String resourceTypeName = roleTypeName.replace(prefix, "").replace(suffix, "");
-                resourceTypes.add(getGraknGraph().getResourceType(resourceTypeName));
+            String roleTypeLabel = roleType.getName().getValue();
+            if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
+                String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
+                resourceTypes.add(getGraknGraph().getResourceType(resourceTypeLabel));
             }
         }));
 

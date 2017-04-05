@@ -30,12 +30,12 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 /**
  * Generator that generates meta type names only
  */
-public class MetaTypeNames extends AbstractGenerator<TypeLabel> {
+public class MetaTypeLabels extends AbstractGenerator<TypeLabel> {
 
     private static final ImmutableSet<TypeLabel> META_TYPE_NAMES =
             Stream.of(Schema.MetaSchema.values()).map(m -> m.getName()).collect(toImmutableSet());
 
-    public MetaTypeNames() {
+    public MetaTypeLabels() {
         super(TypeLabel.class);
     }
 

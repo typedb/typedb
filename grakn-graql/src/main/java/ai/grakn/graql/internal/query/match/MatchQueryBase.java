@@ -112,7 +112,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
     public Set<Type> getTypes(GraknGraph graph) {
         return pattern.getVars().stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .flatMap(v -> v.getTypeNames().stream())
+                .flatMap(v -> v.getTypeLabels().stream())
                 .map(graph::<Type>getType)
                 .filter(Objects::nonNull)
                 .collect(toSet());

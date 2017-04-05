@@ -122,16 +122,16 @@ public class GraknTitanGraphTest extends TitanTestBase{
     public void testPermanentlyClosedGraph(){
         GraknTitanGraph graph = new TitanInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES).open(GraknTxType.WRITE);
 
-        String entityTypeName = "Hello";
+        String entityTypeLabel = "Hello";
 
-        graph.putEntityType(entityTypeName);
-        assertNotNull(graph.getEntityType(entityTypeName));
+        graph.putEntityType(entityTypeLabel);
+        assertNotNull(graph.getEntityType(entityTypeLabel));
 
         graph.close();
 
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(GRAPH_CLOSED_ON_ACTION.getMessage("closed", graph.getKeyspace()));
 
-        graph.getEntityType(entityTypeName);
+        graph.getEntityType(entityTypeLabel);
     }
 }

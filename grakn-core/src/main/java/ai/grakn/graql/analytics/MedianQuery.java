@@ -33,23 +33,23 @@ import java.util.Optional;
 public interface MedianQuery extends ComputeQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a MedianQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a MedianQuery with the subTypeLabels set
      */
-    MedianQuery of(String... resourceTypeNames);
+    MedianQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceTypeLabels a collection of types of resources to execute the query on
-     * @return a MedianQuery with the subTypeNames set
+     * @return a MedianQuery with the subTypeLabels set
      */
     MedianQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a MedianQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a MedianQuery with the subTypeLabels set
      */
     @Override
-    MedianQuery in(String... subTypeNames);
+    MedianQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

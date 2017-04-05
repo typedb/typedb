@@ -33,23 +33,23 @@ import java.util.Optional;
 public interface MeanQuery extends ComputeQuery<Optional<Double>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a MeanQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a MeanQuery with the subTypeLabels set
      */
-    MeanQuery of(String... resourceTypeNames);
+    MeanQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceTypeLabels a collection of types of resources to execute the query on
-     * @return a MeanQuery with the subTypeNames set
+     * @return a MeanQuery with the subTypeLabels set
      */
     MeanQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a MeanQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a MeanQuery with the subTypeLabels set
      */
     @Override
-    MeanQuery in(String... subTypeNames);
+    MeanQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

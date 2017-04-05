@@ -50,11 +50,11 @@ public interface ClusterQuery<T> extends ComputeQuery<T> {
     ClusterQuery<T> clusterSize(long clusterSize);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a ClusterQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a ClusterQuery with the subTypeLabels set
      */
     @Override
-    ClusterQuery<T> in(String... subTypeNames);
+    ClusterQuery<T> in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

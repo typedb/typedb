@@ -127,7 +127,7 @@ class ConjunctionQuery {
     Stream<TypeLabel> getTypes() {
         return vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .flatMap(v -> v.getTypeNames().stream());
+                .flatMap(v -> v.getTypeLabels().stream());
     }
 
     private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {

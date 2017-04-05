@@ -77,29 +77,29 @@ public class GraknGraphTest extends GraphTestBase {
 
     @Test
     public void whenGettingTypesByName_ReturnTypes(){
-        String entityTypeName = "My Entity Type";
-        String relationTypeName = "My Relation Type";
-        String roleTypeName = "My Role Type";
-        String resourceTypeName = "My Resource Type";
-        String ruleTypeName = "My Rule Type";
+        String entityTypeLabel = "My Entity Type";
+        String relationTypeLabel = "My Relation Type";
+        String roleTypeLabel = "My Role Type";
+        String resourceTypeLabel = "My Resource Type";
+        String ruleTypeLabel = "My Rule Type";
 
-        assertNull(graknGraph.getEntityType(entityTypeName));
-        assertNull(graknGraph.getRelationType(relationTypeName));
-        assertNull(graknGraph.getRoleType(roleTypeName));
-        assertNull(graknGraph.getResourceType(resourceTypeName));
-        assertNull(graknGraph.getRuleType(ruleTypeName));
+        assertNull(graknGraph.getEntityType(entityTypeLabel));
+        assertNull(graknGraph.getRelationType(relationTypeLabel));
+        assertNull(graknGraph.getRoleType(roleTypeLabel));
+        assertNull(graknGraph.getResourceType(resourceTypeLabel));
+        assertNull(graknGraph.getRuleType(ruleTypeLabel));
 
-        EntityType entityType = graknGraph.putEntityType(entityTypeName);
-        RelationType relationType = graknGraph.putRelationType(relationTypeName);
-        RoleType roleType = graknGraph.putRoleType(roleTypeName);
-        ResourceType resourceType = graknGraph.putResourceType(resourceTypeName, ResourceType.DataType.STRING);
-        RuleType ruleType = graknGraph.putRuleType(ruleTypeName);
+        EntityType entityType = graknGraph.putEntityType(entityTypeLabel);
+        RelationType relationType = graknGraph.putRelationType(relationTypeLabel);
+        RoleType roleType = graknGraph.putRoleType(roleTypeLabel);
+        ResourceType resourceType = graknGraph.putResourceType(resourceTypeLabel, ResourceType.DataType.STRING);
+        RuleType ruleType = graknGraph.putRuleType(ruleTypeLabel);
 
-        assertEquals(entityType, graknGraph.getEntityType(entityTypeName));
-        assertEquals(relationType, graknGraph.getRelationType(relationTypeName));
-        assertEquals(roleType, graknGraph.getRoleType(roleTypeName));
-        assertEquals(resourceType, graknGraph.getResourceType(resourceTypeName));
-        assertEquals(ruleType, graknGraph.getRuleType(ruleTypeName));
+        assertEquals(entityType, graknGraph.getEntityType(entityTypeLabel));
+        assertEquals(relationType, graknGraph.getRelationType(relationTypeLabel));
+        assertEquals(roleType, graknGraph.getRoleType(roleTypeLabel));
+        assertEquals(resourceType, graknGraph.getResourceType(resourceTypeLabel));
+        assertEquals(ruleType, graknGraph.getRuleType(ruleTypeLabel));
     }
 
     @Test

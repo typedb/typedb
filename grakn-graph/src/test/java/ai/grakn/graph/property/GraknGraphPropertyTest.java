@@ -39,7 +39,7 @@ import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import ai.grakn.generator.GraknGraphs.Open;
-import ai.grakn.generator.MetaTypeNames;
+import ai.grakn.generator.MetaTypeLabels;
 import ai.grakn.generator.Methods.MethodOf;
 import ai.grakn.generator.ResourceValues;
 import ai.grakn.util.ErrorMessage;
@@ -132,14 +132,14 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingGetTypeWithAnExistingTypeName_ItReturnsThatType(
+    public void whenCallingGetTypeWithAnExistingTypeLabel_ItReturnsThatType(
             @Open GraknGraph graph, @FromGraph Type type) {
         TypeLabel typeLabel = type.getName();
         assertEquals(type, graph.getType(typeLabel));
     }
 
     @Property
-    public void whenCallingGetTypeWithANonExistingTypeName_ItReturnsNull(@Open GraknGraph graph, TypeLabel typeLabel) {
+    public void whenCallingGetTypeWithANonExistingTypeLabel_ItReturnsNull(@Open GraknGraph graph, TypeLabel typeLabel) {
         Set<TypeLabel> allTypes = allTypesFrom(graph).stream().map(Type::getName).collect(toSet());
         assumeThat(allTypes, not(hasItem(typeLabel)));
 
@@ -267,7 +267,7 @@ public class GraknGraphPropertyTest {
     }
 
     @Property
-    public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeNames.class) TypeLabel typeLabel) {
+    public void whenCallingClear_AllMetaConceptsArePresent(@Open GraknGraph graph, @From(MetaTypeLabels.class) TypeLabel typeLabel) {
         graph.clear();
         graph = Grakn.session(Grakn.IN_MEMORY, graph.getKeyspace()).open(GraknTxType.WRITE);
         assertNotNull(graph.getType(typeLabel));

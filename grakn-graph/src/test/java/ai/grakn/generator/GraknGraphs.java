@@ -146,14 +146,14 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
     // A list of methods that will mutate the graph in some random way when called
     private final ImmutableList<Runnable> mutators = ImmutableList.of(
             () -> {
-                TypeLabel typeLabel = typeName();
+                TypeLabel typeLabel = typeLabel();
                 EntityType superType = entityType();
                 EntityType entityType = graph.putEntityType(typeLabel).superType(superType);
                 summaryAssign(entityType, "graph", "putEntityType", typeLabel);
                 summary(entityType, "superType", superType);
             },
             () -> {
-                TypeLabel typeLabel = typeName();
+                TypeLabel typeLabel = typeLabel();
                 ResourceType.DataType dataType = gen(ResourceType.DataType.class);
                 ResourceType superType = resourceType();
                 ResourceType resourceType = graph.putResourceType(typeLabel, dataType).superType(superType);
@@ -161,14 +161,14 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
                 summary(resourceType, "superType", superType);
             },
             () -> {
-                TypeLabel typeLabel = typeName();
+                TypeLabel typeLabel = typeLabel();
                 RoleType superType = roleType();
                 RoleType roleType = graph.putRoleType(typeLabel).superType(superType);
                 summaryAssign(roleType, "graph", "putRoleType", typeLabel);
                 summary(roleType, "superType", superType);
             },
             () -> {
-                TypeLabel typeLabel = typeName();
+                TypeLabel typeLabel = typeLabel();
                 RelationType superType = relationType();
                 RelationType relationType = graph.putRelationType(typeLabel).superType(superType);
                 summaryAssign(relationType, "graph", "putRelationType", typeLabel);
@@ -304,7 +304,7 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
         }
     }
 
-    private TypeLabel typeName() {
+    private TypeLabel typeLabel() {
         return gen().make(TypeLabels.class, gen().make(MetasyntacticStrings.class)).generate(random, status);
     }
 

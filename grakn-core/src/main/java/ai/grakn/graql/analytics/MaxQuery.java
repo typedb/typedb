@@ -33,23 +33,23 @@ import java.util.Optional;
 public interface MaxQuery extends ComputeQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a MaxQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a MaxQuery with the subTypeLabels set
      */
-    MaxQuery of(String... resourceTypeNames);
+    MaxQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceTypeLabels a collection of types of resources to execute the query on
-     * @return a MaxQuery with the subTypeNames set
+     * @return a MaxQuery with the subTypeLabels set
      */
     MaxQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a MaxQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a MaxQuery with the subTypeLabels set
      */
     @Override
-    MaxQuery in(String... subTypeNames);
+    MaxQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

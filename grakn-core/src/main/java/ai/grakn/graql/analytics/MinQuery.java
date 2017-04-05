@@ -33,23 +33,23 @@ import java.util.Optional;
 public interface MinQuery extends ComputeQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a MinQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a MinQuery with the subTypeLabels set
      */
-    MinQuery of(String... resourceTypeNames);
+    MinQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceTypeLabels a collection of types of resources to execute the query on
-     * @return a MinQuery with the subTypeNames set
+     * @return a MinQuery with the subTypeLabels set
      */
     MinQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a MinQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a MinQuery with the subTypeLabels set
      */
     @Override
-    MinQuery in(String... subTypeNames);
+    MinQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph

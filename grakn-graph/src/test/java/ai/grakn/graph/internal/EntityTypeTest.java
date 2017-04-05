@@ -99,7 +99,7 @@ public class EntityTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void whenGettingTheNameOfType_TheTypeNameIsReturned(){
+    public void whenGettingTheLabelOfType_TheTypeLabelIsReturned(){
         Type test = graknGraph.putEntityType("test");
         assertEquals(TypeLabel.of("test"), test.getName());
     }

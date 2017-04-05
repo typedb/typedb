@@ -84,7 +84,7 @@ public abstract class CommonOLAP {
         oldKeys.forEach(configuration::clearProperty);
 
         // store selectedTypes
-        selectedTypes.forEach(typeName -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY + "." + typeName.getValue(), typeName.getValue()));
+        selectedTypes.forEach(typeLabel -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY + "." + typeLabel.getValue(), typeLabel.getValue()));
 
         // store fields
 

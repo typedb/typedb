@@ -33,23 +33,23 @@ import java.util.Optional;
 public interface SumQuery extends ComputeQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a SumQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a SumQuery with the subTypeLabels set
      */
-    SumQuery of(String... resourceTypeNames);
+    SumQuery of(String... resourceTypeLabels);
 
     /**
      * @param resourceTypeLabels a collection of types of resources to execute the query on
-     * @return a SumQuery with the subTypeNames set
+     * @return a SumQuery with the subTypeLabels set
      */
     SumQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a SumQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a SumQuery with the subTypeLabels set
      */
     @Override
-    SumQuery in(String... subTypeNames);
+    SumQuery in(String... subTypeLabels);
 
     /**
      * @param subTypeLabels a collection of types to include in the subgraph
