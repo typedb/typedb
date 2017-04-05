@@ -161,7 +161,7 @@ public class EngineCacheDistributedTest {
         Map<String, Set<ConceptId>> internalCache = new HashMap<>();
         for(int i = 0; i < numIndex; i ++){
             for(int j = 0; j < numJobs; j++){
-                internalCache.computeIfAbsent(indexPrefix + "_" + i, (key) -> new HashSet<>()).add(ConceptId.of(j));
+                internalCache.computeIfAbsent(indexPrefix  + i, (key) -> new HashSet<>()).add(ConceptId.of(j));
             }
         }
         return internalCache;

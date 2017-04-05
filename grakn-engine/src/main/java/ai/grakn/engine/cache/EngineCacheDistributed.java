@@ -22,7 +22,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -86,9 +85,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         Set<String> currentKeyspaces = getKeyspaces();
         if(!currentKeyspaces.contains(newKeyspace)){
             currentKeyspaces.add(newKeyspace);
-            synchronized (this) {
-                writeObjectToZookeeper(ENGINE_CACHE_KEYSPACES, currentKeyspaces);
-            }
+            writeObjectToZookeeper(ENGINE_CACHE_KEYSPACES, currentKeyspaces);
         }
     }
 
@@ -115,7 +112,18 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
 
     @Override
     public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
-        throw new UnsupportedOperationException("not yet implemented");
+        deleteJob(getPathCastings(keyspace), castingIndex, castingId);
+    }
+    @Override
+    public void deleteJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
+        deleteJob(getPathResources(keyspace), resourceIndex, resourceId);
+    }
+    private void deleteJob(String path, String index, ConceptId id){
+        Map<String, Set<ConceptId>> currentJobs = getJobs(path);
+        if(currentJobs.containsKey(index) && currentJobs.get(index).contains(id)){
+            currentJobs.get(index).remove(id);
+            writeObjectToZookeeper(path, currentJobs);
+        }
     }
 
     @Override
@@ -140,35 +148,38 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         addJob(getPathResources(keyspace), keyspace, resourceIndex, resourceId);
     }
     private void addJob(String jobPath, String keyspace, String index, ConceptId id){
+        updateLastTimeJobAdded();
         updateKeyspaces(keyspace);
         Map<String, Set<ConceptId>> currentJobs = getJobs(jobPath);
         Set<ConceptId> currentIds = currentJobs.computeIfAbsent(index, (k) -> new HashSet<>());
         if(!currentIds.contains(id)){
             currentIds.add(id);
-            synchronized (this) {
-                writeObjectToZookeeper(jobPath, currentJobs);
-            }
+            writeObjectToZookeeper(jobPath, currentJobs);
         }
     }
 
     @Override
-    public void deleteJobResource(String keyspace, String resourceIndex, ConceptId resourceId) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    @Override
     public void clearJobSetResources(String keyspace, String conceptIndex) {
-        throw new UnsupportedOperationException("not yet implemented");
+        cleanJobSet(getPathResources(keyspace), conceptIndex);
     }
-
     @Override
     public void clearJobSetCastings(String keyspace, String conceptIndex) {
-        throw new UnsupportedOperationException("not yet implemented");
+        cleanJobSet(getPathCastings(keyspace), conceptIndex);
+    }
+    private void cleanJobSet(String path, String index){
+        Map<String, Set<ConceptId>> currentJobs = getJobs(path);
+        if(currentJobs.containsKey(index)){
+            currentJobs.remove(index);
+            writeObjectToZookeeper(path, currentJobs);
+        }
     }
 
     @Override
     public void clearAllJobs(String keyspace) {
-        writeObjectToZookeeper(getPathResources(keyspace), Collections.EMPTY_MAP);
-        writeObjectToZookeeper(getPathCastings(keyspace), Collections.EMPTY_MAP);
+        updateLastTimeJobAdded();
+        synchronized (this) {
+            writeObjectToZookeeper(getPathResources(keyspace), new HashMap<>());
+            writeObjectToZookeeper(getPathCastings(keyspace), new HashMap<>());
+        }
     }
 }
