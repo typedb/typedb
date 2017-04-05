@@ -30,7 +30,6 @@ import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.ErrorMessage;
-import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
 import mjson.Json;
@@ -47,6 +46,11 @@ import java.util.Properties;
 
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_ANALYTICS;
 import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
+import static ai.grakn.util.REST.GraphConfig.COMPUTER;
+import static ai.grakn.util.REST.GraphConfig.DEFAULT;
+import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 
 
 /**
@@ -63,30 +67,30 @@ import static ai.grakn.engine.GraknEngineConfig.FACTORY_INTERNAL;
  *
  * @author fppt
  */
-public class GraphFactoryController {
-    private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
+public class SystemController {
+    private final Logger LOG = LoggerFactory.getLogger(SystemController.class);
 
-    public GraphFactoryController(Service spark) {
-        spark.get(REST.WebPath.GRAPH_FACTORY_URI, this::getGraphConfig);
-        spark.get(REST.WebPath.KEYSPACE_LIST, this::getKeySpaces);
+    public SystemController(Service spark) {
+        spark.get(KEYSPACES,     this::getKeyspaces);
+        spark.get(CONFIGURATION, this::getConfiguration);
     }
 
     @GET
-    @Path("/graph_factory")
+    @Path("/configuration")
     @ApiOperation(value = "Get config which is used to build graphs")
     @ApiImplicitParam(name = "graphConfig", value = "The type of graph config to return", required = true, dataType = "string", paramType = "path")
-    private String getGraphConfig(Request request, Response response) {
-        String graphConfig = request.queryParams(REST.Request.GRAPH_CONFIG_PARAM);
-        if(graphConfig == null){
-            graphConfig = REST.GraphConfig.DEFAULT;
-        }
+    private String getConfiguration(Request request, Response response) {
+        String graphConfig = request.queryParams(GRAPH_CONFIG_PARAM);
 
+        // Make a copy of the properties object
         Properties properties = new Properties();
         properties.putAll(GraknEngineConfig.getInstance().getProperties());
-        switch (graphConfig) {
-            case REST.GraphConfig.DEFAULT:
+
+        // Get the correct factory based on the request
+        switch ((graphConfig != null) ? graphConfig : DEFAULT) {
+            case DEFAULT:
                 break; // Factory is already correctly set
-            case REST.GraphConfig.COMPUTER:
+            case COMPUTER:
                 properties.setProperty(FACTORY_INTERNAL, properties.get(FACTORY_ANALYTICS).toString());
                 break;
             default:
@@ -105,7 +109,7 @@ public class GraphFactoryController {
     @GET
     @Path("/keyspaces")
     @ApiOperation(value = "Get all the key spaces that have been opened")
-    private String getKeySpaces(Request request, Response response) {
+    private String getKeyspaces(Request request, Response response) {
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             ResourceType<String> keyspaceName = graph.getType(SystemKeyspace.KEYSPACE_RESOURCE);
             Json result = Json.array();

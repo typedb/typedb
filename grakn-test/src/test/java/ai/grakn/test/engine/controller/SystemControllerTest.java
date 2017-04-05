@@ -32,14 +32,14 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
-import static ai.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
-import static ai.grakn.util.REST.WebPath.KEYSPACE_LIST;
+import static ai.grakn.util.REST.WebPath.System.CONFIGURATION;
+import static ai.grakn.util.REST.WebPath.System.KEYSPACES;
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GraphFactoryControllerTest {
+public class SystemControllerTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -48,7 +48,7 @@ public class GraphFactoryControllerTest {
 	public void testKeyspaceList() throws GraknValidationException {
 		Grakn.session(Grakn.DEFAULT_URI, "grakntest1").open(GraknTxType.WRITE).close();
         Grakn.session(Grakn.DEFAULT_URI, "grakntest2").open(GraknTxType.WRITE).close();
-        Response response = get(KEYSPACE_LIST).then().statusCode(200).extract().response();
+        Response response = get(KEYSPACES).then().statusCode(200).extract().response();
         Json result = Json.read(response.body().asString());
         Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest")));
         Assert.assertTrue(result.asJsonList().contains(Json.make("grakntest2")));
@@ -56,14 +56,14 @@ public class GraphFactoryControllerTest {
 	
     @Test
     public void testConfigWorking() {
-        Response response = get(GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();
+        Response response = get(CONFIGURATION).then().statusCode(200).extract().response().andReturn();
         String config = response.getBody().asString();
         assertTrue(config.contains("factory"));
     }
 
     @Test
     public void testSpecificConfigWorking() {
-        String endPoint = GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=";
+        String endPoint = CONFIGURATION + "?" + GRAPH_CONFIG_PARAM + "=";
 
         Response responseDefault = get(endPoint + GraphConfig.DEFAULT).
                 then().statusCode(200).extract().response().andReturn();
