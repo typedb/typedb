@@ -120,6 +120,7 @@ public class ExplanationTest {
 
         Answer answer = answers.iterator().next();
         assertTrue(answer.getExplanation().isRuleExplanation());
+        assertEquals(2, answer.getExplanation().getAnswers().size());
         assertEquals(3, getRuleExplanations(answer).size());
         assertEquals(4, answer.getExplicitPath().size());
     }
