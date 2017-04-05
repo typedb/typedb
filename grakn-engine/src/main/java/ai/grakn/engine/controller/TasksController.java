@@ -43,10 +43,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
-import static ai.grakn.engine.controller.GraqlController.getMandatoryParameter;
+import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.Request.ID;
 import static ai.grakn.util.REST.Request.LIMIT;
 import static ai.grakn.util.REST.Request.OFFSET;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
@@ -146,7 +146,7 @@ public class TasksController {
     @ApiOperation(value = "Stop a running or paused task.")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private Json stopTask(Request request, Response response) {
-        String id = request.params(ID_PARAMETER);
+        String id = request.params(ID);
         manager.stopTask(TaskId.of(id));
         return Json.object();
     }
@@ -163,9 +163,9 @@ public class TasksController {
             @ApiImplicitParam(name = "configuration", value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "body")
     })
     private Json createTask(Request request, Response response) {
-        String className = getMandatoryParameter(request, TASK_CLASS_NAME_PARAMETER);
-        String createdBy = getMandatoryParameter(request, TASK_CREATOR_PARAMETER);
-        String runAtTime = getMandatoryParameter(request, TASK_RUN_AT_PARAMETER);
+        String className = mandatoryQueryParameter(request, TASK_CLASS_NAME_PARAMETER);
+        String createdBy = mandatoryQueryParameter(request, TASK_CREATOR_PARAMETER);
+        String runAtTime = mandatoryQueryParameter(request, TASK_RUN_AT_PARAMETER);
         String intervalParam = request.queryParams(TASK_RUN_INTERVAL_PARAMETER);
 
         TaskSchedule schedule;

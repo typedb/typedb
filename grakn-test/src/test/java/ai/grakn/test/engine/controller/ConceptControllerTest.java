@@ -42,6 +42,7 @@ import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.test.engine.controller.GraqlControllerTest.exception;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
+import static ai.grakn.util.REST.Request.ID;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
@@ -121,9 +122,8 @@ public class ConceptControllerTest {
         Concept concept = graphContext.graph().getEntityType("movie");
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
-                .queryParam(IDENTIFIER, concept.getId().getValue())
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT.replace(ID, concept.getId().getValue())));
 
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
@@ -185,9 +185,8 @@ public class ConceptControllerTest {
 
     private Response sendRequest(Concept concept, int numberEmbeddedComponents){
         return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
-                .queryParam(IDENTIFIER, concept.getId().getValue())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT.replace(ID, concept.getId().getValue())));
     }
 }

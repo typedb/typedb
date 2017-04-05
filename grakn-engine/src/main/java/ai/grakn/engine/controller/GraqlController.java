@@ -98,10 +98,10 @@ public class GraqlController {
             @ApiImplicitParam(name = MATERIALISE, value = "Should reasoner materialise results with the current query.", required = true, dataType = "boolean", paramType = "query")
     })
     private Json executeGraql(Request request, Response response){
-        String keyspace = getMandatoryParameter(request, KEYSPACE);
-        String queryString = getMandatoryParameter(request, QUERY);
-        boolean infer = parseBoolean(getMandatoryParameter(request, INFER));
-        boolean materialise = parseBoolean(getMandatoryParameter(request, MATERIALISE));
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String queryString = mandatoryQueryParameter(request, QUERY);
+        boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
+        boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
@@ -116,14 +116,14 @@ public class GraqlController {
 
     /**
      * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
-     * in the request, return a 404 to the client.
+     * in the request query, return a 404 to the client.
      *
      * @param request information about the HTTP request
      * @param parameter value to retrieve from the HTTP request
      * @return value of the given parameter
      */
-    static String getMandatoryParameter(Request request, String parameter){
-        return getParameter(request, parameter).orElseThrow(() ->
+    static String mandatoryQueryParameter(Request request, String parameter){
+        return queryParameter(request, parameter).orElseThrow(() ->
                 new GraknEngineServerException(400, MISSING_MANDATORY_PARAMETERS, parameter));
     }
 
@@ -133,7 +133,7 @@ public class GraqlController {
      * @param parameter value to retrieve from the HTTP request
      * @return value of the given parameter
      */
-    static Optional<String> getParameter(Request request, String parameter){
+    static Optional<String> queryParameter(Request request, String parameter){
         return Optional.ofNullable(request.queryParams(parameter));
     }
 
@@ -206,8 +206,8 @@ public class GraqlController {
                 break;
             case APPLICATION_HAL:
                 // Extract extra information needed by HAL renderer
-                String keyspace = getMandatoryParameter(request, KEYSPACE);
-                int limitEmbedded = getParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
+                String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+                int limitEmbedded = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
                 body.set(RESPONSE, formatAsHAL(query, keyspace, limitEmbedded));
                 break;

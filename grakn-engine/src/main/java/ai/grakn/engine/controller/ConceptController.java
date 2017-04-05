@@ -27,6 +27,7 @@ import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import java.util.Optional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import mjson.Json;
@@ -36,13 +37,15 @@ import spark.Service;
 
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.GraqlController.getAcceptType;
-import static ai.grakn.engine.controller.GraqlController.getMandatoryParameter;
-import static ai.grakn.engine.controller.GraqlController.getParameter;
+import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.GraqlController.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
+import static ai.grakn.util.REST.Request.ID;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
@@ -54,6 +57,7 @@ import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
  *
  * @author alexandraorth
  */
+@Path("/graph/concept")
 public class ConceptController {
 
     private static final int separationDegree = 1;
@@ -66,7 +70,7 @@ public class ConceptController {
     }
 
     @GET
-    @Path("/concept/{id}")
+    @Path("/{id}")
     @ApiOperation(
             value = "Return the HAL representation of a given concept.")
     @ApiImplicitParams({
@@ -78,10 +82,10 @@ public class ConceptController {
     private Json conceptByIdentifier(Request request, Response response){
         validateRequest(request);
 
-        String keyspace = getMandatoryParameter(request, KEYSPACE);
-        ConceptId conceptId = ConceptId.of(getMandatoryParameter(request, IDENTIFIER));
-        int offset = getParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
-        int limit = getParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID));
+        int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
+        int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Concept concept = retrieveExistingConcept(graph, conceptId);
@@ -112,11 +116,24 @@ public class ConceptController {
     }
 
     /**
+     * Given a {@link Request} object retrieve the value of the {@param parameter} argument. If it is not present
+     * in the request URL, return a 404 to the client.
+     *
+     * @param request information about the HTTP request
+     * @param parameter value to retrieve from the HTTP request
+     * @return value of the given parameter
+     */
+    static String mandatoryRequestParameter(Request request, String parameter){
+        return Optional.ofNullable(request.params(parameter)).orElseThrow(() ->
+                new GraknEngineServerException(400, MISSING_MANDATORY_PARAMETERS, parameter));
+    }
+
+    /**
      * Check if the concept is a valid concept
      * @param concept the concept to validate
      * @return true if the concept is valid, false otherwise
      */
-    static boolean notPresent(Concept concept){
+    private static boolean notPresent(Concept concept){
         return concept == null;
     }
 }

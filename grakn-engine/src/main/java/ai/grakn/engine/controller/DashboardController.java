@@ -42,16 +42,18 @@ import spark.Response;
 import spark.Service;
 
 import static ai.grakn.GraknTxType.READ;
+import static ai.grakn.engine.controller.ConceptController.mandatoryRequestParameter;
 import static ai.grakn.engine.controller.ConceptController.retrieveExistingConcept;
 import static ai.grakn.engine.controller.ConceptController.validateRequest;
-import static ai.grakn.engine.controller.GraqlController.getMandatoryParameter;
-import static ai.grakn.engine.controller.GraqlController.getParameter;
+import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
+import static ai.grakn.engine.controller.GraqlController.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
 import static ai.grakn.graql.internal.hal.HALBuilder.explanationAnswersToHAL;
 import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
+import static ai.grakn.util.REST.Request.ID;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
@@ -68,6 +70,7 @@ import static java.util.stream.Collectors.toList;
  *
  * @author alexandraorth
  */
+@Path("dashboard")
 public class DashboardController {
 
     private static final String RELATION_TYPES = "/graph/match?query=match $a isa %s id '%s'; ($a,$b) isa %s; limit %s;&keyspace=%s&limit=%s&reasoner=true";
@@ -98,10 +101,10 @@ public class DashboardController {
     private Json exploreConcept(Request request, Response response){
         validateRequest(request);
 
-        String keyspace = getMandatoryParameter(request, KEYSPACE);
-        ConceptId conceptId = ConceptId.of(getMandatoryParameter(request, IDENTIFIER));
-        int offset = getParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
-        int limit = getParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID));
+        int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
+        int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Concept concept = retrieveExistingConcept(graph, conceptId);
@@ -129,9 +132,9 @@ public class DashboardController {
     private Json typesOfConcept(Request request, Response response){
         validateRequest(request);
 
-        String keyspace = getMandatoryParameter(request, KEYSPACE);
-        int limit = getParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        ConceptId conceptId = ConceptId.of(getMandatoryParameter(request, IDENTIFIER));
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
+        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID));
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Concept concept = retrieveExistingConcept(graph, conceptId);
@@ -160,8 +163,8 @@ public class DashboardController {
             @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
     })
     private Json explainConcept(Request request, Response response) {
-        String keyspace = getMandatoryParameter(request, KEYSPACE);
-        String queryString = getMandatoryParameter(request, QUERY);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
+        String queryString = mandatoryQueryParameter(request, QUERY);
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Query<?> query = graph.graql().infer(true).parse(queryString);
@@ -170,7 +173,7 @@ public class DashboardController {
                 throw new GraknEngineServerException(405, EXPLAIN_ONLY_MATCH, query.getClass().getName());
             }
 
-            int limitEmbedded = getParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
+            int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
             return explanationAnswersToHAL(((MatchQuery) query).admin().streamWithAnswers(), limitEmbedded);
         }
@@ -181,7 +184,7 @@ public class DashboardController {
     @ApiOperation(value = "Pre materialise results of all the rules on the graph.")
     @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     private Boolean precomputeInferences(Request request, Response response) {
-        String keyspace = getMandatoryParameter(request, KEYSPACE);
+        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Reasoner.precomputeInferences(graph);

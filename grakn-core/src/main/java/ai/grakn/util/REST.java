@@ -38,7 +38,7 @@ public class REST {
          * URIs to visualiser controller
          */
         public static class Graph {
-            public static final String GRAQL = "/graql";
+            public static final String GRAQL = "/graph/graql";
         }
 
         /**
@@ -62,17 +62,17 @@ public class REST {
          * URIs to concept controller endpoints
          */
         public static class Concept {
-            public static final String CONCEPT = "/concept";
+            public static final String CONCEPT = "/graph/concept/:id";
         }
 
         /**
          * URIs to dashboard controller endpoints
          */
         public static class Dashboard {
-            public static final String TYPES = "/types";
-            public static final String EXPLORE = "/explore";
-            public static final String EXPLAIN = "/explain";
-            public static final String PRECOMPUTE = "/precomputeInferences";
+            public static final String TYPES = "/dashboard/types/:id";
+            public static final String EXPLORE = "/dashboard/explore/:id";
+            public static final String EXPLAIN = "/dashboard/explain/:id";
+            public static final String PRECOMPUTE = "/dashboard/precomputeInferences";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";
@@ -90,7 +90,8 @@ public class REST {
         public static final String OFFSET = "offset";
         public static final String KEYSPACE = "keyspace";
 
-        public static final String ID_PARAMETER = ":id";
+        public static final String ID = ":id";
+
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String TASK_STATUS_PARAMETER = "status";
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
