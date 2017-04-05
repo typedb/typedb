@@ -89,7 +89,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      * @return The Relation Type itself.
      */
     @Override
-    public RelationType hasRole(RoleType roleType) {
+    public RelationType relates(RoleType roleType) {
         checkTypeMutation();
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
 

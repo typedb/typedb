@@ -92,7 +92,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
-        concept.asRelationType().hasRole(roleType);
+        concept.asRelationType().relates(roleType);
     }
 
     @Override

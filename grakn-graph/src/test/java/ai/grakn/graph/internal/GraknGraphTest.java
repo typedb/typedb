@@ -241,7 +241,7 @@ public class GraknGraphTest extends GraphTestBase {
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
         EntityType e1 = graknGraph.putEntityType("e1").playsRole(r1).playsRole(r2);
-        RelationType rel1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
+        RelationType rel1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
         graknGraph.commit();
@@ -307,8 +307,8 @@ public class GraknGraphTest extends GraphTestBase {
         entityT.addEntity();
         RoleType roleT1 = graknGraph.putRoleType(roleType1);
         RoleType roleT2 = graknGraph.putRoleType(roleType2);
-        RelationType relationT1 = graknGraph.putRelationType(relationType1).hasRole(roleT1);
-        RelationType relationT2 = graknGraph.putRelationType(relationType2).hasRole(roleT2);
+        RelationType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
+        RelationType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
         ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);
         graknGraph.commit();
 
@@ -318,8 +318,8 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, () -> resourceT.putResource("A resource"));
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
         failMutation(graknGraph, () -> entityT.playsRole(roleT1));
-        failMutation(graknGraph, () -> relationT1.hasRole(roleT2));
-        failMutation(graknGraph, () -> relationT2.hasRole(roleT1));
+        failMutation(graknGraph, () -> relationT1.relates(roleT2));
+        failMutation(graknGraph, () -> relationT2.relates(roleT1));
     }
     private void failMutation(GraknGraph graph, Runnable mutator){
         int vertexCount = graph.admin().getTinkerTraversal().toList().size();

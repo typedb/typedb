@@ -109,7 +109,7 @@ public interface RelationType extends Type {
      * @param roleType A new role which is part of this relationship.
      * @return The RelationType itself.
      */
-    RelationType hasRole(RoleType roleType);
+    RelationType relates(RoleType roleType);
 
     //------------------------------------- Other ----------------------------------
 

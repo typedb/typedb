@@ -59,9 +59,9 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     1. Plays Role Validation which ensures that a {@link Instance} is allowed to play the {@link RoleType}
  *        it has been assigned to.
  *     2. Has Role Validation which ensures that every {@link RoleType} which is not abstract is
- *        assigned to a {@link RelationType} via {@link RelationType#hasRole(RoleType)}.
+ *        assigned to a {@link RelationType} via {@link RelationType#relates(RoleType)}.
  *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link RoleType}
- *        assigned to it via {@link RelationType#hasRole(RoleType)}.
+ *        assigned to it via {@link RelationType#relates(RoleType)}.
  *     4. Relation Structure Validation which ensures that each {@link ai.grakn.concept.Relation} has the
  *        correct structure.
  *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Instance}.
@@ -121,7 +121,7 @@ class ValidateGlobalRules {
     /**
      *
      * @param roleType The RoleType to validate
-     * @return An error message if the hasRole does not have a single incoming HAS_ROLE edge
+     * @return An error message if the relates does not have a single incoming HAS_ROLE edge
      */
     static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
         if(roleType.isAbstract()) {

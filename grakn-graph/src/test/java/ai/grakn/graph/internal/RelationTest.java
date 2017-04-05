@@ -73,7 +73,7 @@ public class RelationTest extends GraphTestBase{
         role3 = (RoleTypeImpl) graknGraph.putRoleType("Role 3");
 
         type = graknGraph.putEntityType("Main concept Type").playsRole(role1).playsRole(role2).playsRole(role3);
-        relationType = graknGraph.putRelationType("Main relation type").hasRole(role1).hasRole(role2).hasRole(role3);
+        relationType = graknGraph.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
 
         rolePlayer1 = (InstanceImpl) type.addEntity();
         rolePlayer2 = (InstanceImpl) type.addEntity();
@@ -103,7 +103,7 @@ public class RelationTest extends GraphTestBase{
         RoleType role1 = graknGraph.putRoleType("Role 1");
         RoleType role2 = graknGraph.putRoleType("Role 2");
         RoleType role3 = graknGraph.putRoleType("Role 3");
-        RelationType relType = graknGraph.putRelationType("Rel Type").hasRole(role1).hasRole(role2).hasRole(role3);
+        RelationType relType = graknGraph.putRelationType("Rel Type").relates(role1).relates(role2).relates(role3);
         EntityType entType = graknGraph.putEntityType("Entity Type").playsRole(role1).playsRole(role2).playsRole(role3);
 
         //Data
@@ -165,7 +165,7 @@ public class RelationTest extends GraphTestBase{
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
         EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
-        RelationType relationType = graknGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
+        RelationType relationType = graknGraph.putRelationType("relation type").relates(roleType1).relates(roleType2);
 
         relationType.addRelation();
         graknGraph.commit();
@@ -205,7 +205,7 @@ public class RelationTest extends GraphTestBase{
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
         EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
-        RelationType relationType = graknGraph.putRelationType("My relation type").hasRole(roleType1).hasRole(roleType2);
+        RelationType relationType = graknGraph.putRelationType("My relation type").relates(roleType1).relates(roleType2);
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
 
@@ -229,7 +229,7 @@ public class RelationTest extends GraphTestBase{
     public void ensureRelationToStringContainsRolePlayerInformation(){
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
-        RelationType relationType = graknGraph.putRelationType("A relation Type").hasRole(roleType1).hasRole(roleType2);
+        RelationType relationType = graknGraph.putRelationType("A relation Type").relates(roleType1).relates(roleType2);
         EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
@@ -252,7 +252,7 @@ public class RelationTest extends GraphTestBase{
         EntityType entityType = graknGraph.putEntityType("Entity Type").playsRole(entityRole);
         ResourceType<Long> degreeType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.LONG).playsRole(degreeRole);
 
-        RelationType hasDegree = graknGraph.putRelationType("Has Degree").hasRole(entityRole).hasRole(degreeRole);
+        RelationType hasDegree = graknGraph.putRelationType("Has Degree").relates(entityRole).relates(degreeRole);
 
         Entity entity = entityType.addEntity();
         Resource<Long> degree1 = degreeType.putResource(100L);
@@ -275,7 +275,7 @@ public class RelationTest extends GraphTestBase{
         RoleType roleB = graknGraph.putRoleType("RoleB");
         RoleType roleC = graknGraph.putRoleType("RoleC");
 
-        RelationType relation = graknGraph.putRelationType("relation type").hasRole(roleA).hasRole(roleB).hasRole(roleC);
+        RelationType relation = graknGraph.putRelationType("relation type").relates(roleA).relates(roleB).relates(roleC);
         EntityType type = graknGraph.putEntityType("concept type").playsRole(roleA).playsRole(roleB).playsRole(roleC);
         Entity a = type.addEntity();
         Entity b = type.addEntity();

@@ -62,7 +62,7 @@ public class RoleTypeTest extends GraphTestBase {
 
     @Test
     public void testGetRelation() throws Exception {
-        relationType.hasRole(roleType);
+        relationType.relates(roleType);
         assertEquals(relationType, roleType.relationTypes().iterator().next());
     }
 
@@ -108,7 +108,7 @@ public class RoleTypeTest extends GraphTestBase {
     public  void testGetInstancesTest(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
-        RelationType relationType = graknGraph.putRelationType("relationTypes").hasRole(roleA).hasRole(roleB);
+        RelationType relationType = graknGraph.putRelationType("relationTypes").relates(roleA).relates(roleB);
         EntityType entityType = graknGraph.putEntityType("entityType").playsRole(roleA).playsRole(roleB);
 
         Entity a = entityType.addEntity();
@@ -154,7 +154,7 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testDeleteRoleTypeWithHasRole(){
         RoleType roleType2 = graknGraph.putRoleType("New Role Type");
-        graknGraph.putRelationType("Thing").hasRole(roleType2).hasRole(roleType);
+        graknGraph.putRelationType("Thing").relates(roleType2).relates(roleType);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getName()));
@@ -186,8 +186,8 @@ public class RoleTypeTest extends GraphTestBase {
     public void testSharingRole() throws GraknValidationException {
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
-        relationType.hasRole(roleA).hasRole(roleType);
-        RelationType relationType2 = graknGraph.putRelationType("relationType2").hasRole(roleB).hasRole(roleType);
+        relationType.relates(roleA).relates(roleType);
+        RelationType relationType2 = graknGraph.putRelationType("relationType2").relates(roleB).relates(roleType);
         graknGraph.commit();
 
         assertEquals(1, roleA.relationTypes().size());
