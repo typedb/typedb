@@ -32,7 +32,7 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
  */
 public class MetaTypeLabels extends AbstractGenerator<TypeLabel> {
 
-    private static final ImmutableSet<TypeLabel> META_TYPE_NAMES =
+    private static final ImmutableSet<TypeLabel> META_TYPE_LABELS =
             Stream.of(Schema.MetaSchema.values()).map(m -> m.getName()).collect(toImmutableSet());
 
     public MetaTypeLabels() {
@@ -41,6 +41,6 @@ public class MetaTypeLabels extends AbstractGenerator<TypeLabel> {
 
     @Override
     public TypeLabel generate() {
-        return random.choose(META_TYPE_NAMES);
+        return random.choose(META_TYPE_LABELS);
     }
 }

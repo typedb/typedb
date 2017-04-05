@@ -86,10 +86,10 @@ public class PostprocessingTest extends GraphTestBase{
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), mainRoleType.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleType.getId());
 
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), mainRoleType.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleType.getId());
 
         return graknGraph.admin().buildConcept(castingVertex);
     }

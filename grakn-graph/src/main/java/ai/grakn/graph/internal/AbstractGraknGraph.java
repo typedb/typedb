@@ -649,7 +649,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
+            castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
         }
         return casting;
     }
@@ -666,7 +666,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         // Relation To Casting
 
         EdgeImpl relationToCasting = relation.putEdge(foundCasting, Schema.EdgeLabel.CASTING);
-        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
+        relationToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
         getConceptLog().trackConceptForValidation(relation); //The relation is explicitly tracked so we can look them up without committing
 
         //TODO: Only execute this if we need to. I.e if the above relation.putEdge() actually added a new edge.
@@ -682,14 +682,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private void putShortcutEdge(Instance toInstance, Relation fromRelation, RoleType roleType){
         boolean exists  = getTinkerPopGraph().traversal().V(fromRelation.getId().getRawValue()).
                 outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_NAME.name(), fromRelation.type().getName().getValue()).
-                has(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), roleType.getName().getValue()).inV().
+                has(Schema.EdgeProperty.RELATION_TYPE_LABEL.name(), fromRelation.type().getName().getValue()).
+                has(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), roleType.getName().getValue()).inV().
                 hasId(toInstance.getId().getRawValue()).hasNext();
 
         if(!exists){
             EdgeImpl edge = addEdge(fromRelation, toInstance, Schema.EdgeLabel.SHORTCUT);
-            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_NAME, fromRelation.type().getName().getValue());
-            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, roleType.getName().getValue());
+            edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_LABEL, fromRelation.type().getName().getValue());
+            edge.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, roleType.getName().getValue());
         }
     }
 
@@ -933,7 +933,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 //Perform the transfer
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
-                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_NAME, role.getId().getValue());
+                    assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
                 }
             }
 

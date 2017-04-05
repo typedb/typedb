@@ -43,7 +43,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     static final String DEGREE = "degreeVertexProgram.degree";
-    private static final String OF_TYPE_NAMES = "degreeVertexProgram.ofTypeLabels";
+    private static final String OF_TYPE_LABELS = "degreeVertexProgram.ofTypeLabels";
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
     Set<TypeLabel> ofTypeLabels = new HashSet<>();
@@ -60,14 +60,14 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     @Override
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
-        ofTypeLabels.forEach(type -> configuration.addProperty(OF_TYPE_NAMES + "." + type, type));
+        ofTypeLabels.forEach(type -> configuration.addProperty(OF_TYPE_LABELS + "." + type, type));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeLabels.add(TypeLabel.of(configuration.getProperty(OF_TYPE_NAMES + "." + key).toString())));
+        configuration.subset(OF_TYPE_LABELS).getKeys().forEachRemaining(key ->
+                ofTypeLabels.add(TypeLabel.of(configuration.getProperty(OF_TYPE_LABELS + "." + key).toString())));
     }
 
     @Override
