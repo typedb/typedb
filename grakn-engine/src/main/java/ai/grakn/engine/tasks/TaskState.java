@@ -140,6 +140,13 @@ public class TaskState implements Serializable {
     public TaskState markCompleted(){
         this.status = COMPLETED;
         this.statusChangeTime = now();
+
+        // Clearing out any not relevant information
+        if(!this.schedule.isRecurring()) {
+            this.configuration = null;
+        }
+        this.taskCheckpoint = null;
+
         return this;
     }
 
@@ -152,6 +159,12 @@ public class TaskState implements Serializable {
     public TaskState markStopped(){
         this.status = STOPPED;
         this.statusChangeTime = now();
+
+        // Clearing out any not relevant information
+        if(!this.schedule.isRecurring()) {
+            this.configuration = null;
+        }
+
         return this;
     }
 
@@ -160,6 +173,10 @@ public class TaskState implements Serializable {
         this.exception = exception.getClass().getName();
         this.stackTrace = getFullStackTrace(exception);
         this.statusChangeTime = now();
+
+        // We want to keep the configuration and checkpoint here
+        // It's useful to debug failed states
+
         return this;
     }
 
@@ -211,11 +228,6 @@ public class TaskState implements Serializable {
 
     public TaskCheckpoint checkpoint() {
         return taskCheckpoint;
-    }
-
-    public TaskState clearConfiguration() {
-        this.configuration = null;
-        return this;
     }
 
     public @Nullable Json configuration() {
