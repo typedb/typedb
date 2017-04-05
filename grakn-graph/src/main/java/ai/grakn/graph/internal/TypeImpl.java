@@ -545,7 +545,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public String innerToString(){
         String message = super.innerToString();
-        message = message + " - Name [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
+        message = message + " - Label [" + getLabel() + "] - Abstract [" + isAbstract() + "] ";
         return message;
     }
 
