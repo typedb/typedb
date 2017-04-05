@@ -21,14 +21,13 @@ package ai.grakn.engine.cache;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
-import ai.grakn.graph.admin.ConceptCache;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_JOBS;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_KEYSPACES;
@@ -55,10 +54,9 @@ import static org.apache.spark.util.Utils.serialize;
  */
 //TODO: Maybe we can merge this with Stand alone engine cache using Kafka for example?
 //TODO: This class may be in need of sever optimisation. Constantly serialising and deserialising maps and sets is likely to be slow.
-public class EngineCacheDistributed implements ConceptCache {
+public class EngineCacheDistributed extends EngineCacheAbstract{
     private static EngineCacheDistributed instance = null;
     private final ZookeeperConnection zookeeper;
-    private final AtomicLong lastTimeModified = new AtomicLong(0L);
 
 
     private EngineCacheDistributed(ZookeeperConnection zookeeper){
@@ -116,22 +114,6 @@ public class EngineCacheDistributed implements ConceptCache {
     }
 
     @Override
-    public long getNumJobs(String keyspace) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    @Override
-    public long getNumCastingJobs(String keyspace) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    @Override
-    public long getNumResourceJobs(String keyspace) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-
-    @Override
     public void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId) {
         throw new UnsupportedOperationException("not yet implemented");
     }
@@ -186,15 +168,7 @@ public class EngineCacheDistributed implements ConceptCache {
 
     @Override
     public void clearAllJobs(String keyspace) {
-        throw new UnsupportedOperationException("not yet implemented");
-    }
-
-    @Override
-    public long getLastTimeJobAdded() {
-        return lastTimeModified.get();
-    }
-
-    private void updateLastTimeJobAdded(){
-        lastTimeModified.set(System.currentTimeMillis());
+        writeObjectToZookeeper(getPathResources(keyspace), Collections.EMPTY_MAP);
+        writeObjectToZookeeper(getPathCastings(keyspace), Collections.EMPTY_MAP);
     }
 }

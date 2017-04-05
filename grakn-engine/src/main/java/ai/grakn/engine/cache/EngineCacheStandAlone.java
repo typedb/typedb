@@ -19,13 +19,11 @@
 package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.graph.admin.ConceptCache;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>
@@ -45,23 +43,21 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author fppt
  */
 //TODO: Maybe we can merge this with distributed engine cache using Kafka for example?
-public class EngineCacheStandAlone implements ConceptCache{
+public class EngineCacheStandAlone extends EngineCacheAbstract{
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
     private final Map<String, Map<String, Set<ConceptId>>> resources;
 
     private static EngineCacheStandAlone instance=null;
-    private final AtomicLong lastTimeModified;
 
     public static synchronized EngineCacheStandAlone getCache(){
         if(instance == null) instance = new EngineCacheStandAlone();
         return instance;
     }
 
-    public EngineCacheStandAlone(){
+    private EngineCacheStandAlone(){
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
-        lastTimeModified = new AtomicLong(System.currentTimeMillis());
     }
 
     @Override
@@ -70,25 +66,6 @@ public class EngineCacheStandAlone implements ConceptCache{
         keyspaces.addAll(castings.keySet());
         keyspaces.addAll(resources.keySet());
         return keyspaces;
-    }
-
-    @Override
-    public long getNumJobs(String keyspace) {
-        return getNumCastingJobs(keyspace) + getNumCastingJobs(keyspace);
-    }
-
-    @Override
-    public long getNumCastingJobs(String keyspace) {
-        return getNumJobsCount(getCastingJobs(keyspace));
-    }
-
-    @Override
-    public long getNumResourceJobs(String keyspace) {
-        return getNumJobsCount(getResourceJobs(keyspace));
-    }
-
-    private long getNumJobsCount(Map<String, Set<ConceptId>> cache){
-        return cache.values().stream().mapToLong(Set::size).sum();
     }
 
     //-------------------- Casting Jobs
@@ -163,20 +140,5 @@ public class EngineCacheStandAlone implements ConceptCache{
         updateLastTimeJobAdded();
         if(castings.containsKey(keyspace)) castings.remove(keyspace);
         if(resources.containsKey(keyspace)) resources.remove(keyspace);
-    }
-
-    /**
-     * @return the last time a job was added to the EngineCacheStandAlone.
-     */
-    @Override
-    public long getLastTimeJobAdded(){
-        return lastTimeModified.get();
-    }
-
-    /**
-     * Keep a record of the last time something was added to the EngineCacheStandAlone.
-     */
-    private void updateLastTimeJobAdded(){
-        lastTimeModified.set(System.currentTimeMillis());
     }
 }
