@@ -16,21 +16,27 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.printer;
+package ai.grakn.graql.internal.reasoner.iterator;
 
-import ai.grakn.concept.Concept;
-import ai.grakn.graql.internal.hal.HALBuilder;
-import mjson.Json;
+import ai.grakn.graql.admin.Answer;
+import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+/**
+ *
+ * <p>
+ * Convenience base class for reasoner iterators.
+ * </p>
+  *
+ * @author Kasper Piskorski
+ *
+ */
+public abstract class ReasonerQueryIterator implements Iterator<Answer> {
 
-
-class HALPrinter extends JsonPrinter {
-
-    @Override
-    public Json graqlString(boolean inner, Concept concept) {
-        //Todo: remove hardcoded keyspace and think about proper solution (maybe expose the getKeyspace on the concept itself)
-        String json = HALBuilder.renderHALConceptData(concept, 1,"grakn",0,100);
-        return Json.read(json);
+    public Stream<Answer> hasStream(){
+        Iterable<Answer> iterable = () -> this;
+        return StreamSupport.stream(iterable.spliterator(), false).distinct();
     }
-
 }
+

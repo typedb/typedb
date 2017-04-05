@@ -1,7 +1,8 @@
 module.exports = {
     "extends": "airbnb-base",
     "plugins": [
-        "import"
+        "import",
+        "html"
     ],
     "globals": {
         "window": true,
@@ -16,12 +17,6 @@ module.exports = {
             1,
             {
                 "allowForLoopAfterthoughts": true
-            }
-        ],
-        "no-underscore-dangle": [
-            0,
-            {
-                "allow": ["true"]
             }
         ],
         "max-len": [
