@@ -18,9 +18,14 @@
 
 package ai.grakn.engine.lock;
 
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.exception.EngineStorageException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * <p>
@@ -31,34 +36,90 @@ import java.util.concurrent.locks.Lock;
  */
 public class ZookeeperReentrantLock implements Lock {
 
+    private final InterProcessMutex mutex;
 
+    public ZookeeperReentrantLock(ZookeeperConnection zookeeper, String lockPath){
+        this.mutex = new InterProcessMutex(zookeeper.connection(), lockPath);
+    }
+
+    /**
+     * Acquires the lock. If the lock is not available, stalls the current thread until it is available.
+     * See {@link InterProcessMutex#acquire()} for more information.
+     *
+     * @throws EngineStorageException when there are Zookeeper connection issues.
+     */
     @Override
     public void lock() {
-
+        try {
+            mutex.acquire();
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
     }
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
-
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Acquire the lock if it is available within 1 second of calling.
+     * Note: Checking if the lock is available and acquiring the lock IS NOT atomic.
+     *
+     * @return {@code true} if the lock was acquired and
+     *         {@code false} otherwise
+     */
     @Override
     public boolean tryLock() {
+        try {
+            if (!mutex.isAcquiredInThisProcess() && mutex.acquire(1, SECONDS)) {
+                return true;
+            }
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
+
         return false;
     }
 
+    /**
+     * Acquire the lock if it is available within {@param time} using {@param unit}.
+     *
+     * @param time amount of time to wait for the lock to be available
+     * @param unit unit of time that qualifies amount of time to wait for lock
+     * @return @return {@code true} if the lock was acquired and
+     *         {@code false} otherwise
+     * @throws InterruptedException
+     */
     @Override
     public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        try {
+            if (mutex.acquire(time, unit)) {
+                return true;
+            }
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
+
         return false;
     }
 
+    /**
+     *
+     *
+     * @throws EngineStorageException when there are Zookeeper connection issues.
+     */
     @Override
     public void unlock() {
-
+        try {
+            mutex.release();
+        } catch (Exception e) {
+            throw new EngineStorageException(e);
+        }
     }
 
     @Override
     public Condition newCondition() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }
