@@ -64,7 +64,10 @@ public class Explanation implements AnswerExplanation {
     public boolean isRuleExplanation(){ return false;}
 
     @Override
-    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation();}
+    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation() && !getAnswers().isEmpty();}
+
+    @Override
+    public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
 
     @Override
     public ReasonerQuery getQuery(){ return query;}
