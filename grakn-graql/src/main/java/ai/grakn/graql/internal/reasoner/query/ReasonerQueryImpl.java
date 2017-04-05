@@ -32,7 +32,6 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
@@ -52,7 +51,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -177,14 +175,14 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return getAtoms().stream().filter(this::containsEquivalentAtom).count() == 2;
     }
 
-    private boolean isAtomic() {
+    boolean isAtomic() {
         return selectAtoms().size() == 1;
     }
 
     /**
      * @return atom that should be prioritised for resolution
      */
-    private Atom getTopAtom() {
+    Atom getTopAtom() {
         //TODO redo based on priority function
         Set<Atom> atoms = selectAtoms();
 
@@ -429,7 +427,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @param atom to be removed
      * @return modified query
      */
-    private ReasonerQueryImpl removeAtom(Atom atom){
+    ReasonerQueryImpl removeAtom(Atom atom){
         removeAtomic(atom);
         atom.getNonSelectableConstraints().stream()
                 .filter(at -> findNextJoinable(atom) == null)
@@ -558,7 +556,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         for(Atom atom : selectAtoms()){
             if (atom.requiresMaterialisation() && atom.isRuleResolvable()) return true;
             for (InferenceRule rule : atom.getApplicableRules())
-                if (rule.requiresMaterialisation()) return true;
+                if (rule.requiresMaterialisation()){
+                    return true;
+                }
         }
         return false;
     }
@@ -674,7 +674,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     public ReasonerQueryIterator iterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-        return new ReasonerQueryImplIterator(sub, subGoals, cache);
+        return new ReasonerQueryImplIterator(this, sub, subGoals, cache);
     }
 
     private class QueryAnswerIterator extends ReasonerQueryIterator {
@@ -689,7 +689,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         QueryAnswerIterator(){ this(new QueryCache<>());}
         QueryAnswerIterator(QueryCache<ReasonerAtomicQuery> qc){
             this.cache = qc;
-            this.answerIterator = new ReasonerQueryImplIterator(cache);
+            this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
         }
 
         /**
@@ -705,7 +705,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 if (dAns != 0 || iter == 0) {
                     LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                     iter++;
-                    answerIterator = new ReasonerQueryImplIterator(cache);
+                    answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
                     oldAns = answers.size();
                     return answerIterator.hasNext();
                 }
@@ -723,61 +723,5 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             return ans;
         }
 
-    }
-
-    private class ReasonerQueryImplIterator extends ReasonerQueryIterator {
-
-        private final Answer partialSubstitution;
-        private final ReasonerQueryImpl newQuery;
-
-        private final QueryCache<ReasonerAtomicQuery> cache;
-        private final Set<ReasonerAtomicQuery> subGoals;
-
-        private Iterator<Answer> queryIterator;
-        private final Iterator<Answer> atomicQueryIterator;
-
-        ReasonerQueryImplIterator(){ this(new QueryAnswer(), new HashSet<>(), new QueryCache<>());}
-        ReasonerQueryImplIterator(QueryCache<ReasonerAtomicQuery> cache){ this(new QueryAnswer(), new HashSet<>(), cache);}
-        ReasonerQueryImplIterator(Answer sub, Set<ReasonerAtomicQuery> subGoals, QueryCache<ReasonerAtomicQuery> cache){
-            this.partialSubstitution = sub;
-            this.subGoals = subGoals;
-            this.cache = cache;
-
-            //get prioritised atom and construct atomic query from it
-            this.newQuery = new ReasonerQueryImpl(ReasonerQueryImpl.this);
-            newQuery.addSubstitution(sub);
-            Atom topAtom = newQuery.getTopAtom();
-            ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
-
-            boolean isAtomic = isAtomic();
-            if (!isAtomic) newQuery.removeAtom(topAtom);
-
-            atomicQueryIterator = isAtomic? Collections.emptyIterator() : q.iterator(subGoals, cache);
-            queryIterator = isAtomic? q.iterator(subGoals, cache) : Collections.emptyIterator();
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (queryIterator.hasNext()) return true;
-            else {
-                if (atomicQueryIterator.hasNext()) {
-                    Answer sub = atomicQueryIterator.next();
-                    queryIterator = getQueryPrime().iterator(sub, subGoals, cache);
-                    return hasNext();
-                }
-                else return false;
-            }
-        }
-
-        @Override
-        public Answer next() {
-            Answer sub = queryIterator.next();
-            sub = sub.merge(partialSubstitution, true);
-            return sub;
-        }
-
-        private ReasonerQueryImpl getQueryPrime(){
-            return newQuery.isAtomic()? new ReasonerAtomicQuery(newQuery.getTopAtom()) : newQuery;
-        }
     }
 }

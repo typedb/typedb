@@ -47,7 +47,6 @@ import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import java.util.Collections;
 import javafx.util.Pair;
@@ -469,6 +468,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         }
     }
 
+    /**
+     * Tuple-at-a-time iterator for this atomic query.
+     * Resolves the atomic query by:
+     * 1) doing DB lookup
+     * 2) applying a rule
+     * 3) doing a lemma (previously derived answer) lookup
+     */
     private class ReasonerAtomicQueryIterator extends ReasonerQueryIterator {
 
         private final QueryCache<ReasonerAtomicQuery> cache;
