@@ -160,16 +160,16 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
     @Test
     public void testAbstractConceptValidation(){
-        RoleType roleType = graknGraph.putRoleType("hasRole");
+        RoleType roleType = graknGraph.putRoleType("relates");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
 
-        assertTrue(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
+        assertTrue(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).isPresent());
         assertTrue(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
 
         roleType.setAbstract(true);
         relationType.setAbstract(true);
 
-        assertFalse(ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType).isPresent());
+        assertFalse(ValidateGlobalRules.validateHasSingleIncomingRelatesEdge(roleType).isPresent());
         assertFalse(ValidateGlobalRules.validateHasMinimumRoles(relationType).isPresent());
     }
 

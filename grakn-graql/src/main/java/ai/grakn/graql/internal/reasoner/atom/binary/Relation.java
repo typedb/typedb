@@ -409,7 +409,7 @@ public class Relation extends TypeAtom {
         if (type != null) addType(type);
     }
 
-    private void inferRelationTypeFromHasRole() {
+    private void inferRelationTypeFromRelates() {
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         VarName valueVariable = getValueVariable();
         TypeAtom hrAtom = parent.getAtoms().stream()
@@ -437,7 +437,7 @@ public class Relation extends TypeAtom {
     @Override
     public void inferTypes() {
         if (getPredicate() == null) inferRelationTypeFromTypes();
-        if (getPredicate() == null) inferRelationTypeFromHasRole();
+        if (getPredicate() == null) inferRelationTypeFromRelates();
     }
 
     @Override

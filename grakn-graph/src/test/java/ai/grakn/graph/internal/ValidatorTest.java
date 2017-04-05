@@ -137,7 +137,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void hasRoleEdgeTestFail(){
+    public void relatesEdgeTestFail(){
         RoleType alone = graknGraph.putRoleType("alone");
         Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());

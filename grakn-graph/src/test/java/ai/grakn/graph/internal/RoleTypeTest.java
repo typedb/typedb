@@ -152,7 +152,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testDeleteRoleTypeWithHasRole(){
+    public void testDeleteRoleTypeWithRelates(){
         RoleType roleType2 = graknGraph.putRoleType("New Role Type");
         graknGraph.putRelationType("Thing").relates(roleType2).relates(roleType);
 

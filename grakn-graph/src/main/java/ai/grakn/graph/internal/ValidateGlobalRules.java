@@ -123,7 +123,7 @@ class ValidateGlobalRules {
      * @param roleType The RoleType to validate
      * @return An error message if the relates does not have a single incoming HAS_ROLE edge
      */
-    static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
+    static Optional<String> validateHasSingleIncomingRelatesEdge(RoleType roleType){
         if(roleType.isAbstract()) {
             return Optional.empty();
         }
@@ -215,9 +215,9 @@ class ValidateGlobalRules {
             Set<TypeName> allSuperRolesPlayed = new HashSet<>();
             superRelationType.superTypeSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
-            for (RoleType hasRole : relates) {
+            for (RoleType relate : relates) {
                 boolean validRoleTypeFound = false;
-                Set<RoleType> superRoleTypes = ((RoleTypeImpl) hasRole).superTypeSet();
+                Set<RoleType> superRoleTypes = ((RoleTypeImpl) relate).superTypeSet();
                 for (RoleType superRoleType : superRoleTypes) {
                     if(allSuperRolesPlayed.contains(superRoleType.getName())){
                         validRoleTypeFound = true;
@@ -226,16 +226,16 @@ class ValidateGlobalRules {
                 }
 
                 if(!validRoleTypeFound){
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(hasRole.getName(), relationType.getName(), "super", "super", superRelationType.getName()));
+                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getName(), relationType.getName(), "super", "super", superRelationType.getName()));
                 }
             }
         }
 
         //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
-        for (RoleType superHasRole : superRelates) {
+        for (RoleType superRelate : superRelates) {
             boolean subRoleNotFoundInRelates = true;
 
-            for (RoleType subRoleType : superHasRole.subTypes()) {
+            for (RoleType subRoleType : superRelate.subTypes()) {
                 if(relatesNames.contains(subRoleType.getName())){
                     subRoleNotFoundInRelates = false;
                     break;
@@ -243,7 +243,7 @@ class ValidateGlobalRules {
             }
 
             if(subRoleNotFoundInRelates){
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superHasRole.getName(), superRelationType.getName(), "sub", "sub", relationType.getName()));
+                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getName(), superRelationType.getName(), "sub", "sub", relationType.getName()));
             }
         }
 
