@@ -90,7 +90,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public ReasonerAtomicQuery(Conjunction<VarAdmin> pattern, GraknGraph graph) {
         super(pattern, graph);
-        atom = selectAtoms().iterator().next();
+        atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
     public ReasonerAtomicQuery(ReasonerAtomicQuery query) {

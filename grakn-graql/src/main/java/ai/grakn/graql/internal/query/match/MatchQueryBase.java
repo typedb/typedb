@@ -69,7 +69,7 @@ public class MatchQueryBase extends AbstractMatchQuery {
      */
     public MatchQueryBase(Conjunction<PatternAdmin> pattern) {
         if (pattern.getPatterns().size() == 0) {
-            throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
+            throw new IllegalArgumentException(ErrorMessage.NO_PATTERNS.getMessage());
         }
 
         this.pattern = pattern;

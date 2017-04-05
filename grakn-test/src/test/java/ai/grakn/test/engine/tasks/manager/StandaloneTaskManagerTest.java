@@ -41,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -133,7 +134,7 @@ public class StandaloneTaskManagerTest {
         taskManager.addTask(task);
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();
-        assertTrue(status == SCHEDULED || status == RUNNING);
+        assertTrue(status == CREATED || status == RUNNING);
 
         taskManager.stopTask(task.getId());
 

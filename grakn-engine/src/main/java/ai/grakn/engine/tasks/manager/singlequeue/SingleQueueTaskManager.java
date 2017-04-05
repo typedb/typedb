@@ -114,7 +114,6 @@ public class SingleQueueTaskManager implements TaskManager {
         }
 
         //TODO check that the number of partitions is at least the capacity
-        //TODO Single queue task manager should have its own impl of failover
         this.failover = new FailoverElector(engineId, zookeeper, storage);
         this.producer = kafkaProducer();
 

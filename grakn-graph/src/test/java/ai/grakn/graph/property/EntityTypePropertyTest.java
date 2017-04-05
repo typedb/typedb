@@ -32,14 +32,9 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-import static ai.grakn.graph.property.PropertyUtil.choose;
-import static ai.grakn.graph.property.PropertyUtil.directSubTypes;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.ErrorMessage.SUPER_TYPE_LOOP_DETECTED;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -53,16 +48,6 @@ public class EntityTypePropertyTest {
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    @Property
-    public void whenDeletingTheMetaEntityType_Throw(@Open GraknGraph graph) {
-        EntityType entity = graph.admin().getMetaEntityType();
-
-        exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(entity.getName()));
-
-        entity.delete();
-    }
 
     @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
@@ -103,61 +88,5 @@ public class EntityTypePropertyTest {
         Entity entity = type.addEntity();
 
         assertThat(entity.resources(), empty());
-    }
-
-    @Property
-    public void whenSettingTheDirectSuperTypeOfTheMetaEntityType_Throw(
-            @Meta EntityType subType, @FromGraph EntityType superType) {
-        exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
-        subType.superType(superType);
-    }
-
-    @Property
-    public void whenSettingTheDirectSuperTypeToAnIndirectSubType_Throw(
-            @Meta(false) EntityType type, long seed) {
-        EntityType newSuperType = choose(type.subTypes(), seed);
-
-        exception.expect(ConceptException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getName(), newSuperType.getName()));
-        type.superType(newSuperType);
-    }
-
-    @Property
-    public void whenSettingTheDirectSuperType_TheDirectSuperTypeIsSet(
-            @Meta(false) EntityType subType, @FromGraph EntityType superType) {
-        assumeThat(subType.subTypes(), not(hasItem(superType)));
-
-        subType.superType(superType);
-
-        assertEquals(superType, subType.superType());
-    }
-
-    @Property
-    public void whenAddingADirectSubTypeThatIsTheMetaEntityType_Throw(
-            EntityType superType, @Meta @FromGraph EntityType subType) {
-        exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
-        superType.subType(subType);
-    }
-
-    @Property
-    public void whenAddingADirectSubTypeWhichIsAnIndirectSuperType_Throw(
-            @Meta(false) EntityType newSubType, long seed) {
-        EntityType type = choose(newSubType.subTypes(), seed);
-
-        exception.expect(ConceptException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getName(), type.getName()));
-        type.subType(newSubType);
-    }
-
-    @Property
-    public void whenAddingADirectSubType_TheDirectSubTypeIsAdded(
-            @Open GraknGraph graph, @FromGraph EntityType superType, @Meta(false) @FromGraph EntityType subType) {
-        assumeThat(subType.subTypes(), not(hasItem(superType)));
-
-        superType.subType(subType);
-
-        assertThat(directSubTypes(graph, superType), hasItem(subType));
     }
 }

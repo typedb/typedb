@@ -34,7 +34,7 @@
     </properties>
 
     <dependencies>
-        <!--Logging dependencies: Runtime scope needed to override parent test scope-->
+        <!--Logging dependencies: Compile scope needed to override parent test scope-->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>

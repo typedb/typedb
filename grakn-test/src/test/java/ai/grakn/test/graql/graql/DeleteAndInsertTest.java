@@ -21,10 +21,10 @@ package ai.grakn.test.graql.graql;
 import ai.grakn.GraknGraph;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,6 +34,8 @@ import java.util.Collections;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 
 public class DeleteAndInsertTest {
 
@@ -49,28 +51,17 @@ public class DeleteAndInsertTest {
     public void setUp() {
     }
 
-    //TODO: maybe with more specific error message as this happens quite often
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void deleteVarNotExist() {
+    @Test
+    public void whenDeletingAVariableNotInTheQuery_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("y")));
         graph.graql().match(var("x").isa("movie")).delete("y").execute();
     }
 
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void deleteVarNameNotExist() {
-        graph.graql().match(var()).delete("x").execute();
-    }
-
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void deleteVarNameNotExist2() {
-        graph.graql().match(var("x")).delete("y").execute();
-    }
-
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void deleteVarNameEmptySet() {
+    @Test
+    public void whenDeletingAnEmptyPattern_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(NO_PATTERNS.getMessage());
         graph.graql().match(var()).delete(Collections.EMPTY_SET).execute();
     }
 
@@ -79,9 +70,8 @@ public class DeleteAndInsertTest {
         graph.graql().match(var()).delete((Set<Var>) null).execute();
     }
 
-    @Ignore //TODO: Fix this
     @Test(expected = Exception.class)
-    public void deleteVarNameNullString() {
+    public void whenDeleteIsPassedNull_Throw() {
         graph.graql().match(var()).delete((String) null).execute();
     }
 
@@ -95,9 +85,10 @@ public class DeleteAndInsertTest {
         graph.graql().match(var("x").isa("movie")).insert((Collection<? extends Var>) null).execute();
     }
 
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void matchInsertEmptyCollection() {
+    @Test
+    public void whenMatchInsertingAnEmptyPattern_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(NO_PATTERNS.getMessage());
         graph.graql().match(var()).insert(Collections.EMPTY_SET).execute();
     }
 
@@ -111,9 +102,10 @@ public class DeleteAndInsertTest {
         graph.graql().insert((Collection<? extends Var>) null).execute();
     }
 
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void insertEmptyCollection() {
+    @Test
+    public void whenInsertingAnEmptyPattern_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(NO_PATTERNS.getMessage());
         graph.graql().insert(Collections.EMPTY_SET).execute();
     }
 }
