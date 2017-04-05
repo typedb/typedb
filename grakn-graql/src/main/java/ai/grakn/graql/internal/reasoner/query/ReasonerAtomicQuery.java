@@ -95,6 +95,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public ReasonerAtomicQuery(ReasonerAtomicQuery query) {
         super(query);
+        atom = selectAtoms().stream().findFirst().orElse(null);
     }
 
     public ReasonerAtomicQuery(Atom at) {
@@ -540,9 +541,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Answer sub = queryIterator.next()
                     .merge(getIdPredicateAnswer())
                     .filterVars(getVarNames());
-            if (currentRule != null){
-                sub = sub.explain(new RuleExplanation(currentRule));
-            }
+            if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
             return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
         }
 

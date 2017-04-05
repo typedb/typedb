@@ -241,6 +241,8 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
+    //TODO
+    @Ignore
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources1() {
         QueryBuilder qb = testSet14.graph().graql().infer(true);

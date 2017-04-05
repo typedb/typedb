@@ -64,7 +64,7 @@ public class Explanation implements AnswerExplanation {
     public boolean isRuleExplanation(){ return false;}
 
     @Override
-    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation() && !getAnswers().isEmpty();}
+    public boolean isJoinExplanation(){ return !isLookupExplanation() && !isRuleExplanation();}
 
     @Override
     public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
@@ -80,7 +80,6 @@ public class Explanation implements AnswerExplanation {
 
     @Override
     public AnswerExplanation merge(AnswerExplanation a2) {
-        if (a2.isEmpty()) return this;
         AnswerExplanation exp = new Explanation();
         if (this.isJoinExplanation()) this.getAnswers().forEach(exp::addAnswer);
         if (a2.isJoinExplanation()) a2.getAnswers().forEach(exp::addAnswer);
