@@ -141,7 +141,7 @@ public class CWInferenceTest {
         String explicitQuery = "match " +
             "{{$x isa criminal;} or {$x has nationality 'American';" +
             "{$z has alignment 'hostile';} or {" +
-                "$yy value 'America';" +
+                "$yy val 'America';" +
                 "($z, $yy) isa is-enemy-of;" +
                 "$z isa country;" +
                 "$yy isa country;" +

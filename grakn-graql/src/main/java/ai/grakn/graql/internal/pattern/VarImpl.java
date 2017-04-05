@@ -139,12 +139,12 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var value(Object value) {
-        return value(Graql.eq(value));
+    public Var val(Object value) {
+        return val(Graql.eq(value));
     }
 
     @Override
-    public Var value(ValuePredicate predicate) {
+    public Var val(ValuePredicate predicate) {
         return addProperty(new ValueProperty(predicate.admin()));
     }
 
@@ -160,7 +160,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(String type, ValuePredicate predicate) {
-        return has(type, Graql.var().value(predicate));
+        return has(type, Graql.var().val(predicate));
     }
 
     @Override

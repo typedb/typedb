@@ -97,7 +97,7 @@ public class AdmissionsInferenceTest {
         QueryBuilder iqb = admissionsGraph.graph().graql().infer(true);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'full';";
-        String explicitQuery = "match $x isa applicant, has name $name;{$name value 'Charlie';} or {$name value 'Eva';};select $x;";
+        String explicitQuery = "match $x isa applicant, has name $name;{$name val 'Charlie';} or {$name val 'Eva';};select $x;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));

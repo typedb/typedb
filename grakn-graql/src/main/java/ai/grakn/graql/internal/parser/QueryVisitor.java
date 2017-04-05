@@ -440,7 +440,7 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropValue(GraqlParser.PropValueContext ctx) {
-        return var -> var.value(visitPredicate(ctx.predicate()));
+        return var -> var.val(visitPredicate(ctx.predicate()));
     }
 
     @Override
@@ -468,7 +468,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeName type = visitName(ctx.name());
-        Var resource = var().value(visitPredicate(ctx.predicate()));
+        Var resource = var().val(visitPredicate(ctx.predicate()));
         return var -> var.has(type, resource);
     }
 

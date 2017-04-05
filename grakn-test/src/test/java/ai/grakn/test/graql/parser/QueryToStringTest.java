@@ -63,7 +63,7 @@ public class QueryToStringTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("person"),
-                        var("y").isa("genre").value(neq("crime"))
+                        var("y").isa("genre").val(neq("crime"))
                 ),
                 var("y").has("name", var("n"))
         ).orderBy("n").select("x", "y").limit(8).offset(4);
@@ -128,7 +128,7 @@ public class QueryToStringTest {
 
     @Test
     public void testEscapeStrings() {
-        assertEquals("insert $x value \"hello\\nworld\";", qb.insert(var("x").value("hello\nworld")).toString());
+        assertEquals("insert $x val \"hello\\nworld\";", qb.insert(var("x").val("hello\nworld")).toString());
     }
 
     @Test
@@ -205,23 +205,23 @@ public class QueryToStringTest {
 
     @Test
     public void testZeroToString() {
-        assertEquals("match $x value 0.0;", qb.match(var("x").value(0.0)).toString());
+        assertEquals("match $x val 0.0;", qb.match(var("x").val(0.0)).toString());
     }
 
     @Test
     public void testExponentsToString() {
-        assertEquals("match $x value 1000000000.0;", qb.match(var("x").value(1_000_000_000.0)).toString());
+        assertEquals("match $x val 1000000000.0;", qb.match(var("x").val(1_000_000_000.0)).toString());
     }
 
     @Test
     public void testDecimalToString() {
-        assertEquals("match $x value 0.0001;", qb.match(var("x").value(0.0001)).toString());
+        assertEquals("match $x val 0.0001;", qb.match(var("x").val(0.0001)).toString());
     }
 
     @Test(expected=UnsupportedOperationException.class)
     public void testToStringUnsupported() {
         //noinspection ResultOfMethodCallIgnored
-        qb.match(var("x").isa(var().value("abc"))).toString();
+        qb.match(var("x").isa(var().val("abc"))).toString();
     }
 
     private void assertSameResults(MatchQuery query) {

@@ -244,7 +244,7 @@ public class VariableAndPatternTest {
         assertTrue(graph.graql().match(var().isa("movie").has("title", "Godfather")).ask().execute());
         Set<Concept> result1 = graph.graql().match(
                 var("x").isa("movie").has("title", var("y")),
-                var("y").value(neq("Godfather"))).select("x").execute()
+                var("y").val(neq("Godfather"))).select("x").execute()
                 .stream()
                 .map(stringConceptMap -> stringConceptMap.get("x"))
                 .collect(Collectors.toSet());

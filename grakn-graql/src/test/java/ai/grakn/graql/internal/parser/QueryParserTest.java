@@ -97,7 +97,7 @@ public class QueryParserTest {
     @Test
     public void testRelationQuery() {
         MatchQuery expected = match(
-                var("brando").value("Marl B").isa("person"),
+                var("brando").val("Marl B").isa("person"),
                 var().rel("actor", "brando").rel("char").rel("production-with-cast", "prod")
         ).select("char", "prod");
 
@@ -117,12 +117,12 @@ public class QueryParserTest {
                 var("x").isa("movie").has("title", var("t")),
                 or(
                         or(
-                                var("t").value(eq("Apocalypse Now")),
-                                and(var("t").value(lt("Juno")), var("t").value(gt("Godfather")))
+                                var("t").val(eq("Apocalypse Now")),
+                                and(var("t").val(lt("Juno")), var("t").val(gt("Godfather")))
                         ),
-                        var("t").value(eq("Spy"))
+                        var("t").val(eq("Spy"))
                 ),
-                var("t").value(neq("Apocalypse Now"))
+                var("t").val(neq("Apocalypse Now"))
         );
 
         MatchQuery parsed = parse(
@@ -140,8 +140,8 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                    and(var("t").value(lte("Juno")), var("t").value(gte("Godfather")), var("t").value(neq("Heat"))),
-                    var("t").value("The Muppets")
+                    and(var("t").val(lte("Juno")), var("t").val(gte("Godfather")), var("t").val(neq("Heat"))),
+                    var("t").val("The Muppets")
                 )
         );
 
@@ -158,7 +158,7 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var().rel("x").rel("y"),
                 var("y").isa("person").has("name", var("n")),
-                or(var("n").value(contains("ar")), var("n").value(regex("^M.*$")))
+                or(var("n").val(contains("ar")), var("n").val(regex("^M.*$")))
         );
 
         MatchQuery parsed = parse(
@@ -171,7 +171,7 @@ public class QueryParserTest {
 
     @Test
     public void testValueEqualsVariableQuery() {
-        MatchQuery expected = match(var("s1").value(var("s2")));
+        MatchQuery expected = match(var("s1").val(var("s2")));
 
         MatchQuery parsed = parse("match $s1 value = $s2;");
 
@@ -252,7 +252,7 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var().rel(var("p"), "x").rel("y"),
                 var("x").isa(var("z")),
-                var("y").value("crime"),
+                var("y").val("crime"),
                 var("z").sub("production"),
                 name("has-genre").hasRole(var("p"))
         );
@@ -274,8 +274,8 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var("x").isa("movie"),
                 or(
-                        and(var("y").isa("genre").value("drama"), var().rel("x").rel("y")),
-                        var("x").value("The Muppets")
+                        and(var("y").isa("genre").val("drama"), var().rel("x").rel("y")),
+                        var("x").val("The Muppets")
                 )
         );
 
