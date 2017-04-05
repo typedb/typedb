@@ -52,7 +52,7 @@ class HALConceptOntology {
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
-    private final static String HAS_ROLE_EDGE = "relates";
+    private final static String RELATES_EDGE = "relates";
     private final static String HAS_RESOURCE_EDGE = "has-resource";
     private final static String PLAYS_ROLE_EDGE = "plays-role";
 
@@ -139,7 +139,7 @@ class HALConceptOntology {
                 Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId() +getURIParams())
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 generateStateAndLinks(roleRepresentation, relType);
-                halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+                halResource.withRepresentation(RELATES_EDGE, roleRepresentation);
             });
     }
 
@@ -150,7 +150,7 @@ class HALConceptOntology {
             generateStateAndLinks(roleRepresentation, role);
             //We always return roles with in embedded the entities that play that role.
             roleTypeOntology(roleRepresentation, role);
-            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(RELATES_EDGE, roleRepresentation);
         });
     }
 

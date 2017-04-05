@@ -22,7 +22,7 @@ import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.EdgeLabel.HAS_ROLE;
+import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 
 class OutRelatesFragment extends AbstractFragment {
 
@@ -32,7 +32,7 @@ class OutRelatesFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.out(HAS_ROLE.getLabel());
+        traversal.out(RELATES.getLabel());
     }
 
     @Override

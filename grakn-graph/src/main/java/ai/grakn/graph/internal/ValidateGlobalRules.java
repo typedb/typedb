@@ -121,7 +121,7 @@ class ValidateGlobalRules {
     /**
      *
      * @param roleType The RoleType to validate
-     * @return An error message if the relates does not have a single incoming HAS_ROLE edge
+     * @return An error message if the relates does not have a single incoming RELATES edge
      */
     static Optional<String> validateHasSingleIncomingRelatesEdge(RoleType roleType){
         if(roleType.isAbstract()) {

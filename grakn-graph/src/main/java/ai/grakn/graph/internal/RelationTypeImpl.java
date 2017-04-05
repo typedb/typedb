@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private ComponentCache<Set<RoleType>> cachedRelates = new ComponentCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE).collect(Collectors.toSet()));
+    private ComponentCache<Set<RoleType>> cachedRelates = new ComponentCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -91,7 +91,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public RelationType relates(RoleType roleType) {
         checkTypeMutation();
-        putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
+        putEdge(roleType, Schema.EdgeLabel.RELATES);
 
         //ComponentCache the Role internally
         cachedRelates.ifPresent(set -> set.add(roleType));
@@ -113,7 +113,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public RelationType deleteRelates(RoleType roleType) {
         checkTypeMutation();
-        deleteEdgeTo(Schema.EdgeLabel.HAS_ROLE, roleType);
+        deleteEdgeTo(Schema.EdgeLabel.RELATES, roleType);
 
         RoleTypeImpl roleTypeImpl = (RoleTypeImpl) roleType;
         //Add castings of roleType to make sure relations are still valid
