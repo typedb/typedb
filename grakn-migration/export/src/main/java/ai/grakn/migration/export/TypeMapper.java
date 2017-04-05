@@ -55,7 +55,7 @@ public class TypeMapper {
      * @return var with RelationType specific metadata
      */
     private static Var map(Var var, RelationType relationType) {
-        return hasRoles(var, relationType);
+        return relates(var, relationType);
     }
 
     /**
@@ -115,7 +115,7 @@ public class TypeMapper {
      * @param type type from which metadata extracted
      * @return var with appropriate has-role edges
      */
-    private static Var hasRoles(Var var, RelationType type){
+    private static Var relates(Var var, RelationType type){
         for(RoleType role:type.relates()){
             var = var.hasRole(name(role.getName()));
         }

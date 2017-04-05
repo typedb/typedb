@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  *
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private ComponentCache<Set<RoleType>> cachedHasRoles = new ComponentCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE).collect(Collectors.toSet()));
+    private ComponentCache<Set<RoleType>> cachedRelates = new ComponentCache<>(() -> this.<RoleType>getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE).collect(Collectors.toSet()));
 
     RelationTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -65,7 +65,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     void copyCachedConcepts(RelationType type){
         super.copyCachedConcepts(type);
-        ((RelationTypeImpl) type).cachedHasRoles.ifPresent(value -> this.cachedHasRoles.set(getGraknGraph().clone(value)));
+        ((RelationTypeImpl) type).cachedRelates.ifPresent(value -> this.cachedRelates.set(getGraknGraph().clone(value)));
     }
 
     @Override
@@ -80,7 +80,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public Collection<RoleType> relates() {
-        return Collections.unmodifiableCollection(cachedHasRoles.get());
+        return Collections.unmodifiableCollection(cachedRelates.get());
     }
 
     /**
@@ -94,7 +94,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         putEdge(roleType, Schema.EdgeLabel.HAS_ROLE);
 
         //ComponentCache the Role internally
-        cachedHasRoles.ifPresent(set -> set.add(roleType));
+        cachedRelates.ifPresent(set -> set.add(roleType));
 
         //ComponentCache the relation type in the role
         ((RoleTypeImpl) roleType).addCachedRelationType(this);
@@ -126,7 +126,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         getGraknGraph().getConceptLog().trackConceptForValidation(roleTypeImpl);
 
         //Remove from internal cache
-        cachedHasRoles.ifPresent(set -> set.remove(roleType));
+        cachedRelates.ifPresent(set -> set.remove(roleType));
 
         //Remove from roleTypeCache
         ((RoleTypeImpl) roleType).deleteCachedRelationType(this);
@@ -140,14 +140,14 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public void delete(){
         //Force load the cache
-        cachedHasRoles.get();
+        cachedRelates.get();
 
         super.delete();
 
         //Update the cache of the connected role types
-        cachedHasRoles.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
+        cachedRelates.get().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedRelationType(this));
 
         //Clear internal Cache
-        cachedHasRoles.clear();
+        cachedRelates.clear();
     }
 }

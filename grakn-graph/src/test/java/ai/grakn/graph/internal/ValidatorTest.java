@@ -146,7 +146,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void relationTypeHasRolesTest(){
+    public void relationTypeRelatesTest(){
         RelationType alone = graknGraph.putRelationType("alone");
         Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());

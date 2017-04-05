@@ -78,7 +78,7 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingHasRoleUsedByExistingRelation_Throw() throws GraknValidationException {
+    public void whenDeletingRelatesUsedByExistingRelation_Throw() throws GraknValidationException {
         marriage.deleteRelates(husband);
         expectedException.expect(GraknValidationException.class);
         graknGraph.commit();

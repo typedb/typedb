@@ -121,7 +121,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     }
 
     @Test
-    public void testValidateRelationTypeHasRoles() throws Exception {
+    public void testValidateRelationTypeRelates() throws Exception {
         RoleType hunter = graknGraph.putRoleType("hunter");
         RelationType kills = graknGraph.putRelationType("kills");
 

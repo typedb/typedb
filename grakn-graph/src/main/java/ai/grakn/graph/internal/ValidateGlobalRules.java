@@ -205,9 +205,9 @@ class ValidateGlobalRules {
 
         Set<String> errorMessages = new HashSet<>();
 
-        Collection<RoleType> superHasRoles = superRelationType.relates();
-        Collection<RoleType> hasRoles = relationType.relates();
-        Set<TypeName> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
+        Collection<RoleType> superRelates = superRelationType.relates();
+        Collection<RoleType> relates = relationType.relates();
+        Set<TypeName> relatesNames = relates.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
         //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
@@ -215,7 +215,7 @@ class ValidateGlobalRules {
             Set<TypeName> allSuperRolesPlayed = new HashSet<>();
             superRelationType.superTypeSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
-            for (RoleType hasRole : hasRoles) {
+            for (RoleType hasRole : relates) {
                 boolean validRoleTypeFound = false;
                 Set<RoleType> superRoleTypes = ((RoleTypeImpl) hasRole).superTypeSet();
                 for (RoleType superRoleType : superRoleTypes) {
@@ -232,17 +232,17 @@ class ValidateGlobalRules {
         }
 
         //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
-        for (RoleType superHasRole : superHasRoles) {
-            boolean subRoleNotFoundInHasRoles = true;
+        for (RoleType superHasRole : superRelates) {
+            boolean subRoleNotFoundInRelates = true;
 
             for (RoleType subRoleType : superHasRole.subTypes()) {
-                if(hasRolesNames.contains(subRoleType.getName())){
-                    subRoleNotFoundInHasRoles = false;
+                if(relatesNames.contains(subRoleType.getName())){
+                    subRoleNotFoundInRelates = false;
                     break;
                 }
             }
 
-            if(subRoleNotFoundInHasRoles){
+            if(subRoleNotFoundInRelates){
                 errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superHasRole.getName(), superRelationType.getName(), "sub", "sub", relationType.getName()));
             }
         }
