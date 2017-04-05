@@ -48,6 +48,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.SUB_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.VALUE_PROPERTY;
 import static ai.grakn.graql.internal.hal.HALUtils.generateConceptState;
+import static ai.grakn.util.REST.WebPath.Dashboard.EXPLORE;
 
 
 /**
@@ -151,7 +152,7 @@ public class HALConceptData {
     private void generateRuleRHS(Representation halResource, Rule rule) {
         Representation RHS = factory.newRepresentation(resourceLinkPrefix + "RHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
-                .withLink(EXPLORE_CONCEPT_LINK, REST.WebPath.CONCEPT_BY_ID_EXPLORE_URI)
+                .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)
                 .withProperty(ID_PROPERTY, "RHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "RHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
@@ -162,7 +163,7 @@ public class HALConceptData {
     private void generateRuleLHS(Representation halResource, Rule rule) {
         Representation LHS = factory.newRepresentation(resourceLinkPrefix + "LHS-" + rule.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
-                .withLink(EXPLORE_CONCEPT_LINK, REST.WebPath.CONCEPT_BY_ID_EXPLORE_URI)
+                .withLink(EXPLORE_CONCEPT_LINK, EXPLORE)
                 .withProperty(ID_PROPERTY, "LHS-" + rule.getId().getValue())
                 .withProperty(TYPE_PROPERTY, "LHS")
                 .withProperty(BASETYPE_PROPERTY, Schema.BaseType.RESOURCE_TYPE.name())
@@ -200,7 +201,7 @@ public class HALConceptData {
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
-        resource.withLink(EXPLORE_CONCEPT_LINK, REST.WebPath.CONCEPT_BY_ID_EXPLORE_URI + concept.getId() + getURIParams(0));
+        resource.withLink(EXPLORE_CONCEPT_LINK, EXPLORE + concept.getId() + getURIParams(0));
         generateConceptState(resource, concept);
     }
 

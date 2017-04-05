@@ -40,7 +40,7 @@ import org.junit.Test;
 import spark.Service;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.test.GraknTestEnv.usingTitan;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;

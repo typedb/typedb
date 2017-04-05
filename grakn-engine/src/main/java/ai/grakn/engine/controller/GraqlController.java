@@ -47,8 +47,8 @@ import javax.ws.rs.Produces;
 import java.util.Optional;
 
 import static ai.grakn.GraknTxType.READ;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;

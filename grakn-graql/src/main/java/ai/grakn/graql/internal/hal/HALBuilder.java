@@ -49,6 +49,7 @@ import static ai.grakn.graql.internal.hal.HALUtils.HAS_EMPTY_ROLE_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.OUTBOUND_EDGE;
 import static ai.grakn.graql.internal.hal.HALUtils.buildInferredRelationsMap;
 import static ai.grakn.graql.internal.hal.HALUtils.computeRoleTypesFromQuery;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Class for building HAL representations of a {@link Concept} or a {@link MatchQuery}.
@@ -62,18 +63,24 @@ public class HALBuilder {
     private final static String ASSERTION_URL = "?keyspace=%s&query=match %s %s %s %s; %s limit 1;&limit=%s";
 
 
-    public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Answer> graqlResultsList, String keyspace, int offset, int limit) {
+    public static Json renderHALArrayData(MatchQuery matchQuery, int offset, int limit){
+        Collection<Answer> answers = matchQuery.admin().streamWithAnswers().collect(toSet());
+        return renderHALArrayData(matchQuery, answers, offset, limit);
+    }
+
+   public static Json renderHALArrayData(MatchQuery matchQuery, Collection<Answer> results, int offset, int limit) {
+        String keyspace = matchQuery.admin().getGraph().get().getKeyspace();
 
         //For each VarAdmin containing a relation we store a map containing varNames associated to RoleTypes
         Map<VarAdmin,Pair<Map<VarName, String>, String>> roleTypes = new HashMap<>();
-        if(graqlResultsList.iterator().hasNext()) {
+        if(results.iterator().hasNext()) {
             // Compute map on first answer in result, since it will be the same for all the answers
-            roleTypes = computeRoleTypesFromQuery(matchQuery, graqlResultsList.iterator().next());
+            roleTypes = computeRoleTypesFromQuery(matchQuery, results.iterator().next());
         }
         //Collect all the types explicitly asked in the match query
-        Set<TypeName> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
+        Set<TypeName> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(toSet());
 
-        return buildHALRepresentations(graqlResultsList, typesAskedInQuery, roleTypes, keyspace, offset, limit);
+        return buildHALRepresentations(results, typesAskedInQuery, roleTypes, keyspace, offset, limit);
     }
 
     public static String renderHALConceptData(Concept concept, int separationDegree, String keyspace, int offset, int limit) {
@@ -93,19 +100,19 @@ public class HALBuilder {
         return renderedHAL;
     }
 
-    public static Json explanationAnswersToHAL(Stream<Answer> answerStream, String keyspace, int limit) {
+    public static Json explanationAnswersToHAL(Stream<Answer> answerStream, int limit) {
         final Json conceptsArray = Json.array();
         answerStream.forEach(answer -> {
             AnswerExplanation expl = answer.getExplanation();
             if (expl.isLookupExplanation()) {
-                HALBuilder.renderHALArrayData(expl.getQuery().getMatchQuery(), Collections.singletonList(answer), keyspace, 0,limit).asList().forEach(conceptsArray::add);
+                HALBuilder.renderHALArrayData(expl.getQuery().getMatchQuery(), Collections.singletonList(answer), 0,limit).asList().forEach(conceptsArray::add);
             } else if (expl.isRuleExplanation()) {
                 Atom innerAtom = ((RuleExplanation) expl).getRule().getHead().getAtom();
                 //TODO: handle case innerAtom isa resource
                 if (innerAtom.isRelation()) {
-                    HALBuilder.renderHALArrayData(expl.getQuery().getMatchQuery(), Collections.singletonList(answer), keyspace, 0,limit).asList().forEach(conceptsArray::add);
+                    HALBuilder.renderHALArrayData(expl.getQuery().getMatchQuery(), Collections.singletonList(answer), 0,limit).asList().forEach(conceptsArray::add);
                 }
-                explanationAnswersToHAL(expl.getAnswers().stream(), keyspace, limit).asList().forEach(conceptsArray::add);
+                explanationAnswersToHAL(expl.getAnswers().stream(), limit).asList().forEach(conceptsArray::add);
             }
         });
         return conceptsArray;
@@ -182,7 +189,7 @@ public class HALBuilder {
 
         String withoutUrl = String.format(ASSERTION_URL, keyspace, varsWithIds, dollarR,parenthesis, isaString, selectR,limit);
 
-        String URL = (isInferred) ?  REST.WebPath.GRAPH_EXPLAIN_URI : REST.WebPath.GRAPH_MATCH_QUERY_URI;
+        String URL = (isInferred) ?  REST.WebPath.Dashboard.EXPLAIN : REST.WebPath.Graph.GRAQL;
 
         return URL+withoutUrl;
     }

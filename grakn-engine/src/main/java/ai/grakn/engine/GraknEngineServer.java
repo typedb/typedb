@@ -20,6 +20,7 @@ package ai.grakn.engine;
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.ConceptController;
+import ai.grakn.engine.controller.DashboardController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
@@ -131,6 +132,7 @@ public class GraknEngineServer implements AutoCloseable {
         EngineGraknGraphFactory factory = EngineGraknGraphFactory.getInstance();
         new GraqlController(factory, spark);
         new ConceptController(factory, spark);
+        new DashboardController(factory, spark);
         new SystemController(spark);
         new CommitLogController(spark);
         new AuthController(spark);

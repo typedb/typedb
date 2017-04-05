@@ -38,8 +38,7 @@ import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.GraqlController.getAcceptType;
 import static ai.grakn.engine.controller.GraqlController.getMandatoryParameter;
 import static ai.grakn.engine.controller.GraqlController.getParameter;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
@@ -71,8 +70,10 @@ public class ConceptController {
     @ApiOperation(
             value = "Return the HAL representation of a given concept.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = IDENTIFIER, value = "Identifier of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = KEYSPACE,   value = "Name of graph to use", required = true, dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = IDENTIFIER,      value = "Identifier of the concept", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = KEYSPACE,        value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = OFFSET_EMBEDDED, value = "Offset to begin at for embedded HAL concepts", required = true, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = LIMIT_EMBEDDED,  value = "Limit on the number of embedded HAL concepts", required = true, dataType = "boolean", paramType = "query")
     })
     private Json conceptByIdentifier(Request request, Response response){
         validateRequest(request);
@@ -83,24 +84,26 @@ public class ConceptController {
         int limit = getParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
-            Concept concept = graph.getConcept(conceptId);
-
-            if (notPresent(concept)) {
-                throw new GraknEngineServerException(500, NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, keyspace));
-            }
+            Concept concept = retrieveExistingConcept(graph, conceptId);
 
             response.type(APPLICATION_HAL);
             response.status(200);
 
-            if(concept.isType()){
-                return Json.read(renderHALConceptOntology(concept, keyspace, offset, limit));
-            } else {
-                return Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit));
-            }
+            return Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit));
         }
     }
 
-    private void validateRequest(Request request){
+    static Concept retrieveExistingConcept(GraknGraph graph, ConceptId conceptId){
+        Concept concept = graph.getConcept(conceptId);
+
+        if (notPresent(concept)) {
+            throw new GraknEngineServerException(500, NO_CONCEPT_IN_KEYSPACE.getMessage(conceptId, graph.getKeyspace()));
+        }
+
+        return concept;
+    }
+
+    static void validateRequest(Request request){
         String acceptType = getAcceptType(request);
 
         if(!acceptType.equals(APPLICATION_HAL)){
@@ -113,7 +116,7 @@ public class ConceptController {
      * @param concept the concept to validate
      * @return true if the concept is valid, false otherwise
      */
-    private boolean notPresent(Concept concept){
+    static boolean notPresent(Concept concept){
         return concept == null;
     }
 }

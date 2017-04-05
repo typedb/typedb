@@ -38,8 +38,7 @@ import org.junit.Test;
 import spark.Service;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.test.engine.controller.GraqlControllerTest.exception;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
@@ -158,7 +157,7 @@ public class ConceptControllerTest {
 
         Response response = sendRequest(concept, 1);
 
-        Json expectedResponse = Json.read(renderHALConceptOntology(concept, "randomKeyspace", 0, 1));
+        Json expectedResponse = Json.read(renderHALConceptData(concept, 1, "randomKeyspace", 0, 1));
         assertThat(response.as(Json.class, jsonMapper), equalTo(expectedResponse));
     }
 

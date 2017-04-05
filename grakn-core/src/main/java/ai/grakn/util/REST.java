@@ -65,6 +65,16 @@ public class REST {
             public static final String CONCEPT = "/concept";
         }
 
+        /**
+         * URIs to dashboard controller endpoints
+         */
+        public static class Dashboard {
+            public static final String TYPES = "/types";
+            public static final String EXPLORE = "/explore";
+            public static final String EXPLAIN = "/explain";
+            public static final String PRECOMPUTE = "/precomputeInferences";
+        }
+
         public static final String NEW_SESSION_URI="/auth/session/";
         public static final String IS_PASSWORD_PROTECTED_URI="/auth/enabled/";
 
