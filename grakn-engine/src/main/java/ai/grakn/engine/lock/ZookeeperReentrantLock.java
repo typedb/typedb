@@ -113,8 +113,6 @@ public class ZookeeperReentrantLock implements Lock {
     public void unlock() {
         try {
             mutex.release();
-        } catch (IllegalMonitorStateException e){
-            throw e;
         } catch (Exception e) {
             throw new EngineStorageException(e);
         }

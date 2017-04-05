@@ -20,6 +20,7 @@ package ai.grakn.test.engine.lock;
 
 import ai.grakn.engine.lock.ZookeeperReentrantLock;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
+import ai.grakn.exception.EngineStorageException;
 import ai.grakn.test.EngineContext;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -81,7 +82,7 @@ public class ZookeeperReentrantLockTest {
 
     @Test
     public void whenUnownedLockIsReleased_IllegalMonitorStateExceptionThrown(){
-        exception.expect(IllegalMonitorStateException.class);
+        exception.expect(EngineStorageException.class);
 
         Lock lock = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
         lock.unlock();
