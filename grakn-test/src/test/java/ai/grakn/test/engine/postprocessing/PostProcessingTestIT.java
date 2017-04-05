@@ -25,10 +25,11 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -55,13 +56,13 @@ import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private EngineCache cache = EngineCache.getInstance();
+    private ConceptCache cache = EngineCacheProvider.getCache();
 
     private GraknSession factory;
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startSingleQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
     public void setUp() throws Exception {
