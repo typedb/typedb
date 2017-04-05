@@ -25,7 +25,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * <p>
@@ -72,7 +72,7 @@ public class ZookeeperReentrantLock implements Lock {
     @Override
     public boolean tryLock() {
         try {
-            if (!mutex.isAcquiredInThisProcess() && mutex.acquire(1, SECONDS)) {
+            if (mutex.acquire(100, MILLISECONDS)) {
                 return true;
             }
         } catch (Exception e) {
@@ -113,6 +113,8 @@ public class ZookeeperReentrantLock implements Lock {
     public void unlock() {
         try {
             mutex.release();
+        } catch (IllegalMonitorStateException e){
+            throw e;
         } catch (Exception e) {
             throw new EngineStorageException(e);
         }
