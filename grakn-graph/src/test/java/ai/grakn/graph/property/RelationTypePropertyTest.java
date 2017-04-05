@@ -62,16 +62,6 @@ public class RelationTypePropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenDeletingMetaRelationType_Throw(@Open GraknGraph graph) {
-        RelationType relation = graph.admin().getMetaRelationType();
-
-        exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relation.getName()));
-
-        relation.delete();
-    }
-
-    @Property
     public void whenANonMetaRelationTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @Meta(false) RelationType type) {
         assumeThat(type.instances(), empty());

@@ -55,16 +55,6 @@ public class EntityTypePropertyTest {
     public ExpectedException exception = ExpectedException.none();
 
     @Property
-    public void whenDeletingTheMetaEntityType_Throw(@Open GraknGraph graph) {
-        EntityType entity = graph.admin().getMetaEntityType();
-
-        exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(entity.getName()));
-
-        entity.delete();
-    }
-
-    @Property
     public void whenANonMetaEntityTypeHasNoInstancesSubTypesOrRules_ItCanBeDeleted(
             @Open GraknGraph graph, @FromGraph @Meta(false) EntityType type) {
         assumeThat(type.instances(), empty());
