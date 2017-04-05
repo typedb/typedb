@@ -120,7 +120,7 @@ public interface RelationType extends Type {
      * @param roleType The RoleType to delete from the RelationType.
      * @return The RelationType itself.
      */
-    RelationType deleteHasRole(RoleType roleType);
+    RelationType deleteRelates(RoleType roleType);
 
     //---- Inherited Methods
     /**

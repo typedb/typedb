@@ -111,7 +111,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      * @return The Relation Type itself.
      */
     @Override
-    public RelationType deleteHasRole(RoleType roleType) {
+    public RelationType deleteRelates(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.HAS_ROLE, roleType);
 

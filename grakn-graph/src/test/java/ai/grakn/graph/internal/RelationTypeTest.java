@@ -88,7 +88,7 @@ public class RelationTypeTest extends GraphTestBase{
         assertTrue(c1.hasRoles().contains(c2));
         assertTrue(c1.hasRoles().contains(c3));
 
-        c1.deleteHasRole(c2);
+        c1.deleteRelates(c2);
         assertFalse(c1.hasRoles().contains(c2));
         assertTrue(c1.hasRoles().contains(c3));
     }
