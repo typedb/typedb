@@ -87,6 +87,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -213,6 +214,17 @@ public class SingleQueueTaskRunnerTest {
     }
 
     @Property(trials=10)
+    public void afterRunning_AllNonFailingTasksHaveConfigurationRemoved(List<List<TaskState>> tasks) throws Exception {
+        setUpTasks(tasks);
+
+        taskRunner.run();
+
+        completableTasks(tasks(tasks)).forEach(task ->
+                assertThat("Task " + task + " should not have configuration.", storage.getState(task).configuration(), nullValue())
+        );
+    }
+
+    @Property(trials=10)
     public void afterRunning_AllFailingTasksAreRecordedAsFailed(List<List<TaskState>> tasks) throws Exception {
         setUpTasks(tasks);
 
@@ -220,6 +232,17 @@ public class SingleQueueTaskRunnerTest {
 
         failingTasks(tasks(tasks)).forEach(task ->
                 assertThat("Task " + task + " should have failed.", storage.getState(task).status(), is(FAILED))
+        );
+    }
+
+    @Property(trials=10)
+    public void afterRunning_AllFailingTasksAreRecordedWithException(List<List<TaskState>> tasks) throws Exception {
+        setUpTasks(tasks);
+
+        taskRunner.run();
+
+        failingTasks(tasks(tasks)).forEach(task ->
+                assertThat("Task " + task + " should have stack trace.", storage.getState(task).stackTrace(), notNullValue())
         );
     }
 
