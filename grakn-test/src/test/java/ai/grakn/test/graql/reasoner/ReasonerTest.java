@@ -787,7 +787,7 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingHasRole() {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match ($x, $y) isa $rel-type;$rel-type has-role geo-entity;" +
+        String queryString = "match ($x, $y) isa $rel-type;$rel-type relates geo-entity;" +
                 "$y isa country;$y has name 'Poland';select $x;";
         String queryString2 = "match $y isa country;" +
             "($x, $y) isa is-located-in;$y has name 'Poland'; select $x;";
@@ -799,7 +799,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingHasRole2() {
-        String queryString = "match ($x, $y) isa $rel;$rel has-role $role;";
+        String queryString = "match ($x, $y) isa $rel;$rel relates $role;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
         QueryBuilder qb = geoGraph.graph().graql().infer(false);
         QueryBuilder iqb = geoGraph.graph().graql().infer(true).materialise(true);

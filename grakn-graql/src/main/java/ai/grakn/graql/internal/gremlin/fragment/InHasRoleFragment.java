@@ -37,7 +37,7 @@ class InHasRoleFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        return "<-[has-role]-";
+        return "<-[relates]-";
     }
 
     @Override

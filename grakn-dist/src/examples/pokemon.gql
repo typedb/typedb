@@ -23,20 +23,20 @@ height sub resource datatype double;
 weight sub resource datatype double;
 
 evolution sub relation
-    has-role ancestor
-    has-role descendant;
+    relates ancestor
+    relates descendant;
 ancestor sub role;
 descendant sub role;
 
 has-type sub relation
-    has-role pokemon-with-type
-    has-role type-of-pokemon;
+    relates pokemon-with-type
+    relates type-of-pokemon;
 pokemon-with-type sub role;
 type-of-pokemon sub role;
 
 super-effective sub relation
-    has-role defending-type
-    has-role attacking-type;
+    relates defending-type
+    relates attacking-type;
 defending-type sub role;
 attacking-type sub role;
 

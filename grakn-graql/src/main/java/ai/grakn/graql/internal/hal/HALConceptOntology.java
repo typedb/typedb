@@ -52,7 +52,7 @@ class HALConceptOntology {
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
-    private final static String HAS_ROLE_EDGE = "has-role";
+    private final static String HAS_ROLE_EDGE = "relates";
     private final static String HAS_RESOURCE_EDGE = "has-resource";
     private final static String PLAYS_ROLE_EDGE = "plays-role";
 

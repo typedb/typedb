@@ -372,14 +372,14 @@ public class GraknGraphTest extends GraphTestBase {
                 "qa sub user-interaction\n" +
                 "    has-resource helpful-votes\n" +
                 "    has-resource unhelpful-votes\n" +
-                "    has-role asked-question\n" +
-                "    has-role given-answer\n" +
-                "    has-role item;\n" +
+                "    relates asked-question\n" +
+                "    relates given-answer\n" +
+                "    relates item;\n" +
                 "product-review sub user-interaction\n" +
                 "    has-resource rating\n" +
-                "    has-role reviewer\n" +
-                "    has-role feedback\n" +
-                "    has-role item;\n" +
+                "    relates reviewer\n" +
+                "    relates feedback\n" +
+                "    relates item;\n" +
                 "comment sub entity\n" +
                 "    has-resource text\n" +
                 "    has-resource time;\n" +
@@ -423,12 +423,12 @@ public class GraknGraphTest extends GraphTestBase {
                 "    plays-role recommended;\n" +
                 "name sub resource datatype string;\n" +
                 "hierarchy sub relation\n" +
-                "    has-role subcategory\n" +
-                "    has-role supercategory;\n" +
+                "    relates subcategory\n" +
+                "    relates supercategory;\n" +
                 "category-assignment sub relation\n" +
                 "    has-resource rank\n" +
-                "    has-role item #product\n" +
-                "    has-role label; #category \n" +
+                "    relates item #product\n" +
+                "    relates label; #category \n" +
                 "rank sub resource datatype long;\n" +
                 "user sub entity\n" +
                 "    has-resource uid\n" +
@@ -438,30 +438,30 @@ public class GraknGraphTest extends GraphTestBase {
                 "uid sub ID;\n" +
                 "username sub name;\n" +
                 "completed-recommendation sub relation\n" +
-                "    has-role successful-recommendation\n" +
-                "    has-role buyer;\n" +
+                "    relates successful-recommendation\n" +
+                "    relates buyer;\n" +
                 "implied-recommendation sub relation\n" +
-                "    has-role category-recommendation\n" +
-                "    has-role product-recommendation;\n" +
+                "    relates category-recommendation\n" +
+                "    relates product-recommendation;\n" +
                 "recommendation sub relation is-abstract\n" +
                 "    plays-role successful-recommendation\n" +
                 "    plays-role product-recommendation;\n" +
                 "co-categories sub relation\n" +
                 "    plays-role category-recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "also-viewed sub recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "also-bought sub recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "bought-together sub recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "transaction sub relation\n" +
-                "    has-role buyer\n" +
-                "    has-role item;\n" +
+                "    relates buyer\n" +
+                "    relates item;\n" +
                 "asked-question sub role;\n" +
                 "given-answer sub role;\n" +
                 "item sub role;\n" +

@@ -12,8 +12,8 @@ document-type sub resource datatype string;
 notes sub resource datatype string;
 
 conclusion-evidence sub relation
-	has-role evidence
-	has-role conclusion;
+	relates evidence
+	relates conclusion;
 evidence sub role;
 conclusion sub role;
 
@@ -34,8 +34,8 @@ degree sub resource datatype long;
 # The following links events to people, specifying the role of the person in the event
 
 event-protagonist sub relation
-	has-role happening
-	has-role protagonist
+	relates happening
+	relates protagonist
 	has-resource event-role;
 happening sub role;
 protagonist sub role;
@@ -98,10 +98,10 @@ relatives sub relation
 	is-abstract;
 
 marriage sub relatives
-	has-role spouse1
-	has-role spouse2
-	has-role husband
-	has-role wife
+	relates spouse1
+	relates spouse2
+	relates husband
+	relates wife
 	has-resource date;
 spouse sub role is-abstract;
 generic-spouse sub spouse is-abstract;
@@ -111,12 +111,12 @@ husband sub spouse;
 wife sub spouse;
 
 parentship sub relatives
-	has-role parent
-	has-role mother
-	has-role father
-	has-role child
-	has-role son
-	has-role daughter;
+	relates parent
+	relates mother
+	relates father
+	relates child
+	relates son
+	relates daughter;
 parent sub role;
 mother sub parent;
 father sub parent;
@@ -126,19 +126,19 @@ daughter sub child;
 
 ### The following will be added by reasoner
 siblings sub relatives
-	has-role sibling1
-	has-role sibling2;
+	relates sibling1
+	relates sibling2;
 sibling sub role is-abstract;
 sibling1 sub sibling;
 sibling2 sub sibling;
 
 grandparentship sub relatives
-	has-role grandparent
-	has-role grandfather
-	has-role grandmother
-	has-role grandchild
-	has-role granddaughter
-	has-role grandson;
+	relates grandparent
+	relates grandfather
+	relates grandmother
+	relates grandchild
+	relates granddaughter
+	relates grandson;
 grandparent sub role;
 grandfather sub grandparent;
 grandmother sub grandparent;
@@ -147,19 +147,19 @@ grandson sub grandchild;
 granddaughter sub grandchild;
 
 cousins sub relatives
-	has-role cousin1
-	has-role cousin2;
+	relates cousin1
+	relates cousin2;
 cousin sub role is-abstract;
 cousin1 sub cousin;
 cousin2 sub cousin;
 
 in-laws sub relatives
-	has-role child-in-law
-	has-role son-in-law
-	has-role daughter-in-law
-	has-role parent-in-law
-	has-role mother-in-law
-	has-role father-in-law;
+	relates child-in-law
+	relates son-in-law
+	relates daughter-in-law
+	relates parent-in-law
+	relates mother-in-law
+	relates father-in-law;
 child-in-law sub role;
 son-in-law sub child-in-law;
 daughter-in-law sub child-in-law;

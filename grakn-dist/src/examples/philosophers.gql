@@ -30,20 +30,20 @@ description sub resource datatype string;
 # Relation types
 
 practice sub relation
-    has-role philosopher
-    has-role philosophy;
+    relates philosopher
+    relates philosophy;
 philosopher sub role;
 philosophy sub role;
 
 education sub relation
-    has-role teacher
-    has-role student;
+    relates teacher
+    relates student;
 teacher sub role;
 student sub role;
 
 knowledge sub relation
-    has-role thinker
-    has-role thought
+    relates thinker
+    relates thought
     plays-role thought;
 thinker sub role;
 thought sub role;

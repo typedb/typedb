@@ -19,7 +19,7 @@ pokemon-type sub entity
     plays-role type-of-pokemon;
 
 has-type sub relation
-    has-role pokemon-with-type
-    has-role type-of-pokemon;
+    relates pokemon-with-type
+    relates type-of-pokemon;
 pokemon-with-type sub role;
 type-of-pokemon sub role;

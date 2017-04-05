@@ -12,13 +12,13 @@ insert
 
 "arc-from" sub role;
 "arc-to" sub role;
-"arc" sub relation, has-role arc-from, has-role arc-to;
+"arc" sub relation, relates arc-from, relates arc-to;
 vertex plays-role arc-from, plays-role arc-to;
 start-vertex plays-role arc-from;
 
 "path-from" sub role;
 "path-to" sub role;
-"path" sub relation, has-role path-from, has-role path-to;
+"path" sub relation, relates path-from, relates path-to;
 vertex plays-role path-from, plays-role path-to;
 start-vertex plays-role path-from;
 

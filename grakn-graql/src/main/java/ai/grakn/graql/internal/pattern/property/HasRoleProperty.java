@@ -43,7 +43,7 @@ import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasRol
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 /**
- * Represents the {@code has-role} property on a {@link RelationType}.
+ * Represents the {@code relates} property on a {@link RelationType}.
  *
  * This property can be queried, inserted or deleted.
  *
@@ -66,7 +66,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public String getName() {
-        return "has-role";
+        return "relates";
     }
 
     @Override
