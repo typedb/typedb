@@ -141,18 +141,18 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
     }
 
     void degreeStepCasting(Messenger<Long> messenger) {
-        boolean relatesPlayer = false;
+        boolean hasPlayer = false;
         long assertionCount = 0;
         Iterator<Long> iterator = messenger.receiveMessages();
         while (iterator.hasNext()) {
             long message = iterator.next();
             // count number of assertions connected
             if (message < 0) assertionCount++;
-            else relatesPlayer = true;
+            else hasPlayer = true;
         }
 
         // make sure this role-player is in the subgraph
-        if (relatesPlayer) {
+        if (hasPlayer) {
             messenger.sendMessage(messageScopeInCasting, 1L);
             messenger.sendMessage(messageScopeOutRolePlayer, assertionCount);
         }
