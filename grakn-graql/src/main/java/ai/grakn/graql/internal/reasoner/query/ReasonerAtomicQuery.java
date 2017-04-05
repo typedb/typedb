@@ -537,8 +537,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
         @Override
         public Answer next() {
-            Answer sub = queryIterator.next().filterVars(getVarNames());
-            if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
+            Answer sub = queryIterator.next()
+                    .merge(getIdPredicateAnswer())
+                    .filterVars(getVarNames());
+            if (currentRule != null){
+                sub = sub.explain(new RuleExplanation(currentRule));
+            }
             return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
         }
 

@@ -736,8 +736,6 @@ public class ReasonerTest {
         assertEquals(answers.filterVars(Sets.newHashSet(VarName.of("x"))), answers2);
     }
 
-    //TODO loses $rel variable
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingRelationTypeVar2(){
         String queryString = "match $y isa product;(recommended-customer: $x, recommended-product: $y) isa $rel;";

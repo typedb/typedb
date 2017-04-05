@@ -200,13 +200,20 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
         if (!resources.isEmpty()) return resources.iterator().next();
 
-        //favour non-resolvable atoms
+        //favour non-resolvable relations
         Set<Atom> relations = atoms.stream()
                 .filter(Atom::isRelation)
                 .filter(at -> !at.isRuleResolvable())
                 .collect(Collectors.toSet());
-
         if (!relations.isEmpty()) return relations.iterator().next();
+
+        //favour resolvable relations
+        Set<Atom> resolvableRelations = atoms.stream()
+                .filter(Atom::isRelation)
+                .filter(Atom::isRuleResolvable)
+                .collect(Collectors.toSet());
+        if (!resolvableRelations.isEmpty()) return resolvableRelations.iterator().next();
+
         return atoms.stream().findFirst().orElse(null);
     }
 
@@ -639,8 +646,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         if (!this.isRuleResolvable()) {
             return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
         }
-        if (materialise || requiresMaterialisation()
-                /*|| (isAtomic() && !getTopAtom().hasSubstitution() ) */) {
+        if (materialise || requiresMaterialisation()) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
             return new QueryAnswerIterator().hasStream();
