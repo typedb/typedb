@@ -23,27 +23,29 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.util.ErrorMessage;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static java.util.stream.Collectors.toList;
 
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
 class DeleteQueryImpl implements DeleteQueryAdmin {
-    private final ImmutableMap<VarName, VarAdmin> deleters;
+    private final ImmutableCollection<VarAdmin> deleters;
     private final MatchQueryAdmin matchQuery;
 
     /**
@@ -51,14 +53,18 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
      * @param matchQuery a pattern to match and delete for each result
      */
     DeleteQueryImpl(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
-        this.deleters = Maps.uniqueIndex(deleters, VarAdmin::getVarName);
+        if (deleters.isEmpty()) {
+            throw new IllegalArgumentException(NO_PATTERNS.getMessage());
+        }
+
+        this.deleters = ImmutableSet.copyOf(deleters);
         this.matchQuery = matchQuery.admin();
     }
 
     @Override
     public Void execute() {
         List<Map<VarName, Concept>> results = matchQuery.streamWithVarNames().collect(toList());
-        results.forEach(result -> result.forEach(this::deleteResult));
+        results.forEach(this::deleteResult);
         return null;
     }
 
@@ -75,7 +81,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public DeleteQuery withGraph(GraknGraph graph) {
-        return Queries.delete(deleters.values(), matchQuery.withGraph(graph));
+        return Queries.delete(deleters, matchQuery.withGraph(graph));
     }
 
     @Override
@@ -83,18 +89,25 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
         return this;
     }
 
+    private void deleteResult(Map<VarName, Concept> result) {
+        for (VarAdmin deleter : deleters) {
+            Concept concept = result.get(deleter.getVarName());
+
+            if (concept == null) {
+                throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(deleter.getVarName()));
+            }
+
+            deletePattern(concept, deleter);
+        }
+    }
+
     /**
      * Delete a result from a query. This may involve deleting the whole concept or specific edges, depending
      * on what deleters were provided.
-     * @param name the variable name to delete
      * @param result the concept that matches the variable in the graph
+     * @param deleter the pattern to delete on the concept
      */
-    private void deleteResult(VarName name, Concept result) {
-        VarAdmin deleter = deleters.get(name);
-
-        // Check if this has been requested to be deleted
-        if (deleter == null) return;
-
+    private void deletePattern(Concept result, VarAdmin deleter) {
         if (!deleter.getProperties().findAny().isPresent()) {
             // Delete whole concept if nothing specified to delete
             result.delete();
@@ -113,7 +126,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public Collection<VarAdmin> getDeleters() {
-        return deleters.values();
+        return deleters;
     }
 
     @Override

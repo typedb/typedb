@@ -24,6 +24,8 @@ import ai.grakn.graql.admin.Answer;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
+
 /**
  * "Offset" modifier for match query that offsets (skips) some number of results.
  */
@@ -33,6 +35,9 @@ class MatchQueryOffset extends MatchQueryModifier {
 
     MatchQueryOffset(AbstractMatchQuery inner, long offset) {
         super(inner);
+        if (offset < 0) {
+            throw new IllegalArgumentException(NEGATIVE_OFFSET.getMessage(offset));
+        }
         this.offset = offset;
     }
 

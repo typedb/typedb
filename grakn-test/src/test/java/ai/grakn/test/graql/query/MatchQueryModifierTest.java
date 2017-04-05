@@ -24,7 +24,6 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.matcher.MovieMatchers;
-import com.google.common.collect.ImmutableSet;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -41,7 +40,7 @@ import static ai.grakn.graql.Order.asc;
 import static ai.grakn.graql.Order.desc;
 import static ai.grakn.test.matcher.GraknMatchers.variable;
 import static ai.grakn.test.matcher.MovieMatchers.containsAllMovies;
-import static ai.grakn.util.ErrorMessage.SELECT_VAR_NOT_IN_MATCH;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -168,7 +167,7 @@ public class MatchQueryModifierTest {
         MatchQuery query = qb.match(var("x").isa("movie"));
 
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(SELECT_VAR_NOT_IN_MATCH.getMessage(ImmutableSet.of(VarName.of("y"))));
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("y")));
 
         query.select("y");
     }

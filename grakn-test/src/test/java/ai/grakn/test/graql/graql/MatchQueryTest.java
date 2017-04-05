@@ -26,7 +26,6 @@ import ai.grakn.graql.VarName;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,6 +37,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.NEGATIVE_OFFSET;
+import static ai.grakn.util.ErrorMessage.NON_POSITIVE_LIMIT;
+import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -55,22 +57,24 @@ public class MatchQueryTest {
     public void setUp() {
     }
 
-    @Ignore //TODO
-    @Test(expected = Exception.class)
-    public void testLimitNegative() {
+    @Test
+    public void whenQueryIsLimitedToANegativeNumber_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(Long.MIN_VALUE));
         graph.graql().match(var()).limit(Long.MIN_VALUE);
     }
 
-    @Ignore //TODO
-    @Test(expected = Exception.class)
-    public void testLimitZero() {
+    @Test
+    public void whenQueryIsLimitedToZero_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(NON_POSITIVE_LIMIT.getMessage(0L));
         graph.graql().match(var()).limit(0L);
-
     }
 
-    @Ignore //TODO
-    @Test(expected = Exception.class)
-    public void testOffsetNegative() {
+    @Test
+    public void whenQueryIsOffsetByANegativeNumber_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(NEGATIVE_OFFSET.getMessage(Long.MIN_VALUE));
         graph.graql().match(var()).offset(Long.MIN_VALUE);
     }
 
@@ -117,16 +121,11 @@ public class MatchQueryTest {
         assertEquals(size, result4.size());
     }
 
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void testVarNameNotExist() {
+    @Test
+    public void whenSelectingVarNotInQuery_Throw() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of("x")));
         graph.graql().match(var()).select("x").execute();
-    }
-
-    @Ignore //TODO: Fix this
-    @Test(expected = Exception.class)
-    public void testVarNameNotExist2() {
-        graph.graql().match(var("x")).select("y").execute();
     }
 
     @Test(expected = Exception.class)
@@ -180,23 +179,9 @@ public class MatchQueryTest {
                 var().rel("x").rel("y")).orderBy("y", Order.asc).execute();
     }
 
-    @Ignore
     @Test(expected = Exception.class)
-    //TODO: this can cause problems on a big graph
     public void testOrderBy8() {
-        graph.graql().match(var("x").isa("movie"),
-                var("y").isa("name")).orderBy("y", Order.asc).execute();
-    }
-
-    @Test(expected = Exception.class)
-    public void testOrderBy9() {
         graph.graql().match(var("x").isa("movie")).orderBy("x", Order.asc).execute();
-    }
-
-    @Ignore
-    @Test(expected = Exception.class) //TODO: I don't think this should be allowed
-    public void testOrderBy10() {
-        graph.graql().match(var("x").isa("name")).orderBy("x", Order.asc).execute();
     }
 
 }

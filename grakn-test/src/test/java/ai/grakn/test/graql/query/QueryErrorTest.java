@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
+import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -121,7 +122,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNoPatternsProvided() {
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(allOf(containsString("match"), containsString("pattern")));
+        exception.expectMessage(NO_PATTERNS.getMessage());
         qb.match();
     }
 
