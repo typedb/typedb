@@ -20,8 +20,10 @@ package ai.grakn.test.engine.lock;
 
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ZookeeperReentrantLock;
+import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.curator.framework.CuratorFramework;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +31,8 @@ import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class LockProviderTest {
 
@@ -51,7 +55,10 @@ public class LockProviderTest {
 
     @Test
     public void whenGivenZKReentrantLock_ReturnsZKReentrantLock(){
-        Lock lock = new ZookeeperReentrantLock();
+        ZookeeperConnection zookeeperConnection = mock(ZookeeperConnection.class);
+        when(zookeeperConnection.connection()).thenReturn(mock(CuratorFramework.class));
+
+        Lock lock = new ZookeeperReentrantLock(zookeeperConnection, "/lock");
 
         LockProvider.init(lock);
 
