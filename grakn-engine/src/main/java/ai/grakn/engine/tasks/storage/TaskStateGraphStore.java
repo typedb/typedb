@@ -28,7 +28,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -294,7 +294,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
                 T result = function.apply(graph);
                 if (commit) {
-                    graph.admin().commit(EngineCache.getInstance());
+                    graph.admin().commit(EngineCacheProvider.getCache());
                 }
 
                 return Optional.of(result);

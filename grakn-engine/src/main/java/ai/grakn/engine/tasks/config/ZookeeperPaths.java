@@ -41,4 +41,12 @@ public interface ZookeeperPaths {
     String SINGLE_ENGINE_PATH = ALL_ENGINE_PATH + "/%s";
     String ZK_TASK_PATH =  TASKS_PATH_PREFIX + "/%s";
     String ZK_ENGINE_TASK_PATH = ALL_ENGINE_PATH + "/%s/%s";
+
+    String ENGINE_CACHE = "/engine/cache/";
+    String ENGINE_CACHE_KEYSPACES = ENGINE_CACHE + "keyspaces";
+    //String ENGINE_CACHE_JOBS = ENGINE_CACHE + "%s/%s"; //Format is /keyspace/job_type
+
+    String ENGINE_CACHE_INDICES = ENGINE_CACHE + "%s/%s"; //Used to get all the indices of a job type
+    String ENGINE_CACHE_CONCEPT_IDS = ENGINE_CACHE_INDICES +  "/%s"; //Used to get all the ids of a specific index
+    String ENGINE_CACHE_EXACT_JOB = ENGINE_CACHE_CONCEPT_IDS + "/%s";
 }
