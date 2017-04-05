@@ -43,7 +43,7 @@ import static org.apache.spark.util.Utils.serialize;
  *    This is a cache which houses {@link org.apache.tinkerpop.gremlin.structure.Vertex} ids. It keeps these ids
  *    so that we can lookup the vertices in need of postprocessing directly.
  *
- *    We cannot relay on {@link ai.grakn.concept.ConceptId}s because the indexed lookup maybe faulty with
+ *    We cannot rely on {@link ai.grakn.concept.ConceptId}s because the indexed lookup maybe faulty with
  *    vertices in need of post processing.
  *
  *    This distributed version persists everything using {@link ai.grakn.engine.tasks.manager.ZookeeperConnection}
