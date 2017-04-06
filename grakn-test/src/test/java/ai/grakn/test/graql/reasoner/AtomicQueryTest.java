@@ -242,7 +242,7 @@ public class AtomicQueryTest {
     @Test
     public void testReifiedRelation(){
         String patternString = "{(geo-entity: $x, entity-location: $y) isa is-located-in;}";
-        String patternString2 = "{($x, $y) has-role geo-entity;}";
+        String patternString2 = "{($x, $y) relates geo-entity;}";
         GraknGraph graph = geoGraph.graph();
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);

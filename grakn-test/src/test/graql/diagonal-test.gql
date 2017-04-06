@@ -6,16 +6,16 @@ entity1 sub entity
     has-resource name;
 
 horizontal sub relation
-    has-role rel-from
-    has-role rel-to;
+    relates rel-from
+    relates rel-to;
 
 vertical sub relation
-    has-role rel-from
-    has-role rel-to;
+    relates rel-from
+    relates rel-to;
 
 diagonal sub relation
-    has-role rel-from
-    has-role rel-to;
+    relates rel-from
+    relates rel-to;
 
 rel-from sub role;
 rel-to sub role;

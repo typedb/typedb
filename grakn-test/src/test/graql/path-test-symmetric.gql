@@ -11,13 +11,13 @@ has-resource index;
 
 "arcA" sub role;
 "arcB" sub role;
-"arc" sub relation, has-role arcA, has-role arcB;
+"arc" sub relation, relates arcA, relates arcB;
 vertex plays-role arcA, plays-role arcB;
 start-vertex plays-role arcA, plays-role arcB;
 
 "pathA" sub role;
 "pathB" sub role;
-"path" sub relation, has-role pathA, has-role pathB;
+"path" sub relation, relates pathA, relates pathB;
 vertex plays-role pathA, plays-role pathB;
 start-vertex plays-role pathA, plays-role pathB;
 

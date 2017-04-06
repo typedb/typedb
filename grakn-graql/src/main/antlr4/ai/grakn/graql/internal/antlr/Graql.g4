@@ -70,7 +70,7 @@ varPattern     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                 # isa
                | 'sub' variable                 # sub
-               | 'has-role' variable            # hasRole
+               | 'relates' variable             # relates
                | 'plays-role' variable          # playsRole
                | 'has-scope' VARIABLE           # hasScope
                | 'id' id                        # propId

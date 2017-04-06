@@ -57,7 +57,7 @@ public class GeoGraph extends TestGraph {
         geoEntity = graph.putRoleType("geo-entity");
         entityLocation = graph.putRoleType("entity-location");
         isLocatedIn = graph.putRelationType("is-located-in")
-                .hasRole(geoEntity).hasRole(entityLocation);
+                .relates(geoEntity).relates(entityLocation);
 
         geographicalObject = graph.putEntityType("geoObject")
                 .playsRole(geoEntity)

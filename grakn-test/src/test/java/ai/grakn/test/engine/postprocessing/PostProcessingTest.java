@@ -85,7 +85,7 @@ public class PostProcessingTest {
         //Create Scenario
         RoleType roleType1 = graph.putRoleType("role 1");
         RoleType roleType2 = graph.putRoleType("role 2");
-        graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        graph.putRelationType("rel type").relates(roleType1).relates(roleType2);
         graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
         GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, graph.getKeyspace());
