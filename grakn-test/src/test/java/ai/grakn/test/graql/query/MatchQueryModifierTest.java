@@ -98,7 +98,7 @@ public class MatchQueryModifierTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("person"),
-                        var("y").isa("genre").value(neq("crime"))
+                        var("y").isa("genre").val(neq("crime"))
                 ),
                 var("y").has("name", var("n"))
         ).orderBy("n").offset(4).limit(8).select("x");

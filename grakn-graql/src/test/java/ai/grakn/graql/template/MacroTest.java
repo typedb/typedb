@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.List;
 import java.util.Map;
 
 import static ai.grakn.graql.Graql.parse;
@@ -69,8 +68,8 @@ public class MacroTest {
 
     @Test
     public void intMacroTest(){
-        String template = "insert $x value @int(<value>);";
-        String expected = "insert $x0 value 4;";
+        String template = "insert $x val @int(<value>);";
+        String expected = "insert $x0 val 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
@@ -78,8 +77,8 @@ public class MacroTest {
 
     @Test
     public void whenMacroIsWrongCase_ResolvedToLowerCase(){
-        String template = "insert $x value @InT(<value>);";
-        String expected = "insert $x0 value 4;";
+        String template = "insert $x val @InT(<value>);";
+        String expected = "insert $x0 val 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
@@ -94,8 +93,8 @@ public class MacroTest {
 
     @Test
     public void doubleMacroTest(){
-        String template = "insert $x value @double(<value>);";
-        String expected = "insert $x0 value 4.0;";
+        String template = "insert $x val @double(<value>);";
+        String expected = "insert $x0 val 4.0;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
@@ -104,8 +103,8 @@ public class MacroTest {
     @Test
     public void whenParsingDoubleInFrenchLocale_DontUseComma(){
         Locale.setDefault(Locale.FRANCE);
-        String template = "insert $x value @double(<value>);";
-        String expected = "insert $x0 value 4.0;";
+        String template = "insert $x val @double(<value>);";
+        String expected = "insert $x0 val 4.0;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
@@ -120,8 +119,8 @@ public class MacroTest {
 
     @Test
     public void equalsMacroTest(){
-        String template = "insert $x value @equals(<this>, <that>);";
-        String expected = "insert $x0 value true;";
+        String template = "insert $x val @equals(<this>, <that>);";
+        String expected = "insert $x0 val true;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("this", "50");
@@ -129,8 +128,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(<this>, <notThat>);";
-        expected = "insert $x0 value false;";
+        template = "insert $x val @equals(<this>, <notThat>);";
+        expected = "insert $x0 val false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -138,8 +137,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(<this>, <notThat>);";
-        expected = "insert $x0 value false;";
+        template = "insert $x val @equals(<this>, <notThat>);";
+        expected = "insert $x0 val false;";
 
         data = new HashMap<>();
         data.put("this", "50");
@@ -147,8 +146,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(<this>, <that>, <those>);";
-        expected = "insert $x0 value true;";
+        template = "insert $x val @equals(<this>, <that>, <those>);";
+        expected = "insert $x0 val true;";
 
         data = new HashMap<>();
         data.put("this", 50);
@@ -157,8 +156,8 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
 
-        template = "insert $x value @equals(<this>, <that>, <notThat>);";
-        expected = "insert $x0 value false;";
+        template = "insert $x val @equals(<this>, <that>, <notThat>);";
+        expected = "insert $x0 val false;";
 
         data = new HashMap<>();
         data.put("this", 50);
@@ -193,8 +192,8 @@ public class MacroTest {
 
     @Test
     public void stringMacroTest(){
-        String template = "insert $this value @string(<value>);";
-        String expected = "insert $this0 value \"1000\";";
+        String template = "insert $this val @string(<value>);";
+        String expected = "insert $this0 val \"1000\";";
 
         Map<String, Object> data = Collections.singletonMap("value", 1000);
 
@@ -203,8 +202,8 @@ public class MacroTest {
 
     @Test
     public void longMacroTest(){
-        String template = "insert $x value @long(<value>);";
-        String expected = "insert $x0 value 4;";
+        String template = "insert $x val @long(<value>);";
+        String expected = "insert $x0 val 4;";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
@@ -212,13 +211,13 @@ public class MacroTest {
 
     @Test
     public void booleanMacroTest(){
-        String template = "insert $x value @boolean(<value>);";
-        String expected = "insert $x0 value true;";
+        String template = "insert $x val @boolean(<value>);";
+        String expected = "insert $x0 val true;";
 
         assertParseEquals(template, Collections.singletonMap("value", "true"), expected);
         assertParseEquals(template, Collections.singletonMap("value", "True"), expected);
 
-        expected = "insert $x0 value false;";
+        expected = "insert $x0 val false;";
 
         assertParseEquals(template, Collections.singletonMap("value", "false"), expected);
         assertParseEquals(template, Collections.singletonMap("value", "False"), expected);
@@ -226,8 +225,8 @@ public class MacroTest {
 
     @Test
     public void convertDateFormatMacroTest(){
-        String template = "insert $x value @date(<date>, \"mm/dd/yyyy\", \"dd/mm/yyyy\");";
-        String expected = "insert $x0 value \"09\\/10\\/1993\";";
+        String template = "insert $x val @date(<date>, \"mm/dd/yyyy\", \"dd/mm/yyyy\");";
+        String expected = "insert $x0 val \"09\\/10\\/1993\";";
 
         assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
     }
@@ -237,15 +236,15 @@ public class MacroTest {
     	java.text.DateFormat format = new java.text.SimpleDateFormat("mm/dd/yyyy");
     	String dateAsString = "10/09/1993";
     	long time = format.parse(dateAsString).getTime();
-        String template = "insert $x value @date(<date>, \"mm/dd/yyyy\");";
-        String expected = "insert $x0 value \"" + time + "\";";
+        String template = "insert $x val @date(<date>, \"mm/dd/yyyy\");";
+        String expected = "insert $x0 val \"" + time + "\";";
         assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void wrongDateFormatTest(){
-        String template = "insert $x value @date(<date>, \"this is not a format\");";
-        String expected = "insert $x0 value \"726538200000\";";
+        String template = "insert $x val @date(<date>, \"this is not a format\");";
+        String expected = "insert $x0 val \"726538200000\";";
 
         assertParseEquals(template, Collections.singletonMap("date", "10/09/1993"), expected);
     }
@@ -273,8 +272,8 @@ public class MacroTest {
         java.text.DateFormat format = new java.text.SimpleDateFormat("mm/dd/yyyy");
         String dateAsString = "10/09/1993";
         long time = format.parse(dateAsString).getTime();
-        String template = "insert $x value @long(@date(<date>, \"mm/dd/yyyy\"));";
-        String expected = "insert $x0 value " + time + ";";
+        String template = "insert $x val @long(@date(<date>, \"mm/dd/yyyy\"));";
+        String expected = "insert $x0 val " + time + ";";
         assertParseEquals(template, Collections.singletonMap("date", dateAsString), expected);
     }
 
