@@ -170,14 +170,14 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var playsRole(String type);
+    Var plays(String type);
 
     /**
      * @param type a role type that this concept type variable must play
      * @return this
      */
     @CheckReturnValue
-    Var playsRole(Var type);
+    Var plays(Var type);
 
     /**
      * @param type a scope that this variable must have

@@ -93,12 +93,12 @@ public class Fragments {
         return new DataTypeFragment(start, dataType);
     }
 
-    public static Fragment inPlaysRole(VarName start, VarName end, boolean required) {
-        return new InPlaysRoleFragment(start, end, required);
+    public static Fragment inPlays(VarName start, VarName end, boolean required) {
+        return new InPlaysFragment(start, end, required);
     }
 
-    public static Fragment outPlaysRole(VarName start, VarName end, boolean required) {
-        return new OutPlaysRoleFragment(start, end, required);
+    public static Fragment outPlays(VarName start, VarName end, boolean required) {
+        return new OutPlaysFragment(start, end, required);
     }
 
     public static Fragment inCasting(VarName start, VarName end) {

@@ -11,11 +11,11 @@ import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class InPlaysRoleFragmentTest {
+public class InPlaysFragmentTest {
 
     private final VarName start = VarName.anon();
     private final VarName end = VarName.anon();
-    private final InPlaysRoleFragment fragment = new InPlaysRoleFragment(start, end, false);
+    private final InPlaysFragment fragment = new InPlaysFragment(start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

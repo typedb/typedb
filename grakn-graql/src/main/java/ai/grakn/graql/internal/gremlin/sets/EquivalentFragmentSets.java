@@ -52,8 +52,8 @@ public class EquivalentFragmentSets {
      * @param roleType a role type variable name
      * @param required whether the plays-role must be constrained to be "required"
      */
-    public static EquivalentFragmentSet playsRole(VarName type, VarName roleType, boolean required) {
-        return new PlaysRoleFragmentSet(type, roleType, required);
+    public static EquivalentFragmentSet plays(VarName type, VarName roleType, boolean required) {
+        return new PlaysFragmentSet(type, roleType, required);
     }
 
     /**

@@ -493,7 +493,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return false;
     }
 
-    T playsRole(RoleType roleType, boolean required) {
+    T plays(RoleType roleType, boolean required) {
         checkTypeMutation();
 
         //Update the internal cache of role types played
@@ -517,7 +517,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     public T plays(RoleType roleType) {
-        return playsRole(roleType, false);
+        return plays(roleType, false);
     }
 
     /**
@@ -623,9 +623,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);
         }
 
-        this.playsRole(ownerRole, required);
+        this.plays(ownerRole, required);
         //TODO: Use explicit cardinality of 0-1 rather than just false
-        ((ResourceTypeImpl) resourceType).playsRole(valueRole, false);
+        ((ResourceTypeImpl) resourceType).plays(valueRole, false);
 
         return getThis();
     }

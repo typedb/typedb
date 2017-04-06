@@ -167,7 +167,7 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenAddingPlaysRoleUsingBatchGraph_Throw(){
+    public void whenAddingPlaysUsingBatchGraph_Throw(){
         String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         graknGraph.putRoleType(roleTypeId);
@@ -203,7 +203,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
 
     @Test
-    public void whenDeletingPlaysRoleUsingBatchGraph_Throw(){
+    public void whenDeletingPlaysUsingBatchGraph_Throw(){
         String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         RoleType roleType = graknGraph.putRoleType(roleTypeId);

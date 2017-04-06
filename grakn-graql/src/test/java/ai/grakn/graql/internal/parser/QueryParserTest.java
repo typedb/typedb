@@ -235,7 +235,7 @@ public class QueryParserTest {
 
     @Test
     public void testOntologyQuery() {
-        MatchQuery expected = match(var("x").playsRole("actor")).orderBy("x");
+        MatchQuery expected = match(var("x").plays("actor")).orderBy("x");
         MatchQuery parsed = parse("match $x plays-role actor; order by $x asc;");
         assertEquals(expected, parsed);
     }
@@ -322,7 +322,7 @@ public class QueryParserTest {
                 name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolution").hasRole("evolves-from").hasRole("evolves-to"),
-                name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
+                name("pokemon").plays("evolves-from").plays("evolves-to").hasResource("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),

@@ -91,16 +91,16 @@ class ValidateGlobalRules {
         TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
         RoleType roleType = casting.getRole();
 
-        boolean satisfiesPlaysRole = false;
+        boolean satisfiesPlays = false;
 
         while(currentConcept != null){
             Map<RoleType, Boolean> plays = currentConcept.directPlays();
 
-            for (Map.Entry<RoleType, Boolean> playsRoleEntry : plays.entrySet()) {
-                RoleType playsRole = playsRoleEntry.getKey();
-                Boolean required = playsRoleEntry.getValue();
-                if(playsRole.getName().equals(roleType.getName())){
-                    satisfiesPlaysRole = true;
+            for (Map.Entry<RoleType, Boolean> playsEntry : plays.entrySet()) {
+                RoleType plays = playsEntry.getKey();
+                Boolean required = playsEntry.getValue();
+                if(plays.getName().equals(roleType.getName())){
+                    satisfiesPlays = true;
 
                     // Assert unique relation for this role type
                     if (required && rolePlayer.relations(roleType).size() != 1) {
@@ -111,7 +111,7 @@ class ValidateGlobalRules {
             currentConcept = (TypeImpl) currentConcept.superType();
         }
 
-        if(satisfiesPlaysRole) {
+        if(satisfiesPlays) {
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
@@ -261,9 +261,9 @@ class ValidateGlobalRules {
         while(currentConcept != null){
 
             Map<RoleType, Boolean> plays = currentConcept.directPlays();
-            for (Map.Entry<RoleType, Boolean> playsRoleEntry : plays.entrySet()) {
-                if(playsRoleEntry.getValue()){
-                    RoleType roleType = playsRoleEntry.getKey();
+            for (Map.Entry<RoleType, Boolean> playsEntry : plays.entrySet()) {
+                if(playsEntry.getValue()){
+                    RoleType roleType = playsEntry.getKey();
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId(), instance.type().getName(), roleType.getName()));

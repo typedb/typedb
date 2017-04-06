@@ -105,7 +105,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void castingValidationOfRoleTypeAndPlaysRoleEdge(){
+    public void castingValidationOfRoleTypeAndPlaysEdge(){
         EntityType fakeType = graknGraph.putEntityType("Fake Concept");
         RelationType relationType = graknGraph.putRelationType("kicks");
         RoleType kicker = graknGraph.putRoleType("kicker");
@@ -269,7 +269,7 @@ public class ValidatorTest extends GraphTestBase{
     }
 
     @Test
-    public void testNormalRelationshipWithTwoPlaysRole() throws GraknValidationException {
+    public void testNormalRelationshipWithTwoPlays() throws GraknValidationException {
         RoleType characterBeingPlayed = graknGraph.putRoleType("Character being played");
         RoleType personPlayingCharacter = graknGraph.putRoleType("Person Playing Char");
         RelationType playsChar = graknGraph.putRelationType("Plays Char").hasRole(characterBeingPlayed).hasRole(personPlayingCharacter);

@@ -49,12 +49,12 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  *
  * @author Felix Chapman
  */
-public class PlaysRoleProperty extends AbstractVarProperty implements NamedProperty {
+public class PlaysProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin role;
     private final boolean required;
 
-    public PlaysRoleProperty(VarAdmin role, boolean required) {
+    public PlaysProperty(VarAdmin role, boolean required) {
         this.role = role;
         this.required = required;
     }
@@ -75,7 +75,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        return ImmutableSet.of(EquivalentFragmentSets.playsRole(start, role.getVarName(), required));
+        return ImmutableSet.of(EquivalentFragmentSets.plays(start, role.getVarName(), required));
     }
 
     @Override
@@ -105,7 +105,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        PlaysRoleProperty that = (PlaysRoleProperty) o;
+        PlaysProperty that = (PlaysProperty) o;
 
         return required == that.required && role.equals(that.role);
 
@@ -125,7 +125,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
         VarName typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
+        VarAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

@@ -88,8 +88,8 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         EntityType entityType = graknGraph.putEntityType("et");
 
-        ((EntityTypeImpl) entityType).playsRole(role1, true);
-        ((EntityTypeImpl) entityType).playsRole(role2, false);
+        ((EntityTypeImpl) entityType).plays(role1, true);
+        ((EntityTypeImpl) entityType).plays(role2, false);
 
         Entity other1 = entityType.addEntity();
         Entity other2 = entityType.addEntity();

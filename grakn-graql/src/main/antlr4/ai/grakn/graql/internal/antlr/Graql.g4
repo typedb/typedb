@@ -71,7 +71,7 @@ varPattern     : VARIABLE | variable? property (','? property)* ;
 property       : 'isa' variable                 # isa
                | 'sub' variable                 # sub
                | 'has-role' variable            # hasRole
-               | 'plays-role' variable          # playsRole
+               | 'plays-role' variable          # plays
                | 'has-scope' VARIABLE           # hasScope
                | 'id' id                        # propId
                | 'type-name' name               # propName

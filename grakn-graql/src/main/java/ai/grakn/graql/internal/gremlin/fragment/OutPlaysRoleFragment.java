@@ -25,11 +25,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.util.Schema.EdgeLabel.PLAYS_ROLE;
 
-class OutPlaysRoleFragment extends AbstractFragment {
+class OutPlaysFragment extends AbstractFragment {
 
     private final boolean required;
 
-    OutPlaysRoleFragment(VarName start, VarName end, boolean required) {
+    OutPlaysFragment(VarName start, VarName end, boolean required) {
         super(start, end);
         this.required = required;
     }

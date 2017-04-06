@@ -317,7 +317,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenAddingAPlaysRole_TheTypePlaysThatRoleAndNoOtherNewRoles(
+    public void whenAddingAPlays_TheTypePlaysThatRoleAndNoOtherNewRoles(
             @Meta(false) Type type, @FromGraph RoleType roleType) {
         assumeThat(type, not(is(roleType)));  // A role-type cannot play itself, TODO: is this sensible?
 
@@ -329,7 +329,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenAddingAPlaysRoleToATypesIndirectSuperType_TheTypePlaysThatRole(
+    public void whenAddingAPlaysToATypesIndirectSuperType_TheTypePlaysThatRole(
             Type type, @FromGraph RoleType roleType, long seed) {
         Type superType = choose(indirectSuperTypes(type), seed);
 
@@ -344,7 +344,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenDeletingAPlaysRoleAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
+    public void whenDeletingAPlaysAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
             @Meta(false) Type type, @FromGraph RoleType roleType) {
         assumeThat(type.superType().plays(), not(hasItem(roleType)));
         type.deletePlays(roleType);
@@ -352,7 +352,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenDeletingAPlaysRoleAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
+    public void whenDeletingAPlaysAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @Meta(false) Type type, long seed) {
         RoleType roleType = choose(type.superType() + " plays no roles", type.superType().plays(), seed);
         type.deletePlays(roleType);

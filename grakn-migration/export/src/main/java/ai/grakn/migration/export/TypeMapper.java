@@ -104,7 +104,7 @@ public class TypeMapper {
      */
     private static Var plays(Var var, Type type) {
         for(RoleType role:type.plays()){
-            var = var.playsRole(name(role.getName()));
+            var = var.plays(name(role.getName()));
         }
         return var;
     }

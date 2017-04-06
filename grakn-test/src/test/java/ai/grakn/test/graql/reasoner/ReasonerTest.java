@@ -490,7 +490,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingPlaysRole(){
+    public void testReasoningWithQueryContainingPlays(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;";
@@ -514,7 +514,7 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingPlaysRole2(){
+    public void testReasoningWithQueryContainingPlays2(){
         String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
         String queryString2 = "match $x isa person;$y isa $type;{$type type-name 'product';} or {$type type-name 'tag';};($x, $y) isa recommendation;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
