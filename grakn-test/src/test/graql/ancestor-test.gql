@@ -6,7 +6,7 @@ insert
 #################################################
 
 "Person" sub entity
-    has-resource name;
+    has name;
 
 "parent" sub role;
 "child" sub role;

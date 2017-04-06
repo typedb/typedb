@@ -370,19 +370,19 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph.graql().parse("insert\n" +
                 "user-interaction sub relation is-abstract;\n" +
                 "qa sub user-interaction\n" +
-                "    has-resource helpful-votes\n" +
-                "    has-resource unhelpful-votes\n" +
+                "    has helpful-votes\n" +
+                "    has unhelpful-votes\n" +
                 "    relates asked-question\n" +
                 "    relates given-answer\n" +
                 "    relates item;\n" +
                 "product-review sub user-interaction\n" +
-                "    has-resource rating\n" +
+                "    has rating\n" +
                 "    relates reviewer\n" +
                 "    relates feedback\n" +
                 "    relates item;\n" +
                 "comment sub entity\n" +
-                "    has-resource text\n" +
-                "    has-resource time;\n" +
+                "    has text\n" +
+                "    has time;\n" +
                 "time sub resource datatype long;\n" +
                 "question sub comment\n" +
                 "    plays-role asked-question; \n" +
@@ -390,11 +390,11 @@ public class GraknGraphTest extends GraphTestBase {
                 "open sub question;\n" +
                 "answer sub comment\n" +
                 "    plays-role given-answer\n" +
-                "    has-resource answer-type;\n" +
+                "    has answer-type;\n" +
                 "answer-type sub resource datatype string;\n" +
                 "review sub comment\n" +
                 "    plays-role feedback\n" +
-                "    has-resource summary;\n" +
+                "    has summary;\n" +
                 "summary sub text;\n" +
                 "text sub resource datatype string;\n" +
                 "rating sub resource datatype double;\n" +
@@ -402,12 +402,12 @@ public class GraknGraphTest extends GraphTestBase {
                 "unhelpful-votes sub resource datatype long;\n" +
                 "ID sub resource is-abstract datatype string;\n" +
                 "product sub entity\n" +
-                "    has-resource asin\n" +
-                "    has-resource price\n" +
-                "    has-resource image-url\n" +
-                "    has-resource brand\n" +
-                "    has-resource name\n" +
-                "    has-resource text\n" +
+                "    has asin\n" +
+                "    has price\n" +
+                "    has image-url\n" +
+                "    has brand\n" +
+                "    has name\n" +
+                "    has text\n" +
                 "    plays-role item\n" +
                 "    plays-role recommended;\n" +
                 "asin sub ID;\n" +
@@ -415,7 +415,7 @@ public class GraknGraphTest extends GraphTestBase {
                 "brand sub name;\n" +
                 "price sub resource datatype double;\n" +
                 "category sub entity\n" +
-                "    has-resource name\n" +
+                "    has name\n" +
                 "    plays-role subcategory\n" +
                 "    plays-role supercategory\n" +
                 "    plays-role label\n" +
@@ -426,13 +426,13 @@ public class GraknGraphTest extends GraphTestBase {
                 "    relates subcategory\n" +
                 "    relates supercategory;\n" +
                 "category-assignment sub relation\n" +
-                "    has-resource rank\n" +
+                "    has rank\n" +
                 "    relates item #product\n" +
                 "    relates label; #category \n" +
                 "rank sub resource datatype long;\n" +
                 "user sub entity\n" +
-                "    has-resource uid\n" +
-                "    has-resource username\n" +
+                "    has uid\n" +
+                "    has username\n" +
                 "    plays-role reviewer\n" +
                 "    plays-role buyer;\n" +
                 "uid sub ID;\n" +

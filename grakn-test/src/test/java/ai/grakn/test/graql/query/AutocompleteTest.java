@@ -71,7 +71,7 @@ public class AutocompleteTest {
     public void whenAutocompletingWithinWord_AppropriateCandidatesAreFound() {
         String queryString = "match $x has-re title";
         Autocomplete autocomplete = Autocomplete.create(types, queryString, 11);
-        assertThat(autocomplete.getCandidates(), hasItem("has-resource"));
+        assertThat(autocomplete.getCandidates(), hasItem("has"));
         assertThat(autocomplete.getCandidates(), not(hasItem("delete")));
         assertEquals(9, autocomplete.getCursorPosition());
     }

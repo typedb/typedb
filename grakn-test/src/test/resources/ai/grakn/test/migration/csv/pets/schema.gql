@@ -1,11 +1,11 @@
 insert
 
 pet sub entity
-    has-resource name
-    has-resource owner
-    has-resource sex
-    has-resource birth
-    has-resource death
+    has name
+    has owner
+    has sex
+    has birth
+    has death
     is-abstract;
 
 cat sub pet;

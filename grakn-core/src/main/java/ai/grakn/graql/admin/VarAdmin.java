@@ -116,7 +116,7 @@ public interface VarAdmin extends PatternAdmin, Var {
     Collection<VarAdmin> getInnerVars();
 
     /**
-     * Get all inner variables, including implicit variables such as in a has-resource property
+     * Get all inner variables, including implicit variables such as in a has property
      */
     Collection<VarAdmin> getImplicitInnerVars();
 

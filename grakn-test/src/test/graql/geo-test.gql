@@ -5,7 +5,7 @@ insert
 #################################################
 
 "entity" sub entity, is-abstract
-    has-resource name;
+    has name;
 
 "city" sub entity;
 "region" sub entity;

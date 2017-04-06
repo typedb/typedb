@@ -4,14 +4,14 @@ pokemon sub entity
     plays-role ancestor
     plays-role descendant
     plays-role pokemon-with-type
-    has-resource name
-    has-resource pokedex-no
-    has-resource description
-    has-resource height
-    has-resource weight;
+    has name
+    has pokedex-no
+    has description
+    has height
+    has weight;
 
 pokemon-type sub entity
-    has-resource name
+    has name
     plays-role type-of-pokemon
     plays-role defending-type
     plays-role attacking-type;

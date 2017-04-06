@@ -80,7 +80,7 @@ property       : 'isa' variable                 # isa
                | 'rhs' '{' varPatterns '}'      # propRhs
                | 'has' name? VARIABLE           # propHasVariable
                | 'has' name predicate           # propHas
-               | 'has-resource' variable        # propResource
+               | 'has' variable        # propResource
                | 'key' variable                 # propKey
                | '(' casting (',' casting)* ')' # propRel
                | 'is-abstract'                  # isAbstract

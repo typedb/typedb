@@ -4,8 +4,8 @@ name sub resource
 age sub resource
 	datatype long;
 person sub entity;
-person has-resource name;
-person has-resource age;
+person has name;
+person has age;
 
 $marko isa person;
 $vadas isa person;
@@ -32,7 +32,7 @@ person plays-role known-about;
 knows sub relation
 	relates knower
 	relates known-about
-	has-resource weight;
+	has weight;
 
 (knower: $marko, known-about: $josh) isa knows has weight 1.0;
 (knower: $marko, known-about: $vadas) isa knows has weight 0.5;
@@ -40,8 +40,8 @@ knows sub relation
 lang sub resource
 	datatype string;
 software sub entity;
-software has-resource name;
-software has-resource lang;
+software has name;
+software has lang;
 
 $lop isa software;
 $ripple isa software;
@@ -61,7 +61,7 @@ software plays-role programmed;
 programming sub relation
 	relates programmer
 	relates programmed
-	has-resource weight;
+	has weight;
 
 (programmer: $marko, programmed: $lop) isa programming has weight 0.4;
 (programmer: $peter, programmed: $lop) isa programming has weight 0.2;

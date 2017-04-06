@@ -5,7 +5,7 @@ insert
 #################################################
 
 "entity2" sub entity
-    has-resource index
+    has index
     plays-role Q-from
     plays-role Q-to;
 "a-entity" sub entity2;

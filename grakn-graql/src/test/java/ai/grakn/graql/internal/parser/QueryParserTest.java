@@ -336,7 +336,7 @@ public class QueryParserTest {
                 "evolves-from sub role;" +
                 "type-name \"evolves-to\" sub role;" +
                 "evolution relates evolves-from, relates evolves-to;" +
-                "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
+                "pokemon plays-role evolves-from plays-role evolves-to has name;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +
                 "$z has name 'Raichu' isa pokemon;" +

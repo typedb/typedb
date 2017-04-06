@@ -134,7 +134,7 @@ public class QueryErrorTest {
 
     @Test
     public void testExceptionWhenNoHasResourceRelation() throws GraknValidationException {
-        // Create a fresh graph, with no has-resource between person and name
+        // Create a fresh graph, with no has between person and name
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
                 name("person").sub("entity"),

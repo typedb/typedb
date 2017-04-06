@@ -195,17 +195,17 @@ public final class Schema {
         /**
          * The name of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
          */
-        HAS("has-resource-%s"),
+        HAS("has-%s"),
 
         /**
          * The name of a role in has-resource, played by the owner of the resource
          */
-        HAS_OWNER("has-resource-%s-owner"),
+        HAS_OWNER("has-%s-owner"),
 
         /**
          * The name of a role in has-resource, played by the resource
          */
-        HAS_VALUE("has-resource-%s-value"),
+        HAS_VALUE("has-%s-value"),
 
         /**
          * The name of the generic key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique

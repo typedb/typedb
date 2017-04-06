@@ -1,6 +1,6 @@
 insert
 
 the-thing sub entity
-   has-resource a-string;
+   has a-string;
 
 a-string sub resource datatype string;

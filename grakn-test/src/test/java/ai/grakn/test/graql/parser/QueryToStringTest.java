@@ -149,7 +149,7 @@ public class QueryToStringTest {
 
     @Test
     public void testHas() {
-        assertEquals("insert $x has-resource thingy;", qb.insert(var("x").has("thingy")).toString());
+        assertEquals("insert $x has thingy;", qb.insert(var("x").has("thingy")).toString());
     }
 
     @Test
