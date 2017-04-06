@@ -48,13 +48,13 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.rules.ExpectedException;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
@@ -333,40 +333,6 @@ public class ReasonerTest {
         QueryAnswers answers = queryAnswers(snbGraph.graph().graql().infer(true).materialise(false).parse(queryString));
         QueryAnswers expAnswers = queryAnswers(snbGraph.graph().graql().infer(false).parse(queryString));
         assertEquals(answers, expAnswers);
-    }
-
-    //NB:
-    //Plays behaviour in the context of reasoning is somewhat ambiguous as it fetches results based on the db content.
-    //In order for the inferred data to be included it would need to be materialised and computed before
-    //the plays atom.
-    @Test
-    public void testReasoningWithQueryContainingPlays(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match $x plays geo-entity;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
-        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
-                "{$name value 'Masovia' or $name value 'Silesia';}; select $x, $y;";
-        MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Test
-    public void testReasoningWithQueryContainingPlays2(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match $x plays $role;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
-        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
-                "{" +
-                "{$role label geo-entity or $role label concept or $role label role;};" +
-                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw' or " +
-                "$name value 'Warsaw' or $name value 'Wroclaw' or " +
-                "$name value 'Masovia' or $name value 'Silesia';};" +
-                "} or {" +
-                "{$role label entity-location or $role label concept or $role label role;};" +
-                "{$name value 'Europe' or $name value 'Warsaw' or $name value 'Masovia' or $name value 'Silesia';};" +
-                "}; select $x, $y, $role;";
-        MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
     }
 
     @Test

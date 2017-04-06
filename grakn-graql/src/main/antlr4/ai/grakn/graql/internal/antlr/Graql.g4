@@ -83,7 +83,6 @@ property       : 'isa' variable                 # isa
                | 'has-resource' variable        # propResource
                | 'has-key' variable             # propKey
                | '(' casting (',' casting)* ')' # propRel
-               | 'plays' variable               # plays
                | 'is-abstract'                  # isAbstract
                | 'datatype' DATATYPE            # propDatatype
                | 'regex' REGEX                  # propRegex

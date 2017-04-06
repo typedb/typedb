@@ -273,24 +273,6 @@ public interface Var extends Pattern {
     Var rel(Var roletype, Var roleplayer);
 
     /**
-     * the variable must play the given role type
-     *
-     * @param roleType the role type the variable must play
-     * @return this
-     */
-    @CheckReturnValue
-    Var plays(String roleType);
-
-    /**
-     * the variable must play the given role type
-     *
-     * @param roleType the role type the variable must play
-     * @return this
-     */
-    @CheckReturnValue
-    Var plays(Var roleType);
-
-    /**
      * set this concept type variable as abstract, meaning it cannot have direct instances
      * @return this
      */
