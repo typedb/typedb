@@ -48,6 +48,10 @@ import static org.junit.Assert.assertThat;
 @RunWith(Theories.class)
 public class EngineCacheTest {
 
+    //We do this just so we can start ZK
+    @ClassRule
+    public static final EngineContext engine = EngineContext.startSingleQueueServer();
+
     @DataPoints
     public static Caches[] configValues = Caches.values();
 
@@ -64,10 +68,6 @@ public class EngineCacheTest {
         }
         throw new RuntimeException("Invalid cache [" + caches + "]");
     }
-
-    //We do this just so we can start ZK
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startSingleQueueServer();
 
     @Theory
     public void whenDeletingFixingJobsFromCache_EnsureJobsAreNoLongerInCache(Caches caches){
@@ -189,13 +189,13 @@ public class EngineCacheTest {
         fakeCache.entrySet().forEach(entry -> cache.addJobInstanceCount(keyspace1, entry.getKey(), entry.getValue()));
 
         assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
-        assertEquals(fakeCache.values(), cache.getInstanceCountJobs(keyspace1).values());
+        fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));
 
         fakeCache.remove(TypeName.of("B"));
         cache.deleteJobInstanceCount(keyspace1, TypeName.of("B"));
 
         assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
-        assertEquals(fakeCache.values(), cache.getInstanceCountJobs(keyspace1).values());
+        fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));
     }
 
     private Map<String, Set<ConceptId>> createFakeInternalConceptLog(String indexPrefix, int numIndex, int numJobs){

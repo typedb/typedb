@@ -70,9 +70,9 @@ public interface ConceptCache {
      *
      * @param keyspace The keyspace of the concepts
      * @param name The name of the type with new or removed instances
-     * @param instances The number of new or removed instances
+     * @param instanceCount The number of new or removed instances
      */
-    void addJobInstanceCount(String keyspace, TypeName name, long instances);
+    void addJobInstanceCount(String keyspace, TypeName name, long instanceCount);
 
     /**
      *

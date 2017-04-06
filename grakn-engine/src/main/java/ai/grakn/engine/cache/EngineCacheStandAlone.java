@@ -43,7 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author fppt
  */
-//TODO: Maybe we can merge this with distributed engine cache using Kafka for example?
 public class EngineCacheStandAlone extends EngineCacheAbstract{
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
@@ -155,8 +154,8 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
     }
 
     @Override
-    public void addJobInstanceCount(String keyspace, TypeName name, long instances) {
-        getInstanceCountJobs(keyspace).compute(name, (key, value) -> value == null ? instances : value + instances);
+    public void addJobInstanceCount(String keyspace, TypeName name, long instanceCount) {
+        getInstanceCountJobs(keyspace).compute(name, (key, value) -> value == null ? instanceCount : value + instanceCount);
     }
 
     @Override

@@ -32,8 +32,9 @@ import java.util.Set;
 
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_CONCEPT_IDS;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_EXACT_JOB;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_INDICES;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_JOB_TYPE;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_KEYSPACES;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_TYPE_INSTANCE_COUNT;
 import static java.lang.String.format;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
 import static org.apache.spark.util.Utils.serialize;
@@ -56,6 +57,7 @@ import static org.apache.spark.util.Utils.serialize;
  * @author fppt
  */
 public class EngineCacheDistributed extends EngineCacheAbstract{
+    private static final String COUNTING_JOB = "counting";
     private static final String RESOURCE_JOB = "resources";
     private static final String CASTING_JOB = "castings";
     private static EngineCacheDistributed instance = null;
@@ -70,14 +72,17 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         return instance;
     }
 
-    private String getPathIndices(String jobType, String keyspace){
-        return format(ENGINE_CACHE_INDICES, keyspace, jobType);
+    private String getPathJobRoot(String jobType, String keyspace){
+        return format(ENGINE_CACHE_JOB_TYPE, keyspace, jobType);
     }
     private String getPathConceptIds(String jobType, String keyspace, String index){
         return format(ENGINE_CACHE_CONCEPT_IDS, keyspace, jobType, index);
     }
     private String getPathExactJob(String jobType, String keyspace, String index, ConceptId conceptId){
         return format(ENGINE_CACHE_EXACT_JOB, keyspace, jobType, index, conceptId.getValue());
+    }
+    private String getPathTypeInstanceCount(String keyspace, TypeName name){
+        return format(ENGINE_CACHE_TYPE_INSTANCE_COUNT, keyspace, COUNTING_JOB, name);
     }
 
     @Override
@@ -157,7 +162,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     }
     private Map<String, Set<ConceptId>> getJobs(String jopType, String keyspace){
         Map<String, Set<ConceptId>> jobs = new HashMap<>();
-        Optional<List<String>> indices = getChildrenFromZookeeper(getPathIndices(jopType, keyspace));
+        Optional<List<String>> indices = getChildrenFromZookeeper(getPathJobRoot(jopType, keyspace));
 
         if(indices.isPresent()){
             for (String index : indices.get()) {
@@ -216,7 +221,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         clearAllJobs(CASTING_JOB, keyspace);
     }
     private void clearAllJobs(String jobType, String keyspace){
-        Optional<List<String>> indices = getChildrenFromZookeeper(getPathIndices(jobType, keyspace));
+        Optional<List<String>> indices = getChildrenFromZookeeper(getPathJobRoot(jobType, keyspace));
         if(indices.isPresent()){
             indices.get().forEach(index -> cleanJobSet(jobType, keyspace, index, true));
         }
@@ -226,16 +231,39 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
 
     @Override
     public Map<TypeName, Long> getInstanceCountJobs(String keyspace) {
-        throw new UnsupportedOperationException("Not Yet Implemented");
+        Map<TypeName, Long> results = new HashMap<>();
+        Optional<List<String>> types = getChildrenFromZookeeper(getPathJobRoot(COUNTING_JOB, keyspace));
+
+        if(types.isPresent()){
+            types.get().forEach(name -> {
+                String pathTypeIntanceCount = getPathTypeInstanceCount(keyspace, TypeName.of(name));
+                Optional<Object> value = getObjectFromZookeeper(pathTypeIntanceCount);
+                if(value.isPresent()){
+                    results.put(TypeName.of(name), (Long) value.get());
+                } else {
+                    deleteObjectFromZookeeper(pathTypeIntanceCount); //We have a type saved with no count. Kill it
+                }
+            });
+        }
+
+        return results;
     }
 
     @Override
-    public void addJobInstanceCount(String keyspace, TypeName name, long instances) {
-        throw new UnsupportedOperationException("Not Yet Implemented");
+    public void addJobInstanceCount(String keyspace, TypeName name, long instanceCount) {
+        String path = getPathTypeInstanceCount(keyspace, name);
+        Optional<Object> currentValue = getObjectFromZookeeper(path);
+        long newValue = instanceCount;
+
+        if(currentValue.isPresent()){
+            newValue +=  (long) currentValue.get();
+        }
+
+        writeObjectToZookeeper(path, newValue);
     }
 
     @Override
     public void deleteJobInstanceCount(String keyspace, TypeName name) {
-        throw new UnsupportedOperationException("Not Yet Implemented");
+        deleteObjectFromZookeeper(getPathTypeInstanceCount(keyspace, name));
     }
 }
