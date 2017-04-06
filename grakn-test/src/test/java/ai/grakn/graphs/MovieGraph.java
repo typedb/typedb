@@ -70,23 +70,23 @@ public class MovieGraph extends TestGraph {
         productionBeingDirected = graph.putRoleType("production-being-directed");
         director = graph.putRoleType("director");
         directedBy = graph.putRelationType("directed-by")
-                .hasRole(productionBeingDirected).hasRole(director);
+                .relates(productionBeingDirected).relates(director);
 
         productionWithCast = graph.putRoleType("production-with-cast");
         actor = graph.putRoleType("actor");
         characterBeingPlayed = graph.putRoleType("character-being-played");
         hasCast = graph.putRelationType("has-cast")
-                .hasRole(productionWithCast).hasRole(actor).hasRole(characterBeingPlayed);
+                .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
 
         genreOfProduction = graph.putRoleType("genre-of-production");
         productionWithGenre = graph.putRoleType("production-with-genre");
         hasGenre = graph.putRelationType("has-genre")
-                .hasRole(genreOfProduction).hasRole(productionWithGenre);
+                .relates(genreOfProduction).relates(productionWithGenre);
 
         clusterOfProduction = graph.putRoleType("cluster-of-production");
         productionWithCluster = graph.putRoleType("production-with-cluster");
         hasCluster = graph.putRelationType("has-cluster")
-                .hasRole(clusterOfProduction).hasRole(productionWithCluster);
+                .relates(clusterOfProduction).relates(productionWithCluster);
 
         title = graph.putResourceType("title", ResourceType.DataType.STRING);
         tmdbVoteCount = graph.putResourceType("tmdb-vote-count", ResourceType.DataType.LONG);

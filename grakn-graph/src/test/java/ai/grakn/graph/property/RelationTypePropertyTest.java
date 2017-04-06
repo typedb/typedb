@@ -106,93 +106,93 @@ public class RelationTypePropertyTest {
     }
 
     @Property
-    public void ARelationTypeOwningARoleIsEquivalentToARoleHavingARelationType(
+    public void ARelationTypeRelatingARoleIsEquivalentToARoleHavingARelationType(
             RelationType relationType, @FromGraph RoleType roleType) {
-        assertEquals(relationType.hasRoles().contains(roleType), roleType.relationTypes().contains(relationType));
+        assertEquals(relationType.relates().contains(roleType), roleType.relationTypes().contains(relationType));
     }
 
     @Property
-    public void whenAddingAHasRoleToTheMetaRelationType_Throw(
+    public void whenMakingTheMetaRelationTypeRelateARole_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
         exception.expect(ConceptException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
-        relationType.hasRole(roleType);
+        relationType.relates(roleType);
     }
 
     @Property
-    public void whenAddingAHasRole_TheTypeHasThatRoleAndNoOtherNewRoles(
+    public void whenRelatingARole_TheTypeRelatesThatRoleAndNoOtherNewRoles(
             @Meta(false) RelationType relationType, @FromGraph RoleType roleType) {
-        Set<RoleType> previousHasRoles = Sets.newHashSet(relationType.hasRoles());
-        relationType.hasRole(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(relationType.hasRoles());
+        Set<RoleType> previousHasRoles = Sets.newHashSet(relationType.relates());
+        relationType.relates(roleType);
+        Set<RoleType> newHasRoles = Sets.newHashSet(relationType.relates());
 
         assertEquals(Sets.union(previousHasRoles, ImmutableSet.of(roleType)), newHasRoles);
     }
 
     @Property
-    public void whenAddingAHasRole_TheDirectSuperTypeRolesAreUnchanged(
+    public void whenRelatingARole_TheDirectSuperTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
         RelationType superType = subType.superType();
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(superType.hasRoles());
-        subType.hasRole(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(superType.hasRoles());
+        Set<RoleType> previousHasRoles = Sets.newHashSet(superType.relates());
+        subType.relates(roleType);
+        Set<RoleType> newHasRoles = Sets.newHashSet(superType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
-    public void whenAddingAHasRole_TheDirectSubTypeRolesAreUnchanged(
+    public void whenRelatingARole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
         RelationType superType = subType.superType();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(subType.hasRoles());
-        superType.hasRole(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(subType.hasRoles());
+        Set<RoleType> previousHasRoles = Sets.newHashSet(subType.relates());
+        superType.relates(roleType);
+        Set<RoleType> newHasRoles = Sets.newHashSet(subType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
-    public void whenDeletingAHasRoleFromTheMetaRelationType_Throw(
+    public void whenDeletingARelatedRoleFromTheMetaRelationType_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
         exception.expect(ConceptException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
-        relationType.deleteHasRole(roleType);
+        relationType.deleteRelates(roleType);
     }
 
     @Property
-    public void whenDeletingAHasRole_TheTypeLosesThatRoleAndNoOtherRoles(
+    public void whenDeletingARelatedRole_TheTypeLosesThatRoleAndNoOtherRoles(
             @Meta(false) RelationType relationType, @FromGraph RoleType roleType) {
-        Set<RoleType> previousHasRoles = Sets.newHashSet(relationType.hasRoles());
-        relationType.deleteHasRole(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(relationType.hasRoles());
+        Set<RoleType> previousHasRoles = Sets.newHashSet(relationType.relates());
+        relationType.deleteRelates(roleType);
+        Set<RoleType> newHasRoles = Sets.newHashSet(relationType.relates());
 
         assertEquals(Sets.difference(previousHasRoles, ImmutableSet.of(roleType)), newHasRoles);
     }
 
     @Property
-    public void whenDeletingAHasRole_TheDirectSuperTypeRolesAreUnchanged(
+    public void whenDeletingARelatedRole_TheDirectSuperTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
         RelationType superType = subType.superType();
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(superType.hasRoles());
-        subType.deleteHasRole(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(superType.hasRoles());
+        Set<RoleType> previousHasRoles = Sets.newHashSet(superType.relates());
+        subType.deleteRelates(roleType);
+        Set<RoleType> newHasRoles = Sets.newHashSet(superType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }
 
     @Property
-    public void whenDeletingAHasRole_TheDirectSubTypeRolesAreUnchanged(
+    public void whenDeletingARelatedRole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
         RelationType superType = subType.superType();
         assumeFalse(isMetaLabel(superType.getLabel()));
 
-        Set<RoleType> previousHasRoles = Sets.newHashSet(subType.hasRoles());
-        superType.deleteHasRole(roleType);
-        Set<RoleType> newHasRoles = Sets.newHashSet(subType.hasRoles());
+        Set<RoleType> previousHasRoles = Sets.newHashSet(subType.relates());
+        superType.deleteRelates(roleType);
+        Set<RoleType> newHasRoles = Sets.newHashSet(subType.relates());
 
         assertEquals(previousHasRoles, newHasRoles);
     }

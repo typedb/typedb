@@ -144,7 +144,7 @@ public class OWLMigrator {
         RoleType hasIriOwner = entityRole(type, iriResource);
         RoleType hasIriValue = resourceRole(iriResource);
         RelationType hasIriRelation = graph.putRelationType(namer.resourceRelation(hasIriResourceId))
-                .hasRole(hasIriOwner).hasRole(hasIriValue);
+                .relates(hasIriOwner).relates(hasIriValue);
 
         Entity entity = type.addEntity();
         Resource resourceInstance = iriResource.putResource(id);
@@ -183,8 +183,8 @@ public class OWLMigrator {
         RelationType relType = graph.putRelationType(namer.objectPropertyName(property.getIRI()));
         RoleType subjectRole = subjectRole(relType);
         RoleType objectRole = objectRole(relType);
-        relType.hasRole(subjectRole);
-        relType.hasRole(objectRole);
+        relType.relates(subjectRole);
+        relType.relates(objectRole);
         EntityType top = this.owlThingEntityType();
         top.playsRole(subjectRole);
         top.playsRole(objectRole);
@@ -194,16 +194,16 @@ public class OWLMigrator {
     public RelationType relation(OWLDataProperty property) {
         RelationType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
         ResourceType<?> resourceType = resourceType(property);
-        relType.hasRole(entityRole(owlThingEntityType(), resourceType));
-        relType.hasRole(resourceRole(resourceType));
+        relType.relates(entityRole(owlThingEntityType(), resourceType));
+        relType.relates(resourceRole(resourceType));
         return relType;     
     }
 
     public RelationType relation(OWLAnnotationProperty property) {
         RelationType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
         ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), ResourceType.DataType.STRING);
-        relType.hasRole(entityRole(owlThingEntityType(), resourceType));
-        relType.hasRole(resourceRole(resourceType));
+        relType.relates(entityRole(owlThingEntityType(), resourceType));
+        relType.relates(resourceRole(resourceType));
         return relType;
     }
     

@@ -87,8 +87,8 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
     public OwlGraknGraphStoringVisitor prepareOWL() {
         migrator.entityType(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));
         migrator.relation(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLObjectProperty(OwlModel.OBJECT_PROPERTY.owlname()))
-          .hasRole(migrator.graph().putRoleType(OwlModel.OBJECT.owlname()))
-          .hasRole(migrator.graph().putRoleType(OwlModel.SUBJECT.owlname()));
+          .relates(migrator.graph().putRoleType(OwlModel.OBJECT.owlname()))
+          .relates(migrator.graph().putRoleType(OwlModel.SUBJECT.owlname()));
         return this;
     }
     
@@ -162,7 +162,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
             RoleType domain = migrator.subjectRole(objectRelation);
             migrator.owlThingEntityType().deletePlaysRole(domain);
             entityType.playsRole(domain);
-            objectRelation.hasRole(domain);
+            objectRelation.relates(domain);
 //          System.out.println("Replaced domain thing with " + entityType.getLabel());
         }
         return objectRelation;
@@ -177,7 +177,7 @@ public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, 
         if (axiom.getRange().isOWLClass()) {
             EntityType entityType = migrator.entityType(axiom.getRange().asOWLClass());
             RoleType range = migrator.objectRole(objectRelation);
-            objectRelation.hasRole(range);          
+            objectRelation.relates(range);
             migrator.owlThingEntityType().deletePlaysRole(range);
             entityType.playsRole(range);
         }       

@@ -58,7 +58,7 @@ public class HALConceptRepresentationBuilder {
     private final static Logger LOG = LoggerFactory.getLogger(HALConceptRepresentationBuilder.class);
     private final static int MATCH_QUERY_FIXED_DEGREE = 0;
     private final static String ASSERTION_URL = REST.WebPath.GRAPH_MATCH_QUERY_URI + "?keyspace=%s&query=match $x id '%s'; $y id '%s'; $r (%s$x, %s$y) %s; select $r;&limit=%s";
-    private final static String HAS_ROLE_EDGE = "EMPTY-GRAKN-ROLE";
+    private final static String RELATES_EDGE = "EMPTY-GRAKN-ROLE";
 
     // - State properties
 
@@ -144,13 +144,13 @@ public class HALConceptRepresentationBuilder {
         if (currentID.compareTo(otherVar.getId()) > 0) {
             firstID = currentID;
             secondID = otherVar.getId();
-            firstRole = (roleTypes.get(currentVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(currentVarName) + ":";
-            secondRole = (roleTypes.get(otherVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
+            firstRole = (roleTypes.get(currentVarName).equals(RELATES_EDGE)) ? "" : roleTypes.get(currentVarName) + ":";
+            secondRole = (roleTypes.get(otherVarName).equals(RELATES_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
         } else {
             firstID = otherVar.getId();
             secondID = currentID;
-            secondRole = (roleTypes.get(currentVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(currentVarName) + ":";
-            firstRole = (roleTypes.get(otherVarName).equals(HAS_ROLE_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
+            secondRole = (roleTypes.get(currentVarName).equals(RELATES_EDGE)) ? "" : roleTypes.get(currentVarName) + ":";
+            firstRole = (roleTypes.get(otherVarName).equals(RELATES_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
         }
 
         String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeLabelToString(relationType.get()) : "";
@@ -194,7 +194,7 @@ public class HALConceptRepresentationBuilder {
                         .get()
                         .getRelationPlayers()
                         .forEach(x -> roleTypes.get(varHashCode).put(x.getRolePlayer().getVarName(),
-                                (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : HAS_ROLE_EDGE));
+                                (x.getRoleType().isPresent()) ? x.getRoleType().get().getPrintableName() : RELATES_EDGE));
             }
         });
         return roleTypes;

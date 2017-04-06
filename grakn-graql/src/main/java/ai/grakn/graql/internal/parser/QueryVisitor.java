@@ -526,8 +526,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitHasRole(GraqlParser.HasRoleContext ctx) {
-        return var -> var.hasRole(visitVariable(ctx.variable()));
+    public UnaryOperator<Var> visitRelates(GraqlParser.RelatesContext ctx) {
+        return var -> var.relates(visitVariable(ctx.variable()));
     }
 
     @Override

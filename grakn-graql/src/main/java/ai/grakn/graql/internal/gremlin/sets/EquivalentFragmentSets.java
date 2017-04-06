@@ -108,8 +108,8 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.
      */
-    public static EquivalentFragmentSet hasRole(VarName relationType, VarName roleType) {
-        return new HasRoleFragmentSet(relationType, roleType);
+    public static EquivalentFragmentSet relates(VarName relationType, VarName roleType) {
+        return new RelatesFragmentSet(relationType, roleType);
     }
 
     /**

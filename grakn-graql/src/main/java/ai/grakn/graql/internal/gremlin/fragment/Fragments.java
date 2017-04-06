@@ -55,12 +55,12 @@ public class Fragments {
         return new OutSubFragment(start, end);
     }
 
-    public static InHasRoleFragment inHasRole(VarName start, VarName end) {
-        return new InHasRoleFragment(start, end);
+    public static InRelatesFragment inRelates(VarName start, VarName end) {
+        return new InRelatesFragment(start, end);
     }
 
-    public static Fragment outHasRole(VarName start, VarName end) {
-        return new OutHasRoleFragment(start, end);
+    public static Fragment outRelates(VarName start, VarName end) {
+        return new OutRelatesFragment(start, end);
     }
 
     public static Fragment inIsa(VarName start, VarName end) {

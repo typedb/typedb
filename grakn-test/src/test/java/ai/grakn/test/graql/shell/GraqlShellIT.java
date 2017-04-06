@@ -558,7 +558,7 @@ public class GraqlShellIT {
     public void testDuplicateRelation() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(
-                "insert R sub relation, has-role R1, has-role R2; R1 sub role; R2 sub role;\n" +
+                "insert R sub relation, relates R1, relates R2; R1 sub role; R2 sub role;\n" +
                         "insert X sub entity, plays-role R1, plays-role R2;\n" +
                         "insert $x isa X; (R1: $x, R2: $x) isa R;\n" +
                         "match $x isa X; insert (R1: $x, R2: $x) isa R;\n" +

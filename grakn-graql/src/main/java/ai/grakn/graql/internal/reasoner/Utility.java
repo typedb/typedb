@@ -259,7 +259,7 @@ public class Utility {
 
     /**
      * Gets roletypes a given type can play in the provided relType relation type by performing
-     * type intersection between type's playedRoles and relation's hasRoles.
+     * type intersection between type's playedRoles and relation's relates.
      * @param type for which we want to obtain compatible roles it plays
      * @param relRoles relation type of interest
      * @return set of role types the type can play in relType
@@ -341,7 +341,7 @@ public class Utility {
      * @return rule instance
      */
     public static Rule createTransitiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
-        final int arity = relType.hasRoles().size();
+        final int arity = relType.relates().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
         VarAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
@@ -360,7 +360,7 @@ public class Utility {
      * @return rule instance
      */
     public static Rule createReflexiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
-        final int arity = relType.hasRoles().size();
+        final int arity = relType.relates().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
         Var body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
@@ -378,8 +378,8 @@ public class Utility {
      */
     public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeLabel, TypeLabel> roleMappings,
                                              GraknGraph graph){
-        final int parentArity = parent.hasRoles().size();
-        final int childArity = child.hasRoles().size();
+        final int parentArity = parent.relates().size();
+        final int childArity = child.relates().size();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
         }

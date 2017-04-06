@@ -215,7 +215,7 @@ public class VisualiserControllerTest {
 
         assertEquals("protagonist",protagonist.at("_name").getValue());
         assertEquals(protagonistType.getId().getValue(),protagonist.at("_id").getValue());
-        assertEquals("event-protagonist",protagonist.at("_embedded").at("has-role").at(0).at("_name").getValue());
+        assertEquals("event-protagonist",protagonist.at("_embedded").at("relates").at(0).at("_name").getValue());
     }
 
     private void checkHALStructureOfPerson(Json person, String id) {

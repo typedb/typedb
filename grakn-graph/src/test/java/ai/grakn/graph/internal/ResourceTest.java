@@ -56,7 +56,7 @@ public class ResourceTest extends GraphTestBase{
         Instance bob = randomThing.addEntity();
         Instance alice = randomThing.addEntity();
         Resource birthDate = resourceType.putResource("10/10/10");
-        hasResource.hasRole(resourceRole).hasRole(actorRole);
+        hasResource.relates(resourceRole).relates(actorRole);
 
         assertEquals(0, birthDate.ownerInstances().size());
 

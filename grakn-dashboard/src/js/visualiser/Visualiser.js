@@ -341,7 +341,7 @@ export default class Visualiser {
         color: this.style.getEdgeColour(label),
         font: this.style.getEdgeFont(label),
         arrows: {
-          to: (label !== 'has-role'),
+          to: (label !== 'relates'),
         },
       });
     }

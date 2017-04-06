@@ -535,7 +535,7 @@ public class StatisticsTest {
             RoleType relation2 = graph.putRoleType("relation2");
             entityType1.playsRole(relation1).playsRole(relation2);
             entityType2.playsRole(relation1).playsRole(relation2);
-            RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+            RelationType related = graph.putRelationType("related").relates(relation1).relates(relation2);
 
             related.addRelation()
                     .addRolePlayer(relation1, entity1)
@@ -573,19 +573,19 @@ public class StatisticsTest {
             RoleType resourceValue7 = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(TypeLabel.of(resourceType7)));
 
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(TypeLabel.of(resourceType1)))
-                    .hasRole(resourceOwner1).hasRole(resourceValue1);
+                    .relates(resourceOwner1).relates(resourceValue1);
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(TypeLabel.of(resourceType2)))
-                    .hasRole(resourceOwner2).hasRole(resourceValue2);
+                    .relates(resourceOwner2).relates(resourceValue2);
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(TypeLabel.of(resourceType3)))
-                    .hasRole(resourceOwner3).hasRole(resourceValue3);
+                    .relates(resourceOwner3).relates(resourceValue3);
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(TypeLabel.of(resourceType4)))
-                    .hasRole(resourceOwner4).hasRole(resourceValue4);
+                    .relates(resourceOwner4).relates(resourceValue4);
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(TypeLabel.of(resourceType5)))
-                    .hasRole(resourceOwner5).hasRole(resourceValue5);
+                    .relates(resourceOwner5).relates(resourceValue5);
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(TypeLabel.of(resourceType6)))
-                    .hasRole(resourceOwner6).hasRole(resourceValue6);
+                    .relates(resourceOwner6).relates(resourceValue6);
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getLabel(TypeLabel.of(resourceType7)))
-                    .hasRole(resourceOwner7).hasRole(resourceValue7);
+                    .relates(resourceOwner7).relates(resourceValue7);
 
             entityType1.playsRole(resourceOwner1)
                     .playsRole(resourceOwner2)

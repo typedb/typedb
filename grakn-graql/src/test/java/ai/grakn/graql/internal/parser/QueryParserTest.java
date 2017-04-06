@@ -254,7 +254,7 @@ public class QueryParserTest {
                 var("x").isa(var("z")),
                 var("y").value("crime"),
                 var("z").sub("production"),
-                label("has-genre").hasRole(var("p"))
+                label("has-genre").relates(var("p"))
         );
 
         MatchQuery parsed = parse(
@@ -263,7 +263,7 @@ public class QueryParserTest {
                         "$x isa $z;" +
                         "$y value 'crime';" +
                         "$z sub production;" +
-                        "has-genre has-role $p;"
+                        "has-genre relates $p;"
         );
 
         assertEquals(expected, parsed);
@@ -321,7 +321,7 @@ public class QueryParserTest {
                 label("evolution").sub(Schema.MetaSchema.RELATION.getLabel().getValue()),
                 label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
-                label("evolution").hasRole("evolves-from").hasRole("evolves-to"),
+                label("evolution").relates("evolves-from").relates("evolves-to"),
                 label("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
@@ -335,7 +335,7 @@ public class QueryParserTest {
                 "evolution sub relation;" +
                 "evolves-from sub role;" +
                 "label \"evolves-to\" sub role;" +
-                "evolution has-role evolves-from, has-role evolves-to;" +
+                "evolution relates evolves-from, relates evolves-to;" +
                 "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +

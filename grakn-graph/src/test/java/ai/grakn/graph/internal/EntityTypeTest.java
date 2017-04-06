@@ -266,7 +266,7 @@ public class EntityTypeTest extends GraphTestBase{
         RelationType relationType = graknGraph.getRelationType(hasResourceLabel.getValue());
         assertEquals(hasResourceLabel, relationType.getLabel());
 
-        Set<TypeLabel> roleLabels = relationType.hasRoles().stream().map(Type::getLabel).collect(toSet());
+        Set<TypeLabel> roleLabels = relationType.relates().stream().map(Type::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
         assertThat(entityType.playsRoles(), containsInAnyOrder(graknGraph.getRoleType(hasResourceOwnerLabel.getValue())));
@@ -274,7 +274,7 @@ public class EntityTypeTest extends GraphTestBase{
 
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
-        relationType.hasRoles().forEach(role -> assertTrue(role.isImplicit()));
+        relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
         EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();

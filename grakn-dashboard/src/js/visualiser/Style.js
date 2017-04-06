@@ -151,7 +151,7 @@ export default class Style {
   getEdgeColour(label) {
     // let colour;
     // switch (label) {
-    //   case 'has-role':
+    //   case 'relates':
     //     colour = '#2bbbad';
     //     break;
     //   default:
@@ -167,7 +167,7 @@ export default class Style {
   getEdgeFont(label) {
     // let font;
     // switch (label) {
-    //   case 'has-role':
+    //   case 'relates':
     //     font = '#2bbbad';
     //     break;
     //   default:

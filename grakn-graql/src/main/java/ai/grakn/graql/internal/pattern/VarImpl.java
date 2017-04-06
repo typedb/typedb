@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
+import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
@@ -193,13 +193,13 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasRole(String type) {
-        return hasRole(Graql.label(type));
+    public Var relates(String type) {
+        return relates(Graql.label(type));
     }
 
     @Override
-    public Var hasRole(Var type) {
-        return addProperty(new HasRoleProperty(type.admin()));
+    public Var relates(Var type) {
+        return addProperty(new RelatesProperty(type.admin()));
     }
 
     @Override

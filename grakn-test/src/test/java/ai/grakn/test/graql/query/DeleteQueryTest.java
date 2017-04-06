@@ -117,13 +117,13 @@ public class DeleteQueryTest {
 
     @Test
     public void testDeleteSpecificEdge() {
-        Var actor = label("has-cast").hasRole("actor");
-        Var productionWithCast = label("has-cast").hasRole("production-with-cast");
+        Var actor = label("has-cast").relates("actor");
+        Var productionWithCast = label("has-cast").relates("production-with-cast");
 
         assertTrue(qb.match(actor).ask().execute());
         assertTrue(qb.match(productionWithCast).ask().execute());
 
-        qb.match(var("x").label("has-cast")).delete(var("x").hasRole("actor")).execute();
+        qb.match(var("x").label("has-cast")).delete(var("x").relates("actor")).execute();
         assertTrue(qb.match(label("has-cast")).ask().execute());
         assertFalse(qb.match(actor).ask().execute());
         assertTrue(qb.match(productionWithCast).ask().execute());

@@ -88,7 +88,7 @@ public class RuleTest extends GraphTestBase{
         graknGraph.putEntityType("My-Type");
 
         lhs = graknGraph.graql().parsePattern("$x isa My-Type");
-        rhs = graknGraph.graql().parsePattern("$x has-role Your-Type");
+        rhs = graknGraph.graql().parsePattern("$x relates Your-Type");
         Rule rule = graknGraph.admin().getMetaRuleInference().putRule(lhs, rhs);
 
         expectedException.expect(GraknValidationException.class);

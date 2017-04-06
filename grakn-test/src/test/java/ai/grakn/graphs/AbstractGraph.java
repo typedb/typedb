@@ -50,11 +50,11 @@ public class AbstractGraph extends TestGraph {
 
         relRoleA = graph.putRoleType("rel-roleA");
         relRoleB = graph.putRoleType("rel-roleB");
-        rel = graph.putRelationType("rel").hasRole(relRoleA).hasRole(relRoleB);
+        rel = graph.putRelationType("rel").relates(relRoleA).relates(relRoleB);
 
         RELRoleA = graph.putRoleType("REL-roleA");
         RELRoleB = graph.putRoleType("REL-roleB");
-        REL = graph.putRelationType("REL").hasRole(RELRoleA).hasRole(RELRoleB);
+        REL = graph.putRelationType("REL").relates(RELRoleA).relates(RELRoleB);
 
         P = graph.putEntityType("P").playsRole(RELRoleA).playsRole(RELRoleB);
         P.resource(key);
