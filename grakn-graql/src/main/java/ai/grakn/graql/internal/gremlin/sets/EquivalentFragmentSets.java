@@ -50,10 +50,10 @@ public class EquivalentFragmentSets {
      * An {@link EquivalentFragmentSet} that indicates a variable is a type whose instances play a role.
      * @param type a type variable label
      * @param roleType a role type variable label
-     * @param required whether the plays-role must be constrained to be "required"
+     * @param required whether the plays must be constrained to be "required"
      */
-    public static EquivalentFragmentSet playsRole(VarName type, VarName roleType, boolean required) {
-        return new PlaysRoleFragmentSet(type, roleType, required);
+    public static EquivalentFragmentSet plays(VarName type, VarName roleType, boolean required) {
+        return new PlaysFragmentSet(type, roleType, required);
     }
 
     /**

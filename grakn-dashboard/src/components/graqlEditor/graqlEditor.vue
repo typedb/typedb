@@ -260,7 +260,7 @@ export default {
             this.codeMirror.setValue(query);
         },
         typeQuery(t, ti) {
-            this.codeMirror.setValue("match $x " + (t === 'roles' ? 'plays-role' : 'isa') + " " + ti + ";");
+            this.codeMirror.setValue("match $x " + (t === 'roles' ? 'plays' : 'isa') + " " + ti + ";");
             this.showTypeInstances = false;
             this.runQuery();
         },

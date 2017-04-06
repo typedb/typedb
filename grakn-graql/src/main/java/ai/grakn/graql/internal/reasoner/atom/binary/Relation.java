@@ -252,7 +252,7 @@ public class Relation extends TypeAtom {
             Type type = varTypeMap.get(rolePlayer);
             if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
                 Set<RoleType> roleIntersection = new HashSet<>(roles);
-                roleIntersection.retainAll(type.playsRoles());
+                roleIntersection.retainAll(type.plays());
                 if (roleIntersection.isEmpty()){
                     return false;
                 } else {

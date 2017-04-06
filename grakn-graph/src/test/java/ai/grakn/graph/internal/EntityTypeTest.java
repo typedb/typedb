@@ -117,11 +117,11 @@ public class EntityTypeTest extends GraphTestBase{
         RoleType animal = graknGraph.putRoleType("animal");
         RoleType monsterEvil = graknGraph.putRoleType("evil monster").superType(monster);
 
-        EntityType creature = graknGraph.putEntityType("creature").playsRole(monster).playsRole(animal);
-        EntityType creatureMysterious = graknGraph.putEntityType("mysterious creature").superType(creature).playsRole(monsterEvil);
+        EntityType creature = graknGraph.putEntityType("creature").plays(monster).plays(animal);
+        EntityType creatureMysterious = graknGraph.putEntityType("mysterious creature").superType(creature).plays(monsterEvil);
 
-        assertThat(creature.playsRoles(), containsInAnyOrder(monster, animal));
-        assertThat(creatureMysterious.playsRoles(), containsInAnyOrder(monster, animal, monsterEvil));
+        assertThat(creature.plays(), containsInAnyOrder(monster, animal));
+        assertThat(creatureMysterious.plays(), containsInAnyOrder(monster, animal, monsterEvil));
     }
 
     @Test
@@ -181,11 +181,11 @@ public class EntityTypeTest extends GraphTestBase{
     public void whenRemovingRoleFromEntityType_TheRoleCanNoLongerBePlayed(){
         RoleType role1 = graknGraph.putRoleType("A Role 1");
         RoleType role2 = graknGraph.putRoleType("A Role 2");
-        EntityType type = graknGraph.putEntityType("A Concept Type").playsRole(role1).playsRole(role2);
+        EntityType type = graknGraph.putEntityType("A Concept Type").plays(role1).plays(role2);
 
-        assertThat(type.playsRoles(), containsInAnyOrder(role1, role2));
-        type.deletePlaysRole(role1);
-        assertThat(type.playsRoles(), containsInAnyOrder( role2));
+        assertThat(type.plays(), containsInAnyOrder(role1, role2));
+        type.deletePlays(role1);
+        assertThat(type.plays(), containsInAnyOrder( role2));
     }
 
     @Test
@@ -246,7 +246,7 @@ public class EntityTypeTest extends GraphTestBase{
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(META_TYPE_IMMUTABLE.getMessage(meta.getLabel()));
 
-        meta.playsRole(roleType);
+        meta.plays(roleType);
     }
 
     @Test
@@ -269,17 +269,17 @@ public class EntityTypeTest extends GraphTestBase{
         Set<TypeLabel> roleLabels = relationType.relates().stream().map(Type::getLabel).collect(toSet());
         assertThat(roleLabels, containsInAnyOrder(hasResourceOwnerLabel, hasResourceValueLabel));
 
-        assertThat(entityType.playsRoles(), containsInAnyOrder(graknGraph.getRoleType(hasResourceOwnerLabel.getValue())));
-        assertThat(resourceType.playsRoles(), containsInAnyOrder(graknGraph.getRoleType(hasResourceValueLabel.getValue())));
+        assertThat(entityType.plays(), containsInAnyOrder(graknGraph.getRoleType(hasResourceOwnerLabel.getValue())));
+        assertThat(resourceType.plays(), containsInAnyOrder(graknGraph.getRoleType(hasResourceValueLabel.getValue())));
 
         //Check everything is implicit
         assertTrue(relationType.isImplicit());
         relationType.relates().forEach(role -> assertTrue(role.isImplicit()));
 
         // Check that resource is not required
-        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
+        EdgeImpl entityPlays = ((EntityTypeImpl) entityType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
         assertFalse(entityPlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
-        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).iterator().next();
+        EdgeImpl resourcePlays = ((ResourceTypeImpl <?>) resourceType).getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).iterator().next();
         assertFalse(resourcePlays.getPropertyBoolean(Schema.EdgeProperty.REQUIRED));
     }
 
@@ -300,10 +300,10 @@ public class EntityTypeTest extends GraphTestBase{
         graknGraph.showImplicitConcepts(true);
 
         //Check role types are only built explicitly
-        assertThat(entityType1.playsRoles(),
+        assertThat(entityType1.plays(),
                 containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(superLabel).getValue())));
 
-        assertThat(entityType2.playsRoles(),
+        assertThat(entityType2.plays(),
                 containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(label).getValue())));
 
         //Check Implicit Types Follow SUB Structure

@@ -65,18 +65,18 @@ public class SystemKeyspaceTest {
         ResourceType userEmail = graph.getResourceType("user-email");
         ResourceType userIsAdmin = graph.getResourceType("user-is-admin");
 
-        //Check Plays Roles
-        assertTrue(user.playsRoles().contains(
+        //Check Plays
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_KEY_OWNER.getLabel(userName.getLabel()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userPassword.getLabel()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userFirstName.getLabel()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userLastName.getLabel()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userEmail.getLabel()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userIsAdmin.getLabel()).getValue())));
 
         graph.close();

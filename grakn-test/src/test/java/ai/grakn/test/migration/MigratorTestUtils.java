@@ -84,7 +84,7 @@ public class MigratorTestUtils {
     public static void assertRelationBetweenInstancesExists(GraknGraph graph, Instance instance1, Instance instance2, TypeLabel relation){
         RelationType relationType = graph.getType(relation);
 
-        RoleType role1 = instance1.playsRoles().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
+        RoleType role1 = instance1.plays().stream().filter(r -> r.relationTypes().stream().anyMatch(rel -> rel.equals(relationType))).findFirst().get();
         assertTrue(instance1.relations(role1).stream().anyMatch(rel -> rel.rolePlayers().contains(instance2)));
     }
 

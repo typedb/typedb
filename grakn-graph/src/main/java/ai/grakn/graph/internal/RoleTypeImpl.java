@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  *
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    private ComponentCache<Set<Type>> cachedDirectPlayedByTypes = new ComponentCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).collect(Collectors.toSet()));
+    private ComponentCache<Set<Type>> cachedDirectPlayedByTypes = new ComponentCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private ComponentCache<Set<RelationType>> cachedRelationTypes = new ComponentCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
@@ -155,19 +155,19 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @return The Type itself.
      */
     @Override
-    public RoleType playsRole(RoleType roleType) {
+    public RoleType plays(RoleType roleType) {
         if(equals(roleType)){
             throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
         }
-        return super.playsRole(roleType, false);
+        return super.plays(roleType, false);
     }
 
     @Override
     public void delete(){
         boolean hasRelates = getVertex().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
-        boolean hasPlaysRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
+        boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
 
-        if(hasRelates || hasPlaysRoles){
+        if(hasRelates || hasPlays){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getLabel()));
         } else {
             super.delete();

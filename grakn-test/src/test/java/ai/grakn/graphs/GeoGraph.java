@@ -60,27 +60,27 @@ public class GeoGraph extends TestGraph {
                 .relates(geoEntity).relates(entityLocation);
 
         geographicalObject = graph.putEntityType("geoObject")
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         geographicalObject.resource(key);
 
         continent = graph.putEntityType("continent")
                 .superType(geographicalObject)
-                .playsRole(entityLocation);
+                .plays(entityLocation);
         country = graph.putEntityType("country")
                 .superType(geographicalObject)
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         region = graph.putEntityType("region")
                 .superType(geographicalObject)
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         city = graph.putEntityType("city")
                 .superType(geographicalObject)
-                .playsRole(geoEntity)
-                .playsRole(entityLocation);
+                .plays(geoEntity)
+                .plays(entityLocation);
         university = graph.putEntityType("university")
-                        .playsRole(geoEntity);
+                        .plays(geoEntity);
         university.resource(key);
     }
 

@@ -380,7 +380,7 @@ public class ScalingTestIT {
         EntityType thing = graph.putEntityType("thing");
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
+        thing.plays(relation1).plays(relation2);
         graph.putRelationType("related").relates(relation1).relates(relation2);
         ResourceType<String> id = graph.putResourceType("node-id", ResourceType.DataType.STRING);
         thing.resource(id);

@@ -265,7 +265,7 @@ public class Utility {
      * @return set of role types the type can play in relType
      */
     public static Set<RoleType> getCompatibleRoleTypes(Type type, Set<RoleType> relRoles) {
-        Collection<RoleType> typeRoles = type.playsRoles();
+        Collection<RoleType> typeRoles = type.plays();
         return relRoles.stream().filter(typeRoles::contains).collect(toSet());
     }
 
@@ -279,7 +279,7 @@ public class Utility {
      * convert given entity type to a set of relation types in which it can play roles
      */
     public static final Function<Type, Set<RelationType>> typeToRelationTypes =
-            type -> type.playsRoles().stream()
+            type -> type.plays().stream()
                     .flatMap(roleType -> roleType.relationTypes().stream())
                     .filter(rt -> !rt.isImplicit())
                     .collect(toSet());

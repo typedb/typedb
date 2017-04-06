@@ -65,7 +65,7 @@ public interface Instance extends Concept{
      *
      * @return A set of all the Role Types which this instance plays.
      */
-    Collection<RoleType> playsRoles();
+    Collection<RoleType> plays();
 
     /**
      * Creates a relation from this instance to the provided resource.

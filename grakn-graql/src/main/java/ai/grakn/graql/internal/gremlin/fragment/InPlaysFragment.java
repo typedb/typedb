@@ -23,13 +23,13 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.EdgeLabel.PLAYS_ROLE;
+import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 
-class InPlaysRoleFragment extends AbstractFragment {
+class InPlaysFragment extends AbstractFragment {
 
     private final boolean required;
 
-    InPlaysRoleFragment(VarName start, VarName end, boolean required) {
+    InPlaysFragment(VarName start, VarName end, boolean required) {
         super(start, end);
         this.required = required;
     }
@@ -37,9 +37,9 @@ class InPlaysRoleFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         if (required) {
-            traversal.inE(PLAYS_ROLE.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
+            traversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {
-            traversal.in(PLAYS_ROLE.getLabel());
+            traversal.in(PLAYS.getLabel());
         }
 
         Fragments.inSubs(traversal);
@@ -48,9 +48,9 @@ class InPlaysRoleFragment extends AbstractFragment {
     @Override
     public String getName() {
         if (required) {
-            return "<-[plays-role:required]-";
+            return "<-[plays:required]-";
         } else {
-            return "<-[plays-role]-";
+            return "<-[plays]-";
         }
     }
 

@@ -76,15 +76,15 @@ public class RoleTypeTest extends GraphTestBase {
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
 
-        roleType.playsRole(roleType);
+        roleType.plays(roleType);
     }
 
     @Test
     public void testRolePlayerConceptType(){
-        Type type1 = graknGraph.putEntityType("CT1").playsRole(roleType);
-        Type type2 = graknGraph.putEntityType("CT2").playsRole(roleType);
-        Type type3 = graknGraph.putEntityType("CT3").playsRole(roleType);
-        Type type4 = graknGraph.putEntityType("CT4").playsRole(roleType);
+        Type type1 = graknGraph.putEntityType("CT1").plays(roleType);
+        Type type2 = graknGraph.putEntityType("CT2").plays(roleType);
+        Type type3 = graknGraph.putEntityType("CT3").plays(roleType);
+        Type type4 = graknGraph.putEntityType("CT4").plays(roleType);
 
         assertEquals(4, roleType.playedByTypes().size());
         assertTrue(roleType.playedByTypes().contains(type1));
@@ -96,7 +96,7 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testPlayedByTypes(){
         RoleType crewMember = graknGraph.putRoleType("crew-member").setAbstract(true);
-        EntityType human = graknGraph.putEntityType("human").playsRole(crewMember);
+        EntityType human = graknGraph.putEntityType("human").plays(crewMember);
         EntityType person = graknGraph.putEntityType("person").superType(human);
 
         assertEquals(2, crewMember.playedByTypes().size());
@@ -109,7 +109,7 @@ public class RoleTypeTest extends GraphTestBase {
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         RelationType relationType = graknGraph.putRelationType("relationTypes").relates(roleA).relates(roleB);
-        EntityType entityType = graknGraph.putEntityType("entityType").playsRole(roleA).playsRole(roleB);
+        EntityType entityType = graknGraph.putEntityType("entityType").plays(roleA).plays(roleB);
 
         Entity a = entityType.addEntity();
         Entity b = entityType.addEntity();
@@ -137,13 +137,13 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testDeleteRoleTypeWithPlaysRole(){
+    public void testDeleteRoleTypeWithPlays(){
         assertNotNull(graknGraph.getRoleType("RoleType"));
         graknGraph.getRoleType("RoleType").delete();
         assertNull(graknGraph.getRoleType("RoleType"));
 
         RoleType roleType = graknGraph.putRoleType("New Role Type");
-        graknGraph.putEntityType("Entity Type").playsRole(roleType);
+        graknGraph.putEntityType("Entity Type").plays(roleType);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getLabel()));

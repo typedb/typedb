@@ -55,7 +55,7 @@ public class OntologyMutationTest extends GraphTestBase{
         marriage = graknGraph.putRelationType("marriage").relates(husband).relates(wife);
         graknGraph.putRelationType("car being driven by").relates(driven).relates(driver);
 
-        person = graknGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
+        person = graknGraph.putEntityType("Person").plays(husband).plays(wife);
         man = graknGraph.putEntityType("Man").superType(person);
         woman = graknGraph.putEntityType("Woman").superType(person);
         car = graknGraph.putEntityType("Car");
@@ -68,8 +68,8 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingPlaysRoleUsedByExistingCasting_Throw() throws GraknValidationException {
-        person.deletePlaysRole(wife);
+    public void whenDeletingPlaysUsedByExistingCasting_Throw() throws GraknValidationException {
+        person.deletePlays(wife);
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getLabel(), alice.getId(), wife.getLabel()));
@@ -167,7 +167,7 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenAddingPlaysRoleUsingBatchGraph_Throw(){
+    public void whenAddingPlaysUsingBatchGraph_Throw(){
         String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         graknGraph.putRoleType(roleTypeId);
@@ -180,7 +180,7 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        entityType.playsRole(roleType);
+        entityType.plays(roleType);
     }
 
     @Test
@@ -203,11 +203,11 @@ public class OntologyMutationTest extends GraphTestBase{
 
 
     @Test
-    public void whenDeletingPlaysRoleUsingBatchGraph_Throw(){
+    public void whenDeletingPlaysUsingBatchGraph_Throw(){
         String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         RoleType roleType = graknGraph.putRoleType(roleTypeId);
-        graknGraph.putEntityType(entityTypeId).playsRole(roleType);
+        graknGraph.putEntityType(entityTypeId).plays(roleType);
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         roleType = graknGraphBatch.getRoleType(roleTypeId);
@@ -216,7 +216,7 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        entityType.deletePlaysRole(roleType);
+        entityType.deletePlays(roleType);
     }
 
     @Test

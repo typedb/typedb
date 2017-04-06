@@ -81,7 +81,7 @@ public interface ResourceType<D> extends Type {
      * @param roleType The Role Type which the instances of this ResourceType are allowed to play.
      * @return The ResourceType itself.
      */
-    ResourceType<D> playsRole(RoleType roleType);
+    ResourceType<D> plays(RoleType roleType);
 
     /**
      * Removes the RoleType to prevent instances of this ResourceType from playing it.
@@ -89,7 +89,7 @@ public interface ResourceType<D> extends Type {
      * @param roleType The Role Type which the instances of this ResourceType should no longer be allowed to play.
      * @return The ResourceType itself.
      */
-    ResourceType<D> deletePlaysRole(RoleType roleType);
+    ResourceType<D> deletePlays(RoleType roleType);
 
     /**
      * Set the regular expression that instances of the ResourceType must conform to.

@@ -71,11 +71,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
 
-    //This cache is different in order to keep track of which plays roles are required
-    private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlaysRoles = new ComponentCache<>(() -> {
+    //This cache is different in order to keep track of which plays are required
+    private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlays = new ComponentCache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
-        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).forEach(edge -> {
+        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
             RoleType roleType = edge.getTarget();
             Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
@@ -158,16 +158,16 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return A list of all the roles this Type is allowed to play.
      */
     @Override
-    public Collection<RoleType> playsRoles() {
+    public Collection<RoleType> plays() {
         Set<RoleType> allRoleTypes = new HashSet<>();
 
-        //Get the immediate plays roles which may be cached
-        allRoleTypes.addAll(cachedDirectPlaysRoles.get().keySet());
+        //Get the immediate plays which may be cached
+        allRoleTypes.addAll(cachedDirectPlays.get().keySet());
 
-        //Now get the super type plays roles (Which may also be cached locally within their own context
+        //Now get the super type plays (Which may also be cached locally within their own context
         Set<T> superSet = superTypeSet();
-        superSet.remove(this); //We already have the plays roles from ourselves
-        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlaysRoles().keySet()));
+        superSet.remove(this); //We already have the plays from ourselves
+        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
     }
@@ -196,7 +196,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         Set<ResourceType> resourceTypes = new HashSet<>();
         //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-        playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
             String roleTypeLabel = roleType.getLabel().getValue();
             if(roleTypeLabel.startsWith(prefix) && roleTypeLabel.endsWith(suffix)){ //This is the implicit type we want
                 String resourceTypeLabel = roleTypeLabel.replace(prefix, "").replace(suffix, "");
@@ -208,8 +208,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return resourceTypes;
     }
 
-    Map<RoleType, Boolean> directPlaysRoles(){
-        return cachedDirectPlaysRoles.get();
+    Map<RoleType, Boolean> directPlays(){
+        return cachedDirectPlays.get();
     }
 
     private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){
@@ -233,21 +233,21 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         } else {
             //Force load of linked concepts whose caches need to be updated
             cachedSuperType.get();
-            cachedDirectPlaysRoles.get();
+            cachedDirectPlays.get();
 
             deleteNode();
 
             //Update neighbouring caches
             //noinspection unchecked
             ((TypeImpl<T, V>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
-            cachedDirectPlaysRoles.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+            cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
 
             //Clear internal caching
             cachedIsImplicit.clear();
             cachedIsAbstract.clear();
             cachedSuperType.clear();
             cachedDirectSubTypes.clear();
-            cachedDirectPlaysRoles.clear();
+            cachedDirectPlays.clear();
 
             //Clear Global ComponentCache
             getGraknGraph().getConceptLog().removeConcept(this);
@@ -493,16 +493,16 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return false;
     }
 
-    T playsRole(RoleType roleType, boolean required) {
+    T plays(RoleType roleType, boolean required) {
         checkTypeMutation();
 
         //Update the internal cache of role types played
-        cachedDirectPlaysRoles.ifPresent(map -> map.put(roleType, required));
+        cachedDirectPlays.ifPresent(map -> map.put(roleType, required));
 
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
 
-        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
@@ -516,8 +516,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
-    public T playsRole(RoleType roleType) {
-        return playsRole(roleType, false);
+    public T plays(RoleType roleType) {
+        return plays(roleType, false);
     }
 
     /**
@@ -526,10 +526,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     @Override
-    public T deletePlaysRole(RoleType roleType) {
+    public T deletePlays(RoleType roleType) {
         checkTypeMutation();
-        deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
-        cachedDirectPlaysRoles.ifPresent(set -> set.remove(roleType));
+        deleteEdgeTo(Schema.EdgeLabel.PLAYS, roleType);
+        cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
         //Add castings to tracking to make sure they can still be played.
@@ -608,7 +608,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
         TypeLabel superLabel = resourceTypeSuper.getLabel();
-        if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays role edges to meta types accidentally
+        if(!Schema.MetaSchema.RESOURCE.getLabel().equals(superLabel)) { //Check to make sure we dont add plays edges to meta types accidentally
             RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
             RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getLabel(superLabel));
             RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(has.getLabel(superLabel)).
@@ -620,12 +620,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             relationType.superType(relationTypeSuper);
 
             //Make sure the supertype resource is linked with the role as well
-            ((ResourceTypeImpl) resourceTypeSuper).playsRole(valueRoleSuper);
+            ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);
         }
 
-        this.playsRole(ownerRole, required);
+        this.plays(ownerRole, required);
         //TODO: Use explicit cardinality of 0-1 rather than just false
-        ((ResourceTypeImpl) resourceType).playsRole(valueRole, false);
+        ((ResourceTypeImpl) resourceType).plays(valueRole, false);
 
         return getThis();
     }

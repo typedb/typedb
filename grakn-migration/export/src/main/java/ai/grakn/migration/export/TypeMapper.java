@@ -81,7 +81,7 @@ public class TypeMapper {
             var = var.sub(Graql.label(superType.getLabel()));
         }
 
-        var = playsRoles(var, type);
+        var = plays(var, type);
         var = isAbstract(var, type);
 
         return var;
@@ -97,14 +97,14 @@ public class TypeMapper {
     }
 
     /**
-     * Add plays-role edges to a var, given a type
+     * Add plays edges to a var, given a type
      * @param var var to be modified
      * @param type type from which metadata extracted
-     * @return var with appropriate plays-role edges
+     * @return var with appropriate plays edges
      */
-    private static Var playsRoles(Var var, Type type) {
-        for(RoleType role:type.playsRoles()){
-            var = var.playsRole(Graql.label(role.getLabel()));
+    private static Var plays(Var var, Type type) {
+        for(RoleType role:type.plays()){
+            var = var.plays(Graql.label(role.getLabel()));
         }
         return var;
     }

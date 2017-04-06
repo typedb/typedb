@@ -214,7 +214,7 @@ public class InsertQueryTest {
                 label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue()),
                 label("evolution").relates("evolves-from").relates("evolves-to"),
-                label("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
+                label("pokemon").plays("evolves-from").plays("evolves-to").hasResource("name"),
 
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
@@ -228,7 +228,7 @@ public class InsertQueryTest {
         assertTrue(qb.match(label("evolves-from").sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(label("evolves-to").sub(Schema.MetaSchema.ROLE.getLabel().getValue())).ask().execute());
         assertTrue(qb.match(label("evolution").relates("evolves-from").relates("evolves-to")).ask().execute());
-        assertTrue(qb.match(label("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
+        assertTrue(qb.match(label("pokemon").plays("evolves-from").plays("evolves-to")).ask().execute());
 
         assertTrue(qb.match(
                 var("x").has("name", "Pichu").isa("pokemon"),
@@ -302,13 +302,13 @@ public class InsertQueryTest {
         qb.insert(
                 var("abc").sub("entity"),
                 var("abc").label("123"),
-                label("123").playsRole("actor"),
-                var("abc").playsRole("director")
+                label("123").plays("actor"),
+                var("abc").plays("director")
         ).execute();
 
         assertTrue(qb.match(label("123").sub("entity")).ask().execute());
-        assertTrue(qb.match(label("123").playsRole("actor")).ask().execute());
-        assertTrue(qb.match(label("123").playsRole("director")).ask().execute());
+        assertTrue(qb.match(label("123").plays("actor")).ask().execute());
+        assertTrue(qb.match(label("123").plays("director")).ask().execute());
     }
 
     @Test
@@ -403,7 +403,7 @@ public class InsertQueryTest {
         qb.insert(
                 label("new-type").sub(Schema.MetaSchema.ENTITY.getLabel().getValue()),
                 label("new-type").isAbstract(),
-                label("new-type").playsRole(roleTypeLabel),
+                label("new-type").plays(roleTypeLabel),
                 var("x").isa("new-type")
         ).execute();
 
@@ -416,7 +416,7 @@ public class InsertQueryTest {
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
         assertTrue(newType.asEntityType().isAbstract());
-        assertTrue(newType.playsRoles().contains(movieGraph.graph().getRoleType(roleTypeLabel)));
+        assertTrue(newType.plays().contains(movieGraph.graph().getRoleType(roleTypeLabel)));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
@@ -492,8 +492,8 @@ public class InsertQueryTest {
         assertTrue(qb.match(hasResourceValue.sub("role")).ask().execute());
         assertTrue(qb.match(hasResource.relates(hasResourceOwner)).ask().execute());
         assertTrue(qb.match(hasResource.relates(hasResourceValue)).ask().execute());
-        assertTrue(qb.match(label("a-new-type").playsRole(hasResourceOwner)).ask().execute());
-        assertTrue(qb.match(label(resourceType).playsRole(hasResourceValue)).ask().execute());
+        assertTrue(qb.match(label("a-new-type").plays(hasResourceOwner)).ask().execute());
+        assertTrue(qb.match(label(resourceType).plays(hasResourceValue)).ask().execute());
     }
 
     @Test
@@ -521,8 +521,8 @@ public class InsertQueryTest {
         assertTrue(qb.match(hasKeyValue.sub("role")).ask().execute());
         assertTrue(qb.match(hasKey.relates(hasKeyOwner)).ask().execute());
         assertTrue(qb.match(hasKey.relates(hasKeyValue)).ask().execute());
-        assertTrue(qb.match(label("a-new-type").playsRole(hasKeyOwner)).ask().execute());
-        assertTrue(qb.match(label(resourceType).playsRole(hasKeyValue)).ask().execute());
+        assertTrue(qb.match(label("a-new-type").plays(hasKeyOwner)).ask().execute());
+        assertTrue(qb.match(label(resourceType).plays(hasKeyValue)).ask().execute());
     }
 
     @Test

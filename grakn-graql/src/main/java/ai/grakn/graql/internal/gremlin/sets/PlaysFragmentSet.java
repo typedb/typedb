@@ -26,9 +26,9 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 /**
  * @author Felix Chapman
  */
-class PlaysRoleFragmentSet extends EquivalentFragmentSet {
+class PlaysFragmentSet extends EquivalentFragmentSet {
 
-    PlaysRoleFragmentSet(VarName type, VarName roleType, boolean required) {
-        super(Fragments.outPlaysRole(type, roleType, required), Fragments.inPlaysRole(roleType, type, required));
+    PlaysFragmentSet(VarName type, VarName roleType, boolean required) {
+        super(Fragments.outPlays(type, roleType, required), Fragments.inPlays(roleType, type, required));
     }
 }
