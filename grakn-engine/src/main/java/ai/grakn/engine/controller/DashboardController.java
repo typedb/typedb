@@ -206,7 +206,7 @@ public class DashboardController {
 
     private static List<Json> getEntityTypes(Collection<RoleType> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
         return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
-                .flatMap(relationType -> relationType.hasRoles().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
+                .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
                 .flatMap(roleType -> roleType.playedByTypes().stream().map(entityType -> entityType.getName().getValue()))
                 .collect(Collectors.toSet()).stream()
                 .sorted()
@@ -216,7 +216,7 @@ public class DashboardController {
 
     private static List<Json> getRoleTypes(Collection<RoleType> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {
         return roleTypesPlayerByConcept.stream().flatMap(roleType -> roleType.relationTypes().stream())
-                .flatMap(relationType -> relationType.hasRoles().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
+                .flatMap(relationType -> relationType.relates().stream().filter(roleType1 -> !roleTypesPlayerByConcept.contains(roleType1)))
                 .map(roleType -> roleType.getName().getValue())
                 .collect(Collectors.toSet()).stream()
                 .sorted()
