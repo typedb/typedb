@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 /**
- * Reperesents the {@code plays-role} property on a {@link ai.grakn.concept.Type}.
+ * Reperesents the {@code plays} property on a {@link ai.grakn.concept.Type}.
  *
  * This property relates a {@link ai.grakn.concept.Type} and a {@link RoleType}. It indicates that an
  * {@link ai.grakn.concept.Instance} whose type is this {@link ai.grakn.concept.Type} is permitted to be a role-player
@@ -65,7 +65,7 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public String getName() {
-        return "plays-role";
+        return "plays";
     }
 
     @Override

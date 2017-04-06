@@ -48,9 +48,9 @@ class OutPlaysFragment extends AbstractFragment {
     @Override
     public String getName() {
         if (required) {
-            return "-[plays-role:required]->";
+            return "-[plays:required]->";
         } else {
-            return "-[plays-role]->";
+            return "-[plays]->";
         }
     }
 

@@ -1,5 +1,5 @@
 insert person sub entity, has-resource identifier; identifier sub resource, datatype string;
-insert spouse1 sub role; spouse2 sub role; person plays-role spouse1; person plays-role spouse2;
+insert spouse1 sub role; spouse2 sub role; person plays spouse1; person plays spouse2;
 insert marriage sub relation, has-role spouse1, has-role spouse2, has-resource date; date sub resource datatype string;
 commit;
 

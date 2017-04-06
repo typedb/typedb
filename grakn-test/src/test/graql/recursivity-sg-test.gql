@@ -11,12 +11,12 @@ insert
 "parent" sub role;
 "child" sub role;
 "Parent" sub relation, has-role parent, has-role child;
-entity2 plays-role parent, plays-role child;
+entity2 plays parent, plays child;
 
 "SG-role-A" sub role;
 "SG-role-B" sub role;
 "SameGen" sub relation, has-role SG-role-A, has-role SG-role-B;
-entity2 plays-role SG-role-A, plays-role SG-role-B;
+entity2 plays SG-role-A, plays SG-role-B;
 
 "name" sub resource, datatype string;
 

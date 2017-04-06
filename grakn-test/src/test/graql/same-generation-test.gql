@@ -10,17 +10,17 @@ insert
 "parent" sub role;
 "child" sub role;
 "Parent" sub relation, has-role parent, has-role child;
-person plays-role parent, plays-role child;
+person plays parent, plays child;
 
 "sibA" sub role;
 "sibB" sub role;
 "Sibling" sub relation, has-role sibA, has-role sibB;
-person plays-role sibA, plays-role sibB;
+person plays sibA, plays sibB;
 
 "SG-role-A" sub role;
 "SG-role-B" sub role;
 "SameGen" sub relation, has-role SG-role-A, has-role SG-role-B;
-person plays-role SG-role-A, plays-role SG-role-B;
+person plays SG-role-A, plays SG-role-B;
 
 "name" sub resource, datatype string;
 

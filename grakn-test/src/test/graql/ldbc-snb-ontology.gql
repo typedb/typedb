@@ -25,12 +25,12 @@ insert
 "member-location" sub location;
 "container-location" sub location;
 "sublocate" sub relation, has-role member-location, has-role container-location;
-place plays-role member-location, plays-role container-location, plays-role subject-location;
+place plays member-location, plays container-location, plays subject-location;
 
 # organization
 "university" sub organization;
 "company" sub organization;
-organization plays-role located-subject;
+organization plays located-subject;
 
 # person
 "person" sub entity2;
@@ -52,39 +52,39 @@ person
 "email" sub resource, datatype string;
 "age" sub resource, datatype long;
 
-person plays-role located-subject;
+person plays located-subject;
 
 "acquaintance" sub role, is-abstract;
 "acquaintance1" sub acquaintance;
 "acquaintance2" sub acquaintance;
 "knows" sub relation, has-role acquaintance1, has-role acquaintance2;
-person plays-role acquaintance1, plays-role acquaintance2;
+person plays acquaintance1, plays acquaintance2;
 
 "student" sub role;
 "enrolled-university" sub role;
 "attends" sub relation, has-role student, has-role enrolled-university;
-person plays-role student;
-university plays-role enrolled-university;
+person plays student;
+university plays enrolled-university;
 
 "employee" sub role;
 "employer" sub role;
 "employment" sub relation, has-role employee, has-role employer;
-person plays-role employee;
-company plays-role employer;
+person plays employee;
+company plays employer;
 
 "class-year" sub resource, datatype string;
 "attends-resource-value" sub role;
 "attends-resource-owner" sub role;
 "attends-resource" sub relation, has-role attends-resource-value, has-role attends-resource-owner;
-attends plays-role attends-resource-owner;
-class-year plays-role attends-resource-value;
+attends plays attends-resource-owner;
+class-year plays attends-resource-value;
 
 "employment-startdate" sub resource, datatype string;
 "employment-resource-value" sub role;
 "employment-resource-owner" sub role;
 "employment-resource" sub relation, has-role employment-resource-value, has-role employment-resource-owner;
-employment plays-role employment-resource-owner;
-employment-startdate plays-role employment-resource-value;
+employment plays employment-resource-owner;
+employment-startdate plays employment-resource-value;
 
 # message
 "message" sub entity2, is-abstract;
@@ -92,84 +92,84 @@ employment-startdate plays-role employment-resource-value;
 "message-resource-owner" sub role;
 "message-resource-value" sub role;
 "message-resource" sub relation, has-role message-resource-value, has-role message-resource-owner;
-message plays-role message-resource-owner;
+message plays message-resource-owner;
 
-"content" sub resource, datatype string, plays-role message-resource-value;
-"length" sub resource, datatype string, plays-role message-resource-value;
+"content" sub resource, datatype string, plays message-resource-value;
+"length" sub resource, datatype string, plays message-resource-value;
 
 "liked" sub role;
 "liker" sub role;
 "likes" sub relation, has-role liked, has-role liker;
-message plays-role liked;
-person plays-role liker;
+message plays liked;
+person plays liker;
 
 "written" sub role;
 "writer" sub role;
 "writes" sub relation, has-role written, has-role writer;
-message plays-role written;
-person plays-role writer;
+message plays written;
+person plays writer;
 
-message plays-role located-subject;
+message plays located-subject;
 
 "comment" sub message;
 
 "reply-owner" sub role;
 "reply-content" sub role;
 "reply" sub relation, has-role reply-content, has-role reply-owner;
-comment plays-role reply-content;
-message plays-role reply-owner;
+comment plays reply-content;
+message plays reply-owner;
 
 "post" sub message;
 
 "post-resource-owner" sub role;
 "post-resource-value" sub role;
 "post-resource" sub relation, has-role post-resource-owner, has-role post-resource-value;
-post plays-role post-resource-owner;
+post plays post-resource-owner;
 
-"image-file" sub resource, datatype string, plays-role post-resource-value;
+"image-file" sub resource, datatype string, plays post-resource-value;
 
 # forum
 "forum-resource-owner" sub role;
 "forum-resource-value" sub role;
 "forum-resource" sub relation, has-role forum-resource-value, has-role forum-resource-owner;
-forum plays-role forum-resource-owner;
+forum plays forum-resource-owner;
 
 "moderator" sub role;
 "moderated" sub role;
 "moderates" sub relation, has-role moderator, has-role moderated;
-person plays-role moderator;
-forum plays-role moderated;
+person plays moderator;
+forum plays moderated;
 
 "forum-member" sub role;
 "membered-forum" sub role;
 "membership" sub relation, has-role forum-member, has-role membered-forum;
-person plays-role forum-member;
-forum plays-role membered-forum;
+person plays forum-member;
+forum plays membered-forum;
 
 "post-container" sub role;
 "contained-post" sub role;
 "containing" sub relation, has-role post-container, has-role contained-post;
-post plays-role contained-post;
-forum plays-role post-container;
+post plays contained-post;
+forum plays post-container;
 
 # tag
 "subject-tag" sub role;
 "tagged-subject" sub role;
 "tagging" sub relation, has-role tagged-subject, has-role subject-tag;
-tag plays-role subject-tag;
-forum plays-role tagged-subject;
-message plays-role tagged-subject;
-person plays-role tagged-subject;
+tag plays subject-tag;
+forum plays tagged-subject;
+message plays tagged-subject;
+person plays tagged-subject;
 
 # tag class
 "group" sub role, is-abstract;
 "subgroup" sub group;
 "supergroup" sub group;
 "subgrouping" sub relation, has-role subgroup, has-role supergroup;
-category plays-role subgroup, plays-role supergroup;
+category plays subgroup, plays supergroup;
 
 "grouped-tag" sub role;
 "tag-group" sub role;
 "grouping" sub relation, has-role grouped-tag, has-role tag-group;
-tag plays-role grouped-tag;
-category plays-role tag-group;
+tag plays grouped-tag;
+category plays tag-group;

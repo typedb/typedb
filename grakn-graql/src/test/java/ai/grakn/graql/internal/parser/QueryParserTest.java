@@ -236,7 +236,7 @@ public class QueryParserTest {
     @Test
     public void testOntologyQuery() {
         MatchQuery expected = match(var("x").plays("actor")).orderBy("x");
-        MatchQuery parsed = parse("match $x plays-role actor; order by $x asc;");
+        MatchQuery parsed = parse("match $x plays actor; order by $x asc;");
         assertEquals(expected, parsed);
     }
 
@@ -336,7 +336,7 @@ public class QueryParserTest {
                 "evolves-from sub role;" +
                 "type-name \"evolves-to\" sub role;" +
                 "evolution has-role evolves-from, has-role evolves-to;" +
-                "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
+                "pokemon plays evolves-from plays evolves-to has-resource name;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +
                 "$z has name 'Raichu' isa pokemon;" +

@@ -10,23 +10,23 @@ role3 sub role;
 #Entities
 
 entity1 sub entity
-	plays-role role1;
+	plays role1;
 
 entity2 sub entity
-	plays-role role1
-	plays-role role2;
+	plays role1
+	plays role2;
 
 entity3 sub entity
-    plays-role role1
-    plays-role role2
-    plays-role role3;
+    plays role1
+    plays role2
+    plays role3;
 
 entity4 sub entity
-    plays-role role2
-    plays-role role3;
+    plays role2
+    plays role3;
 
 entity5 sub entity
-    plays-role role1;
+    plays role1;
 
 
 #Relations

@@ -54,7 +54,7 @@ class HALConceptOntology {
     private final static String INBOUND_EDGE = "IN";
     private final static String HAS_ROLE_EDGE = "has-role";
     private final static String HAS_RESOURCE_EDGE = "has-resource";
-    private final static String PLAYS_EDGE = "plays-role";
+    private final static String PLAYS_EDGE = "plays";
 
     // - State properties
 

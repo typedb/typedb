@@ -15,24 +15,24 @@ gender sub resource, datatype string;
 product-made sub role;
 product-origin sub role;
 made-in sub relation, has-role product-origin, has-role product-made;
-product plays-role product-made
-    plays-role typed-product;
+product plays product-made
+    plays typed-product;
 
 recommended-product sub role;
 recommended-customer sub role;
 recommendation sub relation, has-role recommended-product, has-role recommended-customer;
-product plays-role recommended-product;
+product plays recommended-product;
 
 person sub entity2;
-person plays-role recommended-customer;
+person plays recommended-customer;
 
 place sub entity2;
-place plays-role product-origin;
+place plays product-origin;
 
 typed-product sub role;
 product-type sub role;
 typing sub relation, has-role typed-product, has-role product-type;
 category sub entity2
     has-resource name
-    plays-role product-type
-    plays-role typed-product;
+    plays product-type
+    plays typed-product;

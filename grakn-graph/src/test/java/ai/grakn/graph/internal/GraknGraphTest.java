@@ -385,15 +385,15 @@ public class GraknGraphTest extends GraphTestBase {
                 "    has-resource time;\n" +
                 "time sub resource datatype long;\n" +
                 "question sub comment\n" +
-                "    plays-role asked-question; \n" +
+                "    plays asked-question; \n" +
                 "yes-no sub question;\n" +
                 "open sub question;\n" +
                 "answer sub comment\n" +
-                "    plays-role given-answer\n" +
+                "    plays given-answer\n" +
                 "    has-resource answer-type;\n" +
                 "answer-type sub resource datatype string;\n" +
                 "review sub comment\n" +
-                "    plays-role feedback\n" +
+                "    plays feedback\n" +
                 "    has-resource summary;\n" +
                 "summary sub text;\n" +
                 "text sub resource datatype string;\n" +
@@ -408,19 +408,19 @@ public class GraknGraphTest extends GraphTestBase {
                 "    has-resource brand\n" +
                 "    has-resource name\n" +
                 "    has-resource text\n" +
-                "    plays-role item\n" +
-                "    plays-role recommended;\n" +
+                "    plays item\n" +
+                "    plays recommended;\n" +
                 "asin sub ID;\n" +
                 "image-url sub resource datatype string;\n" +
                 "brand sub name;\n" +
                 "price sub resource datatype double;\n" +
                 "category sub entity\n" +
                 "    has-resource name\n" +
-                "    plays-role subcategory\n" +
-                "    plays-role supercategory\n" +
-                "    plays-role label\n" +
-                "    plays-role item\n" +
-                "    plays-role recommended;\n" +
+                "    plays subcategory\n" +
+                "    plays supercategory\n" +
+                "    plays label\n" +
+                "    plays item\n" +
+                "    plays recommended;\n" +
                 "name sub resource datatype string;\n" +
                 "hierarchy sub relation\n" +
                 "    has-role subcategory\n" +
@@ -433,8 +433,8 @@ public class GraknGraphTest extends GraphTestBase {
                 "user sub entity\n" +
                 "    has-resource uid\n" +
                 "    has-resource username\n" +
-                "    plays-role reviewer\n" +
-                "    plays-role buyer;\n" +
+                "    plays reviewer\n" +
+                "    plays buyer;\n" +
                 "uid sub ID;\n" +
                 "username sub name;\n" +
                 "completed-recommendation sub relation\n" +
@@ -444,10 +444,10 @@ public class GraknGraphTest extends GraphTestBase {
                 "    has-role category-recommendation\n" +
                 "    has-role product-recommendation;\n" +
                 "recommendation sub relation is-abstract\n" +
-                "    plays-role successful-recommendation\n" +
-                "    plays-role product-recommendation;\n" +
+                "    plays successful-recommendation\n" +
+                "    plays product-recommendation;\n" +
                 "co-categories sub relation\n" +
-                "    plays-role category-recommendation\n" +
+                "    plays category-recommendation\n" +
                 "    has-role item\n" +
                 "    has-role recommended;\n" +
                 "also-viewed sub recommendation\n" +

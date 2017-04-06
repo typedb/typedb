@@ -50,7 +50,7 @@ public final class Schema {
         ISA("isa"),
         SUB("sub"),
         HAS_ROLE("has-role"),
-        PLAYS("plays-role"),
+        PLAYS("plays"),
         HAS_SCOPE("has-scope"),
         CASTING("casting"),
         ROLE_PLAYER("role-player"),

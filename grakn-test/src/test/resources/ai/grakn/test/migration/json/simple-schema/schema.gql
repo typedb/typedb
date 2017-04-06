@@ -1,21 +1,21 @@
 
 insert
   person sub entity
-    plays-role person-with-address
-    plays-role person-with-phone;
+    plays person-with-address
+    plays person-with-phone;
 
   address sub entity
-    plays-role address-of-person
-    plays-role address-with-street
+    plays address-of-person
+    plays address-with-street
     has-resource city;
 
   street-address sub entity
-    plays-role street-of-address
+    plays street-of-address
     has-resource number
     has-resource street;
 
   phone-number sub entity
-    plays-role phone-of-person
+    plays phone-of-person
     has-resource location
     has-resource code;
 

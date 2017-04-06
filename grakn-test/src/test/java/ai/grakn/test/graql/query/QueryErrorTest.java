@@ -162,11 +162,11 @@ public class QueryErrorTest {
     @Test
     public void testAdditionalSemicolon() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("id"), containsString("plays-role product-type")));
+        exception.expectMessage(allOf(containsString("id"), containsString("plays product-type")));
         qb.parse(
                 "insert " +
                         "tag-group sub role; product-type sub role;" +
-                        "category sub entity, plays-role tag-group; plays-role product-type;"
+                        "category sub entity, plays tag-group; plays product-type;"
         ).execute();
     }
 
