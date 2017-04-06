@@ -18,10 +18,17 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
+import ai.grakn.concept.TypeName;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.graph.admin.ConceptCache;
 import mjson.Json;
 
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -36,9 +43,22 @@ import java.util.function.Consumer;
  * @author fppt
  */
 public class UpdatingInstanceCountTask implements BackgroundTask {
+    private ConceptCache cache = EngineCacheProvider.getCache();
+
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        cache.getKeyspaces().parallelStream().forEach(this::updateCountsOnKeySpace);
+        return true;
+    }
+    private void updateCountsOnKeySpace(String keyspace){
+        Map<TypeName, Long> jobs = cache.getInstanceCountJobs(keyspace);
+        //Clear the cache optimistically because we think we going to update successfully
+        jobs.forEach((key, value) -> cache.deleteJobInstanceCount(keyspace, key));
+
+        try(GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE)){
+            graknGraph.admin().updateTypeCounts(jobs);
+            graknGraph.admin().commitNoLogs();
+        }
     }
 
     @Override
