@@ -199,11 +199,6 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testResourceWithoutTypeToString() {
-        assertSameResults(qb.match(var("x").has(var("y"))));
-    }
-
-    @Test
     public void testZeroToString() {
         assertEquals("match $x value 0.0;", qb.match(var("x").value(0.0)).toString());
     }
