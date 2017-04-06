@@ -22,7 +22,6 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeName;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -83,47 +82,43 @@ public class CommitLogController {
         @ApiImplicitParam(name = REST.Request.COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
-        try {
-            String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
 
-            if (graphName == null) {
-                graphName = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
-            }
-            LOG.info("Commit log received for graph [" + graphName + "]");
-
-            //Jobs to Fix
-            JSONArray conceptsToFix = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_FIXING);
-            for (Object object : conceptsToFix) {
-                JSONObject jsonObject = (JSONObject) object;
-
-                String conceptVertexId = jsonObject.getString(REST.Request.COMMIT_LOG_ID);
-                String conceptIndex = jsonObject.getString(REST.Request.COMMIT_LOG_INDEX);
-                Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE));
-
-                switch (type) {
-                    case CASTING:
-                        cache.addJobCasting(graphName, conceptIndex, ConceptId.of(conceptVertexId));
-                        break;
-                    case RESOURCE:
-                        cache.addJobResource(graphName, conceptIndex, ConceptId.of(conceptVertexId));
-                        break;
-                    default:
-                        LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptVertexId, type.name()));
-                }
-            }
-
-            //Instances to count
-            JSONArray instancesToCount = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_COUNTING);
-            for (Object object : instancesToCount) {
-                JSONObject jsonObject = (JSONObject) object;
-                TypeName name = TypeName.of(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE_NAME));
-                Long value = jsonObject.getLong(REST.Request.COMMIT_LOG_INSTANCE_COUNT);
-                cache.addJobInstanceCount(graphName, name, value);
-            }
-
-            return "Graph [" + graphName + "] now has [" + cache.getNumJobs(graphName) + "] post processing jobs";
-        } catch(Exception e){
-            throw new GraknEngineServerException(500,e);
+        if (graphName == null) {
+            graphName = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
         }
+        LOG.info("Commit log received for graph [" + graphName + "]");
+
+        //Jobs to Fix
+        JSONArray conceptsToFix = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_FIXING);
+        for (Object object : conceptsToFix) {
+            JSONObject jsonObject = (JSONObject) object;
+
+            String conceptVertexId = jsonObject.getString(REST.Request.COMMIT_LOG_ID);
+            String conceptIndex = jsonObject.getString(REST.Request.COMMIT_LOG_INDEX);
+            Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE));
+
+            switch (type) {
+                case CASTING:
+                    cache.addJobCasting(graphName, conceptIndex, ConceptId.of(conceptVertexId));
+                    break;
+                case RESOURCE:
+                    cache.addJobResource(graphName, conceptIndex, ConceptId.of(conceptVertexId));
+                    break;
+                default:
+                    LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptVertexId, type.name()));
+            }
+        }
+
+        //Instances to count
+        JSONArray instancesToCount = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_COUNTING);
+        for (Object object : instancesToCount) {
+            JSONObject jsonObject = (JSONObject) object;
+            TypeName name = TypeName.of(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE_NAME));
+            Long value = jsonObject.getLong(REST.Request.COMMIT_LOG_INSTANCE_COUNT);
+            cache.addJobInstanceCount(graphName, name, value);
+        }
+
+        return "Graph [" + graphName + "] now has [" + cache.getNumJobs(graphName) + "] post processing jobs";
     }
 }
