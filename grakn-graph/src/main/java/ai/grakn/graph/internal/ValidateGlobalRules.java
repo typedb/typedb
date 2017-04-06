@@ -97,9 +97,9 @@ class ValidateGlobalRules {
             Map<RoleType, Boolean> plays = currentConcept.directPlays();
 
             for (Map.Entry<RoleType, Boolean> playsEntry : plays.entrySet()) {
-                RoleType plays = playsEntry.getKey();
+                RoleType rolePlayed = playsEntry.getKey();
                 Boolean required = playsEntry.getValue();
-                if(plays.getName().equals(roleType.getName())){
+                if(rolePlayed.getName().equals(roleType.getName())){
                     satisfiesPlays = true;
 
                     // Assert unique relation for this role type
