@@ -564,7 +564,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testGraqlPlaysRoleSemanticsMatchGraphAPI() {
+    public void testGraqlPlaysSemanticsMatchGraphAPI() {
         TypeName a = TypeName.of("a");
         TypeName b = TypeName.of("b");
         TypeName c = TypeName.of("c");
@@ -581,10 +581,10 @@ public class MatchQueryTest {
         GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
-            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).plays());
+            Set<Concept> graqlPlays = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
+            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getType(type).plays());
 
-            assertEquals(graqlPlaysRoles, graphAPIPlaysRoles);
+            assertEquals(graqlPlays, graphAPIPlays);
         });
 
         Stream.of(d, e, f).forEach(type -> {

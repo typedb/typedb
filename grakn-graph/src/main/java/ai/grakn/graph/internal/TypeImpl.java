@@ -72,7 +72,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays roles are required
-    private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlaysRoles = new ComponentCache<>(() -> {
+    private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlays = new ComponentCache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
         getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).forEach(edge -> {
@@ -162,12 +162,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         Set<RoleType> allRoleTypes = new HashSet<>();
 
         //Get the immediate plays roles which may be cached
-        allRoleTypes.addAll(cachedDirectPlaysRoles.get().keySet());
+        allRoleTypes.addAll(cachedDirectPlays.get().keySet());
 
         //Now get the super type plays roles (Which may also be cached locally within their own context
         Set<T> superSet = superTypeSet();
         superSet.remove(this); //We already have the plays roles from ourselves
-        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlaysRoles().keySet()));
+        superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
     }
@@ -208,8 +208,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         return resourceTypes;
     }
 
-    Map<RoleType, Boolean> directPlaysRoles(){
-        return cachedDirectPlaysRoles.get();
+    Map<RoleType, Boolean> directPlays(){
+        return cachedDirectPlays.get();
     }
 
     private <X extends Concept> Set<X> filterImplicitStructures(Set<X> types){
@@ -233,21 +233,21 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         } else {
             //Force load of linked concepts whose caches need to be updated
             cachedSuperType.get();
-            cachedDirectPlaysRoles.get();
+            cachedDirectPlays.get();
 
             deleteNode();
 
             //Update neighbouring caches
             //noinspection unchecked
             ((TypeImpl<T, V>) cachedSuperType.get()).deleteCachedDirectedSubType(getThis());
-            cachedDirectPlaysRoles.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
+            cachedDirectPlays.get().keySet().forEach(roleType -> ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(getThis()));
 
             //Clear internal caching
             cachedIsImplicit.clear();
             cachedIsAbstract.clear();
             cachedSuperType.clear();
             cachedDirectSubTypes.clear();
-            cachedDirectPlaysRoles.clear();
+            cachedDirectPlays.clear();
 
             //Clear Global ComponentCache
             getGraknGraph().getConceptLog().removeConcept(this);
@@ -497,7 +497,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         checkTypeMutation();
 
         //Update the internal cache of role types played
-        cachedDirectPlaysRoles.ifPresent(map -> map.put(roleType, required));
+        cachedDirectPlays.ifPresent(map -> map.put(roleType, required));
 
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
@@ -529,7 +529,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public T deletePlays(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
-        cachedDirectPlaysRoles.ifPresent(set -> set.remove(roleType));
+        cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 
         //Add castings to tracking to make sure they can still be played.

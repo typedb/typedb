@@ -68,7 +68,7 @@ public class OntologyMutationTest extends GraphTestBase{
     }
 
     @Test
-    public void whenDeletingPlaysRoleUsedByExistingCasting_Throw() throws GraknValidationException {
+    public void whenDeletingPlaysUsedByExistingCasting_Throw() throws GraknValidationException {
         person.deletePlays(wife);
 
         expectedException.expect(GraknValidationException.class);

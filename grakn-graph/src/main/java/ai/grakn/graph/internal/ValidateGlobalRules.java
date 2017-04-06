@@ -86,7 +86,7 @@ class ValidateGlobalRules {
      * @param casting The casting to be validated
      * @return A specific error if one is found.
      */
-    static Optional<String> validatePlaysRoleStructure(CastingImpl casting) {
+    static Optional<String> validatePlaysStructure(CastingImpl casting) {
         Instance rolePlayer = casting.getRolePlayer();
         TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
         RoleType roleType = casting.getRole();
@@ -94,9 +94,9 @@ class ValidateGlobalRules {
         boolean satisfiesPlaysRole = false;
 
         while(currentConcept != null){
-            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
+            Map<RoleType, Boolean> plays = currentConcept.directPlays();
 
-            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
+            for (Map.Entry<RoleType, Boolean> playsRoleEntry : plays.entrySet()) {
                 RoleType playsRole = playsRoleEntry.getKey();
                 Boolean required = playsRoleEntry.getValue();
                 if(playsRole.getName().equals(roleType.getName())){
@@ -260,8 +260,8 @@ class ValidateGlobalRules {
 
         while(currentConcept != null){
 
-            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
-            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
+            Map<RoleType, Boolean> plays = currentConcept.directPlays();
+            for (Map.Entry<RoleType, Boolean> playsRoleEntry : plays.entrySet()) {
                 if(playsRoleEntry.getValue()){
                     RoleType roleType = playsRoleEntry.getKey();
                     // Assert there is a relation for this type

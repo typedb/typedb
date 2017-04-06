@@ -306,7 +306,7 @@ public class TypePropertyTest {
     }
 
     @Property
-    public void whenGettingPlaysRoles_ResultIsASupersetOfDirectSuperTypePlaysRoles(Type type) {
+    public void whenGettingPlays_ResultIsASupersetOfDirectSuperTypePlays(Type type) {
         assumeNotNull(type.superType());
         assertTrue(type.plays().containsAll(type.superType().plays()));
     }
@@ -321,11 +321,11 @@ public class TypePropertyTest {
             @Meta(false) Type type, @FromGraph RoleType roleType) {
         assumeThat(type, not(is(roleType)));  // A role-type cannot play itself, TODO: is this sensible?
 
-        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.plays());
+        Set<RoleType> previousPlays = Sets.newHashSet(type.plays());
         type.plays(roleType);
-        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.plays());
+        Set<RoleType> newPlays = Sets.newHashSet(type.plays());
 
-        assertEquals(newPlaysRoles, Sets.union(previousPlaysRoles, ImmutableSet.of(roleType)));
+        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(roleType)));
     }
 
     @Property
@@ -336,11 +336,11 @@ public class TypePropertyTest {
         assumeFalse(isMetaName(superType.getName()));
         assumeThat(superType, not(is(roleType)));
 
-        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.plays());
+        Set<RoleType> previousPlays = Sets.newHashSet(type.plays());
         superType.plays(roleType);
-        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.plays());
+        Set<RoleType> newPlays = Sets.newHashSet(type.plays());
 
-        assertEquals(newPlaysRoles, Sets.union(previousPlaysRoles, ImmutableSet.of(roleType)));
+        assertEquals(newPlays, Sets.union(previousPlays, ImmutableSet.of(roleType)));
     }
 
     @Property

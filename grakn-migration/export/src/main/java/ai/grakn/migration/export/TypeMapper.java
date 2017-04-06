@@ -81,7 +81,7 @@ public class TypeMapper {
             var = var.sub(name(superType.getName()));
         }
 
-        var = playsRoles(var, type);
+        var = plays(var, type);
         var = isAbstract(var, type);
 
         return var;
@@ -102,7 +102,7 @@ public class TypeMapper {
      * @param type type from which metadata extracted
      * @return var with appropriate plays-role edges
      */
-    private static Var playsRoles(Var var, Type type) {
+    private static Var plays(Var var, Type type) {
         for(RoleType role:type.plays()){
             var = var.playsRole(name(role.getName()));
         }
