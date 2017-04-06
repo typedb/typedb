@@ -174,7 +174,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
-        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_RESOURCE_OWNER);
+        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_OWNER);
         resources.addAll(keys());
         return resources;
     }
@@ -647,12 +647,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public T resource(ResourceType resourceType){
         checkNonOverlapOfImplicitRelations(Schema.ImplicitType.KEY_OWNER, resourceType);
-        return has(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, false);
+        return has(resourceType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
     }
 
     @Override
     public T key(ResourceType resourceType) {
-        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_RESOURCE_OWNER, resourceType);
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_OWNER, resourceType);
         return has(resourceType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
     }
 

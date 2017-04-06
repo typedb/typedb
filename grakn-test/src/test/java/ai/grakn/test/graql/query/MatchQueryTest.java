@@ -132,7 +132,7 @@ import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteAverage;
 import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteCount;
 import static ai.grakn.test.matcher.MovieMatchers.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE;
+import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -812,7 +812,7 @@ public class MatchQueryTest {
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
-        MatchQuery query = qb.match(var("x").sub("concept").name(HAS_RESOURCE.getName("title")));
+        MatchQuery query = qb.match(var("x").sub("concept").name(HAS.getName("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
     }
 

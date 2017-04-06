@@ -96,18 +96,18 @@ public interface Namer {
      * The name of the entity role type in an entity-role relation representing an OWL data property
      */
     default TypeName entityRole(TypeName resourceTypeName) {
-        return Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName);
+        return Schema.ImplicitType.HAS_OWNER.getName(resourceTypeName);
     }
     /**
      * Make a name for a resource relation type representing the value of an OWL data property.
      */
     default TypeName resourceRelation(TypeName resourceTypeName) {
-        return Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName);
+        return Schema.ImplicitType.HAS.getName(resourceTypeName);
     }
     /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
     default TypeName resourceRole(TypeName resourceTypeName) {
-        return Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName);
+        return Schema.ImplicitType.HAS_VALUE.getName(resourceTypeName);
     }
 }

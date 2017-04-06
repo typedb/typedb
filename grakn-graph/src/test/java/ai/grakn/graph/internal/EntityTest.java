@@ -123,7 +123,7 @@ public class EntityTest extends GraphTestBase{
         entity.resource(resource);
         Relation relation = entity.relations().iterator().next();
 
-        checkImplicitStructure(resourceType, relation, entity, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_OWNER, Schema.ImplicitType.HAS_RESOURCE_VALUE);
+        checkImplicitStructure(resourceType, relation, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
     }
 
     @Test
@@ -231,7 +231,7 @@ public class EntityTest extends GraphTestBase{
         relationType.addRelation().addRolePlayer(role1, entityToDelete).addRolePlayer(role2, entityOther);
 
         //Check Relation Counts
-        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceType.getName()).getValue());
+        RelationType implicitRelationType = graknGraph.getRelationType(Schema.ImplicitType.HAS.getName(resourceType.getName()).getValue());
         assertEquals(1, relationType.instances().size());
         assertEquals(3, implicitRelationType.instances().size());
 

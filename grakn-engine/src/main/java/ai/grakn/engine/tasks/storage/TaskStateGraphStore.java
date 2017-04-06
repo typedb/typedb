@@ -172,7 +172,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
             Instance taskConcept = graph.getResourcesByValue(task.getId().getValue()).iterator().next().owner();
             // Remove relations to any resources we want to currently update
             resourcesToDettach.forEach(typeName -> {
-                RoleType roleType = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(typeName));
+                RoleType roleType = graph.getType(Schema.ImplicitType.HAS_OWNER.getName(typeName));
                 taskConcept.relations(roleType).forEach(Concept::delete);
             });
 

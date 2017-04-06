@@ -32,7 +32,7 @@ import java.util.Set;
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_VALUE;
+import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 
 /**
  * Map Grakn Core instance to Graql representation
@@ -164,7 +164,7 @@ public class InstanceMapper {
 
         // TODO: Make sure this is tested
         boolean playsRole = resourceType.playsRoles().stream().map(RoleType::getName)
-                .allMatch(c -> c.equals(HAS_RESOURCE_VALUE.getName(resourceType.getName())));
+                .allMatch(c -> c.equals(HAS_VALUE.getName(resourceType.getName())));
         return !resource.ownerInstances().isEmpty() && playsRole;
     }
 }

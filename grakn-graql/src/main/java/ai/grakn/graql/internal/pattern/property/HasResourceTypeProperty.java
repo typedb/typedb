@@ -77,7 +77,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.required = required;
 
         TypeName resourceTypeName = resourceType.getTypeName().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
+                () -> new IllegalStateException(ErrorMessage.NO_NAME_SPECIFIED_FOR_HAS.getMessage())
         );
 
         Var role = name(Schema.MetaSchema.ROLE.getName());

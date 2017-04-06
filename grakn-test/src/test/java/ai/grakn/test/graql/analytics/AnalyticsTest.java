@@ -111,9 +111,9 @@ public class AnalyticsTest {
             EntityType thing = graph.putEntityType("thing");
 
             graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-            RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeId));
-            RoleType degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeId));
-            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeId))
+            RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getName(resourceTypeId));
+            RoleType degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getName(resourceTypeId));
+            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getName(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
             thing.playsRole(degreeOwner);

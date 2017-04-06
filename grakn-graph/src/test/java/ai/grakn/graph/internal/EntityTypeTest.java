@@ -257,9 +257,9 @@ public class EntityTypeTest extends GraphTestBase{
         ResourceType resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Implicit Names
-        TypeName hasResourceOwnerName = Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeName);
-        TypeName hasResourceValueName = Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeName);
-        TypeName hasResourceName = Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeName);
+        TypeName hasResourceOwnerName = Schema.ImplicitType.HAS_OWNER.getName(resourceTypeName);
+        TypeName hasResourceValueName = Schema.ImplicitType.HAS_VALUE.getName(resourceTypeName);
+        TypeName hasResourceName = Schema.ImplicitType.HAS.getName(resourceTypeName);
 
         entityType.resource(resourceType);
 
@@ -301,19 +301,19 @@ public class EntityTypeTest extends GraphTestBase{
 
         //Check role types are only built explicitly
         assertThat(entityType1.playsRoles(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(superName).getValue())));
+                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getName(superName).getValue())));
 
         assertThat(entityType2.playsRoles(),
-                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(name).getValue())));
+                containsInAnyOrder(graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getName(name).getValue())));
 
         //Check Implicit Types Follow SUB Structure
-        RelationType rtSuperRelation = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(rtSuper.getName()));
-        RoleType rtSuperRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(rtSuper.getName()));
-        RoleType rtSuperRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(rtSuper.getName()));
+        RelationType rtSuperRelation = graknGraph.getType(Schema.ImplicitType.HAS.getName(rtSuper.getName()));
+        RoleType rtSuperRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_OWNER.getName(rtSuper.getName()));
+        RoleType rtSuperRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_VALUE.getName(rtSuper.getName()));
 
-        RelationType rtRelation = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE.getName(rt.getName()));
-        RoleType reRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(rt.getName()));
-        RoleType reRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(rt.getName()));
+        RelationType rtRelation = graknGraph.getType(Schema.ImplicitType.HAS.getName(rt.getName()));
+        RoleType reRoleOwner = graknGraph.getType(Schema.ImplicitType.HAS_OWNER.getName(rt.getName()));
+        RoleType reRoleValue = graknGraph.getType(Schema.ImplicitType.HAS_VALUE.getName(rt.getName()));
 
         assertEquals(rtSuperRoleOwner, reRoleOwner.superType());
         assertEquals(rtSuperRoleValue, reRoleValue.superType());

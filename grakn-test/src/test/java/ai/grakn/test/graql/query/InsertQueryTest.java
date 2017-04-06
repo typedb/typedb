@@ -64,9 +64,9 @@ import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
 import static ai.grakn.util.Schema.ImplicitType.KEY;
 import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_OWNER;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_VALUE;
+import static ai.grakn.util.Schema.ImplicitType.HAS;
+import static ai.grakn.util.Schema.ImplicitType.HAS_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -398,7 +398,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertReferenceByName() {
-        String roleTypeName = HAS_RESOURCE_OWNER.getName("title").getValue();
+        String roleTypeName = HAS_OWNER.getName("title").getValue();
         qb.insert(
                 name("new-type").sub(Schema.MetaSchema.ENTITY.getName().getValue()),
                 name("new-type").isAbstract(),
@@ -481,9 +481,9 @@ public class InsertQueryTest {
         assertFalse(qb.match(name("movie").has(resourceType)).ask().execute());
         assertFalse(qb.match(name("a-new-type").has("an-unconnected-resource-type")).ask().execute());
 
-        Var hasResource = name(HAS_RESOURCE.getName(resourceType));
-        Var hasResourceOwner = name(HAS_RESOURCE_OWNER.getName(resourceType));
-        Var hasResourceValue = name(HAS_RESOURCE_VALUE.getName(resourceType));
+        Var hasResource = name(HAS.getName(resourceType));
+        Var hasResourceOwner = name(HAS_OWNER.getName(resourceType));
+        Var hasResourceValue = name(HAS_VALUE.getName(resourceType));
 
         // Make sure the expected ontology elements are created
         assertTrue(qb.match(hasResource.sub("relation")).ask().execute());

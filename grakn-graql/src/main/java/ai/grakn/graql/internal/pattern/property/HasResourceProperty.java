@@ -156,8 +156,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         TypeName type = resourceType.orElseThrow(() -> failDelete(this));
 
-        RoleType owner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(type));
-        RoleType value = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(type));
+        RoleType owner = graph.getType(Schema.ImplicitType.HAS_OWNER.getName(type));
+        RoleType value = graph.getType(Schema.ImplicitType.HAS_VALUE.getName(type));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))

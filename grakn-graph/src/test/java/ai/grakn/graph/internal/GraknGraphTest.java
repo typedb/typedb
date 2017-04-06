@@ -176,9 +176,9 @@ public class GraknGraphTest extends GraphTestBase {
         assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType));
 
         //Check things are still returned when explicitly asking for them
-        RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceType.getName()).getValue());
-        RoleType hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceType.getName()).getValue());
-        RoleType hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceType.getName()).getValue());
+        RelationType has = graknGraph.getRelationType(Schema.ImplicitType.HAS.getName(resourceType.getName()).getValue());
+        RoleType hasOwner = graknGraph.getRoleType(Schema.ImplicitType.HAS_OWNER.getName(resourceType.getName()).getValue());
+        RoleType hasValue = graknGraph.getRoleType(Schema.ImplicitType.HAS_VALUE.getName(resourceType.getName()).getValue());
         assertNotNull(hasOwner);
         assertNotNull(hasValue);
         assertNotNull(has);
