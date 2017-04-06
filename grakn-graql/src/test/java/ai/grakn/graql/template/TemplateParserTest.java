@@ -127,13 +127,13 @@ public class TemplateParserTest {
 
     @Test
     public void multipleDataTypesTest(){
-        String template = "insert $x isa y; $x value <string>; $x value <long>; $x value <double>; $x value <bool>;";
+        String template = "insert $x isa y; $x val <string>; $x val <long>; $x val <double>; $x val <bool>;";
         String expected =
                 "insert $x0 isa y;\n" +
-                        "$x0 value \"string\";\n" +
-                        "$x0 value 40;\n" +
-                        "$x0 value 0.001;\n" +
-                        "$x0 value false;";
+                        "$x0 val \"string\";\n" +
+                        "$x0 val 40;\n" +
+                        "$x0 val 0.001;\n" +
+                        "$x0 val false;";
 
         Map<String, Object> data = new HashMap<>();
         data.put("string", "string");

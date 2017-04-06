@@ -97,13 +97,13 @@ public class QueryParserTest {
     @Test
     public void testRelationQuery() {
         MatchQuery expected = match(
-                var("brando").value("Marl B").isa("person"),
+                var("brando").val("Marl B").isa("person"),
                 var().rel("actor", "brando").rel("char").rel("production-with-cast", "prod")
         ).select("char", "prod");
 
         MatchQuery parsed = parse(
                 "match\n" +
-                        "$brando value \"Marl B\" isa person;\n" +
+                        "$brando val \"Marl B\" isa person;\n" +
                         "(actor: $brando, $char, production-with-cast: $prod);\n" +
                         "select $char, $prod;"
         );
@@ -117,19 +117,19 @@ public class QueryParserTest {
                 var("x").isa("movie").has("title", var("t")),
                 or(
                         or(
-                                var("t").value(eq("Apocalypse Now")),
-                                and(var("t").value(lt("Juno")), var("t").value(gt("Godfather")))
+                                var("t").val(eq("Apocalypse Now")),
+                                and(var("t").val(lt("Juno")), var("t").val(gt("Godfather")))
                         ),
-                        var("t").value(eq("Spy"))
+                        var("t").val(eq("Spy"))
                 ),
-                var("t").value(neq("Apocalypse Now"))
+                var("t").val(neq("Apocalypse Now"))
         );
 
         MatchQuery parsed = parse(
                 "match\n" +
                 "$x isa movie, has title $t;\n" +
-                "$t value = \"Apocalypse Now\" or {$t value < 'Juno'; $t value > 'Godfather';} or $t value 'Spy';" +
-                "$t value !='Apocalypse Now';\n"
+                "$t val = \"Apocalypse Now\" or {$t val < 'Juno'; $t val > 'Godfather';} or $t val 'Spy';" +
+                "$t val !='Apocalypse Now';\n"
         );
 
         assertEquals(expected, parsed);
@@ -140,14 +140,14 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                    and(var("t").value(lte("Juno")), var("t").value(gte("Godfather")), var("t").value(neq("Heat"))),
-                    var("t").value("The Muppets")
+                    and(var("t").val(lte("Juno")), var("t").val(gte("Godfather")), var("t").val(neq("Heat"))),
+                    var("t").val("The Muppets")
                 )
         );
 
         MatchQuery parsed = parse(
                 "match $x isa movie, has title $t;" +
-                "{$t value <= 'Juno'; $t value >= 'Godfather'; $t value != 'Heat';} or $t value = 'The Muppets';"
+                "{$t val <= 'Juno'; $t val >= 'Godfather'; $t val != 'Heat';} or $t val = 'The Muppets';"
         );
 
         assertEquals(expected, parsed);
@@ -158,12 +158,12 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var().rel("x").rel("y"),
                 var("y").isa("person").has("name", var("n")),
-                or(var("n").value(contains("ar")), var("n").value(regex("^M.*$")))
+                or(var("n").val(contains("ar")), var("n").val(regex("^M.*$")))
         );
 
         MatchQuery parsed = parse(
                 "match ($x, $y); $y isa person, has name $n;" +
-                "$n value contains 'ar' or $n value /^M.*$/;"
+                "$n val contains 'ar' or $n val /^M.*$/;"
         );
 
         assertEquals(expected, parsed);
@@ -171,9 +171,9 @@ public class QueryParserTest {
 
     @Test
     public void testValueEqualsVariableQuery() {
-        MatchQuery expected = match(var("s1").value(var("s2")));
+        MatchQuery expected = match(var("s1").val(var("s2")));
 
-        MatchQuery parsed = parse("match $s1 value = $s2;");
+        MatchQuery parsed = parse("match $s1 val = $s2;");
 
         assertEquals(expected, parsed);
     }
@@ -252,7 +252,7 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var().rel(var("p"), "x").rel("y"),
                 var("x").isa(var("z")),
-                var("y").value("crime"),
+                var("y").val("crime"),
                 var("z").sub("production"),
                 label("has-genre").relates(var("p"))
         );
@@ -261,7 +261,7 @@ public class QueryParserTest {
                 "match" +
                         "($p: $x, $y);" +
                         "$x isa $z;" +
-                        "$y value 'crime';" +
+                        "$y val 'crime';" +
                         "$z sub production;" +
                         "has-genre relates $p;"
         );
@@ -274,13 +274,13 @@ public class QueryParserTest {
         MatchQuery expected = match(
                 var("x").isa("movie"),
                 or(
-                        and(var("y").isa("genre").value("drama"), var().rel("x").rel("y")),
-                        var("x").value("The Muppets")
+                        and(var("y").isa("genre").val("drama"), var().rel("x").rel("y")),
+                        var("x").val("The Muppets")
                 )
         );
 
         MatchQuery parsed = parse(
-                "match $x isa movie; { $y isa genre value 'drama'; ($x, $y); } or $x value 'The Muppets';"
+                "match $x isa movie; { $y isa genre val 'drama'; ($x, $y); } or $x val 'The Muppets';"
         );
 
         assertEquals(expected, parsed);

@@ -151,7 +151,7 @@ public class SQLMigratorTest {
     @Test
     public void migrateWithSQLFunctionTest() throws SQLException {
         try(Connection connection = setupExample(factory, "pets")){
-            String template = "insert $x isa count value <COUNT>;";
+            String template = "insert $x isa count val <COUNT>;";
             String query = "SELECT count(*) AS count FROM pet";
 
             migrator.load(template, new SQLMigrator(query, connection).convert());

@@ -98,7 +98,7 @@ public class InstanceMapper {
         }
 
         Var var = base(resource);
-        var = var.value(resource.getValue());
+        var = var.val(resource.getValue());
         return var;
     }
 
@@ -123,7 +123,7 @@ public class InstanceMapper {
      */
     private static Var hasResources(Var var, Instance instance){
         for(Resource resource:instance.resources()){
-           var = var.has(resource.type().getLabel(), var().value(resource.getValue()));
+           var = var.has(resource.type().getLabel(), var().val(resource.getValue()));
         }
         return var;
     }

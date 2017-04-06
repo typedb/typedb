@@ -23,26 +23,25 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.graphs.CWGraph;
+import ai.grakn.graphs.SNBGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
-import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
-import ai.grakn.graphs.CWGraph;
-import ai.grakn.graphs.SNBGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -52,6 +51,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
@@ -553,8 +553,8 @@ public class AtomicTest {
     @Test
     public void testValuePredicateComparison(){
         GraknGraph graph = snbGraph.graph();
-        String valueString = "{$x value '0';}";
-        String valueString2 = "{$x value != 0;}";
+        String valueString = "{$x val '0';}";
+        String valueString2 = "{$x val != 0;}";
         Atomic atom = new ReasonerQueryImpl(conjunction(valueString, graph), graph).getAtoms().iterator().next();
         Atomic atom2 =new ReasonerQueryImpl(conjunction(valueString2, graph), graph).getAtoms().iterator().next();
         assertTrue(!atom.isEquivalent(atom2));
@@ -563,8 +563,8 @@ public class AtomicTest {
     @Test
     public void testMultiPredResourceEquivalence(){
         GraknGraph graph = snbGraph.graph();
-        String patternString = "{$x has age $a;$a value >23; $a value <27;}";
-        String patternString2 = "{$p has age $a;$a value >23;}";
+        String patternString = "{$x has age $a;$a val >23; $a val <27;}";
+        String patternString2 = "{$p has age $a;$a val >23;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
         assertTrue(!query.getAtom().isEquivalent(query2.getAtom()));

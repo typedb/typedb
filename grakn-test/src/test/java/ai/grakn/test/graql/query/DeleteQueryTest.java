@@ -110,9 +110,9 @@ public class DeleteQueryTest {
         qb.match(var("x").has("gender", "male")).delete("x").execute();
         assertFalse(qb.match(var().has("gender", "male")).ask().execute());
 
-        assertTrue(qb.match(var().isa("real-name").value("Bob")).ask().execute());
-        assertTrue(qb.match(var().isa("real-name").value("Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("gender").value("male")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").val("Bob")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").val("Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("gender").val("male")).ask().execute());
     }
 
     @Test
@@ -154,9 +154,9 @@ public class DeleteQueryTest {
         qb.match(var("x").has("real-name", "Bob")).delete("x").execute();
         assertFalse(qb.match(var().has("real-name", "Bob").isa("person")).ask().execute());
 
-        assertTrue(qb.match(var().isa("real-name").value("Bob")).ask().execute());
-        assertTrue(qb.match(var().isa("real-name").value("Robert")).ask().execute());
-        assertTrue(qb.match(var().isa("gender").value("male")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").val("Bob")).ask().execute());
+        assertTrue(qb.match(var().isa("real-name").val("Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("gender").val("male")).ask().execute());
     }
 
     @Test
@@ -235,13 +235,13 @@ public class DeleteQueryTest {
                 var("a").rel("x").rel("y").isa(Schema.ImplicitType.HAS_RESOURCE.getLabel("tmdb-vote-count").getValue())
         ).get("a").findFirst().get().getId();
         MatchQuery relation = qb.match(var().id(id));
-        MatchQuery voteCount = qb.match(var().value(1000L).isa("tmdb-vote-count"));
+        MatchQuery voteCount = qb.match(var().val(1000L).isa("tmdb-vote-count"));
 
         assertTrue(exists(godfather));
         assertTrue(exists(relation));
         assertTrue(exists(voteCount));
 
-        qb.match(var("x").value(1000L).isa("tmdb-vote-count")).delete("x").execute();
+        qb.match(var("x").val(1000L).isa("tmdb-vote-count")).delete("x").execute();
 
         assertTrue(exists(godfather));
         assertFalse(exists(relation)); //Relation is implicit it was deleted
@@ -316,8 +316,8 @@ public class DeleteQueryTest {
     @Test
     public void testErrorWhenDeleteValue() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("delet"), containsString("value")));
-        qb.match(var("x").isa("movie")).delete(var("x").value("hello")).execute();
+        exception.expectMessage(allOf(containsString("delet"), containsString("val")));
+        qb.match(var("x").isa("movie")).delete(var("x").val("hello")).execute();
     }
 
     @Test

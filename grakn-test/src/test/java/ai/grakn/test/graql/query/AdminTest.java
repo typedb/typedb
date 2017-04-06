@@ -89,7 +89,7 @@ public class AdminTest {
 
     @Test
     public void testGetPatternInQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie"), var("x").value("Bob"));
+        MatchQuery query = qb.match(var("x").isa("movie"), var("x").val("Bob"));
 
         Conjunction<PatternAdmin> conjunction = query.admin().getPattern();
         assertNotNull(conjunction);
@@ -122,7 +122,7 @@ public class AdminTest {
 
     @Test
     public void testInsertQueryGetVars() {
-        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).value("Hi"));
+        InsertQuery query = qb.insert(var().id(ConceptId.of("123")).isa("movie"), var().id(ConceptId.of("123")).val("Hi"));
         // Should not merge variables
         assertEquals(2, query.admin().getVars().size());
     }

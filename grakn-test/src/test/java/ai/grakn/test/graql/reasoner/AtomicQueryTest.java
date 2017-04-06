@@ -49,7 +49,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -172,10 +171,10 @@ public class AtomicQueryTest {
 
     @Test
     public void testResourceEquivalence(){
-        String patternString = "{$x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777 value 'c';" +
+        String patternString = "{$x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777 val 'c';" +
                 "$x has firstname $x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777;}";
         String patternString2 = "{$x has firstname $x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581;" +
-                "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';}";
+                "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 val 'c';}";
         Conjunction<VarAdmin> pattern = conjunction(patternString, snbGraph.graph());
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, snbGraph.graph());
         ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, snbGraph.graph());
@@ -189,12 +188,12 @@ public class AtomicQueryTest {
         String patternString = "{$x isa $x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680;" +
                 "$x has GRE $x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45;" +
                 "$x-type-ec47c2f8-4ced-46a6-a74d-0fb84233e680 label 'applicant';" +
-                "$x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45 value > 1099;}";
+                "$x-GRE-dabaf2cf-b797-4fda-87b2-f9b01e982f45 val > 1099;}";
 
         String patternString2 = "{$x isa $x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6;" +
                 "$x has GRE $x-GRE-388fa981-faa8-4705-984e-f14b072eb688;" +
                 "$x-type-79e3295d-6be6-4b15-b691-69cf634c9cd6 label 'applicant';" +
-                "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 value > 1099;}";
+                "$x-GRE-388fa981-faa8-4705-984e-f14b072eb688 val > 1099;}";
         Conjunction<VarAdmin> pattern = conjunction(patternString, admissionsGraph.graph());
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, admissionsGraph.graph());
         ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, admissionsGraph.graph());

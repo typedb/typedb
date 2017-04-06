@@ -78,14 +78,14 @@ public class ConjunctionQueryTest {
 
     @Test
     public void whenVarRefersToATypeWithoutSubTypesAndALiteralValue_UseResourceIndex() {
-        assertThat(var(x).isa(resourceTypeWithoutSubTypes).value(literalValue), usesResourceIndex());
+        assertThat(var(x).isa(resourceTypeWithoutSubTypes).val(literalValue), usesResourceIndex());
     }
 
     @Test
     public void whenVarHasTwoResources_UseResourceIndexForBoth() {
         Pattern pattern = and(
-                var(x).isa(resourceTypeWithoutSubTypes).value("Foo"),
-                var(y).isa(resourceTypeWithoutSubTypes).value("Bar")
+                var(x).isa(resourceTypeWithoutSubTypes).val("Foo"),
+                var(y).isa(resourceTypeWithoutSubTypes).val("Bar")
         );
 
         assertThat(pattern, allOf(usesResourceIndex(x, "Foo"), usesResourceIndex(y, "Bar")));
@@ -93,13 +93,13 @@ public class ConjunctionQueryTest {
 
     @Test
     public void whenVarRefersToATypeWithAnExplicitVarName_UseResourceIndex() {
-        assertThat(var(x).isa(var(y).label(resourceTypeWithoutSubTypesLabel)).value(literalValue), usesResourceIndex());
+        assertThat(var(x).isa(var(y).label(resourceTypeWithoutSubTypesLabel)).val(literalValue), usesResourceIndex());
     }
 
     @Test
     public void whenQueryUsesHasSyntax_UseResourceIndex() {
         assertThat(
-                var(x).has(resourceTypeWithoutSubTypesLabel, var(y).value(literalValue)),
+                var(x).has(resourceTypeWithoutSubTypesLabel, var(y).val(literalValue)),
                 usesResourceIndex(y, literalValue)
         );
     }
@@ -107,29 +107,29 @@ public class ConjunctionQueryTest {
     @Test
     public void whenVarCanUseResourceIndexAndHasOtherProperties_UseResourceIndex() {
         assertThat(
-                var(x).isa(resourceTypeWithoutSubTypes).value(literalValue).id(ConceptId.of("123")),
+                var(x).isa(resourceTypeWithoutSubTypes).val(literalValue).id(ConceptId.of("123")),
                 usesResourceIndex()
         );
     }
 
     @Test
     public void whenVarRefersToATypeWithSubtypes_DoNotUseResourceIndex() {
-        assertThat(var(x).isa(resourceTypeWithSubTypes).value(literalValue), not(usesResourceIndex()));
+        assertThat(var(x).isa(resourceTypeWithSubTypes).val(literalValue), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarHasAValueComparator_DoNotUseResourceIndex() {
-        assertThat(var(x).isa(resourceTypeWithoutSubTypes).value(gt(literalValue)), not(usesResourceIndex()));
+        assertThat(var(x).isa(resourceTypeWithoutSubTypes).val(gt(literalValue)), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarDoesNotHaveAType_DoNotUseResourceIndex() {
-        assertThat(var(x).value(literalValue), not(usesResourceIndex()));
+        assertThat(var(x).val(literalValue), not(usesResourceIndex()));
     }
 
     @Test
     public void whenVarDoesNotHaveAValue_DoNotUseResourceIndex() {
-        assertThat(var(x).value(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
+        assertThat(var(x).val(resourceTypeWithoutSubTypes), not(usesResourceIndex()));
     }
 
     private Matcher<Pattern> usesResourceIndex() {

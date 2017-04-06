@@ -54,7 +54,7 @@ public class GeoInferenceTest {
                         "$y isa country;$y has name 'Poland'; select $x;";
 
         String explicitQuery = "match " +
-                "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x;";
+                "$x isa city;$x has name $name;{$name val 'Warsaw';} or {$name val 'Wroclaw';};select $x;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
@@ -69,9 +69,9 @@ public class GeoInferenceTest {
         String queryString2 = "match $z2 isa city;$z2 has name $name;"+
                 "($z1, $z2) isa is-located-in;$z1 isa country;$z1 has name 'Poland'; select $z2, $name;";
         String explicitQuery = "match " +
-                "$z1 isa city;$z1 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z1, $name;";
+                "$z1 isa city;$z1 has name $name;{$name val 'Warsaw';} or {$name val 'Wroclaw';};select $z1, $name;";
         String explicitQuery2 = "match " +
-                "$z2 isa city;$z2 has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $z2, $name;";
+                "$z2 isa city;$z2 has name $name;{$name val 'Warsaw';} or {$name val 'Wroclaw';};select $z2, $name;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));

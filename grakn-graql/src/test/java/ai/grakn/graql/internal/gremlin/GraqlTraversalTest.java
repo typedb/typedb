@@ -189,7 +189,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsDisjunction() {
-        Pattern pattern = or(Patterns.var(x).id(ConceptId.of("Titanic")).value("hello"), Patterns.var().rel("x").rel("y"));
+        Pattern pattern = or(Patterns.var(x).id(ConceptId.of("Titanic")).val("hello"), Patterns.var().rel("x").rel("y"));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         // Expect all combinations of both disjunctions
@@ -215,14 +215,14 @@ public class GraqlTraversalTest {
 
     @Test
     public void testOptimalByValue() {
-        assertNearlyOptimal(var(x).value("hello").isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(var(x).val("hello").isa(var(y).id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
                 .rel(var(x).isa(var(y).id(ConceptId.of("movie"))))
-                .rel(var(z).value("Titanic").isa(var("a").id(ConceptId.of("title")))));
+                .rel(var(z).val("Titanic").isa(var("a").id(ConceptId.of("title")))));
     }
 
     @Test
