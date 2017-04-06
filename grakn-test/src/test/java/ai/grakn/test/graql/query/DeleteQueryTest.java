@@ -320,13 +320,6 @@ public class DeleteQueryTest {
         qb.match(var("x").isa("movie")).delete(var("x").val("hello")).execute();
     }
 
-    @Test
-    public void testErrorWhenDeleteVariableResource() {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("delet"), containsString("has"), containsString("$y")));
-        qb.match(var("x").isa("movie")).delete(var("x").has(var("y"))).execute();
-    }
-
     private boolean exists(MatchQuery query) {
         return query.ask().execute();
     }
