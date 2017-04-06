@@ -184,7 +184,7 @@ public class PostProcessingTestIT {
         waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
 
         // Check that task has ran
-        Assert.assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
+        assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
     }
 
     @Test
@@ -192,7 +192,7 @@ public class PostProcessingTestIT {
         TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
         engine.getTaskManager().addTask(task);
         engine.getTaskManager().stopTask(task.getId());
-        Assert.assertEquals(STOPPED, engine.getTaskManager().storage().getState(task.getId()).status());
+        assertEquals(STOPPED, engine.getTaskManager().storage().getState(task.getId()).status());
     }
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})

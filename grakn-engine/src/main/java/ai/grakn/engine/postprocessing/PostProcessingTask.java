@@ -56,6 +56,8 @@ public class PostProcessingTask implements BackgroundTask {
     private PostProcessing postProcessing = PostProcessing.getInstance();
     private long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
+    public PostProcessingTask(){}
+
     public PostProcessingTask(PostProcessing postProcessing, long maxTimeLapse){
         this.postProcessing = postProcessing;
         this.maxTimeLapse = maxTimeLapse;
