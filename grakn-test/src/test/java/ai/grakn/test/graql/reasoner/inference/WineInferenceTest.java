@@ -49,12 +49,12 @@ public class WineInferenceTest {
         QueryBuilder iqb = wineGraph.graph().graql().infer(true);
 
         String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
-                            "{$nameP value 'Bob';$nameW value 'White Champagne';} or" +
-                        "{$nameP value 'Alice';$nameW value 'Cabernet Sauvignion';} or" +
-                        "{$nameP value 'Charlie';$nameW value 'Pinot Grigio Rose';} or" +
-                        "{$nameP value 'Denis';$nameW value 'Busuioaca Romaneasca';} or" +
-                        "{$nameP value 'Eva';$nameW value 'Tamaioasa Romaneasca';} or" +
-                        "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y, $nameW;";
+                            "{$nameP val 'Bob';$nameW val 'White Champagne';} or" +
+                        "{$nameP val 'Alice';$nameW val 'Cabernet Sauvignion';} or" +
+                        "{$nameP val 'Charlie';$nameW val 'Pinot Grigio Rose';} or" +
+                        "{$nameP val 'Denis';$nameW val 'Busuioaca Romaneasca';} or" +
+                        "{$nameP val 'Eva';$nameW val 'Tamaioasa Romaneasca';} or" +
+                        "{$nameP val 'Frank';$nameW val 'Riojo Blanco CVNE 2003';}; select $x, $y, $nameW;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));

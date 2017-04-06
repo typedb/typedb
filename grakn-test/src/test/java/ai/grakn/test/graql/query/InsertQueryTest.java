@@ -112,7 +112,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertValue() {
-        assertInsert(var("x").value(12109038210380L).isa("release-date"));
+        assertInsert(var("x").val(12109038210380L).isa("release-date"));
     }
 
     @Test
@@ -129,7 +129,7 @@ public class InsertQueryTest {
     public void testInsertMultiple() {
         assertInsert(
                 var("x").has("name", "123").isa("person"),
-                var("y").value(123L).isa("runtime"),
+                var("y").val(123L).isa("runtime"),
                 var("z").isa("language")
         );
     }
@@ -368,7 +368,7 @@ public class InsertQueryTest {
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("predicate");
-        qb.insert(var().id(ConceptId.of("123")).value(gt(3))).execute();
+        qb.insert(var().id(ConceptId.of("123")).val(gt(3))).execute();
     }
 
     @Test
@@ -382,7 +382,7 @@ public class InsertQueryTest {
     public void testErrorWhenInsertWithMultipleValues() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("value"), containsString("123"), containsString("456")));
-        qb.insert(var().value("123").value("456").isa("title")).execute();
+        qb.insert(var().val("123").val("456").isa("title")).execute();
     }
 
     @Test
@@ -662,7 +662,7 @@ public class InsertQueryTest {
     public void testErrorInsertResourceWithName() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("instance"), containsString("name"), containsString("bobby")));
-        qb.insert(name("bobby").value("bob").isa("name")).execute();
+        qb.insert(name("bobby").val("bob").isa("name")).execute();
     }
 
     @Test
@@ -691,7 +691,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertResourceOnExistingResourceId() {
-        ConceptId apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
 
         assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
         qb.insert(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
@@ -700,7 +700,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertResourceOnExistingResourceIdWithType() {
-        ConceptId apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+        ConceptId apocalypseNow = qb.match(var("x").val("Apocalypse Now")).get("x").findAny().get().getId();
 
         assertFalse(qb.match(var().id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
         qb.insert(var().id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();

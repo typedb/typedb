@@ -31,11 +31,11 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
-import java.util.Set;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.Set;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
@@ -74,8 +74,8 @@ public class QueryTest {
     public void testTwinPattern() {
         String patternString = "{$x isa person;$x has name 'Bob';}";
         String patternString2 = "{$x isa person, has name 'Bob';}";
-        String patternString3 = "{$x isa person, value 'Bob';}";
-        String patternString4 = "{$x isa person;$x value 'Bob';}";
+        String patternString3 = "{$x isa person, val 'Bob';}";
+        String patternString4 = "{$x isa person;$x val 'Bob';}";
 
         ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
@@ -87,13 +87,13 @@ public class QueryTest {
 
     @Test
     public void testAlphaEquivalence() {
-        String patternString = "{$x isa person;$t isa tag;$t value 'Michelangelo';" +
+        String patternString = "{$x isa person;$t isa tag;$t val 'Michelangelo';" +
                 "($x, $t) isa tagging;" +
-                "$y isa product;$y value 'Michelangelo  The Last Judgement';}";
+                "$y isa product;$y val 'Michelangelo  The Last Judgement';}";
 
-        String patternString2 = "{$x isa person;$y isa tag;$y value 'Michelangelo';" +
+        String patternString2 = "{$x isa person;$y isa tag;$y val 'Michelangelo';" +
                 "($x, $y) isa tagging;" +
-                "$pr isa product;$pr value 'Michelangelo  The Last Judgement';}";
+                "$pr isa product;$pr val 'Michelangelo  The Last Judgement';}";
 
         ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());

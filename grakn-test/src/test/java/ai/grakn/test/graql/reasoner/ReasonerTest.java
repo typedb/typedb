@@ -224,8 +224,8 @@ public class ReasonerTest {
 
     @Test
     public void testParsingQueryWithComma(){
-        String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', value 'Bob', has age <21;";
-        String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x value 'Bob';$x has age <21;";
+        String queryString = "match $x isa person, has firstname 'Bob', has name 'Bob', val 'Bob', has age <21;";
+        String queryString2 = "match $x isa person; $x has firstname 'Bob';$x has name 'Bob';$x val 'Bob';$x has age <21;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
@@ -234,8 +234,8 @@ public class ReasonerTest {
 
     @Test
     public void testParsingQueryWithComma2(){
-        String queryString = "match $x isa person, value <21, value >18;";
-        String queryString2 = "match $x isa person;$x value <21;$x value >18;";
+        String queryString = "match $x isa person, val <21, val >18;";
+        String queryString2 = "match $x isa person;$x val <21;$x val >18;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
@@ -272,7 +272,7 @@ public class ReasonerTest {
     @Test
     public void testParsingQueryWithResourceVariable3(){
         String patternString = "{$x isa person;$x has age <10;}";
-        String patternString2 = "{$x isa person;$x has age $y;$y value <10;}";
+        String patternString2 = "{$x isa person;$x has age $y;$y val <10;}";
         ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
@@ -281,7 +281,7 @@ public class ReasonerTest {
     @Test
     public void testParsingQueryWithResourceVariable4(){
         String patternString = "{$x has firstname 'Bob';}";
-        String patternString2 = "{$x has firstname $y;$y value 'Bob';}";
+        String patternString2 = "{$x has firstname $y;$y val 'Bob';}";
         ReasonerQueryImpl query = new ReasonerAtomicQuery(conjunction(patternString, snbGraph.graph()), snbGraph.graph());
         ReasonerQueryImpl query2 = new ReasonerAtomicQuery(conjunction(patternString2, snbGraph.graph()), snbGraph.graph());
         assertTrue(query.equals(query2));
@@ -292,8 +292,8 @@ public class ReasonerTest {
         GraknGraph graph = snbGraph.graph();
         String patternString = "{$x has firstname 'Bob', has lastname 'Geldof';}";
         String patternString2 = "{$x has firstname 'Bob';$x has lastname 'Geldof';}";
-        String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 value 'Bob';$x2 value 'Geldof';}";
-        String patternString4 = "{$x has firstname $x2;$x has lastname $x1;$x2 value 'Bob';$x1 value 'Geldof';}";
+        String patternString3 = "{$x has firstname $x1;$x has lastname $x2;$x1 val 'Bob';$x2 val 'Geldof';}";
+        String patternString4 = "{$x has firstname $x2;$x has lastname $x1;$x2 val 'Bob';$x1 val 'Geldof';}";
         ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
         ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
         ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
@@ -406,15 +406,15 @@ public class ReasonerTest {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
-        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has $name;" +
+        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has resource $name;" +
                 "{" +
-                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw';};" +
+                "{$name val 'Warsaw-Polytechnics' or $name val 'University-of-Warsaw';};" +
                 "{$type type-name 'university' or $type type-name 'entity' or $type type-name 'concept';};" +
                 "} or {" +
-                "{$name value 'Warsaw' or $name value 'Wroclaw';};" +
+                "{$name val 'Warsaw' or $name val 'Wroclaw';};" +
                 "{$type type-name 'city' or $type type-name 'geoObject' or $type type-name 'entity' or $type type-name 'concept';};" +
                 "} or {" +
-                "{$name value 'Masovia' or $name value 'Silesia';};" +
+                "{$name val 'Masovia' or $name val 'Silesia';};" +
                 "{$type type-name 'region' or $type type-name 'geoObject' or $type type-name 'entity' or $type type-name 'concept';};" +
                 "}; select $x, $y, $type;";
         MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
@@ -453,16 +453,16 @@ public class ReasonerTest {
         String queryString = "match $x isa person;$y isa $type;$type sub recommendable;($x, $y) isa recommendation;";
         String explicitQuery = "match $x isa person, has name $xName;$y isa $type;$y has name $yName;" +
                 "{$type type-name 'recommendable' or $type type-name 'product' or $type type-name 'tag';};" +
-                "{$xName value 'Alice';$yName value 'War of the Worlds';} or" +
-                "{$xName value 'Bob';{$yName value 'Ducatti 1299';} or {$yName value 'The Good the Bad the Ugly';};} or" +
-                "{$xName value 'Charlie';{$yName value 'Blizzard of Ozz';} or {$yName value 'Stratocaster';};} or " +
-                "{$xName value 'Denis';{$yName value 'Colour of Magic';} or {$yName value 'Dorian Gray';};} or"+
-                "{$xName value 'Frank';$yName value 'Nocturnes';} or" +
-                "{$xName value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
-                "{$xName value 'Gary';$yName value 'The Wall';} or" +
-                "{$xName value 'Charlie';" +
-                "{$yName value 'Yngwie Malmsteen';} or {$yName value 'Cacophony';} or {$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};} or " +
-                "{$xName value 'Gary';$yName value 'Pink Floyd';};select $x, $y, $type;";
+                "{$xName val 'Alice';$yName val 'War of the Worlds';} or" +
+                "{$xName val 'Bob';{$yName val 'Ducatti 1299';} or {$yName val 'The Good the Bad the Ugly';};} or" +
+                "{$xName val 'Charlie';{$yName val 'Blizzard of Ozz';} or {$yName val 'Stratocaster';};} or " +
+                "{$xName val 'Denis';{$yName val 'Colour of Magic';} or {$yName val 'Dorian Gray';};} or"+
+                "{$xName val 'Frank';$yName val 'Nocturnes';} or" +
+                "{$xName val 'Karl Fischer';{$yName val 'Faust';} or {$yName val 'Nocturnes';};} or " +
+                "{$xName val 'Gary';$yName val 'The Wall';} or" +
+                "{$xName val 'Charlie';" +
+                "{$yName val 'Yngwie Malmsteen';} or {$yName val 'Cacophony';} or {$yName val 'Steve Vai';} or {$yName val 'Black Sabbath';};} or " +
+                "{$xName val 'Gary';$yName val 'Pink Floyd';};select $x, $y, $type;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -494,18 +494,18 @@ public class ReasonerTest {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;";
-        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has $name;" +
+        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has resource $name;" +
                 "{" +
-                "{$name value 'Europe';};" +
+                "{$name val 'Europe';};" +
                 "{$type type-name 'continent' or $type type-name 'geoObject';};" +
                 "} or {" +
-                "{$name value 'Warsaw-Polytechnics' or $name value 'University-of-Warsaw';};" +
+                "{$name val 'Warsaw-Polytechnics' or $name val 'University-of-Warsaw';};" +
                 "{$type type-name 'university';};" +
                 "} or {" +
-                "{$name value 'Warsaw' or $name value 'Wroclaw';};" +
+                "{$name val 'Warsaw' or $name val 'Wroclaw';};" +
                 "{$type type-name 'city' or $type type-name 'geoObject';};" +
                 "} or {" +
-                "{$name value 'Masovia' or $name value 'Silesia';};" +
+                "{$name val 'Masovia' or $name val 'Silesia';};" +
                 "{$type type-name 'region' or $type type-name 'geoObject';};" +
                 "}; select $x, $y, $type;";
         MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
@@ -542,13 +542,13 @@ public class ReasonerTest {
         //String queryString2 = "match $x isa $type;$y isa product;($x, $y) isa recommendation;";
         String explicitQuery = "match $x isa person, has name $xName;$x isa $type;$y has name $yName;" +
                 "{$type type-name 'person' or $type type-name 'entity2';};" +
-                "{$xName value 'Alice';$yName value 'War of the Worlds';} or" +
-                "{$xName value 'Bob';{$yName value 'Ducatti 1299';} or {$yName value 'The Good the Bad the Ugly';};} or" +
-                "{$xName value 'Charlie';{$yName value 'Blizzard of Ozz';} or {$yName value 'Stratocaster';};} or " +
-                "{$xName value 'Denis';{$yName value 'Colour of Magic';} or {$yName value 'Dorian Gray';};} or"+
-                "{$xName value 'Frank';$yName value 'Nocturnes';} or" +
-                "{$xName value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
-                "{$xName value 'Gary';$yName value 'The Wall';};select $x, $y, $type;";
+                "{$xName val 'Alice';$yName val 'War of the Worlds';} or" +
+                "{$xName val 'Bob';{$yName val 'Ducatti 1299';} or {$yName val 'The Good the Bad the Ugly';};} or" +
+                "{$xName val 'Charlie';{$yName val 'Blizzard of Ozz';} or {$yName val 'Stratocaster';};} or " +
+                "{$xName val 'Denis';{$yName val 'Colour of Magic';} or {$yName val 'Dorian Gray';};} or"+
+                "{$xName val 'Frank';$yName val 'Nocturnes';} or" +
+                "{$xName val 'Karl Fischer';{$yName val 'Faust';} or {$yName val 'Nocturnes';};} or " +
+                "{$xName val 'Gary';$yName val 'The Wall';};select $x, $y, $type;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -558,7 +558,7 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingRegex(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $y isa country;$y has name $name;"+
-                "$name value  /.*(.*)land(.*).*/;($x, $y) isa is-located-in;select $x, $y;";
+                "$name val  /.*(.*)land(.*).*/;($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in;";
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
@@ -571,7 +571,7 @@ public class ReasonerTest {
     public void testReasoningWithQueryContainingContains(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $y isa country;$y has name $name;"+
-                "$name value contains 'land';($x, $y) isa is-located-in;select $x, $y;";
+                "$name val contains 'land';($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
                 "($x, $y) isa is-located-in;";
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
@@ -779,12 +779,12 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingResourceComparison(){
         //recommendations of products for people older than Denis - Frank, Karl and Gary
-        String queryString = "match $b has name 'Denis', has age $x; $p has name $name, has age $y; $y value > $x;"+
+        String queryString = "match $b has name 'Denis', has age $x; $p has name $name, has age $y; $y val > $x;"+
                 "$pr isa product;($p, $pr) isa recommendation;select $p, $y, $pr, $name;";
         String explicitQuery = "match $p isa person, has age $y, has name $name;$pr isa product, has name $yName;" +
-                "{$name value 'Frank';$yName value 'Nocturnes';} or" +
-                "{$name value 'Karl Fischer';{$yName value 'Faust';} or {$yName value 'Nocturnes';};} or " +
-                "{$name value 'Gary';$yName value 'The Wall';};select $p, $pr, $y, $name;";
+                "{$name val 'Frank';$yName val 'Nocturnes';} or" +
+                "{$name val 'Karl Fischer';{$yName val 'Faust';} or {$yName val 'Nocturnes';};} or " +
+                "{$name val 'Gary';$yName val 'The Wall';};select $p, $pr, $y, $name;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -792,13 +792,13 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingResourceComparison2(){
-        String queryString = "match $p has name $name, has age $x;$p2 has name 'Denis', has age $y;$x value < $y;" +
+        String queryString = "match $p has name $name, has age $x;$p2 has name 'Denis', has age $y;$x val < $y;" +
                 "$t isa tag;($p, $t) isa recommendation; select $p, $name, $x, $t;";
         String explicitQuery = "match " +
                 "$p isa person, has age $x, has name $name;$t isa tag, has name $yName;" +
-                "{$name value 'Charlie';" +
-                "{$yName value 'Yngwie Malmsteen';} or {$yName value 'Cacophony';} or" +
-                "{$yName value 'Steve Vai';} or {$yName value 'Black Sabbath';};};select $p, $name, $x, $t;";
+                "{$name val 'Charlie';" +
+                "{$yName val 'Yngwie Malmsteen';} or {$yName val 'Cacophony';} or" +
+                "{$yName val 'Steve Vai';} or {$yName val 'Black Sabbath';};};select $p, $name, $x, $t;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
         MatchQuery query2 = snbGraph.graph().graql().infer(false).parse(explicitQuery);
         assertQueriesEqual(query, query2);
@@ -936,7 +936,7 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingHas(){
         String queryString = "match $x isa person has name $y;";
-        String queryString2 = "match $x isa person has $y; $y isa name;";
+        String queryString2 = "match $x isa person has resource $y; $y isa name;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
@@ -945,7 +945,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingMultiPredResource(){
-        String queryString = "match $p isa person, has age $a;$a value >23; $a value <27;$pr isa product;" +
+        String queryString = "match $p isa person, has age $a;$a val >23; $a val <27;$pr isa product;" +
                 "($p, $pr) isa recommendation; select $p, $pr;";
         String queryString2 = "match $p isa person, has age >23, has age <27;$pr isa product;" +
                 "($p, $pr) isa recommendation;";

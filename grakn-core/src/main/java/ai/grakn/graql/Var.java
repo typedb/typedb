@@ -67,21 +67,14 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var value(Object value);
+    Var val(Object value);
 
     /**
      * @param predicate a atom this variable's value must match
      * @return this
      */
     @CheckReturnValue
-    Var value(ValuePredicate predicate);
-
-    /**
-     * @param var a variable representing a resource
-     * @return this
-     */
-    @CheckReturnValue
-    Var has(Var var);
+    Var val(ValuePredicate predicate);
 
     /**
      * the variable must have a resource or name of the given type with an exact matching value
