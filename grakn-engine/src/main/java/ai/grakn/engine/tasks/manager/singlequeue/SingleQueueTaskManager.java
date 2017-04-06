@@ -37,6 +37,7 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -219,7 +220,13 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return true if the task has been marked stopped
      */
     boolean isTaskMarkedStopped(TaskId taskId) {
-        return stoppedTasks.getCurrentData(format(TASKS_STOPPED, taskId)) != null;
+        try {
+            return zookeeper.connection().checkExists().forPath(format(TASKS_STOPPED, taskId)) != null;
+        } catch (KeeperException.NoNodeException e){
+            return false;
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 
     /**
