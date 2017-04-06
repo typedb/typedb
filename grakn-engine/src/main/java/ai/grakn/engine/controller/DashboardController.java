@@ -70,7 +70,7 @@ import static java.util.stream.Collectors.toList;
  *
  * @author alexandraorth
  */
-@Path("dashboard")
+@Path("/dashboard")
 public class DashboardController {
 
     private static final String RELATION_TYPES = "/graph/match?query=match $a isa %s id '%s'; ($a,$b) isa %s; limit %s;&keyspace=%s&limit=%s&reasoner=true";
@@ -91,12 +91,12 @@ public class DashboardController {
     @GET
     @Path("explore/{id}")
     @ApiOperation(
-            value = "Return the HAL representation of a given concept.")
+            value = "Return the HAL Explore representation for the given concept.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = IDENTIFIER,      value = "Identifier of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = KEYSPACE,        value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = OFFSET_EMBEDDED, value = "Offset to begin at for embedded HAL concepts", required = true, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = LIMIT_EMBEDDED,  value = "Limit on the number of embedded HAL concepts", required = true, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = IDENTIFIER,      value = "Identifier of the concept.", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = KEYSPACE,        value = "Name of graph to use.", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = OFFSET_EMBEDDED, value = "Offset to begin at for embedded HAL concepts.", required = true, dataType = "boolean", paramType = "query"),
+            @ApiImplicitParam(name = LIMIT_EMBEDDED,  value = "Limit on the number of embedded HAL concepts.", required = true, dataType = "boolean", paramType = "query")
     })
     private Json exploreConcept(Request request, Response response){
         validateRequest(request);
