@@ -86,7 +86,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.LABEL.name()));
+        cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.TYPE_LABEL.name()));
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {
@@ -336,7 +336,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         //noinspection unchecked
         GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                .has(Schema.ConceptProperty.LABEL.name(), getLabel().getValue())
+                .has(Schema.ConceptProperty.TYPE_LABEL.name(), getLabel().getValue())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel());
 

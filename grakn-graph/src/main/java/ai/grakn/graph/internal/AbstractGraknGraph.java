@@ -397,10 +397,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        ConceptImpl concept = getConcept(Schema.ConceptProperty.LABEL, label.getValue());
+        ConceptImpl concept = getConcept(Schema.ConceptProperty.TYPE_LABEL, label.getValue());
         if(concept == null) {
             vertex = addVertex(baseType);
-            vertex.property(Schema.ConceptProperty.LABEL.name(), label.getValue());
+            vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
         } else {
             if(!baseType.name().equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
@@ -545,7 +545,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
     private <T extends Type> T getTypeByLabel(TypeLabel label, Schema.BaseType baseType){
-        Type type = buildType(label, ()->getConcept(Schema.ConceptProperty.LABEL, label.getValue()));
+        Type type = buildType(label, ()->getConcept(Schema.ConceptProperty.TYPE_LABEL, label.getValue()));
         return validateConceptType(type, baseType, () -> null);
     }
 

@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
-import static ai.grakn.util.Schema.ConceptProperty.LABEL;
+import static ai.grakn.util.Schema.ConceptProperty.TYPE_LABEL;
 
 class LabelFragment extends AbstractFragment {
 
@@ -37,7 +37,7 @@ class LabelFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(LABEL.name(), label.getValue());
+        traversal.has(TYPE_LABEL.name(), label.getValue());
     }
 
     @Override
