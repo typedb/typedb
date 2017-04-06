@@ -81,7 +81,7 @@ class ValidateGlobalRules {
 
     /**
      * This method checks if the plays-role edge has been added successfully. It does so By checking
-     * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS_ROLE-> X =
+     * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS-> X =
      * Casting -ISA-> X
      * @param casting The casting to be validated
      * @return A specific error if one is found.

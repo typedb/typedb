@@ -23,7 +23,7 @@ import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.EdgeLabel.PLAYS_ROLE;
+import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 
 class OutPlaysFragment extends AbstractFragment {
 
@@ -39,9 +39,9 @@ class OutPlaysFragment extends AbstractFragment {
         Fragments.outSubs(traversal);
 
         if (required) {
-            traversal.outE(PLAYS_ROLE.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
+            traversal.outE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();
         } else {
-            traversal.out(PLAYS_ROLE.getLabel());
+            traversal.out(PLAYS.getLabel());
         }
     }
 

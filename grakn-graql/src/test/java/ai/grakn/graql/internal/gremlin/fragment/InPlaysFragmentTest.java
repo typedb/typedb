@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static ai.grakn.util.Schema.EdgeLabel.PLAYS_ROLE;
+import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,7 +25,7 @@ public class InPlaysFragmentTest {
 
         // Make sure we traverse plays role and downwards subs once
         assertThat(traversal, is(__.V()
-                .in(PLAYS_ROLE.getLabel())
+                .in(PLAYS.getLabel())
                 .union(__.identity(), __.repeat(__.in(SUB.getLabel())).emit()).unfold()
         ));
     }

@@ -75,7 +75,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlays = new ComponentCache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
-        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE).forEach(edge -> {
+        getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
             RoleType roleType = edge.getTarget();
             Boolean required = edge.getPropertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(roleType, required);
@@ -502,7 +502,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Update the cache of types played by the role
         ((RoleTypeImpl) roleType).addCachedDirectPlaysByType(this);
 
-        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
+        EdgeImpl edge = putEdge(roleType, Schema.EdgeLabel.PLAYS);
 
         if (required) {
             edge.setProperty(Schema.EdgeProperty.REQUIRED, true);
@@ -528,7 +528,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public T deletePlays(RoleType roleType) {
         checkTypeMutation();
-        deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
+        deleteEdgeTo(Schema.EdgeLabel.PLAYS, roleType);
         cachedDirectPlays.ifPresent(set -> set.remove(roleType));
         ((RoleTypeImpl) roleType).deleteCachedDirectPlaysByType(this);
 

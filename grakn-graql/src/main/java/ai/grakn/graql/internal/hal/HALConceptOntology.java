@@ -54,7 +54,7 @@ class HALConceptOntology {
     private final static String INBOUND_EDGE = "IN";
     private final static String HAS_ROLE_EDGE = "has-role";
     private final static String HAS_RESOURCE_EDGE = "has-resource";
-    private final static String PLAYS_ROLE_EDGE = "plays-role";
+    private final static String PLAYS_EDGE = "plays-role";
 
     // - State properties
 
@@ -132,7 +132,7 @@ class HALConceptOntology {
             Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId()+getURIParams())
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             generateStateAndLinks(roleRepresentation, type);
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
 
         roleType.relationTypes().forEach(relType-> {
@@ -173,7 +173,7 @@ class HALConceptOntology {
             //We always return roles with in embedded the relations they play in.
             roleTypeOntology(roleRepresentation, role);
 
-            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
+            halResource.withRepresentation(PLAYS_EDGE, roleRepresentation);
         });
     }
 
