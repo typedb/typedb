@@ -418,7 +418,7 @@ public class GraknGraphTest extends GraphTestBase {
                 "    has-resource name\n" +
                 "    plays-role subcategory\n" +
                 "    plays-role supercategory\n" +
-                "    plays-role label\n" +
+                "    plays-role 'label'\n" +
                 "    plays-role item\n" +
                 "    plays-role recommended;\n" +
                 "name sub resource datatype string;\n" +
@@ -428,7 +428,7 @@ public class GraknGraphTest extends GraphTestBase {
                 "category-assignment sub relation\n" +
                 "    has-resource rank\n" +
                 "    has-role item #product\n" +
-                "    has-role label; #category \n" +
+                "    has-role 'label'; #category \n" +
                 "rank sub resource datatype long;\n" +
                 "user sub entity\n" +
                 "    has-resource uid\n" +
@@ -471,7 +471,7 @@ public class GraknGraphTest extends GraphTestBase {
                 "recommended sub role;\n" +
                 "subcategory sub role;\n" +
                 "supercategory sub role;\n" +
-                "label sub role;\n" +
+                "'label' sub role;\n" +
                 "successful-recommendation sub role;\n" +
                 "category-recommendation sub role;\n" +
                 "product-recommendation sub role;").execute();
