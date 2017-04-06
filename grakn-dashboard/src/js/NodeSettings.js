@@ -20,6 +20,7 @@ import User from './User';
 
 // Default constant values
 const NODE_LABELS_KEY = 'node_labels';
+const NODE_COLOURS_KEY = 'node_colours';
 
 
 export default {
@@ -62,5 +63,45 @@ export default {
       [type]: nodesLabelsParam,
     });
     localStorage.setItem(NODE_LABELS_KEY, JSON.stringify(nodesLabels));
+  },
+
+  // Nodes colours
+
+  // if no colours are set for a given type it will return an {}
+
+  getNodeColour(type) {
+    if (type !== undefined && type.length) {
+      const currentKeyspace = User.getCurrentKeySpace();
+      const nodesColours = localStorage.getItem(NODE_COLOURS_KEY);
+
+      if (nodesColours === null) {
+        localStorage.setItem(NODE_COLOURS_KEY, JSON.stringify({ [currentKeyspace]: { [type]: {} } }));
+        return {};
+      }
+      const nodeColoursObject = JSON.parse(nodesColours);
+      if (!(currentKeyspace in nodeColoursObject) || !(type in nodeColoursObject[currentKeyspace])) {
+        return {};
+      }
+
+      return nodeColoursObject[currentKeyspace][type];
+    }
+
+    return {};
+  },
+
+
+// pass a {} to remove colours from given type
+  setNodeColour(type, coloursObj) {
+    const nodesColours = JSON.parse(localStorage.getItem(NODE_COLOURS_KEY));
+    const currentKeyspace = User.getCurrentKeySpace();
+
+    if (!(currentKeyspace in nodesColours)) {
+      Object.assign(nodesColours, { [currentKeyspace]: {} });
+    }
+
+    Object.assign(nodesColours[currentKeyspace], {
+      [type]: coloursObj,
+    });
+    localStorage.setItem(NODE_COLOURS_KEY, JSON.stringify(nodesColours));
   },
 };

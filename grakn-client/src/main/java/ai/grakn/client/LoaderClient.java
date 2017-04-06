@@ -47,7 +47,7 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
@@ -56,7 +56,7 @@ import static java.util.stream.Collectors.toList;
 
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
-import static ai.grakn.util.REST.Request.LIMIT_PARAM;
+import static ai.grakn.util.REST.Request.LIMIT;
 import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
 
 /**
@@ -357,7 +357,7 @@ public class LoaderClient {
     private String getPostParams(){
         return TASK_CLASS_NAME_PARAMETER + "=ai.grakn.engine.loader.LoaderTask&" +
                 TASK_RUN_AT_PARAMETER + "=" + new Date().getTime() + "&" +
-                LIMIT_PARAM + "=" + 10000 + "&" +
+                LIMIT + "=" + 10000 + "&" +
                 TASK_CREATOR_PARAMETER + "=" + LoaderClient.class.getName();
     }
 
@@ -369,7 +369,7 @@ public class LoaderClient {
      */
     private String getConfiguration(Collection<InsertQuery> queries, int batchNumber){
         return Json.object()
-                .set(KEYSPACE_PARAM, keyspace)
+                .set(KEYSPACE, keyspace)
                 .set("batchNumber", batchNumber)
                 .set(TASK_LOADER_INSERTS, queries.stream().map(InsertQuery::toString).collect(toList()))
                 .toString();

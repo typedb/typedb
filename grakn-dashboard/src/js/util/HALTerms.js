@@ -39,6 +39,8 @@ export const ENTITY_TYPE = 'ENTITY_TYPE';
 export const ENTITY = 'ENTITY';
 
 export const GENERATED_RELATION_TYPE = 'generated-relation';
+export const INFERRED_RELATION_TYPE = 'inferred-relation';
+
 
 export const ROOT_CONCEPT = 'concept';
 
@@ -49,7 +51,7 @@ export const KEY_TYPE = '_type';
 export const KEY_BASE_TYPE = '_baseType';
 export const KEY_VALUE = '_value';
 export const KEY_NAME = '_name';
-export const KEY_ONTOLOGY = 'ontology';
+export const KEY_EXPLORE = 'explore';
 export const KEY_SELF = 'self';
 export const KEY_LINKS = '_links';
 export const KEY_HREF = 'href';

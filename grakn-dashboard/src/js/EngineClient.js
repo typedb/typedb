@@ -31,7 +31,8 @@ export default {
      */
   request(requestData) {
     return new Promise((resolve, reject) => {
-      const reasonerParam = (requestData.appendReasonerParams) ? `&reasoner=${User.getReasonerStatus()}` : '';
+      // With generated relations we force reasoner to false because we know the relation is materialised in the graph.
+      const reasonerParam = (requestData.appendReasonerParams) ? '&reasoner=false' : '';
 
       const req = new XMLHttpRequest();
       req.open(requestData.requestType || 'GET', requestData.url + reasonerParam);
@@ -134,7 +135,12 @@ export default {
       url: `/graph/analytics?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
     });
   },
-            /**
+
+  explainQuery(query) {
+    return this.request({
+      url: `/graph/explain?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
+    });
+  },            /**
              * Get current engine configuration.
              */
   getConfig() {
@@ -145,9 +151,15 @@ export default {
             /**
              * Get meta ontology type instances.
              */
-  getMetaTypes(fn) {
+  getMetaTypes() {
     return this.request({
       url: `/graph/ontology?keyspace=${User.getCurrentKeySpace()}`,
+    });
+  },
+
+  getConceptTypes(id) {
+    return this.request({
+      url: `/graph/concept/types/${id}?keyspace=${User.getCurrentKeySpace()}&limit=${User.getQueryLimit()}`,
     });
   },
 

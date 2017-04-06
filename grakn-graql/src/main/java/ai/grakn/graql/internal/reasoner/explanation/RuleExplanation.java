@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.explanation;
 
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
 /**
@@ -45,6 +46,9 @@ public class RuleExplanation extends Explanation {
 
     @Override
     public boolean isRuleExplanation(){ return true;}
+
+    @Override
+    public ReasonerQuery getQuery(){ return rule.getHead();}
 
     public InferenceRule getRule(){ return rule;}
 }

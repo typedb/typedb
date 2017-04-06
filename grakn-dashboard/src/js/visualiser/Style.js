@@ -18,6 +18,7 @@
 
 
 import * as API from '../util/HALTerms';
+import NodeSettings from '../NodeSettings';
 
 /*
  * Styling options for visualised graph.
@@ -52,16 +53,25 @@ export default class Style {
     };
   }
 
+  getNodeColour(type, baseType) {
+    if (!Object.keys(NodeSettings.getNodeColour(type)).length && !Object.keys(NodeSettings.getNodeColour(baseType)).length) {
+      return this.getDefaultNodeColour(type, baseType);
+    } else if (type.length) {
+      return NodeSettings.getNodeColour(type);
+    }
+    return NodeSettings.getNodeColour(baseType);
+  }
     /**
      * Return node colour based on its @baseType or default colour otherwise.
      * @param baseType
      * @returns {*}
      */
-  getNodeColour(type, baseType) {
+  getDefaultNodeColour(type, baseType) {
     let colourObject;
         // User defined ontology & instances
     switch (baseType) {
       case API.GENERATED_RELATION_TYPE:
+      case API.INFERRED_RELATION_TYPE:
         colourObject = {
           background: '#20a194',
           highlight: {
@@ -112,7 +122,10 @@ export default class Style {
   getNodeShape(baseType) {
     let shape;
     switch (baseType) {
-      case 'ROLE_TYPE':
+      case API.RELATION:
+      case API.GENERATED_RELATION_TYPE:
+      case API.INFERRED_RELATION_TYPE:
+      case API.ROLE_TYPE:
         shape = 'dot';
         break;
       default:
@@ -124,7 +137,12 @@ export default class Style {
   getNodeSize(baseType) {
     let size;
     switch (baseType) {
-      case 'ROLE_TYPE':
+      case API.RELATION:
+      case API.GENERATED_RELATION_TYPE:
+      case API.INFERRED_RELATION_TYPE:
+        size = 8;
+        break;
+      case API.ROLE_TYPE:
         size = 10;
         break;
       default:

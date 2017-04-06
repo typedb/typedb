@@ -19,10 +19,12 @@ package ai.grakn.engine;
 
 import ai.grakn.engine.controller.AuthController;
 import ai.grakn.engine.controller.CommitLogController;
+import ai.grakn.engine.controller.ConceptController;
+import ai.grakn.engine.controller.DashboardController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
-import ai.grakn.engine.controller.VisualiserController;
+import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.session.RemoteSession;
@@ -32,8 +34,10 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.REST;
 import mjson.Json;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -125,7 +129,10 @@ public class GraknEngineServer implements AutoCloseable {
         configureSpark(spark, port);
 
         // Start all the controllers
-        new VisualiserController(spark);
+        EngineGraknGraphFactory factory = EngineGraknGraphFactory.getInstance();
+        new GraqlController(factory, spark);
+        new ConceptController(factory, spark);
+        new DashboardController(factory, spark);
         new SystemController(spark);
         new CommitLogController(spark);
         new AuthController(spark);
@@ -236,6 +243,7 @@ public class GraknEngineServer implements AutoCloseable {
     private static void handleGraknServerError(Exception exception, Response response){
         response.status(((GraknEngineServerException) exception).getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
     /**
@@ -246,6 +254,7 @@ public class GraknEngineServer implements AutoCloseable {
     private static void handleInternalError(Exception exception, Response response){
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());
+        response.type(ContentType.APPLICATION_JSON.getMimeType());
     }
 
 
