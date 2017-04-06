@@ -57,7 +57,7 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public String getName() {
-        return "value";
+        return "val";
     }
 
     @Override

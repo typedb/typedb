@@ -129,7 +129,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNullValue() {
         exception.expect(NullPointerException.class);
-        var("x").value(null);
+        var("x").val(null);
     }
 
     @Test

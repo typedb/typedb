@@ -364,7 +364,7 @@ public class GenealogyTest {
     @Test
     public void testMotherInLaw() {
         String queryString = "match (mother-in-law: $x);$x has gender $g;";
-        String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g value 'female'; select $x, $g;";
+        String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g val 'female'; select $x, $g;";
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
@@ -378,7 +378,7 @@ public class GenealogyTest {
     @Test
     public void testFatherInLaw() {
         String queryString = "match (father-in-law: $x);$x has gender $g;";
-        String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g value'male'; select $x, $g;";
+        String queryString2 = "match (parent-in-law: $x, child-in-law: $y) isa in-laws;$x has gender $g;$g val'male'; select $x, $g;";
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);
         QueryAnswers answers = queryAnswers(query);
@@ -472,7 +472,7 @@ public class GenealogyTest {
 
     @Test
     public void testFemaleFather() {
-        String queryString = "match (father: $x) isa parentship; $x has gender $g; $g value 'female';";
+        String queryString = "match (father: $x) isa parentship; $x has gender $g; $g val 'female';";
         MatchQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
         QueryAnswers answers2 =  queryAnswers(genealogyGraph.graph().graql().infer(true).materialise(true).parse(queryString));
