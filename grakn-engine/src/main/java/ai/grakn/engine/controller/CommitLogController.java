@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.exception.GraknEngineServerException;
@@ -78,7 +79,8 @@ public class CommitLogController {
     @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
     @ApiImplicitParams({
         @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = REST.Request.COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body")
+        @ApiImplicitParam(name = REST.Request.COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body"),
+        @ApiImplicitParam(name = REST.Request.COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
         try {
@@ -89,9 +91,9 @@ public class CommitLogController {
             }
             LOG.info("Commit log received for graph [" + graphName + "]");
 
-            JSONArray jsonArray = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_FIXING);
-
-            for (Object object : jsonArray) {
+            //Jobs to Fix
+            JSONArray conceptsToFix = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_FIXING);
+            for (Object object : conceptsToFix) {
                 JSONObject jsonObject = (JSONObject) object;
 
                 String conceptVertexId = jsonObject.getString(REST.Request.COMMIT_LOG_ID);
@@ -108,6 +110,15 @@ public class CommitLogController {
                     default:
                         LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptVertexId, type.name()));
                 }
+            }
+
+            //Instances to count
+            JSONArray instancesToCount = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_COUNTING);
+            for (Object object : instancesToCount) {
+                JSONObject jsonObject = (JSONObject) object;
+                TypeName name = TypeName.of(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE_NAME));
+                Long value = jsonObject.getLong(REST.Request.COMMIT_LOG_INSTANCE_COUNT);
+                cache.addJobInstanceCount(graphName, name, value);
             }
 
             return "Graph [" + graphName + "] now has [" + cache.getNumJobs(graphName) + "] post processing jobs";

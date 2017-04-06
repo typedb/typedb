@@ -144,6 +144,7 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
         updateLastTimeJobAdded();
         if(castings.containsKey(keyspace)) castings.remove(keyspace);
         if(resources.containsKey(keyspace)) resources.remove(keyspace);
+        if(instanceCounts.containsKey(keyspace)) instanceCounts.remove(keyspace);
     }
 
     //-------------------- Instance Count Jobs

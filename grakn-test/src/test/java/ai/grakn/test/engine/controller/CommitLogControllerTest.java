@@ -69,11 +69,11 @@ public class CommitLogControllerTest {
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"100\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"10\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"}\n" +
                 "    ],\n" +
                 "    \"" + REST.Request.COMMIT_LOG_COUNTING + "\":[\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Alpha\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"-3\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Bravo\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"-2\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Charlie\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"-1\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Delta\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"1\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Foxtrot\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"2\"} \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Alpha\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"-3\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Bravo\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"-2\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Charlie\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"-1\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Delta\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"1\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Foxtrot\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"2\"} \n" +
                 "    ]\n" +
                 "}";
 
@@ -115,17 +115,17 @@ public class CommitLogControllerTest {
 
         assertEquals(2, cache.getCastingJobs(BOB).size());
         assertEquals(1, cache.getResourceJobs(BOB).size());
-        assertEquals(-1, cache.getInstanceCountJobs(BOB).size());
+        assertEquals(3, cache.getInstanceCountJobs(BOB).size());
 
         assertEquals(0, cache.getCastingJobs(TIM).size());
         assertEquals(0, cache.getResourceJobs(TIM).size());
-        assertEquals(-1, cache.getInstanceCountJobs(TIM).size());
+        assertEquals(0, cache.getInstanceCountJobs(TIM).size());
 
         addSomeData(tim);
 
         assertEquals(2, cache.getCastingJobs(TIM).size());
         assertEquals(1, cache.getResourceJobs(TIM).size());
-        assertEquals(-1, cache.getInstanceCountJobs(TIM).size());
+        assertEquals(3, cache.getInstanceCountJobs(TIM).size());
 
         Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE).clear();
         Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTxType.WRITE).clear();
