@@ -102,7 +102,8 @@ public class EngineContext extends ExternalResource {
         }
 
         if (startMultiQueueEngine){
-            server = startEngine(MultiQueueTaskManager.class.getName(), port);
+            //TODO: This patch should die when we get rid of MultiQueueTaskManager
+            if(startSingleQueueEngine) server = startEngine(MultiQueueTaskManager.class.getName(), port);
         }
 
         if (startStandaloneEngine){

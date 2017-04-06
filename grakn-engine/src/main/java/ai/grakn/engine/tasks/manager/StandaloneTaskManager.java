@@ -19,6 +19,8 @@
 
 package ai.grakn.engine.tasks.manager;
 
+import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskCheckpoint;
@@ -82,6 +84,8 @@ public class StandaloneTaskManager implements TaskManager {
         GraknEngineConfig properties = GraknEngineConfig.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
+
+        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
     }
 
     public TaskManager open() {
@@ -92,8 +96,8 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
-
         runningTasks.clear();
+        EngineCacheProvider.clearCache();
     }
 
     @Override

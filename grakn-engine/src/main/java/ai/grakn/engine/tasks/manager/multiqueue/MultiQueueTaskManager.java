@@ -20,6 +20,8 @@
 package ai.grakn.engine.tasks.manager.multiqueue;
 
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.cache.EngineCacheDistributed;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -43,6 +45,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
  * @author Denis Lobanov
  * This class begins the TaskRunner instance that will be running on this machine.
  */
+//TODO: Kill this
 public final class MultiQueueTaskManager implements TaskManager {
 
     private final static Logger LOG = LoggerFactory.getLogger(MultiQueueTaskManager.class);
@@ -70,6 +73,7 @@ public final class MultiQueueTaskManager implements TaskManager {
         elector = new SchedulerElector(storage, zookeeper);
 
         this.producer = ConfigHelper.kafkaProducer();
+        EngineCacheProvider.init(EngineCacheDistributed.init(zookeeper));
     }
 
     @Override
@@ -88,6 +92,8 @@ public final class MultiQueueTaskManager implements TaskManager {
 
         // stop zookeeper connection
         noThrow(zookeeper::close, "Error waiting for zookeeper connection to close");
+
+        EngineCacheProvider.clearCache();
 
         LOG.debug("TaskManager closed");
     }

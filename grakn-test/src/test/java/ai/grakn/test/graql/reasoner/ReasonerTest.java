@@ -335,40 +335,6 @@ public class ReasonerTest {
         assertEquals(answers, expAnswers);
     }
 
-    //NB:
-    //Plays behaviour in the context of reasoning is somewhat ambiguous as it fetches results based on the db content.
-    //In order for the inferred data to be included it would need to be materialised and computed before
-    //the plays atom.
-    @Test
-    public void testReasoningWithQueryContainingPlays(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match $x plays geo-entity;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
-        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
-                "{$name val 'Masovia' or $name val 'Silesia';}; select $x, $y;";
-        MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
-    @Test
-    public void testReasoningWithQueryContainingPlays2(){
-        GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match $x plays $role;$y isa country;$y has name 'Poland';($x, $y) isa is-located-in;";
-        String explicitQuery = "match $y has name 'Poland';$x has $name;" +
-                "{" +
-                "{$role type-name geo-entity or $role type-name concept or $role type-name role;};" +
-                "{$name val 'Warsaw-Polytechnics' or $name val 'University-of-Warsaw' or " +
-                "$name val 'Warsaw' or $name val 'Wroclaw' or " +
-                "$name val 'Masovia' or $name val 'Silesia';};" +
-                "} or {" +
-                "{$role type-name entity-location or $role type-name concept or $role type-name role;};" +
-                "{$name val 'Europe' or $name val 'Warsaw' or $name val 'Masovia' or $name val 'Silesia';};" +
-                "}; select $x, $y, $role;";
-        MatchQuery query = graph.graql().infer(true).materialise(false).parse(queryString);
-        MatchQuery query2 = graph.graql().infer(false).parse(explicitQuery);
-        assertQueriesEqual(query, query2);
-    }
-
     @Test
     public void testReasoningWithQueryWithNoRelationType(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();

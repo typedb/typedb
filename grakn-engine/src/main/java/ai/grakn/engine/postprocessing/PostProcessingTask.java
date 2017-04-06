@@ -18,9 +18,11 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.graph.admin.ConceptCache;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +46,7 @@ public class PostProcessingTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
-    private static final EngineCache cache = EngineCache.getInstance();
+    private static final ConceptCache cache = EngineCacheProvider.getCache();
 
     private static final long timeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 

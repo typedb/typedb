@@ -19,6 +19,8 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.graph.admin.ConceptCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,12 +61,12 @@ public class PostProcessing {
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
-    private final EngineCache cache;
+    private final ConceptCache cache;
 
     private PostProcessing() {
         postpool = Executors.newFixedThreadPool(Integer.parseInt(GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
-        cache = EngineCache.getInstance();
+        cache = EngineCacheProvider.getCache();
         futures = ConcurrentHashMap.newKeySet();
         isRunning.set(false);
     }
@@ -176,7 +178,6 @@ public class PostProcessing {
             LOG.info("--------------------Current Status of Post Processing--------------------");
             dumpStatsType("Casting");
             dumpStatsType("Resources");
-            LOG.info("Save in Progress: " + cache.isSaveInProgress());
             LOG.info("Current Stage: " + currentStage);
             LOG.info("-------------------------------------------------------------------------");
 
