@@ -639,9 +639,9 @@ public class InsertQueryTest {
     }
 
     @Test
-    public void testErrorTypeWithoutId() {
+    public void testErrorTypeWithoutLabel() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("type"), containsString("name")));
+        exception.expectMessage(allOf(containsString("type"), containsString("label")));
         qb.insert(var().sub("entity")).execute();
     }
 
