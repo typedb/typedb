@@ -42,9 +42,9 @@ import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_OWNER;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_VALUE;
+import static ai.grakn.util.Schema.ImplicitType.KEY;
+import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 
 /**
  * Represents the {@code has-resource} and {@code has-key} properties on a {@link Type}.
@@ -88,9 +88,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         // If a key, limit only to the implicit key type
         if(required){
-            ownerRole = ownerRole.name(HAS_KEY_OWNER.getName(resourceTypeName));
-            valueRole = valueRole.name(HAS_KEY_VALUE.getName(resourceTypeName));
-            relationType = relationType.name(HAS_KEY.getName(resourceTypeName));
+            ownerRole = ownerRole.name(KEY_OWNER.getName(resourceTypeName));
+            valueRole = valueRole.name(KEY_VALUE.getName(resourceTypeName));
+            relationType = relationType.name(KEY.getName(resourceTypeName));
         }
 
         this.ownerRole = ownerRole.admin();

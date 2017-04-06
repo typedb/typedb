@@ -198,9 +198,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         //Is this resource a key to me?
         if(type().keys().contains(resource.type())){
             type = "key";
-            has = Schema.ImplicitType.HAS_KEY;
-            hasValue = Schema.ImplicitType.HAS_KEY_VALUE;
-            hasOwner  = Schema.ImplicitType.HAS_KEY_OWNER;
+            has = Schema.ImplicitType.KEY;
+            hasValue = Schema.ImplicitType.KEY_VALUE;
+            hasOwner  = Schema.ImplicitType.KEY_OWNER;
         }
 
 

@@ -210,17 +210,17 @@ public final class Schema {
         /**
          * The name of the generic has-key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique
          */
-        HAS_KEY("has-key-%s"),
+        KEY("has-key-%s"),
 
         /**
          * The name of a role in has-key, played by the owner of the key
          */
-        HAS_KEY_OWNER("has-key-%s-owner"),
+        KEY_OWNER("has-key-%s-owner"),
 
         /**
          * The name of a role in has-key, played by the resource
          */
-        HAS_KEY_VALUE("has-key-%s-value");
+        KEY_VALUE("has-key-%s-value");
 
         private final String name;
 

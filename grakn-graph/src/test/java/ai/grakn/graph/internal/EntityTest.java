@@ -175,7 +175,7 @@ public class EntityTest extends GraphTestBase{
         entity.resource(resource);
         Relation relation = entity.relations().iterator().next();
 
-        checkImplicitStructure(resourceType, relation, entity, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_OWNER, Schema.ImplicitType.HAS_KEY_VALUE);
+        checkImplicitStructure(resourceType, relation, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
     }
 
     @Test

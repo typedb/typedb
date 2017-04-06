@@ -61,9 +61,9 @@ import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.util.ErrorMessage.INSERT_UNSUPPORTED_PROPERTY;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_OWNER;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_VALUE;
+import static ai.grakn.util.Schema.ImplicitType.KEY;
+import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE;
 import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_VALUE;
@@ -510,9 +510,9 @@ public class InsertQueryTest {
         assertFalse(qb.match(name("a-new-type").sub("entity").key("title")).ask().execute());
         assertFalse(qb.match(name("movie").sub("entity").key(resourceType)).ask().execute());
 
-        Var key = name(HAS_KEY.getName(resourceType));
-        Var keyOwner = name(HAS_KEY_OWNER.getName(resourceType));
-        Var keyValue = name(HAS_KEY_VALUE.getName(resourceType));
+        Var key = name(KEY.getName(resourceType));
+        Var keyOwner = name(KEY_OWNER.getName(resourceType));
+        Var keyValue = name(KEY_VALUE.getName(resourceType));
 
         // Make sure the expected ontology elements are created
         assertTrue(qb.match(key.sub("relation")).ask().execute());
