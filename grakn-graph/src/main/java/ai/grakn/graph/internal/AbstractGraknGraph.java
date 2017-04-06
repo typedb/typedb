@@ -1051,7 +1051,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public boolean updateTypeCounts(Map<TypeName, Long> typeCounts){
-        throw new UnsupportedOperationException("Not yet implemented");
+    public void updateTypeCounts(Map<TypeName, Long> typeCounts){
+       typeCounts.entrySet().forEach(entry -> {
+           if(entry.getValue() != 0) {
+               TypeImpl type = getType(entry.getKey());
+               type.setInstanceCount(type.getInstanceCount() + entry.getValue());
+           }
+       });
     }
 }

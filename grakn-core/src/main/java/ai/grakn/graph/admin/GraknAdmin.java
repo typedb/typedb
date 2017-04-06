@@ -166,9 +166,8 @@ public interface GraknAdmin {
      * Updates the counts of all the types
      *
      * @param typeCounts The types and the changes to put on their counts
-     * @return true if an update was performed thus requiring a commit
      */
-    boolean updateTypeCounts(Map<TypeName, Long> typeCounts);
+    void updateTypeCounts(Map<TypeName, Long> typeCounts);
 
     /**
      *

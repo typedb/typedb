@@ -227,8 +227,9 @@ public class PostProcessingTest extends GraphTestBase{
 
         //Lets Set Some Counts
         types.put(t1.getName(), -5L);
-        types.put(t1.getName(), -2L);
-        types.put(t1.getName(), 3L);
+        types.put(t2.getName(), -2L);
+        types.put(t3.getName(), 3L);
+        graknGraph.admin().updateTypeCounts(types);
 
         assertEquals(0L, t1.getInstanceCount());
         assertEquals(4L, t2.getInstanceCount());
