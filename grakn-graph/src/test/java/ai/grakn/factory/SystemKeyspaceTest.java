@@ -65,7 +65,7 @@ public class SystemKeyspaceTest {
         ResourceType userEmail = graph.getResourceType("user-email");
         ResourceType userIsAdmin = graph.getResourceType("user-is-admin");
 
-        //Check Plays Roles
+        //Check Plays
         assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_KEY_OWNER.getName(userName.getName()).getValue())));
         assertTrue(user.plays().contains(

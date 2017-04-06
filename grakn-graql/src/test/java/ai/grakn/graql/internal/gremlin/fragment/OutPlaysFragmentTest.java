@@ -23,7 +23,7 @@ public class OutPlaysFragmentTest {
         GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversal(traversal);
 
-        // Make sure we traverse upwards subs once and plays role
+        // Make sure we traverse upwards subs once and plays
         assertThat(traversal, is(__.V()
                 .union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold()
                 .out(PLAYS.getLabel())

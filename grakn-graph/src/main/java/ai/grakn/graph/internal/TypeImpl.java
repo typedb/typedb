@@ -71,7 +71,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
 
-    //This cache is different in order to keep track of which plays roles are required
+    //This cache is different in order to keep track of which plays are required
     private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlays = new ComponentCache<>(() -> {
         Map<RoleType, Boolean> roleTypes = new HashMap<>();
 
@@ -161,12 +161,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public Collection<RoleType> plays() {
         Set<RoleType> allRoleTypes = new HashSet<>();
 
-        //Get the immediate plays roles which may be cached
+        //Get the immediate plays which may be cached
         allRoleTypes.addAll(cachedDirectPlays.get().keySet());
 
-        //Now get the super type plays roles (Which may also be cached locally within their own context
+        //Now get the super type plays (Which may also be cached locally within their own context
         Set<T> superSet = superTypeSet();
-        superSet.remove(this); //We already have the plays roles from ourselves
+        superSet.remove(this); //We already have the plays from ourselves
         superSet.forEach(superParent -> allRoleTypes.addAll(((TypeImpl<?,?>) superParent).directPlays().keySet()));
 
         return Collections.unmodifiableCollection(filterImplicitStructures(allRoleTypes));
@@ -608,7 +608,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
         TypeName superName = resourceTypeSuper.getName();
-        if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays role edges to meta types accidentally
+        if(!Schema.MetaSchema.RESOURCE.getName().equals(superName)) { //Check to make sure we dont add plays edges to meta types accidentally
             RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(superName));
             RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getName(superName));
             RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(has.getName(superName)).
