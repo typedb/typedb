@@ -59,7 +59,7 @@ public class CommitLogController {
     @GET
     @Path("/commit_log")
     @ApiOperation(value = "Delete all the post processing jobs for a specific keyspace")
-    @ApiImplicitParam(name = "keysoace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
     private String deleteConcepts(Request req, Response res){
         String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
 
