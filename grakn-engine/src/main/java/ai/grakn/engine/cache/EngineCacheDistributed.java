@@ -166,7 +166,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
                 if(ids.isPresent()){
                     ids.get().forEach(id -> jobs.get(index).add(ConceptId.of(id)));
                 } else {
-                    cleanJobSet(jopType, keyspace, index); //Have an empty index. Time to kill it.
+                    cleanJobSet(jopType, keyspace, index, false); //Have an empty index. Time to kill it.
                 }
             }
         }
@@ -190,21 +190,23 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
 
     @Override
     public void clearJobSetResources(String keyspace, String conceptIndex) {
-        cleanJobSet(RESOURCE_JOB, keyspace, conceptIndex);
+        cleanJobSet(RESOURCE_JOB, keyspace, conceptIndex, false);
     }
     @Override
     public void clearJobSetCastings(String keyspace, String conceptIndex) {
-        cleanJobSet(CASTING_JOB, keyspace, conceptIndex);
+        cleanJobSet(CASTING_JOB, keyspace, conceptIndex, false);
     }
-    private void cleanJobSet(String jobType, String keyspace, String index){
+    private void cleanJobSet(String jobType, String keyspace, String index, boolean force){
         String idPath = getPathConceptIds(jobType, keyspace, index);
         Optional<List<String>> ids = getChildrenFromZookeeper(idPath);
 
-        if(ids.isPresent()){
+        if(force && ids.isPresent()){
             ids.get().forEach(id -> deleteJob(jobType, keyspace, index, ConceptId.of(id)));
         }
 
-        deleteObjectFromZookeeper(idPath);
+        if(force || ids.isPresent() && ids.get().isEmpty()){
+            deleteObjectFromZookeeper(idPath);
+        }
     }
 
     @Override
@@ -216,7 +218,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     private void clearAllJobs(String jobType, String keyspace){
         Optional<List<String>> indices = getChildrenFromZookeeper(getPathIndices(jobType, keyspace));
         if(indices.isPresent()){
-            indices.get().forEach(index -> cleanJobSet(jobType, keyspace, index));
+            indices.get().forEach(index -> cleanJobSet(jobType, keyspace, index, true));
         }
     }
 

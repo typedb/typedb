@@ -113,6 +113,7 @@ public interface ConceptCache {
     long getNumCastingJobs(String keyspace);
 
     /**
+     * Deletes the job set only if there are no pending jobs
      *
      * @param keyspace The keyspace of the concepts
      * @param conceptIndex The unique index value has been enforced.
@@ -151,6 +152,7 @@ public interface ConceptCache {
     long getNumResourceJobs(String keyspace);
 
     /**
+     * Deletes the job set only if there are no pending jobs
      *
      * @param keyspace The keyspace of the concepts
      * @param conceptIndex The unique index value which has been enforced.

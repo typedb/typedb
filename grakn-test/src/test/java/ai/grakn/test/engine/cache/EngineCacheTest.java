@@ -46,7 +46,7 @@ import static org.junit.Assert.assertThat;
 //NOTE: This test is only in grakn-test because it needs a running ZK
 //Ideally this should be moved to the grakn-engine module
 @RunWith(Theories.class)
-public class EngineCacheDistributedTest {
+public class EngineCacheTest {
 
     @DataPoints
     public static Caches[] configValues = Caches.values();
@@ -68,8 +68,6 @@ public class EngineCacheDistributedTest {
     //We do this just so we can start ZK
     @ClassRule
     public static final EngineContext engine = EngineContext.startSingleQueueServer();
-
-
 
     @Theory
     public void whenDeletingFixingJobsFromCache_EnsureJobsAreNoLongerInCache(Caches caches){
@@ -107,13 +105,18 @@ public class EngineCacheDistributedTest {
 
         //Clear Jobs 1
         String deletedIndex3 = "Casting_Index_2";
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(0));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(1));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(2));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(3));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(4));
         cache.clearJobSetCastings(keyspace, deletedIndex3);
         assertFalse("Index [" + deletedIndex3 + "] was not cleared form the cache", cache.getCastingJobs(keyspace).containsKey(deletedIndex3));
 
         //Clear Jobs 2
         String deletedIndex4 = "Resource_Index_3";
         cache.clearJobSetResources(keyspace, deletedIndex4);
-        assertFalse("Index [" + deletedIndex4 + "] was not cleared form the cache", cache.getResourceJobs(keyspace).containsKey(deletedIndex3));
+        assertTrue("Index [" + deletedIndex4 + "] was cleared form the cache even though it had pending jobs", cache.getResourceJobs(keyspace).containsKey(deletedIndex4));
 
         //Clear all Jobs
         cache.clearAllJobs(keyspace);
