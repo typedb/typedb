@@ -77,13 +77,6 @@ public interface Var extends Pattern {
     Var val(ValuePredicate predicate);
 
     /**
-     * @param var a variable representing a resource
-     * @return this
-     */
-    @CheckReturnValue
-    Var has(Var var);
-
-    /**
      * the variable must have a resource of the given type with an exact matching value
      *
      * @param type a resource type in the ontology

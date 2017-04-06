@@ -75,7 +75,7 @@ public class Resource extends MultiPredicateBinary{
     @Override
     protected ConceptId extractTypeId(VarAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
-        TypeLabel typeLabel = resProp != null? resProp.getType().orElse(null) : null;
+        TypeLabel typeLabel = resProp != null? resProp.getType() : null;
         return typeLabel != null ? getParentQuery().graph().getType(typeLabel).getId() : null;
     }
 

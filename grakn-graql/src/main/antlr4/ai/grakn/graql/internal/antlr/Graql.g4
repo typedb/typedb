@@ -68,25 +68,24 @@ pattern        : varPattern                    # varPatternCase
 varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
-property       : 'isa' variable                 # isa
-               | 'sub' variable                 # sub
-               | 'relates' variable             # relates
-               | 'plays-role' variable          # playsRole
-               | 'has-scope' VARIABLE           # hasScope
-               | 'id' id                        # propId
-               | 'label' label                  # propLabel
-               | 'val' predicate                # propValue
-               | 'lhs' '{' patterns '}'         # propLhs
-               | 'rhs' '{' varPatterns '}'      # propRhs
-               | 'has' label? VARIABLE          # propHasVariable
-               | 'has' label predicate          # propHas
-               | 'has-resource' variable        # propResource
-               | 'has-key' variable             # propKey
-               | '(' casting (',' casting)* ')' # propRel
-               | 'is-abstract'                  # isAbstract
-               | 'datatype' DATATYPE            # propDatatype
-               | 'regex' REGEX                  # propRegex
-               | '!=' variable                  # propNeq
+property       : 'isa' variable                     # isa
+               | 'sub' variable                     # sub
+               | 'relates' variable                 # relates
+               | 'plays-role' variable              # playsRole
+               | 'has-scope' VARIABLE               # hasScope
+               | 'id' id                            # propId
+               | 'label' label                      # propLabel
+               | 'val' predicate                    # propValue
+               | 'lhs' '{' patterns '}'             # propLhs
+               | 'rhs' '{' varPatterns '}'          # propRhs
+               | 'has' label (VARIABLE | predicate) # propHas
+               | 'has-resource' variable            # propResource
+               | 'has-key' variable                 # propKey
+               | '(' casting (',' casting)* ')'     # propRel
+               | 'is-abstract'                      # isAbstract
+               | 'datatype' DATATYPE                # propDatatype
+               | 'regex' REGEX                      # propRegex
+               | '!=' variable                      # propNeq
                ;
 
 casting        : variable (':' VARIABLE)?

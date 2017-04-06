@@ -46,6 +46,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.shortcut;
 import static ai.grakn.graql.internal.reasoner.Utility.getValuePredicates;
 import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
@@ -68,25 +69,20 @@ import static java.util.stream.Collectors.joining;
  */
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
-    private final Optional<TypeLabel> resourceType;
+    private final TypeLabel resourceType;
     private final VarAdmin resource;
 
-    private HasResourceProperty(Optional<TypeLabel> resourceType, VarAdmin resource) {
+    private HasResourceProperty(TypeLabel resourceType, VarAdmin resource) {
         this.resourceType = resourceType;
         this.resource = resource;
     }
 
-    public static HasResourceProperty of(VarAdmin resource) {
-        resource = resource.isa(Graql.label(Schema.MetaSchema.RESOURCE.getLabel())).admin();
-        return new HasResourceProperty(Optional.empty(), resource);
-    }
-
     public static HasResourceProperty of(TypeLabel resourceType, VarAdmin resource) {
-        resource = resource.isa(Graql.label(resourceType)).admin();
-        return new HasResourceProperty(Optional.of(resourceType), resource);
+        resource = resource.isa(label(resourceType)).admin();
+        return new HasResourceProperty(resourceType, resource);
     }
 
-    public Optional<TypeLabel> getType() {
+    public TypeLabel getType() {
         return resourceType;
     }
 
@@ -109,7 +105,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public String getProperty() {
         Stream.Builder<String> repr = Stream.builder();
 
-        resourceType.ifPresent(type -> repr.add(typeLabelToString(type)));
+        repr.add(typeLabelToString(resourceType));
 
         if (resource.isUserDefinedName()) {
             repr.add(resource.getPrintableName());
@@ -133,11 +129,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     void checkValidProperty(GraknGraph graph, VarAdmin var) {
-        if (resourceType.isPresent()) {
-            Type type = graph.getType(resourceType.get());
-            if(type == null || !type.isResourceType()) {
-                throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
-            }
+        Type type = graph.getType(resourceType);
+        if(type == null || !type.isResourceType()) {
+            throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
         }
     }
 
@@ -153,10 +147,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
         Optional<ValuePredicateAdmin> predicate =
                 resource.getProperties(ValueProperty.class).map(ValueProperty::getPredicate).findAny();
 
-        TypeLabel type = resourceType.orElseThrow(() -> failDelete(this));
-
-        RoleType owner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(type));
-        RoleType value = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(type));
+        RoleType owner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(resourceType));
+        RoleType value = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(resourceType));
 
         concept.asInstance().relations(owner).stream()
                 .filter(relation -> testPredicate(predicate, relation, value))
@@ -174,11 +166,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Stream<VarAdmin> getTypes() {
-        if (resourceType.isPresent()) {
-            return Stream.of(Graql.label(resourceType.get()).admin());
-        } else {
-            return Stream.empty();
-        }
+        return Stream.of(label(resourceType).admin());
     }
 
     @Override
@@ -202,16 +190,14 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Atomic mapToAtom(VarAdmin var, Set<VarAdmin> vars, ReasonerQuery parent) {
         VarName varName = var.getVarName();
-        Optional<TypeLabel> type = this.getType();
+        TypeLabel type = this.getType();
         VarAdmin valueVar = this.getResource();
         VarName valueVariable = valueVar.getVarName();
         Set<Predicate> predicates = getValuePredicates(valueVariable, valueVar, vars, parent);
 
         //add resource atom
         Var resource = Graql.var(valueVariable);
-        VarAdmin resVar = type
-                .map(t ->Graql.var(varName).has(t, resource))
-                .orElseGet(() -> Graql.var(varName).has(resource)).admin();
+        VarAdmin resVar = Graql.var(varName).has(type, resource).admin();
         return new ai.grakn.graql.internal.reasoner.atom.binary.Resource(resVar, predicates, parent);
     }
 }

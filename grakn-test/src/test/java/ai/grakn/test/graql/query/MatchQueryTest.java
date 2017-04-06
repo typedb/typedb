@@ -712,18 +712,6 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testMatchAllResources() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").has(var("x")));
-
-        Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
-        Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
-
-        Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
-
-        assertEquals(expected, results);
-    }
-
-    @Test
     public void testMatchAllResourcesUsingResourceName() {
         MatchQuery query = qb.match(var().has("title", "Godfather").has("resource", var("x")));
 
