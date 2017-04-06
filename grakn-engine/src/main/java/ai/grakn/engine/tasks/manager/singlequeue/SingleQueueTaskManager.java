@@ -222,8 +222,6 @@ public class SingleQueueTaskManager implements TaskManager {
     boolean isTaskMarkedStopped(TaskId taskId) {
         try {
             return zookeeper.connection().checkExists().forPath(format(TASKS_STOPPED, taskId)) != null;
-        } catch (KeeperException.NoNodeException e){
-            return false;
         } catch (Exception e){
             throw new RuntimeException(e);
         }
