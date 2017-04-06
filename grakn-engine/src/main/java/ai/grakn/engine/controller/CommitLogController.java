@@ -19,9 +19,10 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.postprocessing.EngineCache;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -45,7 +46,7 @@ import javax.ws.rs.Path;
  * @author Filipe Teixeira
  */
 public class CommitLogController {
-    private final EngineCache cache = EngineCache.getInstance();
+    private final ConceptCache cache = EngineCacheProvider.getCache();
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
     public CommitLogController(Service spark){

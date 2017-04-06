@@ -527,8 +527,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitHasRole(GraqlParser.HasRoleContext ctx) {
-        return var -> var.hasRole(visitVariable(ctx.variable()));
+    public UnaryOperator<Var> visitRelates(GraqlParser.RelatesContext ctx) {
+        return var -> var.relates(visitVariable(ctx.variable()));
     }
 
     @Override
@@ -539,11 +539,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public UnaryOperator<Var> visitHasScope(GraqlParser.HasScopeContext ctx) {
         return var -> var.hasScope(var(getVariable(ctx.VARIABLE())));
-    }
-
-    @Override
-    public UnaryOperator<Var> visitPlays(GraqlParser.PlaysContext ctx) {
-        return var -> var.plays(visitVariable(ctx.variable()));
     }
 
     @Override

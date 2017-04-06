@@ -86,8 +86,8 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testQueryWithHasRoleToString() {
-        assertSameResults(qb.match(var("x").hasRole(var("y"))));
+    public void testQueryWithRelatesToString() {
+        assertSameResults(qb.match(var("x").relates(var("y"))));
     }
 
     @Test

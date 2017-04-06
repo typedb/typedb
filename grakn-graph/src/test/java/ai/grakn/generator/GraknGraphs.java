@@ -217,8 +217,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 RelationType relationType = relationType();
                 RoleType roleType = roleType();
-                relationType.hasRole(roleType);
-                summary(relationType, "hasRole", roleType);
+                relationType.relates(roleType);
+                summary(relationType, "relates", roleType);
             },
             () -> {
                 ResourceType resourceType1 = resourceType();

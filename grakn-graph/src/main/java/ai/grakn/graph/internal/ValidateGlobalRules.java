@@ -58,10 +58,10 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *     This class contains the implementation for the following validation rules:
  *     1. Plays Role Validation which ensures that a {@link Instance} is allowed to play the {@link RoleType}
  *        it has been assigned to.
- *     2. Has Role Validation which ensures that every {@link RoleType} which is not abstract is
- *        assigned to a {@link RelationType} via {@link RelationType#hasRole(RoleType)}.
+ *     2. Relates Validation which ensures that every {@link RoleType} which is not abstract is
+ *        assigned to a {@link RelationType} via {@link RelationType#relates(RoleType)}.
  *     3. Minimum Role Validation which ensures that every {@link RelationType} has at least 2 {@link RoleType}
- *        assigned to it via {@link RelationType#hasRole(RoleType)}.
+ *        assigned to it via {@link RelationType#relates(RoleType)}.
  *     4. Relation Structure Validation which ensures that each {@link ai.grakn.concept.Relation} has the
  *        correct structure.
  *     5. Abstract Type Validation which ensures that each abstract {@link Type} has no {@link Instance}.
@@ -121,9 +121,9 @@ class ValidateGlobalRules {
     /**
      *
      * @param roleType The RoleType to validate
-     * @return An error message if the hasRole does not have a single incoming HAS_ROLE edge
+     * @return An error message if the relates does not have a single incoming RELATES edge
      */
-    static Optional<String> validateHasSingleIncomingHasRoleEdge(RoleType roleType){
+    static Optional<String> validateHasSingleIncomingRelatesEdge(RoleType roleType){
         if(roleType.isAbstract()) {
             return Optional.empty();
         }
@@ -139,7 +139,7 @@ class ValidateGlobalRules {
      * @return An error message if the relationTypes does not have at least 2 roles
      */
     static Optional<String> validateHasMinimumRoles(RelationType relationType) {
-        if(relationType.isAbstract() || relationType.hasRoles().size() >= 1){
+        if(relationType.isAbstract() || relationType.relates().size() >= 1){
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_RELATION_TYPE.getMessage(relationType.getName()));
@@ -155,7 +155,7 @@ class ValidateGlobalRules {
     static Optional<String> validateRelationshipStructure(RelationImpl relation){
         RelationType relationType = relation.type();
         Set<CastingImpl> castings = relation.getMappingCasting();
-        Collection<RoleType> roleTypes = relationType.hasRoles();
+        Collection<RoleType> roleTypes = relationType.relates();
 
         Set<RoleType> rolesViaCastings = castings.stream().map(CastingImpl::getRole).collect(Collectors.toSet());
 
@@ -205,19 +205,19 @@ class ValidateGlobalRules {
 
         Set<String> errorMessages = new HashSet<>();
 
-        Collection<RoleType> superHasRoles = superRelationType.hasRoles();
-        Collection<RoleType> hasRoles = relationType.hasRoles();
-        Set<TypeName> hasRolesNames = hasRoles.stream().map(Type::getName).collect(Collectors.toSet());
+        Collection<RoleType> superRelates = superRelationType.relates();
+        Collection<RoleType> relates = relationType.relates();
+        Set<TypeName> relatesNames = relates.stream().map(Type::getName).collect(Collectors.toSet());
 
         //TODO: Determine if this check is redundant
-        //Check 1) Every role of relationTypes is the sub of a role which is in the hasRoles of it's supers
+        //Check 1) Every role of relationTypes is the sub of a role which is in the relates of it's supers
         if(!superRelationType.isAbstract()) {
             Set<TypeName> allSuperRolesPlayed = new HashSet<>();
-            superRelationType.superTypeSet().forEach(rel -> rel.hasRoles().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
+            superRelationType.superTypeSet().forEach(rel -> rel.relates().forEach(roleType -> allSuperRolesPlayed.add(roleType.getName())));
 
-            for (RoleType hasRole : hasRoles) {
+            for (RoleType relate : relates) {
                 boolean validRoleTypeFound = false;
-                Set<RoleType> superRoleTypes = ((RoleTypeImpl) hasRole).superTypeSet();
+                Set<RoleType> superRoleTypes = ((RoleTypeImpl) relate).superTypeSet();
                 for (RoleType superRoleType : superRoleTypes) {
                     if(allSuperRolesPlayed.contains(superRoleType.getName())){
                         validRoleTypeFound = true;
@@ -226,24 +226,24 @@ class ValidateGlobalRules {
                 }
 
                 if(!validRoleTypeFound){
-                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(hasRole.getName(), relationType.getName(), "super", "super", superRelationType.getName()));
+                    errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(relate.getName(), relationType.getName(), "super", "super", superRelationType.getName()));
                 }
             }
         }
 
-        //Check 2) Every role of superRelationType has a sub role which is in the hasRoles of relationTypes
-        for (RoleType superHasRole : superHasRoles) {
-            boolean subRoleNotFoundInHasRoles = true;
+        //Check 2) Every role of superRelationType has a sub role which is in the relates of relationTypes
+        for (RoleType superRelate : superRelates) {
+            boolean subRoleNotFoundInRelates = true;
 
-            for (RoleType subRoleType : superHasRole.subTypes()) {
-                if(hasRolesNames.contains(subRoleType.getName())){
-                    subRoleNotFoundInHasRoles = false;
+            for (RoleType subRoleType : superRelate.subTypes()) {
+                if(relatesNames.contains(subRoleType.getName())){
+                    subRoleNotFoundInRelates = false;
                     break;
                 }
             }
 
-            if(subRoleNotFoundInHasRoles){
-                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superHasRole.getName(), superRelationType.getName(), "sub", "sub", relationType.getName()));
+            if(subRoleNotFoundInRelates){
+                errorMessages.add(VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(superRelate.getName(), superRelationType.getName(), "sub", "sub", relationType.getName()));
             }
         }
 

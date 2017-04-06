@@ -203,7 +203,7 @@ public class GraknGraphPutPropertyTest {
             @Open GraknGraph graph, @Unused TypeName typeName) {
         RelationType relationType = graph.putRelationType(typeName);
         graph.showImplicitConcepts(true);
-        assertThat(relationType.hasRoles(), empty());
+        assertThat(relationType.relates(), empty());
     }
 
     @Property

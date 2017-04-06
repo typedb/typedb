@@ -241,7 +241,7 @@ public class GraknGraphTest extends GraphTestBase {
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
         EntityType e1 = graknGraph.putEntityType("e1").playsRole(r1).playsRole(r2);
-        RelationType rel1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
+        RelationType rel1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
         graknGraph.commit();
@@ -307,8 +307,8 @@ public class GraknGraphTest extends GraphTestBase {
         entityT.addEntity();
         RoleType roleT1 = graknGraph.putRoleType(roleType1);
         RoleType roleT2 = graknGraph.putRoleType(roleType2);
-        RelationType relationT1 = graknGraph.putRelationType(relationType1).hasRole(roleT1);
-        RelationType relationT2 = graknGraph.putRelationType(relationType2).hasRole(roleT2);
+        RelationType relationT1 = graknGraph.putRelationType(relationType1).relates(roleT1);
+        RelationType relationT2 = graknGraph.putRelationType(relationType2).relates(roleT2);
         ResourceType<String> resourceT = graknGraph.putResourceType(resourceType, ResourceType.DataType.STRING);
         graknGraph.commit();
 
@@ -318,8 +318,8 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, () -> resourceT.putResource("A resource"));
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
         failMutation(graknGraph, () -> entityT.playsRole(roleT1));
-        failMutation(graknGraph, () -> relationT1.hasRole(roleT2));
-        failMutation(graknGraph, () -> relationT2.hasRole(roleT1));
+        failMutation(graknGraph, () -> relationT1.relates(roleT2));
+        failMutation(graknGraph, () -> relationT2.relates(roleT1));
     }
     private void failMutation(GraknGraph graph, Runnable mutator){
         int vertexCount = graph.admin().getTinkerTraversal().toList().size();
@@ -372,14 +372,14 @@ public class GraknGraphTest extends GraphTestBase {
                 "qa sub user-interaction\n" +
                 "    has-resource helpful-votes\n" +
                 "    has-resource unhelpful-votes\n" +
-                "    has-role asked-question\n" +
-                "    has-role given-answer\n" +
-                "    has-role item;\n" +
+                "    relates asked-question\n" +
+                "    relates given-answer\n" +
+                "    relates item;\n" +
                 "product-review sub user-interaction\n" +
                 "    has-resource rating\n" +
-                "    has-role reviewer\n" +
-                "    has-role feedback\n" +
-                "    has-role item;\n" +
+                "    relates reviewer\n" +
+                "    relates feedback\n" +
+                "    relates item;\n" +
                 "comment sub entity\n" +
                 "    has-resource text\n" +
                 "    has-resource time;\n" +
@@ -423,12 +423,12 @@ public class GraknGraphTest extends GraphTestBase {
                 "    plays-role recommended;\n" +
                 "name sub resource datatype string;\n" +
                 "hierarchy sub relation\n" +
-                "    has-role subcategory\n" +
-                "    has-role supercategory;\n" +
+                "    relates subcategory\n" +
+                "    relates supercategory;\n" +
                 "category-assignment sub relation\n" +
                 "    has-resource rank\n" +
-                "    has-role item #product\n" +
-                "    has-role label; #category \n" +
+                "    relates item #product\n" +
+                "    relates label; #category \n" +
                 "rank sub resource datatype long;\n" +
                 "user sub entity\n" +
                 "    has-resource uid\n" +
@@ -438,30 +438,30 @@ public class GraknGraphTest extends GraphTestBase {
                 "uid sub ID;\n" +
                 "username sub name;\n" +
                 "completed-recommendation sub relation\n" +
-                "    has-role successful-recommendation\n" +
-                "    has-role buyer;\n" +
+                "    relates successful-recommendation\n" +
+                "    relates buyer;\n" +
                 "implied-recommendation sub relation\n" +
-                "    has-role category-recommendation\n" +
-                "    has-role product-recommendation;\n" +
+                "    relates category-recommendation\n" +
+                "    relates product-recommendation;\n" +
                 "recommendation sub relation is-abstract\n" +
                 "    plays-role successful-recommendation\n" +
                 "    plays-role product-recommendation;\n" +
                 "co-categories sub relation\n" +
                 "    plays-role category-recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "also-viewed sub recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "also-bought sub recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "bought-together sub recommendation\n" +
-                "    has-role item\n" +
-                "    has-role recommended;\n" +
+                "    relates item\n" +
+                "    relates recommended;\n" +
                 "transaction sub relation\n" +
-                "    has-role buyer\n" +
-                "    has-role item;\n" +
+                "    relates buyer\n" +
+                "    relates item;\n" +
                 "asked-question sub role;\n" +
                 "given-answer sub role;\n" +
                 "item sub role;\n" +

@@ -48,12 +48,12 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.id;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inHasRole;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRelates;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.name;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outHasRole;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRelates;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
@@ -119,10 +119,10 @@ public class GraqlTraversalTest {
     }
 
     @Test
-    public void testHasRoleFasterFromRoleType() {
-        GraqlTraversal hasRoleFromRelationType = traversal(yId, outHasRole(y, x), xId);
-        GraqlTraversal hasRoleFromRoleType = traversal(xId, inHasRole(x, y), yId);
-        assertFaster(hasRoleFromRoleType, hasRoleFromRelationType);
+    public void testRelatesFasterFromRoleType() {
+        GraqlTraversal relatesFromRelationType = traversal(yId, outRelates(y, x), xId);
+        GraqlTraversal relatesFromRoleType = traversal(xId, inRelates(x, y), yId);
+        assertFaster(relatesFromRoleType, relatesFromRelationType);
     }
 
     @Test

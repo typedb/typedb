@@ -527,11 +527,11 @@ public class MatchQueryTest {
     @Test
     public void testSubRelationType() {
         qb.insert(
-                name("ownership").sub("relation").hasRole("owner").hasRole("possession"),
+                name("ownership").sub("relation").relates("owner").relates("possession"),
                 name("organization-with-shares").sub("possession"),
                 name("possession").sub("role"),
 
-                name("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
+                name("share-ownership").sub("ownership").relates("shareholder").relates("organization-with-shares"),
                 name("shareholder").sub("owner"),
                 name("owner").sub("role"),
 
@@ -780,25 +780,6 @@ public class MatchQueryTest {
     @Test
     public void testQueryDoesNotCrash() {
         qb.parse("match $m isa movie; (actor: $a1, $m); (actor: $a2, $m); select $a1, $a2;").execute();
-    }
-
-    @Test
-    public void testPlaysQuery() {
-        List<Map<String, Concept>> queryWithRelation = qb.match(var().rel("actor", "x")).distinct().execute();
-        List<Map<String, Concept>> queryWithPlays = qb.match(var("x").plays("actor")).execute();
-
-        assertEquals(queryWithRelation, queryWithPlays);
-    }
-
-    @Test
-    public void testPlaysQueryVariable() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").plays(var("x")));
-        Set<String> roles = query.get("x").map(concept -> concept.asType().getName().getValue()).collect(toSet());
-
-        assertEquals(
-                Sets.newHashSet("production-with-cast", "production-with-genre", "production-with-cluster", "concept", "role"),
-                roles
-        );
     }
 
     @Test

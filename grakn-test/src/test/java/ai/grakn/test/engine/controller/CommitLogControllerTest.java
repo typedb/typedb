@@ -27,9 +27,10 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -47,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 
 public class CommitLogControllerTest {
     private final String KEYSPACE = "test";
-    private final EngineCache cache = EngineCache.getInstance();
+    private final ConceptCache cache = EngineCacheProvider.getCache();
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -82,7 +83,7 @@ public class CommitLogControllerTest {
     @Test
     public void checkDirectClearWorks(){
         GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, KEYSPACE).open(GraknTxType.WRITE);
-        test.admin().clear(EngineCache.getInstance());
+        test.admin().clear(EngineCacheProvider.getCache());
         assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
     }
@@ -129,7 +130,7 @@ public class CommitLogControllerTest {
     private void addSomeData(GraknGraph graph) throws GraknValidationException {
         RoleType role1 = graph.putRoleType("Role 1");
         RoleType role2 = graph.putRoleType("Role 2");
-        RelationType relationType = graph.putRelationType("A Relation Type").hasRole(role1).hasRole(role2);
+        RelationType relationType = graph.putRelationType("A Relation Type").relates(role1).relates(role2);
         EntityType type = graph.putEntityType("A Thing").playsRole(role1).playsRole(role2);
         ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).playsRole(role1).playsRole(role2);
         Entity entity = type.addEntity();

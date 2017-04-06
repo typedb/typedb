@@ -89,7 +89,7 @@ public class ResourceDeduplicationMapReduceTestIT {
         near1 = graph.putRoleType("near1");
         near2 = graph.putRoleType("near2");
         near3 = graph.putRoleType("near3");        
-        nearby.hasRole(near1).hasRole(near2).hasRole(near3);
+        nearby.relates(near1).relates(near2).relates(near3);
         nearby.resource(stringResource).resource(longResource).resource(integerResource)
               .resource(booleanResource).resource(floatResource).resource(doubleResource);
         related = graph.putRelationType("related");
@@ -98,7 +98,7 @@ public class ResourceDeduplicationMapReduceTestIT {
         related3 = graph.putRoleType("related3");
         related4 = graph.putRoleType("related4");
         related5 = graph.putRoleType("related5");
-        related.hasRole(related1).hasRole(related2).hasRole(related3).hasRole(related4).hasRole(related5);
+        related.relates(related1).relates(related2).relates(related3).relates(related4).relates(related5);
         thing.resource(stringResource);
         thing.resource(longResource);
         thing.resource(integerResource);

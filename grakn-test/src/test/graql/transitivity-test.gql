@@ -9,27 +9,27 @@ insert
 
 "R-role-A" sub role;
 "R-role-B" sub role;
-"R" sub relation, has-role R-role-A, has-role R-role-B;
+"R" sub relation, relates R-role-A, relates R-role-B;
 entity2 plays-role R-role-A, plays-role R-role-B;
 
 "E-role-A" sub role;
 "E-role-B" sub role;
-"E" sub relation, has-role E-role-A, has-role E-role-B;
+"E" sub relation, relates E-role-A, relates E-role-B;
 entity2 plays-role E-role-A, plays-role E-role-B;
 
 "F-role-A" sub role;
 "F-role-B" sub role;
-"F" sub relation, has-role F-role-A, has-role F-role-B;
+"F" sub relation, relates F-role-A, relates F-role-B;
 entity2 plays-role F-role-A, plays-role F-role-B;
 
 "G-role-A" sub role;
 "G-role-B" sub role;
-"G" sub relation, has-role G-role-A, has-role G-role-B;
+"G" sub relation, relates G-role-A, relates G-role-B;
 entity2 plays-role G-role-A, plays-role G-role-B;
 
 "H-role-A" sub role;
 "H-role-B" sub role;
-"H" sub relation, has-role H-role-A, has-role H-role-B;
+"H" sub relation, relates H-role-A, relates H-role-B;
 entity2 plays-role H-role-A, plays-role H-role-B;
 
 "index" sub resource, datatype string;

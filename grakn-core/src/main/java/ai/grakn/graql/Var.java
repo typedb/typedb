@@ -156,14 +156,14 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var hasRole(String type);
+    Var relates(String type);
 
     /**
      * @param type a role type that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
-    Var hasRole(Var type);
+    Var relates(Var type);
 
     /**
      * @param type a role type id that this concept type variable must play
@@ -271,24 +271,6 @@ public interface Var extends Pattern {
      */
     @CheckReturnValue
     Var rel(Var roletype, Var roleplayer);
-
-    /**
-     * the variable must play the given role type
-     *
-     * @param roleType the role type the variable must play
-     * @return this
-     */
-    @CheckReturnValue
-    Var plays(String roleType);
-
-    /**
-     * the variable must play the given role type
-     *
-     * @param roleType the role type the variable must play
-     * @return this
-     */
-    @CheckReturnValue
-    Var plays(Var roleType);
 
     /**
      * set this concept type variable as abstract, meaning it cannot have direct instances

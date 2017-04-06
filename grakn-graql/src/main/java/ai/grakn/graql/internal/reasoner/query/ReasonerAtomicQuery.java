@@ -221,7 +221,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Set<VarName> rolePlayers = relAtom.getRolePlayers();
             if (relAtom.getRoleVarTypeMap().size() != rolePlayers.size()) {
                 RelationType relType = (RelationType) relAtom.getType();
-                Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
+                Set<RoleType> roles = Sets.newHashSet(relType.relates());
                 Set<Map<VarName, Var>> roleMaps = new HashSet<>();
                 Utility.computeRoleCombinations(rolePlayers, roles, new HashMap<>(), roleMaps);
 

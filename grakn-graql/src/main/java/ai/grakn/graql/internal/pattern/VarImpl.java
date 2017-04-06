@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
+import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
@@ -43,7 +43,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
-import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -194,13 +193,13 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasRole(String type) {
-        return hasRole(Graql.name(type));
+    public Var relates(String type) {
+        return relates(Graql.name(type));
     }
 
     @Override
-    public Var hasRole(Var type) {
-        return addProperty(new HasRoleProperty(type.admin()));
+    public Var relates(Var type) {
+        return addProperty(new RelatesProperty(type.admin()));
     }
 
     @Override
@@ -266,16 +265,6 @@ class VarImpl implements VarAdmin {
     @Override
     public Var rel(Var roletype, Var roleplayer) {
         return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
-    }
-
-    @Override
-    public Var plays(String roleType) {
-        return plays(Graql.name(roleType));
-    }
-
-    @Override
-    public Var plays(Var roleType) {
-        return addProperty(new PlaysProperty(roleType.admin()));
     }
 
     @Override

@@ -30,9 +30,10 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.EngineCache;
+import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -54,12 +55,12 @@ import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private EngineCache cache = EngineCache.getInstance();
+    private ConceptCache cache = EngineCacheProvider.getCache();
 
     private GraknGraph graph;
 
     @ClassRule
-    public static final EngineContext engine = EngineContext.startSingleQueueServer();
+    public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @BeforeClass
     public static void onlyRunOnTinker(){
@@ -68,6 +69,7 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
+        EngineCacheProvider.getCache().getKeyspaces().forEach(k -> EngineCacheProvider.getCache().clearAllJobs(k));
         graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
     }
 
@@ -83,7 +85,7 @@ public class PostProcessingTest {
         //Create Scenario
         RoleType roleType1 = graph.putRoleType("role 1");
         RoleType roleType2 = graph.putRoleType("role 2");
-        graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        graph.putRelationType("rel type").relates(roleType1).relates(roleType2);
         graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
 
         GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, graph.getKeyspace());

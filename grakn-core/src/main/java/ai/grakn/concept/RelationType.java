@@ -102,7 +102,7 @@ public interface RelationType extends Type {
      *
      * @return A list of the RoleTypes which make up this RelationType.
      */
-    Collection<RoleType> hasRoles();
+    Collection<RoleType> relates();
 
     //------------------------------------- Edge Handling ----------------------------------
 
@@ -113,7 +113,7 @@ public interface RelationType extends Type {
      * @param roleType A new role which is part of this relationship.
      * @return The RelationType itself.
      */
-    RelationType hasRole(RoleType roleType);
+    RelationType relates(RoleType roleType);
 
     //------------------------------------- Other ----------------------------------
 
@@ -124,7 +124,7 @@ public interface RelationType extends Type {
      * @param roleType The RoleType to delete from the RelationType.
      * @return The RelationType itself.
      */
-    RelationType deleteHasRole(RoleType roleType);
+    RelationType deleteRelates(RoleType roleType);
 
     //---- Inherited Methods
     /**

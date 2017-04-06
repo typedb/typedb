@@ -49,13 +49,13 @@ public class TypeMapper {
     }
 
     /**
-     * Map a RelationType to a Var with all of the has-role edges
+     * Map a RelationType to a Var with all of the relates edges
      * @param var holder var with basic information
      * @param relationType type to be mapped
      * @return var with RelationType specific metadata
      */
     private static Var map(Var var, RelationType relationType) {
-        return hasRoles(var, relationType);
+        return relates(var, relationType);
     }
 
     /**
@@ -110,14 +110,14 @@ public class TypeMapper {
     }
 
     /**
-     * Add has-role edges to a var, given a type
+     * Add relates edges to a var, given a type
      * @param var var to be modified
      * @param type type from which metadata extracted
-     * @return var with appropriate has-role edges
+     * @return var with appropriate relates edges
      */
-    private static Var hasRoles(Var var, RelationType type){
-        for(RoleType role:type.hasRoles()){
-            var = var.hasRole(name(role.getName()));
+    private static Var relates(Var var, RelationType type){
+        for(RoleType role:type.relates()){
+            var = var.relates(name(role.getName()));
         }
         return var;
     }
