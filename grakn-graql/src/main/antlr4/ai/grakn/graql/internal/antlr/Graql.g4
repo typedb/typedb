@@ -81,7 +81,7 @@ property       : 'isa' variable                 # isa
                | 'has' name? VARIABLE           # propHasVariable
                | 'has' name predicate           # propHas
                | 'has-resource' variable        # propResource
-               | 'has-key' variable             # propKey
+               | 'key' variable                 # propKey
                | '(' casting (',' casting)* ')' # propRel
                | 'is-abstract'                  # isAbstract
                | 'datatype' DATATYPE            # propDatatype

@@ -47,7 +47,7 @@ import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
 import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 
 /**
- * Represents the {@code has-resource} and {@code has-key} properties on a {@link Type}.
+ * Represents the {@code has-resource} and {@code key} properties on a {@link Type}.
  *
  * This property can be queried or inserted. Whether this is a key is indicated by the
  * {@link HasResourceTypeProperty#required} field.
@@ -106,7 +106,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public String getName() {
-        return required ? "has-key" : "has-resource";
+        return required ? "key" : "has-resource";
     }
 
     @Override

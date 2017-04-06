@@ -593,7 +593,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseKey() {
-        assertEquals("match $x has-key name;", parse("match $x has-key name;").toString());
+        assertEquals("match $x key name;", parse("match $x key name;").toString());
     }
 
     @Test

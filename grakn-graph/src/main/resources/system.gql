@@ -40,7 +40,7 @@ scheduled-task has-resource status,
 # Keep track of all keyspaces in system.
 keyspace sub entity;
 keyspace-name sub resource, datatype string;
-keyspace has-key keyspace-name;
+keyspace key keyspace-name;
 
 # Users
 user sub entity;
@@ -52,7 +52,7 @@ user-last-name sub resource, datatype string;
 user-email sub resource, datatype string;
 user-is-admin sub resource, datatype boolean;
 
-user has-key user-name;
+user key user-name;
 
 user has-resource user-password,
      has-resource user-password-salt,
