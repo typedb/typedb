@@ -159,7 +159,7 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
     }
 
     @Override
-    public void deleteJobCasting(String keyspace, TypeName name) {
+    public void deleteJobInstanceCount(String keyspace, TypeName name) {
         getInstanceCountJobs(keyspace).remove(name);
     }
 }

@@ -19,6 +19,7 @@
 package ai.grakn.test.engine.cache;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.test.EngineContext;
@@ -60,7 +61,7 @@ public class EngineCacheDistributedTest {
     }
 
     @Test
-    public void whenDeletingJobsFromCache_EnsureJobsAreNoLongerInCache(){
+    public void whenDeletingFixingJobsFromCache_EnsureJobsAreNoLongerInCache(){
         String keyspace = "my_fake_keyspace";
 
         //Fake Commit Logs
@@ -109,7 +110,7 @@ public class EngineCacheDistributedTest {
     }
 
     @Test
-    public void whenAddingJobsToCacheOfSameKeyspace_EnsureCacheContainsJobs(){
+    public void whenAddingFixingJobsToCacheOfSameKeyspace_EnsureCacheContainsJobs(){
         String keyspace = "my_fake_keyspace";
 
         //Fake Commit Logs
@@ -134,7 +135,7 @@ public class EngineCacheDistributedTest {
     }
 
     @Test
-    public void whenAddingJobsToCacheOfDifferentKeySpaces_EnsureCacheContainsJob(){
+    public void whenAddingFixingJobsToCacheOfDifferentKeySpaces_EnsureCacheContainsJob(){
         String keyspace1 = "key1";
         String keyspace2 = "key2";
 
@@ -155,6 +156,28 @@ public class EngineCacheDistributedTest {
         checkContentsOfCache(cache.getResourceJobs(keyspace1), key1_resourcesFake);
         checkContentsOfCache(cache.getCastingJobs(keyspace2), key2_castingsFake);
         checkContentsOfCache(cache.getResourceJobs(keyspace2), key2_resourcesFake);
+    }
+
+    @Test
+    public void whenAddingAndRemovingInstanceJobsToCache_CacheIsUpdated(){
+        String keyspace1 = "key1";
+
+        //Create fake commit log
+        Map<TypeName, Long> fakeCache = new HashMap<>();
+        fakeCache.put(TypeName.of("A"), 1L);
+        fakeCache.put(TypeName.of("B"), 2L);
+        fakeCache.put(TypeName.of("C"), 3L);
+
+        fakeCache.entrySet().forEach(entry -> cache.addJobInstanceCount(keyspace1, entry.getKey(), entry.getValue()));
+
+        assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
+        assertEquals(fakeCache.values(), cache.getInstanceCountJobs(keyspace1).values());
+
+        fakeCache.remove(TypeName.of("B"));
+        cache.deleteJobInstanceCount(keyspace1, TypeName.of("B"));
+
+        assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
+        assertEquals(fakeCache.values(), cache.getInstanceCountJobs(keyspace1).values());
     }
 
     private Map<String, Set<ConceptId>> createFakeInternalConceptLog(String indexPrefix, int numIndex, int numJobs){

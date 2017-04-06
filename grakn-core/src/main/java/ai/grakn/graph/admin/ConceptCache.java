@@ -79,7 +79,7 @@ public interface ConceptCache {
      * @param keyspace The keyspace of the concepts
      * @param name The name of the type with new or removed instances
      */
-    void deleteJobCasting(String keyspace, TypeName name);
+    void deleteJobInstanceCount(String keyspace, TypeName name);
 
     //-------------------- Casting Jobs
     /**
