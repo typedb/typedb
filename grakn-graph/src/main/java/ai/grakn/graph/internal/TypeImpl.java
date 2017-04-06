@@ -671,13 +671,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
     }
 
-    private Long getInstanceCount(){
+    public long getInstanceCount(){
         Long value = getProperty(Schema.ConceptProperty.INSTANCE_COUNT);
         if(value == null) return 0L;
         return value;
     }
 
-    private void setInstanceCount(Long instanceCount){
+    public void setInstanceCount(Long instanceCount){
         setProperty(Schema.ConceptProperty.INSTANCE_COUNT, instanceCount);
     }
 }
