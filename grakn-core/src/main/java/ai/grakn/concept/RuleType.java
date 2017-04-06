@@ -121,14 +121,14 @@ public interface RuleType extends Type {
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Rule Type itself
      */
-    RuleType playsRole(RoleType roleType);
+    RuleType plays(RoleType roleType);
 
     /**
      *
      * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Rule Type itself
      */
-    RuleType deletePlaysRole(RoleType roleType);
+    RuleType deletePlays(RoleType roleType);
 
     /**
      *

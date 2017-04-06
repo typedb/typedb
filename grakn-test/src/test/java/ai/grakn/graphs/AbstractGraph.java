@@ -56,16 +56,16 @@ public class AbstractGraph extends TestGraph {
         RELRoleB = graph.putRoleType("REL-roleB");
         REL = graph.putRelationType("REL").relates(RELRoleA).relates(RELRoleB);
 
-        P = graph.putEntityType("P").playsRole(RELRoleA).playsRole(RELRoleB);
+        P = graph.putEntityType("P").plays(RELRoleA).plays(RELRoleB);
         P.resource(key);
-        Q = graph.putEntityType("Q").playsRole(RELRoleB).playsRole(RELRoleA);
-        p = graph.putEntityType("p").playsRole(relRoleA).playsRole(RELRoleA);
-        q = graph.putEntityType("q").playsRole(relRoleB).playsRole(RELRoleB);
-        r = graph.putEntityType("r").playsRole(relRoleA).playsRole(RELRoleA);
-        s = graph.putEntityType("s").playsRole(relRoleB).playsRole(RELRoleB);
-        u = graph.putEntityType("u").playsRole(relRoleA).playsRole(RELRoleA);
+        Q = graph.putEntityType("Q").plays(RELRoleB).plays(RELRoleA);
+        p = graph.putEntityType("p").plays(relRoleA).plays(RELRoleA);
+        q = graph.putEntityType("q").plays(relRoleB).plays(RELRoleB);
+        r = graph.putEntityType("r").plays(relRoleA).plays(RELRoleA);
+        s = graph.putEntityType("s").plays(relRoleB).plays(RELRoleB);
+        u = graph.putEntityType("u").plays(relRoleA).plays(RELRoleA);
         u.resource(key);
-        t = graph.putEntityType("t").playsRole(relRoleB).playsRole(RELRoleB);
+        t = graph.putEntityType("t").plays(relRoleB).plays(RELRoleB);
         t.resource(key);
     }
 

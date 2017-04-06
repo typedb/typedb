@@ -69,7 +69,7 @@ public interface RoleType extends Type {
      * @param roleType The RoleType which the instances of this Type are allowed to play.
      * @return The RoleType itself
      */
-    RoleType playsRole(RoleType roleType);
+    RoleType plays(RoleType roleType);
 
     /**
      * Removes the RoleType to prevent instances from playing it
@@ -77,7 +77,7 @@ public interface RoleType extends Type {
      * @param roleType The RoleType which the instances of this Type should no longer be allowed to play.
      * @return The RoleType itself
      */
-    RoleType deletePlaysRole(RoleType roleType);
+    RoleType deletePlays(RoleType roleType);
 
 
     /**

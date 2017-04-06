@@ -6,11 +6,11 @@ insert
 
 "entity2" sub entity
     has index
-    plays-role P-from plays-role P-to
-    plays-role Q1-from plays-role Q1-to
-    plays-role Q2-from plays-role Q2-to
-    plays-role R1-from plays-role R1-to
-    plays-role R2-from plays-role R2-to;
+    plays P-from plays P-to
+    plays Q1-from plays Q1-to
+    plays Q2-from plays Q2-to
+    plays R1-from plays R1-to
+    plays R2-from plays R2-to;
 
 "start" sub entity2;
 "end" sub entity2;

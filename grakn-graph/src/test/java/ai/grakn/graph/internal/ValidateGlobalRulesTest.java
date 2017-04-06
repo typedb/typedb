@@ -43,7 +43,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
 
     @Test
-    public void testValidatePlaysRoleStructure() throws Exception {
+    public void testValidatePlaysStructure() throws Exception {
         Type fakeType = graknGraph.putEntityType("Fake Concept");
         EntityTypeImpl wolf = (EntityTypeImpl) graknGraph.putEntityType("wolf");
         EntityTypeImpl creature = (EntityTypeImpl) graknGraph.putEntityType("creature");
@@ -58,38 +58,38 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         RelationImpl assertion = (RelationImpl) hunts.addRelation().
                 addRolePlayer(witcher, geralt).addRolePlayer(monster, werewolf);
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+            assertTrue(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
         }
 
-        hunter.playsRole(witcher);
+        hunter.plays(witcher);
 
         boolean [] flags = {false, false};
         int count = 0;
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            flags[count] = ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent();
+            flags[count] = ValidateGlobalRules.validatePlaysStructure(casting).isPresent();
             count++;
         }
         assertFalse(flags[0] && flags[1]);
         assertTrue(flags[0] || flags[1]);
 
         wolf.superType(creature);
-        creature.playsRole(monster);
+        creature.plays(monster);
 
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+            assertFalse(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
         }
     }
 
     @Test
-    public void testValidatePlaysRoleStructureUnique() {
+    public void testValidatePlaysStructureUnique() {
         RoleType role1 = graknGraph.putRoleType("role1");
         RoleType role2 = graknGraph.putRoleType("role2");
         RelationType relationType = graknGraph.putRelationType("rt").relates(role1).relates(role2);
 
         EntityType entityType = graknGraph.putEntityType("et");
 
-        ((EntityTypeImpl) entityType).playsRole(role1, true);
-        ((EntityTypeImpl) entityType).playsRole(role2, false);
+        ((EntityTypeImpl) entityType).plays(role1, true);
+        ((EntityTypeImpl) entityType).plays(role2, false);
 
         Entity other1 = entityType.addEntity();
         Entity other2 = entityType.addEntity();
@@ -101,7 +101,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
 
         // Valid with only a single relation
         relation1.getMappingCasting().forEach(casting -> {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+            assertFalse(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
         });
 
         RelationImpl relation2 = (RelationImpl) relationType.addRelation()
@@ -110,12 +110,12 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         // Invalid with multiple relations
         relation1.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+                assertTrue(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
             }
         });
         relation2.getMappingCasting().forEach(casting -> {
             if (casting.getRole().equals(role1)) {
-                assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
+                assertTrue(ValidateGlobalRules.validatePlaysStructure(casting).isPresent());
             }
         });
     }
@@ -177,7 +177,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     public void testAbstractInstancesDoNotValidateSubTypes(){
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
-        EntityType entityType = graknGraph.putEntityType("entityType").playsRole(r1).playsRole(r2);
+        EntityType entityType = graknGraph.putEntityType("entityType").plays(r1).plays(r2);
         RelationType relationType = graknGraph.putRelationType("relationTypes").setAbstract(true);
         RelationType hasCast = graknGraph.putRelationType("has cast").superType(relationType).relates(r1).relates(r2);
 

@@ -3,10 +3,10 @@ insert
 # Entities
 
 person sub entity
-	plays-role parent
-	plays-role child
-	plays-role spouse1
-	plays-role spouse2
+	plays parent
+	plays child
+	plays spouse1
+	plays spouse2
 
 	has identifier
 	has firstname
@@ -50,28 +50,28 @@ child sub role;
 ## INFERRED
 
 person 
-	plays-role wife
-	plays-role husband
-	plays-role granddaughter
-	plays-role grandson
-	plays-role father-in-law
-	plays-role mother-in-law
-	plays-role daughter-in-law
-	plays-role son-in-law
-	plays-role son
-	plays-role daughter
-	plays-role sibling1
-	plays-role sibling2
-	plays-role grandparent
-	plays-role grandchild
-	plays-role cousin1
-	plays-role cousin2
-	plays-role child-in-law
-	plays-role parent-in-law
-	plays-role mother
-	plays-role father
-	plays-role grandmother
-	plays-role grandfather;
+	plays wife
+	plays husband
+	plays granddaughter
+	plays grandson
+	plays father-in-law
+	plays mother-in-law
+	plays daughter-in-law
+	plays son-in-law
+	plays son
+	plays daughter
+	plays sibling1
+	plays sibling2
+	plays grandparent
+	plays grandchild
+	plays cousin1
+	plays cousin2
+	plays child-in-law
+	plays parent-in-law
+	plays mother
+	plays father
+	plays grandmother
+	plays grandfather;
 
 marriage sub relation
 	relates husband
@@ -468,9 +468,9 @@ degree sub resource datatype long;
 group sub role;
 member sub role;
 grouping sub relation relates group relates member;
-cluster plays-role group;
-person plays-role member;
-marriage plays-role member;
+cluster plays group;
+person plays member;
+marriage plays member;
 
 #############################################################################
 #                                                                           #

@@ -26,8 +26,8 @@ weight sub resource
 knower sub role;
 known-about sub role;
 
-person plays-role knower;
-person plays-role known-about;
+person plays knower;
+person plays known-about;
 
 knows sub relation
 	relates knower
@@ -55,8 +55,8 @@ $ripple has lang "java";
 programmer sub role;
 programmed sub role;
 
-person plays-role programmer;
-software plays-role programmed;
+person plays programmer;
+software plays programmed;
 
 programming sub relation
 	relates programmer

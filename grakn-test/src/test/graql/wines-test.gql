@@ -48,7 +48,7 @@ insert
 
 "person" sub entity
     has name;
-person plays-role recommendation-owner;
+person plays recommendation-owner;
 person has preferred-context;
 person has preferred-body;
 person has preferred-dryness;
@@ -61,7 +61,7 @@ person has recommended-generic-wine-type;
 
 "wine" sub entity
     has name;
-wine plays-role recommended-wine;
+wine plays recommended-wine;
 
 #######################################################
 ######################DATA########################

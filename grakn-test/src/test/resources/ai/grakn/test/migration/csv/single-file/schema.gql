@@ -5,10 +5,10 @@ model sub entity
     has year
     has description
     has price
-    plays-role model-of-car;
+    plays model-of-car;
 make sub entity
     has name
-    plays-role make-of-car;
+    plays make-of-car;
 
 name sub resource datatype string;
 year sub resource datatype string;

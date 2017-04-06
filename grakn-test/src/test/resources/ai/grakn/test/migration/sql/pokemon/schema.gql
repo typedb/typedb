@@ -1,7 +1,7 @@
 insert
 
 pokemon sub entity
-    plays-role pokemon-with-type
+    plays pokemon-with-type
     has pokedex-no
     has description
     has height
@@ -16,7 +16,7 @@ weight sub resource datatype long;
 pokemon-type sub entity
     has description
     has type-id
-    plays-role type-of-pokemon;
+    plays type-of-pokemon;
 
 has-type sub relation
     relates pokemon-with-type

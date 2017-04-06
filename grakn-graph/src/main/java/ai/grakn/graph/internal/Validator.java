@@ -110,7 +110,7 @@ class Validator {
      * @param casting The casting to validate
      */
     private void validateCasting(CastingImpl casting){
-        ValidateGlobalRules.validatePlaysRoleStructure(casting).ifPresent(errorsFound::add);
+        ValidateGlobalRules.validatePlaysStructure(casting).ifPresent(errorsFound::add);
     }
 
     /**

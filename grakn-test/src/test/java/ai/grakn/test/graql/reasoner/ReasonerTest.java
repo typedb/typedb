@@ -490,9 +490,9 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingPlaysRole(){
+    public void testReasoningWithQueryContainingPlays(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y has name 'Poland';" +
+        String queryString = "match $x isa $type;$type plays geo-entity;$y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;";
         String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has resource $name;" +
                 "{" +
@@ -514,8 +514,8 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingPlaysRole2(){
-        String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
+    public void testReasoningWithQueryContainingPlays2(){
+        String queryString = "match $x isa person;$y isa $type;$type plays recommended-product;($x, $y) isa recommendation;";
         String queryString2 = "match $x isa person;$y isa $type;{$type type-name 'product';} or {$type type-name 'tag';};($x, $y) isa recommendation;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);

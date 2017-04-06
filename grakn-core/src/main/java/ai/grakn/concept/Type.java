@@ -61,7 +61,7 @@ public interface Type extends Concept {
      *
      * @throws ConceptException if this is a meta-type
      */
-    Type playsRole(RoleType roleType) throws ConceptException;
+    Type plays(RoleType roleType) throws ConceptException;
 
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
@@ -112,7 +112,7 @@ public interface Type extends Concept {
      *
      * @return A list of Role Types which instances of this Type can indirectly play.
      */
-    Collection<RoleType> playsRoles();
+    Collection<RoleType> plays();
 
     /**
      *
@@ -197,7 +197,7 @@ public interface Type extends Concept {
      * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
      * @return The Type itself.
      */
-    Type deletePlaysRole(RoleType roleType);
+    Type deletePlays(RoleType roleType);
 
     /**
      *
