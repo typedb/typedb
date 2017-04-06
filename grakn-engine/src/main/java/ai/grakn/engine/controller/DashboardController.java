@@ -84,8 +84,8 @@ public class DashboardController {
     public DashboardController(EngineGraknGraphFactory factory, Service spark){
         this.factory = factory;
 
-        spark.get(REST.WebPath.Dashboard.TYPES + REST.Request.ID,         this::typesOfConcept);
-        spark.get(REST.WebPath.Dashboard.EXPLORE + REST.Request.ID,       this::exploreConcept);
+        spark.get(REST.WebPath.Dashboard.TYPES + ID,         this::typesOfConcept);
+        spark.get(REST.WebPath.Dashboard.EXPLORE + ID,       this::exploreConcept);
         spark.get(REST.WebPath.Dashboard.EXPLAIN,       this::explainConcept);
         spark.get(REST.WebPath.Dashboard.PRECOMPUTE,    this::precomputeInferences);
     }

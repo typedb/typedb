@@ -76,7 +76,7 @@ public class ConceptController {
     public ConceptController(EngineGraknGraphFactory factory, Service spark){
         this.factory = factory;
 
-        spark.get(REST.WebPath.Concept.CONCEPT + REST.Request.ID,  this::conceptByIdentifier);
+        spark.get(REST.WebPath.Concept.CONCEPT + ID,  this::conceptByIdentifier);
         spark.get(REST.WebPath.Concept.ONTOLOGY,  this::ontology);
 
     }
