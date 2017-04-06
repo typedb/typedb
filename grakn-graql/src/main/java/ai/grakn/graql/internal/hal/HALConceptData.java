@@ -139,7 +139,7 @@ class HALConceptData {
         if (concept.isRelation()) {
             generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
             //Only when double clicking on a specific relation we want to fetch also the other relations the current one plays a role into.
-            embedRelationsPlaysRole(halResource, concept.asRelation());
+            embedRelationsPlays(halResource, concept.asRelation());
         }
         if (concept.isResource()) {
             generateOwnerInstances(halResource, concept.asResource(), separationDegree);
@@ -232,7 +232,7 @@ class HALConceptData {
 
         rel.allRolePlayers().forEach((roleType, instanceSet) -> {
             instanceSet.forEach(instance -> {
-                // Relations attached to relations are handled in embedRelationsPlaysRole method. che e' dove devo filtrare risorse
+                // Relations attached to relations are handled in embedRelationsPlays method. che e' dove devo filtrare risorse
                 // We filter out relations to resources.
                 if (instance != null && !instance.isRelation()) {
                     Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
@@ -264,8 +264,8 @@ class HALConceptData {
         }
     }
 
-    private void embedRelationsPlaysRole(Representation halResource, Relation rel) {
-        rel.playsRoles().forEach(roleTypeRel -> {
+    private void embedRelationsPlays(Representation halResource, Relation rel) {
+        rel.plays().forEach(roleTypeRel -> {
             rel.relations(roleTypeRel).forEach(relation -> {
                embedRelationsNotConnectedToResources(halResource,rel,relation,1);
             });

@@ -73,7 +73,7 @@ public class RelationTest extends GraphTestBase{
         role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
         role3 = (RoleTypeImpl) graknGraph.putRoleType("Role 3");
 
-        type = graknGraph.putEntityType("Main concept Type").playsRole(role1).playsRole(role2).playsRole(role3);
+        type = graknGraph.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
         relationType = graknGraph.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
 
         rolePlayer1 = (InstanceImpl) type.addEntity();
@@ -105,7 +105,7 @@ public class RelationTest extends GraphTestBase{
         RoleType role2 = graknGraph.putRoleType("Role 2");
         RoleType role3 = graknGraph.putRoleType("Role 3");
         RelationType relType = graknGraph.putRelationType("Rel Type").relates(role1).relates(role2).relates(role3);
-        EntityType entType = graknGraph.putEntityType("Entity Type").playsRole(role1).playsRole(role2).playsRole(role3);
+        EntityType entType = graknGraph.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
 
         //Data
         EntityImpl entity1r1 = (EntityImpl) entType.addEntity();
@@ -165,7 +165,7 @@ public class RelationTest extends GraphTestBase{
     public void whenCreatingRelation_EnsureUniqueHashIsCreatedBasedOnRolePlayers() throws GraknValidationException {
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
-        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        EntityType type = graknGraph.putEntityType("concept type").plays(roleType1).plays(roleType2);
         RelationType relationType = graknGraph.putRelationType("relation type").relates(roleType1).relates(roleType2);
 
         relationType.addRelation();
@@ -205,7 +205,7 @@ public class RelationTest extends GraphTestBase{
     public void whenAddingDuplicateRelations_Throw() throws GraknValidationException {
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
-        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        EntityType type = graknGraph.putEntityType("concept type").plays(roleType1).plays(roleType2);
         RelationType relationType = graknGraph.putRelationType("My relation type").relates(roleType1).relates(roleType2);
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
@@ -231,7 +231,7 @@ public class RelationTest extends GraphTestBase{
         RoleType roleType1 = graknGraph.putRoleType("role type 1");
         RoleType roleType2 = graknGraph.putRoleType("role type 2");
         RelationType relationType = graknGraph.putRelationType("A relation Type").relates(roleType1).relates(roleType2);
-        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        EntityType type = graknGraph.putEntityType("concept type").plays(roleType1).plays(roleType2);
         Instance instance1 = type.addEntity();
         Instance instance2 = type.addEntity();
 
@@ -250,8 +250,8 @@ public class RelationTest extends GraphTestBase{
     public void whenDeletingRelations_EnsureCastingsRemain(){
         RoleType entityRole = graknGraph.putRoleType("Entity Role");
         RoleType degreeRole = graknGraph.putRoleType("Degree Role");
-        EntityType entityType = graknGraph.putEntityType("Entity Type").playsRole(entityRole);
-        ResourceType<Long> degreeType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.LONG).playsRole(degreeRole);
+        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(entityRole);
+        ResourceType<Long> degreeType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.LONG).plays(degreeRole);
 
         RelationType hasDegree = graknGraph.putRelationType("Has Degree").relates(entityRole).relates(degreeRole);
 
@@ -277,7 +277,7 @@ public class RelationTest extends GraphTestBase{
         RoleType roleC = graknGraph.putRoleType("RoleC");
 
         RelationType relation = graknGraph.putRelationType("relation type").relates(roleA).relates(roleB).relates(roleC);
-        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleA).playsRole(roleB).playsRole(roleC);
+        EntityType type = graknGraph.putEntityType("concept type").plays(roleA).plays(roleB).plays(roleC);
         Entity a = type.addEntity();
         Entity b = type.addEntity();
         Entity c = type.addEntity();

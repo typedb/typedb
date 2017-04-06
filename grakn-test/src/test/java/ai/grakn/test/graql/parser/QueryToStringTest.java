@@ -81,8 +81,8 @@ public class QueryToStringTest {
     }
 
     @Test
-    public void testQueryWithPlaysRoleToString() {
-        assertSameResults(qb.match(var("x").playsRole(var("y"))));
+    public void testQueryWithPlaysToString() {
+        assertSameResults(qb.match(var("x").plays(var("y"))));
     }
 
     @Test
@@ -196,11 +196,6 @@ public class QueryToStringTest {
     public void testMatchInsertToString() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var("x").has("title", "hello"));
         assertEquals("match $x isa movie;\ninsert $x has title \"hello\";", query.toString());
-    }
-
-    @Test
-    public void testResourceWithoutTypeToString() {
-        assertSameResults(qb.match(var("x").has(var("y"))));
     }
 
     @Test

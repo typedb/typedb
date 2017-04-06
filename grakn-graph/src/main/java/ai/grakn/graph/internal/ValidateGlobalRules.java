@@ -56,7 +56,7 @@ import static ai.grakn.util.ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_T
  *
  * <p>
  *     This class contains the implementation for the following validation rules:
- *     1. Plays Role Validation which ensures that a {@link Instance} is allowed to play the {@link RoleType}
+ *     1. Plays Validation which ensures that a {@link Instance} is allowed to play the {@link RoleType}
  *        it has been assigned to.
  *     2. Relates Validation which ensures that every {@link RoleType} which is not abstract is
  *        assigned to a {@link RelationType} via {@link RelationType#relates(RoleType)}.
@@ -80,27 +80,27 @@ class ValidateGlobalRules {
     }
 
     /**
-     * This method checks if the plays-role edge has been added successfully. It does so By checking
-     * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS_ROLE-> X =
+     * This method checks if the plays edge has been added successfully. It does so By checking
+     * Casting -CAST-> ConceptInstance -ISA-> Concept -PLAYS-> X =
      * Casting -ISA-> X
      * @param casting The casting to be validated
      * @return A specific error if one is found.
      */
-    static Optional<String> validatePlaysRoleStructure(CastingImpl casting) {
+    static Optional<String> validatePlaysStructure(CastingImpl casting) {
         Instance rolePlayer = casting.getRolePlayer();
         TypeImpl<?, ?> currentConcept = (TypeImpl<?, ?>) rolePlayer.type();
         RoleType roleType = casting.getRole();
 
-        boolean satisfiesPlaysRole = false;
+        boolean satisfiesPlays = false;
 
         while(currentConcept != null){
-            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
+            Map<RoleType, Boolean> plays = currentConcept.directPlays();
 
-            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
-                RoleType playsRole = playsRoleEntry.getKey();
-                Boolean required = playsRoleEntry.getValue();
-                if(playsRole.getName().equals(roleType.getName())){
-                    satisfiesPlaysRole = true;
+            for (Map.Entry<RoleType, Boolean> playsEntry : plays.entrySet()) {
+                RoleType rolePlayed = playsEntry.getKey();
+                Boolean required = playsEntry.getValue();
+                if(rolePlayed.getName().equals(roleType.getName())){
+                    satisfiesPlays = true;
 
                     // Assert unique relation for this role type
                     if (required && rolePlayer.relations(roleType).size() != 1) {
@@ -111,7 +111,7 @@ class ValidateGlobalRules {
             currentConcept = (TypeImpl) currentConcept.superType();
         }
 
-        if(satisfiesPlaysRole) {
+        if(satisfiesPlays) {
             return Optional.empty();
         } else {
             return Optional.of(VALIDATION_CASTING.getMessage(rolePlayer.type().getName(), rolePlayer.getId(), casting.getRole().getName()));
@@ -260,10 +260,10 @@ class ValidateGlobalRules {
 
         while(currentConcept != null){
 
-            Map<RoleType, Boolean> playsRoles = currentConcept.directPlaysRoles();
-            for (Map.Entry<RoleType, Boolean> playsRoleEntry : playsRoles.entrySet()) {
-                if(playsRoleEntry.getValue()){
-                    RoleType roleType = playsRoleEntry.getKey();
+            Map<RoleType, Boolean> plays = currentConcept.directPlays();
+            for (Map.Entry<RoleType, Boolean> playsEntry : plays.entrySet()) {
+                if(playsEntry.getValue()){
+                    RoleType roleType = playsEntry.getKey();
                     // Assert there is a relation for this type
                     if (instance.relations(roleType).isEmpty()) {
                         return Optional.of(VALIDATION_INSTANCE.getMessage(instance.getId(), instance.type().getName(), roleType.getName()));

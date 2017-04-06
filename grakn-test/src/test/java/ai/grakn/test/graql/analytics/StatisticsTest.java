@@ -533,8 +533,8 @@ public class StatisticsTest {
 
             RoleType relation1 = graph.putRoleType("relation1");
             RoleType relation2 = graph.putRoleType("relation2");
-            entityType1.playsRole(relation1).playsRole(relation2);
-            entityType2.playsRole(relation1).playsRole(relation2);
+            entityType1.plays(relation1).plays(relation2);
+            entityType2.plays(relation1).plays(relation2);
             RelationType related = graph.putRelationType("related").relates(relation1).relates(relation2);
 
             related.addRelation()
@@ -587,29 +587,29 @@ public class StatisticsTest {
             graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(TypeName.of(resourceType7)))
                     .relates(resourceOwner7).relates(resourceValue7);
 
-            entityType1.playsRole(resourceOwner1)
-                    .playsRole(resourceOwner2)
-                    .playsRole(resourceOwner3)
-                    .playsRole(resourceOwner4)
-                    .playsRole(resourceOwner5)
-                    .playsRole(resourceOwner6)
-                    .playsRole(resourceOwner7);
-            entityType2.playsRole(resourceOwner1)
-                    .playsRole(resourceOwner2)
-                    .playsRole(resourceOwner3)
-                    .playsRole(resourceOwner4)
-                    .playsRole(resourceOwner5)
-                    .playsRole(resourceOwner6)
-                    .playsRole(resourceOwner7);
+            entityType1.plays(resourceOwner1)
+                    .plays(resourceOwner2)
+                    .plays(resourceOwner3)
+                    .plays(resourceOwner4)
+                    .plays(resourceOwner5)
+                    .plays(resourceOwner6)
+                    .plays(resourceOwner7);
+            entityType2.plays(resourceOwner1)
+                    .plays(resourceOwner2)
+                    .plays(resourceOwner3)
+                    .plays(resourceOwner4)
+                    .plays(resourceOwner5)
+                    .plays(resourceOwner6)
+                    .plays(resourceOwner7);
 
             resourceTypeList.forEach(resourceType -> resourceType
-                    .playsRole(resourceValue1)
-                    .playsRole(resourceValue2)
-                    .playsRole(resourceValue3)
-                    .playsRole(resourceValue4)
-                    .playsRole(resourceValue5)
-                    .playsRole(resourceValue6)
-                    .playsRole(resourceValue7));
+                    .plays(resourceValue1)
+                    .plays(resourceValue2)
+                    .plays(resourceValue3)
+                    .plays(resourceValue4)
+                    .plays(resourceValue5)
+                    .plays(resourceValue6)
+                    .plays(resourceValue7));
 
             graph.commit();
         }

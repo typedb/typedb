@@ -175,7 +175,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return A set of all the Role Types which this instance plays.
      */
     @Override
-    public Collection<RoleType> playsRoles() {
+    public Collection<RoleType> plays() {
         Set<RoleType> roleTypes = new HashSet<>();
         ConceptImpl<?> parent = this;
         parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(((CastingImpl)c).getRole()));

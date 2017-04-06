@@ -235,8 +235,8 @@ public class QueryParserTest {
 
     @Test
     public void testOntologyQuery() {
-        MatchQuery expected = match(var("x").playsRole("actor")).orderBy("x");
-        MatchQuery parsed = parse("match $x plays-role actor; order by $x asc;");
+        MatchQuery expected = match(var("x").plays("actor")).orderBy("x");
+        MatchQuery parsed = parse("match $x plays actor; order by $x asc;");
         assertEquals(expected, parsed);
     }
 
@@ -322,7 +322,7 @@ public class QueryParserTest {
                 name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolution").relates("evolves-from").relates("evolves-to"),
-                name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
+                name("pokemon").plays("evolves-from").plays("evolves-to").hasResource("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),
@@ -336,7 +336,7 @@ public class QueryParserTest {
                 "evolves-from sub role;" +
                 "type-name \"evolves-to\" sub role;" +
                 "evolution relates evolves-from, relates evolves-to;" +
-                "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
+                "pokemon plays evolves-from plays evolves-to has-resource name;" +
                 "$x has name 'Pichu' isa pokemon;" +
                 "$y has name 'Pikachu' isa pokemon;" +
                 "$z has name 'Raichu' isa pokemon;" +

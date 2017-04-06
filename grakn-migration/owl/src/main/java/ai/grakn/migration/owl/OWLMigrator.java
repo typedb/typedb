@@ -186,8 +186,8 @@ public class OWLMigrator {
         relType.relates(subjectRole);
         relType.relates(objectRole);
         EntityType top = this.owlThingEntityType();
-        top.playsRole(subjectRole);
-        top.playsRole(objectRole);
+        top.plays(subjectRole);
+        top.plays(objectRole);
         return relType;
     }
 
@@ -217,13 +217,13 @@ public class OWLMigrator {
 
     public RoleType entityRole(EntityType entityType, ResourceType<?> resourceType) {
         RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getName()));
-        entityType.playsRole(roleType);
+        entityType.plays(roleType);
         return roleType;
     }
     
     public RoleType resourceRole(ResourceType<?> resourceType) {
         RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getName()));
-        resourceType.playsRole(roleType);
+        resourceType.plays(roleType);
         return roleType;
     }
     

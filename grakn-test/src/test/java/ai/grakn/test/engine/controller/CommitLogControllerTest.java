@@ -131,8 +131,8 @@ public class CommitLogControllerTest {
         RoleType role1 = graph.putRoleType("Role 1");
         RoleType role2 = graph.putRoleType("Role 2");
         RelationType relationType = graph.putRelationType("A Relation Type").relates(role1).relates(role2);
-        EntityType type = graph.putEntityType("A Thing").playsRole(role1).playsRole(role2);
-        ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).playsRole(role1).playsRole(role2);
+        EntityType type = graph.putEntityType("A Thing").plays(role1).plays(role2);
+        ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).plays(role1).plays(role2);
         Entity entity = type.addEntity();
         Resource resource = resourceType.putResource(UUID.randomUUID().toString());
 

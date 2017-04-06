@@ -270,7 +270,7 @@ public class MatchQueryTest {
     @Test
     public void testOntologyQuery() {
         MatchQuery query = qb.match(
-                var("type").playsRole("character-being-played")
+                var("type").plays("character-being-played")
         );
 
         assertThat(query, variable("type", containsInAnyOrder(character, person)));
@@ -399,7 +399,7 @@ public class MatchQueryTest {
 
     @Test
     public void testTypeAsVariable() {
-        MatchQuery query = qb.match(name("genre").playsRole(var("x")));
+        MatchQuery query = qb.match(name("genre").plays(var("x")));
         assertThat(query, variable("x", contains(genreOfProduction)));
     }
 
@@ -535,8 +535,8 @@ public class MatchQueryTest {
                 name("shareholder").sub("owner"),
                 name("owner").sub("role"),
 
-                name("person").sub("entity").playsRole("shareholder"),
-                name("company").sub("entity").playsRole("organization-with-shares"),
+                name("person").sub("entity").plays("shareholder"),
+                name("company").sub("entity").plays("organization-with-shares"),
 
                 var("apple").isa("company"),
                 var("bob").isa("person"),
@@ -564,7 +564,7 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testGraqlPlaysRoleSemanticsMatchGraphAPI() {
+    public void testGraqlPlaysSemanticsMatchGraphAPI() {
         TypeName a = TypeName.of("a");
         TypeName b = TypeName.of("b");
         TypeName c = TypeName.of("c");
@@ -575,20 +575,20 @@ public class MatchQueryTest {
         qb.insert(
                 name(c).sub(name(b).sub(name(a).sub("entity"))),
                 name(f).sub(name(e).sub(name(d).sub("role"))),
-                name(b).playsRole(name(e))
+                name(b).plays(name(e))
         ).execute();
 
         GraknGraph graph = movieGraph.graph();
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
-            Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).playsRoles());
+            Set<Concept> graqlPlays = qb.match(name(type).plays(var("x"))).get("x").collect(Collectors.toSet());
+            Collection<RoleType> graphAPIPlays = new HashSet<>(graph.getType(type).plays());
 
-            assertEquals(graqlPlaysRoles, graphAPIPlaysRoles);
+            assertEquals(graqlPlays, graphAPIPlays);
         });
 
         Stream.of(d, e, f).forEach(type -> {
-            Set<Concept> graqlPlayedBy = qb.match(var("x").playsRole(name(type))).get("x").collect(toSet());
+            Set<Concept> graqlPlayedBy = qb.match(var("x").plays(name(type))).get("x").collect(toSet());
             Collection<Type> graphAPIPlayedBy = new HashSet<>(graph.<RoleType>getType(type).playedByTypes());
 
             assertEquals(graqlPlayedBy, graphAPIPlayedBy);
@@ -708,18 +708,6 @@ public class MatchQueryTest {
             Comparable y = (Comparable) result.get("y").asResource().getValue();
             assertThat(x, lessThanOrEqualTo(y));
         });
-    }
-
-    @Test
-    public void testMatchAllResources() {
-        MatchQuery query = qb.match(var().has("title", "Godfather").has(var("x")));
-
-        Instance godfather = movieGraph.graph().getResourceType("title").getResource("Godfather").owner();
-        Set<Resource<?>> expected = Sets.newHashSet(godfather.resources());
-
-        Set<Resource<?>> results = query.get("x").map(Concept::asResource).collect(toSet());
-
-        assertEquals(expected, results);
     }
 
     @Test

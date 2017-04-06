@@ -4,20 +4,20 @@ insert
 # Concept types
 
 person sub entity
-    plays-role philosopher
-    plays-role teacher
-    plays-role student
-    plays-role thinker
+    plays philosopher
+    plays teacher
+    plays student
+    plays thinker
     has-resource name
     has-resource title
     has-resource epithet;
 
 school sub entity
     has-resource name
-    plays-role philosophy;
+    plays philosophy;
 
 fact sub entity
-    plays-role thought
+    plays thought
     has-resource name
     has-resource description;
 
@@ -44,7 +44,7 @@ student sub role;
 knowledge sub relation
     relates thinker
     relates thought
-    plays-role thought;
+    plays thought;
 thinker sub role;
 thought sub role;
 

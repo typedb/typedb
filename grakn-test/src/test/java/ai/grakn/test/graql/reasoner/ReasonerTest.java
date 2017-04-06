@@ -409,7 +409,7 @@ public class ReasonerTest {
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match $x isa $type;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
-        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has $name;" +
+        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has resource $name;" +
                 "{" +
                 "{$name val 'Warsaw-Polytechnics' or $name val 'University-of-Warsaw';};" +
                 "{$type type-name 'university' or $type type-name 'entity' or $type type-name 'concept';};" +
@@ -506,13 +506,13 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingPlaysRole(){
+    public void testReasoningWithQueryContainingPlays(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
         String queryString = "match " +
-                "$x isa $type;$type plays-role geo-entity;"+
+                "$x isa $type;$type plays geo-entity;"+
                 "$y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;";
-        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has $name;" +
+        String explicitQuery = "match $y has name 'Poland';$x isa $type;$x has resource $name;" +
                 "{" +
                 "{$name val 'Europe';};" +
                 "{$type type-name 'continent' or $type type-name 'geoObject';};" +
@@ -536,8 +536,8 @@ public class ReasonerTest {
     //TODO takes ages - take a look at selection strategy
     @Ignore
     @Test
-    public void testReasoningWithQueryContainingPlaysRole2(){
-        String queryString = "match $x isa person;$y isa $type;$type plays-role recommended-product;($x, $y) isa recommendation;";
+    public void testReasoningWithQueryContainingPlays2(){
+        String queryString = "match $x isa person;$y isa $type;$type plays recommended-product;($x, $y) isa recommendation;";
         String queryString2 = "match $x isa person;$y isa $type;{$type type-name 'product';} or {$type type-name 'tag';};($x, $y) isa recommendation;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
@@ -943,7 +943,7 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingHas(){
         String queryString = "match $x isa person has name $y;";
-        String queryString2 = "match $x isa person has $y; $y isa name;";
+        String queryString2 = "match $x isa person has resource $y; $y isa name;";
         QueryBuilder iqb = snbGraph.graph().graql().infer(true).materialise(true);
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);

@@ -454,22 +454,18 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitPropHasVariable(GraqlParser.PropHasVariableContext ctx) {
-        Var resource = var(getVariable(ctx.VARIABLE()));
-
-        if (ctx.name() != null) {
-            TypeName type = visitName(ctx.name());
-            return var -> var.has(type, resource);
-        } else {
-            return var -> var.has(resource);
-        }
-    }
-
-    @Override
     public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
         TypeName type = visitName(ctx.name());
-        Var resource = var().val(visitPredicate(ctx.predicate()));
-        return var -> var.has(type, resource);
+
+        Var resource = ctx.VARIABLE() != null ? var(getVariable(ctx.VARIABLE())) : var();
+
+        if (ctx.predicate() != null) {
+            resource = resource.val(visitPredicate(ctx.predicate()));
+        }
+
+        Var finalResource = resource;
+
+        return var -> var.has(type, finalResource);
     }
 
     @Override
@@ -532,8 +528,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitPlaysRole(GraqlParser.PlaysRoleContext ctx) {
-        return var -> var.playsRole(visitVariable(ctx.variable()));
+    public UnaryOperator<Var> visitPlays(GraqlParser.PlaysContext ctx) {
+        return var -> var.plays(visitVariable(ctx.variable()));
     }
 
     @Override
