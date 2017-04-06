@@ -1049,4 +1049,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         String newHash = generateNewHash(relationType, allRolePlayers);
         getConceptLog().getModifiedRelations().put(newHash, foundRelation);
     }
+
+    @Override
+    public boolean updateTypeCounts(Map<TypeName, Long> typeCounts){
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

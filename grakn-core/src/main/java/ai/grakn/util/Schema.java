@@ -149,7 +149,7 @@ public final class Schema {
 
         //Other Properties
         TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class),
+        REGEX(String.class), DATA_TYPE(String.class), INSTANCE_COUNT(Long.class),
         RULE_LHS(String.class), RULE_RHS(String.class),
 
         //Supported Data Types
