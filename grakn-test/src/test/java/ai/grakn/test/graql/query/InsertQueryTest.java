@@ -500,28 +500,28 @@ public class InsertQueryTest {
         String resourceType = "a-new-resource-type";
 
         qb.insert(
-                name("a-new-type").sub("entity").hasKey(resourceType),
+                name("a-new-type").sub("entity").key(resourceType),
                 name(resourceType).sub("resource").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
-        assertTrue(qb.match(name("a-new-type").sub("entity").hasKey(resourceType)).ask().execute());
+        assertTrue(qb.match(name("a-new-type").sub("entity").key(resourceType)).ask().execute());
         assertTrue(qb.match(name("a-new-type").sub("entity").hasResource(resourceType)).ask().execute());
-        assertFalse(qb.match(name("a-new-type").sub("entity").hasKey("title")).ask().execute());
-        assertFalse(qb.match(name("movie").sub("entity").hasKey(resourceType)).ask().execute());
+        assertFalse(qb.match(name("a-new-type").sub("entity").key("title")).ask().execute());
+        assertFalse(qb.match(name("movie").sub("entity").key(resourceType)).ask().execute());
 
-        Var hasKey = name(HAS_KEY.getName(resourceType));
-        Var hasKeyOwner = name(HAS_KEY_OWNER.getName(resourceType));
-        Var hasKeyValue = name(HAS_KEY_VALUE.getName(resourceType));
+        Var key = name(HAS_KEY.getName(resourceType));
+        Var keyOwner = name(HAS_KEY_OWNER.getName(resourceType));
+        Var keyValue = name(HAS_KEY_VALUE.getName(resourceType));
 
         // Make sure the expected ontology elements are created
-        assertTrue(qb.match(hasKey.sub("relation")).ask().execute());
-        assertTrue(qb.match(hasKeyOwner.sub("role")).ask().execute());
-        assertTrue(qb.match(hasKeyValue.sub("role")).ask().execute());
-        assertTrue(qb.match(hasKey.relates(hasKeyOwner)).ask().execute());
-        assertTrue(qb.match(hasKey.relates(hasKeyValue)).ask().execute());
-        assertTrue(qb.match(name("a-new-type").playsRole(hasKeyOwner)).ask().execute());
-        assertTrue(qb.match(name(resourceType).playsRole(hasKeyValue)).ask().execute());
+        assertTrue(qb.match(key.sub("relation")).ask().execute());
+        assertTrue(qb.match(keyOwner.sub("role")).ask().execute());
+        assertTrue(qb.match(keyValue.sub("role")).ask().execute());
+        assertTrue(qb.match(key.relates(keyOwner)).ask().execute());
+        assertTrue(qb.match(key.relates(keyValue)).ask().execute());
+        assertTrue(qb.match(name("a-new-type").playsRole(keyOwner)).ask().execute());
+        assertTrue(qb.match(name(resourceType).playsRole(keyValue)).ask().execute());
     }
 
     @Test
@@ -530,7 +530,7 @@ public class InsertQueryTest {
         assumeTrue(usingTinker());
 
         qb.insert(
-                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-type").sub("entity").key("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello")
         ).execute();
@@ -541,7 +541,7 @@ public class InsertQueryTest {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
-                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-type").sub("entity").key("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type").has("a-new-resource-type", "hello").has("a-new-resource-type", "goodbye")
         ).execute();
@@ -556,7 +556,7 @@ public class InsertQueryTest {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
-                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-type").sub("entity").key("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var("x").isa("a-new-type").has("a-new-resource-type", "hello"),
                 var("y").isa("a-new-type").has("a-new-resource-type", "hello")
@@ -571,7 +571,7 @@ public class InsertQueryTest {
         assumeTrue(usingTinker()); // This should only run on tinker because it commits
 
         qb.insert(
-                name("a-new-type").sub("entity").hasKey("a-new-resource-type"),
+                name("a-new-type").sub("entity").key("a-new-resource-type"),
                 name("a-new-resource-type").sub("resource").datatype(ResourceType.DataType.STRING),
                 var().isa("a-new-type")
         ).execute();

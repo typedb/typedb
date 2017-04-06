@@ -800,7 +800,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchKey() {
-        MatchQuery query = qb.match(var("x").hasKey("name"));
+        MatchQuery query = qb.match(var("x").key("name"));
         assertThat(query, variable("x", contains(genre)));
     }
 

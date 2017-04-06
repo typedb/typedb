@@ -205,14 +205,14 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var hasKey(String type);
+    Var key(String type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to
      * @return this
      */
     @CheckReturnValue
-    Var hasKey(Var type);
+    Var key(Var type);
 
     /**
      * the variable must be a relation with the given roleplayer
