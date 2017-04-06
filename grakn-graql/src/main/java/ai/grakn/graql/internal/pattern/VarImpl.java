@@ -148,11 +148,6 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var has(Var var) {
-        return addProperty(HasResourceProperty.of(var.admin()));
-    }
-
-    @Override
     public Var has(String type, Object value) {
         return has(type, Graql.eq(value));
     }
