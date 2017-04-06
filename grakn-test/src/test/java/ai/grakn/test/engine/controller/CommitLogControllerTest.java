@@ -56,7 +56,7 @@ public class CommitLogControllerTest {
     @Before
     public void setUp() throws Exception {
         String commitLog = "{\n" +
-                "    \"concepts\":[\n" +
+                "    \"" + REST.Request.COMMIT_LOG_FIXING + "\":[\n" +
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"10\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"1\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"20\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"2\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"30\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"3\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +

@@ -78,7 +78,7 @@ public class CommitLogController {
     @ApiOperation(value = "Submits post processing jobs for a specific keyspace")
     @ApiImplicitParams({
         @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = "concepts", value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body")
+            @ApiImplicitParam(name = REST.Request.COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
         try {
@@ -89,7 +89,7 @@ public class CommitLogController {
             }
             LOG.info("Commit log received for graph [" + graphName + "]");
 
-            JSONArray jsonArray = (JSONArray) new JSONObject(req.body()).get("concepts");
+            JSONArray jsonArray = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_FIXING);
 
             for (Object object : jsonArray) {
                 JSONObject jsonObject = (JSONObject) object;
