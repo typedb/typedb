@@ -28,6 +28,7 @@ import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
@@ -58,6 +59,11 @@ public class StandaloneTaskManagerTest {
     @Before
     public void setUp() {
         taskManager = new StandaloneTaskManager(EngineID.of("hello")) ;
+    }
+
+    @After
+    public void shutdown() throws Exception {
+        taskManager.close();
     }
 
     @Test
