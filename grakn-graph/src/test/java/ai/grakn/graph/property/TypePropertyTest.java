@@ -237,7 +237,7 @@ public class TypePropertyTest {
         assumeTrue(sameType(subType, superType));
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getLabel()));
         setDirectSuperType(subType, superType);
     }
 
@@ -247,7 +247,7 @@ public class TypePropertyTest {
         Type newSuperType = choose(type.subTypes(), seed);
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getName(), newSuperType.getName()));
+        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(type.getLabel(), newSuperType.getLabel()));
         setDirectSuperType(type, newSuperType);
     }
 
@@ -268,7 +268,7 @@ public class TypePropertyTest {
         assumeTrue(sameType(subType, superType));
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(subType.getLabel()));
         addDirectSubType(superType, subType);
     }
 
@@ -278,7 +278,7 @@ public class TypePropertyTest {
         Type type = choose(newSubType.subTypes(), seed);
 
         exception.expect(ConceptException.class);
-        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getName(), type.getName()));
+        exception.expectMessage(SUPER_TYPE_LOOP_DETECTED.getMessage(newSubType.getLabel(), type.getLabel()));
         addDirectSubType(type, newSubType);
     }
 
