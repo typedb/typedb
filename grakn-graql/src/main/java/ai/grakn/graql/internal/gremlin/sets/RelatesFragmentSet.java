@@ -14,34 +14,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql.internal.gremlin.fragment;
+package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.graql.VarName;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
-import static ai.grakn.util.Schema.EdgeLabel.HAS_ROLE;
+/**
+ * @author Felix Chapman
+ */
+class RelatesFragmentSet extends EquivalentFragmentSet {
 
-class InHasRoleFragment extends AbstractFragment {
-
-    InHasRoleFragment(VarName start, VarName end) {
-        super(start, end);
-    }
-
-    @Override
-    public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.in(HAS_ROLE.getLabel());
-    }
-
-    @Override
-    public String getName() {
-        return "<-[has-role]-";
-    }
-
-    @Override
-    public double fragmentCost(double previousCost) {
-        return previousCost;
+    RelatesFragmentSet(VarName relationType, VarName roleType) {
+        super(Fragments.outRelates(relationType, roleType), Fragments.inRelates(roleType, relationType));
     }
 }

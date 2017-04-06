@@ -602,8 +602,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         RoleType ownerRole = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(resourceTypeName));
         RoleType valueRole = getGraknGraph().putRoleTypeImplicit(hasValue.getName(resourceTypeName));
         RelationType relationType = getGraknGraph().putRelationTypeImplicit(has.getName(resourceTypeName)).
-                hasRole(ownerRole).
-                hasRole(valueRole);
+                relates(ownerRole).
+                relates(valueRole);
 
         //Linking with ako structure if present
         ResourceType resourceTypeSuper = resourceType.superType();
@@ -612,7 +612,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             RoleType ownerRoleSuper = getGraknGraph().putRoleTypeImplicit(hasOwner.getName(superName));
             RoleType valueRoleSuper = getGraknGraph().putRoleTypeImplicit(hasValue.getName(superName));
             RelationType relationTypeSuper = getGraknGraph().putRelationTypeImplicit(has.getName(superName)).
-                    hasRole(ownerRoleSuper).hasRole(valueRoleSuper);
+                    relates(ownerRoleSuper).relates(valueRoleSuper);
 
             //Create the super type edges from sub role/relations to super roles/relation
             ownerRole.superType(ownerRoleSuper);

@@ -66,26 +66,26 @@ public class CWGraph extends TestGraph {
         enemySource = graph.putRoleType("enemy-source");
         enemyTarget = graph.putRoleType("enemy-target");
         isEnemyOf = graph.putRelationType("is-enemy-of")
-                .hasRole(enemySource).hasRole(enemyTarget);
+                .relates(enemySource).relates(enemyTarget);
 
         //owns
         owner = graph.putRoleType("item-owner");
         ownedItem = graph.putRoleType("owned-item");
         owns = graph.putRelationType("owns")
-                .hasRole(owner).hasRole(ownedItem);
+                .relates(owner).relates(ownedItem);
 
         //transaction
         seller = graph.putRoleType("seller");
         buyer = graph.putRoleType("buyer");
         transactionItem = graph.putRoleType("transaction-item");
         transaction = graph.putRelationType("transaction")
-                .hasRole(seller).hasRole(buyer).hasRole(transactionItem);
+                .relates(seller).relates(buyer).relates(transactionItem);
 
         //isPaidBy
         payee = graph.putRoleType("payee");
         payer = graph.putRoleType("payer");
         isPaidBy = graph.putRelationType("is-paid-by")
-                .hasRole(payee).hasRole(payer);
+                .relates(payee).relates(payer);
 
         person = graph.putEntityType("person")
                 .plays(seller)

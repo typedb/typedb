@@ -22,26 +22,26 @@ import ai.grakn.graql.VarName;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static ai.grakn.util.Schema.EdgeLabel.HAS_ROLE;
+import static ai.grakn.util.Schema.EdgeLabel.RELATES;
 
-class OutHasRoleFragment extends AbstractFragment {
+class InRelatesFragment extends AbstractFragment {
 
-    OutHasRoleFragment(VarName start, VarName end) {
+    InRelatesFragment(VarName start, VarName end) {
         super(start, end);
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.out(HAS_ROLE.getLabel());
+        traversal.in(RELATES.getLabel());
     }
 
     @Override
     public String getName() {
-        return "-[has-role]->";
+        return "<-[relates]-";
     }
 
     @Override
     public double fragmentCost(double previousCost) {
-        return previousCost * NUM_ROLES_PER_RELATION;
+        return previousCost;
     }
 }

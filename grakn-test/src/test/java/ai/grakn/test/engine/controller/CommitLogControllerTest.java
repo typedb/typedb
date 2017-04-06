@@ -130,7 +130,7 @@ public class CommitLogControllerTest {
     private void addSomeData(GraknGraph graph) throws GraknValidationException {
         RoleType role1 = graph.putRoleType("Role 1");
         RoleType role2 = graph.putRoleType("Role 2");
-        RelationType relationType = graph.putRelationType("A Relation Type").hasRole(role1).hasRole(role2);
+        RelationType relationType = graph.putRelationType("A Relation Type").relates(role1).relates(role2);
         EntityType type = graph.putEntityType("A Thing").plays(role1).plays(role2);
         ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).plays(role1).plays(role2);
         Entity entity = type.addEntity();

@@ -47,7 +47,7 @@ public class CastingTest extends GraphTestBase{
     public void crateRelation() {
         role1 = graknGraph.putRoleType("role 1");
         role2 = graknGraph.putRoleType("role 2");
-        RelationType relationType = graknGraph.putRelationType("Relation Type").hasRole(role1).hasRole(role2);
+        RelationType relationType = graknGraph.putRelationType("Relation Type").relates(role1).relates(role2);
         EntityType entityType = graknGraph.putEntityType("An Entity Type").plays(role1).plays(role2);
 
         entity1 = entityType.addEntity();

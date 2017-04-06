@@ -93,24 +93,24 @@ public class TaskStateGraphStore implements TaskStateStorage {
         TaskSchedule schedule = task.schedule();
         Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId().getValue())
-                .has(STATUS, var().value(CREATED.toString()))
-                .has(TASK_CLASS_NAME, var().value(task.taskClass().getName()))
-                .has(CREATED_BY, var().value(task.creator()))
-                .has(RUN_AT, var().value(schedule.runAt().toEpochMilli()))
-                .has(RECURRING, var().value(schedule.isRecurring()))
-                .has(SERIALISED_TASK, var().value(serializeToString(task)));
+                .has(STATUS, var().val(CREATED.toString()))
+                .has(TASK_CLASS_NAME, var().val(task.taskClass().getName()))
+                .has(CREATED_BY, var().val(task.creator()))
+                .has(RUN_AT, var().val(schedule.runAt().toEpochMilli()))
+                .has(RECURRING, var().val(schedule.isRecurring()))
+                .has(SERIALISED_TASK, var().val(serializeToString(task)));
 
         if (schedule.interval().isPresent()) {
             Duration interval = schedule.interval().get();
-            state = state.has(RECUR_INTERVAL, var().value(interval.getSeconds()));
+            state = state.has(RECUR_INTERVAL, var().val(interval.getSeconds()));
         }
 
         if(task.configuration() != null) {
-            state = state.has(TASK_CONFIGURATION, var().value(task.configuration().toString()));
+            state = state.has(TASK_CONFIGURATION, var().val(task.configuration().toString()));
         }
 
         if(task.engineID() != null){
-            state = state.has(ENGINE_ID, var().value(task.engineID().value()));
+            state = state.has(ENGINE_ID, var().val(task.engineID().value()));
         }
 
         Var finalState = state;
@@ -135,36 +135,36 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Var resources = var(TASK_VAR);
 
         resourcesToDettach.add(SERIALISED_TASK);
-        resources = resources.has(SERIALISED_TASK, var().value(serializeToString(task)));
+        resources = resources.has(SERIALISED_TASK, var().val(serializeToString(task)));
 
         // TODO make sure all properties are being updated
         if(task.status() != null) {
             resourcesToDettach.add(STATUS);
             resourcesToDettach.add(STATUS_CHANGE_TIME);
-            resources = resources.has(STATUS, var().value(task.status().toString()))
-                     .has(STATUS_CHANGE_TIME, var().value(new Date().getTime()));
+            resources = resources.has(STATUS, var().val(task.status().toString()))
+                     .has(STATUS_CHANGE_TIME, var().val(new Date().getTime()));
         }
         if(task.engineID() != null) {
             resourcesToDettach.add(ENGINE_ID);
-            resources = resources.has(ENGINE_ID, var().value(task.engineID().value()));
+            resources = resources.has(ENGINE_ID, var().val(task.engineID().value()));
         } else{
             resourcesToDettach.add(ENGINE_ID);
         }
         if(task.exception() != null) {
             resourcesToDettach.add(TASK_EXCEPTION);
             resourcesToDettach.add(STACK_TRACE);            
-            resources = resources.has(TASK_EXCEPTION, var().value(task.exception()));
+            resources = resources.has(TASK_EXCEPTION, var().val(task.exception()));
             if(task.stackTrace() != null) {
-                resources = resources.has(STACK_TRACE, var().value(task.stackTrace()));
+                resources = resources.has(STACK_TRACE, var().val(task.stackTrace()));
             }
         }
         if(task.checkpoint() != null) {
             resourcesToDettach.add(TASK_CHECKPOINT);
-            resources = resources.has(TASK_CHECKPOINT, var().value(task.checkpoint()));
+            resources = resources.has(TASK_CHECKPOINT, var().val(task.checkpoint()));
         }
         if(task.configuration() != null) {
             resourcesToDettach.add(TASK_CONFIGURATION);            
-            resources = resources.has(TASK_CONFIGURATION, var().value(task.configuration().toString()));
+            resources = resources.has(TASK_CONFIGURATION, var().val(task.configuration().toString()));
         }
 
         Var finalResources = resources;
@@ -248,19 +248,19 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Var matchVar = var(TASK_VAR).isa(name(SCHEDULED_TASK));
 
         if(taskStatus != null) {
-            matchVar = matchVar.has(STATUS, var().value(taskStatus.toString()));
+            matchVar = matchVar.has(STATUS, var().val(taskStatus.toString()));
         }
         if(taskClassName != null) {
-            matchVar = matchVar.has(TASK_CLASS_NAME, var().value(taskClassName));
+            matchVar = matchVar.has(TASK_CLASS_NAME, var().val(taskClassName));
         }
         if(createdBy != null) {
-            matchVar = matchVar.has(CREATED_BY, var().value(createdBy));
+            matchVar = matchVar.has(CREATED_BY, var().val(createdBy));
         }
         if(engineRunningOn != null){
-            matchVar = matchVar.has(ENGINE_ID, var().value(engineRunningOn.value()));
+            matchVar = matchVar.has(ENGINE_ID, var().val(engineRunningOn.value()));
         }
         if(recurring != null) {
-            matchVar = matchVar.has(RECURRING, var().value(recurring));
+            matchVar = matchVar.has(RECURRING, var().val(recurring));
         }
 
         Var finalMatchVar = matchVar;

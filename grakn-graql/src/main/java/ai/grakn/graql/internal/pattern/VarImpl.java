@@ -35,7 +35,7 @@ import ai.grakn.graql.admin.VarProperty;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
-import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
+import ai.grakn.graql.internal.pattern.property.RelatesProperty;
 import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
@@ -138,12 +138,12 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var value(Object value) {
-        return value(Graql.eq(value));
+    public Var val(Object value) {
+        return val(Graql.eq(value));
     }
 
     @Override
-    public Var value(ValuePredicate predicate) {
+    public Var val(ValuePredicate predicate) {
         return addProperty(new ValueProperty(predicate.admin()));
     }
 
@@ -159,7 +159,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Var has(String type, ValuePredicate predicate) {
-        return has(type, Graql.var().value(predicate));
+        return has(type, Graql.var().val(predicate));
     }
 
     @Override
@@ -193,13 +193,13 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasRole(String type) {
-        return hasRole(Graql.name(type));
+    public Var relates(String type) {
+        return relates(Graql.name(type));
     }
 
     @Override
-    public Var hasRole(Var type) {
-        return addProperty(new HasRoleProperty(type.admin()));
+    public Var relates(Var type) {
+        return addProperty(new RelatesProperty(type.admin()));
     }
 
     @Override

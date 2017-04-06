@@ -38,7 +38,7 @@ public class SchemaTest {
     public void enumParingAndValueTest(){
         Schema.EdgeLabel isa = Schema.EdgeLabel.valueOf("ISA");
         Schema.EdgeLabel sub = Schema.EdgeLabel.valueOf("SUB");
-        Schema.EdgeLabel has_role = Schema.EdgeLabel.valueOf("HAS_ROLE");
+        Schema.EdgeLabel relates = Schema.EdgeLabel.valueOf("RELATES");
         Schema.EdgeLabel has_scope = Schema.EdgeLabel.valueOf("HAS_SCOPE");
         Schema.EdgeLabel casting = Schema.EdgeLabel.valueOf("CASTING");
 
@@ -47,7 +47,7 @@ public class SchemaTest {
         // Basic Edges
         assertEquals(Schema.EdgeLabel.ISA, isa);
         assertEquals(Schema.EdgeLabel.SUB, sub);
-        assertEquals(Schema.EdgeLabel.HAS_ROLE, has_role);
+        assertEquals(Schema.EdgeLabel.RELATES, relates);
         assertEquals(Schema.EdgeLabel.HAS_SCOPE, has_scope);
         // Other
         assertEquals(Schema.EdgeLabel.CASTING, casting);

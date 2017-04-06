@@ -39,11 +39,11 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasRole;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.relates;
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 /**
- * Represents the {@code has-role} property on a {@link RelationType}.
+ * Represents the {@code relates} property on a {@link RelationType}.
  *
  * This property can be queried, inserted or deleted.
  *
@@ -52,11 +52,11 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  *
  * @author Felix Chapman
  */
-public class HasRoleProperty extends AbstractVarProperty implements NamedProperty {
+public class RelatesProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin role;
 
-    public HasRoleProperty(VarAdmin role) {
+    public RelatesProperty(VarAdmin role) {
         this.role = role;
     }
 
@@ -66,7 +66,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public String getName() {
-        return "has-role";
+        return "relates";
     }
 
     @Override
@@ -76,7 +76,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        return ImmutableSet.of(hasRole(start, role.getVarName()));
+        return ImmutableSet.of(relates(start, role.getVarName()));
     }
 
     @Override
@@ -92,13 +92,13 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
-        concept.asRelationType().hasRole(roleType);
+        concept.asRelationType().relates(roleType);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         TypeName roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
-        concept.asRelationType().deleteHasRole(graph.getType(roleName));
+        concept.asRelationType().deleteRelates(graph.getType(roleName));
     }
 
     @Override
@@ -106,7 +106,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        HasRoleProperty that = (HasRoleProperty) o;
+        RelatesProperty that = (RelatesProperty) o;
 
         return role.equals(that.role);
 
@@ -124,7 +124,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
         VarName roleVariable = roleVar.getVarName();
         IdPredicate rolePredicate = getIdPredicate(roleVariable, roleVar, vars, parent);
 
-        VarAdmin hrVar = Graql.var(varName).hasRole(Graql.var(roleVariable)).admin();
+        VarAdmin hrVar = Graql.var(varName).relates(Graql.var(roleVariable)).admin();
         return new TypeAtom(hrVar, rolePredicate, parent);
     }
 }

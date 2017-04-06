@@ -49,7 +49,7 @@ public final class Schema {
     public enum EdgeLabel {
         ISA("isa"),
         SUB("sub"),
-        HAS_ROLE("has-role"),
+        RELATES("relates"),
         PLAYS("plays"),
         HAS_SCOPE("has-scope"),
         CASTING("casting"),

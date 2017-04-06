@@ -48,12 +48,12 @@ import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.id;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inHasRole;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRelates;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.name;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outCasting;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outHasRole;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRelates;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
@@ -119,10 +119,10 @@ public class GraqlTraversalTest {
     }
 
     @Test
-    public void testHasRoleFasterFromRoleType() {
-        GraqlTraversal hasRoleFromRelationType = traversal(yId, outHasRole(y, x), xId);
-        GraqlTraversal hasRoleFromRoleType = traversal(xId, inHasRole(x, y), yId);
-        assertFaster(hasRoleFromRoleType, hasRoleFromRelationType);
+    public void testRelatesFasterFromRoleType() {
+        GraqlTraversal relatesFromRelationType = traversal(yId, outRelates(y, x), xId);
+        GraqlTraversal relatesFromRoleType = traversal(xId, inRelates(x, y), yId);
+        assertFaster(relatesFromRoleType, relatesFromRelationType);
     }
 
     @Test
@@ -189,7 +189,7 @@ public class GraqlTraversalTest {
 
     @Test
     public void testAllTraversalsDisjunction() {
-        Pattern pattern = or(Patterns.var(x).id(ConceptId.of("Titanic")).value("hello"), Patterns.var().rel("x").rel("y"));
+        Pattern pattern = or(Patterns.var(x).id(ConceptId.of("Titanic")).val("hello"), Patterns.var().rel("x").rel("y"));
         Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         // Expect all combinations of both disjunctions
@@ -215,14 +215,14 @@ public class GraqlTraversalTest {
 
     @Test
     public void testOptimalByValue() {
-        assertNearlyOptimal(var(x).value("hello").isa(var(y).id(ConceptId.of("movie"))));
+        assertNearlyOptimal(var(x).val("hello").isa(var(y).id(ConceptId.of("movie"))));
     }
 
     @Test
     public void testOptimalAttachedResource() {
         assertNearlyOptimal(var()
                 .rel(var(x).isa(var(y).id(ConceptId.of("movie"))))
-                .rel(var(z).value("Titanic").isa(var("a").id(ConceptId.of("title")))));
+                .rel(var(z).val("Titanic").isa(var("a").id(ConceptId.of("title")))));
     }
 
     @Test

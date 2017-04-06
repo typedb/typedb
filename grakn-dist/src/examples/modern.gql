@@ -30,8 +30,8 @@ person plays knower;
 person plays known-about;
 
 knows sub relation
-	has-role knower
-	has-role known-about
+	relates knower
+	relates known-about
 	has-resource weight;
 
 (knower: $marko, known-about: $josh) isa knows has weight 1.0;
@@ -59,8 +59,8 @@ person plays programmer;
 software plays programmed;
 
 programming sub relation
-	has-role programmer
-	has-role programmed
+	relates programmer
+	relates programmed
 	has-resource weight;
 
 (programmer: $marko, programmed: $lop) isa programming has weight 0.4;

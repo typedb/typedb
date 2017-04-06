@@ -17,12 +17,12 @@ entity2 sub entity1;
 #Relations
 
 relation1 sub relation
-	has-role role1
-	has-role role2;
+	relates role1
+	relates role2;
 
 relation2 sub relation
-	has-role role1
-	has-role role2;
+	relates role1
+	relates role2;
 
 
 #Rules

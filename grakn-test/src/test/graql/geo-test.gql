@@ -15,13 +15,13 @@ insert
 
 "geo-entity" sub role;
 "entity-location" sub role;
-"is-located-in" sub relation, has-role geo-entity, has-role entity-location;
+"is-located-in" sub relation, relates geo-entity, relates entity-location;
 entity plays geo-entity, plays entity-location;
 
 "role1" sub role;
 "role2" sub role;
 "role3" sub role;
-"ternary-relation-test" sub relation, has-role role1, has-role role2, has-role role3;
+"ternary-relation-test" sub relation, relates role1, relates role2, relates role3;
 entity plays role1, plays role2, plays role3;
 
 "name" sub resource, datatype string;

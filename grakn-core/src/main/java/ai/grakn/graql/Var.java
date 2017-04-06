@@ -67,14 +67,14 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var value(Object value);
+    Var val(Object value);
 
     /**
      * @param predicate a atom this variable's value must match
      * @return this
      */
     @CheckReturnValue
-    Var value(ValuePredicate predicate);
+    Var val(ValuePredicate predicate);
 
     /**
      * @param var a variable representing a resource
@@ -156,14 +156,14 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var hasRole(String type);
+    Var relates(String type);
 
     /**
      * @param type a role type that this relation type variable must have
      * @return this
      */
     @CheckReturnValue
-    Var hasRole(Var type);
+    Var relates(Var type);
 
     /**
      * @param type a role type id that this concept type variable must play

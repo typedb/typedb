@@ -66,9 +66,9 @@ public class EntityTest extends GraphTestBase{
         Instance rolePlayer2 = type.addEntity();
         Instance rolePlayer3 = type.addEntity();
 
-        relationType.hasRole(role1);
-        relationType.hasRole(role2);
-        relationType.hasRole(role3);
+        relationType.relates(role1);
+        relationType.relates(role2);
+        relationType.relates(role3);
 
         //Check Structure is in order
         RelationImpl relation = (RelationImpl) relationType.addRelation().
@@ -211,7 +211,7 @@ public class EntityTest extends GraphTestBase{
     public void whenDeletingEntityInRelations_DeleteAllImplicitRelations(){
         RoleType role1 = graknGraph.putRoleType("Role 1");
         RoleType role2 = graknGraph.putRoleType("Role 2");
-        RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").hasRole(role1).hasRole(role2);
+        RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").relates(role1).relates(role2);
         EntityType entityType = graknGraph.putEntityType("A Thing").plays(role1).plays(role2);
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
         entityType.resource(resourceType);

@@ -32,14 +32,14 @@ entity5 sub entity
 #Relations
 
 relation1 sub relation
-	has-role role1
-	has-role role2
-	has-role role3;
+	relates role1
+	relates role2
+	relates role3;
 
 relation2 sub relation
-    has-role role1
-    has-role role2
-    has-role role3;
+    relates role1
+    relates role2
+    relates role3;
 
 #Rules
 

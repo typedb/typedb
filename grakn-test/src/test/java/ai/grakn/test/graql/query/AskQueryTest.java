@@ -61,8 +61,8 @@ public class AskQueryTest {
     public void testNegativeQueryShortcutEdge() {
         assertFalse(qb.match(
                 var().rel("x").rel("y").isa("directed-by"),
-                var("x").value("Apocalypse Now"),
-                var("y").value("Martin Sheen")
+                var("x").val("Apocalypse Now"),
+                var("y").val("Martin Sheen")
         ).ask().execute());
     }
 

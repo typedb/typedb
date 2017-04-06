@@ -95,8 +95,8 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         this.ownerRole = ownerRole.admin();
         this.valueRole = valueRole.admin();
-        this.relationOwner = relationType.hasRole(this.ownerRole).admin();
-        this.relationValue = var(relationType.admin().getVarName()).hasRole(this.valueRole).admin();
+        this.relationOwner = relationType.relates(this.ownerRole).admin();
+        this.relationValue = var(relationType.admin().getVarName()).relates(this.valueRole).admin();
 
     }
 

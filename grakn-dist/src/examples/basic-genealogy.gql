@@ -33,16 +33,16 @@ gender sub resource datatype string;
 # Roles and Relations
 
 marriage sub relation
-	has-role spouse1
-	has-role spouse2
+	relates spouse1
+	relates spouse2
 	has-resource picture;
 
 spouse1 sub role;
 spouse2 sub role;
 
 parentship sub relation
-	has-role parent
-	has-role child;
+	relates parent
+	relates child;
 
 parent sub role;
 child sub role;
@@ -74,17 +74,17 @@ person
 	plays grandfather;
 
 marriage sub relation
-	has-role husband
-	has-role wife;
+	relates husband
+	relates wife;
 
 husband sub role;
 wife sub role;
 
 parentship sub relation
-	has-role mother
-	has-role father
-	has-role son
-	has-role daughter;
+	relates mother
+	relates father
+	relates son
+	relates daughter;
 
 mother sub parent;
 father sub parent;
@@ -92,20 +92,20 @@ son sub child;
 daughter sub child;
 
 siblings sub relation
-	has-role sibling1
-	has-role sibling2;
+	relates sibling1
+	relates sibling2;
 
 sibling sub role is-abstract;
 sibling1 sub sibling;
 sibling2 sub sibling;
 
 grandparentship sub relation
-	has-role grandparent
-	has-role grandfather
-	has-role grandmother
-	has-role grandchild
-	has-role granddaughter
-	has-role grandson;
+	relates grandparent
+	relates grandfather
+	relates grandmother
+	relates grandchild
+	relates granddaughter
+	relates grandson;
 
 grandparent sub role;
 grandfather sub grandparent;
@@ -115,20 +115,20 @@ grandson sub grandchild;
 granddaughter sub grandchild;
 
 cousins sub relation
-	has-role cousin1
-	has-role cousin2;
+	relates cousin1
+	relates cousin2;
 
 cousin sub role is-abstract;
 cousin1 sub cousin;
 cousin2 sub cousin;
 
 in-laws sub relation
-	has-role child-in-law
-	has-role son-in-law
-	has-role daughter-in-law
-	has-role parent-in-law
-	has-role mother-in-law
-	has-role father-in-law;
+	relates child-in-law
+	relates son-in-law
+	relates daughter-in-law
+	relates parent-in-law
+	relates mother-in-law
+	relates father-in-law;
 
 child-in-law sub role;
 son-in-law sub child-in-law;
@@ -467,7 +467,7 @@ cluster sub entity
 degree sub resource datatype long;
 group sub role;
 member sub role;
-grouping sub relation has-role group has-role member;
+grouping sub relation relates group relates member;
 cluster plays group;
 person plays member;
 marriage plays member;

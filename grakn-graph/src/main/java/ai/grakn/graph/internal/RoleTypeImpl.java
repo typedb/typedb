@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     private ComponentCache<Set<Type>> cachedDirectPlayedByTypes = new ComponentCache<>(() -> this.<Type>getIncomingNeighbours(Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private ComponentCache<Set<RelationType>> cachedRelationTypes = new ComponentCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.HAS_ROLE).collect(Collectors.toSet()));
+    private ComponentCache<Set<RelationType>> cachedRelationTypes = new ComponentCache<>(() -> this.<RelationType>getIncomingNeighbours(Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleTypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -164,10 +164,10 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
 
     @Override
     public void delete(){
-        boolean hasHasRoles = getVertex().edges(Direction.IN, Schema.EdgeLabel.HAS_ROLE.getLabel()).hasNext();
+        boolean hasRelates = getVertex().edges(Direction.IN, Schema.EdgeLabel.RELATES.getLabel()).hasNext();
         boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
 
-        if(hasHasRoles || hasPlays){
+        if(hasRelates || hasPlays){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
         } else {
             super.delete();

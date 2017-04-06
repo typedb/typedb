@@ -194,7 +194,7 @@ public class MatchQueryTest {
 
     @Test
     public void testValueQuery() {
-        MatchQuery query = qb.match(var("tgf").value("Godfather"));
+        MatchQuery query = qb.match(var("tgf").val("Godfather"));
         assertThat(query, variable("tgf", contains(both(hasValue("Godfather")).and(hasType(title)))));
     }
 
@@ -213,11 +213,11 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                        var("t").value(eq("Apocalypse Now")),
-                        and(var("t").value(lt("Juno")), var("t").value(gt("Godfather"))),
-                        var("t").value(eq("Spy"))
+                        var("t").val(eq("Apocalypse Now")),
+                        and(var("t").val(lt("Juno")), var("t").val(gt("Godfather"))),
+                        var("t").val(eq("Spy"))
                 ),
-                var("t").value(neq("Apocalypse Now"))
+                var("t").val(neq("Apocalypse Now"))
         );
 
         assertThat(query, variable("x", containsInAnyOrder(hocusPocus, heat, spy)));
@@ -228,8 +228,8 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(
                 var("x").isa("movie").has("title", var("t")),
                 or(
-                        and(var("t").value(lte("Juno")), var("t").value(gte("Godfather")), var("t").value(neq("Heat"))),
-                        var("t").value("The Muppets")
+                        and(var("t").val(lte("Juno")), var("t").val(gte("Godfather")), var("t").val(neq("Heat"))),
+                        var("t").val("The Muppets")
                 )
         );
 
@@ -238,7 +238,7 @@ public class MatchQueryTest {
 
     @Test
     public void testValueEqualsVarQuery() {
-        MatchQuery query = qb.match(var("x").value(var("y")));
+        MatchQuery query = qb.match(var("x").val(var("y")));
 
         assertThat(query.execute(), hasSize(greaterThan(10)));
 
@@ -365,8 +365,8 @@ public class MatchQueryTest {
     @Test
     public void testGlobalPredicateQuery() {
         MatchQuery query = qb.match(
-                var("x").value(gt(500L)),
-                var("x").value(lt(1000000L))
+                var("x").val(gt(500L)),
+                var("x").val(lt(1000000L))
         );
 
         assertThat(query, variable("x", contains(both(hasValue(1000L)).and(hasType(tmdbVoteCount)))));
@@ -527,11 +527,11 @@ public class MatchQueryTest {
     @Test
     public void testSubRelationType() {
         qb.insert(
-                name("ownership").sub("relation").hasRole("owner").hasRole("possession"),
+                name("ownership").sub("relation").relates("owner").relates("possession"),
                 name("organization-with-shares").sub("possession"),
                 name("possession").sub("role"),
 
-                name("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
+                name("share-ownership").sub("ownership").relates("shareholder").relates("organization-with-shares"),
                 name("shareholder").sub("owner"),
                 name("owner").sub("role"),
 
@@ -669,7 +669,7 @@ public class MatchQueryTest {
 
     @Test
     public void testAllGreaterThanResources() {
-        MatchQuery query = qb.match(var("x").value(gt(var("y"))));
+        MatchQuery query = qb.match(var("x").val(gt(var("y"))));
 
         List<Map<String, Concept>> results = query.execute();
 
@@ -696,7 +696,7 @@ public class MatchQueryTest {
     public void testAllLessThanAttachedResource() {
         MatchQuery query = qb.match(
                 var("p").has("release-date", var("x")),
-                var("x").value(lte(var("y")))
+                var("x").val(lte(var("y")))
         );
 
         List<Map<String, Concept>> results = query.execute();

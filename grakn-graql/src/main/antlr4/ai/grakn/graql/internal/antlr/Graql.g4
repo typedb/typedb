@@ -70,12 +70,12 @@ varPattern     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                 # isa
                | 'sub' variable                 # sub
-               | 'has-role' variable            # hasRole
+               | 'relates' variable             # relates
                | 'plays' variable          # plays
                | 'has-scope' VARIABLE           # hasScope
                | 'id' id                        # propId
                | 'type-name' name               # propName
-               | 'value' predicate              # propValue
+               | 'val' predicate                # propValue
                | 'lhs' '{' patterns '}'         # propLhs
                | 'rhs' '{' varPatterns '}'      # propRhs
                | 'has' name? VARIABLE           # propHasVariable

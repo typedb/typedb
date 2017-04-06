@@ -142,8 +142,8 @@ public class GraqlTest {
             RoleType resourceOwner = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(resourceTypeId));
             RoleType resourceValue = graph.putRoleType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getName(resourceTypeId));
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeId))
-                    .hasRole(resourceOwner)
-                    .hasRole(resourceValue);
+                    .relates(resourceOwner)
+                    .relates(resourceValue);
 
             ResourceType<Long> resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG)
                     .plays(resourceValue);
@@ -285,7 +285,7 @@ public class GraqlTest {
             RoleType role2 = graph.putRoleType("role2");
             entityType1.plays(role1).plays(role2);
             entityType2.plays(role1).plays(role2);
-            RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
+            RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
 
             relationId12 = relationType.addRelation()
                     .addRolePlayer(role1, entity1)

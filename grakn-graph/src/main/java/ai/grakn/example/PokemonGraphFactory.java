@@ -94,20 +94,20 @@ public class PokemonGraphFactory{
         ancestor = graph.putRoleType("ancestor");
         descendent = graph.putRoleType("descendent");
         evolution = graph.putRelationType("evolution")
-                .hasRole(ancestor)
-                .hasRole(descendent);
+                .relates(ancestor)
+                .relates(descendent);
 
         pokemonWithType = graph.putRoleType("pokemon-with-type");
         typeOfPokemon = graph.putRoleType("type-of-pokemon");
         hasType = graph.putRelationType("has-type")
-                .hasRole(pokemonWithType)
-                .hasRole(typeOfPokemon);
+                .relates(pokemonWithType)
+                .relates(typeOfPokemon);
 
         defendingType = graph.putRoleType("defending-type");
         attackingType = graph.putRoleType("attacking-type");
         superEffective = graph.putRelationType("super-effective")
-                .hasRole(defendingType)
-                .hasRole(attackingType);
+                .relates(defendingType)
+                .relates(attackingType);
 
         pokemon = graph.putEntityType("pokemon")
                 .plays(ancestor)
