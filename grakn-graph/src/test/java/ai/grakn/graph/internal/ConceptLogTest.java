@@ -31,6 +31,8 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -122,5 +124,31 @@ public class ConceptLogTest extends GraphTestBase{
 
         i1.delete();
         assertThat(graknGraph.getConceptLog().getModifiedConcepts(), is(empty()));
+    }
+
+    @Test
+    public void whenAddingAndRemovingInstancesFromTypes_EnsureLogTracksNumberOfChanges(){
+        EntityType entityType = graknGraph.putEntityType("My Type");
+        RelationType relationType = graknGraph.putRelationType("My Relation Type");
+
+        ConceptLog conceptLog = graknGraph.getConceptLog();
+        assertThat(conceptLog.getInstanceCount().keySet(), empty());
+
+        //Add some instances
+        Entity e1 = entityType.addEntity();
+        Entity e2 = entityType.addEntity();
+        relationType.addRelation();
+        assertEquals(2, (long) conceptLog.getInstanceCount().get(entityType.getName()));
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getName()));
+
+        //Remove an entity
+        e1.delete();
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(entityType.getName()));
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getName()));
+
+        //Remove another entity
+        e2.delete();
+        assertFalse(conceptLog.getInstanceCount().containsKey(entityType.getName()));
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getName()));
     }
 }

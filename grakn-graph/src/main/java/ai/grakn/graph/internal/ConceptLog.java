@@ -62,6 +62,9 @@ class ConceptLog {
     //We Track Relations so that we can look them up before they are completely defined and indexed on commit
     private final Map<String, RelationImpl> modifiedRelations = new HashMap<>();
 
+    //We Track the number of instances each type has lost or gained
+    private final Map<TypeName, Long> instanceCount = new HashMap<>();
+
 
     ConceptLog(AbstractGraknGraph<?> graknGraph) {
         this.graknGraph = graknGraph;
@@ -135,6 +138,14 @@ class ConceptLog {
      */
     Map<String, RelationImpl> getModifiedRelations(){
         return modifiedRelations;
+    }
+
+    /**
+     *
+     * @return All the types that have gained or lost instances and by how much
+     */
+    Map<TypeName, Long> getInstanceCount(){
+        return instanceCount;
     }
 
     /**
@@ -215,5 +226,17 @@ class ConceptLog {
     <X extends Type> X getCachedType(TypeLabel label){
         //noinspection unchecked
         return (X) typeCache.get(label);
+    }
+
+    void addedInstance(TypeName name){
+        instanceCount.compute(name, (key, value) -> value == null ? 1 : value + 1);
+        cleanupInstanceCount(name);
+    }
+    void removedInstance(TypeName name){
+        instanceCount.compute(name, (key, value) -> value == null ? -1 : value - 1);
+        cleanupInstanceCount(name);
+    }
+    private void cleanupInstanceCount(TypeName name){
+        if(instanceCount.get(name) == 0) instanceCount.remove(name);
     }
 }
