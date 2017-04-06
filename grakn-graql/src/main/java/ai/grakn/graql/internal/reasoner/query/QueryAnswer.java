@@ -110,16 +110,18 @@ public class QueryAnswer implements Answer {
     public int size(){ return map.size();}
 
     @Override
-    public Answer merge(Answer a2, boolean explanation){
+    public Answer merge(Answer a2, boolean mergeExplanation){
+        if(a2.isEmpty()) return this;
+        AnswerExplanation exp = this.getExplanation();
         QueryAnswer merged = new QueryAnswer(a2);
         merged.putAll(this);
 
-        if(explanation) {
-            AnswerExplanation exp = this.getExplanation().merge(a2.getExplanation());
+        if(mergeExplanation) {
+            exp = exp.merge(a2.getExplanation());
             if(!this.getExplanation().isJoinExplanation()) exp.addAnswer(this);
             if(!a2.getExplanation().isJoinExplanation()) exp.addAnswer(a2);
-            merged.setExplanation(exp);
         }
+        merged.setExplanation(exp);
         return merged;
     }
 

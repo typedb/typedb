@@ -22,7 +22,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="graph-panel-body">
         <div v-on:contextmenu="customContextMenu" v-on:mousemove="updateRectangle" id="graph-div" ref="graph"></div>
         <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeOntologyProps="allNodeOntologyProps" :allNodeLinks="allNodeLinks" :selectedNodeLabel="selectedNodeLabel" v-on:graph-response="onGraphResponse" v-on:close-node-panel="showNodePanel=false"></node-panel>
-        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false"></context-menu>
+        <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false" v-on:fetch-relations="fetchFilteredRelations"></context-menu>
         <node-tool-tip :showToolTip="showToolTip" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop"></node-tool-tip>
         <footer-bar></footer-bar>
     </div>
@@ -102,13 +102,17 @@ export default {
     mounted() {
         this.$nextTick(function nextTickVisualiser() {
             const graph = this.$refs.graph;
-            // TODO: find a way to compute this without jQuery:
-            this.graphOffsetTop = $('#graph-div').offset().top;
+            const graphDiv = document.getElementById('graph-div');
+            this.graphOffsetTop = graphDiv.getBoundingClientRect().top + document.body.scrollTop;
             this.canvasHandler.renderGraph(graph, this.graphOffsetTop);
         });
     },
 
     methods: {
+        fetchFilteredRelations(href){
+            this.canvasHandler.fetchFilteredRelations(href);
+            this.showContextMenu = false
+        },
         onShowNodePanel(ontologyProps, resources, label) {
             this.allNodeOntologyProps = ontologyProps;
             this.allNodeResources = resources;

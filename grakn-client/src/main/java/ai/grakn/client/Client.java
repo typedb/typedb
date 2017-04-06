@@ -32,7 +32,7 @@ import mjson.Json;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ResponseHandler;
 
-import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.Request.ID;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -73,7 +73,7 @@ public class Client {
     }
 
     protected String convert(String uri, TaskId id){
-        return uri.replace(ID_PARAMETER, id.getValue());
+        return uri.replace(ID, id.getValue());
     }
 
     protected String exceptionFrom(HttpResponse response) throws IOException {

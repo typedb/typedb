@@ -78,4 +78,10 @@ public interface AnswerExplanation {
      * @return true if this explanation explains an intermediate answer being a product of a join operation
      */
     boolean isJoinExplanation();
+
+    /**
+     *
+     * @return true if this is an empty explanation (explanation wasn't recorded)
+     */
+    boolean isEmpty();
 }

@@ -21,6 +21,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -33,6 +34,7 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.Sets;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
@@ -82,6 +84,11 @@ public abstract class Atom extends AtomBase {
      * @return true if the atom corresponds to a resource atom
      * */
     public boolean isResource(){ return false;}
+
+    /**
+     * @return true if atom contains a substitution (id predicates)
+     */
+    public boolean hasSubstitution(){ return false;}
 
     protected abstract boolean isRuleApplicable(InferenceRule child);
 
@@ -180,6 +187,16 @@ public abstract class Atom extends AtomBase {
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
         return relevantTypes;
+    }
+
+    /**
+     * @return set of constraints of this atom (predicates + types) that are not selectable
+     */
+    public Set<Atomic> getNonSelectableConstraints() {
+        Set<Atom> types = getTypeConstraints().stream()
+                .filter(at -> !at.isSelectable())
+                .collect(Collectors.toSet());
+        return Sets.union(types, getPredicates());
     }
 
     public Set<IdPredicate> getUnmappedIdPredicates(){ return new HashSet<>();}

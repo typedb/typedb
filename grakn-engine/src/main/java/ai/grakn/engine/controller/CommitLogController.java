@@ -60,11 +60,11 @@ public class CommitLogController {
     @ApiOperation(value = "Delete all the post processing jobs for a specific keyspace")
     @ApiImplicitParam(name = "keysoace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
     private String deleteConcepts(Request req, Response res){
-        String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        String graphName = req.queryParams(REST.Request.KEYSPACE);
 
         if(graphName == null){
             res.status(400);
-           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.KEYSPACE_PARAM, "delete");
+           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.KEYSPACE, "delete");
         }
 
         cache.clearAllJobs(graphName);
@@ -82,7 +82,7 @@ public class CommitLogController {
     })
     private String submitConcepts(Request req, Response res) {
         try {
-            String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
+            String graphName = req.queryParams(REST.Request.KEYSPACE);
 
             if (graphName == null) {
                 graphName = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);

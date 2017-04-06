@@ -868,7 +868,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         if(Grakn.IN_MEMORY.equals(engine)) {
             return Grakn.IN_MEMORY;
         }
-        return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + keyspace;
+        return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE + "=" + keyspace;
     }
 
     public void validVertex(Vertex vertex){

@@ -127,30 +127,30 @@ import EngineClient from '../../js/EngineClient';
 import User from '../../js/User';
 
 export default {
-    name: "NodePanel",
-    props: ['allNodeResources', 'allNodeLinks', 'allNodeOntologyProps', 'selectedNodeLabel', 'showNodePanel'],
-    data: function() {
-        return {
-        }
-    },
-    created: function() {
-    },
-    mounted: function() {
-        this.$nextTick(function() {
-            new Draggabilly(document.querySelector('.node-panel'), {handle:'.panel-heading',containment: '.graph-panel-body'});
-        })
-    },
-    methods: {
-        addResourceNodeWithOwners(id) {
-            EngineClient.request({
-                url: id,
-            }).then( (resp) => this.$emit('graph-response', resp),
+  name: 'NodePanel',
+  props: ['allNodeResources', 'allNodeLinks', 'allNodeOntologyProps', 'selectedNodeLabel', 'showNodePanel'],
+  data() {
+    return {
+    };
+  },
+  created() {
+  },
+  mounted() {
+    this.$nextTick(() => {
+      new Draggabilly(document.querySelector('.node-panel'), { handle: '.panel-heading', containment: '.graph-panel-body' });
+    });
+  },
+  methods: {
+    addResourceNodeWithOwners(id) {
+      EngineClient.request({
+        url: id,
+      }).then(resp => this.$emit('graph-response', resp),
 );
-        },
-        closePanel(){
-          this.$emit('close-node-panel');
-        }
+    },
+    closePanel() {
+      this.$emit('close-node-panel');
+    },
 
-    }
-}
+  },
+};
 </script>
