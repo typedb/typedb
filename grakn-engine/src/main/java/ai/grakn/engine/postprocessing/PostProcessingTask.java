@@ -19,10 +19,14 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.graph.admin.ConceptCache;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.locks.Lock;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
+import static java.time.Instant.now;
 
 /**
  * <p>
@@ -48,7 +53,7 @@ public class PostProcessingTask implements BackgroundTask {
     private static final PostProcessing postProcessing = PostProcessing.getInstance();
     private static final ConceptCache cache = EngineCacheProvider.getCache();
 
-    private static final long timeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
+    private static final long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
     /**
      * Run postprocessing only if enough time has passed since the last job was added
@@ -56,14 +61,24 @@ public class PostProcessingTask implements BackgroundTask {
      * @param configuration
      */
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
-        long lastJob = cache.getLastTimeJobAdded();
-        long currentTime = System.currentTimeMillis();
-        LOG.info("Checking post processing should run: " + ((currentTime - lastJob) >= timeLapse));
-        if((currentTime - lastJob) >= timeLapse) {
-            return postProcessing.run();
-        } else {
-            return true;
+        Instant lastJobAdded = Instant.ofEpochMilli(cache.getLastTimeJobAdded());
+        long timeElapsed = Duration.between(lastJobAdded, now()).toMillis();
+
+        LOG.info("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
+
+        if(timeElapsed < maxTimeLapse){
+
+            Lock engineLock = LockProvider.getLock();
+
+            engineLock.lock();
+            try {
+                return postProcessing.run();
+            } finally {
+                engineLock.unlock();
+            }
         }
+
+        return true;
     }
 
     public boolean stop() {
