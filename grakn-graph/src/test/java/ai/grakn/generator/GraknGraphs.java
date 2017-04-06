@@ -182,8 +182,8 @@ public class GraknGraphs extends AbstractGenerator<GraknGraph> implements Minima
             () -> {
                 Type type = type();
                 RoleType roleType = roleType();
-                type.playsRole(roleType);
-                summary(type, "playsRole", roleType);
+                type.plays(roleType);
+                summary(type, "plays", roleType);
             },
             () -> {
                 Type type = type();

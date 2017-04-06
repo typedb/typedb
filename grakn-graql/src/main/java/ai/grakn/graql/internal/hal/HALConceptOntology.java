@@ -93,7 +93,7 @@ class HALConceptOntology {
         generateStateAndLinks(halResource, concept);
 
         if (concept.isType()) {
-            attachRolesPlayed(halResource, concept.asType().playsRoles());
+            attachRolesPlayed(halResource, concept.asType().plays());
             attachTypeResources(halResource, concept.asType());
         }
 

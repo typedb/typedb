@@ -54,7 +54,7 @@ public class PostprocessingTest extends GraphTestBase{
         roleType1 = graknGraph.putRoleType("role 1");
         roleType2 = graknGraph.putRoleType("role 2");
         relationType = graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        EntityType thing = graknGraph.putEntityType("thing").plays(roleType1).plays(roleType2);
         instance1 = (InstanceImpl) thing.addEntity();
         instance2 = (InstanceImpl) thing.addEntity();
         instance3 = (InstanceImpl) thing.addEntity();
@@ -140,8 +140,8 @@ public class PostprocessingTest extends GraphTestBase{
         RoleType roleEntity = graknGraph.putRoleType("Entity Role");
         RoleType roleResource = graknGraph.putRoleType("Resource Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").hasRole(roleEntity).hasRole(roleResource);
-        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).playsRole(roleResource);
-        EntityType entityType = graknGraph.putEntityType("Entity Type").playsRole(roleEntity);
+        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
+        EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         Entity e3 = entityType.addEntity();

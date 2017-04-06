@@ -212,7 +212,7 @@ public class EntityTest extends GraphTestBase{
         RoleType role1 = graknGraph.putRoleType("Role 1");
         RoleType role2 = graknGraph.putRoleType("Role 2");
         RelationType relationType = graknGraph.putRelationType("A Relation Type Thing").hasRole(role1).hasRole(role2);
-        EntityType entityType = graknGraph.putEntityType("A Thing").playsRole(role1).playsRole(role2);
+        EntityType entityType = graknGraph.putEntityType("A Thing").plays(role1).plays(role2);
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
         entityType.resource(resourceType);
 

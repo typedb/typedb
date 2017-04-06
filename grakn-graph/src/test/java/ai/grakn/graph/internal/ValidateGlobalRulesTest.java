@@ -61,7 +61,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
             assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
         }
 
-        hunter.playsRole(witcher);
+        hunter.plays(witcher);
 
         boolean [] flags = {false, false};
         int count = 0;
@@ -73,7 +73,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
         assertTrue(flags[0] || flags[1]);
 
         wolf.superType(creature);
-        creature.playsRole(monster);
+        creature.plays(monster);
 
         for (CastingImpl casting : assertion.getMappingCasting()) {
             assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting).isPresent());
@@ -177,7 +177,7 @@ public class ValidateGlobalRulesTest extends GraphTestBase{
     public void testAbstractInstancesDoNotValidateSubTypes(){
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
-        EntityType entityType = graknGraph.putEntityType("entityType").playsRole(r1).playsRole(r2);
+        EntityType entityType = graknGraph.putEntityType("entityType").plays(r1).plays(r2);
         RelationType relationType = graknGraph.putRelationType("relationTypes").setAbstract(true);
         RelationType hasCast = graknGraph.putRelationType("has cast").superType(relationType).hasRole(r1).hasRole(r2);
 

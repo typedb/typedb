@@ -265,7 +265,7 @@ class HALConceptData {
     }
 
     private void embedRelationsPlaysRole(Representation halResource, Relation rel) {
-        rel.playsRoles().forEach(roleTypeRel -> {
+        rel.plays().forEach(roleTypeRel -> {
             rel.relations(roleTypeRel).forEach(relation -> {
                embedRelationsNotConnectedToResources(halResource,rel,relation,1);
             });

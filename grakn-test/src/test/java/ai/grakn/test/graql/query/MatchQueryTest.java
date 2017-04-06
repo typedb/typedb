@@ -582,7 +582,7 @@ public class MatchQueryTest {
 
         Stream.of(a, b, c, d, e, f).forEach(type -> {
             Set<Concept> graqlPlaysRoles = qb.match(name(type).playsRole(var("x"))).get("x").collect(Collectors.toSet());
-            Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).playsRoles());
+            Collection<RoleType> graphAPIPlaysRoles = new HashSet<>(graph.getType(type).plays());
 
             assertEquals(graqlPlaysRoles, graphAPIPlaysRoles);
         });

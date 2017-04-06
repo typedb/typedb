@@ -415,7 +415,7 @@ public class InsertQueryTest {
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
         assertTrue(newType.asEntityType().isAbstract());
-        assertTrue(newType.playsRoles().contains(movieGraph.graph().getRoleType(roleTypeName)));
+        assertTrue(newType.plays().contains(movieGraph.graph().getRoleType(roleTypeName)));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }

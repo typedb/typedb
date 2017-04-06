@@ -103,7 +103,7 @@ public class TypeMapper {
      * @return var with appropriate plays-role edges
      */
     private static Var playsRoles(Var var, Type type) {
-        for(RoleType role:type.playsRoles()){
+        for(RoleType role:type.plays()){
             var = var.playsRole(name(role.getName()));
         }
         return var;

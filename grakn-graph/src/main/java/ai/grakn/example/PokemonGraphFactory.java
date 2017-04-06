@@ -110,14 +110,14 @@ public class PokemonGraphFactory{
                 .hasRole(attackingType);
 
         pokemon = graph.putEntityType("pokemon")
-                .playsRole(ancestor)
-                .playsRole(descendent)
-                .playsRole(pokemonWithType);
+                .plays(ancestor)
+                .plays(descendent)
+                .plays(pokemonWithType);
 
         pokemonType = graph.putEntityType("pokemon-type")
-                .playsRole(typeOfPokemon)
-                .playsRole(defendingType)
-                .playsRole(attackingType);
+                .plays(typeOfPokemon)
+                .plays(defendingType)
+                .plays(attackingType);
 
         name = graph.putResourceType("name", ResourceType.DataType.STRING);
         pokedexNo = graph.putResourceType("pokedex-no", ResourceType.DataType.LONG);

@@ -91,13 +91,13 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
-        concept.asType().playsRole(roleType);
+        concept.asType().plays(roleType);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         TypeName roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
-        concept.asType().deletePlaysRole(graph.getType(roleName));
+        concept.asType().deletePlays(graph.getType(roleName));
     }
 
     @Override

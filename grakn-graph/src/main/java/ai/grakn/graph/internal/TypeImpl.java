@@ -158,7 +158,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return A list of all the roles this Type is allowed to play.
      */
     @Override
-    public Collection<RoleType> playsRoles() {
+    public Collection<RoleType> plays() {
         Set<RoleType> allRoleTypes = new HashSet<>();
 
         //Get the immediate plays roles which may be cached
@@ -196,7 +196,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
         Set<ResourceType> resourceTypes = new HashSet<>();
         //A traversal is not used in this caching so that ontology caching can be taken advantage of.
-        playsRoles().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
+        plays().forEach(roleType -> roleType.relationTypes().forEach(relationType -> {
             String roleTypeName = roleType.getName().getValue();
             if(roleTypeName.startsWith(prefix) && roleTypeName.endsWith(suffix)){ //This is the implicit type we want
                 String resourceTypeName = roleTypeName.replace(prefix, "").replace(suffix, "");
@@ -516,7 +516,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
-    public T playsRole(RoleType roleType) {
+    public T plays(RoleType roleType) {
         return playsRole(roleType, false);
     }
 
@@ -526,7 +526,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @return The Type itself.
      */
     @Override
-    public T deletePlaysRole(RoleType roleType) {
+    public T deletePlays(RoleType roleType) {
         checkTypeMutation();
         deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
         cachedDirectPlaysRoles.ifPresent(set -> set.remove(roleType));
@@ -620,7 +620,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             relationType.superType(relationTypeSuper);
 
             //Make sure the supertype resource is linked with the role as well
-            ((ResourceTypeImpl) resourceTypeSuper).playsRole(valueRoleSuper);
+            ((ResourceTypeImpl) resourceTypeSuper).plays(valueRoleSuper);
         }
 
         this.playsRole(ownerRole, required);

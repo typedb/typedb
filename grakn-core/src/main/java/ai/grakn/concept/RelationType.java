@@ -154,7 +154,7 @@ public interface RelationType extends Type {
      * @param roleType The RoleType which the instances of this Type are allowed to play.
      * @return  The RelationType itself.
      */
-    RelationType playsRole(RoleType roleType);
+    RelationType plays(RoleType roleType);
 
     /**
      * Removes the RoleType to prevent instances of this RelationType from playing it.
@@ -162,7 +162,7 @@ public interface RelationType extends Type {
      * @param roleType The RoleType which the instances of this Type should no longer be allowed to play.
      * @return The RelationType itself.
      */
-    RelationType deletePlaysRole(RoleType roleType);
+    RelationType deletePlays(RoleType roleType);
 
     /**
      * Retrieve all the Relation instances of this RelationType

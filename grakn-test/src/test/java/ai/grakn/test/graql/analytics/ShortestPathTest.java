@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingOrientDB;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -243,7 +242,7 @@ public class ShortestPathTest {
 
             RoleType role1 = graph.putRoleType("role1");
             RoleType role2 = graph.putRoleType("role2");
-            entityType.playsRole(role1).playsRole(role2);
+            entityType.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             Entity start = entityType.addEntity();
@@ -324,8 +323,8 @@ public class ShortestPathTest {
 
             RoleType role1 = graph.putRoleType("role1");
             RoleType role2 = graph.putRoleType("role2");
-            entityType1.playsRole(role1).playsRole(role2);
-            entityType2.playsRole(role1).playsRole(role2);
+            entityType1.plays(role1).plays(role2);
+            entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             relationId12 = relationType.addRelation()
@@ -359,13 +358,13 @@ public class ShortestPathTest {
 
             RoleType role1 = graph.putRoleType("role1");
             RoleType role2 = graph.putRoleType("role2");
-            entityType.playsRole(role1).playsRole(role2);
+            entityType.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
 
             RoleType role3 = graph.putRoleType("role3");
             RoleType role4 = graph.putRoleType("role4");
-            entityType.playsRole(role3).playsRole(role4);
-            relationType.playsRole(role3).playsRole(role4);
+            entityType.plays(role3).plays(role4);
+            relationType.plays(role3).plays(role4);
             RelationType relationType2 = graph.putRelationType(veryRelated).hasRole(role3).hasRole(role4);
 
             relationId12 = relationType.addRelation()

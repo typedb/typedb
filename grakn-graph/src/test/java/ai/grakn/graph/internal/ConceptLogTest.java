@@ -59,7 +59,7 @@ public class ConceptLogTest extends GraphTestBase{
     public void whenCreatingSuperTypes_EnsureLogContainsSubTypeCastings() {
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
-        EntityType t1 = graknGraph.putEntityType("t1").playsRole(r1).playsRole(r2);
+        EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
         EntityType t2 = graknGraph.putEntityType("t2");
         RelationType rt1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
         Entity i1 = t1.addEntity();
@@ -94,7 +94,7 @@ public class ConceptLogTest extends GraphTestBase{
     public void whenCreatingRelations_EnsureLogContainsRelationAndCastings(){
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
-        EntityType t1 = graknGraph.putEntityType("t1").playsRole(r1).playsRole(r2);
+        EntityType t1 = graknGraph.putEntityType("t1").plays(r1).plays(r2);
         RelationType rt1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
         Entity i1 = t1.addEntity();
         Entity i2 = t1.addEntity();

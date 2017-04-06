@@ -55,7 +55,7 @@ public class OntologyMutationTest extends GraphTestBase{
         marriage = graknGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
         graknGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
 
-        person = graknGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
+        person = graknGraph.putEntityType("Person").plays(husband).plays(wife);
         man = graknGraph.putEntityType("Man").superType(person);
         woman = graknGraph.putEntityType("Woman").superType(person);
         car = graknGraph.putEntityType("Car");
@@ -69,7 +69,7 @@ public class OntologyMutationTest extends GraphTestBase{
 
     @Test
     public void whenDeletingPlaysRoleUsedByExistingCasting_Throw() throws GraknValidationException {
-        person.deletePlaysRole(wife);
+        person.deletePlays(wife);
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getName(), alice.getId(), wife.getName()));
@@ -180,7 +180,7 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        entityType.playsRole(roleType);
+        entityType.plays(roleType);
     }
 
     @Test
@@ -207,7 +207,7 @@ public class OntologyMutationTest extends GraphTestBase{
         String roleTypeId = "role-thing";
         String entityTypeId = "entityType";
         RoleType roleType = graknGraph.putRoleType(roleTypeId);
-        graknGraph.putEntityType(entityTypeId).playsRole(roleType);
+        graknGraph.putEntityType(entityTypeId).plays(roleType);
 
         AbstractGraknGraph<?> graknGraphBatch = switchToBatchGraph();
         roleType = graknGraphBatch.getRoleType(roleTypeId);
@@ -216,7 +216,7 @@ public class OntologyMutationTest extends GraphTestBase{
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(SCHEMA_LOCKED.getMessage());
 
-        entityType.deletePlaysRole(roleType);
+        entityType.deletePlays(roleType);
     }
 
     @Test

@@ -170,8 +170,8 @@ public class GraknGraphTest extends GraphTestBase {
         RoleType roleType = graknGraph.admin().getMetaRoleType();
 
         //Check nothing is revealed when returning result sets
-        assertThat(type.playsRoles(), is(empty()));
-        assertThat(resourceType.playsRoles(), is(empty()));
+        assertThat(type.plays(), is(empty()));
+        assertThat(resourceType.plays(), is(empty()));
         assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType));
         assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType));
 
@@ -190,8 +190,8 @@ public class GraknGraphTest extends GraphTestBase {
         //Now check the result sets again
         assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType, has));
         assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType, hasOwner, hasValue));
-        assertThat(type.playsRoles(), containsInAnyOrder(hasOwner));
-        assertThat(resourceType.playsRoles(), containsInAnyOrder(hasValue));
+        assertThat(type.plays(), containsInAnyOrder(hasOwner));
+        assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
     }
 
     @Test
@@ -240,7 +240,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
-        EntityType e1 = graknGraph.putEntityType("e1").playsRole(r1).playsRole(r2);
+        EntityType e1 = graknGraph.putEntityType("e1").plays(r1).plays(r2);
         RelationType rel1 = graknGraph.putRelationType("rel1").hasRole(r1).hasRole(r2);
 
         //Purge the above concepts into the main cache
@@ -252,7 +252,7 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.getMetaConcept(), graknGraph.getMetaEntityType(),
                 graknGraph.getMetaRelationType(), graknGraph.getMetaRoleType()));
 
-        assertThat(e1.playsRoles(), containsInAnyOrder(r1, r2));
+        assertThat(e1.plays(), containsInAnyOrder(r1, r2));
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
@@ -260,12 +260,12 @@ public class GraknGraphTest extends GraphTestBase {
             GraknGraph innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             RoleType role = innerGraph.getRoleType("r1");
-            entityType.deletePlaysRole(role);
+            entityType.deletePlays(role);
         }).get();
 
         //Check the above mutation did not affect central repo
         Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
-        assertTrue("Main cache was affected by transaction", foundE1.playsRoles().contains(r1));
+        assertTrue("Main cache was affected by transaction", foundE1.plays().contains(r1));
     }
 
     @Test
@@ -317,7 +317,7 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, entityT::addEntity);
         failMutation(graknGraph, () -> resourceT.putResource("A resource"));
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
-        failMutation(graknGraph, () -> entityT.playsRole(roleT1));
+        failMutation(graknGraph, () -> entityT.plays(roleT1));
         failMutation(graknGraph, () -> relationT1.hasRole(roleT2));
         failMutation(graknGraph, () -> relationT2.hasRole(roleT1));
     }

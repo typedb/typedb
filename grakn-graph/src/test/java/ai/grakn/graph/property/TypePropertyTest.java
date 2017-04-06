@@ -86,7 +86,7 @@ public class TypePropertyTest {
 
         exception.expect(ConceptException.class);
         exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
-        type.playsRole(roleType);
+        type.plays(roleType);
     }
 
     @Property
@@ -308,12 +308,12 @@ public class TypePropertyTest {
     @Property
     public void whenGettingPlaysRoles_ResultIsASupersetOfDirectSuperTypePlaysRoles(Type type) {
         assumeNotNull(type.superType());
-        assertTrue(type.playsRoles().containsAll(type.superType().playsRoles()));
+        assertTrue(type.plays().containsAll(type.superType().plays()));
     }
 
     @Property
     public void ATypePlayingARoleIsEquivalentToARoleBeingPlayed(Type type, @FromGraph RoleType roleType) {
-        assertEquals(type.playsRoles().contains(roleType), roleType.playedByTypes().contains(type));
+        assertEquals(type.plays().contains(roleType), roleType.playedByTypes().contains(type));
     }
 
     @Property
@@ -321,9 +321,9 @@ public class TypePropertyTest {
             @Meta(false) Type type, @FromGraph RoleType roleType) {
         assumeThat(type, not(is(roleType)));  // A role-type cannot play itself, TODO: is this sensible?
 
-        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.playsRoles());
-        type.playsRole(roleType);
-        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.playsRoles());
+        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.plays());
+        type.plays(roleType);
+        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.plays());
 
         assertEquals(newPlaysRoles, Sets.union(previousPlaysRoles, ImmutableSet.of(roleType)));
     }
@@ -336,9 +336,9 @@ public class TypePropertyTest {
         assumeFalse(isMetaName(superType.getName()));
         assumeThat(superType, not(is(roleType)));
 
-        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.playsRoles());
-        superType.playsRole(roleType);
-        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.playsRoles());
+        Set<RoleType> previousPlaysRoles = Sets.newHashSet(type.plays());
+        superType.plays(roleType);
+        Set<RoleType> newPlaysRoles = Sets.newHashSet(type.plays());
 
         assertEquals(newPlaysRoles, Sets.union(previousPlaysRoles, ImmutableSet.of(roleType)));
     }
@@ -346,17 +346,17 @@ public class TypePropertyTest {
     @Property
     public void whenDeletingAPlaysRoleAndTheDirectSuperTypeDoesNotPlaysThatRole_TheTypeNoLongerPlaysThatRole(
             @Meta(false) Type type, @FromGraph RoleType roleType) {
-        assumeThat(type.superType().playsRoles(), not(hasItem(roleType)));
-        type.deletePlaysRole(roleType);
-        assertThat(type.playsRoles(), not(hasItem(roleType)));
+        assumeThat(type.superType().plays(), not(hasItem(roleType)));
+        type.deletePlays(roleType);
+        assertThat(type.plays(), not(hasItem(roleType)));
     }
 
     @Property
     public void whenDeletingAPlaysRoleAndTheDirectSuperTypePlaysThatRole_TheTypeStillPlaysThatRole(
             @Meta(false) Type type, long seed) {
-        RoleType roleType = choose(type.superType() + " plays no roles", type.superType().playsRoles(), seed);
-        type.deletePlaysRole(roleType);
-        assertThat(type.playsRoles(), hasItem(roleType));
+        RoleType roleType = choose(type.superType() + " plays no roles", type.superType().plays(), seed);
+        type.deletePlays(roleType);
+        assertThat(type.plays(), hasItem(roleType));
     }
 
     // TODO: Tests for `resource` and `key`

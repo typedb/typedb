@@ -66,17 +66,17 @@ public class SystemKeyspaceTest {
         ResourceType userIsAdmin = graph.getResourceType("user-is-admin");
 
         //Check Plays Roles
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_KEY_OWNER.getName(userName.getName()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userPassword.getName()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userFirstName.getName()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userLastName.getName()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userEmail.getName()).getValue())));
-        assertTrue(user.playsRoles().contains(
+        assertTrue(user.plays().contains(
                 graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()).getValue())));
 
         graph.close();

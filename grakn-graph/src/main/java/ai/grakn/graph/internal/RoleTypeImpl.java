@@ -155,7 +155,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @return The Type itself.
      */
     @Override
-    public RoleType playsRole(RoleType roleType) {
+    public RoleType plays(RoleType roleType) {
         if(equals(roleType)){
             throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()));
         }

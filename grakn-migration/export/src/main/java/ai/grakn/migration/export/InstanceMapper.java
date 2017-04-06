@@ -163,7 +163,7 @@ public class InstanceMapper {
         ResourceType resourceType = resource.type();
 
         // TODO: Make sure this is tested
-        boolean playsRole = resourceType.playsRoles().stream().map(RoleType::getName)
+        boolean playsRole = resourceType.plays().stream().map(RoleType::getName)
                 .allMatch(c -> c.equals(HAS_RESOURCE_VALUE.getName(resourceType.getName())));
         return !resource.ownerInstances().isEmpty() && playsRole;
     }
