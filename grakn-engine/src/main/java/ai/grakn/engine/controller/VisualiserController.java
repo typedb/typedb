@@ -44,6 +44,8 @@ import mjson.Json;
 import org.eclipse.jetty.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -60,9 +62,10 @@ import java.util.stream.Collectors;
 import static ai.grakn.engine.controller.Utilities.getAcceptType;
 import static ai.grakn.engine.controller.Utilities.getKeyspace;
 import static ai.grakn.factory.EngineGraknGraphFactory.getInstance;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALArrayData;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptData;
-import static ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder.renderHALConceptOntology;
+import static ai.grakn.graql.internal.hal.HALBuilder.HALExploreConcept;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.graql.internal.hal.HALExplanationBuilder.answersToHAL;
 import static ai.grakn.util.REST.Request.GRAQL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.HAL_CONTENTTYPE;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
@@ -73,6 +76,8 @@ import static ai.grakn.util.REST.Response.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.ROLES_JSON_FIELD;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.stream.Collectors.toList;
+
+;
 
 /**
  * <p>
@@ -86,17 +91,19 @@ import static java.util.stream.Collectors.toList;
 @Produces({"application/json", "text/plain"})
 public class VisualiserController {
 
+    private final static Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
     private final static int separationDegree = 1;
     private final static String COMPUTE_RESPONSE_TYPE = "type";
     private final static String COMPUTE_RESPONSE_FIELD = "response";
 
     public VisualiserController(Service spark) {
         spark.get(REST.WebPath.CONCEPT_BY_ID_URI + ID_PARAMETER, this::conceptById);
-        spark.get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + ID_PARAMETER, this::conceptByIdOntology);
+        spark.get(REST.WebPath.CONCEPT_BY_ID_EXPLORE_URI + ID_PARAMETER, this::exploreConcept);
         spark.get(REST.WebPath.GRAPH_ONTOLOGY_URI, this::ontology);
         spark.get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::match);
         spark.get(REST.WebPath.GRAPH_ANALYTICS_QUERY_URI, this::compute);
         spark.get(REST.WebPath.GRAPH_PRE_MATERIALISE_QUERY_URI, this::preMaterialiseAll);
+        spark.get(REST.WebPath.GRAPH_EXPLAIN_URI, this::explain);
     }
 
     @GET
@@ -113,7 +120,7 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
 
             int offset = (req.queryParams().contains("offset")) ? Integer.parseInt(req.queryParams("offset")) : 0;
-            int limit =  (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
+            int limit = (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
 
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
@@ -128,14 +135,14 @@ public class VisualiserController {
     }
 
     @GET
-    @Path("/concept/ontology/:uuid")
+    @Path("/concept/explore/:uuid")
     @ApiOperation(
             value = "Return the HAL representation of a given concept.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
             @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
-    private String conceptByIdOntology(Request req, Response res) {
+    private String exploreConcept(Request req, Response res) {
         String keyspace = getKeyspace(req);
 
         int offset = (req.queryParams().contains("offset")) ? Integer.parseInt(req.queryParams("offset")) : 0;
@@ -144,7 +151,11 @@ public class VisualiserController {
         try (GraknGraph graph = getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
             Concept concept = graph.getConcept(ConceptId.of(req.params(ID_PARAMETER)));
 
-            return renderHALConceptOntology(concept, keyspace,offset, limit);
+            if (concept == null) {
+                throw new GraknEngineServerException(500, ErrorMessage.NO_CONCEPT_IN_KEYSPACE.getMessage(req.params(ID_PARAMETER), keyspace));
+            }
+
+            return HALExploreConcept(concept, keyspace, offset, limit);
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
@@ -188,9 +199,12 @@ public class VisualiserController {
         boolean materialise = parseBoolean(req.queryParams("materialise"));
 
         try (GraknGraph graph = getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
+            String query = req.queryParams(QUERY_FIELD);
             QueryBuilder qb = graph.graql().infer(useReasoner).materialise(materialise);
-            Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
+            Query parsedQuery = qb.parse(query);
             int limit = (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
+
+            LOG.trace("Received new query: [{}}", query);
 
             if (parsedQuery instanceof MatchQuery || parsedQuery instanceof AggregateQuery || parsedQuery instanceof ComputeQuery) {
                 switch (getAcceptType(req)) {
@@ -210,6 +224,36 @@ public class VisualiserController {
             throw new GraknEngineServerException(500, e);
         }
     }
+
+    @GET
+    @Path("/explain")
+    @ApiOperation(
+            value = "Returns an HAL representation of the explanation tree for a given match query.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
+    })
+    private String explain(Request req, Response res) {
+        String keyspace = getKeyspace(req);
+
+        try (GraknGraph graph = getInstance().getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
+            QueryBuilder qb = graph.graql().infer(true);
+            Query parsedQuery = qb.parse(req.queryParams(QUERY_FIELD));
+            int limit = (req.queryParams().contains("limit")) ? Integer.parseInt(req.queryParams("limit")) : -1;
+            final Json conceptsArray = Json.array();
+
+            answersToHAL(((MatchQuery) parsedQuery).admin().streamWithAnswers(), keyspace, limit).asList().forEach(conceptsArray::add);
+
+            return conceptsArray.toString();
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw new GraknEngineServerException(HttpStatus.BAD_REQUEST_400, e.getMessage());
+        } catch (RuntimeException e) {
+            throw new GraknEngineServerException(500, e);
+        }
+    }
+
+
 
     @GET
     @Path("/analytics")

@@ -18,12 +18,6 @@ module.exports = {
                 "allowForLoopAfterthoughts": true
             }
         ],
-        "no-underscore-dangle": [
-            0,
-            {
-                "allow": ["true"]
-            }
-        ],
         "max-len": [
             2,
             180

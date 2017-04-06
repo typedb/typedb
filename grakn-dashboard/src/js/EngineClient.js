@@ -134,7 +134,12 @@ export default {
       url: `/graph/analytics?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
     });
   },
-            /**
+
+  explainQuery(query) {
+    return this.request({
+      url: `/graph/explain?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
+    });
+  },            /**
              * Get current engine configuration.
              */
   getConfig() {

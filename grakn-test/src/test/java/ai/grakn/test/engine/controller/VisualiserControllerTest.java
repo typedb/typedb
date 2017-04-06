@@ -209,7 +209,7 @@ public class VisualiserControllerTest {
         Type protagonistType = graph.getType(TypeName.of("protagonist"));
         Response response = with()
                 .queryParam(KEYSPACE_PARAM, graph.getKeyspace())
-                .get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + protagonistType.getId().getValue())
+                .get(REST.WebPath.CONCEPT_BY_ID_EXPLORE_URI + protagonistType.getId().getValue())
                 .then().statusCode(200).extract().response().andReturn();
         Json protagonist = Json.read(response.getBody().asString());
 

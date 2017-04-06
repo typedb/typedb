@@ -115,7 +115,7 @@ export default class HALParser {
     for (let i = start; i < start + batchSize; i++) {
       if (i >= instances.length) {
         // When all the requests are loaded in promises flush the remaining ones and update labels on nodes
-        HALParser.flushPromisesAndRefreshLabels(promises, instances);
+        this.flushPromisesAndRefreshLabels(promises, instances);
         return;
       }
       promises.push(EngineClient.request({
@@ -127,6 +127,16 @@ export default class HALParser {
     Promise.all(promises).then((responses) => {
       responses.forEach((resp) => {
         const respObj = JSON.parse(resp);
+        // Check if some of the resources attached to this node are already drawn in the graph:
+        // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
+        // we need to draw the edges connecting this node to the resource node.
+        if (API.KEY_EMBEDDED in respObj) {
+          Object.keys(respObj[API.KEY_EMBEDDED]).forEach((key) => {
+            if ((key !== 'isa') || (respObj._baseType === API.RESOURCE)) {
+            this.parseEmbedded(respObj[API.KEY_EMBEDDED][key], respObj, key, {}, false, false);
+          }
+          });
+        }
         visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
       });
       visualiser.flushUpdates();
@@ -134,10 +144,21 @@ export default class HALParser {
     });
   }
 
-  static flushPromisesAndRefreshLabels(promises, instances) {
+  flushPromisesAndRefreshLabels(promises, instances) {
     Promise.all(promises).then((responses) => {
       responses.forEach((resp) => {
         const respObj = JSON.parse(resp);
+
+        // Check if some of the resources attached to this node are already drawn in the graph:
+        // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
+        // we need to draw the edges connecting this node to the resource node.
+         if (API.KEY_EMBEDDED in respObj) {
+          Object.keys(respObj[API.KEY_EMBEDDED]).forEach((key) => {
+            if ((key !== 'isa') || (respObj._baseType === API.RESOURCE)) {
+            this.parseEmbedded(respObj[API.KEY_EMBEDDED][key], respObj, key, {}, false, false);
+          }
+          });
+        }
         visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
       });
       visualiser.flushUpdates();
@@ -184,7 +205,7 @@ export default class HALParser {
           && (child[API.KEY_BASE_TYPE] !== API.RESOURCE)
           || showResources)
           || (hashSet !== undefined && hashSet[child._id])
-          || this.nodeAlreadyInGraph(HALParser.getHref(child))) {
+          || this.nodeAlreadyInGraph(child._id)) {
                 // Add resource and iterate its _embedded field
         const idC = child[API.KEY_ID];
         const idP = parent[API.KEY_ID];
@@ -209,7 +230,7 @@ export default class HALParser {
   // Load instance resouces if the node is not already in the graph
     if (nodeObj[API.KEY_BASE_TYPE] === API.ENTITY || nodeObj[API.KEY_BASE_TYPE] === API.RELATION || nodeObj[API.KEY_BASE_TYPE] === API.RULE) {
       if (!visualiser.nodeExists(nodeObj[API.KEY_ID])) {
-        this.instances.push({ id: nodeObj[API.KEY_ID], href: nodeObj[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF] });
+        this.instances.push({ id: nodeObj[API.KEY_ID], href: nodeObj[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF] });
       }
     }
     this.newResource(HALParser.getHref(nodeObj),
