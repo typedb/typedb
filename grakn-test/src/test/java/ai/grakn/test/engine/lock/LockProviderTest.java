@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.lock;
 
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.lock.ZookeeperReentrantLock;
+import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -58,7 +58,7 @@ public class LockProviderTest {
         ZookeeperConnection zookeeperConnection = mock(ZookeeperConnection.class);
         when(zookeeperConnection.connection()).thenReturn(mock(CuratorFramework.class));
 
-        Lock lock = new ZookeeperReentrantLock(zookeeperConnection, "/lock");
+        Lock lock = new ZookeeperLock(zookeeperConnection, "/lock");
 
         LockProvider.init(lock);
 

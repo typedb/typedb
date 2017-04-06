@@ -24,27 +24,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * <p>
- *
+ *     A fully distributed lock that is globally synchronous. No two engines or tasks will think they hold the same lock.
  * </p>
  *
  * @author alexandraorth
  */
-public class ZookeeperReentrantLock implements Lock {
+public class ZookeeperLock implements Lock {
 
-    private final InterProcessMutex mutex;
+    private final InterProcessSemaphoreMutex mutex;
 
-    public ZookeeperReentrantLock(ZookeeperConnection zookeeper, String lockPath){
-        this.mutex = new InterProcessMutex(zookeeper.connection(), lockPath);
+    public ZookeeperLock(ZookeeperConnection zookeeper, String lockPath){
+        this.mutex = new InterProcessSemaphoreMutex(zookeeper.connection(), lockPath);
     }
 
     /**
      * Acquires the lock. If the lock is not available, stalls the current thread until it is available.
-     * See {@link InterProcessMutex#acquire()} for more information.
+     * See {@link InterProcessSemaphoreMutex#acquire()} for more information.
      *
      * @throws EngineStorageException when there are Zookeeper connection issues.
      */

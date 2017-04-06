@@ -18,7 +18,7 @@
 
 package ai.grakn.test.engine.lock;
 
-import ai.grakn.engine.lock.ZookeeperReentrantLock;
+import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import ai.grakn.test.EngineContext;
@@ -34,7 +34,7 @@ import org.junit.rules.ExpectedException;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ZookeeperReentrantLockTest {
+public class ZookeeperLockTest {
 
     private static final String LOCK_PATH = "/lock";
     private static ZookeeperConnection zookeeperConnection;
@@ -57,20 +57,19 @@ public class ZookeeperReentrantLockTest {
 
     // this is allowed in a Reentrant lock
     @Test
-    public void whenLockAcquired_ItCanBeAcquiredAgain(){
-        Lock lock = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
+    public void whenLockAcquired_ItCannotBeAcquiredAgain(){
+        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
 
         lock.lock();
 
-        assertThat(lock.tryLock(), is(true));
+        assertThat(lock.tryLock(), is(false));
 
-        lock.unlock();
         lock.unlock();
     }
 
     @Test
     public void whenLockReleased_ItCanBeAcquiredAgain(){
-        Lock lock = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
+        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
 
         lock.lock();
         lock.unlock();
@@ -81,17 +80,17 @@ public class ZookeeperReentrantLockTest {
     }
 
     @Test
-    public void whenUnownedLockIsReleased_IllegalMonitorStateExceptionThrown(){
+    public void whenUnownedLockIsReleased_EngineStorageExceptionThrown(){
         exception.expect(EngineStorageException.class);
 
-        Lock lock = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
+        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
         lock.unlock();
     }
 
     @Test
     public void whenMultipleLocks_OnlyOneAtATimeCanBeAcquired(){
-        Lock lock1 = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
-        Lock lock2 = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
+        Lock lock1 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
+        Lock lock2 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
 
         lock1.lock();
 
@@ -107,8 +106,8 @@ public class ZookeeperReentrantLockTest {
 
     @Test
     public void whenMultipleLocks_TryLockSucceedsWhenFirstLockReleased() throws InterruptedException {
-        Lock lock1 = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
-        Lock lock2 = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
+        Lock lock1 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
+        Lock lock2 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
 
         lock1.lock();
 
@@ -128,8 +127,8 @@ public class ZookeeperReentrantLockTest {
 
     @Test
     public void whenLockAcquiredOnPath_AnotherCanBeAcquiredOnDifferentPath(){
-        Lock lock1 = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
-        Lock lock2 = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH + "2");
+        Lock lock1 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
+        Lock lock2 = new ZookeeperLock(zookeeperConnection, LOCK_PATH + "2");
 
         assertThat(lock1.tryLock(), is(true));
         assertThat(lock2.tryLock(), is(true));
@@ -142,7 +141,7 @@ public class ZookeeperReentrantLockTest {
     public void whenLockInterruptiblyCalled_UnsupportedOperationThrown() throws InterruptedException {
         exception.expect(UnsupportedOperationException.class);
 
-        Lock lock = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
+        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
         lock.lockInterruptibly();
     }
 
@@ -150,7 +149,7 @@ public class ZookeeperReentrantLockTest {
     public void whenNewConditionCalled_UnsupportedOperationThrown(){
         exception.expect(UnsupportedOperationException.class);
 
-        Lock lock = new ZookeeperReentrantLock(zookeeperConnection, LOCK_PATH);
+        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
         lock.newCondition();
     }
 
