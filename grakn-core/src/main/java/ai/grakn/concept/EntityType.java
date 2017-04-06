@@ -74,7 +74,7 @@ public interface EntityType extends Type{
      * @param roleType The Role Type which the instances of this EntityType are allowed to play.
      * @return The EntityType itself
      */
-    EntityType playsRole(RoleType roleType);
+    EntityType plays(RoleType roleType);
 
     /**
      * Removes the RoleType to prevent instances of this EntityType from playing it.
@@ -82,7 +82,7 @@ public interface EntityType extends Type{
      * @param roleType The Role Type which the instances of this EntityType should no longer be allowed to play.
      * @return The EntityType itself
      */
-    EntityType deletePlaysRole(RoleType roleType);
+    EntityType deletePlays(RoleType roleType);
 
     /**
      * Creates and returns a new Entity instance, whose direct type will be this type.

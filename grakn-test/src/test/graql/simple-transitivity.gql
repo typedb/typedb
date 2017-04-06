@@ -6,8 +6,8 @@ insert
 
 "entity2" sub entity
     has-resource index
-    plays-role Q-from
-    plays-role Q-to;
+    plays Q-from
+    plays Q-to;
 "a-entity" sub entity2;
 
 "Q-from" sub role;

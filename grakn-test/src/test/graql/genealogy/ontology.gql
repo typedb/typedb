@@ -1,7 +1,7 @@
 insert
 
 document sub entity
-	plays-role evidence
+	plays evidence
 	has-resource identifier
 	has-resource document-location
 	has-resource document-type
@@ -21,8 +21,8 @@ conclusion sub role;
 
 event sub entity
 	is-abstract
-	plays-role conclusion
-	plays-role happening
+	plays conclusion
+	plays happening
 	has-resource degree
 	has-resource confidence
 	has-resource date
@@ -67,16 +67,16 @@ confidence sub resource datatype string;
 ### Genealogy tree: this is inferred from the events
 
 person sub entity
-	plays-role protagonist
-	plays-role spouse
-	plays-role parent
-	plays-role child
-	plays-role sibling
-	plays-role grandparent
-	plays-role grandchild
-	plays-role cousin
-	plays-role child-in-law
-	plays-role parent-in-law
+	plays protagonist
+	plays spouse
+	plays parent
+	plays child
+	plays sibling
+	plays grandparent
+	plays grandchild
+	plays cousin
+	plays child-in-law
+	plays parent-in-law
 	has-resource gender
 	has-resource birth-date
 	has-resource death-date

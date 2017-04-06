@@ -6,27 +6,27 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static ai.grakn.util.Schema.EdgeLabel.PLAYS_ROLE;
+import static ai.grakn.util.Schema.EdgeLabel.PLAYS;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThat;
 
-public class InPlaysRoleFragmentTest {
+public class OutPlaysFragmentTest {
 
     private final VarName start = VarName.anon();
     private final VarName end = VarName.anon();
-    private final InPlaysRoleFragment fragment = new InPlaysRoleFragment(start, end, false);
+    private final OutPlaysFragment fragment = new OutPlaysFragment(start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testApplyTraversalFollowsSubsDownwards() {
+    public void testApplyTraversalFollowsSubsUpwards() {
         GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversal(traversal);
 
-        // Make sure we traverse plays role and downwards subs once
+        // Make sure we traverse upwards subs once and plays
         assertThat(traversal, is(__.V()
-                .in(PLAYS_ROLE.getLabel())
-                .union(__.identity(), __.repeat(__.in(SUB.getLabel())).emit()).unfold()
+                .union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold()
+                .out(PLAYS.getLabel())
         ));
     }
 }

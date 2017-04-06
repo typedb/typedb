@@ -98,8 +98,8 @@ public class MovieGraph extends TestGraph {
         name = graph.putResourceType("name", ResourceType.DataType.STRING);
 
         production = graph.putEntityType("production")
-                .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
-                .playsRole(productionWithGenre);
+                .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
+                .plays(productionWithGenre);
 
         production.resource(title);
         production.resource(tmdbVoteCount);
@@ -112,17 +112,17 @@ public class MovieGraph extends TestGraph {
         graph.putEntityType("tv-show").superType(production);
 
         person = graph.putEntityType("person")
-                .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
+                .plays(director).plays(actor).plays(characterBeingPlayed);
 
         person.resource(gender);
         person.resource(name);
         person.resource(realName);
 
-        genre = graph.putEntityType("genre").playsRole(genreOfProduction);
+        genre = graph.putEntityType("genre").plays(genreOfProduction);
         genre.key(name);
 
         character = graph.putEntityType("character")
-                .playsRole(characterBeingPlayed);
+                .plays(characterBeingPlayed);
 
         character.resource(name);
 
@@ -131,7 +131,7 @@ public class MovieGraph extends TestGraph {
 
         language.resource(name);
 
-        cluster = graph.putEntityType("cluster").playsRole(clusterOfProduction);
+        cluster = graph.putEntityType("cluster").plays(clusterOfProduction);
         cluster.resource(name);
     }
 

@@ -117,12 +117,12 @@ public class ResourceDeduplicationMapReduceTestIT {
         related.resource(booleanResource);
         related.resource(floatResource);
         related.resource(doubleResource);
-        thing.playsRole(near1).playsRole(near2).playsRole(near3).playsRole(related1)
-            .playsRole(related2).playsRole(related3).playsRole(related4).playsRole(related5);
-        idea.playsRole(related1).playsRole(related2).playsRole(related3).playsRole(related4).playsRole(related5);
-        stringResource.playsRole(related1).playsRole(related2).playsRole(related3)
-                .playsRole(related4).playsRole(related5);
-        floatResource.playsRole(related1).playsRole(related2);
+        thing.plays(near1).plays(near2).plays(near3).plays(related1)
+            .plays(related2).plays(related3).plays(related4).plays(related5);
+        idea.plays(related1).plays(related2).plays(related3).plays(related4).plays(related5);
+        stringResource.plays(related1).plays(related2).plays(related3)
+                .plays(related4).plays(related5);
+        floatResource.plays(related1).plays(related2);
     }
     
     @Before

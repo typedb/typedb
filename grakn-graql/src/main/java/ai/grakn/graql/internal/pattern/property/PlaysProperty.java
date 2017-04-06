@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
 
 /**
- * Reperesents the {@code plays-role} property on a {@link ai.grakn.concept.Type}.
+ * Reperesents the {@code plays} property on a {@link ai.grakn.concept.Type}.
  *
  * This property relates a {@link ai.grakn.concept.Type} and a {@link RoleType}. It indicates that an
  * {@link ai.grakn.concept.Instance} whose type is this {@link ai.grakn.concept.Type} is permitted to be a role-player
@@ -49,12 +49,12 @@ import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
  *
  * @author Felix Chapman
  */
-public class PlaysRoleProperty extends AbstractVarProperty implements NamedProperty {
+public class PlaysProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin role;
     private final boolean required;
 
-    public PlaysRoleProperty(VarAdmin role, boolean required) {
+    public PlaysProperty(VarAdmin role, boolean required) {
         this.role = role;
         this.required = required;
     }
@@ -65,7 +65,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
     @Override
     public String getName() {
-        return "plays-role";
+        return "plays";
     }
 
     @Override
@@ -75,7 +75,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        return ImmutableSet.of(EquivalentFragmentSets.playsRole(start, role.getVarName(), required));
+        return ImmutableSet.of(EquivalentFragmentSets.plays(start, role.getVarName(), required));
     }
 
     @Override
@@ -91,13 +91,13 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
-        concept.asType().playsRole(roleType);
+        concept.asType().plays(roleType);
     }
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
         TypeName roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
-        concept.asType().deletePlaysRole(graph.getType(roleName));
+        concept.asType().deletePlays(graph.getType(roleName));
     }
 
     @Override
@@ -105,7 +105,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        PlaysRoleProperty that = (PlaysRoleProperty) o;
+        PlaysProperty that = (PlaysProperty) o;
 
         return required == that.required && role.equals(that.role);
 
@@ -125,7 +125,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
         VarName typeVariable = typeVar.getVarName();
         IdPredicate predicate = getIdPredicate(typeVariable, typeVar, vars, parent);
 
-        VarAdmin resVar = Graql.var(varName).playsRole(Graql.var(typeVariable)).admin();
+        VarAdmin resVar = Graql.var(varName).plays(Graql.var(typeVariable)).admin();
         return new TypeAtom(resVar, predicate, parent);
     }
 }

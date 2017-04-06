@@ -170,8 +170,8 @@ public class GraknGraphTest extends GraphTestBase {
         RoleType roleType = graknGraph.admin().getMetaRoleType();
 
         //Check nothing is revealed when returning result sets
-        assertThat(type.playsRoles(), is(empty()));
-        assertThat(resourceType.playsRoles(), is(empty()));
+        assertThat(type.plays(), is(empty()));
+        assertThat(resourceType.plays(), is(empty()));
         assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType));
         assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType));
 
@@ -190,8 +190,8 @@ public class GraknGraphTest extends GraphTestBase {
         //Now check the result sets again
         assertThat(graknGraph.getMetaRelationType().subTypes(), containsInAnyOrder(relationType, has));
         assertThat(graknGraph.getMetaRoleType().subTypes(), containsInAnyOrder(roleType, hasOwner, hasValue));
-        assertThat(type.playsRoles(), containsInAnyOrder(hasOwner));
-        assertThat(resourceType.playsRoles(), containsInAnyOrder(hasValue));
+        assertThat(type.plays(), containsInAnyOrder(hasOwner));
+        assertThat(resourceType.plays(), containsInAnyOrder(hasValue));
     }
 
     @Test
@@ -240,7 +240,7 @@ public class GraknGraphTest extends GraphTestBase {
 
         RoleType r1 = graknGraph.putRoleType("r1");
         RoleType r2 = graknGraph.putRoleType("r2");
-        EntityType e1 = graknGraph.putEntityType("e1").playsRole(r1).playsRole(r2);
+        EntityType e1 = graknGraph.putEntityType("e1").plays(r1).plays(r2);
         RelationType rel1 = graknGraph.putRelationType("rel1").relates(r1).relates(r2);
 
         //Purge the above concepts into the main cache
@@ -252,7 +252,7 @@ public class GraknGraphTest extends GraphTestBase {
                 graknGraph.getMetaConcept(), graknGraph.getMetaEntityType(),
                 graknGraph.getMetaRelationType(), graknGraph.getMetaRoleType()));
 
-        assertThat(e1.playsRoles(), containsInAnyOrder(r1, r2));
+        assertThat(e1.plays(), containsInAnyOrder(r1, r2));
 
         ExecutorService pool = Executors.newSingleThreadExecutor();
         //Mutate Ontology in a separate thread
@@ -260,12 +260,12 @@ public class GraknGraphTest extends GraphTestBase {
             GraknGraph innerGraph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
             EntityType entityType = innerGraph.getEntityType("e1");
             RoleType role = innerGraph.getRoleType("r1");
-            entityType.deletePlaysRole(role);
+            entityType.deletePlays(role);
         }).get();
 
         //Check the above mutation did not affect central repo
         Type foundE1 = graknGraph.getCachedOntology().asMap().get(e1.getName());
-        assertTrue("Main cache was affected by transaction", foundE1.playsRoles().contains(r1));
+        assertTrue("Main cache was affected by transaction", foundE1.plays().contains(r1));
     }
 
     @Test
@@ -317,7 +317,7 @@ public class GraknGraphTest extends GraphTestBase {
         failMutation(graknGraph, entityT::addEntity);
         failMutation(graknGraph, () -> resourceT.putResource("A resource"));
         failMutation(graknGraph, () -> graknGraph.putEntityType(entityType));
-        failMutation(graknGraph, () -> entityT.playsRole(roleT1));
+        failMutation(graknGraph, () -> entityT.plays(roleT1));
         failMutation(graknGraph, () -> relationT1.relates(roleT2));
         failMutation(graknGraph, () -> relationT2.relates(roleT1));
     }
@@ -385,15 +385,15 @@ public class GraknGraphTest extends GraphTestBase {
                 "    has-resource time;\n" +
                 "time sub resource datatype long;\n" +
                 "question sub comment\n" +
-                "    plays-role asked-question; \n" +
+                "    plays asked-question; \n" +
                 "yes-no sub question;\n" +
                 "open sub question;\n" +
                 "answer sub comment\n" +
-                "    plays-role given-answer\n" +
+                "    plays given-answer\n" +
                 "    has-resource answer-type;\n" +
                 "answer-type sub resource datatype string;\n" +
                 "review sub comment\n" +
-                "    plays-role feedback\n" +
+                "    plays feedback\n" +
                 "    has-resource summary;\n" +
                 "summary sub text;\n" +
                 "text sub resource datatype string;\n" +
@@ -408,19 +408,19 @@ public class GraknGraphTest extends GraphTestBase {
                 "    has-resource brand\n" +
                 "    has-resource name\n" +
                 "    has-resource text\n" +
-                "    plays-role item\n" +
-                "    plays-role recommended;\n" +
+                "    plays item\n" +
+                "    plays recommended;\n" +
                 "asin sub ID;\n" +
                 "image-url sub resource datatype string;\n" +
                 "brand sub name;\n" +
                 "price sub resource datatype double;\n" +
                 "category sub entity\n" +
                 "    has-resource name\n" +
-                "    plays-role subcategory\n" +
-                "    plays-role supercategory\n" +
-                "    plays-role label\n" +
-                "    plays-role item\n" +
-                "    plays-role recommended;\n" +
+                "    plays subcategory\n" +
+                "    plays supercategory\n" +
+                "    plays label\n" +
+                "    plays item\n" +
+                "    plays recommended;\n" +
                 "name sub resource datatype string;\n" +
                 "hierarchy sub relation\n" +
                 "    relates subcategory\n" +
@@ -433,8 +433,8 @@ public class GraknGraphTest extends GraphTestBase {
                 "user sub entity\n" +
                 "    has-resource uid\n" +
                 "    has-resource username\n" +
-                "    plays-role reviewer\n" +
-                "    plays-role buyer;\n" +
+                "    plays reviewer\n" +
+                "    plays buyer;\n" +
                 "uid sub ID;\n" +
                 "username sub name;\n" +
                 "completed-recommendation sub relation\n" +
@@ -444,10 +444,10 @@ public class GraknGraphTest extends GraphTestBase {
                 "    relates category-recommendation\n" +
                 "    relates product-recommendation;\n" +
                 "recommendation sub relation is-abstract\n" +
-                "    plays-role successful-recommendation\n" +
-                "    plays-role product-recommendation;\n" +
+                "    plays successful-recommendation\n" +
+                "    plays product-recommendation;\n" +
                 "co-categories sub relation\n" +
-                "    plays-role category-recommendation\n" +
+                "    plays category-recommendation\n" +
                 "    relates item\n" +
                 "    relates recommended;\n" +
                 "also-viewed sub recommendation\n" +

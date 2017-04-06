@@ -68,6 +68,6 @@ public class AskQueryTest {
 
     @Test
     public void testAskNoVariables() {
-        assertTrue(qb.match(name("person").playsRole("actor")).ask().execute());
+        assertTrue(qb.match(name("person").plays("actor")).ask().execute());
     }
 }

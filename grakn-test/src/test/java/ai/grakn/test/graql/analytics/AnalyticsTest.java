@@ -116,7 +116,7 @@ public class AnalyticsTest {
             RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS_RESOURCE.getName(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
-            thing.playsRole(degreeOwner);
+            thing.plays(degreeOwner);
 
             Entity thisThing = thing.addEntity();
             relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
@@ -169,8 +169,8 @@ public class AnalyticsTest {
 
             RoleType role1 = graph.putRoleType("role1");
             RoleType role2 = graph.putRoleType("role2");
-            entityType1.playsRole(role1).playsRole(role2);
-            entityType2.playsRole(role1).playsRole(role2);
+            entityType1.plays(role1).plays(role2);
+            entityType2.plays(role1).plays(role2);
             RelationType relationType = graph.putRelationType(related).relates(role1).relates(role2);
 
             relationId12 = relationType.addRelation()

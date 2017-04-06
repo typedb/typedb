@@ -29,7 +29,7 @@ export default {
     alias: 'string',
   },
   keyword: {
-    pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(match|ask|insert|delete|select|isa|sub|plays-role|relates|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|aggregate|type-name)(?![-a-zA-Z_0-9])/, // eslint-disable-line max-len
+    pattern: /((?:(?![-a-zA-Z_0-9]).)|^|\s)(match|ask|insert|delete|select|isa|sub|plays|relates|has-scope|datatype|is-abstract|has|value|id|of|limit|offset|order|by|compute|aggregate|type-name)(?![-a-zA-Z_0-9])/, // eslint-disable-line max-len
     alias: 'keyword',
     lookbehind: true,
   },
