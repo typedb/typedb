@@ -42,6 +42,8 @@
                 <include>pom.xml</include>
                 <include>LICENSE.txt</include>
                 <include>grakn-core/**</include>
+                <include>grakn-client/**</include>
+                <include>grakn-test-profiles/**</include>
                 <include>grakn-dashboard/**</include>
                 <include>grakn-dist/**</include>
                 <include>grakn-engine/**</include>
