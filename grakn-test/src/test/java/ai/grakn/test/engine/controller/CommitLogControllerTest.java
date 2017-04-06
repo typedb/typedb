@@ -54,7 +54,7 @@ public class CommitLogControllerTest {
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
     @Before
-    public void setUp() throws Exception {
+    public void sendFakeCommitLog() throws Exception {
         String commitLog = "{\n" +
                 "    \"" + REST.Request.COMMIT_LOG_FIXING + "\":[\n" +
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"10\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"1\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
@@ -67,6 +67,13 @@ public class CommitLogControllerTest {
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"80\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"8\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"90\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"9\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
                 "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"100\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"10\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"}\n" +
+                "    ],\n" +
+                "    \"" + REST.Request.COMMIT_LOG_COUNTING + "\":[\n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Alpha\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"-3\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Bravo\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"-2\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Charlie\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"-1\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Delta\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"1\"}, \n" +
+                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Foxtrot\", \"" + REST.Request.COMMIT_LOG_COUNTING + "\":\"2\"} \n" +
                 "    ]\n" +
                 "}";
 
@@ -76,12 +83,12 @@ public class CommitLogControllerTest {
     }
 
     @After
-    public void takeDown() throws InterruptedException {
+    public void clearCache() throws InterruptedException {
         cache.getCastingJobs(KEYSPACE).clear();
     }
 
     @Test
-    public void checkDirectClearWorks(){
+    public void whenClearingGraph_CommitLogClearsCache(){
         GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, KEYSPACE).open(GraknTxType.WRITE);
         test.admin().clear(EngineCacheProvider.getCache());
         assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
@@ -89,13 +96,13 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void testControllerWorking() {
+    public void whenControllerReceivesLog_CacheIsUpdated() {
         assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
     }
 
     @Test
-    public void testCommitLogSubmission() throws GraknValidationException {
+    public void whenCommittingGraph_CommitLogIsSent() throws GraknValidationException {
         final String BOB = "bob";
         final String TIM = "tim";
 
@@ -142,7 +149,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void testDeleteController() throws InterruptedException {
+    public void whenDeletingViaController_CacheIsCleared() throws InterruptedException {
         assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
         assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
 
@@ -167,7 +174,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void testSystemKeyspaceNotSubmittingLogs() throws GraknValidationException {
+    public void whenCommittingSystemGraph_CommitLogsNotSent() throws GraknValidationException {
         GraknGraph graph1 = Grakn.session(Grakn.DEFAULT_URI, SystemKeyspace.SYSTEM_GRAPH_NAME).open(GraknTxType.WRITE);
         ResourceType<String> resourceType = graph1.putResourceType("New Resource Type", ResourceType.DataType.STRING);
         resourceType.putResource("a");
