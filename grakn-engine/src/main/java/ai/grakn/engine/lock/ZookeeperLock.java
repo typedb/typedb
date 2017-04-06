@@ -23,7 +23,6 @@ import ai.grakn.exception.EngineStorageException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
