@@ -43,7 +43,6 @@ import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.pattern.property.NameProperty;
 import ai.grakn.graql.internal.pattern.property.NeqProperty;
-import ai.grakn.graql.internal.pattern.property.PlaysProperty;
 import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
 import ai.grakn.graql.internal.pattern.property.RegexProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
@@ -266,16 +265,6 @@ class VarImpl implements VarAdmin {
     @Override
     public Var rel(Var roletype, Var roleplayer) {
         return addCasting(RelationPlayerImpl.of(roletype.admin(), roleplayer.admin()));
-    }
-
-    @Override
-    public Var plays(String roleType) {
-        return plays(Graql.name(roleType));
-    }
-
-    @Override
-    public Var plays(Var roleType) {
-        return addProperty(new PlaysProperty(roleType.admin()));
     }
 
     @Override
