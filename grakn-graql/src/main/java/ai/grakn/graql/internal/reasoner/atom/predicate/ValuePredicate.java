@@ -52,7 +52,7 @@ public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
     }
 
     public static VarAdmin createValueVar(VarName name, ValuePredicateAdmin pred) {
-        return Graql.var(name).value(pred).admin();
+        return Graql.var(name).val(pred).admin();
     }
 
     @Override
