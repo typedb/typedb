@@ -21,12 +21,16 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.TypeName;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graph.admin.ConceptCache;
+import ai.grakn.util.ErrorMessage;
 import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -43,6 +47,7 @@ import java.util.function.Consumer;
  * @author fppt
  */
 public class UpdatingInstanceCountTask implements BackgroundTask {
+    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private ConceptCache cache = EngineCacheProvider.getCache();
 
     @Override
@@ -50,15 +55,48 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
         cache.getKeyspaces().parallelStream().forEach(this::updateCountsOnKeySpace);
         return true;
     }
+
     private void updateCountsOnKeySpace(String keyspace){
         Map<TypeName, Long> jobs = cache.getInstanceCountJobs(keyspace);
         //Clear the cache optimistically because we think we going to update successfully
         jobs.forEach((key, value) -> cache.deleteJobInstanceCount(keyspace, key));
 
-        try(GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE)){
-            graknGraph.admin().updateTypeCounts(jobs);
-            graknGraph.admin().commitNoLogs();
+        //TODO: All this boiler plate retry should be moved into a common graph mutating background task
+
+        boolean notDone = true;
+        int retry = 0;
+
+        while(notDone) {
+            notDone = false;
+            try (GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
+                graknGraph.admin().updateTypeCounts(jobs);
+                graknGraph.admin().commitNoLogs();
+            } catch (Throwable e) {
+                LOG.error("Unable to updating instance counts of graph [" + keyspace + "]", e);
+                if(retry > 10){
+                    LOG.error("Failed 10 times in a row to update the counts of the types on graph [" + keyspace + "] giving up");
+                    jobs.forEach((key, value) -> cache.addJobInstanceCount(keyspace, key, value));
+                } else {
+                    retry = performRetry(retry);
+                    notDone = true;
+                }
+            }
         }
+    }
+
+    private static int performRetry(int retry){
+        retry ++;
+        double seed = 1.0 + (Math.random() * 5.0);
+        double waitTime = (retry * 2.0)  + seed;
+        LOG.debug(ErrorMessage.BACK_OFF_RETRY.getMessage(waitTime));
+
+        try {
+            Thread.sleep((long) Math.ceil(waitTime * 1000));
+        } catch (InterruptedException e1) {
+            LOG.error("Exception",e1);
+        }
+
+        return retry;
     }
 
     @Override
