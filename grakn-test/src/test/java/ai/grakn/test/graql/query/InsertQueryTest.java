@@ -213,7 +213,7 @@ public class InsertQueryTest {
                 name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolution").relates("evolves-from").relates("evolves-to"),
-                name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
+                name("pokemon").playsRole("evolves-from").playsRole("evolves-to").has("name"),
 
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
@@ -457,18 +457,18 @@ public class InsertQueryTest {
     @Test
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
-                name("movie").hasResource("my-resource"),
+                name("movie").has("my-resource"),
                 name("my-resource").sub("resource").datatype(ResourceType.DataType.STRING),
                 var("x").isa("movie").has("my-resource", "look a string")
         ).execute();
     }
 
     @Test
-    public void testHasResource() {
+    public void testHas() {
         String resourceType = "a-new-resource-type";
 
         qb.insert(
-                name("a-new-type").sub("entity").hasResource(resourceType),
+                name("a-new-type").sub("entity").has(resourceType),
                 name(resourceType).sub("resource").datatype(ResourceType.DataType.STRING),
                 name("an-unconnected-resource-type").sub("resource").datatype(ResourceType.DataType.LONG)
         ).execute();
@@ -476,10 +476,10 @@ public class InsertQueryTest {
         movieGraph.graph().showImplicitConcepts(true);
 
         // Make sure a-new-type can have the given resource type, but not other resource types
-        assertTrue(qb.match(name("a-new-type").sub("entity").hasResource(resourceType)).ask().execute());
-        assertFalse(qb.match(name("a-new-type").hasResource("title")).ask().execute());
-        assertFalse(qb.match(name("movie").hasResource(resourceType)).ask().execute());
-        assertFalse(qb.match(name("a-new-type").hasResource("an-unconnected-resource-type")).ask().execute());
+        assertTrue(qb.match(name("a-new-type").sub("entity").has(resourceType)).ask().execute());
+        assertFalse(qb.match(name("a-new-type").has("title")).ask().execute());
+        assertFalse(qb.match(name("movie").has(resourceType)).ask().execute());
+        assertFalse(qb.match(name("a-new-type").has("an-unconnected-resource-type")).ask().execute());
 
         Var hasResource = name(HAS_RESOURCE.getName(resourceType));
         Var hasResourceOwner = name(HAS_RESOURCE_OWNER.getName(resourceType));
@@ -506,7 +506,7 @@ public class InsertQueryTest {
 
         // Make sure a-new-type can have the given resource type as a key or otherwise
         assertTrue(qb.match(name("a-new-type").sub("entity").key(resourceType)).ask().execute());
-        assertTrue(qb.match(name("a-new-type").sub("entity").hasResource(resourceType)).ask().execute());
+        assertTrue(qb.match(name("a-new-type").sub("entity").has(resourceType)).ask().execute());
         assertFalse(qb.match(name("a-new-type").sub("entity").key("title")).ask().execute());
         assertFalse(qb.match(name("movie").sub("entity").key(resourceType)).ask().execute());
 
@@ -746,7 +746,7 @@ public class InsertQueryTest {
     public void testErrorWhenNonExistentResource() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("nothing");
-        qb.insert(name("blah this").sub("entity").hasResource("nothing")).execute();
+        qb.insert(name("blah this").sub("entity").has("nothing")).execute();
     }
 
     @Test

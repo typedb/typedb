@@ -218,12 +218,12 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var hasResource(String type) {
-        return hasResource(Graql.name(type));
+    public Var has(String type) {
+        return has(Graql.name(type));
     }
 
     @Override
-    public Var hasResource(Var type) {
+    public Var has(Var type) {
         return addProperty(new HasResourceTypeProperty(type.admin(), false));
     }
 

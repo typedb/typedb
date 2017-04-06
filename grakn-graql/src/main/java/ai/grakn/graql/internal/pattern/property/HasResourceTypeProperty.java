@@ -175,7 +175,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         VarName varName = var.getVarName();
         TypeName typeName = this.getResourceType().getTypeName().orElse(null);
         //isa part
-        VarAdmin resVar = var(varName).hasResource(name(typeName)).admin();
+        VarAdmin resVar = var(varName).has(name(typeName)).admin();
         return new TypeAtom(resVar, parent);
     }
 }

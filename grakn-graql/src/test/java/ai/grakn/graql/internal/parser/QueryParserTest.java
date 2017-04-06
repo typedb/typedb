@@ -322,7 +322,7 @@ public class QueryParserTest {
                 name("evolves-from").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolves-to").sub(Schema.MetaSchema.ROLE.getName().getValue()),
                 name("evolution").relates("evolves-from").relates("evolves-to"),
-                name("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
+                name("pokemon").playsRole("evolves-from").playsRole("evolves-to").has("name"),
                 var("x").has("name", "Pichu").isa("pokemon"),
                 var("y").has("name", "Pikachu").isa("pokemon"),
                 var("z").has("name", "Raichu").isa("pokemon"),

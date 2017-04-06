@@ -191,14 +191,14 @@ public interface Var extends Pattern {
      * @return this
      */
     @CheckReturnValue
-    Var hasResource(String type);
+    Var has(String type);
 
     /**
      * @param type a resource type that this type variable can be related to
      * @return this
      */
     @CheckReturnValue
-    Var hasResource(Var type);
+    Var has(Var type);
 
     /**
      * @param type a resource type that this type variable can be one-to-one related to

@@ -361,7 +361,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     /**
      *
-     * @return returns true if the type was created implicitly through {@link #hasResource}
+     * @return returns true if the type was created implicitly through {@link #has}
      */
     @Override
     public Boolean isImplicit(){
@@ -589,7 +589,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param required Indicates if the resource is required on the entity
      * @return The Type itself
      */
-    public T hasResource(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
+    public T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
         checkTypeMutation();
 
@@ -647,13 +647,13 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @Override
     public T resource(ResourceType resourceType){
         checkNonOverlapOfImplicitRelations(Schema.ImplicitType.KEY_OWNER, resourceType);
-        return hasResource(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, false);
+        return has(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, false);
     }
 
     @Override
     public T key(ResourceType resourceType) {
         checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_RESOURCE_OWNER, resourceType);
-        return hasResource(resourceType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
+        return has(resourceType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
     }
 
     /**

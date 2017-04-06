@@ -783,16 +783,16 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testMatchHasResource() {
-        MatchQuery query = qb.match(var("x").hasResource("name"));
+    public void testMatchHas() {
+        MatchQuery query = qb.match(var("x").has("name"));
         assertThat(query, variable("x", containsInAnyOrder(
                 person, language, genre, aRuleType, cluster, character
         )));
     }
 
     @Test
-    public void whenMatchingHasResource_ThenTheResultOnlyContainsTheExpectedVariables() {
-        MatchQuery query = qb.match(var("x").hasResource("name"));
+    public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
+        MatchQuery query = qb.match(var("x").has("name"));
         for (Map<String, Concept> result : query) {
             assertEquals(result.keySet(), ImmutableSet.of("x"));
         }
