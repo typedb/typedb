@@ -32,6 +32,7 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -57,7 +58,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
     }
 
     private void updateCountsOnKeySpace(String keyspace){
-        Map<TypeName, Long> jobs = cache.getInstanceCountJobs(keyspace);
+        Map<TypeName, Long> jobs = new HashMap<>(cache.getInstanceCountJobs(keyspace));
         //Clear the cache optimistically because we think we going to update successfully
         jobs.forEach((key, value) -> cache.deleteJobInstanceCount(keyspace, key));
 
