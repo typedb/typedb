@@ -19,7 +19,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <template>
 <transition name="slideInDown" appear>
     <div class="z-depth-1 message-panel" v-if="showMessagePanel">
-        <div>{{message}}</div><div><button @click="$emit('close-message')" class="btn">X</button></div>
+        <div style="word-break: break-all">{{message}}</div><div><button @click="$emit('close-message')" class="btn">X</button></div>
     </div>
 </transition>
 </template>
@@ -53,12 +53,12 @@ i
 </style>
 <script>
 export default {
-    name: 'MessagePanel',
-    props: ['message', 'showMessagePanel'],
-    mounted: function() {
-        this.$nextTick(function() {});
-    },
-    methods: {
-    }
-}
+  name: 'MessagePanel',
+  props: ['message', 'showMessagePanel'],
+  mounted() {
+    this.$nextTick(() => {});
+  },
+  methods: {
+  },
+};
 </script>

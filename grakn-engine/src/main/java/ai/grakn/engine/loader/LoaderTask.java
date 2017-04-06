@@ -42,7 +42,7 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static java.util.stream.Collectors.toList;
 
@@ -178,8 +178,8 @@ public class LoaderTask implements BackgroundTask {
      * @return keyspace from the configuration
      */
     private String getKeyspace(Json configuration){
-        if(configuration.has(KEYSPACE_PARAM)){
-            return configuration.at(KEYSPACE_PARAM).asString();
+        if(configuration.has(KEYSPACE)){
+            return configuration.at(KEYSPACE).asString();
         }
 
         //TODO default graph name

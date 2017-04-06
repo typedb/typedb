@@ -20,8 +20,8 @@ res1 sub resource datatype string;
 
 isa inference-rule
 lhs {
-$x isa entity1, has res1 $y;
-$z isa relation1;
+    $x isa entity1, has res1 $y;
+    $z isa relation1;
 }
 rhs {
     $z has res1 $y;

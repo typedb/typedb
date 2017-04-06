@@ -31,10 +31,9 @@ export default {
      */
   request(requestData) {
     return new Promise((resolve, reject) => {
-      const reasonerParam = (requestData.appendReasonerParams) ? `&reasoner=${User.getReasonerStatus()}` : '';
 
       const req = new XMLHttpRequest();
-      req.open(requestData.requestType || 'GET', requestData.url + reasonerParam);
+      req.open(requestData.requestType || 'GET', requestData.url);
       this.setHeaders(req, requestData);
 
       req.onload = function setOnLoad() {
@@ -102,7 +101,7 @@ export default {
              */
   preMaterialiseAll() {
     this.request({
-      url: `/graph/preMaterialiseAll?keyspace=${User.getCurrentKeySpace()}`,
+      url: `/graph/precomputeInferences?keyspace=${User.getCurrentKeySpace()}`,
       contentType: 'application/text',
     });
   },
@@ -112,9 +111,9 @@ export default {
              */
   graqlShell(query) {
     return this.request({
-      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
+      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
       contentType: 'application/text',
-      accepts: 'application/graql',
+      accepts: 'application/text',
     });
   },
             /**
@@ -123,7 +122,7 @@ export default {
   graqlHAL(query) {
       // In match queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
-      url: `/graph/match?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&reasoner=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limit=${User.getQueryLimit()}`,
+      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
     });
   },
             /**
@@ -131,10 +130,16 @@ export default {
              */
   graqlAnalytics(query) {
     return this.request({
-      url: `/graph/analytics?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
+      url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=false&materialise=false`,
+      accepts: 'application/text',
     });
   },
-            /**
+
+  explainQuery(query) {
+    return this.request({
+      url: `/dashboard/explain?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
+    });
+  },            /**
              * Get current engine configuration.
              */
   getConfig() {
@@ -145,9 +150,15 @@ export default {
             /**
              * Get meta ontology type instances.
              */
-  getMetaTypes(fn) {
+  getMetaTypes() {
     return this.request({
       url: `/graph/ontology?keyspace=${User.getCurrentKeySpace()}`,
+    });
+  },
+
+  getConceptTypes(id) {
+    return this.request({
+      url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}&limitEmbedded=${User.getQueryLimit()}`,
     });
   },
 

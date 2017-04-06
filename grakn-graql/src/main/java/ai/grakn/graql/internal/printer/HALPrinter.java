@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.printer;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.graql.internal.hal.HALConceptRepresentationBuilder;
+import ai.grakn.graql.internal.hal.HALBuilder;
 import mjson.Json;
 
 
@@ -29,7 +29,7 @@ class HALPrinter extends JsonPrinter {
     @Override
     public Json graqlString(boolean inner, Concept concept) {
         //Todo: remove hardcoded keyspace and think about proper solution (maybe expose the getKeyspace on the concept itself)
-        String json = HALConceptRepresentationBuilder.renderHALConceptData(concept, 1,"grakn",0,100);
+        String json = HALBuilder.renderHALConceptData(concept, 1,"grakn",0,100);
         return Json.read(json);
     }
 

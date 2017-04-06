@@ -78,13 +78,14 @@ public class NguyenGraph extends TestGraph {
             bInstancesIds[i] = putEntity(graph, "b" + i, bEntity, key).getId();
         }
 
-        R.addRelation()
-                .addRolePlayer(Rfrom, graph.getConcept(dId))
-                .addRolePlayer(Rto, graph.getConcept(eId));
 
         P.addRelation()
                 .addRolePlayer(Pfrom, graph.getConcept(cId))
                 .addRolePlayer(Pto, graph.getConcept(dId));
+
+        R.addRelation()
+                .addRolePlayer(Rfrom, graph.getConcept(dId))
+                .addRolePlayer(Rto, graph.getConcept(eId));
 
         Q.addRelation()
                 .addRolePlayer(Qfrom, graph.getConcept(eId))

@@ -18,40 +18,40 @@
 
 package ai.grakn.graql.internal.hal;
 
-import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 
-import java.util.Optional;
+import static ai.grakn.graql.internal.hal.HALUtils.BASETYPE_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.EXPLORE_CONCEPT_LINK;
+import static ai.grakn.graql.internal.hal.HALUtils.ID_PROPERTY;
+import static ai.grakn.graql.internal.hal.HALUtils.TYPE_PROPERTY;
 
-class HALGeneratedRelation {
+/**
+ * Class used to build the HAL representation of a generated relation.
+ *
+ * @author Marco Scoppetta
+ */
+
+public class HALGeneratedRelation {
 
     private final RepresentationFactory factory;
 
-    private final static String ONTOLOGY_LINK = "ontology";
-    private final static String INBOUND_EDGE = "IN";
-
-    // - State properties
-
-    private final static String ID_PROPERTY = "_id";
-    private final static String TYPE_PROPERTY = "_type";
-    private final static String BASETYPE_PROPERTY = "_baseType";
-    private final static String DIRECTION_PROPERTY = "_direction";
-
-    HALGeneratedRelation() {
+    public HALGeneratedRelation() {
         this.factory = new StandardRepresentationFactory();
     }
 
-    Representation getNewGeneratedRelation(ConceptId firstID, ConceptId secondID, String assertionID, Optional<TypeName> relationType) {
-        Representation representation = factory.newRepresentation(assertionID)
-                .withProperty(ID_PROPERTY, "temp-assertion-" + firstID.getValue() + secondID.getValue())
-                .withProperty(BASETYPE_PROPERTY, "generated-relation")
-                .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE)
-                .withLink(ONTOLOGY_LINK, "");
 
-        relationType.ifPresent(typeName -> representation.withProperty(TYPE_PROPERTY, typeName.getValue()));
+    Representation getNewGeneratedRelation(String relationId, String relationHref, String relationType, boolean isInferred) {
+        String relationBaseType = (isInferred) ? "inferred-relation" : "generated-relation";
+        Representation representation = factory.newRepresentation(relationHref)
+                .withProperty(ID_PROPERTY, relationId)
+                .withProperty(BASETYPE_PROPERTY, relationBaseType)
+                .withLink(EXPLORE_CONCEPT_LINK, "");
+
+        if (!relationType.equals("")) {
+            representation.withProperty(TYPE_PROPERTY, relationType);
+        }
 
         return representation;
     }

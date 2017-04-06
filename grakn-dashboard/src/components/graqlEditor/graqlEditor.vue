@@ -34,7 +34,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
         </div>
         <div class="right-side">
-          <scroll-button :editorLinesNumber="editorLinesNumber"></scroll-button>
+          <scroll-button :editorLinesNumber="editorLinesNumber" :codeMirror="codeMirror"></scroll-button>
           <add-current-query :current-query="currentQuery" v-on:new-query-saved="refreshSavedQueries"></add-current-query>
             <button @click="runQuery" class="btn"><i
                           class="pe-7s-angle-right-circle"></i></button>
