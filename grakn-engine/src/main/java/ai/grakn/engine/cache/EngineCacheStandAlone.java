@@ -19,6 +19,7 @@
 package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -47,6 +48,7 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
     private final Map<String, Map<String, Set<ConceptId>>> resources;
+    private final Map<String, Map<TypeName, Long>> instanceCounts;
 
     private static EngineCacheStandAlone instance=null;
 
@@ -58,6 +60,7 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
     private EngineCacheStandAlone(){
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
+        instanceCounts = new ConcurrentHashMap<>();
     }
 
     @Override
@@ -65,6 +68,7 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
         Set<String> keyspaces = new HashSet<>();
         keyspaces.addAll(castings.keySet());
         keyspaces.addAll(resources.keySet());
+        keyspaces.addAll(instanceCounts.keySet());
         return keyspaces;
     }
 
@@ -140,5 +144,22 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
         updateLastTimeJobAdded();
         if(castings.containsKey(keyspace)) castings.remove(keyspace);
         if(resources.containsKey(keyspace)) resources.remove(keyspace);
+    }
+
+    //-------------------- Instance Count Jobs
+
+    @Override
+    public Map<TypeName, Long> getInstanceCountJobs(String keyspace) {
+        return instanceCounts.computeIfAbsent(keyspace, (key) -> new ConcurrentHashMap<>());
+    }
+
+    @Override
+    public void addJobInstanceCount(String keyspace, TypeName name, long instances) {
+        getInstanceCountJobs(keyspace).compute(name, (key, value) -> value == null ? instances : value + instances);
+    }
+
+    @Override
+    public void deleteJobCasting(String keyspace, TypeName name) {
+        getInstanceCountJobs(keyspace).remove(name);
     }
 }

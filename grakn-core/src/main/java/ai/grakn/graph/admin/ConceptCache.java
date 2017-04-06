@@ -19,6 +19,7 @@
 package ai.grakn.graph.admin;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 
 import java.util.Map;
 import java.util.Set;
@@ -45,18 +46,40 @@ public interface ConceptCache {
     long getNumJobs(String keyspace);
 
     /**
+     * Removes all jobs from the keyspace
      *
-     * @param keyspace The keyspace of a specific graph.
-     * @return The number of casting jobs pending to be performed on that graph
+     * @param keyspace The keyspace to purge of all jobs
      */
-    long getNumCastingJobs(String keyspace);
+    void clearAllJobs(String keyspace);
 
     /**
      *
-     * @param keyspace The keyspace of a specific graph.
-     * @return The number of resource jobs pending to be performed on that graph
+     * @return The timestamp of the last time a job was added
      */
-    long getNumResourceJobs(String keyspace);
+    long getLastTimeJobAdded();
+
+    //-------------------- Instance Count Jobs
+    /**
+     *
+     * @param keyspace The keyspace of a specific graph.
+     * @return The types and the number of instances that have been removed or added to the type
+     */
+    Map<TypeName, Long> getInstanceCountJobs(String keyspace);
+
+    /**
+     *
+     * @param keyspace The keyspace of the concepts
+     * @param name The name of the type with new or removed instances
+     * @param instances The number of new or removed instances
+     */
+    void addJobInstanceCount(String keyspace, TypeName name, long instances);
+
+    /**
+     *
+     * @param keyspace The keyspace of the concepts
+     * @param name The name of the type with new or removed instances
+     */
+    void deleteJobCasting(String keyspace, TypeName name);
 
     //-------------------- Casting Jobs
     /**
@@ -81,6 +104,20 @@ public interface ConceptCache {
      * @param castingId The casting Id which no longer needs post processing.
      */
     void deleteJobCasting(String keyspace, String castingIndex, ConceptId castingId);
+
+    /**
+     *
+     * @param keyspace The keyspace of a specific graph.
+     * @return The number of casting jobs pending to be performed on that graph
+     */
+    long getNumCastingJobs(String keyspace);
+
+    /**
+     *
+     * @param keyspace The keyspace of the concepts
+     * @param conceptIndex The unique index value has been enforced.
+     */
+    void clearJobSetCastings(String keyspace, String conceptIndex);
 
     //-------------------- Resource Jobs
     /**
@@ -108,28 +145,15 @@ public interface ConceptCache {
 
     /**
      *
+     * @param keyspace The keyspace of a specific graph.
+     * @return The number of resource jobs pending to be performed on that graph
+     */
+    long getNumResourceJobs(String keyspace);
+
+    /**
+     *
      * @param keyspace The keyspace of the concepts
      * @param conceptIndex The unique index value which has been enforced.
      */
     void clearJobSetResources(String keyspace, String conceptIndex);
-
-    /**
-     *
-     * @param keyspace The keyspace of the concepts
-     * @param conceptIndex The unique index value has been enforced.
-     */
-    void clearJobSetCastings(String keyspace, String conceptIndex);
-
-    /**
-     * Removes all jobs from the keyspace
-     *
-     * @param keyspace The keyspace to purge of all jobs
-     */
-    void clearAllJobs(String keyspace);
-
-    /**
-     *
-     * @return The timestamp of the last time a job was added
-     */
-    long getLastTimeJobAdded();
 }

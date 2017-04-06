@@ -19,6 +19,7 @@
 package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeName;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 
@@ -217,5 +218,22 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         if(indices.isPresent()){
             indices.get().forEach(index -> cleanJobSet(jobType, keyspace, index));
         }
+    }
+
+    //-------------------- Instance Count Jobs
+
+    @Override
+    public Map<TypeName, Long> getInstanceCountJobs(String keyspace) {
+        throw new UnsupportedOperationException("Not Yet Implemented");
+    }
+
+    @Override
+    public void addJobInstanceCount(String keyspace, TypeName name, long instances) {
+        throw new UnsupportedOperationException("Not Yet Implemented");
+    }
+
+    @Override
+    public void deleteJobCasting(String keyspace, TypeName name) {
+        throw new UnsupportedOperationException("Not Yet Implemented");
     }
 }
