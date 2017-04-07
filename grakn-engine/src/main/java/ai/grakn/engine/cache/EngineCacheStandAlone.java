@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>
@@ -44,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author fppt
  */
 public class EngineCacheStandAlone extends EngineCacheAbstract{
+    private final AtomicLong lastTimeModified;
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
     private final Map<String, Map<String, Set<ConceptId>>> resources;
@@ -57,6 +59,7 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
     }
 
     private EngineCacheStandAlone(){
+        lastTimeModified = new AtomicLong(System.currentTimeMillis());
         castings = new ConcurrentHashMap<>();
         resources = new ConcurrentHashMap<>();
         instanceCounts = new ConcurrentHashMap<>();
@@ -69,6 +72,15 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
         keyspaces.addAll(resources.keySet());
         keyspaces.addAll(instanceCounts.keySet());
         return keyspaces;
+    }
+
+    @Override
+    public long getLastTimeJobAdded() {
+        return lastTimeModified.get();
+    }
+
+    void updateLastTimeJobAdded(){
+        lastTimeModified.set(System.currentTimeMillis());
     }
 
     //-------------------- Casting Jobs
