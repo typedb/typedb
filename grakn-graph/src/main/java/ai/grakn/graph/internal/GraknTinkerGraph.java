@@ -62,7 +62,7 @@ public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
 
     @Override
     public boolean isConnectionClosed() {
-        return !rootGraph.traversal().V().has(Schema.ConceptProperty.NAME.name(), Schema.MetaSchema.ENTITY.getName().getValue()).hasNext();
+        return !rootGraph.traversal().V().has(Schema.ConceptProperty.TYPE_LABEL.name(), Schema.MetaSchema.ENTITY.getLabel().getValue()).hasNext();
     }
 
     @Override

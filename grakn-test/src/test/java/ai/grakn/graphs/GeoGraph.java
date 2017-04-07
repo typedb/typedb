@@ -86,30 +86,30 @@ public class GeoGraph extends TestGraph {
 
     @Override
     public void buildInstances(GraknGraph graph) {
-        Europe = putEntity(graph, "Europe", continent, key.getName());
-        NorthAmerica = putEntity(graph, "NorthAmerica", continent, key.getName());
-        Poland = putEntity(graph, "Poland", country, key.getName());
-        England = putEntity(graph, "England", country, key.getName());
-        Germany = putEntity(graph, "Germany", country, key.getName());
-        France = putEntity(graph, "France", country, key.getName());
-        Italy = putEntity(graph, "Italy", country, key.getName());
-        Masovia = putEntity(graph, "Masovia", region, key.getName());
-        Silesia = putEntity(graph, "Silesia", region, key.getName());
-        GreaterLondon = putEntity(graph, "GreaterLondon", region, key.getName());
-        Bavaria = putEntity(graph, "Bavaria", region, key.getName());
-        IleDeFrance = putEntity(graph, "IleDeFrance", region, key.getName());
-        Lombardy = putEntity(graph, "Lombardy", region, key.getName());
-        Warsaw = putEntity(graph, "Warsaw", city, key.getName());
-        Wroclaw = putEntity(graph, "Wroclaw", city, key.getName());
-        London = putEntity(graph, "London", city, key.getName());
-        Munich = putEntity(graph, "Munich", city, key.getName());
-        Paris = putEntity(graph, "Paris", city, key.getName());
-        Milan = putEntity(graph, "Milan", city, key.getName());
-        UW = putEntity(graph, "University-of-Warsaw", university, key.getName());
-        PW = putEntity(graph, "Warsaw-Polytechnics", university, key.getName());
-        Imperial = putEntity(graph, "Imperial College London", university, key.getName());
-        UCL = putEntity(graph, "University College London", university, key.getName());
-        UniversityOfMunich = putEntity(graph, "University of Munich", university, key.getName());
+        Europe = putEntity(graph, "Europe", continent, key.getLabel());
+        NorthAmerica = putEntity(graph, "NorthAmerica", continent, key.getLabel());
+        Poland = putEntity(graph, "Poland", country, key.getLabel());
+        England = putEntity(graph, "England", country, key.getLabel());
+        Germany = putEntity(graph, "Germany", country, key.getLabel());
+        France = putEntity(graph, "France", country, key.getLabel());
+        Italy = putEntity(graph, "Italy", country, key.getLabel());
+        Masovia = putEntity(graph, "Masovia", region, key.getLabel());
+        Silesia = putEntity(graph, "Silesia", region, key.getLabel());
+        GreaterLondon = putEntity(graph, "GreaterLondon", region, key.getLabel());
+        Bavaria = putEntity(graph, "Bavaria", region, key.getLabel());
+        IleDeFrance = putEntity(graph, "IleDeFrance", region, key.getLabel());
+        Lombardy = putEntity(graph, "Lombardy", region, key.getLabel());
+        Warsaw = putEntity(graph, "Warsaw", city, key.getLabel());
+        Wroclaw = putEntity(graph, "Wroclaw", city, key.getLabel());
+        London = putEntity(graph, "London", city, key.getLabel());
+        Munich = putEntity(graph, "Munich", city, key.getLabel());
+        Paris = putEntity(graph, "Paris", city, key.getLabel());
+        Milan = putEntity(graph, "Milan", city, key.getLabel());
+        UW = putEntity(graph, "University-of-Warsaw", university, key.getLabel());
+        PW = putEntity(graph, "Warsaw-Polytechnics", university, key.getLabel());
+        Imperial = putEntity(graph, "Imperial College London", university, key.getLabel());
+        UCL = putEntity(graph, "University College London", university, key.getLabel());
+        UniversityOfMunich = putEntity(graph, "University of Munich", university, key.getLabel());
     }
 
     @Override

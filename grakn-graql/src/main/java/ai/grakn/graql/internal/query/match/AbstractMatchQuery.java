@@ -130,7 +130,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final MatchQuery select(String... names) {
-        return select(Stream.of(names).map((name) -> VarName.of(name)).collect(toSet()));
+        return select(Stream.of(names).map(VarName::of).collect(toSet()));
     }
 
     @Override

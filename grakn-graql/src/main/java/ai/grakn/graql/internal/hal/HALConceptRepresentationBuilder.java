@@ -22,7 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.RelationPlayer;
@@ -78,7 +78,7 @@ public class HALConceptRepresentationBuilder {
 
 
         //Collect all the types explicitly asked in the match query
-        Set<TypeName> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getName()).collect(Collectors.toSet());
+        Set<TypeLabel> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(x -> x.asType().getLabel()).collect(Collectors.toSet());
 
 
         return buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery, roleTypes, keyspace, offset, limit);
@@ -92,7 +92,7 @@ public class HALConceptRepresentationBuilder {
         return new HALConceptOntology(concept, keyspace, offset, limit).render();
     }
 
-    private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeName> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
+    private static Json buildHALRepresentations(Collection<Map<VarName, Concept>> graqlResultsList, Map<VarName, Collection<VarAdmin>> linkedNodes, Set<TypeLabel> typesAskedInQuery, Map<String,Map<VarName, String>> roleTypes, String keyspace, int offset, int limit) {
         final Json lines = Json.array();
         graqlResultsList.forEach(resultLine -> resultLine.entrySet().forEach(current -> {
 
@@ -115,7 +115,7 @@ public class HALConceptRepresentationBuilder {
                         if (current.getValue() != null) {
                             VarName currentVarName = current.getKey();
                             Concept currentRolePlayer = current.getValue();
-                            final Optional<TypeName> relationType = currentRelation.getProperty(IsaProperty.class).flatMap(x->x.getType().getTypeName());
+                            final Optional<TypeLabel> relationType = currentRelation.getProperty(IsaProperty.class).flatMap(x->x.getType().getTypeLabel());
 
                             currentRelation.getProperty(RelationProperty.class).get()
                                     .getRelationPlayers()
@@ -133,7 +133,7 @@ public class HALConceptRepresentationBuilder {
         }
     }
 
-    private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, Optional<TypeName> relationType, String keyspace, int limit) {
+    private static void attachSingleGeneratedRelation(Representation currentHal, Concept currentVar, Concept otherVar, Map<VarName, String> roleTypes, VarName currentVarName, VarName otherVarName, Optional<TypeLabel> relationType, String keyspace, int limit) {
         ConceptId currentID = currentVar.getId();
 
         ConceptId firstID;
@@ -153,7 +153,7 @@ public class HALConceptRepresentationBuilder {
             firstRole = (roleTypes.get(otherVarName).equals(RELATES_EDGE)) ? "" : roleTypes.get(otherVarName) + ":";
         }
 
-        String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeNameToString(relationType.get()) : "";
+        String isaString = (relationType.isPresent()) ? "isa " + StringConverter.typeLabelToString(relationType.get()) : "";
 
         String assertionID = String.format(ASSERTION_URL, keyspace, firstID, secondID, firstRole, secondRole,isaString, limit);
         currentHal.withRepresentation(roleTypes.get(currentVarName), new HALGeneratedRelation().getNewGeneratedRelation(firstID,secondID,assertionID, relationType));
@@ -225,7 +225,7 @@ public class HALConceptRepresentationBuilder {
             return Schema.BaseType.RULE_TYPE;
         } else if (type.isRoleType()) {
             return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
+        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
             throw new RuntimeException("Unrecognized base type of " + type);
@@ -238,7 +238,7 @@ public class HALConceptRepresentationBuilder {
 
         if (concept.isInstance()) {
             Instance instance = concept.asInstance();
-            resource.withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
+            resource.withProperty(TYPE_PROPERTY, instance.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else {
             resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
@@ -248,7 +248,7 @@ public class HALConceptRepresentationBuilder {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
         }
         if(concept.isType()){
-            resource.withProperty(NAME_PROPERTY, concept.asType().getName().getValue());
+            resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
         }
     }
 }

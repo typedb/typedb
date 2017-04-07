@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -41,7 +41,7 @@ public class SumMapReduce extends GraknMapReduce<Number> {
     public SumMapReduce() {
     }
 
-    public SumMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
+    public SumMapReduce(Set<TypeLabel> selectedTypes, String resourceDataType) {
         super(selectedTypes, resourceDataType);
     }
 

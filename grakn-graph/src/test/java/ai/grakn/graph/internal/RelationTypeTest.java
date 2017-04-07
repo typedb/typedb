@@ -62,9 +62,9 @@ public class RelationTypeTest extends GraphTestBase{
         RoleType original = graknGraph.putRoleType("Role Type");
 
         expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(ID_ALREADY_TAKEN.getMessage(original.getName(), original.toString()));
+        expectedException.expectMessage(ID_ALREADY_TAKEN.getMessage(original.getLabel(), original.toString()));
 
-        graknGraph.putRelationType(original.getName());
+        graknGraph.putRelationType(original.getLabel());
     }
 
     @Test

@@ -88,12 +88,12 @@ public class AdmissionsGraph extends TestGraph{
 
     @Override
     protected void buildInstances(GraknGraph graph) {
-        Instance Alice = putEntity(graph, "Alice", applicant, key.getName());
-        Instance Bob = putEntity(graph, "Bob", applicant, key.getName());
-        Instance Charlie = putEntity(graph, "Charlie", applicant, key.getName());
-        Instance Denis = putEntity(graph, "Denis", applicant, key.getName());
-        Instance Eva = putEntity(graph, "Eva", applicant, key.getName());
-        Instance Frank = putEntity(graph, "Frank", applicant, key.getName());
+        Instance Alice = putEntity(graph, "Alice", applicant, key.getLabel());
+        Instance Bob = putEntity(graph, "Bob", applicant, key.getLabel());
+        Instance Charlie = putEntity(graph, "Charlie", applicant, key.getLabel());
+        Instance Denis = putEntity(graph, "Denis", applicant, key.getLabel());
+        Instance Eva = putEntity(graph, "Eva", applicant, key.getLabel());
+        Instance Frank = putEntity(graph, "Frank", applicant, key.getLabel());
 
         putResource(Alice, TOEFL, 470L);
         putResource(Alice, degreeOrigin, "nonUS");

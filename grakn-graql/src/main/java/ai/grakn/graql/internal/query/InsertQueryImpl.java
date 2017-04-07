@@ -142,7 +142,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
         Set<Type> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
-                .map(VarAdmin::getTypeName)
+                .map(VarAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(theGraph::<Type>getType)
                 .collect(Collectors.toSet());

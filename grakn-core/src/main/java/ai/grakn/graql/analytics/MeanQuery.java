@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -33,30 +33,30 @@ import java.util.Optional;
 public interface MeanQuery extends ComputeQuery<Optional<Double>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a MeanQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a MeanQuery with the subTypeLabels set
      */
-    MeanQuery of(String... resourceTypeNames);
+    MeanQuery of(String... resourceTypeLabels);
 
     /**
-     * @param resourceTypeNames a collection of types of resources to execute the query on
-     * @return a MeanQuery with the subTypeNames set
+     * @param resourceTypeLabels a collection of types of resources to execute the query on
+     * @return a MeanQuery with the subTypeLabels set
      */
-    MeanQuery of(Collection<TypeName> resourceTypeNames);
+    MeanQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a MeanQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a MeanQuery with the subTypeLabels set
      */
     @Override
-    MeanQuery in(String... subTypeNames);
+    MeanQuery in(String... subTypeLabels);
 
     /**
-     * @param subTypeNames a collection of types to include in the subgraph
-     * @return a MeanQuery with the subTypeNames set
+     * @param subTypeLabels a collection of types to include in the subgraph
+     * @return a MeanQuery with the subTypeLabels set
      */
     @Override
-    MeanQuery in(Collection<TypeName> subTypeNames);
+    MeanQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * Execute the query.

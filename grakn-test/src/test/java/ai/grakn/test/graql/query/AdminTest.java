@@ -20,7 +20,7 @@ package ai.grakn.test.graql.query;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.InsertQuery;
@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
@@ -61,14 +61,14 @@ public class AdminTest {
     @Test
     public void testGetTypesInQuery() {
         MatchQuery query = qb.match(
-                var("x").isa(name("movie").sub("production")).has("tmdb-vote-count", 400),
+                var("x").isa(label("movie").sub("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
         );
 
         Set<Type> types = Stream.of(
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
+        ).map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }
@@ -142,7 +142,7 @@ public class AdminTest {
     @Test
     public void testInsertQueryGetTypes() {
         InsertQuery query = qb.insert(var("x").isa("person").has("name", var("y")), var().rel("actor", "x").isa("has-cast"));
-        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
+        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
         assertEquals(types, query.admin().getTypes());
     }
 
@@ -152,7 +152,7 @@ public class AdminTest {
                         .insert(var("x").isa("person").has("name", var("z")), var().rel("actor", "x").isa("has-cast"));
 
         Set<Type> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeName.of(t))).collect(toSet());
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(t -> rule.graph().<Type>getType(TypeLabel.of(t))).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }

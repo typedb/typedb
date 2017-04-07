@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.pattern.property;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
@@ -34,38 +34,38 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * Represents the {@code type-name} property on a {@link ai.grakn.concept.Type}.
+ * Represents the {@code label} property on a {@link ai.grakn.concept.Type}.
  *
  * This property can be queried and inserted. If used in an insert query and there is an existing type with the give
- * name, then that type will be retrieved.
+ * label, then that type will be retrieved.
  *
  * @author Felix Chapman
  */
-public class NameProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+public class LabelProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    private final TypeName name;
+    private final TypeLabel label;
 
-    public NameProperty(TypeName name) {
-        this.name = name;
+    public LabelProperty(TypeLabel label) {
+        this.label = label;
     }
 
-    public TypeName getNameValue() {
-        return name;
+    public TypeLabel getLabelValue() {
+        return label;
     }
 
     @Override
     public String getName() {
-        return "type-name";
+        return "label";
     }
 
     @Override
     public String getProperty() {
-        return StringConverter.typeNameToString(name);
+        return StringConverter.typeLabelToString(label);
     }
 
     @Override
     public Collection<EquivalentFragmentSet> match(VarName start) {
-        return ImmutableSet.of(EquivalentFragmentSets.name(start, name));
+        return ImmutableSet.of(EquivalentFragmentSets.label(start, label));
     }
 
     @Override
@@ -73,15 +73,15 @@ public class NameProperty extends AbstractVarProperty implements NamedProperty, 
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        NameProperty that = (NameProperty) o;
+        LabelProperty that = (LabelProperty) o;
 
-        return name.equals(that.name);
+        return label.equals(that.label);
 
     }
 
     @Override
     public int hashCode() {
-        return name.hashCode();
+        return label.hashCode();
     }
 
     @Override

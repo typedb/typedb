@@ -72,7 +72,7 @@ public class OntologyMutationTest extends GraphTestBase{
         person.deletePlays(wife);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getName(), alice.getId(), wife.getName()));
+        expectedException.expectMessage(VALIDATION_CASTING.getMessage(woman.getLabel(), alice.getId(), wife.getLabel()));
 
         graknGraph.commit();
     }
@@ -89,7 +89,7 @@ public class OntologyMutationTest extends GraphTestBase{
         man.superType(car);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(VALIDATION_CASTING.getMessage(man.getName(), bob.getId(), husband.getName()));
+        expectedException.expectMessage(VALIDATION_CASTING.getMessage(man.getLabel(), bob.getId(), husband.getLabel()));
 
         graknGraph.commit();
     }
@@ -99,7 +99,7 @@ public class OntologyMutationTest extends GraphTestBase{
         man.setAbstract(true);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(VALIDATION_IS_ABSTRACT.getMessage(man.getName()));
+        expectedException.expectMessage(VALIDATION_IS_ABSTRACT.getMessage(man.getLabel()));
 
         graknGraph.commit();
     }

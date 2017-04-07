@@ -21,7 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,7 +48,7 @@ class ConceptLog {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
-    private final Map<TypeName, TypeImpl> typeCache = new HashMap<>();
+    private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
     private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
@@ -148,7 +148,7 @@ class ConceptLog {
         modifiedResources.remove(concept);
         conceptCache.remove(concept.getId());
         if(concept.isType()){
-            typeCache.remove(((TypeImpl) concept).getName());
+            typeCache.remove(((TypeImpl) concept).getLabel());
         }
     }
 
@@ -170,7 +170,7 @@ class ConceptLog {
         conceptCache.put(concept.getId(), concept);
         if(concept.isType()){
             TypeImpl type = (TypeImpl) concept;
-            typeCache.put(type.getName(), type);
+            typeCache.put(type.getLabel(), type);
         }
     }
 
@@ -186,11 +186,11 @@ class ConceptLog {
 
     /**
      *
-     * @param name The name of the type to cache
+     * @param label The label of the type to cache
      * @return true if the concept is cached
      */
-    boolean isTypeCached(TypeName name){
-        return typeCache.containsKey(name);
+    boolean isTypeCached(TypeLabel label){
+        return typeCache.containsKey(label);
     }
 
     /**
@@ -208,12 +208,12 @@ class ConceptLog {
     /**
      * Returns a previously built type
      *
-     * @param name The name of the type
+     * @param label The label of the type
      * @param <X> The type of the type
      * @return The cached type
      */
-    <X extends Type> X getCachedType(TypeName name){
+    <X extends Type> X getCachedType(TypeLabel label){
         //noinspection unchecked
-        return (X) typeCache.get(name);
+        return (X) typeCache.get(label);
     }
 }

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.util;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.antlr.GraqlLexer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -97,25 +97,25 @@ public class StringConverter {
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
     public static String idToString(ConceptId id) {
-        return escapeNameOrId(id.getValue());
+        return escapeLabelOrId(id.getValue());
     }
 
     /**
-     * @param typeName a name of a type
+     * @param typeLabel a label of a type
      * @return
-     * The name of the type correctly escaped in graql.
-     * If the name doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
+     * The label of the type correctly escaped in graql.
+     * If the label doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
-    public static String typeNameToString(TypeName typeName) {
-        return escapeNameOrId(typeName.getValue());
+    public static String typeLabelToString(TypeLabel typeLabel) {
+        return escapeLabelOrId(typeLabel.getValue());
     }
 
-    private static String escapeNameOrId(String name) {
-        if (name.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(name)) {
-            return name;
+    private static String escapeLabelOrId(String value) {
+        if (value.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(value)) {
+            return value;
         } else {
-            return quoteString(name);
+            return quoteString(value);
         }
     }
 

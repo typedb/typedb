@@ -21,7 +21,7 @@ package ai.grakn.engine.user;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
@@ -113,16 +113,16 @@ public class SystemKeyspaceUsers extends UsersHandler {
         Var lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
         Var resource = var("property");
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getName(), resource));
+            MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
             List<Map<String, Concept>> L = query.execute();
             if (L.isEmpty()) {
                 return Json.nil();
             }
             Json user = Json.object();
             L.forEach(property -> {
-                TypeName name = property.get("property").asInstance().type().getName();
+                TypeLabel label = property.get("property").asInstance().type().getLabel();
                 Object value = property.get("property").asResource().getValue();
-                user.set(name.getValue(), value);
+                user.set(label.getValue(), value);
             });
             return user;
         }

@@ -81,7 +81,7 @@ public abstract class RuleProperty extends AbstractVarProperty implements Unique
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         if (!concept.isRule()) {
-            throw new IllegalStateException(INSERT_UNSUPPORTED_PROPERTY.getMessage(getName(), RULE.getName()));
+            throw new IllegalStateException(INSERT_UNSUPPORTED_PROPERTY.getMessage(getName(), RULE.getLabel()));
         }
     }
 

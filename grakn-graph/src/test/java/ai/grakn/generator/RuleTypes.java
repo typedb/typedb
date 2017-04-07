@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.RuleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
@@ -32,8 +32,8 @@ public class RuleTypes extends AbstractTypeGenerator<RuleType> {
     }
 
     @Override
-    protected RuleType newType(TypeName name) {
-        return graph().putRuleType(name);
+    protected RuleType newType(TypeLabel label) {
+        return graph().putRuleType(label);
     }
 
     @Override

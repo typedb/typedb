@@ -66,7 +66,7 @@ public class ResourceTypeTest extends GraphTestBase{
     public void testRegexSetOnNonString(){
         ResourceType<Long> thing = graknGraph.putResourceType("Random ID", ResourceType.DataType.LONG);
         expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(thing.getName()));
+        expectedException.expectMessage(ErrorMessage.REGEX_NOT_STRING.getMessage(thing.getLabel()));
         thing.setRegex("blab");
     }
 
@@ -75,7 +75,7 @@ public class ResourceTypeTest extends GraphTestBase{
         resourceType.setRegex("[abc]");
         resourceType.putResource("a");
         expectedException.expect(InvalidConceptValueException.class);
-        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(resourceType.getName().getValue())));
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[abc]"), containsString("1"), containsString(resourceType.getLabel().getValue())));
         resourceType.putResource("1");
     }
 
@@ -83,7 +83,7 @@ public class ResourceTypeTest extends GraphTestBase{
     public void testRegexInstanceChangeRegexWithInstances(){
         Resource<String> thing = resourceType.putResource("1");
         expectedException.expect(InvalidConceptValueException.class);
-        expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.getId(), thing.getValue(), resourceType.getName()));
+        expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.getId(), thing.getValue(), resourceType.getLabel()));
         resourceType.setRegex("[abc]");
     }
 
