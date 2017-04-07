@@ -402,7 +402,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addVertex(baseType);
             vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
         } else {
-            if(!baseType.name().equals(concept.getBaseType())) {
+            if(!baseType.equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
             }
             vertex = concept.getVertex();
@@ -421,9 +421,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> getElementFactory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends Type> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
+    private <T extends TypeImpl> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
         checkOntologyMutation();
-        Type type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
+        TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
+
+        //Automatic shard creation - If this type does not have a shard create one
+        if(!type.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
+            type.createShard();
+        }
+
         return validateConceptType(type, baseType, () -> {
             throw new ConceptNotUniqueException(type, label.getValue());
         });
@@ -446,7 +452,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private Type buildType(TypeLabel label, Supplier<Type> dbBuilder){
+    private TypeImpl buildType(TypeLabel label, Supplier<TypeImpl> dbBuilder){
         if(getConceptLog().isTypeCached(label)){
             return getConceptLog().getCachedType(label);
         } else {
@@ -945,6 +951,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
                     assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
+                    relations = mainCasting.getRelations();
                 }
             }
 

@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +87,12 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
-        cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.TYPE_LABEL.name()));
+        VertexProperty<Object> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
+        if(typeLabel.isPresent()) {
+            cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.TYPE_LABEL.name()));
+        } else {
+            cachedTypeLabel = TypeLabel.of("SHARDED TYPE"); //This is just a place holder it is never actually committed
+        }
     }
 
     TypeImpl(AbstractGraknGraph graknGraph, Vertex v, T superType) {

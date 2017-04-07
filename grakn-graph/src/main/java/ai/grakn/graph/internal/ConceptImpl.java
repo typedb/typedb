@@ -86,6 +86,12 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         this.vertex = concept.getVertex();
     }
 
+    public <V extends ConceptImpl> V createShard(){
+        Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
+        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
+        return getGraknGraph().buildConcept(shardVertex);
+    }
+
     /**
      *
      * @param key The key of the property to mutate
@@ -439,8 +445,8 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
      *
      * @return The base ttpe of this concept which helps us identify the concept
      */
-    String getBaseType(){
-        return getVertex().label();
+    Schema.BaseType getBaseType(){
+        return Schema.BaseType.valueOf(getVertex().label());
     }
 
     /**

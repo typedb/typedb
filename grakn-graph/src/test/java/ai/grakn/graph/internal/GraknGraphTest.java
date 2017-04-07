@@ -248,9 +248,11 @@ public class GraknGraphTest extends GraphTestBase {
         graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
 
         //Check cache is in good order
-        assertThat(graknGraph.getCachedOntology().asMap().values(), containsInAnyOrder(r1, r2, e1, rel1,
-                graknGraph.getMetaConcept(), graknGraph.getMetaEntityType(),
-                graknGraph.getMetaRelationType(), graknGraph.getMetaRoleType()));
+        Collection<Type> cachedValues = graknGraph.getCachedOntology().asMap().values();
+        assertTrue("Type [" + r1 + "] was not cached", cachedValues.contains(r1));
+        assertTrue("Type [" + r2 + "] was not cached", cachedValues.contains(r2));
+        assertTrue("Type [" + e1 + "] was not cached", cachedValues.contains(e1));
+        assertTrue("Type [" + rel1 + "] was not cached", cachedValues.contains(rel1));
 
         assertThat(e1.plays(), containsInAnyOrder(r1, r2));
 
