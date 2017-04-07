@@ -56,6 +56,7 @@ public interface ConceptCache {
      *
      * @return The timestamp of the last time a job was added
      */
+    //TODO: This should also be keyspace specific
     long getLastTimeJobAdded();
 
     //-------------------- Instance Count Jobs

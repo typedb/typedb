@@ -35,6 +35,7 @@ public class UpdatingInstanceCountTaskTest {
         String keyspace = "mysimplekeyspace";
         String entityType1 = "e1";
         String entityType2 = "e2";
+        EngineCacheProvider.getCache().clearAllJobs(keyspace);
 
         //Create Simple Graph
         try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
