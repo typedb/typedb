@@ -25,7 +25,6 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -58,6 +57,8 @@ import static ai.grakn.util.REST.Response.Json.ENTITIES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RELATIONS_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.RESOURCES_JSON_FIELD;
 import static ai.grakn.util.REST.Response.Json.ROLES_JSON_FIELD;
+import static ai.grakn.util.REST.WebPath.Concept.CONCEPT;
+import static ai.grakn.util.REST.WebPath.Concept.ONTOLOGY;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -76,8 +77,8 @@ public class ConceptController {
     public ConceptController(EngineGraknGraphFactory factory, Service spark){
         this.factory = factory;
 
-        spark.get(REST.WebPath.Concept.CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
-        spark.get(REST.WebPath.Concept.ONTOLOGY,  this::ontology);
+        spark.get(CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
+        spark.get(ONTOLOGY,  this::ontology);
 
     }
 

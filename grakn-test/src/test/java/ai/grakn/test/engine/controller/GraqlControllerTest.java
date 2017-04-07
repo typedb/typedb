@@ -196,7 +196,7 @@ public class GraqlControllerTest {
     public void sendingGraqlMatchNoMaterialise_ResponseStatusIs400(){
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, "match $x isa person;")
-                .queryParam(MATERIALISE, true)
+                .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
                 .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
 

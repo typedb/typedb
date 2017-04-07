@@ -8,7 +8,7 @@ role2 sub role;
 #Entities
 
 entity1 sub entity
-    has-resource name
+    has name
 	plays role1
 	plays role2;
 
@@ -29,6 +29,3 @@ $c isa entity1, has name "c";
 (role1:$a2, role2:$b) isa relation1;
 (role1:$a2, role2:$c) isa relation1;
 (role1:$b, role2:$c) isa relation1;
-
-
-

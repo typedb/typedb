@@ -40,6 +40,8 @@ import spark.Service;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.test.engine.controller.GraqlControllerTest.exception;
+import static ai.grakn.test.engine.controller.GraqlControllerTest.jsonResponse;
+import static ai.grakn.test.engine.controller.GraqlControllerTest.stringResponse;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
@@ -57,8 +59,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ConceptControllerTest {
-
-    private static final TasksControllerTest.JsonMapper jsonMapper = new TasksControllerTest.JsonMapper();
 
     private static final String HOST = "localhost";
     private static final int PORT = 4567;
@@ -112,7 +112,7 @@ public class ConceptControllerTest {
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("*/*")));}
@@ -123,7 +123,7 @@ public class ConceptControllerTest {
 
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT.replace(ID_PARAMETER, concept.getId().getValue())));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
 
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
@@ -135,7 +135,7 @@ public class ConceptControllerTest {
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, concept.getId().getValue())
                 .accept("invalid")
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId()));
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("invalid")));
@@ -147,8 +147,8 @@ public class ConceptControllerTest {
 
         Response response = sendRequest(concept, 1);
 
-        Json expectedResponse = Json.read(renderHALConceptData(concept, 1, "randomKeyspace", 0, 1));
-        assertThat(response.as(Json.class, jsonMapper), equalTo(expectedResponse));
+        String expectedResponse = renderHALConceptData(concept, 1, "randomKeyspace", 0, 1);
+        assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
     @Test
@@ -157,8 +157,8 @@ public class ConceptControllerTest {
 
         Response response = sendRequest(concept, 1);
 
-        Json expectedResponse = Json.read(renderHALConceptData(concept, 1, "randomKeyspace", 0, 1));
-        assertThat(response.as(Json.class, jsonMapper), equalTo(expectedResponse));
+        String expectedResponse = renderHALConceptData(concept, 1, "randomKeyspace", 0, 1);
+        assertThat(stringResponse(response), equalTo(expectedResponse));
     }
 
     @Test
@@ -178,7 +178,7 @@ public class ConceptControllerTest {
         Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(IDENTIFIER, "invalid")
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + "blah"));
 
         assertThat(response.statusCode(), equalTo(500));
     }
@@ -187,6 +187,6 @@ public class ConceptControllerTest {
         return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(LIMIT_EMBEDDED, numberEmbeddedComponents)
                 .accept(APPLICATION_HAL)
-                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT.replace(ID_PARAMETER, concept.getId().getValue())));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Concept.CONCEPT + concept.getId().getValue()));
     }
 }
