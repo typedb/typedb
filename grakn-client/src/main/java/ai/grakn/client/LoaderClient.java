@@ -343,12 +343,12 @@ public class LoaderClient {
                     }
                 } catch (Throwable t) {
                     throw new RuntimeException(t);
-                } finally {
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                }
+                
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
         });
