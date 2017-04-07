@@ -71,6 +71,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     private ComponentCache<Boolean> cachedIsAbstract = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT));
     private ComponentCache<T> cachedSuperType = new ComponentCache<>(() -> this.<T>getOutgoingNeighbours(Schema.EdgeLabel.SUB).findFirst().orElse(null));
     private ComponentCache<Set<T>> cachedDirectSubTypes = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private ComponentCache<Set<T>> cachedShards = new ComponentCache<>(() -> this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet()));
 
     //This cache is different in order to keep track of which plays are required
     private ComponentCache<Map<RoleType, Boolean>> cachedDirectPlays = new ComponentCache<>(() -> {
@@ -117,6 +118,11 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public Type copy(){
         //noinspection unchecked
         return new TypeImpl(this);
+    }
+
+    @Override
+    Set<T> shards(){
+        return cachedShards.get();
     }
 
     @SuppressWarnings("unchecked")

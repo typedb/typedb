@@ -44,7 +44,9 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -86,10 +88,14 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         this.vertex = concept.getVertex();
     }
 
-    public <V extends ConceptImpl> V createShard(){
+    <V extends ConceptImpl> V createShard(){
         Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
         shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
         return getGraknGraph().buildConcept(shardVertex);
+    }
+
+    Set<T> shards(){
+        return this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
     }
 
     /**

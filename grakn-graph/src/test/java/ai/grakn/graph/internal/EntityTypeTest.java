@@ -41,6 +41,7 @@ import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -453,6 +454,12 @@ public class EntityTypeTest extends GraphTestBase{
         expectedException.expectMessage(CANNOT_BE_KEY_AND_RESOURCE.getMessage(entityType.getLabel(), resourceType.getLabel()));
 
         entityType.resource(resourceType);
+    }
+
+    @Test
+    public void whenCreatingEntityType_EnsureItHasAShard(){
+        EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("EntityType");
+        assertThat(entityType.shards(), not(empty()));
     }
 
 }
