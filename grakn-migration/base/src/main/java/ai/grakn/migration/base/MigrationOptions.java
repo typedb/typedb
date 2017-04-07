@@ -119,13 +119,11 @@ public class MigrationOptions {
         return parseInt(command.getOptionValue("a", active));
     }
 
-    protected <T extends MigrationOptions> T parse(String[] args){
+    protected void parse(String[] args){
         try {
             CommandLineParser parser = new DefaultParser();
             command = parser.parse(options, args);
             numberOptions = command.getOptions().length;
-
-            return (T) this;
         } catch (ParseException e){
             throw new RuntimeException(e);
         }
