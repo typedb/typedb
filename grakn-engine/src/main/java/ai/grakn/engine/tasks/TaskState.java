@@ -228,6 +228,10 @@ public class TaskState implements Serializable {
         return configuration;
     }
 
+    public void clearConfiguration(){
+        this.configuration = null;
+    }
+
     public TaskState copy() {
         return new TaskState(this);
     }

@@ -101,8 +101,11 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public Boolean updateState(TaskState task){
         try {
-            // Get the previously stored task
-            TaskState previousTask = (TaskState) deserialize(zookeeper.connection().getData().forPath(taskPath(task)));
+                // Get the previously stored task
+                TaskState previousTask = (TaskState) deserialize(zookeeper.connection().getData().forPath(taskPath(task)));
+
+                // Remove any configuration information from the task state
+                task.clearConfiguration();
 
                 // Start a transaction to write the current serialized task
                 CuratorTransactionBridge transaction = zookeeper.connection().inTransaction()
