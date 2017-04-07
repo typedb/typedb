@@ -22,7 +22,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -250,7 +250,7 @@ public class Relation extends TypeAtom {
         int roleWildcards = 0;
         for (VarName rolePlayer : getRolePlayers()){
             Type type = varTypeMap.get(rolePlayer);
-            if (type != null && !Schema.MetaSchema.isMetaName(type.getName())) {
+            if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
                 Set<RoleType> roleIntersection = new HashSet<>(roles);
                 roleIntersection.retainAll(type.plays());
                 if (roleIntersection.isEmpty()){
@@ -367,7 +367,7 @@ public class Relation extends TypeAtom {
         getRelationPlayers().stream()
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(VarAdmin::getTypeName)
+                .map(VarAdmin::getTypeLabel)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(graph::<RoleType>getType)
                 .forEach(roleTypes::add);
@@ -569,8 +569,8 @@ public class Relation extends TypeAtom {
                 Type type = varTypeMap.get(var);
                 roleVarMap.put(role, new Pair<>(var, type));
                 //try directly
-                TypeName typeName = role.getTypeName().orElse(null);
-                RoleType roleType = typeName != null ? graph.getType(typeName) : null;
+                TypeLabel typeLabel = role.getTypeLabel().orElse(null);
+                RoleType roleType = typeLabel != null ? graph.getType(typeLabel) : null;
                 //try indirectly
                 if (roleType == null && role.isUserDefinedName()) {
                     IdPredicate rolePredicate = ((ReasonerQueryImpl) getParentQuery()).getIdPredicate(role.getVarName());
@@ -596,7 +596,7 @@ public class Relation extends TypeAtom {
                 .forEach(casting -> {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
-                    if (type != null && !Schema.MetaSchema.isMetaName(type.getName())) {
+                    if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
                         mappings.put(casting, Utility.getCompatibleRoleTypes(type, possibleRoles));
                     } else {
                         mappings.put(casting, Utility.getTopRoles(possibleRoles));
@@ -612,7 +612,7 @@ public class Relation extends TypeAtom {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
                     RoleType roleType = entry.getValue().iterator().next();
-                    VarAdmin roleVar = Graql.var().name(roleType.getName()).admin();
+                    VarAdmin roleVar = Graql.var().label(roleType.getLabel()).admin();
                     mappings.values().forEach(s -> s.remove(roleType));
                     roleVarMap.put(roleVar, new Pair<>(varName, type));
                     roleVarTypeMap.put(roleType, new Pair<>(varName, type));

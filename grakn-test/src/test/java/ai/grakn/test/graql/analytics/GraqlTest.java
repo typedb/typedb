@@ -28,7 +28,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.analytics.ClusterQuery;
 import ai.grakn.graql.analytics.DegreeQuery;
@@ -137,11 +137,11 @@ public class GraqlTest {
         assumeFalse(usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            TypeName resourceTypeId = TypeName.of("my-resource");
+            TypeLabel resourceTypeId = TypeLabel.of("my-resource");
 
-            RoleType resourceOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getName(resourceTypeId));
-            RoleType resourceValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getName(resourceTypeId));
-            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getName(resourceTypeId))
+            RoleType resourceOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
+            RoleType resourceValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
+            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(resourceOwner)
                     .relates(resourceValue);
 

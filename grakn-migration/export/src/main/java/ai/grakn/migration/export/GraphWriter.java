@@ -80,6 +80,6 @@ public class GraphWriter {
      */
     private Stream<? extends Type> types(){
         return graph.admin().getMetaConcept().subTypes().stream()
-                .filter(t -> !Schema.MetaSchema.isMetaName(t.getName()));
+                .filter(t -> !Schema.MetaSchema.isMetaLabel(t.getLabel()));
     }
 }

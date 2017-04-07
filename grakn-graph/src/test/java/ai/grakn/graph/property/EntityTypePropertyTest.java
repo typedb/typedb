@@ -59,13 +59,13 @@ public class EntityTypePropertyTest {
 
         type.delete();
 
-        assertNull(graph.getType(type.getName()));
+        assertNull(graph.getType(type.getLabel()));
     }
 
     @Property
     public void whenAddingAnEntityOfTheMetaEntityType_Throw(@Meta EntityType type) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.addEntity();
     }
 

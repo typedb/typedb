@@ -19,7 +19,7 @@
 
 package ai.grakn.generator;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
 
@@ -30,17 +30,17 @@ import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 /**
  * Generator that generates meta type names only
  */
-public class MetaTypeNames extends AbstractGenerator<TypeName> {
+public class MetaTypeLabels extends AbstractGenerator<TypeLabel> {
 
-    private static final ImmutableSet<TypeName> META_TYPE_NAMES =
-            Stream.of(Schema.MetaSchema.values()).map(m -> m.getName()).collect(toImmutableSet());
+    private static final ImmutableSet<TypeLabel> META_TYPE_LABELS =
+            Stream.of(Schema.MetaSchema.values()).map(m -> m.getLabel()).collect(toImmutableSet());
 
-    public MetaTypeNames() {
-        super(TypeName.class);
+    public MetaTypeLabels() {
+        super(TypeLabel.class);
     }
 
     @Override
-    public TypeName generate() {
-        return random.choose(META_TYPE_NAMES);
+    public TypeLabel generate() {
+        return random.choose(META_TYPE_LABELS);
     }
 }

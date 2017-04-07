@@ -47,9 +47,9 @@ cluster        : CLUSTER                   ('in' inList)? ';' (MEMBERS ';')? (SI
 path           : PATH    'from' id 'to' id ('in' inList)? ';' ;
 count          : COUNT                     ('in' inList)? ';' ;
 
-ofList         : nameList ;
-inList         : nameList ;
-nameList       : name (',' name)* ;
+ofList         : labelList ;
+inList         : labelList ;
+labelList      : label (',' label)* ;
 
 aggregate      : identifier argument*             # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
@@ -68,30 +68,30 @@ pattern        : varPattern                    # varPatternCase
 varPatterns    : (varPattern ';')+ ;
 varPattern     : VARIABLE | variable? property (','? property)* ;
 
-property       : 'isa' variable                    # isa
-               | 'sub' variable                    # sub
-               | 'relates' variable                # relates
-               | 'plays' variable                  # plays
-               | 'has-scope' VARIABLE              # hasScope
-               | 'id' id                           # propId
-               | 'type-name' name                  # propName
-               | 'val' predicate                   # propValue
-               | 'lhs' '{' patterns '}'            # propLhs
-               | 'rhs' '{' varPatterns '}'         # propRhs
-               | 'has' name (VARIABLE | predicate) # propHas
-               | 'has' variable                    # propResource
-               | 'key' variable                    # propKey
-               | '(' casting (',' casting)* ')'    # propRel
-               | 'is-abstract'                     # isAbstract
-               | 'datatype' DATATYPE               # propDatatype
-               | 'regex' REGEX                     # propRegex
-               | '!=' variable                     # propNeq
+property       : 'isa' variable                     # isa
+               | 'sub' variable                     # sub
+               | 'relates' variable                 # relates
+               | 'plays' variable                   # plays
+               | 'has-scope' VARIABLE               # hasScope
+               | 'id' id                            # propId
+               | 'label' label                      # propLabel
+               | 'val' predicate                    # propValue
+               | 'lhs' '{' patterns '}'             # propLhs
+               | 'rhs' '{' varPatterns '}'          # propRhs
+               | 'has' label (VARIABLE | predicate) # propHas
+               | 'has' variable                     # propResource
+               | 'key' variable                     # propKey
+               | '(' casting (',' casting)* ')'     # propRel
+               | 'is-abstract'                      # isAbstract
+               | 'datatype' DATATYPE                # propDatatype
+               | 'regex' REGEX                      # propRegex
+               | '!=' variable                      # propNeq
                ;
 
 casting        : variable (':' VARIABLE)?
                | variable VARIABLE         {notifyErrorListeners("expecting {',', ':'}");};
 
-variable       : name | VARIABLE ;
+variable       : label | VARIABLE ;
 
 predicate      : '='? value        # predicateEq
                | '=' VARIABLE      # predicateVariable
@@ -112,7 +112,7 @@ value          : STRING   # valueString
                | BOOLEAN  # valueBoolean
                ;
 
-name           : identifier ;
+label          : identifier ;
 id             : identifier ;
 
 // Some keywords can also be used as identifiers

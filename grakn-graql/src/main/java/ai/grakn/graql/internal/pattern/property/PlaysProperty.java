@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
@@ -96,8 +96,8 @@ public class PlaysProperty extends AbstractVarProperty implements NamedProperty 
 
     @Override
     public void delete(GraknGraph graph, Concept concept) {
-        TypeName roleName = role.getTypeName().orElseThrow(() -> failDelete(this));
-        concept.asType().deletePlays(graph.getType(roleName));
+        TypeLabel roleLabel = role.getTypeLabel().orElseThrow(() -> failDelete(this));
+        concept.asType().deletePlays(graph.getType(roleLabel));
     }
 
     @Override

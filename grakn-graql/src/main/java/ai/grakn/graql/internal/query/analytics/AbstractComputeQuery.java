@@ -27,8 +27,9 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Printer;
 import ai.grakn.graql.internal.util.StringConverter;
@@ -48,7 +49,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
@@ -60,7 +60,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     Optional<GraknGraph> graph = Optional.empty();
     GraknComputer graknComputer = null;
     String keySpace;
-    Set<TypeName> subTypeNames = new HashSet<>();
+    Set<TypeLabel> subTypeLabels = new HashSet<>();
 
     @Override
     public ComputeQuery<T> withGraph(GraknGraph graph) {
@@ -69,14 +69,14 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     @Override
-    public ComputeQuery<T> in(String... subTypeNames) {
-        this.subTypeNames = Arrays.stream(subTypeNames).map(TypeName::of).collect(Collectors.toSet());
+    public ComputeQuery<T> in(String... subTypeLabels) {
+        this.subTypeLabels = Arrays.stream(subTypeLabels).map(TypeLabel::of).collect(Collectors.toSet());
         return this;
     }
 
     @Override
-    public ComputeQuery<T> in(Collection<TypeName> subTypeNames) {
-        this.subTypeNames = Sets.newHashSet(subTypeNames);
+    public ComputeQuery<T> in(Collection<TypeLabel> subTypeLabels) {
+        this.subTypeLabels = Sets.newHashSet(subTypeLabels);
         return this;
     }
 
@@ -118,26 +118,26 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
 
     private void getAllSubTypes(GraknGraph graph) {
         // fetch all the types in the subGraph
-        Set<Type> subGraph = subTypeNames.stream().map((name) -> {
-            Type type = graph.getType(name);
-            if (type == null) throw new IllegalArgumentException(ErrorMessage.NAME_NOT_FOUND.getMessage(name));
+        Set<Type> subGraph = subTypeLabels.stream().map((label) -> {
+            Type type = graph.getType(label);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
             return type;
         }).collect(Collectors.toSet());
 
         // get all types if subGraph is empty, else get all subTypes of each type in subGraph
         if (subGraph.isEmpty()) {
             EntityType metaEntityType = graph.admin().getMetaEntityType();
-            metaEntityType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            metaEntityType.subTypes().forEach(type -> this.subTypeLabels.add(type.asType().getLabel()));
             ResourceType<?> metaResourceType = graph.admin().getMetaResourceType(); //Yay for losing the type
-            metaResourceType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
+            metaResourceType.subTypes().forEach(type -> this.subTypeLabels.add(type.asType().getLabel()));
             RelationType metaRelationType = graph.admin().getMetaRelationType();
-            metaRelationType.subTypes().forEach(type -> this.subTypeNames.add(type.asType().getName()));
-            subTypeNames.remove(metaEntityType.getName());
-            subTypeNames.remove(metaResourceType.getName());
-            subTypeNames.remove(metaRelationType.getName());
+            metaRelationType.subTypes().forEach(type -> this.subTypeLabels.add(type.asType().getLabel()));
+            subTypeLabels.remove(metaEntityType.getLabel());
+            subTypeLabels.remove(metaResourceType.getLabel());
+            subTypeLabels.remove(metaRelationType.getLabel());
         } else {
             for (Type type : subGraph) {
-                type.subTypes().forEach(subType -> this.subTypeNames.add(subType.getName()));
+                type.subTypes().forEach(subType -> this.subTypeLabels.add(subType.getLabel()));
             }
         }
     }
@@ -150,17 +150,17 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     }
 
     boolean selectedTypesHaveInstance() {
-        if (subTypeNames.isEmpty()) return false;
+        if (subTypeLabels.isEmpty()) return false;
 
-        List<Pattern> checkSubtypes = subTypeNames.stream()
-                .map(type -> var("x").isa(name(type))).collect(Collectors.toList());
+        List<Pattern> checkSubtypes = subTypeLabels.stream()
+                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
         return this.graph.get().graql().infer(false).match(or(checkSubtypes)).ask().execute();
     }
 
     boolean verticesExistInSubgraph(ConceptId... ids) {
         for (ConceptId id : ids) {
             Instance instance = this.graph.get().getConcept(id);
-            if (instance == null || !subTypeNames.contains(instance.type().getName())) return false;
+            if (instance == null || !subTypeLabels.contains(instance.type().getLabel())) return false;
         }
         return true;
     }
@@ -168,11 +168,11 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     abstract String graqlString();
 
     final String subtypeString() {
-        if (subTypeNames.isEmpty()) {
+        if (subTypeLabels.isEmpty()) {
             return ";";
         } else {
             return " in "
-                    + subTypeNames.stream().map(StringConverter::typeNameToString).collect(joining(", ")) + ";";
+                    + subTypeLabels.stream().map(StringConverter::typeLabelToString).collect(joining(", ")) + ";";
         }
     }
 
@@ -181,10 +181,10 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
         return "compute " + graqlString();
     }
 
-    Set<TypeName> getHasResourceRelationTypes() {
-        return subTypeNames.stream()
+    Set<TypeLabel> getHasResourceRelationTypes() {
+        return subTypeLabels.stream()
                 .filter(type -> graph.get().getType(type).isResourceType())
-                .map(Schema.ImplicitType.HAS::getName)
+                .map(Schema.ImplicitType.HAS::getLabel)
                 .collect(Collectors.toSet());
     }
 }

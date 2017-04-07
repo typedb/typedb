@@ -36,7 +36,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.Graql.name;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static org.hamcrest.core.AllOf.allOf;
@@ -137,8 +137,8 @@ public class QueryErrorTest {
         // Create a fresh graph, with no has between person and name
         QueryBuilder emptyQb = empty.graph().graql();
         emptyQb.insert(
-                name("person").sub("entity"),
-                name("name").sub("resource").datatype(ResourceType.DataType.STRING)
+                label("person").sub("entity"),
+                label("name").sub("resource").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         exception.expect(ConceptException.class);

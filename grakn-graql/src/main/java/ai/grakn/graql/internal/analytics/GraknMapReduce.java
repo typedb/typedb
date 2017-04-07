@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
@@ -47,11 +47,11 @@ public abstract class GraknMapReduce<T> extends CommonOLAP
 
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
-    public GraknMapReduce(Set<TypeName> selectedTypes) {
+    public GraknMapReduce(Set<TypeLabel> selectedTypes) {
         this.selectedTypes = selectedTypes;
     }
 
-    public GraknMapReduce(Set<TypeName> selectedTypes, String resourceDataType) {
+    public GraknMapReduce(Set<TypeLabel> selectedTypes, String resourceDataType) {
         this(selectedTypes);
         persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
     }

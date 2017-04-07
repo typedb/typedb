@@ -94,7 +94,7 @@ public abstract class GraphWriterTestUtil {
     }
 
     public static <V> Resource<V> getResourceFromGraph(GraknGraph graph, Resource<V> resource){
-        return graph.getResourceType(resource.type().getName().getValue()).getResource(resource.getValue());
+        return graph.getResourceType(resource.type().getLabel().getValue()).getResource(resource.getValue());
     }
 
     public static void assertRelationCopied(Relation relation1, GraknGraph two){
@@ -102,9 +102,9 @@ public abstract class GraphWriterTestUtil {
             return;
         }
 
-        RelationType relationType = two.getRelationType(relation1.type().getName().getValue());
+        RelationType relationType = two.getRelationType(relation1.type().getLabel().getValue());
         Map<RoleType, Set<Instance>> rolemap = relation1.allRolePlayers().entrySet().stream().collect(toMap(
-                e -> two.getRoleType(e.getKey().asType().getName().getValue()),
+                e -> two.getRoleType(e.getKey().asType().getLabel().getValue()),
                 e -> e.getValue().stream().
                         map(instance -> getInstanceUniqueByResourcesFromGraph(two, instance)).
                         collect(Collectors.toSet())
@@ -123,8 +123,8 @@ public abstract class GraphWriterTestUtil {
     public static void assertResourceCopied(Resource resource1, GraknGraph two){
         assertEquals(true, two.getResourcesByValue(resource1.getValue()).stream()
                 .map(Instance::type)
-                .map(Type::getName)
-                .anyMatch(t -> resource1.type().getName().equals(t)));
+                .map(Type::getLabel)
+                .anyMatch(t -> resource1.type().getLabel().equals(t)));
     }
 
     public static void assertRuleCopied(Rule rule1, GraknGraph two){
@@ -136,14 +136,14 @@ public abstract class GraphWriterTestUtil {
 
     public static void assertOntologiesEqual(GraknGraph one, GraknGraph two){
         boolean ontologyCorrect = one.admin().getMetaConcept().subTypes().stream()
-                .allMatch(t -> typesEqual(t.asType(), two.getType(t.asType().getName())));
+                .allMatch(t -> typesEqual(t.asType(), two.getType(t.asType().getLabel())));
         assertEquals(true, ontologyCorrect);
     }
 
     public static boolean typesEqual(Type one, Type two){
-        return one.getName().equals(two.getName())
+        return one.getLabel().equals(two.getLabel())
                 && one.isAbstract().equals(two.isAbstract())
-                && (one.superType() == null || one.superType().getName().equals(two.superType().getName()))
+                && (one.superType() == null || one.superType().getLabel().equals(two.superType().getLabel()))
                 && (!one.isResourceType() || Objects.equals(one.asResourceType().getDataType(), two.asResourceType().getDataType()));
     }
 }

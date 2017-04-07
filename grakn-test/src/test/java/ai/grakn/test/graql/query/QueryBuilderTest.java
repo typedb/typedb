@@ -96,7 +96,7 @@ public class QueryBuilderTest {
     public void testBuildMatchInsertQueryGraphLast() {
         assertFalse(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());
         InsertQuery query =
-                match(var("x").name("movie")).
+                match(var("x").label("movie")).
                 insert(var().has("title", "a-movie").isa("movie")).withGraph(movieGraph.graph());
         query.execute();
         assertTrue(movieGraph.graph().graql().match(var().has("title", "a-movie")).ask().execute());

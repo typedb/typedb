@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.SumQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.SumMapReduce;
@@ -44,13 +44,13 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<TypeName> allSubTypes = getCombinedSubTypes();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
+        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeNames),
-                new SumMapReduce(statisticsResourceTypeNames, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
+                new SumMapReduce(statisticsResourceTypeLabels, dataType));
         Map<Serializable, Number> sum = result.memory().get(SumMapReduce.class.getName());
 
         Number finalResult = sum.get(MapReduce.NullObject.instance());
@@ -61,23 +61,23 @@ class SumQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public SumQuery of(String... resourceTypeNames) {
-        return (SumQuery) setStatisticsResourceType(resourceTypeNames);
+    public SumQuery of(String... resourceTypeLabels) {
+        return (SumQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public SumQuery of(Collection<TypeName> resourceTypeNames) {
-        return (SumQuery) setStatisticsResourceType(resourceTypeNames);
+    public SumQuery of(Collection<TypeLabel> resourceTypeLabels) {
+        return (SumQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public SumQuery in(String... subTypeNames) {
-        return (SumQuery) super.in(subTypeNames);
+    public SumQuery in(String... subTypeLabels) {
+        return (SumQuery) super.in(subTypeLabels);
     }
 
     @Override
-    public SumQuery in(Collection<TypeName> subTypeNames) {
-        return (SumQuery) super.in(subTypeNames);
+    public SumQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (SumQuery) super.in(subTypeLabels);
     }
 
     @Override

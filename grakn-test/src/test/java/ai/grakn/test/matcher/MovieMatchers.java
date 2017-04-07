@@ -49,7 +49,7 @@ public class MovieMatchers {
     public static final Matcher<MatchableConcept> tmdbVoteAverage = type("tmdb-vote-average");
     public static final Matcher<MatchableConcept> genreOfProduction = type("genre-of-production");
     public static final Matcher<MatchableConcept> aRuleType = type("a-rule-type");
-    public static final Matcher<MatchableConcept> hasTitle = type(HAS.getName("title"));
+    public static final Matcher<MatchableConcept> hasTitle = type(HAS.getLabel("title"));
     public static final Matcher<MatchableConcept> godfather = instance("Godfather");
     public static final Matcher<MatchableConcept> theMuppets = instance("The Muppets");
     public static final Matcher<MatchableConcept> heat = instance("Heat");

@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.pattern.property;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
@@ -79,9 +79,9 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        Optional<TypeName> typeName = type.getTypeName();
-        if (typeName.isPresent()) {
-            shortcutTraversal.setType(typeName.get());
+        Optional<TypeLabel> typeLabel = type.getTypeLabel();
+        if (typeLabel.isPresent()) {
+            shortcutTraversal.setType(typeLabel.get());
         } else {
             shortcutTraversal.setInvalid();
         }
@@ -104,10 +104,10 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
 
     @Override
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
-        type.getTypeName().ifPresent(typeName -> {
-            Type theType = graph.getType(typeName);
+        type.getTypeLabel().ifPresent(typeLabel -> {
+            Type theType = graph.getType(typeLabel);
             if (theType != null && theType.isRoleType()) {
-                throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(typeName));
+                throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(typeLabel));
             }
         });
     }

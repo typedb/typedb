@@ -74,7 +74,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     @Override
     public ResourceType<D> setRegex(String regex) {
         if(getDataType() == null || !getDataType().equals(DataType.STRING)){
-            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getName()));
+            throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getLabel()));
         }
 
         if(regex != null) {
@@ -84,7 +84,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                 String value = (String) resource.getValue();
                 matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, getName()));
+                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, getLabel()));
                 }
             }
         }
@@ -103,7 +103,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     @Override
     public <V> Resource<V> getResource(V value) {
-        String index = Schema.generateResourceIndex(getName(), value.toString());
+        String index = Schema.generateResourceIndex(getLabel(), value.toString());
         return getGraknGraph().getConcept(Schema.ConceptProperty.INDEX, index);
     }
 

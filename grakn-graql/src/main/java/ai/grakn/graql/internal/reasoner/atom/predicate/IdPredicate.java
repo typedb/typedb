@@ -27,7 +27,7 @@ import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.util.ErrorMessage;
 
@@ -48,7 +48,7 @@ public class IdPredicate extends Predicate<ConceptId>{
     public IdPredicate(VarName varName, IdProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop.getId()), par);
     }
-    public IdPredicate(VarName varName, NameProperty prop, ReasonerQuery par){
+    public IdPredicate(VarName varName, LabelProperty prop, ReasonerQuery par){
         this(createIdVar(varName, prop, par.graph()), par);
     }
     private IdPredicate(IdPredicate a) { super(a);}
@@ -62,9 +62,9 @@ public class IdPredicate extends Predicate<ConceptId>{
         return Graql.var(varName).id(typeId).admin();
     }
 
-    private static VarAdmin createIdVar(VarName varName, NameProperty prop, GraknGraph graph){
-        Type type = graph.getType(prop.getNameValue());
-        if (type == null) throw new IllegalArgumentException(ErrorMessage.CANNOT_CREATE_IDPREDICATE.getMessage(prop.getNameValue()));
+    private static VarAdmin createIdVar(VarName varName, LabelProperty prop, GraknGraph graph){
+        Type type = graph.getType(prop.getLabelValue());
+        if (type == null) throw new IllegalArgumentException(ErrorMessage.CANNOT_CREATE_IDPREDICATE.getMessage(prop.getLabelValue()));
         return Graql.var(varName).id(type.getId()).admin();
     }
 

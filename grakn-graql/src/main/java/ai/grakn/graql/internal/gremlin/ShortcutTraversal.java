@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.gremlin;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 
@@ -43,10 +43,10 @@ import java.util.Optional;
  */
 public class ShortcutTraversal {
 
-    private final List<Optional<TypeName>> roletypes = new ArrayList<>();
+    private final List<Optional<TypeLabel>> roletypes = new ArrayList<>();
     private final List<VarName> roleplayers = new ArrayList<>();
     private boolean valid = true;
-    private Optional<TypeName> type = Optional.empty();
+    private Optional<TypeLabel> type = Optional.empty();
     private EquivalentFragmentSet equivalentFragmentSet = null;
 
     /**
@@ -77,9 +77,9 @@ public class ShortcutTraversal {
      * Create a EquivalentFragmentSet that follows shortcut edges
      */
     private EquivalentFragmentSet makeEquivalentFragmentSet() {
-        Optional<TypeName> roleA = roletypes.get(0);
+        Optional<TypeLabel> roleA = roletypes.get(0);
         VarName playerA = roleplayers.get(0);
-        Optional<TypeName> roleB = roletypes.get(1);
+        Optional<TypeLabel> roleB = roletypes.get(1);
         VarName playerB = roleplayers.get(1);
 
         return EquivalentFragmentSets.shortcut(roleA, playerA, roleB, playerB, type);
@@ -88,7 +88,7 @@ public class ShortcutTraversal {
     /**
      * @param type the type of the variable this ShortcutTraversal represents
      */
-    public void setType(TypeName type) {
+    public void setType(TypeLabel type) {
         if (!this.type.isPresent()) {
             this.type = Optional.of(type);
         } else {
@@ -108,7 +108,7 @@ public class ShortcutTraversal {
      * @param roletype the role type of the given roleplayer
      * @param roleplayer a roleplayer of the relation that this ShortcutTraversal represents
      */
-    public void addRel(TypeName roletype, VarName roleplayer) {
+    public void addRel(TypeLabel roletype, VarName roleplayer) {
         roletypes.add(Optional.of(roletype));
         roleplayers.add(roleplayer);
     }

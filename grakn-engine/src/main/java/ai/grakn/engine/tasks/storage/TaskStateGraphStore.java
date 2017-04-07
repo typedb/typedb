@@ -25,7 +25,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.cache.EngineCacheProvider;
@@ -37,6 +37,7 @@ import ai.grakn.exception.EngineStorageException;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.util.Schema;
@@ -69,7 +70,6 @@ import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_ID;
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.lang.Thread.sleep;
 import static java.util.stream.Collectors.toSet;
@@ -91,7 +91,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     @Override
     public TaskId newState(TaskState task) throws EngineStorageException {
         TaskSchedule schedule = task.schedule();
-        Var state = var(TASK_VAR).isa(name(SCHEDULED_TASK))
+        Var state = var(TASK_VAR).isa(Graql.label(SCHEDULED_TASK))
                 .has(TASK_ID.getValue(), task.getId().getValue())
                 .has(STATUS, var().val(CREATED.toString()))
                 .has(TASK_CLASS_NAME, var().val(task.taskClass().getName()))
@@ -129,7 +129,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
     @Override
     public Boolean updateState(TaskState task) {
         // Existing resource relations to remove
-        final Set<TypeName> resourcesToDettach = new HashSet<>();
+        final Set<TypeLabel> resourcesToDettach = new HashSet<>();
         
         // New resources to add
         Var resources = var(TASK_VAR);
@@ -171,8 +171,8 @@ public class TaskStateGraphStore implements TaskStateStorage {
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
             Instance taskConcept = graph.getResourcesByValue(task.getId().getValue()).iterator().next().owner();
             // Remove relations to any resources we want to currently update
-            resourcesToDettach.forEach(typeName -> {
-                RoleType roleType = graph.getType(Schema.ImplicitType.HAS_OWNER.getName(typeName));
+            resourcesToDettach.forEach(typeLabel -> {
+                RoleType roleType = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(typeLabel));
                 taskConcept.relations(roleType).forEach(Concept::delete);
             });
 
@@ -245,7 +245,7 @@ public class TaskStateGraphStore implements TaskStateStorage {
 
     public Set<TaskState> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, EngineID engineRunningOn,
                                                  int limit, int offset, Boolean recurring) {
-        Var matchVar = var(TASK_VAR).isa(name(SCHEDULED_TASK));
+        Var matchVar = var(TASK_VAR).isa(Graql.label(SCHEDULED_TASK));
 
         if(taskStatus != null) {
             matchVar = matchVar.has(STATUS, var().val(taskStatus.toString()));

@@ -27,7 +27,7 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -77,8 +77,8 @@ public class AnalyticsTest {
         assumeFalse(usingTinker());
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-            TypeName resourceTypeName = TypeName.of("degree");
-            ResourceType<Long> degree = graph.putResourceType(resourceTypeName, ResourceType.DataType.LONG);
+            TypeLabel resourceTypeLabel = TypeLabel.of("degree");
+            ResourceType<Long> degree = graph.putResourceType(resourceTypeLabel, ResourceType.DataType.LONG);
             EntityType thing = graph.putEntityType("thing");
             thing.resource(degree);
 
@@ -107,13 +107,13 @@ public class AnalyticsTest {
 
         try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
             // make slightly odd graph
-            TypeName resourceTypeId = TypeName.of("degree");
+            TypeLabel resourceTypeId = TypeLabel.of("degree");
             EntityType thing = graph.putEntityType("thing");
 
             graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-            RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getName(resourceTypeId));
-            RoleType degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getName(resourceTypeId));
-            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getName(resourceTypeId))
+            RoleType degreeOwner = graph.putRoleType(Schema.ImplicitType.HAS_OWNER.getLabel(resourceTypeId));
+            RoleType degreeValue = graph.putRoleType(Schema.ImplicitType.HAS_VALUE.getLabel(resourceTypeId));
+            RelationType relationType = graph.putRelationType(Schema.ImplicitType.HAS.getLabel(resourceTypeId))
                     .relates(degreeOwner)
                     .relates(degreeValue);
             thing.plays(degreeOwner);

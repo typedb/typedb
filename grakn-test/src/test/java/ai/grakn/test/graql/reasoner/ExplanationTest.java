@@ -118,8 +118,8 @@ public class ExplanationTest {
         assertEquals(4, answer.getExplicitPath().size());
     }
 
-    private Concept getConcept(GraknGraph graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
+    private Concept getConcept(GraknGraph graph, String typeLabel, Object val){
+        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){

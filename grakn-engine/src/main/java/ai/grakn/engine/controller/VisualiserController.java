@@ -23,7 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
@@ -295,7 +295,7 @@ public class VisualiserController {
      * @return JSONArray with IDs of instances
      */
     private JSONArray instances(Type type) {
-        List<String> list = type.subTypes().stream().map(Type::getName).map(TypeName::getValue).collect(toList());
+        List<String> list = type.subTypes().stream().map(Type::getLabel).map(TypeLabel::getValue).collect(toList());
         return new JSONArray(list);
     }
 }

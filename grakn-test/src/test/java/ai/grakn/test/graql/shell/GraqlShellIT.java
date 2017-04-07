@@ -268,7 +268,7 @@ public class GraqlShellIT {
     @Test
     public void testAutocompleteFill() throws Exception {
         String result = testShell("match $x sub concep\t;\n");
-        assertThat(result, containsString(Schema.MetaSchema.RELATION.getName().getValue()));
+        assertThat(result, containsString(Schema.MetaSchema.RELATION.getLabel().getValue()));
     }
 
     @Test
@@ -331,10 +331,10 @@ public class GraqlShellIT {
         // Tinker graph doesn't support rollback
         assumeFalse(usingTinker());
 
-        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x type-name E;\n").split("\n");
+        String[] result = testShell("insert E sub entity;\nrollback\nmatch $x label E;\n").split("\n");
 
         // Make sure there are no results for match query
-        assertEquals(">>> match $x type-name E;", result[result.length-2]);
+        assertEquals(">>> match $x label E;", result[result.length-2]);
         assertEquals(">>> ", result[result.length-1]);
     }
 
@@ -349,7 +349,7 @@ public class GraqlShellIT {
     @Test
     public void testGraqlOutput() throws Exception {
         String result = testShell("", "-e", "match $x sub concept;", "-o", "graql");
-        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getName().getValue())));
+        assertThat(result, allOf(containsString("$x"), containsString(Schema.MetaSchema.ENTITY.getLabel().getValue())));
     }
 
     @Test

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MedianQuery;
 import ai.grakn.graql.internal.analytics.MedianVertexProgram;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -40,12 +40,12 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<TypeName> allSubTypes = getCombinedSubTypes();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
+        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new MedianVertexProgram(allSubTypes, statisticsResourceTypeNames, dataType));
+                new MedianVertexProgram(allSubTypes, statisticsResourceTypeLabels, dataType));
 
         Number finalResult = result.memory().get(MedianVertexProgram.MEDIAN);
         LOGGER.debug("Median = " + finalResult);
@@ -55,23 +55,23 @@ class MedianQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implemen
     }
 
     @Override
-    public MedianQuery of(String... resourceTypeNames) {
-        return (MedianQuery) setStatisticsResourceType(resourceTypeNames);
+    public MedianQuery of(String... resourceTypeLabels) {
+        return (MedianQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public MedianQuery of(Collection<TypeName> resourceTypeNames) {
-        return (MedianQuery) setStatisticsResourceType(resourceTypeNames);
+    public MedianQuery of(Collection<TypeLabel> resourceTypeLabels) {
+        return (MedianQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public MedianQuery in(String... subTypeNames) {
-        return (MedianQuery) super.in(subTypeNames);
+    public MedianQuery in(String... subTypeLabels) {
+        return (MedianQuery) super.in(subTypeLabels);
     }
 
     @Override
-    public MedianQuery in(Collection<TypeName> subTypeNames) {
-        return (MedianQuery) super.in(subTypeNames);
+    public MedianQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (MedianQuery) super.in(subTypeLabels);
     }
 
     @Override

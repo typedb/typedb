@@ -20,7 +20,7 @@
 package ai.grakn.generator;
 
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 public class RoleTypes extends AbstractTypeGenerator<RoleType> {
 
@@ -29,8 +29,8 @@ public class RoleTypes extends AbstractTypeGenerator<RoleType> {
     }
 
     @Override
-    protected RoleType newType(TypeName name) {
-        return graph().putRoleType(name);
+    protected RoleType newType(TypeLabel label) {
+        return graph().putRoleType(label);
     }
 
     @Override

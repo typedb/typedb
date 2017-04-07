@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -43,31 +43,31 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     static final String DEGREE = "degreeVertexProgram.degree";
-    private static final String OF_TYPE_NAMES = "degreeVertexProgram.ofTypeNames";
+    private static final String OF_TYPE_LABELS = "degreeVertexProgram.ofTypeLabels";
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
-    Set<TypeName> ofTypeNames = new HashSet<>();
+    Set<TypeLabel> ofTypeLabels = new HashSet<>();
 
     // Needed internally for OLAP tasks
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<TypeName> types, Set<TypeName> ofTypeNames) {
+    public DegreeVertexProgram(Set<TypeLabel> types, Set<TypeLabel> ofTypeLabels) {
         selectedTypes = types;
-        this.ofTypeNames = ofTypeNames;
+        this.ofTypeLabels = ofTypeLabels;
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
-        ofTypeNames.forEach(type -> configuration.addProperty(OF_TYPE_NAMES + "." + type, type));
+        ofTypeLabels.forEach(type -> configuration.addProperty(OF_TYPE_LABELS + "." + type, type));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
-        configuration.subset(OF_TYPE_NAMES).getKeys().forEachRemaining(key ->
-                ofTypeNames.add(TypeName.of(configuration.getProperty(OF_TYPE_NAMES + "." + key).toString())));
+        configuration.subset(OF_TYPE_LABELS).getKeys().forEachRemaining(key ->
+                ofTypeLabels.add(TypeLabel.of(configuration.getProperty(OF_TYPE_LABELS + "." + key).toString())));
     }
 
     @Override
@@ -104,8 +104,8 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                 break;
 
             case 2:
-                TypeName type = Utility.getVertexType(vertex);
-                if (selectedTypes.contains(type) && ofTypeNames.contains(type)) {
+                TypeLabel type = Utility.getVertexType(vertex);
+                if (selectedTypes.contains(type) && ofTypeLabels.contains(type)) {
                     vertex.property(DEGREE, getMessageCount(messenger));
                 }
                 break;

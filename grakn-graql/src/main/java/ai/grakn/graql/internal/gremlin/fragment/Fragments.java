@@ -20,7 +20,7 @@ package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -41,7 +41,7 @@ public class Fragments {
     private Fragments() {}
 
     public static Fragment shortcut(
-            Optional<TypeName> relationType, Optional<TypeName> roleStart, Optional<TypeName> roleEnd,
+            Optional<TypeLabel> relationType, Optional<TypeLabel> roleStart, Optional<TypeLabel> roleEnd,
             VarName start, VarName end
     ) {
         return new ShortcutFragment(relationType, roleStart, roleEnd, start, end);
@@ -125,8 +125,8 @@ public class Fragments {
         return new IdFragment(start, id);
     }
 
-    public static Fragment name(VarName start, TypeName name) {
-        return new NameFragment(start, name);
+    public static Fragment label(VarName start, TypeLabel label) {
+        return new LabelFragment(start, label);
     }
 
     public static Fragment value(VarName start, ValuePredicateAdmin predicate) {
@@ -156,8 +156,8 @@ public class Fragments {
     /**
      * A {@link Fragment} that uses an index stored on each resource. Resources are indexed by direct type and value.
      */
-    public static Fragment resourceIndex(VarName start, TypeName typeName, Object resourceValue) {
-        return new ResourceIndexFragment(start, typeName, resourceValue);
+    public static Fragment resourceIndex(VarName start, TypeLabel typeLabel, Object resourceValue) {
+        return new ResourceIndexFragment(start, typeLabel, resourceValue);
     }
 
     @SuppressWarnings("unchecked")

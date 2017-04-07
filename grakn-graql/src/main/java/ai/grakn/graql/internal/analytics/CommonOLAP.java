@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -45,11 +45,11 @@ public abstract class CommonOLAP {
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
-    static final Set<TypeName> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
-            Schema.Analytics.DEGREE.getName(),
-            Schema.ImplicitType.HAS.getName(Schema.Analytics.DEGREE.getName()),
-            Schema.Analytics.CLUSTER.getName(),
-            Schema.ImplicitType.HAS.getName(Schema.Analytics.CLUSTER.getName())));
+    static final Set<TypeLabel> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
+            Schema.Analytics.DEGREE.getLabel(),
+            Schema.ImplicitType.HAS.getLabel(Schema.Analytics.DEGREE.getLabel()),
+            Schema.Analytics.CLUSTER.getLabel(),
+            Schema.ImplicitType.HAS.getLabel(Schema.Analytics.CLUSTER.getLabel())));
 
     /**
      * The concepts that can be "seen" by analytics by default.
@@ -62,7 +62,7 @@ public abstract class CommonOLAP {
     /**
      * The types that define a subgraph.
      */
-    Set<TypeName> selectedTypes = new HashSet<>();
+    Set<TypeLabel> selectedTypes = new HashSet<>();
 
     /**
      * Properties that will be reloaded whenever the class is instantiated in a spark executor.
@@ -84,7 +84,7 @@ public abstract class CommonOLAP {
         oldKeys.forEach(configuration::clearProperty);
 
         // store selectedTypes
-        selectedTypes.forEach(typeName -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY + "." + typeName.getValue(), typeName.getValue()));
+        selectedTypes.forEach(typeLabel -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY + "." + typeLabel.getValue(), typeLabel.getValue()));
 
         // store fields
 
@@ -103,7 +103,7 @@ public abstract class CommonOLAP {
     public void loadState(final Graph graph, final Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
-                selectedTypes.add(TypeName.of(configuration.getString(PREFIX_SELECTED_TYPE_KEY + "." + key))));
+                selectedTypes.add(TypeLabel.of(configuration.getString(PREFIX_SELECTED_TYPE_KEY + "." + key))));
 
         // load fields
 
