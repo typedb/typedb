@@ -20,7 +20,6 @@ package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 
@@ -233,7 +232,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     }
 
     private void updateLastTimeJobAdded(){
-        writeObjectToZookeeper(ZookeeperPaths.ENGINE_CACHE_UPDATE_TIME, System.currentTimeMillis());
+        writeObjectToZookeeper(ENGINE_CACHE_UPDATE_TIME, System.currentTimeMillis());
     }
 
     private void clearAllJobs(String jobType, String keyspace){
