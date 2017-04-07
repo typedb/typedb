@@ -29,16 +29,17 @@ public class REST {
      * Class containing URIs to REST endpoints.
      */
     public static class WebPath{
-        public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
-        public static final String GRAPH_ANALYTICS_QUERY_URI = "/graph/analytics";
-        public static final String GRAPH_PRE_MATERIALISE_QUERY_URI = "/graph/preMaterialiseAll";
-        public static final String GRAPH_ONTOLOGY_URI = "/graph/ontology" ;
-        public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
-        public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
 
         public static final String COMMIT_LOG_URI = "/commit_log";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
+
+        /**
+         * URIs to visualiser controller
+         */
+        public static class Graph {
+            public static final String GRAQL = "/graph/graql";
+        }
 
         /**
          * URIs to Tasks Controller endpoints
@@ -55,6 +56,24 @@ public class REST {
         public static class System {
             public static final String CONFIGURATION = "/configuration";
             public static final String KEYSPACES = "/keyspaces";
+        }
+
+        /**
+         * URIs to concept controller endpoints
+         */
+        public static class Concept {
+            public static final String CONCEPT = "/graph/concept/";
+            public static final String ONTOLOGY = "/graph/ontology";
+        }
+
+        /**
+         * URIs to dashboard controller endpoints
+         */
+        public static class Dashboard {
+            public static final String TYPES = "/dashboard/types/";
+            public static final String EXPLORE = "/dashboard/explore/";
+            public static final String EXPLAIN = "/dashboard/explain/";
+            public static final String PRECOMPUTE = "/dashboard/precomputeInferences";
         }
 
         public static final String NEW_SESSION_URI="/auth/session/";
@@ -82,6 +101,7 @@ public class REST {
         public static final String OFFSET_PARAM = "offset";
         public static final String HAL_CONTENTTYPE = "application/hal+json";
         public static final String GRAQL_CONTENTTYPE = "application/graql";
+        public static final String KEYSPACE = "keyspace";
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
@@ -91,6 +111,24 @@ public class REST {
         public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
         public static final String COMMIT_LOG_TYPE_NAME = "type-name";
         public static final String COMMIT_LOG_INSTANCE_COUNT = "instance-count";
+
+        /**
+         * Concept controller request parameters
+         */
+        public static final class Concept {
+            public static final String LIMIT_EMBEDDED = "limitEmbedded";
+            public static final String OFFSET_EMBEDDED = "offsetEmbedded";
+        }
+
+        /**
+         * Graql controller request parameters
+         */
+        public static final class Graql {
+            public static final String QUERY = "query";
+            public static final String INFER = "infer";
+            public static final String MATERIALISE = "materialise";
+            public static final String LIMIT_EMBEDDED = "limitEmbedded";
+        }
     }
 
     /**
@@ -119,10 +157,37 @@ public class REST {
      * Class listing various strings found in responses from the REST API.
      */
     public static class Response{
-        public static final String ENTITIES_JSON_FIELD = "entities";
-        public static final String ROLES_JSON_FIELD = "roles";
-        public static final String RELATIONS_JSON_FIELD = "relations";
-        public static final String RESOURCES_JSON_FIELD = "resources";
+
+        public static final String EXCEPTION = "exception";
+
+        /**
+         * Response content types
+         */
+        public static class ContentType {
+            public static final String APPLICATION_JSON_GRAQL = "application/graql+json";
+            public static final String APPLICATION_TEXT = "application/text";
+            public static final String APPLICATION_HAL ="application/hal+json";
+        }
+
+        /**
+         * Graql controller response fields
+         */
+        public static class Graql {
+            public static final String RESPONSE = "response";
+            public static final String IDENTIFIER = "identifier";
+            public static final String ORIGINAL_QUERY = "originalQuery";
+        }
+
+        /**
+         *  Metatypes Json object fields
+         */
+
+        public static class Json {
+            public static final String ENTITIES_JSON_FIELD = "entities";
+            public static final String ROLES_JSON_FIELD = "roles";
+            public static final String RELATIONS_JSON_FIELD = "relations";
+            public static final String RESOURCES_JSON_FIELD = "resources";
+        }
     }
 
     /**

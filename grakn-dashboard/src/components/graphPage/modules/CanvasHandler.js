@@ -46,6 +46,7 @@ export default class CanvasHandler {
 
     // vars
     this.doubleClickTime = 0;
+    this.alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
   }
 
   renderGraph(graphElement, graphOffsetTop) {
@@ -60,8 +61,9 @@ export default class CanvasHandler {
   // //////////////////////////////////////////////////// ----------- Graph mouse interactions ------------ ///////////////////////////////////////////////////////////
 
   holdOnNode(param) {
-    const node = param.nodes[0];
-    if (node === undefined) return;
+    visualiser.network.unselectAll();
+    const node = visualiser.getNodeOnCoordinates(param.pointer.canvas);
+    if (node === null) return;
     this.state.eventHub.$emit('show-label-panel', visualiser.getAllNodeProperties(node), visualiser.getNodeType(node), node);
   }
 
@@ -76,17 +78,12 @@ export default class CanvasHandler {
     const nodeObj = visualiser.getNode(node);
 
     if (eventKeys.shiftKey) {
-      this.requestOntology(nodeObj);
+      this.requestExplore(nodeObj);
     } else {
-      let generatedNode = false;
-      // If we are popping a generated relationship we need to append the 'reasoner' parameter to the URL
-      if (nodeObj.baseType === API.GENERATED_RELATION_TYPE) {
-        generatedNode = true;
-      }
+      const generatedNode = (nodeObj.baseType === API.GENERATED_RELATION_TYPE);
 
       EngineClient.request({
         url: nodeObj.href,
-        appendReasonerParams: generatedNode,
       }).then(resp => this.onGraphResponse(resp, node), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
@@ -94,6 +91,14 @@ export default class CanvasHandler {
         visualiser.deleteNode(node);
       }
     }
+  }
+
+  fetchFilteredRelations(href) {
+    EngineClient.request({
+      url: href,
+    }).then(resp => this.onGraphResponse(resp), (err) => {
+      this.state.eventHub.$emit('error-message', err.message);
+    });
   }
 
   rightClick(param) {
@@ -116,18 +121,16 @@ export default class CanvasHandler {
   blurNode() {
     this.state.eventHub.$emit('blur-node');
   }
-  requestOntology(nodeObj) {
-      // If alt key is pressed we load ontology related to the current node
-    if (nodeObj.ontology) {
+  requestExplore(nodeObj) {
+    if (nodeObj.explore) {
       EngineClient.request({
-        url: nodeObj.ontology,
-      }).then(resp => this.onGraphResponseOntology(resp, nodeObj.id), (err) => {
+        url: nodeObj.explore,
+      }).then(resp => this.onGraphResponseExplore(resp, nodeObj.id), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
     }
   }
   leftClick(param) {
-      // TODO: handle multiselect properly now that is enabled.
     const node = param.nodes[0];
     const eventKeys = param.event.srcEvent;
     const clickType = param.event.type;
@@ -147,7 +150,7 @@ export default class CanvasHandler {
     const nodeObj = visualiser.getNode(node);
 
     if (eventKeys.shiftKey) {
-      this.requestOntology(nodeObj);
+      this.requestExplore(nodeObj);
     } else {
           // Show node properties on node panel.
       const ontologyProps = {
@@ -156,7 +159,7 @@ export default class CanvasHandler {
         baseType: nodeObj.baseType,
       };
 
-      const nodeResources = this.prepareResources(nodeObj.properties);
+      const nodeResources = CanvasHandler.prepareResources(nodeObj.properties);
       const nodeLabel = visualiser.getNodeLabel(node);
       this.state.eventHub.$emit('show-node-panel', ontologyProps, nodeResources, nodeLabel);
     }
@@ -206,10 +209,17 @@ export default class CanvasHandler {
       return;
     }
 
-    if (query.trim().startsWith('compute')) {
-      EngineClient.graqlAnalytics(query).then(resp => this.onGraphResponseAnalytics(resp), (err) => {
-        this.state.eventHub.$emit('error-message', err.message);
-      });
+    if (query.startsWith('compute')) {
+      // If analytics query contains path we execute a HAL request
+      if (query.includes('path')) {
+        EngineClient.graqlHAL(query).then(resp => this.onGraphResponse(resp), (err) => {
+          this.state.eventHub.$emit('error-message', err.message);
+        });
+      } else {
+        EngineClient.graqlAnalytics(query).then(resp => this.onGraphResponseAnalytics(resp), (err) => {
+          this.state.eventHub.$emit('error-message', err.message);
+        });
+      }
     } else {
       let queryToExecute = query.trim();
 
@@ -232,24 +242,19 @@ export default class CanvasHandler {
   // //----------- Render Engine responses ------------------ ///
 
   onGraphResponseAnalytics(resp) {
-    const responseObject = JSON.parse(resp);
-    if (responseObject.type === 'string') {
-      this.state.eventHub.$emit('analytics-string-response', responseObject.response);
-    } else {
-      this.halParser.parseResponse(responseObject.response, false, false);
-      visualiser.fitGraphToWindow();
-    }
+    const responseObject = JSON.parse(resp).response;
+    this.state.eventHub.$emit('analytics-string-response', responseObject);
   }
 
   onGraphResponse(resp, nodeId) {
-    const responseObject = JSON.parse(resp);
+    const responseObject = JSON.parse(resp).response;
     if (!this.halParser.parseResponse(responseObject, false, false, nodeId)) {
       this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
     } else if (nodeId) {
       // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
       // which will contain a new value for offset
       // Check if the node still in the Dataset, if not (generated relation), don't update href
-      if (visualiser.getNode(nodeId)) {
+      if (visualiser.getNode(nodeId) && ('_links' in responseObject)) {
         visualiser.updateNode({
           id: nodeId,
           href: responseObject._links.self.href,
@@ -259,8 +264,8 @@ export default class CanvasHandler {
     visualiser.fitGraphToWindow();
   }
 
-  onGraphResponseOntology(resp, nodeId) {
-    if (!this.halParser.parseResponse(JSON.parse(resp), true, true, nodeId)) {
+  onGraphResponseExplore(resp, nodeId) {
+    if (!this.halParser.parseResponse(JSON.parse(resp).response, false, true, nodeId)) {
       this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
     }
     visualiser.fitGraphToWindow();
@@ -282,7 +287,7 @@ export default class CanvasHandler {
    * Prepare the list of resources to be shown in the right div panel
    * It sorts them alphabetically and then check if a resource value is a URL
    */
-  prepareResources(originalObject) {
+  static prepareResources(originalObject) {
     if (originalObject == null) return {};
     return Object.keys(originalObject).sort().reduce(
           // sortedObject is the accumulator variable, i.e. new object with sorted keys
