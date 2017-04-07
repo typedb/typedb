@@ -24,10 +24,12 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
+import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
+import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -36,23 +38,30 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -163,6 +172,35 @@ public class SingleQueueTaskManagerTest {
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
         assertStatus(task, COMPLETED, FAILED);
+    }
+
+    @Test
+    public void whenRunningARecurringTaskAndManyOtherTasks_TheRecurringTaskRunsRegularly() throws InterruptedException {
+        Duration recurDur = Duration.ofMillis(50);
+        Duration sleepDur = Duration.ofMillis(1000);
+
+        Stream<TaskState> manyTasks = Stream.generate(BackgroundTaskTestUtils::createTask).limit(100);
+
+        TaskState recurringTask = createTask(ShortExecutionMockTask.class, recurring(recurDur));
+
+        // Since this test is sleeping and there are various overheads,
+        // we are fairly liberal about how many times the task must run to avoid random failures
+        long expectedTimesRecurringTaskCompleted = sleepDur.toMillis() / (2 * recurDur.toMillis());
+
+        AtomicLong timesRecurringTaskCompleted = new AtomicLong(0);
+
+        whenTaskFinishes(taskId -> {
+            if (taskId.equals(recurringTask.getId())) {
+                timesRecurringTaskCompleted.incrementAndGet();
+            }
+        });
+
+        manyTasks.forEach(taskManager::addTask);
+        taskManager.addTask(recurringTask);
+
+        Thread.sleep(sleepDur.toMillis());
+
+        assertThat(timesRecurringTaskCompleted.get(), greaterThanOrEqualTo(expectedTimesRecurringTaskCompleted));
     }
 
     private void assertStatus(TaskState task, TaskStatus... status) {
