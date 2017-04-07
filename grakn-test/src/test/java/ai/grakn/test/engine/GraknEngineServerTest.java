@@ -20,7 +20,6 @@ package ai.grakn.test.engine;
 
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
@@ -53,18 +52,6 @@ public class GraknEngineServerTest {
 
         try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
             assertTrue(server.getTaskManager() instanceof StandaloneTaskManager);
-        }
-    }
-
-    @Test
-    public void whenEnginePropertiesIndicatesMultiQueueTM_MultiQueueTmIsStarted() {
-        // Should start engine with distributed server, which means we will get a cannot
-        // connect to Zookeeper exception (that has not been started)
-        GraknEngineConfig.getInstance().setConfigProperty(ZK_CONNECTION_TIMEOUT, "1000");
-        GraknEngineConfig.getInstance().setConfigProperty(TASK_MANAGER_IMPLEMENTATION, MultiQueueTaskManager.class.getName());
-
-        try (GraknEngineServer server = GraknEngineServer.mainWithServer()) {
-            assertThat(server.getTaskManager(), instanceOf(MultiQueueTaskManager.class));
         }
     }
 
