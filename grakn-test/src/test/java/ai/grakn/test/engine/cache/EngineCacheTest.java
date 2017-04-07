@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.cache;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.graph.admin.ConceptCache;
@@ -181,18 +181,18 @@ public class EngineCacheTest {
         String keyspace1 = "key1";
 
         //Create fake commit log
-        Map<TypeName, Long> fakeCache = new HashMap<>();
-        fakeCache.put(TypeName.of("A"), 1L);
-        fakeCache.put(TypeName.of("B"), 2L);
-        fakeCache.put(TypeName.of("C"), 3L);
+        Map<TypeLabel, Long> fakeCache = new HashMap<>();
+        fakeCache.put(TypeLabel.of("A"), 1L);
+        fakeCache.put(TypeLabel.of("B"), 2L);
+        fakeCache.put(TypeLabel.of("C"), 3L);
 
         fakeCache.entrySet().forEach(entry -> cache.addJobInstanceCount(keyspace1, entry.getKey(), entry.getValue()));
 
         assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
         fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));
 
-        fakeCache.remove(TypeName.of("B"));
-        cache.deleteJobInstanceCount(keyspace1, TypeName.of("B"));
+        fakeCache.remove(TypeLabel.of("B"));
+        cache.deleteJobInstanceCount(keyspace1, TypeLabel.of("B"));
 
         assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
         fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));

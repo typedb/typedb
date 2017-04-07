@@ -27,7 +27,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -167,7 +167,7 @@ public interface GraknAdmin {
      *
      * @param typeCounts The types and the changes to put on their counts
      */
-    void updateTypeCounts(Map<TypeName, Long> typeCounts);
+    void updateTypeCounts(Map<TypeLabel, Long> typeCounts);
 
     /**
      *

@@ -19,7 +19,7 @@
 package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 
@@ -81,7 +81,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     private String getPathExactJob(String jobType, String keyspace, String index, ConceptId conceptId){
         return format(ENGINE_CACHE_EXACT_JOB, keyspace, jobType, index, conceptId.getValue());
     }
-    private String getPathTypeInstanceCount(String keyspace, TypeName name){
+    private String getPathTypeInstanceCount(String keyspace, TypeLabel name){
         return format(ENGINE_CACHE_TYPE_INSTANCE_COUNT, keyspace, COUNTING_JOB, name);
     }
 
@@ -230,16 +230,16 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     //-------------------- Instance Count Jobs
 
     @Override
-    public Map<TypeName, Long> getInstanceCountJobs(String keyspace) {
-        Map<TypeName, Long> results = new HashMap<>();
+    public Map<TypeLabel, Long> getInstanceCountJobs(String keyspace) {
+        Map<TypeLabel, Long> results = new HashMap<>();
         Optional<List<String>> types = getChildrenFromZookeeper(getPathJobRoot(COUNTING_JOB, keyspace));
 
         if(types.isPresent()){
             types.get().forEach(name -> {
-                String pathTypeIntanceCount = getPathTypeInstanceCount(keyspace, TypeName.of(name));
+                String pathTypeIntanceCount = getPathTypeInstanceCount(keyspace, TypeLabel.of(name));
                 Optional<Object> value = getObjectFromZookeeper(pathTypeIntanceCount);
                 if(value.isPresent()){
-                    results.put(TypeName.of(name), (Long) value.get());
+                    results.put(TypeLabel.of(name), (Long) value.get());
                 } else {
                     deleteObjectFromZookeeper(pathTypeIntanceCount); //We have a type saved with no count. Kill it
                 }
@@ -250,7 +250,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     }
 
     @Override
-    public void addJobInstanceCount(String keyspace, TypeName name, long instanceCount) {
+    public void addJobInstanceCount(String keyspace, TypeLabel name, long instanceCount) {
         String path = getPathTypeInstanceCount(keyspace, name);
         Optional<Object> currentValue = getObjectFromZookeeper(path);
         long newValue = instanceCount;
@@ -263,7 +263,7 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     }
 
     @Override
-    public void deleteJobInstanceCount(String keyspace, TypeName name) {
+    public void deleteJobInstanceCount(String keyspace, TypeLabel name) {
         deleteObjectFromZookeeper(getPathTypeInstanceCount(keyspace, name));
     }
 }

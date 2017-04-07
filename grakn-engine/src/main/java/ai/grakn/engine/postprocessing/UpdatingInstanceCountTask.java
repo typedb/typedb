@@ -20,7 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
@@ -58,7 +58,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
     }
 
     private void updateCountsOnKeySpace(String keyspace){
-        Map<TypeName, Long> jobs = new HashMap<>(cache.getInstanceCountJobs(keyspace));
+        Map<TypeLabel, Long> jobs = new HashMap<>(cache.getInstanceCountJobs(keyspace));
         //Clear the cache optimistically because we think we going to update successfully
         jobs.forEach((key, value) -> cache.deleteJobInstanceCount(keyspace, key));
 

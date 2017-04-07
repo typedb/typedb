@@ -138,17 +138,17 @@ public class ConceptLogTest extends GraphTestBase{
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
         relationType.addRelation();
-        assertEquals(2, (long) conceptLog.getInstanceCount().get(entityType.getName()));
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getName()));
+        assertEquals(2, (long) conceptLog.getInstanceCount().get(entityType.getLabel()));
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getLabel()));
 
         //Remove an entity
         e1.delete();
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(entityType.getName()));
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getName()));
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(entityType.getLabel()));
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getLabel()));
 
         //Remove another entity
         e2.delete();
-        assertFalse(conceptLog.getInstanceCount().containsKey(entityType.getName()));
-        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getName()));
+        assertFalse(conceptLog.getInstanceCount().containsKey(entityType.getLabel()));
+        assertEquals(1, (long) conceptLog.getInstanceCount().get(relationType.getLabel()));
     }
 }

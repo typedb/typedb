@@ -19,7 +19,7 @@
 package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
     //These are maps of keyspaces to indices to vertex ids
     private final Map<String, Map<String, Set<ConceptId>>> castings;
     private final Map<String, Map<String, Set<ConceptId>>> resources;
-    private final Map<String, Map<TypeName, Long>> instanceCounts;
+    private final Map<String, Map<TypeLabel, Long>> instanceCounts;
 
     private static EngineCacheStandAlone instance=null;
 
@@ -149,17 +149,17 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
     //-------------------- Instance Count Jobs
 
     @Override
-    public Map<TypeName, Long> getInstanceCountJobs(String keyspace) {
+    public Map<TypeLabel, Long> getInstanceCountJobs(String keyspace) {
         return instanceCounts.computeIfAbsent(keyspace, (key) -> new ConcurrentHashMap<>());
     }
 
     @Override
-    public void addJobInstanceCount(String keyspace, TypeName name, long instanceCount) {
+    public void addJobInstanceCount(String keyspace, TypeLabel name, long instanceCount) {
         getInstanceCountJobs(keyspace).compute(name, (key, value) -> value == null ? instanceCount : value + instanceCount);
     }
 
     @Override
-    public void deleteJobInstanceCount(String keyspace, TypeName name) {
+    public void deleteJobInstanceCount(String keyspace, TypeLabel name) {
         getInstanceCountJobs(keyspace).remove(name);
     }
 }

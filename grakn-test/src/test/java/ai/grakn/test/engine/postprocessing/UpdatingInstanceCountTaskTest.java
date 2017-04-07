@@ -3,7 +3,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskSchedule;
@@ -45,8 +45,8 @@ public class UpdatingInstanceCountTaskTest {
 
         //Create Artificial Caches
         ConceptCache cache = EngineCacheProvider.getCache();
-        cache.addJobInstanceCount(keyspace, TypeName.of(entityType1), 6);
-        cache.addJobInstanceCount(keyspace, TypeName.of(entityType2), 3);
+        cache.addJobInstanceCount(keyspace, TypeLabel.of(entityType1), 6);
+        cache.addJobInstanceCount(keyspace, TypeLabel.of(entityType2), 3);
 
         //Start up the Job
         TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), Json.object());

@@ -19,7 +19,7 @@
 package ai.grakn.graph.admin;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +64,7 @@ public interface ConceptCache {
      * @param keyspace The keyspace of a specific graph.
      * @return The types and the number of instances that have been removed or added to the type
      */
-    Map<TypeName, Long> getInstanceCountJobs(String keyspace);
+    Map<TypeLabel, Long> getInstanceCountJobs(String keyspace);
 
     /**
      *
@@ -72,14 +72,14 @@ public interface ConceptCache {
      * @param name The name of the type with new or removed instances
      * @param instanceCount The number of new or removed instances
      */
-    void addJobInstanceCount(String keyspace, TypeName name, long instanceCount);
+    void addJobInstanceCount(String keyspace, TypeLabel name, long instanceCount);
 
     /**
      *
      * @param keyspace The keyspace of the concepts
      * @param name The name of the type with new or removed instances
      */
-    void deleteJobInstanceCount(String keyspace, TypeName name);
+    void deleteJobInstanceCount(String keyspace, TypeLabel name);
 
     //-------------------- Casting Jobs
     /**

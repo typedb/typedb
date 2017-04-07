@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.graph.admin.ConceptCache;
@@ -114,7 +114,7 @@ public class CommitLogController {
         JSONArray instancesToCount = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_COUNTING);
         for (Object object : instancesToCount) {
             JSONObject jsonObject = (JSONObject) object;
-            TypeName name = TypeName.of(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE_NAME));
+            TypeLabel name = TypeLabel.of(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE_NAME));
             Long value = jsonObject.getLong(REST.Request.COMMIT_LOG_INSTANCE_COUNT);
             cache.addJobInstanceCount(graphName, name, value);
         }
