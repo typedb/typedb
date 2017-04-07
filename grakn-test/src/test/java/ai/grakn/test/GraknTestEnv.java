@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.RECURRING_TASKS_TOPIC;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -84,6 +85,7 @@ public abstract class GraknTestEnv {
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
             kafkaUnit.createTopic(NEW_TASKS_TOPIC, properties.getAvailableThreads() * 4);
+            kafkaUnit.createTopic(RECURRING_TASKS_TOPIC, properties.getAvailableThreads() * 4);
 
             LOG.info("kafka started.");
         }
