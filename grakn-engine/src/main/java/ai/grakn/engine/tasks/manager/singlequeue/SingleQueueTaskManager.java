@@ -219,7 +219,7 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
-     * Get a new kafka consumer listening on the new tasks topic
+     * Get a new kafka consumer listening on the recurring tasks topic
      */
     public Consumer<TaskId, TaskState> newRecurringConsumer(){
         return newConsumer(RECURRING_TASKS_TOPIC);
