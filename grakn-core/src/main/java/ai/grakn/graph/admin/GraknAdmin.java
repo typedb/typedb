@@ -27,11 +27,13 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -153,11 +155,19 @@ public interface GraknAdmin {
     boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds);
 
     /**
+     * Merges the provided duplicate resources
      *
      * @param resourceVertexIds The resource vertex ids which need to be merged.
      * @return True if a commit is required.
      */
     boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds);
+
+    /**
+     * Updates the counts of all the types
+     *
+     * @param typeCounts The types and the changes to put on their counts
+     */
+    void updateTypeCounts(Map<TypeLabel, Long> typeCounts);
 
     /**
      *

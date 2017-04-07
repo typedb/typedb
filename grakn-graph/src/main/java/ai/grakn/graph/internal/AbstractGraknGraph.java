@@ -845,15 +845,26 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     private void submitCommitLogs(Set<Pair<String, ConceptId>> castings, Set<Pair<String, ConceptId>> resources){
-        JSONArray jsonArray = new JSONArray();
+        //Concepts In Need of Inspection
+        JSONArray conceptsForInspection = new JSONArray();
+        loadCommitLogConcepts(conceptsForInspection, Schema.BaseType.CASTING, castings);
+        loadCommitLogConcepts(conceptsForInspection, Schema.BaseType.RESOURCE, resources);
 
-        loadCommitLogConcepts(jsonArray, Schema.BaseType.CASTING, castings);
-        loadCommitLogConcepts(jsonArray, Schema.BaseType.RESOURCE, resources);
+        //Types with instance changes
+        JSONArray typesWithInstanceChanges = new JSONArray();
+        getConceptLog().getInstanceCount().entrySet().forEach(entry -> {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put(REST.Request.COMMIT_LOG_TYPE_NAME, entry.getKey().getValue());
+            jsonObject.put(REST.Request.COMMIT_LOG_INSTANCE_COUNT, entry.getValue());
+            typesWithInstanceChanges.put(jsonObject);
+        });
 
+        //Final Commit Log
         JSONObject postObject = new JSONObject();
-        postObject.put("concepts", jsonArray);
-        LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString()) + "]");
+        postObject.put(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
+        postObject.put(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
 
+        LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString()) + "]");
     }
     private void loadCommitLogConcepts(JSONArray jsonArray, Schema.BaseType baseType, Set<Pair<String, ConceptId>> concepts){
         concepts.forEach(concept -> {
@@ -1037,5 +1048,15 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         //Explicitly track this new relation so we don't create duplicates
         String newHash = generateNewHash(relationType, allRolePlayers);
         getConceptLog().getModifiedRelations().put(newHash, foundRelation);
+    }
+
+    @Override
+    public void updateTypeCounts(Map<TypeLabel, Long> typeCounts){
+       typeCounts.entrySet().forEach(entry -> {
+           if(entry.getValue() != 0) {
+               TypeImpl type = getType(entry.getKey());
+               type.setInstanceCount(type.getInstanceCount() + entry.getValue());
+           }
+       });
     }
 }

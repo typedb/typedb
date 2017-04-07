@@ -25,13 +25,16 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -40,7 +43,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class PostprocessingTest extends GraphTestBase{
+public class PostProcessingTest extends GraphTestBase{
     private RoleType roleType1;
     private RoleType roleType2;
     private RelationType relationType;
@@ -203,5 +206,33 @@ public class PostprocessingTest extends GraphTestBase{
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
         return new ResourceImpl<>(graknGraph, resourceVertex);
+    }
+
+    @Test
+    public void whenUpdatingTheCountsOfTypes_TheTypesHaveNewCounts() {
+        Map<TypeLabel, Long> types = new HashMap<>();
+        //Create Some Types;
+        EntityTypeImpl t1 = (EntityTypeImpl) graknGraph.putEntityType("t1");
+        ResourceTypeImpl t2 = (ResourceTypeImpl)  graknGraph.putResourceType("t2", ResourceType.DataType.STRING);
+        RelationTypeImpl t3 = (RelationTypeImpl) graknGraph.putRelationType("t3");
+
+        //Lets Set Some Counts
+        types.put(t1.getLabel(), 5L);
+        types.put(t2.getLabel(), 6L);
+        types.put(t3.getLabel(), 2L);
+
+        graknGraph.admin().updateTypeCounts(types);
+        types.entrySet().forEach(entry ->
+                assertEquals((long) entry.getValue(), ((TypeImpl) graknGraph.getType(entry.getKey())).getInstanceCount()));
+
+        //Lets Set Some Counts
+        types.put(t1.getLabel(), -5L);
+        types.put(t2.getLabel(), -2L);
+        types.put(t3.getLabel(), 3L);
+        graknGraph.admin().updateTypeCounts(types);
+
+        assertEquals(0L, t1.getInstanceCount());
+        assertEquals(4L, t2.getInstanceCount());
+        assertEquals(5L, t3.getInstanceCount());
     }
 }
