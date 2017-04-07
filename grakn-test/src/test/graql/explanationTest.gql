@@ -18,6 +18,8 @@ relation1 sub relation
 	relates role1
 	relates role2;
 
+#Resources
+
 "name" sub resource, datatype string;
 
 $a1 isa entity1, has name "a1";
