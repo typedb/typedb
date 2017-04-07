@@ -115,6 +115,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         while (!wakeUp.get()) {
             try {
+                // Reading from both the regular consumer and recurring consumer every time means that we will handle
+                // recurring tasks regularly, even if there are lots of non-recurring tasks to process.
                 readRecords(consumer);
                 readRecords(recurringConsumer);
 
@@ -161,6 +163,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         return taskId.equals(runningTaskId) && runningTask.stop();
     }
 
+    /**
+     * Read and handle some records from the given consumer
+     */
     private void readRecords(Consumer<TaskId, TaskState> theConsumer) {
         // This TaskRunner should only ever receive one record from each consumer
         ConsumerRecords<TaskId, TaskState> records = theConsumer.poll(1000);
