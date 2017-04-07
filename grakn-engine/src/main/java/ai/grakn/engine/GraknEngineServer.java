@@ -27,6 +27,7 @@ import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
@@ -82,7 +83,7 @@ public class GraknEngineServer implements AutoCloseable {
         taskManager = startTaskManager(taskManagerClass);
         this.port = port;
         startHTTP();
-        startPostprocessing();
+        startRecurringBackgroundTasks();
         printStartMessage(prop.getProperty(SERVER_HOST_NAME), prop.getProperty(GraknEngineConfig.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
@@ -166,12 +167,16 @@ public class GraknEngineServer implements AutoCloseable {
         spark.exception(Exception.class,                  (e, req, res) -> handleInternalError(e, res));
     }
 
-    private void startPostprocessing(){
+    private void startRecurringBackgroundTasks(){
         // Submit a recurring post processing task
         Duration interval = Duration.ofMillis(prop.getPropertyAsInt(GraknEngineConfig.TIME_LAPSE));
         String creator = GraknEngineServer.class.getName();
+
         TaskState postprocessing = TaskState.of(PostProcessingTask.class, creator, TaskSchedule.recurring(interval), Json.object());
         taskManager.addTask(postprocessing);
+
+        TaskState updatingInstanceCount = TaskState.of(UpdatingInstanceCountTask.class, creator, TaskSchedule.recurring(interval), Json.object());
+        taskManager.addTask(updatingInstanceCount);
     }
 
     public void stopHTTP() {

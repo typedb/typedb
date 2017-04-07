@@ -67,17 +67,17 @@ public class SystemKeyspaceTest {
 
         //Check Plays
         assertTrue(user.plays().contains(
-                graph.getRoleType(Schema.ImplicitType.HAS_KEY_OWNER.getName(userName.getName()).getValue())));
+                graph.getRoleType(Schema.ImplicitType.HAS_KEY_OWNER.getLabel(userName.getLabel()).getValue())));
         assertTrue(user.plays().contains(
-                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userPassword.getName()).getValue())));
+                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userPassword.getLabel()).getValue())));
         assertTrue(user.plays().contains(
-                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userFirstName.getName()).getValue())));
+                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userFirstName.getLabel()).getValue())));
         assertTrue(user.plays().contains(
-                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userLastName.getName()).getValue())));
+                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userLastName.getLabel()).getValue())));
         assertTrue(user.plays().contains(
-                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userEmail.getName()).getValue())));
+                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userEmail.getLabel()).getValue())));
         assertTrue(user.plays().contains(
-                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getName(userIsAdmin.getName()).getValue())));
+                graph.getRoleType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(userIsAdmin.getLabel()).getValue())));
 
         graph.close();
     }

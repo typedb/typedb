@@ -21,7 +21,7 @@ package ai.grakn.graql.internal.hal;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
@@ -96,7 +96,7 @@ public class HALUtils {
             return Schema.BaseType.RULE_TYPE;
         } else if (type.isRoleType()) {
             return Schema.BaseType.ROLE_TYPE;
-        } else if (type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
+        } else if (type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             return Schema.BaseType.TYPE;
         } else {
             throw new RuntimeException("Unrecognized base type of " + type);
@@ -109,7 +109,7 @@ public class HALUtils {
 
         if (concept.isInstance()) {
             Instance instance = concept.asInstance();
-            resource.withProperty(TYPE_PROPERTY, instance.type().getName().getValue())
+            resource.withProperty(TYPE_PROPERTY, instance.type().getLabel().getValue())
                     .withProperty(BASETYPE_PROPERTY, getBaseType(instance).name());
         } else {
             resource.withProperty(BASETYPE_PROPERTY, getBaseType(concept.asType()).name());
@@ -119,7 +119,7 @@ public class HALUtils {
             resource.withProperty(VALUE_PROPERTY, concept.asResource().getValue());
         }
         if (concept.isType()) {
-            resource.withProperty(NAME_PROPERTY, concept.asType().getName().getValue());
+            resource.withProperty(NAME_PROPERTY, concept.asType().getLabel().getValue());
         }
     }
 
@@ -162,7 +162,7 @@ public class HALUtils {
                 );
                 String relationType = null;
                 if(var.getProperty(IsaProperty.class).isPresent()) {
-                    Optional<TypeName> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeName();
+                    Optional<TypeLabel> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
                     relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
                 }else{
                     relationType = "";
@@ -180,9 +180,9 @@ public class HALUtils {
         // Put all the varNames in the map with EMPTY-ROLE role
         reasonerRel.getRolePlayers().forEach(varName -> varNamesToRole.put(varName, HAS_EMPTY_ROLE_EDGE));
         // Overrides the varNames that have roles in the previous map
-        reasonerRel.getRoleVarTypeMap().entrySet().forEach(entry -> varNamesToRole.put(entry.getValue().getKey(), entry.getKey().getName().getValue()));
+        reasonerRel.getRoleVarTypeMap().entrySet().forEach(entry -> varNamesToRole.put(entry.getValue().getKey(), entry.getKey().getLabel().getValue()));
 
-        String relationType = (reasonerRel.getType() != null) ? reasonerRel.getType().getName().getValue() : "";
+        String relationType = (reasonerRel.getType() != null) ? reasonerRel.getType().getLabel().getValue() : "";
         return new Pair<>(varNamesToRole, relationType);
     }
 

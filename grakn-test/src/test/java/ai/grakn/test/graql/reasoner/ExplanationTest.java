@@ -168,8 +168,8 @@ public class ExplanationTest {
         assertEquals(answers.size(), 0);
     }
 
-    private static Concept getConcept(GraknGraph graph, String typeName, Object val){
-        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
+    private static Concept getConcept(GraknGraph graph, String typeLabel, Object val){
+        return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
     }
 
     private Answer findAnswer(Answer a, List<Answer> list){

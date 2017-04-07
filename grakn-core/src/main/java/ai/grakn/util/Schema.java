@@ -29,7 +29,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 
 import java.util.Date;
 
@@ -92,19 +92,19 @@ public final class Schema {
         CONSTRAINT_RULE("constraint-rule");
 
 
-        private final TypeName name;
+        private final TypeLabel label;
 
         MetaSchema(String i) {
-            name = TypeName.of(i);
+            label = TypeLabel.of(i);
         }
 
-        public TypeName getName() {
-            return name;
+        public TypeLabel getLabel() {
+            return label;
         }
 
-        public static boolean isMetaName(TypeName name) {
+        public static boolean isMetaLabel(TypeLabel label) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
-                if (metaSchema.getName().equals(name)) return true;
+                if (metaSchema.getLabel().equals(label)) return true;
             }
             return false;
         }
@@ -145,11 +145,11 @@ public final class Schema {
      */
     public enum ConceptProperty {
         //Unique Properties
-        NAME(String.class), INDEX(String.class), ID(String.class),
+        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class),
 
         //Other Properties
         TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class),
+        REGEX(String.class), DATA_TYPE(String.class), INSTANCE_COUNT(Long.class),
         RULE_LHS(String.class), RULE_RHS(String.class),
 
         //Supported Data Types
@@ -173,8 +173,8 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE_NAME(String.class),
-        RELATION_TYPE_NAME(String.class),
+        ROLE_TYPE_LABEL(String.class),
+        RELATION_TYPE_LABEL(String.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;
@@ -193,47 +193,47 @@ public final class Schema {
      */
     public enum ImplicitType {
         /**
-         * The name of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
+         * The label of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
          */
         HAS_RESOURCE("has-resource-%s"),
 
         /**
-         * The name of a role in has-resource, played by the owner of the resource
+         * The label of a role in has-resource, played by the owner of the resource
          */
         HAS_RESOURCE_OWNER("has-resource-%s-owner"),
 
         /**
-         * The name of a role in has-resource, played by the resource
+         * The label of a role in has-resource, played by the resource
          */
         HAS_RESOURCE_VALUE("has-resource-%s-value"),
 
         /**
-         * The name of the generic has-key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique
+         * The label of the generic has-key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique
          */
         HAS_KEY("has-key-%s"),
 
         /**
-         * The name of a role in has-key, played by the owner of the key
+         * The label of a role in has-key, played by the owner of the key
          */
         HAS_KEY_OWNER("has-key-%s-owner"),
 
         /**
-         * The name of a role in has-key, played by the resource
+         * The label of a role in has-key, played by the resource
          */
         HAS_KEY_VALUE("has-key-%s-value");
 
-        private final String name;
+        private final String label;
 
-        ImplicitType(String name) {
-            this.name = name;
+        ImplicitType(String label) {
+            this.label = label;
         }
 
-        public TypeName getName(TypeName resourceType) {
-            return resourceType.map(resource -> String.format(name, resource));
+        public TypeLabel getLabel(TypeLabel resourceType) {
+            return resourceType.map(resource -> String.format(label, resource));
         }
 
-        public TypeName getName(String resourceType) {
-            return TypeName.of(String.format(name, resourceType));
+        public TypeLabel getLabel(String resourceType) {
+            return TypeLabel.of(String.format(label, resourceType));
         }
     }
 
@@ -245,24 +245,24 @@ public final class Schema {
         DEGREE("degree"),
         CLUSTER("cluster");
 
-        private final String name;
+        private final String label;
 
-        Analytics(String name) {
-            this.name = name;
+        Analytics(String label) {
+            this.label = label;
         }
 
-        public TypeName getName() {
-            return TypeName.of(name);
+        public TypeLabel getLabel() {
+            return TypeLabel.of(label);
         }
     }
 
     /**
      *
-     * @param typeName The resource type name
+     * @param typeLabel The resource type label
      * @param value The value of the resource
      * @return A unique id for the resource
      */
-    public static String generateResourceIndex(TypeName typeName, String value){
-        return Schema.BaseType.RESOURCE.name() + "-" + typeName + "-" + value;
+    public static String generateResourceIndex(TypeLabel typeLabel, String value){
+        return Schema.BaseType.RESOURCE.name() + "-" + typeLabel + "-" + value;
     }
 }

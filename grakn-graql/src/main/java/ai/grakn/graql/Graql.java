@@ -19,7 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
@@ -157,19 +157,19 @@ public class Graql {
     }
 
     /**
-     * @param name the name of a concept
-     * @return a query variable that identifies a concept by name
+     * @param label the label of a concept
+     * @return a query variable that identifies a concept by label
      */
-    public static Var name(TypeName name) {
-        return var().name(name);
+    public static Var label(TypeLabel label) {
+        return var().label(label);
     }
 
     /**
-     * @param name the name of a concept
-     * @return a query variable that identifies a concept by name
+     * @param label the label of a concept
+     * @return a query variable that identifies a concept by label
      */
-    public static Var name(String name) {
-        return var().name(name);
+    public static Var label(String label) {
+        return var().label(label);
     }
 
     /**

@@ -160,7 +160,7 @@ public class PostProcessingTestIT {
         //Check the resource indices are working
         for (Object object : graph.admin().getMetaResourceType().instances()) {
             Resource resource = (Resource) object;
-            String index = Schema.generateResourceIndex(resource.type().getName(), resource.getValue().toString());
+            String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
             assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
         }
     }
@@ -169,7 +169,7 @@ public class PostProcessingTestIT {
     private boolean graphIsBroken(GraknGraph graph){
         Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
         for (ResourceType<?> resourceType : resourceTypes) {
-            if(!Schema.MetaSchema.RESOURCE.getName().equals(resourceType.getName())) {
+            if(!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
                 Set<Integer> foundValues = new HashSet<>();
                 for (Resource<?> resource : resourceType.instances()) {
                     if (foundValues.contains(resource.getValue())) {

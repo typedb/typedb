@@ -157,7 +157,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     @Override
     public RoleType plays(RoleType roleType) {
         if(equals(roleType)){
-            throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()));
+            throw new ConceptException(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
         }
         return super.plays(roleType, false);
     }
@@ -168,7 +168,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         boolean hasPlays = getVertex().edges(Direction.IN, Schema.EdgeLabel.PLAYS.getLabel()).hasNext();
 
         if(hasRelates || hasPlays){
-            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getName()));
+            throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getLabel()));
         } else {
             super.delete();
 

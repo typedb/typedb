@@ -19,13 +19,16 @@
 package ai.grakn.test.engine.cache;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.test.EngineContext;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.experimental.theories.DataPoints;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,25 +45,33 @@ import static org.junit.Assert.assertThat;
 
 //NOTE: This test is only in grakn-test because it needs a running ZK
 //Ideally this should be moved to the grakn-engine module
-public class EngineCacheDistributedTest {
-    private ConceptCache cache;
+@RunWith(Theories.class)
+public class EngineCacheTest {
 
     //We do this just so we can start ZK
     @ClassRule
     public static final EngineContext engine = EngineContext.startSingleQueueServer();
 
-    @Before
-    public void setupCache(){
-        cache = EngineCacheProvider.getCache();
+    @DataPoints
+    public static Caches[] configValues = Caches.values();
+
+    private static enum Caches{
+        DISTRIBUTED, STAND_ALONE;
     }
 
-    @After
-    public void clearCache(){
-        cache.getKeyspaces().forEach(k -> cache.clearAllJobs(k));
+    private ConceptCache getCache(Caches caches){
+        switch(caches){
+            case DISTRIBUTED:
+                return EngineCacheProvider.getCache();
+            case STAND_ALONE:
+                return EngineCacheStandAlone.getCache();
+        }
+        throw new RuntimeException("Invalid cache [" + caches + "]");
     }
 
-    @Test
-    public void whenDeletingJobsFromCache_EnsureJobsAreNoLongerInCache(){
+    @Theory
+    public void whenDeletingFixingJobsFromCache_EnsureJobsAreNoLongerInCache(Caches caches){
+        ConceptCache cache = getCache(caches);
         String keyspace = "my_fake_keyspace";
 
         //Fake Commit Logs
@@ -94,13 +105,18 @@ public class EngineCacheDistributedTest {
 
         //Clear Jobs 1
         String deletedIndex3 = "Casting_Index_2";
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(0));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(1));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(2));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(3));
+        cache.deleteJobCasting(keyspace, deletedIndex3, ConceptId.of(4));
         cache.clearJobSetCastings(keyspace, deletedIndex3);
         assertFalse("Index [" + deletedIndex3 + "] was not cleared form the cache", cache.getCastingJobs(keyspace).containsKey(deletedIndex3));
 
         //Clear Jobs 2
         String deletedIndex4 = "Resource_Index_3";
         cache.clearJobSetResources(keyspace, deletedIndex4);
-        assertFalse("Index [" + deletedIndex4 + "] was not cleared form the cache", cache.getResourceJobs(keyspace).containsKey(deletedIndex3));
+        assertTrue("Index [" + deletedIndex4 + "] was cleared form the cache even though it had pending jobs", cache.getResourceJobs(keyspace).containsKey(deletedIndex4));
 
         //Clear all Jobs
         cache.clearAllJobs(keyspace);
@@ -108,8 +124,9 @@ public class EngineCacheDistributedTest {
         assertTrue(cache.getResourceJobs(keyspace).isEmpty());
     }
 
-    @Test
-    public void whenAddingJobsToCacheOfSameKeyspace_EnsureCacheContainsJobs(){
+    @Theory
+    public void whenAddingFixingJobsToCacheOfSameKeyspace_EnsureCacheContainsJobs(Caches caches){
+        ConceptCache cache = getCache(caches);
         String keyspace = "my_fake_keyspace";
 
         //Fake Commit Logs
@@ -133,8 +150,9 @@ public class EngineCacheDistributedTest {
         assertEquals(castingsFakeCount + resourcesFakeCount, cache.getNumJobs(keyspace));
     }
 
-    @Test
-    public void whenAddingJobsToCacheOfDifferentKeySpaces_EnsureCacheContainsJob(){
+    @Theory
+    public void whenAddingFixingJobsToCacheOfDifferentKeySpaces_EnsureCacheContainsJob(Caches caches){
+        ConceptCache cache = getCache(caches);
         String keyspace1 = "key1";
         String keyspace2 = "key2";
 
@@ -155,6 +173,29 @@ public class EngineCacheDistributedTest {
         checkContentsOfCache(cache.getResourceJobs(keyspace1), key1_resourcesFake);
         checkContentsOfCache(cache.getCastingJobs(keyspace2), key2_castingsFake);
         checkContentsOfCache(cache.getResourceJobs(keyspace2), key2_resourcesFake);
+    }
+
+    @Theory
+    public void whenAddingAndRemovingInstanceJobsToCache_CacheIsUpdated(Caches caches){
+        ConceptCache cache = getCache(caches);
+        String keyspace1 = "key1";
+
+        //Create fake commit log
+        Map<TypeLabel, Long> fakeCache = new HashMap<>();
+        fakeCache.put(TypeLabel.of("A"), 1L);
+        fakeCache.put(TypeLabel.of("B"), 2L);
+        fakeCache.put(TypeLabel.of("C"), 3L);
+
+        fakeCache.entrySet().forEach(entry -> cache.addJobInstanceCount(keyspace1, entry.getKey(), entry.getValue()));
+
+        assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
+        fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));
+
+        fakeCache.remove(TypeLabel.of("B"));
+        cache.deleteJobInstanceCount(keyspace1, TypeLabel.of("B"));
+
+        assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
+        fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));
     }
 
     private Map<String, Set<ConceptId>> createFakeInternalConceptLog(String indexPrefix, int numIndex, int numJobs){

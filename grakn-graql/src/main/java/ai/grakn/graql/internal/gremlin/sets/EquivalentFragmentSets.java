@@ -22,7 +22,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -48,8 +48,8 @@ public class EquivalentFragmentSets {
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a type whose instances play a role.
-     * @param type a type variable name
-     * @param roleType a role type variable name
+     * @param type a type variable label
+     * @param roleType a role type variable label
      * @param required whether the plays must be constrained to be "required"
      */
     public static EquivalentFragmentSet plays(VarName type, VarName roleType, boolean required) {
@@ -80,14 +80,14 @@ public class EquivalentFragmentSets {
     /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
      * @param roleTypeA an optional role-type for {@param rolePlayerA}
-     * @param rolePlayerA a role-player variable name
+     * @param rolePlayerA a role-player variable label
      * @param roleTypeB an optional role-type for {@param rolePlayerB}
-     * @param rolePlayerB a role-player variable name
+     * @param rolePlayerB a role-player variable label
      * @param relationType an optional relation-type for the shortcut
      */
     public static EquivalentFragmentSet shortcut(
-            Optional<TypeName> roleTypeA, VarName rolePlayerA,
-            Optional<TypeName> roleTypeB, VarName rolePlayerB, Optional<TypeName> relationType) {
+            Optional<TypeLabel> roleTypeA, VarName rolePlayerA,
+            Optional<TypeLabel> roleTypeB, VarName rolePlayerB, Optional<TypeLabel> relationType) {
         return new ShortcutFragmentSet(roleTypeA, rolePlayerA, roleTypeB, rolePlayerB, relationType);
     }
 
@@ -155,10 +155,10 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular name.
+     * An {@link EquivalentFragmentSet} that indicates a variable representing a type with a particular label.
      */
-    public static EquivalentFragmentSet name(VarName type, TypeName name) {
-        return new NameFragmentSet(type, name);
+    public static EquivalentFragmentSet label(VarName type, TypeLabel label) {
+        return new LabelFragmentSet(type, label);
     }
 
     /**

@@ -55,9 +55,9 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testRoleTypeName(){
+    public void testRoleTypeLabel(){
         RoleType roleType = graknGraph.putRoleType("test");
-        assertEquals("test", roleType.getName().getValue());
+        assertEquals("test", roleType.getLabel().getValue());
     }
 
     @Test
@@ -74,7 +74,7 @@ public class RoleTypeTest extends GraphTestBase {
     @Test
     public void testRoleTypeCannotPlayItself(){
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getName()));
+        expectedException.expectMessage(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
 
         roleType.plays(roleType);
     }
@@ -146,7 +146,7 @@ public class RoleTypeTest extends GraphTestBase {
         graknGraph.putEntityType("Entity Type").plays(roleType);
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getName()));
+        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType.getLabel()));
 
         roleType.delete();
     }
@@ -157,7 +157,7 @@ public class RoleTypeTest extends GraphTestBase {
         graknGraph.putRelationType("Thing").relates(roleType2).relates(roleType);
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getName()));
+        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleType2.getLabel()));
 
         roleType2.delete();
     }
@@ -177,7 +177,7 @@ public class RoleTypeTest extends GraphTestBase {
                 addRolePlayer(roleB, b);
 
         expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getName()));
+        expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getLabel()));
 
         roleA.delete();
     }

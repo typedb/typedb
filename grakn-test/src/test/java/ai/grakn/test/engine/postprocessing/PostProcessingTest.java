@@ -164,10 +164,10 @@ public class PostProcessingTest {
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), mainRoleTypeId);
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleTypeId);
 
         edge = relationVertex.addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_NAME.name(), mainRoleTypeId);
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleTypeId);
 
         cache.addJobCasting(graph.getKeyspace(), castingVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(castingVertex.id().toString()));
     }

@@ -41,7 +41,7 @@ class HALExploreInstance extends HALExploreConcept {
             Representation embeddedResource = factory.newRepresentation(resourceLinkPrefix + currentResource.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(embeddedResource, currentResource);
-            halResource.withRepresentation(currentResource.type().getName().getValue(), embeddedResource);
+            halResource.withRepresentation(currentResource.type().getLabel().getValue(), embeddedResource);
         });
     }
 

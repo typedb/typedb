@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MeanQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.MeanMapReduce;
@@ -44,13 +44,13 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<TypeName> allSubTypes = getCombinedSubTypes();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
+        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeNames),
-                new MeanMapReduce(statisticsResourceTypeNames, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
+                new MeanMapReduce(statisticsResourceTypeLabels, dataType));
         Map<Serializable, Map<String, Double>> mean = result.memory().get(MeanMapReduce.class.getName());
         Map<String, Double> meanPair = mean.get(MapReduce.NullObject.instance());
 
@@ -62,23 +62,23 @@ class MeanQueryImpl extends AbstractStatisticsQuery<Optional<Double>> implements
     }
 
     @Override
-    public MeanQuery of(String... resourceTypeNames) {
-        return (MeanQuery) setStatisticsResourceType(resourceTypeNames);
+    public MeanQuery of(String... resourceTypeLabels) {
+        return (MeanQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public MeanQuery of(Collection<TypeName> resourceTypeNames) {
-        return (MeanQuery) setStatisticsResourceType(resourceTypeNames);
+    public MeanQuery of(Collection<TypeLabel> resourceTypeLabels) {
+        return (MeanQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public MeanQuery in(String... subTypeNames) {
-        return (MeanQuery) super.in(subTypeNames);
+    public MeanQuery in(String... subTypeLabels) {
+        return (MeanQuery) super.in(subTypeLabels);
     }
 
     @Override
-    public MeanQuery in(Collection<TypeName> subTypeNames) {
-        return (MeanQuery) super.in(subTypeNames);
+    public MeanQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (MeanQuery) super.in(subTypeLabels);
     }
 
     @Override

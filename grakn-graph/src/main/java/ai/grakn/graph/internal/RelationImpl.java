@@ -179,16 +179,16 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     @Override
     public String innerToString(){
         StringBuilder description = new StringBuilder();
-        description.append("ID [").append(getId()).append("] Type [").append(type().getName()).append("] Roles and Role Players: \n");
+        description.append("ID [").append(getId()).append("] Type [").append(type().getLabel()).append("] Roles and Role Players: \n");
         for (Map.Entry<RoleType, Set<Instance>> entry : allRolePlayers().entrySet()) {
             if(entry.getValue().isEmpty()){
-                description.append("    Role [").append(entry.getKey().getName()).append("] not played by any instance \n");
+                description.append("    Role [").append(entry.getKey().getLabel()).append("] not played by any instance \n");
             } else {
                 StringBuilder instancesString = new StringBuilder();
                 for (Instance instance : entry.getValue()) {
                     instancesString.append(instance.getId()).append(",");
                 }
-                description.append("    Role [").append(entry.getKey().getName()).append("] played by [").
+                description.append("    Role [").append(entry.getKey().getLabel()).append("] played by [").
                         append(instancesString.toString()).append("] \n");
             }
         }

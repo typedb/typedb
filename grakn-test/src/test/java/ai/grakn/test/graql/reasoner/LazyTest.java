@@ -192,8 +192,8 @@ public class LazyTest {
         String queryString = "match (P-from: $x, P-to: $y) isa P;";
         MatchQuery query = iqb.parse(queryString);
 
-        final int limit = 20;
-        final long maxTime = 1000;
+        final int limit = 10;
+        final long maxTime = 2000;
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;

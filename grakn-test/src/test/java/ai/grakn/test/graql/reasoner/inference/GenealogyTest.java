@@ -289,7 +289,7 @@ public class GenealogyTest {
     @Ignore
     @Test
     public void testWife2(){
-        String queryString = "match ($r: $x) isa marriage;$r type-name 'wife';select $x;";
+        String queryString = "match ($r: $x) isa marriage;$r label 'wife';select $x;";
         String queryString2 = "match (wife: $x) isa marriage;";
         MatchQuery query = iqb.parse(queryString);
         MatchQuery query2 = iqb.parse(queryString2);

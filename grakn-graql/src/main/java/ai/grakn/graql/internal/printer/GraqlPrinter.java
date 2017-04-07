@@ -36,7 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.util.StringConverter.idToString;
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.graql.internal.util.StringConverter.valueToString;
 
 /**
@@ -57,7 +57,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
      * @return the type, color-coded
      */
     private static String colorType(Type type) {
-        return ANSI.color(typeNameToString(type.getName()), ANSI.PURPLE);
+        return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
     }
 
     private final ResourceType[] resourceTypes;
@@ -79,7 +79,7 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                 sb.append(colorKeyword("value ")).append(valueToString(concept.asResource().getValue()));
             } else if (concept.isType()) {
                 Type type = concept.asType();
-                sb.append(colorKeyword("type-name ")).append(colorType(type));
+                sb.append(colorKeyword("label ")).append(colorType(type));
 
                 Type superType = type.superType();
 

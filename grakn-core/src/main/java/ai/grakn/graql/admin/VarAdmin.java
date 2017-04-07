@@ -19,12 +19,12 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 
-import java.util.Collection;
 import javax.annotation.CheckReturnValue;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -107,7 +107,7 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the name this variable represents, if it represents something with a specific name
      */
-    Optional<TypeName> getTypeName();
+    Optional<TypeLabel> getTypeLabel();
 
     /**
      * @return all variables that this variable references
@@ -123,7 +123,7 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return all type names that this variable refers to
      */
-    Set<TypeName> getTypeNames();
+    Set<TypeLabel> getTypeLabels();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')

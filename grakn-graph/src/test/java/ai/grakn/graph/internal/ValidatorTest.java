@@ -131,9 +131,9 @@ public class ValidatorTest extends GraphTestBase{
         CastingImpl casting1 = (CastingImpl) assertion.getMappingCasting().toArray()[0];
         CastingImpl casting2 = (CastingImpl) assertion.getMappingCasting().toArray()[1];
         assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_CASTING.getMessage(
-                casting1.getRolePlayer().type().getName(), casting1.getRolePlayer().getId(), casting1.getRole().getName())));
+                casting1.getRolePlayer().type().getLabel(), casting1.getRolePlayer().getId(), casting1.getRole().getLabel())));
         assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_CASTING.getMessage(
-                casting2.getRolePlayer().type().getName(), casting2.getRolePlayer().getId(), casting2.getRole().getName())));
+                casting2.getRolePlayer().type().getLabel(), casting2.getRolePlayer().getId(), casting2.getRole().getLabel())));
     }
 
     @Test
@@ -142,7 +142,7 @@ public class ValidatorTest extends GraphTestBase{
         Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(1, validator.getErrorsFound().size());
-        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(alone.getName())));
+        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(alone.getLabel())));
     }
 
     @Test
@@ -151,7 +151,7 @@ public class ValidatorTest extends GraphTestBase{
         Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(1, validator.getErrorsFound().size());
-        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getName())));
+        assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getLabel())));
     }
 
     @Test
@@ -206,10 +206,10 @@ public class ValidatorTest extends GraphTestBase{
 
         validator.validate();
 
-        assertTrue((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x1.getName()))));
-        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x2.getName()))));
-        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x3.getName()))));
-        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x4.getName()))));
+        assertTrue((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x1.getLabel()))));
+        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x2.getLabel()))));
+        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x3.getLabel()))));
+        assertFalse((expectedErrorFound(validator, ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(x4.getLabel()))));
     }
 
     @Test
@@ -375,7 +375,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_CASTING.getMessage(man.getName(), x.getId(), parent.getName()));
+                ErrorMessage.VALIDATION_CASTING.getMessage(man.getLabel(), x.getId(), parent.getLabel()));
 
         graknGraph.commit();
     }
@@ -395,7 +395,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()));
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getLabel(), x.getId(), parent.getLabel()));
 
         graknGraph.commit();
     }
@@ -415,7 +415,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_CASTING.getMessage(person.getName(), x.getId(), parent.getName()));
+                ErrorMessage.VALIDATION_CASTING.getMessage(person.getLabel(), x.getId(), parent.getLabel()));
 
         graknGraph.commit();
     }
@@ -508,7 +508,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), fatherhood.getName(), "super", "super", parenthood.getName()));
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getLabel(), fatherhood.getLabel(), "super", "super", parenthood.getLabel()));
 
         graknGraph.commit();
     }
@@ -529,7 +529,7 @@ public class ValidatorTest extends GraphTestBase{
 
         expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(
-                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getName(), parenthood.getName(), "sub", "sub", fatherhood.getName()));
+                ErrorMessage.VALIDATION_RELATION_TYPES_ROLES_SCHEMA.getMessage(inContext.getLabel(), parenthood.getLabel(), "sub", "sub", fatherhood.getLabel()));
 
         graknGraph.commit();
     }

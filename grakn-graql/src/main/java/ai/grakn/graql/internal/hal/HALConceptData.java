@@ -26,7 +26,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.theoryinpractise.halbuilder.api.Representation;
@@ -66,13 +66,13 @@ public class HALConceptData {
     private final String keyspace;
 
     private final boolean embedType;
-    private final Set<TypeName> typesInQuery;
+    private final Set<TypeLabel> typesInQuery;
 
     private final int offset;
     private final int limit;
 
 
-    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<TypeName> typesInQuery, String keyspace, int offset, int limit){
+    public HALConceptData(Concept concept, int separationDegree, boolean embedTypeParam, Set<TypeLabel> typesInQuery, String keyspace, int offset, int limit){
 
         embedType = embedTypeParam;
         this.typesInQuery = typesInQuery;
@@ -107,9 +107,9 @@ public class HALConceptData {
 
         if (embedType && concept.isInstance()) {
             Instance instance = concept.asInstance();
-            if (typesInQuery.contains(instance.type().getName())
+            if (typesInQuery.contains(instance.type().getLabel())
                     || (instance.type().superType() != null &&
-                    typesInQuery.contains(instance.type().superType().getName()))) {
+                    typesInQuery.contains(instance.type().superType().getLabel()))) {
                 embedType(halResource, instance);
             }
         }
@@ -172,7 +172,7 @@ public class HALConceptData {
     }
 
     private void generateOwnerInstances(Representation halResource, Resource<?> conceptResource, int separationDegree) {
-        final TypeName roleType = conceptResource.type().getName();
+        final TypeLabel roleType = conceptResource.type().getLabel();
         Stream<Instance> ownersStream = conceptResource.ownerInstances().stream().skip(offset);
         if (limit >= 0) ownersStream = ownersStream.limit(limit);
         ownersStream.forEach(instance -> {
@@ -220,7 +220,7 @@ public class HALConceptData {
         });
     }
 
-    private void attachRelation(Representation halResource, Concept rel, TypeName role, int separationDegree) {
+    private void attachRelation(Representation halResource, Concept rel, TypeLabel role, int separationDegree) {
         Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId() + getURIParams(0))
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
         handleConcept(relationResource, rel, separationDegree - 1);
@@ -238,14 +238,14 @@ public class HALConceptData {
                     Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                             .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
                     handleConcept(roleResource, instance, separationDegree - 1);
-                    halResource.withRepresentation(roleType.getName().getValue(), roleResource);
+                    halResource.withRepresentation(roleType.getLabel().getValue(), roleResource);
                 }
             });
         });
     }
 
     private void embedRelationsNotConnectedToResources(Representation halResource, Concept concept, Relation relation, int separationDegree) {
-        TypeName rolePlayedByCurrentConcept = null;
+        TypeLabel rolePlayedByCurrentConcept = null;
         boolean isResource = false;
         for (Map.Entry<RoleType, Set<Instance>> entry : relation.allRolePlayers().entrySet()) {
             for (Instance instance : entry.getValue()) {
@@ -254,7 +254,7 @@ public class HALConceptData {
                     if (instance.isResource()) {
                         isResource = true;
                     } else if (instance.getId().equals(concept.getId())) {
-                        rolePlayedByCurrentConcept = entry.getKey().getName();
+                        rolePlayedByCurrentConcept = entry.getKey().getLabel();
                     }
                 }
             }
@@ -273,7 +273,7 @@ public class HALConceptData {
     }
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
-        if (!type.getName().equals(Schema.MetaSchema.CONCEPT.getName())) {
+        if (!type.getLabel().equals(Schema.MetaSchema.CONCEPT.getLabel())) {
             Stream<? extends Instance> instancesStream = type.instances().stream().filter(instance -> (!instance.isType() || !instance.asType().isImplicit())).skip(offset);
             if (limit >= 0) instancesStream = instancesStream.limit(limit);
             instancesStream.forEach(instance -> {
@@ -284,7 +284,7 @@ public class HALConceptData {
             });
         }
         // We only limit the number of instances and not subtypes.
-        type.subTypes().stream().filter(instance -> (!instance.getName().equals(type.getName()))).forEach(instance -> {
+        type.subTypes().stream().filter(instance -> (!instance.getLabel().equals(type.getLabel()))).forEach(instance -> {
             Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId() + getURIParams(0))
                     .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
             handleConcept(instanceResource, instance, separationDegree - 1);

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.analytics;
 
 import ai.grakn.concept.ResourceType;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import org.apache.commons.configuration.Configuration;
@@ -76,14 +76,14 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
             INDEX_START, INDEX_END, INDEX_MEDIAN, PIVOT, PIVOT_POSITIVE, PIVOT_NEGATIVE,
             POSITIVE_COUNT, NEGATIVE_COUNT, LABEL_SELECTED);
 
-    private Set<TypeName> statisticsResourceTypes = new HashSet<>();
+    private Set<TypeLabel> statisticsResourceTypes = new HashSet<>();
 
     // Needed internally for OLAP tasks
     public MedianVertexProgram() {
     }
 
-    public MedianVertexProgram(Set<TypeName> selectedTypes,
-                               Set<TypeName> statisticsResourceTypes, String resourceDataType) {
+    public MedianVertexProgram(Set<TypeLabel> selectedTypes,
+                               Set<TypeLabel> statisticsResourceTypes, String resourceDataType) {
         this.selectedTypes = selectedTypes;
         this.statisticsResourceTypes = statisticsResourceTypes;
 
@@ -122,14 +122,14 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     public void storeState(final Configuration configuration) {
         super.storeState(configuration);
         statisticsResourceTypes.forEach(
-                typeName -> configuration.addProperty(RESOURCE_TYPE + "." + typeName.getValue(), typeName.getValue()));
+                typeLabel -> configuration.addProperty(RESOURCE_TYPE + "." + typeLabel.getValue(), typeLabel.getValue()));
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(RESOURCE_TYPE).getKeys().forEachRemaining(key ->
-                statisticsResourceTypes.add(TypeName.of((String) configuration.getProperty(RESOURCE_TYPE + "." + key))));
+                statisticsResourceTypes.add(TypeLabel.of((String) configuration.getProperty(RESOURCE_TYPE + "." + key))));
     }
 
     @Override

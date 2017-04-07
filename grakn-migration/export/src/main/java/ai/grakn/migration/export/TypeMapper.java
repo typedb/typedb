@@ -21,9 +21,9 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 
 /**
@@ -74,11 +74,11 @@ public class TypeMapper {
      * @return Var containing basic information about the given type
      */
     private static Var formatBase(Type type) {
-        Var var = var().name(type.getName());
+        Var var = var().label(type.getLabel());
 
         Type superType = type.superType();
         if (type.superType() != null) {
-            var = var.sub(name(superType.getName()));
+            var = var.sub(Graql.label(superType.getLabel()));
         }
 
         var = plays(var, type);
@@ -104,7 +104,7 @@ public class TypeMapper {
      */
     private static Var plays(Var var, Type type) {
         for(RoleType role:type.plays()){
-            var = var.plays(name(role.getName()));
+            var = var.plays(Graql.label(role.getLabel()));
         }
         return var;
     }
@@ -117,7 +117,7 @@ public class TypeMapper {
      */
     private static Var relates(Var var, RelationType type){
         for(RoleType role:type.relates()){
-            var = var.relates(name(role.getName()));
+            var = var.relates(Graql.label(role.getLabel()));
         }
         return var;
     }
