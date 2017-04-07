@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.REST;
@@ -49,7 +49,7 @@ import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
-import static ai.grakn.util.REST.Request.ID;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
@@ -76,7 +76,7 @@ public class ConceptController {
     public ConceptController(EngineGraknGraphFactory factory, Service spark){
         this.factory = factory;
 
-        spark.get(REST.WebPath.Concept.CONCEPT + ID,  this::conceptByIdentifier);
+        spark.get(REST.WebPath.Concept.CONCEPT + ID_PARAMETER,  this::conceptByIdentifier);
         spark.get(REST.WebPath.Concept.ONTOLOGY,  this::ontology);
 
     }
@@ -95,7 +95,7 @@ public class ConceptController {
         validateRequest(request);
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID));
+        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
@@ -153,7 +153,7 @@ public class ConceptController {
     }
 
     private List<String> instances(Type type) {
-        return type.subTypes().stream().map(Type::getName).map(TypeName::getValue).collect(toList());
+        return type.subTypes().stream().map(Type::getLabel).map(TypeLabel::getValue).collect(toList());
     }
 
     /**

@@ -42,12 +42,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_OWNER;
-import static ai.grakn.util.Schema.ImplicitType.HAS_KEY_VALUE;
+import static ai.grakn.util.Schema.ImplicitType.KEY;
+import static ai.grakn.util.Schema.ImplicitType.KEY_OWNER;
+import static ai.grakn.util.Schema.ImplicitType.KEY_VALUE;
 
 /**
- * Represents the {@code has-resource} and {@code has-key} properties on a {@link Type}.
+ * Represents the {@code has} and {@code key} properties on a {@link Type}.
  *
  * This property can be queried or inserted. Whether this is a key is indicated by the
  * {@link HasResourceTypeProperty#required} field.
@@ -77,7 +77,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         this.required = required;
 
         TypeLabel resourceTypeLabel = resourceType.getTypeLabel().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_LABEL_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
+                () -> new IllegalStateException(ErrorMessage.NO_LABEL_SPECIFIED_FOR_HAS.getMessage())
         );
 
         Var role = Graql.label(Schema.MetaSchema.ROLE.getLabel());
@@ -88,9 +88,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
         // If a key, limit only to the implicit key type
         if(required){
-            ownerRole = ownerRole.label(HAS_KEY_OWNER.getLabel(resourceTypeLabel));
-            valueRole = valueRole.label(HAS_KEY_VALUE.getLabel(resourceTypeLabel));
-            relationType = relationType.label(HAS_KEY.getLabel(resourceTypeLabel));
+            ownerRole = ownerRole.label(KEY_OWNER.getLabel(resourceTypeLabel));
+            valueRole = valueRole.label(KEY_VALUE.getLabel(resourceTypeLabel));
+            relationType = relationType.label(KEY.getLabel(resourceTypeLabel));
         }
 
         this.ownerRole = ownerRole.admin();
@@ -106,7 +106,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public String getName() {
-        return required ? "has-key" : "has-resource";
+        return required ? "key" : "has";
     }
 
     @Override
@@ -175,7 +175,7 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         VarName varName = var.getVarName();
         TypeLabel typeLabel = this.getResourceType().getTypeLabel().orElse(null);
         //isa part
-        VarAdmin resVar = var(varName).hasResource(Graql.label(typeLabel)).admin();
+        VarAdmin resVar = var(varName).has(Graql.label(typeLabel)).admin();
         return new TypeAtom(resVar, parent);
     }
 }

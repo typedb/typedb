@@ -150,7 +150,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
-        getGraknGraph().getConceptLog().addedInstance(getLabel());
+        if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
+            getGraknGraph().getConceptLog().addedInstance(getLabel());
+        }
         return producer.apply(instanceVertex, getThis());
     }
 
@@ -175,14 +177,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     @Override
     public Collection<ResourceType> resources() {
-        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_RESOURCE_OWNER);
+        Collection<ResourceType> resources = resources(Schema.ImplicitType.HAS_OWNER);
         resources.addAll(keys());
         return resources;
     }
 
     @Override
     public Collection<ResourceType> keys() {
-        return resources(Schema.ImplicitType.HAS_KEY_OWNER);
+        return resources(Schema.ImplicitType.KEY_OWNER);
     }
 
     private Collection<ResourceType> resources(Schema.ImplicitType implicitType){
@@ -362,7 +364,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
 
     /**
      *
-     * @return returns true if the type was created implicitly through {@link #hasResource}
+     * @return returns true if the type was created implicitly through {@link #has}
      */
     @Override
     public Boolean isImplicit(){
@@ -590,7 +592,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * @param required Indicates if the resource is required on the entity
      * @return The Type itself
      */
-    public T hasResource(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
+    public T has(ResourceType resourceType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required){
         //Check if this is a met type
         checkTypeMutation();
 
@@ -647,14 +649,14 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public T resource(ResourceType resourceType){
-        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_KEY_OWNER, resourceType);
-        return hasResource(resourceType, Schema.ImplicitType.HAS_RESOURCE, Schema.ImplicitType.HAS_RESOURCE_VALUE, Schema.ImplicitType.HAS_RESOURCE_OWNER, false);
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.KEY_OWNER, resourceType);
+        return has(resourceType, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_VALUE, Schema.ImplicitType.HAS_OWNER, false);
     }
 
     @Override
     public T key(ResourceType resourceType) {
-        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_RESOURCE_OWNER, resourceType);
-        return hasResource(resourceType, Schema.ImplicitType.HAS_KEY, Schema.ImplicitType.HAS_KEY_VALUE, Schema.ImplicitType.HAS_KEY_OWNER, true);
+        checkNonOverlapOfImplicitRelations(Schema.ImplicitType.HAS_OWNER, resourceType);
+        return has(resourceType, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_VALUE, Schema.ImplicitType.KEY_OWNER, true);
     }
 
     /**

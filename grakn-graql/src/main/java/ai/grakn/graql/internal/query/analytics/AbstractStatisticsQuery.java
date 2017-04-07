@@ -151,7 +151,7 @@ abstract class AbstractStatisticsQuery<T> extends AbstractComputeQuery<T> {
 
     Set<TypeLabel> getCombinedSubTypes() {
         Set<TypeLabel> allSubTypes = statisticsResourceTypeLabels.stream()
-                .map(Schema.ImplicitType.HAS_RESOURCE::getLabel).collect(Collectors.toSet());
+                .map(Schema.ImplicitType.HAS::getLabel).collect(Collectors.toSet());
         allSubTypes.addAll(subTypeLabels);
         allSubTypes.addAll(statisticsResourceTypeLabels);
         return allSubTypes;

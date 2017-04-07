@@ -2,10 +2,10 @@ insert
 
 entity2 sub entity, is-abstract;
 product sub recommendable
-    has-resource name
-    has-resource min-age
-    has-resource max-age
-    has-resource gender;
+    has name
+    has min-age
+    has max-age
+    has gender;
 
 # product resources
 min-age sub resource, datatype long;
@@ -33,6 +33,6 @@ typed-product sub role;
 product-type sub role;
 typing sub relation, relates typed-product, relates product-type;
 category sub entity2
-    has-resource name
+    has name
     plays product-type
     plays typed-product;

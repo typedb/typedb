@@ -47,20 +47,20 @@ insert
 "recommended-generic-wine-type" sub resource, datatype string;
 
 "person" sub entity
-    has-resource name;
+    has name;
 person plays recommendation-owner;
-person has-resource preferred-context;
-person has-resource preferred-body;
-person has-resource preferred-dryness;
-person has-resource preferred-entree;
-person has-resource preferred-colour;
-person has-resource preferred-sparklingness;
-person has-resource recommended-generic-wine-type;
+person has preferred-context;
+person has preferred-body;
+person has preferred-dryness;
+person has preferred-entree;
+person has preferred-colour;
+person has preferred-sparklingness;
+person has recommended-generic-wine-type;
 
 "name" sub resource, datatype string;
 
 "wine" sub entity
-    has-resource name;
+    has name;
 wine plays recommended-wine;
 
 #######################################################

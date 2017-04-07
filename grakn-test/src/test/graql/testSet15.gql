@@ -1,8 +1,8 @@
 insert
 
 entity1 sub entity
-	has-resource res1 
-	has-resource res2;
+	has res1
+	has res2;
 
 #Resources
 res1 sub resource datatype string;

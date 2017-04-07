@@ -7,17 +7,17 @@ insert
   address sub entity
     plays address-of-person
     plays address-with-street
-    has-resource city;
+    has city;
 
   street-address sub entity
     plays street-of-address
-    has-resource number
-    has-resource street;
+    has number
+    has street;
 
   phone-number sub entity
     plays phone-of-person
-    has-resource location
-    has-resource code;
+    has location
+    has code;
 
   code sub resource datatype long;
   location sub resource datatype string;

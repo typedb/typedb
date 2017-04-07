@@ -79,8 +79,8 @@ property       : 'isa' variable                     # isa
                | 'lhs' '{' patterns '}'             # propLhs
                | 'rhs' '{' varPatterns '}'          # propRhs
                | 'has' label (VARIABLE | predicate) # propHas
-               | 'has-resource' variable            # propResource
-               | 'has-key' variable                 # propKey
+               | 'has' variable                     # propResource
+               | 'key' variable                     # propKey
                | '(' casting (',' casting)* ')'     # propRel
                | 'is-abstract'                      # isAbstract
                | 'datatype' DATATYPE                # propDatatype

@@ -8,15 +8,15 @@ person sub entity
 	plays spouse1
 	plays spouse2
 
-	has-resource identifier
-	has-resource firstname
-	has-resource surname
-	has-resource middlename
-	has-resource picture
-	has-resource age
-	has-resource birth-date
-	has-resource death-date
-	has-resource gender;
+	has identifier
+	has firstname
+	has surname
+	has middlename
+	has picture
+	has age
+	has birth-date
+	has death-date
+	has gender;
 
 # Resources
 
@@ -35,7 +35,7 @@ gender sub resource datatype string;
 marriage sub relation
 	relates spouse1
 	relates spouse2
-	has-resource picture;
+	has picture;
 
 spouse1 sub role;
 spouse2 sub role;
@@ -462,8 +462,8 @@ rhs
 
 insert 
 cluster sub entity
-	has-resource identifier
-	has-resource degree;
+	has identifier
+	has degree;
 degree sub resource datatype long;
 group sub role;
 member sub role;

@@ -32,7 +32,7 @@ import java.util.Set;
 
 import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_VALUE;
+import static ai.grakn.util.Schema.ImplicitType.HAS_VALUE;
 
 /**
  * Map Grakn Core instance to Graql representation
@@ -62,7 +62,7 @@ public class InstanceMapper {
 
     /**
      * Map a Entity to a Var
-     * This includes mapping the instance itself, its id and any has-resource relations
+     * This includes mapping the instance itself, its id and any has relations
      * @param entity entity to be mapped
      * @return var patterns representing given instance
      */
@@ -88,7 +88,7 @@ public class InstanceMapper {
     }
 
     /**
-     * Map a Resource to a var IF it is not attached in a has-resource relation to another instance
+     * Map a Resource to a var IF it is not attached in a has relation to another instance
      * @param resource resource to be mapped
      * @return var patterns representing the given instance
      */
@@ -155,16 +155,16 @@ public class InstanceMapper {
     }
 
     /**
-     * Check if the given resource conforms to the has-resource syntax and structural requirements
+     * Check if the given resource conforms to the has syntax and structural requirements
      * @param resource resource to check
-     * @return true if the resource is target of has-resource relation
+     * @return true if the resource is target of has relation
      */
     private static boolean isHasResourceResource(Resource resource){
         ResourceType resourceType = resource.type();
 
         // TODO: Make sure this is tested
         boolean plays = resourceType.plays().stream().map(RoleType::getLabel)
-                .allMatch(c -> c.equals(HAS_RESOURCE_VALUE.getLabel(resourceType.getLabel())));
+                .allMatch(c -> c.equals(HAS_VALUE.getLabel(resourceType.getLabel())));
         return !resource.ownerInstances().isEmpty() && plays;
     }
 }

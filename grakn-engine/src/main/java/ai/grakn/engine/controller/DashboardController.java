@@ -53,7 +53,7 @@ import static ai.grakn.util.ErrorMessage.EXPLAIN_ONLY_MATCH;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Concept.OFFSET_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
-import static ai.grakn.util.REST.Request.ID;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.IDENTIFIER;
@@ -84,8 +84,8 @@ public class DashboardController {
     public DashboardController(EngineGraknGraphFactory factory, Service spark){
         this.factory = factory;
 
-        spark.get(REST.WebPath.Dashboard.TYPES + ID,         this::typesOfConcept);
-        spark.get(REST.WebPath.Dashboard.EXPLORE + ID,       this::exploreConcept);
+        spark.get(REST.WebPath.Dashboard.TYPES + ID_PARAMETER,         this::typesOfConcept);
+        spark.get(REST.WebPath.Dashboard.EXPLORE + ID_PARAMETER,       this::exploreConcept);
         spark.get(REST.WebPath.Dashboard.EXPLAIN,       this::explainConcept);
         spark.get(REST.WebPath.Dashboard.PRECOMPUTE,    this::precomputeInferences);
     }
@@ -104,7 +104,7 @@ public class DashboardController {
         validateRequest(request);
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID));
+        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
@@ -137,7 +137,7 @@ public class DashboardController {
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
-        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID));
+        ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
 
         try(GraknGraph graph = factory.getGraph(keyspace, READ)){
             Concept concept = retrieveExistingConcept(graph, conceptId);

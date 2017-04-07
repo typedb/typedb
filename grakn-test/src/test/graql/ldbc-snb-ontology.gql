@@ -2,7 +2,7 @@ insert
 #string, long, double, boolean
 
 "entity2" sub entity, is-abstract
-    has-resource name;
+    has name;
 "recommendable" sub entity2;
 "place" sub entity2;
 "organization" sub entity2;
@@ -36,13 +36,13 @@ organization plays located-subject;
 "person" sub entity2;
 
 person
-    has-resource name,
-    has-resource firstname,
-    has-resource lastname,
-    has-resource gender,
-    has-resource birthday,
-    has-resource email,
-    has-resource age;
+    has name,
+    has firstname,
+    has lastname,
+    has gender,
+    has birthday,
+    has email,
+    has age;
 
 "name" sub resource, datatype string;
 "firstname" sub resource, datatype string;

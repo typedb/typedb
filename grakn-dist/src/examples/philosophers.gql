@@ -8,18 +8,18 @@ person sub entity
     plays teacher
     plays student
     plays thinker
-    has-resource name
-    has-resource title
-    has-resource epithet;
+    has name
+    has title
+    has epithet;
 
 school sub entity
-    has-resource name
+    has name
     plays philosophy;
 
 fact sub entity
     plays thought
-    has-resource name
-    has-resource description;
+    has name
+    has description;
 
 name sub resource datatype string;
 title sub resource datatype string;

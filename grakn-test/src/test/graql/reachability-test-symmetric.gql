@@ -5,7 +5,7 @@ insert
 #################################################
 
 "vertex" sub entity
-    has-resource index;
+    has index;
 
 "link-endA" sub role;
 "link-endB" sub role;

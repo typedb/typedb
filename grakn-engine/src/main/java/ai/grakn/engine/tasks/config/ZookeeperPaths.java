@@ -45,9 +45,9 @@ public interface ZookeeperPaths {
     String ENGINE_CACHE = "/engine/cache/";
     String ENGINE_CACHE_KEYSPACES = ENGINE_CACHE + "keyspaces";
 
+    String ENGINE_CACHE_UPDATE_TIME = ENGINE_CACHE + "last-update";
     String ENGINE_CACHE_JOB_TYPE = ENGINE_CACHE + "%s/%s"; //Used to get all the indices of a job type
     String ENGINE_CACHE_CONCEPT_IDS = ENGINE_CACHE_JOB_TYPE +  "/%s"; //Used to get all the ids of a specific index
     String ENGINE_CACHE_EXACT_JOB = ENGINE_CACHE_CONCEPT_IDS + "/%s";
-
     String ENGINE_CACHE_TYPE_INSTANCE_COUNT = ENGINE_CACHE_JOB_TYPE + "/%s";
 }

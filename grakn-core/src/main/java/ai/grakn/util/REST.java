@@ -87,12 +87,9 @@ public class REST {
      * Class containing request fields and content types.
      */
     public static class Request {
-        public static final String LIMIT = "limit";
-        public static final String OFFSET = "offset";
-        public static final String KEYSPACE = "keyspace";
-
-        public static final String ID = ":id";
-
+        public static final String QUERY_FIELD = "query";
+        public static final String ID_PARAMETER = ":id";
+        public static final String KEYSPACE_PARAM = "keyspace";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String TASK_STATUS_PARAMETER = "status";
         public static final String TASK_CLASS_NAME_PARAMETER = "className";
@@ -100,10 +97,20 @@ public class REST {
         public static final String TASK_RUN_AT_PARAMETER = "runAt";
         public static final String TASK_RUN_INTERVAL_PARAMETER = "interval";
         public static final String TASK_LOADER_INSERTS = "inserts";
+        public static final String LIMIT_PARAM = "limit";
+        public static final String OFFSET_PARAM = "offset";
+        public static final String HAL_CONTENTTYPE = "application/hal+json";
+        public static final String GRAQL_CONTENTTYPE = "application/graql";
+        public static final String KEYSPACE = "keyspace";
 
+        //Commit Logs
+        public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
         public static final String COMMIT_LOG_TYPE = "concept-base-type";
         public static final String COMMIT_LOG_ID = "concept-vertex-id";
         public static final String COMMIT_LOG_INDEX = "concept-index";
+        public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
+        public static final String COMMIT_LOG_TYPE_NAME = "type-name";
+        public static final String COMMIT_LOG_INSTANCE_COUNT = "instance-count";
 
         /**
          * Concept controller request parameters

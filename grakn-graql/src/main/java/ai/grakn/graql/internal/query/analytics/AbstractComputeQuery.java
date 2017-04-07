@@ -184,7 +184,7 @@ abstract class AbstractComputeQuery<T> implements ComputeQuery<T> {
     Set<TypeLabel> getHasResourceRelationTypes() {
         return subTypeLabels.stream()
                 .filter(type -> graph.get().getType(type).isResourceType())
-                .map(Schema.ImplicitType.HAS_RESOURCE::getLabel)
+                .map(Schema.ImplicitType.HAS::getLabel)
                 .collect(Collectors.toSet());
     }
 }
