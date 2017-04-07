@@ -19,7 +19,7 @@
 
 ai.grakn.generator.GraknGraphs
 ai.grakn.generator.DataTypes
-ai.grakn.generator.TypeNames
+ai.grakn.generator.TypeLabels
 ai.grakn.generator.ConceptIds
 ai.grakn.generator.EntityTypes
 ai.grakn.generator.RelationTypes
@@ -30,6 +30,6 @@ ai.grakn.generator.Entities
 ai.grakn.generator.Relations
 ai.grakn.generator.Rules
 ai.grakn.generator.Resources
-ai.grakn.generator.MetaTypeNames
+ai.grakn.generator.MetaTypeLabels
 ai.grakn.generator.Methods
 ai.grakn.generator.MetasyntacticStrings

@@ -102,7 +102,7 @@ public enum ErrorMessage {
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_RESOURCE_TYPE("type '%s' must be a resource-type"),
-    NAME_NOT_FOUND("name '%s' not found"),
+    LABEL_NOT_FOUND("label '%s' not found"),
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
     NOT_ROLE_IN_RELATION("'%s' is not a valid role type for relation type '%s'. valid role types are: '%s'"),
@@ -120,7 +120,7 @@ public enum ErrorMessage {
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     NO_PATTERNS("no patterns have been provided. at least one pattern must be provided"),
     MATCH_INVALID("cannot match on property of type [%s]"),
-    NO_NAME_SPECIFIED_FOR_HAS_RESOURCE("no name was specified for a resource type in a 'has-resource' property"),
+    NO_LABEL_SPECIFIED_FOR_HAS_RESOURCE("no label was specified for a resource type in a 'has-resource' property"),
     MULTIPLE_GRAPH("a graph has been specified twice for this query"),
     MULTIPLE_ORDER("an ordering has been specified twice for this query"),
 
@@ -138,7 +138,7 @@ public enum ErrorMessage {
     INSERT_NO_RESOURCE_RELATION("type %s cannot have resource type %s"),
     INSERT_METATYPE("'%s' cannot be a subtype of '%s'"),
     INSERT_RECURSIVE("%s should not refer to itself"),
-    INSERT_TYPE_WITHOUT_NAME("attempted to insert a type without a name"),
+    INSERT_TYPE_WITHOUT_LABEL("attempted to insert a type without a label"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
     INSERT_RESOURCE_WITHOUT_VALUE("cannot insert a resource without specifying a value"),
     INSERT_INSTANCE_WITH_NAME("cannot insert an instance with a name: %s"),

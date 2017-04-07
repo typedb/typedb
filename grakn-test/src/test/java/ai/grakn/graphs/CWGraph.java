@@ -124,10 +124,10 @@ public class CWGraph extends TestGraph {
 
     @Override
     protected void buildInstances(GraknGraph graph) {
-        colonelWest =  putEntity(graph, "colonelWest", person, key.getName());
-        Nono =  putEntity(graph, "Nono", country, key.getName());
-        America =  putEntity(graph, "America", country, key.getName());
-        Tomahawk =  putEntity(graph, "Tomahawk", rocket, key.getName());
+        colonelWest =  putEntity(graph, "colonelWest", person, key.getLabel());
+        Nono =  putEntity(graph, "Nono", country, key.getLabel());
+        America =  putEntity(graph, "America", country, key.getLabel());
+        Tomahawk =  putEntity(graph, "Tomahawk", rocket, key.getLabel());
 
         putResource(colonelWest, nationality, "American");
         putResource(Tomahawk, propulsion, "gsp");

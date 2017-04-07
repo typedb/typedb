@@ -99,7 +99,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             //Not checking the datatype because the regex will always be null for non strings.
             String regex = resourceType.getRegex();
             if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, getId(), value, type().getName()));
+                throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, getId(), value, type().getLabel()));
             }
 
             Schema.ConceptProperty property = dataType().getConceptProperty();
@@ -107,7 +107,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             //noinspection unchecked
             setImmutableProperty(property, castValue(value), getProperty(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
 
-            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getName(), value.toString()));
+            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
         } catch (ClassCastException e) {
             throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
         }

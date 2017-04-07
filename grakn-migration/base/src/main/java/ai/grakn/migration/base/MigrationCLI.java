@@ -22,6 +22,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.client.Client;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.util.Schema;
 import com.google.common.io.Files;
@@ -47,7 +48,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.Graql.count;
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
@@ -138,10 +138,10 @@ public class MigrationCLI {
             builder.append("\t ").append(graph.admin().getMetaRuleType().instances().size()).append(" rule types\n\n");
 
             builder.append("Graph data contains:\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(name(Schema.MetaSchema.ENTITY.getName()))).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(name(Schema.MetaSchema.RELATION.getName()))).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(name(Schema.MetaSchema.RESOURCE.getName()))).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
-            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(name(Schema.MetaSchema.RULE.getName()))).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.ENTITY.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" entities\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RELATION.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" relations\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RESOURCE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" resources\n");
+            builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").sub(Graql.label(Schema.MetaSchema.RULE.getLabel()))).select("x").distinct().aggregate(count()).execute()).append(" rules\n\n");
 
             System.out.println(builder);
 

@@ -19,7 +19,7 @@
 package ai.grakn.graql.internal.query.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.analytics.MinQuery;
 import ai.grakn.graql.internal.analytics.DegreeStatisticsVertexProgram;
 import ai.grakn.graql.internal.analytics.MinMapReduce;
@@ -44,13 +44,13 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
         long startTime = System.currentTimeMillis();
 
         initSubGraph();
-        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeNames);
-        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeNames)) return Optional.empty();
-        Set<TypeName> allSubTypes = getCombinedSubTypes();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypeLabels);
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypeLabels)) return Optional.empty();
+        Set<TypeLabel> allSubTypes = getCombinedSubTypes();
 
         ComputerResult result = getGraphComputer().compute(
-                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeNames),
-                new MinMapReduce(statisticsResourceTypeNames, dataType));
+                new DegreeStatisticsVertexProgram(allSubTypes, statisticsResourceTypeLabels),
+                new MinMapReduce(statisticsResourceTypeLabels, dataType));
         Map<Serializable, Number> min = result.memory().get(MinMapReduce.class.getName());
 
         LOGGER.debug("Min = " + min.get(MapReduce.NullObject.instance()));
@@ -59,23 +59,23 @@ class MinQueryImpl extends AbstractStatisticsQuery<Optional<Number>> implements 
     }
 
     @Override
-    public MinQuery of(String... resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MinQuery of(String... resourceTypeLabels) {
+        return (MinQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public MinQuery of(Collection<TypeName> resourceTypeNames) {
-        return (MinQuery) setStatisticsResourceType(resourceTypeNames);
+    public MinQuery of(Collection<TypeLabel> resourceTypeLabels) {
+        return (MinQuery) setStatisticsResourceType(resourceTypeLabels);
     }
 
     @Override
-    public MinQuery in(String... subTypeNames) {
-        return (MinQuery) super.in(subTypeNames);
+    public MinQuery in(String... subTypeLabels) {
+        return (MinQuery) super.in(subTypeLabels);
     }
 
     @Override
-    public MinQuery in(Collection<TypeName> subTypeNames) {
-        return (MinQuery) super.in(subTypeNames);
+    public MinQuery in(Collection<TypeLabel> subTypeLabels) {
+        return (MinQuery) super.in(subTypeLabels);
     }
 
     @Override

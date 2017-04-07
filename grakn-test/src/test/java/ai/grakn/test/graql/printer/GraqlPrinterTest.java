@@ -130,7 +130,7 @@ public class GraqlPrinterTest {
 
         String productionString = printer.graqlString(production);
 
-        assertThat(productionString, containsString("type-name"));
+        assertThat(productionString, containsString("label"));
         assertThat(productionString, containsString("production"));
         assertThat(productionString, containsString("sub"));
         assertThat(productionString, containsString("entity"));
@@ -146,7 +146,7 @@ public class GraqlPrinterTest {
 
         String entityString = printer.graqlString(entity);
 
-        assertThat(entityString, containsString("type-name"));
+        assertThat(entityString, containsString("label"));
         assertThat(entityString, containsString("entity"));
         assertThat(entityString, containsString("sub"));
         assertThat(entityString, containsString("concept"));
@@ -161,7 +161,7 @@ public class GraqlPrinterTest {
 
         String conceptString = printer.graqlString(concept);
 
-        assertThat(conceptString, containsString("type-name"));
+        assertThat(conceptString, containsString("label"));
         assertThat(conceptString, containsString("concept"));
         assertThat(conceptString, not(containsString("sub")));
         assertThat(conceptString, not(containsString("isa")));

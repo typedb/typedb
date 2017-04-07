@@ -24,7 +24,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -92,10 +92,10 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
             Optional<VarAdmin> roleType = relationPlayer.getRoleType();
 
             if (roleType.isPresent()) {
-                Optional<TypeName> roleTypeName = roleType.get().getTypeName();
+                Optional<TypeLabel> roleTypeLabel = roleType.get().getTypeLabel();
 
-                if (roleTypeName.isPresent()) {
-                    shortcutTraversal.addRel(roleTypeName.get(), relationPlayer.getRolePlayer().getVarName());
+                if (roleTypeLabel.isPresent()) {
+                    shortcutTraversal.addRel(roleTypeLabel.get(), relationPlayer.getRolePlayer().getVarName());
                 } else {
                     shortcutTraversal.setInvalid();
                 }
@@ -179,19 +179,19 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
 
-        Set<TypeName> roleTypes = relationPlayers.stream()
+        Set<TypeLabel> roleTypes = relationPlayers.stream()
                 .map(RelationPlayer::getRoleType).flatMap(CommonUtil::optionalToStream)
-                .map(VarAdmin::getTypeName).flatMap(CommonUtil::optionalToStream)
+                .map(VarAdmin::getTypeLabel).flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
 
-        Optional<TypeName> maybeName =
-                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeName);
+        Optional<TypeLabel> maybeLabel =
+                var.getProperty(IsaProperty.class).map(IsaProperty::getType).flatMap(VarAdmin::getTypeLabel);
 
-        maybeName.ifPresent(name -> {
-            Type type = graph.getType(name);
+        maybeLabel.ifPresent(label -> {
+            Type type = graph.getType(label);
 
             if (type == null || !type.isRelationType()) {
-                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(name));
+                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
             }
         });
 
@@ -272,12 +272,12 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         //Isa present
         if (isaProp != null) {
             VarAdmin isaVar = isaProp.getType();
-            TypeName typeName = isaVar.getTypeName().orElse(null);
-            VarName typeVariable = typeName == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
+            TypeLabel typeLabel = isaVar.getTypeLabel().orElse(null);
+            VarName typeVariable = typeLabel == null ? isaVar.getVarName() : VarName.of("rel-" + UUID.randomUUID().toString());
             relVar = relVar.isa(Graql.var(typeVariable));
-            if (typeName != null) {
+            if (typeLabel != null) {
                 GraknGraph graph = parent.graph();
-                VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeName).getId()).admin();
+                VarAdmin idVar = Graql.var(typeVariable).id(graph.getType(typeLabel).getId()).admin();
                 predicate = new IdPredicate(idVar, parent);
             } else {
                 predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);

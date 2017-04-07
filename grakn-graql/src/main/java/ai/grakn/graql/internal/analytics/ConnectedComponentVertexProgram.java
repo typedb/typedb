@@ -18,7 +18,7 @@
 
 package ai.grakn.graql.internal.analytics;
 
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -62,7 +62,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<String> 
     public ConnectedComponentVertexProgram() {
     }
 
-    public ConnectedComponentVertexProgram(Set<TypeName> selectedTypes, String randomId) {
+    public ConnectedComponentVertexProgram(Set<TypeLabel> selectedTypes, String randomId) {
         this.selectedTypes = selectedTypes;
 
         isActiveCasting = IS_ACTIVE_CASTING + randomId;

@@ -21,7 +21,7 @@ package ai.grakn.test.matcher;
 
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -50,12 +50,12 @@ import static org.hamcrest.Matchers.is;
  */
 public class GraknMatchers {
 
-    public static final Matcher<MatchableConcept> concept = type(CONCEPT.getName());
-    public static final Matcher<MatchableConcept> entity = type(ENTITY.getName());
-    public static final Matcher<MatchableConcept> resource = type(RESOURCE.getName());
-    public static final Matcher<MatchableConcept> rule = type(RULE.getName());
-    public static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getName());
-    public static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getName());
+    public static final Matcher<MatchableConcept> concept = type(CONCEPT.getLabel());
+    public static final Matcher<MatchableConcept> entity = type(ENTITY.getLabel());
+    public static final Matcher<MatchableConcept> resource = type(RESOURCE.getLabel());
+    public static final Matcher<MatchableConcept> rule = type(RULE.getLabel());
+    public static final Matcher<MatchableConcept> inferenceRule = type(INFERENCE_RULE.getLabel());
+    public static final Matcher<MatchableConcept> constraintRule = type(CONSTRAINT_RULE.getLabel());
 
     /**
      * Create a matcher to test against the results of a Graql query.
@@ -192,14 +192,14 @@ public class GraknMatchers {
      * Create a matcher to test that the concept has the given type name.
      */
     static Matcher<MatchableConcept> type(String type) {
-        return type(TypeName.of(type));
+        return type(TypeLabel.of(type));
     }
 
     /**
      * Create a matcher to test that the concept has the given type name.
      */
-    static Matcher<MatchableConcept> type(TypeName expectedName) {
-        return new PropertyEqualsMatcher<MatchableConcept, TypeName>(expectedName) {
+    static Matcher<MatchableConcept> type(TypeLabel expectedLabel) {
+        return new PropertyEqualsMatcher<MatchableConcept, TypeLabel>(expectedLabel) {
 
             @Override
             public String getName() {
@@ -207,8 +207,8 @@ public class GraknMatchers {
             }
 
             @Override
-            TypeName transform(MatchableConcept item) {
-                return item.get().asType().getName();
+            TypeLabel transform(MatchableConcept item) {
+                return item.get().asType().getLabel();
             }
         };
     }
@@ -236,7 +236,7 @@ public class GraknMatchers {
             @Override
             Iterable<? super MatchableConcept> transform(MatchableConcept item) {
                 return item.get().asInstance().resources().stream()
-                        .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
+                        .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                         .map(MatchableConcept::new)
                         .collect(toSet());
             }

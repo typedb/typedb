@@ -19,7 +19,7 @@
 package ai.grakn.graql.analytics;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.ComputeQuery;
 
 import java.util.Collection;
@@ -33,30 +33,30 @@ import java.util.Optional;
 public interface SumQuery extends ComputeQuery<Optional<Number>> {
 
     /**
-     * @param resourceTypeNames an array of types of resources to execute the query on
-     * @return a SumQuery with the subTypeNames set
+     * @param resourceTypeLabels an array of types of resources to execute the query on
+     * @return a SumQuery with the subTypeLabels set
      */
-    SumQuery of(String... resourceTypeNames);
+    SumQuery of(String... resourceTypeLabels);
 
     /**
-     * @param resourceTypeNames a collection of types of resources to execute the query on
-     * @return a SumQuery with the subTypeNames set
+     * @param resourceTypeLabels a collection of types of resources to execute the query on
+     * @return a SumQuery with the subTypeLabels set
      */
-    SumQuery of(Collection<TypeName> resourceTypeNames);
+    SumQuery of(Collection<TypeLabel> resourceTypeLabels);
 
     /**
-     * @param subTypeNames an array of types to include in the subgraph
-     * @return a SumQuery with the subTypeNames set
+     * @param subTypeLabels an array of types to include in the subgraph
+     * @return a SumQuery with the subTypeLabels set
      */
     @Override
-    SumQuery in(String... subTypeNames);
+    SumQuery in(String... subTypeLabels);
 
     /**
-     * @param subTypeNames a collection of types to include in the subgraph
-     * @return a SumQuery with the subTypeNames set
+     * @param subTypeLabels a collection of types to include in the subgraph
+     * @return a SumQuery with the subTypeLabels set
      */
     @Override
-    SumQuery in(Collection<TypeName> subTypeNames);
+    SumQuery in(Collection<TypeLabel> subTypeLabels);
 
     /**
      * Execute the query.

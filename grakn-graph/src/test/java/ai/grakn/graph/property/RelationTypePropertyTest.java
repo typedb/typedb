@@ -38,7 +38,7 @@ import org.junit.runner.RunWith;
 import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
-import static ai.grakn.util.Schema.MetaSchema.isMetaName;
+import static ai.grakn.util.Schema.MetaSchema.isMetaLabel;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
@@ -66,13 +66,13 @@ public class RelationTypePropertyTest {
 
         type.delete();
 
-        assertNull(graph.getType(type.getName()));
+        assertNull(graph.getType(type.getLabel()));
     }
 
     @Property
     public void whenAddingARelationOfAMetaType_Throw(@Meta RelationType type) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(type.getLabel()));
         type.addRelation();
     }
 
@@ -115,7 +115,7 @@ public class RelationTypePropertyTest {
     public void whenMakingTheMetaRelationTypeRelateARole_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
         relationType.relates(roleType);
     }
 
@@ -145,7 +145,7 @@ public class RelationTypePropertyTest {
     public void whenRelatingARole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
         RelationType superType = subType.superType();
-        assumeFalse(isMetaName(superType.getName()));
+        assumeFalse(isMetaLabel(superType.getLabel()));
 
         Set<RoleType> previousHasRoles = Sets.newHashSet(subType.relates());
         superType.relates(roleType);
@@ -158,7 +158,7 @@ public class RelationTypePropertyTest {
     public void whenDeletingARelatedRoleFromTheMetaRelationType_Throw(
             @Meta RelationType relationType, @FromGraph RoleType roleType) {
         exception.expect(ConceptException.class);
-        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getName()));
+        exception.expectMessage(META_TYPE_IMMUTABLE.getMessage(relationType.getLabel()));
         relationType.deleteRelates(roleType);
     }
 
@@ -188,7 +188,7 @@ public class RelationTypePropertyTest {
     public void whenDeletingARelatedRole_TheDirectSubTypeRelatedRolesAreUnchanged(
             @Meta(false) RelationType subType, @FromGraph RoleType roleType) {
         RelationType superType = subType.superType();
-        assumeFalse(isMetaName(superType.getName()));
+        assumeFalse(isMetaLabel(superType.getLabel()));
 
         Set<RoleType> previousHasRoles = Sets.newHashSet(subType.relates());
         superType.deleteRelates(roleType);

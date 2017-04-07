@@ -21,14 +21,14 @@ package ai.grakn.test.matcher;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Resource;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.internal.util.StringConverter;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
+import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 
 /**
  * Wraps a {@link Concept} in order to provide a prettier {@link Object#toString()} representation. This is done using
@@ -36,7 +36,7 @@ import static ai.grakn.graql.internal.util.StringConverter.typeNameToString;
  */
 public class MatchableConcept {
 
-    static final ImmutableSet<TypeName> NAME_TYPES = ImmutableSet.of(TypeName.of("name"), TypeName.of("title"));
+    static final ImmutableSet<TypeLabel> NAME_TYPES = ImmutableSet.of(TypeLabel.of("name"), TypeLabel.of("title"));
 
     private final Concept concept;
 
@@ -54,12 +54,12 @@ public class MatchableConcept {
 
             Collection<Resource<?>> resources = concept.asInstance().resources();
             Optional<?> value = resources.stream()
-                    .filter(resource -> NAME_TYPES.contains(resource.type().getName()))
+                    .filter(resource -> NAME_TYPES.contains(resource.type().getLabel()))
                     .map(Resource::getValue).findFirst();
 
             return "instance(" + value.map(StringConverter::valueToString).orElse("") + ")";
         } else {
-            return "type(" + typeNameToString(concept.asType().getName()) + ")";
+            return "type(" + typeLabelToString(concept.asType().getLabel()) + ")";
         }
     }
 }

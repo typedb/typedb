@@ -24,7 +24,8 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
-import ai.grakn.concept.TypeName;
+import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
@@ -33,7 +34,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.IdProperty;
-import ai.grakn.graql.internal.pattern.property.NameProperty;
+import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -56,7 +57,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
 
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate.createValueVar;
 import static java.util.stream.Collectors.toSet;
@@ -114,8 +114,8 @@ public class Utility {
     public static IdPredicate getUserDefinedIdPredicate(VarName typeVariable, Set<VarAdmin> vars, ReasonerQuery parent){
         return  vars.stream()
                 .filter(v -> v.getVarName().equals(typeVariable))
-                .flatMap(v -> v.hasProperty(NameProperty.class)?
-                        v.getProperties(NameProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
+                .flatMap(v -> v.hasProperty(LabelProperty.class)?
+                        v.getProperties(LabelProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)) :
                         v.getProperties(IdProperty.class).map(np -> new IdPredicate(typeVariable, np, parent)))
                 .findFirst().orElse(null);
     }
@@ -135,7 +135,7 @@ public class Utility {
         if(typeVar.isUserDefinedName()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
-            NameProperty nameProp = typeVar.getProperty(NameProperty.class).orElse(null);
+            LabelProperty nameProp = typeVar.getProperty(LabelProperty.class).orElse(null);
             if (nameProp != null) predicate = new IdPredicate(typeVariable, nameProp, parent);
         }
         return predicate;
@@ -240,7 +240,7 @@ public class Utility {
     public static Set<RoleType> getSuperTypes(RoleType role){
         Set<RoleType> superTypes = new HashSet<>();
         RoleType superRole = role.superType();
-        while(!Schema.MetaSchema.isMetaName(superRole.getName())) {
+        while(!Schema.MetaSchema.isMetaLabel(superRole.getLabel())) {
             superTypes.add(superRole);
             superRole = superRole.superType();
         }
@@ -318,7 +318,7 @@ public class Utility {
         roles.forEach(role -> {
             tempVars.remove(var);
             tempRoles.remove(role);
-            roleMap.put(var, var().name(role.getName()).admin());
+            roleMap.put(var, var().label(role.getLabel()).admin());
             if (!tempVars.isEmpty() && !tempRoles.isEmpty()) {
                 computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
             } else {
@@ -335,18 +335,18 @@ public class Utility {
     /**
      * create transitive rule R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
      * @param relType transitive relation type
-     * @param fromRoleName  from directional role type type name
-     * @param toRoleName to directional role type type name
+     * @param fromRoleLabel  from directional role type type label
+     * @param toRoleLabel to directional role type type label
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createTransitiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        VarAdmin startVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "z").admin();
-        VarAdmin endVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "z").rel(name(toRoleName), "y").admin();
-        VarAdmin headVar = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "y").admin();
+        VarAdmin startVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "z").admin();
+        VarAdmin endVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "z").rel(Graql.label(toRoleLabel), "y").admin();
+        VarAdmin headVar = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y").admin();
         Pattern body = Patterns.conjunction(Sets.newHashSet(startVar, endVar));
         return graph.admin().getMetaRuleInference().putRule(body, headVar);
     }
@@ -354,17 +354,17 @@ public class Utility {
     /**
      * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
      * @param relType reflexive relation type
-     *                * @param fromRoleName  from directional role type type name
-     * @param toRoleName to directional role type type name
+     * @param fromRoleLabel from directional role type type label
+     * @param toRoleLabel to directional role type type label
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createReflexiveRule(RelationType relType, TypeName fromRoleName, TypeName toRoleName, GraknGraph graph){
+    public static Rule createReflexiveRule(RelationType relType, TypeLabel fromRoleLabel, TypeLabel toRoleLabel, GraknGraph graph){
         final int arity = relType.relates().size();
         if (arity != 2) throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var body = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "y");
-        Var head = var().isa(name(relType.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), "x");
+        Var body = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "y");
+        Var head = var().isa(Graql.label(relType.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), "x");
         return graph.admin().getMetaRuleInference().putRule(body, head);
     }
 
@@ -376,20 +376,20 @@ public class Utility {
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeName, TypeName> roleMappings,
+    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<TypeLabel, TypeLabel> roleMappings,
                                              GraknGraph graph){
         final int parentArity = parent.relates().size();
         final int childArity = child.relates().size();
         if (parentArity != childArity || parentArity != roleMappings.size()) {
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
         }
-        Var parentVar = var().isa(name(parent.getName()));
-        Var childVar = var().isa(name(child.getName()));
+        Var parentVar = var().isa(Graql.label(parent.getLabel()));
+        Var childVar = var().isa(Graql.label(child.getLabel()));
 
-        for (Map.Entry<TypeName, TypeName> entry : roleMappings.entrySet()) {
+        for (Map.Entry<TypeLabel, TypeLabel> entry : roleMappings.entrySet()) {
             VarName varName = VarName.anon();
-            parentVar = parentVar.rel(name(entry.getKey()), var(varName));
-            childVar = childVar.rel(name(entry.getValue()), var(varName));
+            parentVar = parentVar.rel(Graql.label(entry.getKey()), var(varName));
+            childVar = childVar.rel(Graql.label(entry.getValue()), var(varName));
         }
         return graph.admin().getMetaRuleInference().putRule(childVar, parentVar);
     }
@@ -397,27 +397,27 @@ public class Utility {
     /**
      * creates rule R(fromRole: x, toRole: xm) :- R1(fromRole: x, ...), , R2, ... , Rn(..., toRole: xm)
      * @param relation head relation
-     * @param fromRoleName specifies the role directionality of the head relation
-     * @param toRoleName specifies the role directionality of the head relation
+     * @param fromRoleLabel specifies the role directionality of the head relation
+     * @param toRoleLabel specifies the role directionality of the head relation
      * @param chain map containing ordered relation with their corresponding role mappings
      * @param graph graph for the rule to be inserted
      * @return rule instance
      */
-    public static Rule createPropertyChainRule(RelationType relation, TypeName fromRoleName, TypeName toRoleName,
-                                             LinkedHashMap<RelationType, Pair<TypeName, TypeName>> chain, GraknGraph graph){
+    public static Rule createPropertyChainRule(RelationType relation, TypeLabel fromRoleLabel, TypeLabel toRoleLabel,
+                                               LinkedHashMap<RelationType, Pair<TypeLabel, TypeLabel>> chain, GraknGraph graph){
         Stack<VarName> varNames = new Stack<>();
         varNames.push(VarName.of("x"));
         Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
             VarName varName = VarName.anon();
-            VarAdmin var = var().isa(name(relType.getName()))
-                    .rel(name(rolePair.getKey()), var(varNames.peek()))
-                    .rel(name(rolePair.getValue()), var(varName)).admin();
+            VarAdmin var = var().isa(Graql.label(relType.getLabel()))
+                    .rel(Graql.label(rolePair.getKey()), var(varNames.peek()))
+                    .rel(Graql.label(rolePair.getValue()), var(varName)).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
-        Var headVar = var().isa(name(relation.getName())).rel(name(fromRoleName), "x").rel(name(toRoleName), var(varNames.peek()));
+        Var headVar = var().isa(Graql.label(relation.getLabel())).rel(Graql.label(fromRoleLabel), "x").rel(Graql.label(toRoleLabel), var(varNames.peek()));
         return graph.admin().getMetaRuleInference().putRule(Patterns.conjunction(bodyVars), headVar);
     }
     
@@ -428,7 +428,7 @@ public class Utility {
     public static RoleType getNonMetaTopRole(RoleType role){
         RoleType topRole = role;
         RoleType superRole = topRole.superType();
-        while(!Schema.MetaSchema.isMetaName(superRole.getName())) {
+        while(!Schema.MetaSchema.isMetaLabel(superRole.getLabel())) {
             topRole = superRole;
             superRole = superRole.superType();
         }

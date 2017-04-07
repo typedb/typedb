@@ -24,13 +24,13 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Rule;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.Var;
 
 import java.util.Map;
 import java.util.Set;
 
 import static ai.grakn.graql.Graql.and;
-import static ai.grakn.graql.Graql.name;
 import static ai.grakn.graql.Graql.var;
 import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE_VALUE;
 
@@ -123,7 +123,7 @@ public class InstanceMapper {
      */
     private static Var hasResources(Var var, Instance instance){
         for(Resource resource:instance.resources()){
-           var = var.has(resource.type().getName(), var().val(resource.getValue()));
+           var = var.has(resource.type().getLabel(), var().val(resource.getValue()));
         }
         return var;
     }
@@ -138,7 +138,7 @@ public class InstanceMapper {
         for(Map.Entry<RoleType, Set<Instance>> entry:relation.allRolePlayers().entrySet()){
             RoleType role = entry.getKey();
             for (Instance instance : entry.getValue()) {
-                var = var.rel(name(role.getName()), instance.getId().getValue());
+                var = var.rel(Graql.label(role.getLabel()), instance.getId().getValue());
             }
         }
         return var;
@@ -150,7 +150,7 @@ public class InstanceMapper {
      * @return var patterns representing given instance
      */
     private static  Var base(Instance instance){
-        Var var = var(instance.getId().getValue()).isa(name(instance.type().getName()));
+        Var var = var(instance.getId().getValue()).isa(Graql.label(instance.type().getLabel()));
         return hasResources(var, instance);
     }
 
@@ -163,8 +163,8 @@ public class InstanceMapper {
         ResourceType resourceType = resource.type();
 
         // TODO: Make sure this is tested
-        boolean plays = resourceType.plays().stream().map(RoleType::getName)
-                .allMatch(c -> c.equals(HAS_RESOURCE_VALUE.getName(resourceType.getName())));
+        boolean plays = resourceType.plays().stream().map(RoleType::getLabel)
+                .allMatch(c -> c.equals(HAS_RESOURCE_VALUE.getLabel(resourceType.getLabel())));
         return !resource.ownerInstances().isEmpty() && plays;
     }
 }

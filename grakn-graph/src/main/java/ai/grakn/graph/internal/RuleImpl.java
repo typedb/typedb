@@ -126,6 +126,6 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * Generate the internal hash in order to perform a faster lookups and ensure rules are unique
      */
     public static String generateRuleIndex(RuleType type, Pattern lhs, Pattern rhs){
-        return "RuleType_" + type.getName().getValue() + "_LHS:" + lhs.hashCode() + "_RHS:" + rhs.hashCode();
+        return "RuleType_" + type.getLabel().getValue() + "_LHS:" + lhs.hashCode() + "_RHS:" + rhs.hashCode();
     }
 }
