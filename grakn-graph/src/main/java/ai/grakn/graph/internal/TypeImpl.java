@@ -150,7 +150,9 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         }
 
         Vertex instanceVertex = getGraknGraph().addVertex(instanceBaseType);
-        getGraknGraph().getConceptLog().addedInstance(getLabel());
+        if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
+            getGraknGraph().getConceptLog().addedInstance(getLabel());
+        }
         return producer.apply(instanceVertex, getThis());
     }
 
