@@ -88,6 +88,7 @@ public class Relation extends TypeAtom {
 
     private int hashCode = 0;
     private Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
+    private Map<RoleType, String> roleConceptIdMap = null;
 
     public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
         super(pattern, predicate, par);
@@ -185,8 +186,8 @@ public class Relation extends TypeAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
-        return (isUserDefinedName() == a2.isUserDefinedName() ) &&
-                Objects.equals(this.typeId, a2.getTypeId())
+        return (isUserDefinedName() == a2.isUserDefinedName() )
+                && Objects.equals(this.typeId, a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap());
     }
@@ -213,17 +214,26 @@ public class Relation extends TypeAtom {
     @Override
     public boolean isType(){ return getType() != null;}
 
+    @Override
+    public boolean hasSubstitution() {
+        Set<VarName> rolePlayers = getRolePlayers();
+        return getIdPredicates().stream()
+                .filter(pred -> rolePlayers.contains(pred.getVarName()))
+                .count() > 0;
+    }
+
     /**
      * @return map of pairs role type - Id predicate describing the role player playing this role (substitution)
      */
     private Map<RoleType, String> getRoleConceptIdMap() {
-        Map<RoleType, String> roleConceptMap = new HashMap<>();
+        if (roleConceptIdMap != null) return roleConceptIdMap;
+        roleConceptIdMap = new HashMap<>();
         Map<VarName, IdPredicate> varSubMap = getIdPredicates().stream()
                 .collect(Collectors.toMap(AtomBase::getVarName, pred -> pred));
         Map<RoleType, VarName> roleMap = getRoleMap();
 
-        roleMap.forEach((role, var) -> roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : ""));
-        return roleConceptMap;
+        roleMap.forEach((role, var) -> roleConceptIdMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : ""));
+        return roleConceptIdMap;
     }
 
     private Map<RoleType, VarName> getRoleMap() {
@@ -425,11 +435,11 @@ public class Relation extends TypeAtom {
                         answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
 
                 Relation newRelation = new Relation(getPattern().asVar(), newPredicate, parent);
-                parent.removeAtom(hrAtom.getPredicate());
-                parent.removeAtom(hrAtom);
-                parent.removeAtom(this);
-                parent.addAtom(newRelation);
-                parent.addAtom(newPredicate);
+                parent.removeAtomic(hrAtom.getPredicate());
+                parent.removeAtomic(hrAtom);
+                parent.removeAtomic(this);
+                parent.addAtomic(newRelation);
+                parent.addAtomic(newPredicate);
             }
         }
     }

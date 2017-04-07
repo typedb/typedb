@@ -39,7 +39,6 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import javafx.util.Pair;
 
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -73,6 +72,12 @@ public class InferenceRule {
                 throw new IllegalArgumentException(ErrorMessage.HEAD_ROLES_MISSING.getMessage(this.toString()));
             }
         }
+    }
+
+    public InferenceRule(InferenceRule r){
+        this.ruleId = r.getRuleId();
+        this.body = new ReasonerQueryImpl(r.getBody());
+        this.head = new ReasonerAtomicQuery(r.getHead());
     }
 
     @Override
@@ -135,23 +140,25 @@ public class InferenceRule {
     public Atom getRuleConclusionAtom() {
         ReasonerQueryImpl ruleQuery = new ReasonerQueryImpl(head);
         Atom atom = ruleQuery.selectAtoms().iterator().next();
-        body.getAtoms().forEach(at -> ruleQuery.addAtom(at.copy()));
+        body.getAtoms().forEach(at -> ruleQuery.addAtomic(at.copy()));
         return atom;
     }
 
-    private void propagateConstraints(Atom parentAtom){
-        //only propagate unambiguous constraints
-        Set<VarName> unmappedVars = parentAtom.isRelation() ? ((Relation) parentAtom).getUnmappedRolePlayers() : new HashSet<>();
+    /**
+     * @param parentAtom from which constrained are propagated
+     * @return the inference rule with constraints
+     */
+    public  InferenceRule propagateConstraints(Atom parentAtom){
+        if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
-                .filter(pred -> !unmappedVars.contains(pred.getVarName()))
                 .collect(toSet());
         Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                .filter(type -> !unmappedVars.contains(type.getVarName()))
                 .collect(toSet());
 
         head.addAtomConstraints(predicates);
         body.addAtomConstraints(predicates);
         body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
+        return this;
     }
 
     private void rewriteHead(Atom parentAtom){
@@ -160,8 +167,8 @@ public class InferenceRule {
         Unifier rewriteUnifiers = rewrite.getValue();
         Atom newAtom = rewrite.getKey();
         if (newAtom != childAtom){
-            head.removeAtom(childAtom);
-            head.addAtom(newAtom);
+            head.removeAtomic(childAtom);
+            head.addAtomic(newAtom);
             body.unify(rewriteUnifiers);
 
             //resolve captures
@@ -180,18 +187,12 @@ public class InferenceRule {
                 .filter(at -> at.getType().equals(head.getAtom().getType()))
                 .forEach(at -> {
                     Atom rewrite = at.rewriteToUserDefined();
-                    body.removeAtom(at);
-                    body.addAtom(rewrite);
+                    body.removeAtomic(at);
+                    body.addAtomic(rewrite);
                     });
     }
 
-    private void unify(Unifier unifier){
-        //do alpha-conversion
-        head.unify(unifier);
-        body.unify(unifier);
-    }
-
-    private void unifyViaAtom(Atom parentAtom) {
+    private InferenceRule unifyViaAtom(Atom parentAtom) {
         Atom childAtom = getRuleConclusionAtom();
         Unifier unifier = new UnifierImpl();
         if (parentAtom.getType() != null){
@@ -204,19 +205,28 @@ public class InferenceRule {
                     .addType(childAtom.getType());
             unifier.merge(childAtom.getUnifier(extendedParent));
         }
-        unify(unifier);
+        return this.unify(unifier);
+    }
+
+    /**
+     * @param unifier to be applied on this rule
+     * @return unified rule
+     */
+    public InferenceRule unify(Unifier unifier){
+        //do alpha-conversion
+        head.unify(unifier);
+        body.unify(unifier);
+        return this;
     }
 
     /**
      * make rule consistent variable-wise with the parent atom by means of unification
      * @param parentAtom atom the rule should be unified with
      */
-    public void unify(Atom parentAtom) {
+    public InferenceRule unify(Atom parentAtom) {
         if (parentAtom.isUserDefinedName()) rewriteHead(parentAtom);
         unifyViaAtom(parentAtom);
         if (head.getAtom().isUserDefinedName()) rewriteBody();
-        if (parentAtom.isRelation() || parentAtom.isResource()) {
-            propagateConstraints(parentAtom);
-        }
+        return this;
     }
 }

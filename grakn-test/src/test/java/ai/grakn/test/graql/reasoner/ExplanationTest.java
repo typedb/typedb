@@ -52,22 +52,33 @@ public class ExplanationTest {
     @ClassRule
     public static final GraphContext genealogyGraph = GraphContext.preLoad(GenealogyGraph.get());
 
+    @ClassRule
+    public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql");
+
+    private static Concept polibuda;
+    private static Concept uw;
+    private static Concept warsaw;
+    private static Concept masovia;
+    private static Concept poland;
+    private static Concept europe;
+    private static QueryBuilder iqb;
+
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
+        GraknGraph graph = geoGraph.graph();
+        iqb = graph.graql().infer(true).materialise(false);
+        polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
+        uw = getConcept(graph, "name", "University-of-Warsaw");
+        warsaw = getConcept(graph, "name", "Warsaw");
+        masovia = getConcept(graph, "name", "Masovia");
+        poland = getConcept(graph, "name", "Poland");
+        europe = getConcept(graph, "name", "Europe");
     }
 
     @Test
     public void testTransitiveExplanation() {
-        GraknGraph graph = geoGraph.graph();
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
-
-        Concept polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
-        Concept warsaw = getConcept(graph, "name", "Warsaw");
-        Concept masovia = getConcept(graph, "name", "Masovia");
-        Concept poland = getConcept(graph, "name", "Poland");
-        Concept europe = getConcept(graph, "name", "Europe");
 
         Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), warsaw));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), masovia));
@@ -98,27 +109,66 @@ public class ExplanationTest {
 
     @Test
     public void testExplainingSpecificAnswer(){
-        GraknGraph graph = geoGraph.graph();
-        QueryBuilder iqb = graph.graql().infer(true).materialise(false);
-        Concept polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
-        Concept europe = getConcept(graph, "name", "Europe");
-
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
                 "$y id '" + europe.getId() + "';";
 
-        MatchQuery query = graph.graql().parse(queryString);
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
+        MatchQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
         assertEquals(answers.size(), 1);
 
         Answer answer = answers.iterator().next();
         assertTrue(answer.getExplanation().isRuleExplanation());
+        assertEquals(2, answer.getExplanation().getAnswers().size());
         assertEquals(3, getRuleExplanations(answer).size());
         assertEquals(4, answer.getExplicitPath().size());
     }
 
-    private Concept getConcept(GraknGraph graph, String typeLabel, Object val){
+    @Test
+    public void testExplainingConjunctiveQueryWithTwoIdPredicates(){
+        String queryString = "match " +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "(geo-entity: $y, entity-location: $z) isa is-located-in;" +
+                "$x id '" + polibuda.getId() + "';" +
+                "$z id '" + masovia.getId() + "';" +
+                "select $y;";
+
+        MatchQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
+        assertEquals(answers.size(), 1);
+    }
+
+    @Test
+    public void testExplainingQueryContainingContradiction(){
+        String queryString = "match " +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "$x id '" + polibuda.getId() + "';" +
+                "$y id '" + uw.getId() + "';";
+
+        MatchQuery query = iqb.parse(queryString);
+        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
+        assertEquals(answers.size(), 0);
+    }
+
+    @Test
+    public void testExplainingQueryContainingContradiction2(){
+        GraknGraph expGraph = explanationGraph.graph();
+        QueryBuilder eiqb = expGraph.graql().infer(true);
+
+        Concept a1 = getConcept(expGraph, "name", "a1");
+        Concept a2 = getConcept(expGraph, "name", "a2");
+        String queryString = "match " +
+                "(role1: $x, role2: $y) isa relation1;" +
+                "$x id '" + a1.getId() + "';" +
+                "$y id '" + a2.getId() + "';";
+
+        MatchQuery query = eiqb.parse(queryString);
+        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
+        assertEquals(answers.size(), 0);
+    }
+
+    private static Concept getConcept(GraknGraph graph, String typeLabel, Object val){
         return graph.graql().match(Graql.var("x").has(typeLabel, val).admin()).execute().iterator().next().get("x");
     }
 

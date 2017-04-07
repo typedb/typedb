@@ -120,7 +120,9 @@ public class AnalyticsTest {
 
             Entity thisThing = thing.addEntity();
             relationType.addRelation().addRolePlayer(degreeOwner, thisThing);
+
             graph.commit();
+
         }
 
         // the null role-player caused analytics to fail at some stage

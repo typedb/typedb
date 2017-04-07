@@ -16,39 +16,27 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graql.internal.reasoner.explanation;
+package ai.grakn.graql.internal.reasoner.iterator;
 
-import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.admin.Answer;
+import java.util.Iterator;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  *
  * <p>
- * Explanation class for rule application.
+ * Convenience base class for reasoner iterators.
  * </p>
- *
+  *
  * @author Kasper Piskorski
  *
  */
-public class RuleExplanation extends Explanation {
+public abstract class ReasonerQueryIterator implements Iterator<Answer> {
 
-    private final InferenceRule rule;
-
-    public RuleExplanation(InferenceRule rl){ this.rule = rl;}
-    public RuleExplanation(RuleExplanation exp){
-        super(exp);
-        this.rule = exp.getRule();
+    public Stream<Answer> hasStream(){
+        Iterable<Answer> iterable = () -> this;
+        return StreamSupport.stream(iterable.spliterator(), false).distinct();
     }
-
-    @Override
-    public AnswerExplanation copy(){ return new RuleExplanation(this);}
-
-    @Override
-    public boolean isRuleExplanation(){ return true;}
-
-    @Override
-    public ReasonerQuery getQuery(){ return rule.getHead();}
-
-    public InferenceRule getRule(){ return rule;}
 }
+

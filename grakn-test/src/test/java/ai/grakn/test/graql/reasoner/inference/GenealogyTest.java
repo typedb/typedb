@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -308,9 +309,9 @@ public class GenealogyTest {
     @Test
     public void testSiblings() {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
-        MatchQuery query = iqb.parse(queryString);
+        MatchQuery query = iqb.materialise(true).parse(queryString);
 
-        QueryAnswers answers = queryAnswers(query);
+        QueryAnswers answers = new QueryAnswers(query.admin().streamWithAnswers().collect(Collectors.toSet()));
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));
@@ -474,7 +475,7 @@ public class GenealogyTest {
         String queryString = "match (father: $x) isa parentship; $x has gender $g; $g val 'female';";
         MatchQuery query = iqb.parse(queryString);
         QueryAnswers answers = queryAnswers(query);
-        QueryAnswers answers2 =  queryAnswers(genealogyGraph.graph().graql().infer(true).materialise(false).parse(queryString));
+        QueryAnswers answers2 =  queryAnswers(genealogyGraph.graph().graql().infer(true).materialise(true).parse(queryString));
         assertTrue(answers.isEmpty());
         assertEquals(answers, answers2);
     }

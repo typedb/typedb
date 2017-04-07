@@ -76,7 +76,8 @@ insert
 
 $materializeParentChildRelations isa inference-rule
 lhs
-{$b isa birth has confidence "high";
+{
+$b isa birth has confidence "high";
 $rel1 (happening: $b, protagonist: $p) isa event-protagonist;
 $rel1 has event-role "parent";
 $rel2 (happening: $b, protagonist: $c) isa event-protagonist;

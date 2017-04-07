@@ -71,7 +71,7 @@ public abstract class AtomBase implements Atomic {
 
     @Override
     public boolean isUserDefinedName(){ return atomPattern.asVar().isUserDefinedName();}
-
+    
     @Override
     public VarName getVarName(){ return varName;}
 

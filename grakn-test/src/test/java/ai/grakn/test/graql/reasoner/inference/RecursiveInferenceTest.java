@@ -18,6 +18,8 @@
 
 package ai.grakn.test.graql.reasoner.inference;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graphs.DiagonalGraph;
 import ai.grakn.graphs.MatrixGraph;
 import ai.grakn.graphs.MatrixGraphII;
@@ -28,8 +30,12 @@ import ai.grakn.graphs.PathGraphSymmetric;
 import ai.grakn.graphs.TailRecursionGraph;
 import ai.grakn.graphs.TransitivityChainGraph;
 import ai.grakn.graphs.TransitivityMatrixGraph;
+import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -37,9 +43,9 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.stream.Collectors;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -302,7 +308,8 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    /** test 6.3 from Cao p 75*/
+    /**
+     *  test 6.3 from Cao p 75*/
     @Test
     public void testTailRecursion(){
         final int N = 10;
@@ -318,7 +325,25 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
     }
 
-    /**test3 from Nguyen (similar to test 6.5 from Cao)*/
+    /**test3 from Nguyen (similar to test 6.5 from Cao)
+     * N(x, y) :- R(x, y)
+     * N(x, y) :- P(x, z), N(z, w), Q(w, y)
+     *
+     *
+     *   c -- P -- d -- R -- e -- Q -- a0
+     *     \                        /
+     *         P               Q
+     *      \    \          /
+     *                b0   --  Q  --   a1
+     *        \                     /
+     *          P              Q
+     *             \        /
+     *                b1   --  Q  --   a2
+     *                            .
+     *                         .
+     *                      .
+     *                bN   --  Q --    aN+1
+     */
     @Test
     public void testNguyen(){
         final int N = 9;
@@ -329,24 +354,11 @@ public class RecursiveInferenceTest {
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; select $y;";
         String explicitQuery = "match $y isa a-entity;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
-    }
-
-    //TODO bug #10635
-    @Test
-    public void testNguyen2(){
-        final int N = 9;
-        graphContext.load(NguyenGraph.get(N));
-
-        QueryBuilder qb = graphContext.graph().graql().infer(false);
-        QueryBuilder iqb = graphContext.graph().graql().infer(true);
-
-        String queryString = "match (N-rA: $x, N-rB: $y) isa N;$x has index 'c'; select $y;";
-        String explicitQuery = "match $y isa a-entity;";
-
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
+        assertEquals(answers.size(), explicitAnswers.size());
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+        assertEquals(answers, answers2);
     }
 
     /**test 6.6 from Cao p.76*/
@@ -381,21 +393,35 @@ public class RecursiveInferenceTest {
 
     /**test 6.10 from Cao p. 82*/
     @Test
-    public void testPath(){
+    public void testPathTree(){
         final int N = 3;
         graphContext.load(PathGraph.get(N, 3));
-        QueryBuilder qb = graphContext.graph().graql().infer(false);
-        QueryBuilder iqb = graphContext.graph().graql().infer(true);
+        GraknGraph graph = graphContext.graph();
+        QueryBuilder qb = graph.graql().infer(false);
+        QueryBuilder iqb = graph.graql().infer(true);
 
-        String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
+        Concept a0 = getConcept(graph, "index", "a0");
+
+        String queryString = "match (path-from: $x, path-to: $y) isa path;" +
+                "$x has index 'a0';" +
+                "select $y;";
         String explicitQuery = "match $y isa vertex;";
 
-        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+
+        QueryAnswers answers = queryAnswers(iqb.materialise(false).parse(queryString));
+        QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
+        QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
+
+        assertEquals(answers.size(), explicitAnswers.size());
+        assertEquals(answers, answers2);
+    }
+
+    private Concept getConcept(GraknGraph graph, String typeName, Object val){
+        return graph.graql().match(Graql.var("x").has(typeName, val).admin()).execute().iterator().next().get("x");
     }
 
     @Test
-    public void testPathPrime(){
+    public void testPathTreePrime(){
         final int N = 3;
         graphContext.load(PathGraph.get(N, 3));
         QueryBuilder qb = graphContext.graph().graql().infer(false);
@@ -446,8 +472,8 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = graphContext.graph().graql().infer(false);
         QueryBuilder iqb = graphContext.graph().graql().infer(true);
 
-        String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
-        String explicitQuery = "match $y isa vertex;";
+        String queryString = "match ($x, $y) isa path;$x has index 'a0'; $y has index $ind;select $y, $ind;";
+        String explicitQuery = "match $y isa vertex;$y has index $ind;";
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
         assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
@@ -524,7 +550,13 @@ public class RecursiveInferenceTest {
         assertEquals(iqb.materialise(true).<MatchQuery>parse(queryString).execute().size(), 64);
     }
 
+    private QueryAnswers queryAnswers(MatchQuery query) {
+        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
+    }
+
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
-        assertEquals(q1.stream().collect(Collectors.toSet()), q2.stream().collect(Collectors.toSet()));
+        QueryAnswers answers = queryAnswers(q1);
+        QueryAnswers answers2 = queryAnswers(q2);
+        assertEquals(answers, answers2);
     }
 }
