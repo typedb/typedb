@@ -55,7 +55,7 @@ public interface VarProperty {
 
     /**
      * Get a stream of any inner {@link VarAdmin} within this `VarProperty`, including any that may have been
-     * implicitly created (such as with "has-resource").
+     * implicitly created (such as with "has").
      */
     Stream<VarAdmin> getImplicitInnerVars();
 

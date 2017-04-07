@@ -524,9 +524,9 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingHasResource(){
+    public void testReasoningWithQueryContainingTypeHas(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        String queryString = "match $x isa $type;$type has-resource name;$y isa country;$y has name 'Poland';" +
+        String queryString = "match $x isa $type;$type has name;$y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;select $x, $y;";
         String queryString2 = "match $y isa country;$y has name 'Poland';" +
                 "($x, $y) isa is-located-in;";
@@ -537,8 +537,8 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testReasoningWithQueryContainingHasResource2(){
-        String queryString = "match $x isa $type;$type has-resource name;$y isa product;($x, $y) isa recommendation;";
+    public void testReasoningWithQueryContainingTypeHas2(){
+        String queryString = "match $x isa $type;$type has name;$y isa product;($x, $y) isa recommendation;";
         //String queryString2 = "match $x isa $type;$y isa product;($x, $y) isa recommendation;";
         String explicitQuery = "match $x isa person, has name $xName;$x isa $type;$y has name $yName;" +
                 "{$type label 'person' or $type label 'entity2';};" +

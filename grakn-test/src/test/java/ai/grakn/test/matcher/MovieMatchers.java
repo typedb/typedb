@@ -24,7 +24,7 @@ import org.hamcrest.Matcher;
 
 import static ai.grakn.test.matcher.GraknMatchers.instance;
 import static ai.grakn.test.matcher.GraknMatchers.type;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE;
+import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
 /**
@@ -49,7 +49,7 @@ public class MovieMatchers {
     public static final Matcher<MatchableConcept> tmdbVoteAverage = type("tmdb-vote-average");
     public static final Matcher<MatchableConcept> genreOfProduction = type("genre-of-production");
     public static final Matcher<MatchableConcept> aRuleType = type("a-rule-type");
-    public static final Matcher<MatchableConcept> hasTitle = type(HAS_RESOURCE.getLabel("title"));
+    public static final Matcher<MatchableConcept> hasTitle = type(HAS.getLabel("title"));
     public static final Matcher<MatchableConcept> godfather = instance("Godfather");
     public static final Matcher<MatchableConcept> theMuppets = instance("The Muppets");
     public static final Matcher<MatchableConcept> heat = instance("Heat");

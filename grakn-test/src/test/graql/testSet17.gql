@@ -1,8 +1,8 @@
 insert
 
 general-entity sub entity
-	has-resource res1
-	has-resource res2;
+	has res1
+	has res2;
 
 sub-entity sub general-entity;
 

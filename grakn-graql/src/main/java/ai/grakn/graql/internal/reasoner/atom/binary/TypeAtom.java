@@ -31,7 +31,7 @@ import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 /**
  *
  * <p>
- * Atom implementation defining type atoms of the type $varName {isa|sub|plays|has-resource|has-scope} $valueVariable)
+ * Atom implementation defining type atoms of the type $varName {isa|sub|plays|has|has-scope} $valueVariable)
  * </p>
  *
  * @author Kasper Piskorski

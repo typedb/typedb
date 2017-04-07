@@ -133,7 +133,7 @@ import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteAverage;
 import static ai.grakn.test.matcher.MovieMatchers.tmdbVoteCount;
 import static ai.grakn.test.matcher.MovieMatchers.war;
 import static ai.grakn.util.ErrorMessage.MATCH_INVALID;
-import static ai.grakn.util.Schema.ImplicitType.HAS_RESOURCE;
+import static ai.grakn.util.Schema.ImplicitType.HAS;
 import static ai.grakn.util.Schema.MetaSchema.RULE;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -772,16 +772,16 @@ public class MatchQueryTest {
     }
 
     @Test
-    public void testMatchHasResource() {
-        MatchQuery query = qb.match(var("x").hasResource("name"));
+    public void testMatchHas() {
+        MatchQuery query = qb.match(var("x").has("name"));
         assertThat(query, variable("x", containsInAnyOrder(
                 person, language, genre, aRuleType, cluster, character
         )));
     }
 
     @Test
-    public void whenMatchingHasResource_ThenTheResultOnlyContainsTheExpectedVariables() {
-        MatchQuery query = qb.match(var("x").hasResource("name"));
+    public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
+        MatchQuery query = qb.match(var("x").has("name"));
         for (Map<String, Concept> result : query) {
             assertEquals(result.keySet(), ImmutableSet.of("x"));
         }
@@ -789,7 +789,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchKey() {
-        MatchQuery query = qb.match(var("x").hasKey("name"));
+        MatchQuery query = qb.match(var("x").key("name"));
         assertThat(query, variable("x", contains(genre)));
     }
 
@@ -801,7 +801,7 @@ public class MatchQueryTest {
 
     @Test
     public void testDontHideImplicitTypesIfExplicitlyMentioned() {
-        MatchQuery query = qb.match(var("x").sub("concept").label(HAS_RESOURCE.getLabel("title")));
+        MatchQuery query = qb.match(var("x").sub("concept").label(HAS.getLabel("title")));
         assertThat(query, variable("x", (Matcher) hasItem(hasTitle)));
     }
 

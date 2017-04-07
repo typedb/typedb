@@ -274,7 +274,7 @@ public class GraqlShellIT {
     @Test
     public void testReasonerOff() throws Exception {
         assertShellMatches(
-                "insert man sub entity has-resource name; name sub resource datatype string;",
+                "insert man sub entity has name; name sub resource datatype string;",
                 anything(),
                 "insert person sub entity;",
                 anything(),
@@ -291,7 +291,7 @@ public class GraqlShellIT {
     @Test
     public void testReasoner() throws Exception {
         assertShellMatches(ImmutableList.of("--infer"),
-                "insert man sub entity has-resource name; name sub resource datatype string;",
+                "insert man sub entity has name; name sub resource datatype string;",
                 anything(),
                 "insert person sub entity;",
                 anything(),
@@ -441,7 +441,7 @@ public class GraqlShellIT {
     @Test
     public void testDefaultDontDisplayResources() throws Exception {
         assertShellMatches(
-                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';",
+                "insert X sub entity; R sub resource datatype string; X has R; isa X has R 'foo';",
                 anything(),
                 "match $x isa X;",
                 allOf(containsString("id"), not(containsString("\"foo\"")))
@@ -451,7 +451,7 @@ public class GraqlShellIT {
     @Test
     public void testDisplayResourcesCommand() throws Exception {
         assertShellMatches(
-                "insert X sub entity; R sub resource datatype string; X has-resource R; isa X has R 'foo';",
+                "insert X sub entity; R sub resource datatype string; X has R; isa X has R 'foo';",
                 anything(),
                 "display R;",
                 "match $x isa X;",

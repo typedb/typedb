@@ -6,9 +6,9 @@ insert
 
 
 "vertex" sub entity
-   has-resource index;
+   has index;
 "start-vertex" sub entity
-   has-resource index;
+   has index;
 
 "arc-from" sub role;
 "arc-to" sub role;

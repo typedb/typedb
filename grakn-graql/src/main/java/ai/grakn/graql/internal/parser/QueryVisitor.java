@@ -469,12 +469,12 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropResource(GraqlParser.PropResourceContext ctx) {
-        return var -> var.hasResource(visitVariable(ctx.variable()));
+        return var -> var.has(visitVariable(ctx.variable()));
     }
 
     @Override
     public UnaryOperator<Var> visitPropKey(GraqlParser.PropKeyContext ctx) {
-        return var -> var.hasKey(visitVariable(ctx.variable()));
+        return var -> var.key(visitVariable(ctx.variable()));
     }
 
     @Override

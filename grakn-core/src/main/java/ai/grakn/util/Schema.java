@@ -195,32 +195,32 @@ public final class Schema {
         /**
          * The label of the generic has-resource relationship, used for attaching resources to instances with the 'has' syntax
          */
-        HAS_RESOURCE("has-resource-%s"),
+        HAS("has-%s"),
 
         /**
          * The label of a role in has-resource, played by the owner of the resource
          */
-        HAS_RESOURCE_OWNER("has-resource-%s-owner"),
+        HAS_OWNER("has-%s-owner"),
 
         /**
          * The label of a role in has-resource, played by the resource
          */
-        HAS_RESOURCE_VALUE("has-resource-%s-value"),
+        HAS_VALUE("has-%s-value"),
 
         /**
-         * The label of the generic has-key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique
+         * The label of the generic key relationship, used for attaching resources to instances with the 'has' syntax and additionally constraining them to be unique
          */
-        HAS_KEY("has-key-%s"),
+        KEY("key-%s"),
 
         /**
-         * The label of a role in has-key, played by the owner of the key
+         * The label of a role in key, played by the owner of the key
          */
-        HAS_KEY_OWNER("has-key-%s-owner"),
+        KEY_OWNER("key-%s-owner"),
 
         /**
-         * The label of a role in has-key, played by the resource
+         * The label of a role in key, played by the resource
          */
-        HAS_KEY_VALUE("has-key-%s-value");
+        KEY_VALUE("key-%s-value");
 
         private final String label;
 

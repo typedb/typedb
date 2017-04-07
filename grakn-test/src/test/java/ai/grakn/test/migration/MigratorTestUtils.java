@@ -113,8 +113,8 @@ public class MigratorTestUtils {
     }
 
     public static Stream<Resource> getResources(GraknGraph graph, Instance instance, TypeLabel label) {
-        RoleType roleOwner = graph.getType(Schema.ImplicitType.HAS_RESOURCE_OWNER.getLabel(label));
-        RoleType roleOther = graph.getType(Schema.ImplicitType.HAS_RESOURCE_VALUE.getLabel(label));
+        RoleType roleOwner = graph.getType(Schema.ImplicitType.HAS_OWNER.getLabel(label));
+        RoleType roleOther = graph.getType(Schema.ImplicitType.HAS_VALUE.getLabel(label));
 
         Collection<Relation> relations = instance.relations(roleOwner);
         return relations.stream().flatMap(r -> r.rolePlayers(roleOther).stream()).map(Concept::asResource);

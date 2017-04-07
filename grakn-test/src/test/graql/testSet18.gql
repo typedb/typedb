@@ -8,7 +8,7 @@ role2 sub role;
 #Entities
 
 entity1 sub entity
-    has-resource name
+    has name
 	plays role1
 	plays role2;
 

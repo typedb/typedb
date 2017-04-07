@@ -3,7 +3,7 @@ insert
 entity1 sub entity
     plays rel-from
     plays rel-to
-    has-resource name;
+    has name;
 
 horizontal sub relation
     relates rel-from

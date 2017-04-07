@@ -1,13 +1,13 @@
 insert
 
 model sub entity
-    has-resource name
-    has-resource year
-    has-resource description
-    has-resource price
+    has name
+    has year
+    has description
+    has price
     plays model-of-car;
 make sub entity
-    has-resource name
+    has name
     plays make-of-car;
 
 name sub resource datatype string;

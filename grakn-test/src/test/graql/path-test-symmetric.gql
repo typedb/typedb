@@ -5,9 +5,9 @@ insert
 #################################################
 
 "start-vertex" sub entity
-has-resource index;
+has index;
 "vertex" sub entity
-has-resource index;
+has index;
 
 "arcA" sub role;
 "arcB" sub role;

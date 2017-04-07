@@ -21,26 +21,26 @@ task-configuration sub resource, datatype string;
 task-serialized sub resource, datatype string;
 task-id sub resource, datatype string;
 
-scheduled-task has-resource status,
-               has-resource status-change-time,
-               has-resource status-change-by,
-               has-resource task-class-name,
-               has-resource created-by,
-               has-resource engine-id,
-               has-resource run-at,
-               has-resource recurring,
-               has-resource recur-interval,
-               has-resource stack-trace,
-               has-resource task-exception,
-               has-resource task-checkpoint,
-               has-resource task-configuration
-               has-resource task-serialized
-               has-resource task-id;
+scheduled-task has status,
+               has status-change-time,
+               has status-change-by,
+               has task-class-name,
+               has created-by,
+               has engine-id,
+               has run-at,
+               has recurring,
+               has recur-interval,
+               has stack-trace,
+               has task-exception,
+               has task-checkpoint,
+               has task-configuration
+               has task-serialized
+               has task-id;
 
 # Keep track of all keyspaces in system.
 keyspace sub entity;
 keyspace-name sub resource, datatype string;
-keyspace has-key keyspace-name;
+keyspace key keyspace-name;
 
 # Users
 user sub entity;
@@ -52,14 +52,14 @@ user-last-name sub resource, datatype string;
 user-email sub resource, datatype string;
 user-is-admin sub resource, datatype boolean;
 
-user has-key user-name;
+user key user-name;
 
-user has-resource user-password,
-     has-resource user-password-salt,
-	 has-resource user-first-name,
-	 has-resource user-last-name,
-	 has-resource user-email,
-	 has-resource user-is-admin;
+user has user-password,
+     has user-password-salt,
+	 has user-first-name,
+	 has user-last-name,
+	 has user-email,
+	 has user-is-admin;
 
 # Meta System Information
 system-version sub resource, datatype string;

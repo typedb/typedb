@@ -53,7 +53,7 @@ class HALConceptOntology {
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
     private final static String RELATES_EDGE = "relates";
-    private final static String HAS_RESOURCE_EDGE = "has-resource";
+    private final static String HAS_EDGE = "has";
     private final static String PLAYS_EDGE = "plays";
 
     // - State properties
@@ -160,7 +160,7 @@ class HALConceptOntology {
                     .newRepresentation(resourceLinkPrefix + currentResourceType.getId() + getURIParams())
                     .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(embeddedResource, currentResourceType);
-            halResource.withRepresentation(HAS_RESOURCE_EDGE, embeddedResource);
+            halResource.withRepresentation(HAS_EDGE, embeddedResource);
         });
     }
 

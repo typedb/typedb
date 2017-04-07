@@ -2,10 +2,10 @@ insert
 
 document sub entity
 	plays evidence
-	has-resource identifier
-	has-resource document-location
-	has-resource document-type
-	has-resource notes;
+	has identifier
+	has document-location
+	has document-type
+	has notes;
 document-location sub resource datatype string;
 document-type sub resource datatype string;
 
@@ -23,11 +23,11 @@ event sub entity
 	is-abstract
 	plays conclusion
 	plays happening
-	has-resource degree
-	has-resource confidence
-	has-resource date
-	has-resource identifier
-	has-resource notes;
+	has degree
+	has confidence
+	has date
+	has identifier
+	has notes;
 
 # This is needed otherwise reasoner complains about the missing resource if it has not been persisted
 degree sub resource datatype long;
@@ -36,28 +36,28 @@ degree sub resource datatype long;
 event-protagonist sub relation
 	relates happening
 	relates protagonist
-	has-resource event-role;
+	has event-role;
 happening sub role;
 protagonist sub role;
 event-role sub resource datatype string;
 
 wedding sub event;
 funeral sub event
-	has-resource birth-date;
+	has birth-date;
 christening sub event
-	has-resource death-date;
+	has death-date;
 
 birth sub event
-	has-resource firstname
-	has-resource middlename
-	has-resource surname
-	has-resource gender
-	has-resource birth-date;
+	has firstname
+	has middlename
+	has surname
+	has gender
+	has birth-date;
 child-identifier sub identifier;
 parent-identifier sub identifier;
 
 death sub event
-	has-resource death-date;
+	has death-date;
 
 date sub resource datatype string;
 
@@ -77,13 +77,13 @@ person sub entity
 	plays cousin
 	plays child-in-law
 	plays parent-in-law
-	has-resource gender
-	has-resource birth-date
-	has-resource death-date
-	has-resource identifier
-	has-resource firstname
-	has-resource middlename
-	has-resource surname;
+	has gender
+	has birth-date
+	has death-date
+	has identifier
+	has firstname
+	has middlename
+	has surname;
 
 gender sub resource datatype string;
 birth-date sub date;
@@ -102,7 +102,7 @@ marriage sub relatives
 	relates spouse2
 	relates husband
 	relates wife
-	has-resource date;
+	has date;
 spouse sub role is-abstract;
 generic-spouse sub spouse is-abstract;
 spouse1 sub generic-spouse;
