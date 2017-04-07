@@ -463,4 +463,14 @@ public class EntityTypeTest extends GraphTestBase{
         assertEquals(entityType.shards().iterator().next(), entityType.currentShard());
     }
 
+    @Test
+    public void whenAddingInstanceToType_EnsureIsaEdgeIsPlacedOnShard(){
+        EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("EntityType");
+        EntityTypeImpl shard = (EntityTypeImpl) entityType.currentShard();
+        Entity e1 = entityType.addEntity();
+
+        assertFalse("The isa edge was places on the type rather than the shard", entityType.getIncomingNeighbours(Schema.EdgeLabel.ISA).iterator().hasNext());
+        assertEquals(e1, shard.getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().get());
+    }
+
 }

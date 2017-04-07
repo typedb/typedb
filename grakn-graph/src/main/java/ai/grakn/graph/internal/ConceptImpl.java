@@ -88,28 +88,6 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         this.vertex = concept.getVertex();
     }
 
-    T createShard(){
-        Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
-        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
-
-        T shardConcept = getGraknGraph().buildConcept(shardVertex);
-        setProperty(Schema.ConceptProperty.CURRENT_SHARD, shardConcept.getId().getValue());
-
-        return shardConcept;
-    }
-
-    Set<T> shards(){
-        return this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
-    }
-
-    T currentShard(){
-        String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
-        if(currentShardId == null) throw new ConceptException(ErrorMessage.CONCEPT_HAS_NO_SHARD.getMessage(this));
-
-        return getGraknGraph().getConcept(ConceptId.of(currentShardId));
-    }
-
-
     /**
      *
      * @param key The key of the property to mutate
@@ -599,5 +577,33 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     @Override
     public int compareTo(Concept o) {
         return this.getId().compareTo(o.getId());
+    }
+
+    //----------------------------------- Sharding Functionality
+    T createShard(){
+        Vertex shardVertex = getGraknGraph().addVertex(getBaseType());
+        shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
+
+        ConceptImpl shardConcept = getGraknGraph().buildConcept(shardVertex);
+        shardConcept.setProperty(Schema.ConceptProperty.IS_SHARD, true);
+        setProperty(Schema.ConceptProperty.CURRENT_SHARD, shardConcept.getId().getValue());
+
+        //noinspection unchecked
+        return (T) shardConcept;
+    }
+
+    Set<T> shards(){
+        return this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
+    }
+
+    T currentShard(){
+        String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
+        if(currentShardId == null) throw new ConceptException(ErrorMessage.CONCEPT_HAS_NO_SHARD.getMessage(this));
+
+        return getGraknGraph().getConcept(ConceptId.of(currentShardId));
+    }
+
+    boolean isShard(){
+        return getPropertyBoolean(Schema.ConceptProperty.IS_SHARD);
     }
 }

@@ -165,7 +165,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         if(!Schema.MetaSchema.isMetaLabel(getLabel())) {
             getGraknGraph().getConceptLog().addedInstance(getLabel());
         }
-        return producer.apply(instanceVertex, getThis());
+        return producer.apply(instanceVertex, currentShard());
     }
 
     /**
