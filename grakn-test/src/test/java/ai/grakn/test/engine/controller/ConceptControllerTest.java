@@ -97,6 +97,17 @@ public class ConceptControllerTest {
     @AfterClass
     public static void shutdown(){
         spark.stop();
+
+        // Block until server is truly stopped
+        // This occurs when there is no longer a port assigned to the Spark server
+        boolean running = true;
+        while (running) {
+            try {
+                spark.port();
+            } catch(IllegalStateException e){
+                running = false;
+            }
+        }
     }
 
     @Test
