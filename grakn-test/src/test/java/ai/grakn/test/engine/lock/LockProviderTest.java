@@ -36,21 +36,23 @@ import static org.mockito.Mockito.when;
 
 public class LockProviderTest {
 
+    private final String LOCK_NAME = "lock";
+
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
     @After
     public void clearLock(){
-        LockProvider.clearLock();
+        LockProvider.clear();
     }
 
     @Test
     public void whenGivenReentrantLock_ReturnsReentrantLock(){
         Lock lock = new ReentrantLock();
 
-        LockProvider.init(lock);
+        LockProvider.add(LOCK_NAME, lock);
 
-        assertThat(LockProvider.getLock(), equalTo(lock));
+        assertThat(LockProvider.getLock(LOCK_NAME), equalTo(lock));
     }
 
     @Test
@@ -60,9 +62,9 @@ public class LockProviderTest {
 
         Lock lock = new ZookeeperLock(zookeeperConnection, "/lock");
 
-        LockProvider.init(lock);
+        LockProvider.add(LOCK_NAME, lock);
 
-        assertThat(LockProvider.getLock(), equalTo(lock));
+        assertThat(LockProvider.getLock(LOCK_NAME), equalTo(lock));
     }
 
     @Test
@@ -73,7 +75,7 @@ public class LockProviderTest {
         exception.expect(RuntimeException.class);
         exception.expectMessage("Lock class has already been initialised with another lock.");
 
-        LockProvider.init(lock1);
-        LockProvider.init(lock2);
+        LockProvider.add(LOCK_NAME, lock1);
+        LockProvider.add(LOCK_NAME, lock2);
     }
 }

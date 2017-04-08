@@ -34,6 +34,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *
  * @author alexandraorth
  */
+// TODO: Evaluate the need of implementing this exact interface
 public class ZookeeperLock implements Lock {
 
     private final InterProcessSemaphoreMutex mutex;

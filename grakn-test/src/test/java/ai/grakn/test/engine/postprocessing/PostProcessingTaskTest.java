@@ -33,6 +33,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,14 +48,14 @@ public class PostProcessingTaskTest {
     @BeforeClass
     public static void mockEngineCache(){
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
-        LockProvider.init(new ReentrantLock());
+        LockProvider.add(POST_PROCESSING_LOCK, new ReentrantLock());
     }
 
     @AfterClass
     public static void clearEngineCache(){
         EngineCacheStandAlone.getCache().getKeyspaces().forEach(k -> EngineCacheStandAlone.getCache().clearAllJobs(k));
         EngineCacheProvider.clearCache();
-        LockProvider.clearLock();
+        LockProvider.clear();
     }
 
     @Before

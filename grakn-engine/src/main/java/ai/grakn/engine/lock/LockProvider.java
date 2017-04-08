@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.lock;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -29,23 +31,26 @@ import java.util.concurrent.locks.Lock;
  */
 public class LockProvider {
 
-    private static Lock lock = null;
+    private static final Map<String, Lock> locks = new HashMap<>();
 
     private LockProvider(){}
 
-    public static void init(Lock providedLock){
-        if(lock != null && !lock.getClass().equals(providedLock.getClass())){
+    public static void add(String lockName, Lock providedLock){
+        if(locks.containsKey(lockName) && !locks.get(lockName).getClass().equals(providedLock.getClass())){
             throw new RuntimeException("Lock class has already been initialised with another lock.");
         }
 
-        lock = providedLock;
+        locks.put(lockName, providedLock);
     }
 
-    public static Lock getLock(){
-        return lock;
+    public static Lock getLock(String lockToObtain){
+        if(!locks.containsKey(lockToObtain)){
+            throw new RuntimeException("Lock is not available with name " + lockToObtain);
+        }
+        return locks.get(lockToObtain);
     }
 
-    public static void clearLock(){
-        lock = null;
+    public static void clear(){
+        locks.clear();
     }
 }

@@ -49,6 +49,9 @@ import static java.time.Instant.now;
  * @author Denis Lobanov, alexandraorth
  */
 public class PostProcessingTask implements BackgroundTask {
+
+    public static final String POST_PROCESSING_LOCK = "post-processing-lock";
+
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
     private static final ConceptCache cache = EngineCacheProvider.getCache();
@@ -76,7 +79,7 @@ public class PostProcessingTask implements BackgroundTask {
         // Only try to run if enough time has passed
         if(timeElapsed > maxTimeLapse){
 
-            Lock engineLock = LockProvider.getLock();
+            Lock engineLock = LockProvider.getLock(POST_PROCESSING_LOCK);
 
             try {
 

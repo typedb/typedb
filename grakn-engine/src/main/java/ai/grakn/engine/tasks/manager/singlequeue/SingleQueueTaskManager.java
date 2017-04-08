@@ -48,6 +48,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
@@ -135,7 +136,8 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         EngineCacheProvider.init(EngineCacheDistributed.init(zookeeper));
-        LockProvider.init(new ZookeeperLock(zookeeper, LOCK));
+
+        LockProvider.add(POST_PROCESSING_LOCK, new ZookeeperLock(zookeeper, LOCK));
 
         LOG.debug("TaskManager started");
     }
@@ -170,7 +172,7 @@ public class SingleQueueTaskManager implements TaskManager {
         noThrow(zookeeper::close, "Error waiting for zookeeper connection to close");
 
         EngineCacheProvider.clearCache();
-        LockProvider.clearLock();
+        LockProvider.clear();
 
         LOG.debug("TaskManager closed");
     }

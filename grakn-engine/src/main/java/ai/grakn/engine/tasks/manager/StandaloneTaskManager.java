@@ -48,6 +48,7 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -87,7 +88,8 @@ public class StandaloneTaskManager implements TaskManager {
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
-        LockProvider.init(new ReentrantLock());
+
+        LockProvider.add(POST_PROCESSING_LOCK, new ReentrantLock());
     }
 
     public TaskManager open() {
@@ -100,7 +102,7 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService.shutdown();
         runningTasks.clear();
         EngineCacheProvider.clearCache();
-        LockProvider.clearLock();
+        LockProvider.clear();
     }
 
     @Override
