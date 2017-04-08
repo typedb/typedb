@@ -68,7 +68,7 @@ public class LockProviderTest {
     @Test
     public void whenGivenLockAfterInitialization_ThrowsRunttimeException(){
         Lock lock1 = new ReentrantLock();
-        Lock lock2 = new ReentrantLock();
+        Lock lock2 = new ZookeeperLock(mock(ZookeeperConnection.class), "/testlock");
 
         exception.expect(RuntimeException.class);
         exception.expectMessage("Lock class has already been initialised with another lock.");
