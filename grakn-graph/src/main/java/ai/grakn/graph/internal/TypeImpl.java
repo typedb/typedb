@@ -91,8 +91,10 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
         VertexProperty<Object> typeLabel = v.property(Schema.ConceptProperty.TYPE_LABEL.name());
         if(typeLabel.isPresent()) {
             cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.TYPE_LABEL.name()));
+            isShard(false);
         } else {
             cachedTypeLabel = TypeLabel.of("SHARDED TYPE"); //This is just a place holder it is never actually committed
+            isShard(true);
         }
     }
 
@@ -347,23 +349,26 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     @SuppressWarnings("unchecked")
     @Override
     public Collection<V> instances() {
-        Set<V> instances = new HashSet<>();
+        final Set<V> instances = new HashSet<>();
 
-        //noinspection unchecked
-        GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
-                .has(Schema.ConceptProperty.TYPE_LABEL.name(), getLabel().getValue())
-                .union(__.identity(),
-                        __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()
-                ).unfold()
-                .in(Schema.EdgeLabel.SHARD.getLabel())
-                .in(Schema.EdgeLabel.ISA.getLabel());
+        if(isShard()){
+            instances.addAll(this.<V>getIncomingNeighbours(Schema.EdgeLabel.ISA).collect(Collectors.toSet()));
+        } else {
+            GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
+                    .has(Schema.ConceptProperty.TYPE_LABEL.name(), getLabel().getValue())
+                    .union(__.identity(),
+                            __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()
+                    ).unfold()
+                    .in(Schema.EdgeLabel.SHARD.getLabel())
+                    .in(Schema.EdgeLabel.ISA.getLabel());
 
-        traversal.forEachRemaining(vertex -> {
-            ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
-            if(!concept.isCasting()){
-                instances.add((V) concept);
-            }
-        });
+            traversal.forEachRemaining(vertex -> {
+                ConceptImpl<Concept> concept = getGraknGraph().getElementFactory().buildConcept(vertex);
+                if (!concept.isCasting()) {
+                    instances.add((V) concept);
+                }
+            });
+        }
 
         return Collections.unmodifiableCollection(filterImplicitStructures(instances));
     }

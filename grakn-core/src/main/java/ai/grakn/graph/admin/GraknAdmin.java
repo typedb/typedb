@@ -167,7 +167,7 @@ public interface GraknAdmin {
      *
      * @param typeCounts The types and the changes to put on their counts
      */
-    void updateTypeCounts(Map<TypeLabel, Long> typeCounts);
+    void updateTypeShards(Map<TypeLabel, Long> typeCounts);
 
     /**
      *

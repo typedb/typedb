@@ -221,7 +221,7 @@ public class PostProcessingTest extends GraphTestBase{
         types.put(t2.getLabel(), 6L);
         types.put(t3.getLabel(), 2L);
 
-        graknGraph.admin().updateTypeCounts(types);
+        graknGraph.admin().updateTypeShards(types);
         types.entrySet().forEach(entry ->
                 assertEquals((long) entry.getValue(), ((TypeImpl) graknGraph.getType(entry.getKey())).getInstanceCount()));
 
@@ -229,7 +229,7 @@ public class PostProcessingTest extends GraphTestBase{
         types.put(t1.getLabel(), -5L);
         types.put(t2.getLabel(), -2L);
         types.put(t3.getLabel(), 3L);
-        graknGraph.admin().updateTypeCounts(types);
+        graknGraph.admin().updateTypeShards(types);
 
         assertEquals(0L, t1.getInstanceCount());
         assertEquals(4L, t2.getInstanceCount());

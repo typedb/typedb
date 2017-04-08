@@ -67,6 +67,7 @@ import java.util.stream.StreamSupport;
  *           For example an {@link EntityType}, {@link Entity}, {@link RelationType} etc . . .
  */
 abstract class ConceptImpl<T extends Concept> implements Concept {
+    private ComponentCache<Boolean> cachedIsShard = new ComponentCache<>(() -> getPropertyBoolean(Schema.ConceptProperty.IS_SHARD));
     private final AbstractGraknGraph graknGraph;
     private final ConceptId conceptId;
     private final Vertex vertex;
@@ -585,7 +586,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         shardVertex.addEdge(Schema.EdgeLabel.SHARD.getLabel(), getVertex());
 
         ConceptImpl shardConcept = getGraknGraph().buildConcept(shardVertex);
-        shardConcept.setProperty(Schema.ConceptProperty.IS_SHARD, true);
+        shardConcept.isShard(true);
         setProperty(Schema.ConceptProperty.CURRENT_SHARD, shardConcept.getId().getValue());
 
         //noinspection unchecked
@@ -605,6 +606,11 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
     }
 
     boolean isShard(){
-        return getPropertyBoolean(Schema.ConceptProperty.IS_SHARD);
+        return cachedIsShard.get();
+    }
+
+    void isShard(Boolean isShard){
+        if(isShard) setProperty(Schema.ConceptProperty.IS_SHARD, isShard);
+        cachedIsShard.set(isShard);
     }
 }

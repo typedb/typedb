@@ -13,6 +13,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.RuleType;
 import ai.grakn.concept.Type;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.util.ErrorMessage;
@@ -21,6 +22,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Veri
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -365,6 +368,48 @@ public class GraknGraphTest extends GraphTestBase {
         assertNotNull(exception);
         assertThat(exception, instanceOf(GraphRuntimeException.class));
         assertEquals(exception.getMessage(), ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(keyspace));
+    }
+
+    @Test
+    public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard(){
+        Map<TypeLabel, Long> counts = new HashMap<>();
+        EntityTypeImpl entityType = (EntityTypeImpl) graknGraph.putEntityType("The Special Type");
+        EntityType s1 = entityType.currentShard();
+
+        //Add 3 instances to first shard
+        Entity s1_e1 = entityType.addEntity();
+        Entity s1_e2 = entityType.addEntity();
+        Entity s1_e3 = entityType.addEntity();
+        counts.put(entityType.getLabel(), 200_000L); //Fake the creation of a super node
+
+        graknGraph.admin().updateTypeShards(counts); //Shard
+        EntityType s2 = entityType.currentShard();
+
+        //Add 5 instances to second shard
+        Entity s2_e1 = entityType.addEntity();
+        Entity s2_e2 = entityType.addEntity();
+
+        counts.put(entityType.getLabel(), 90_000L);
+        graknGraph.admin().updateTypeShards(counts); //Don't Shard because we not near super nodes
+
+        Entity s2_e3 = entityType.addEntity();
+        Entity s2_e4 = entityType.addEntity();
+        Entity s2_e5 = entityType.addEntity();
+
+        graknGraph.admin().updateTypeShards(counts); //Shard Again
+        EntityType s3 = entityType.currentShard();
+
+        //Add 2 instances to 3rd shard
+        Entity s3_e1 = entityType.addEntity();
+        Entity s3_e2 = entityType.addEntity();
+
+        //Check Type was sharded correctly
+        assertThat(entityType.shards(), containsInAnyOrder(s1, s2, s3));
+
+        //Check shards have correct instances
+        assertThat(s1.instances(), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
+        assertThat(s2.instances(), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
+        assertThat(s3.instances(), containsInAnyOrder(s3_e1, s3_e2));
     }
 
     @Test

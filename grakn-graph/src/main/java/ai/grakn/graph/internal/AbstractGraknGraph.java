@@ -101,6 +101,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
 
+    //TODO: Make this a config option
+    private final long shardingFactor = 100_000;
+
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
@@ -1071,11 +1074,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void updateTypeCounts(Map<TypeLabel, Long> typeCounts){
+    public void updateTypeShards(Map<TypeLabel, Long> typeCounts){
        typeCounts.entrySet().forEach(entry -> {
            if(entry.getValue() != 0) {
                TypeImpl type = getType(entry.getKey());
-               type.setInstanceCount(type.getInstanceCount() + entry.getValue());
+
+               long newValue = type.getInstanceCount() + entry.getValue();
+               if(newValue < shardingFactor) {
+                   type.setInstanceCount(type.getInstanceCount() + entry.getValue());
+               } else {
+                   //TODO: Maintain the count properly. We reset so we can split with simpler logic
+                   type.setInstanceCount(0L);
+                   type.createShard();
+               }
            }
        });
     }
