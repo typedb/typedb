@@ -34,7 +34,7 @@ public class LockProvider {
     private LockProvider(){}
 
     public static void init(Lock providedLock){
-        if(lock != null){
+        if(lock != null && !lock.getClass().equals(lock.getClass())){
             throw new RuntimeException("Lock class has already been initialised with another lock.");
         }
 
