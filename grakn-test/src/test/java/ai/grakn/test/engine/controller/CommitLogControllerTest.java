@@ -81,7 +81,7 @@ public class CommitLogControllerTest {
 
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
 
-        baseURI = "http://localhost:4567";
+        baseURI = "http://localhost:" + PORT;
         spark = Service.ignite();
         configureSpark(spark, PORT);
 
