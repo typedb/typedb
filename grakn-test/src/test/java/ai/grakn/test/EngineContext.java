@@ -23,7 +23,6 @@ import ai.grakn.GraknSession;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.manager.multiqueue.MultiQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import org.junit.rules.ExternalResource;
@@ -46,32 +45,26 @@ public class EngineContext extends ExternalResource {
     private GraknEngineServer server;
 
     private final boolean startKafka;
-    private final boolean startMultiQueueEngine;
     private final boolean startSingleQueueEngine;
     private final boolean startStandaloneEngine;
     private int port = 4567;
 
-    private EngineContext(boolean startKafka, boolean startMultiQueueEngine, boolean startSingleQueueEngine, boolean startStandaloneEngine){
-        this.startMultiQueueEngine = startMultiQueueEngine;
+    private EngineContext(boolean startKafka, boolean startSingleQueueEngine, boolean startStandaloneEngine){
         this.startSingleQueueEngine = startSingleQueueEngine;
         this.startStandaloneEngine = startStandaloneEngine;
         this.startKafka = startKafka;
     }
 
     public static EngineContext startKafkaServer(){
-        return new EngineContext(true, false, false, false);
-    }
-
-    public static EngineContext startMultiQueueServer(){
-        return new EngineContext(true, true, false, false);
+        return new EngineContext(true, false, false);
     }
 
     public static EngineContext startSingleQueueServer(){
-        return new EngineContext(true, false, true, false);
+        return new EngineContext(true, true, false);
     }
 
     public static EngineContext startInMemoryServer(){
-        return new EngineContext(false, false, false, true);
+        return new EngineContext(false, false, true);
     }
 
     public EngineContext port(int port) {
@@ -101,11 +94,6 @@ public class EngineContext extends ExternalResource {
             server = startEngine(SingleQueueTaskManager.class.getName(), port);
         }
 
-        if (startMultiQueueEngine){
-            //TODO: This patch should die when we get rid of MultiQueueTaskManager
-            if(startSingleQueueEngine) server = startEngine(MultiQueueTaskManager.class.getName(), port);
-        }
-
         if (startStandaloneEngine){
             server = startEngine(StandaloneTaskManager.class.getName(), port);
         }
@@ -116,7 +104,7 @@ public class EngineContext extends ExternalResource {
         noThrow(MockBackgroundTask::clearTasks, "Error clearing tasks");
 
         try {
-            if(startMultiQueueEngine | startSingleQueueEngine | startStandaloneEngine){
+            if(startSingleQueueEngine | startStandaloneEngine){
                 noThrow(() -> stopEngine(server), "Error closing engine");
             }
 
