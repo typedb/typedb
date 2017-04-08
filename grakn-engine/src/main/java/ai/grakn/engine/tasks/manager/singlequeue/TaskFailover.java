@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ALL_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.stream.Collectors.toSet;
@@ -143,7 +143,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
 
             if (!engineIds.contains(task.engineID())) {
                 LOG.debug("Engine {} stopped, task {} requeued", task.engineID(), task.getId());
-                producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, task.getId(), task));
+                producer.send(new ProducerRecord<>(HIGH_PRIORITY_TASKS_TOPIC, task.getId(), task));
                 producer.flush();
             }
         }

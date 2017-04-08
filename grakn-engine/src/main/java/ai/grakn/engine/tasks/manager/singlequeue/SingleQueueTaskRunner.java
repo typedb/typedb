@@ -43,6 +43,7 @@ import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.time.Duration.between;
 import static java.time.Instant.now;
@@ -56,8 +57,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
-    private final Consumer<TaskId, TaskState> consumer;
-    private final Consumer<TaskId, TaskState> recurringConsumer;
+    private final Consumer<TaskId, TaskState> highPriorityConsumer;
+    private final Consumer<TaskId, TaskState> lowPriorityConsumer;
     private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
     private final ExternalOffsetStorage offsetStorage;
@@ -85,8 +86,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff){
         this.manager = manager;
         this.storage = manager.storage();
-        this.consumer = manager.newConsumer();
-        this.recurringConsumer = manager.newRecurringConsumer();
+        this.highPriorityConsumer = manager.newHighPriorityConsumer();
+        this.lowPriorityConsumer = manager.newLowPriorityConsumer();
         this.engineID = engineID;
         this.offsetStorage = offsetStorage;
         this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
@@ -117,8 +118,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             try {
                 // Reading from both the regular consumer and recurring consumer every time means that we will handle
                 // recurring tasks regularly, even if there are lots of non-recurring tasks to process.
-                readRecords(consumer);
-                readRecords(recurringConsumer);
+                readRecords(highPriorityConsumer);
+                readRecords(lowPriorityConsumer);
 
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
                 long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
@@ -150,8 +151,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void close() throws Exception {
         wakeUp.set(true);
         noThrow(countDownLatch::await, "Error waiting for the TaskRunner loop to finish");
-        noThrow(consumer::close, "Error closing the task runner");
-        noThrow(recurringConsumer::close, "Error closing the task runner");
+        noThrow(highPriorityConsumer::close, "Error closing the task runner");
+        noThrow(lowPriorityConsumer::close, "Error closing the task runner");
     }
 
     /**
@@ -173,7 +174,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
         for (ConsumerRecord<TaskId, TaskState> record : records) {
             TaskState task = record.value();
-            boolean handled = handleTask(task);
+            boolean handled = handleTask(task, record.topic());
 
             if (handled) {
                 timeTaskLastHandled = now();
@@ -188,14 +189,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Returns whether the task was succesfully handled, or was just re-submitted.
      */
-    private boolean handleTask(TaskState task) {
+    private boolean handleTask(TaskState task, String priority) {
         LOG.debug("{}\treceived", task);
 
         if (shouldStopTask(task)) {
             stopTask(task);
             return true;
         } else if(shouldDelayTask(task)){
-            resubmitTask(task);
+            resubmitTask(task, priority);
             return false;
         } else if (shouldExecuteTask(task)) {
             executeTask(task);
@@ -203,7 +204,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             if(taskShouldRecur(task)){
                 // re-schedule
                 task.schedule(task.schedule().incrementByInterval());
-                resubmitTask(task);
+                resubmitTask(task, priority);
             }
 
             return true;
@@ -260,9 +261,13 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * to be executed
      * @param task Task to be delayed
      */
-    private void resubmitTask(TaskState task){
-        manager.addTask(task);
-        LOG.debug("{}\tresubmitted", task);
+    private void resubmitTask(TaskState task, String priority){
+        if(priority.equals(HIGH_PRIORITY_TASKS_TOPIC)){
+            manager.addHighPriorityTask(task);
+        } else {
+            manager.addLowPriorityTask(task);
+        }
+        LOG.debug("{}\tresubmitted with {}", task, priority);
     }
 
     private void stopTask(TaskState task) {

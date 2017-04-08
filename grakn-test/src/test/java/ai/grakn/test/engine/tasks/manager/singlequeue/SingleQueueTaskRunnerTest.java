@@ -114,8 +114,8 @@ public class SingleQueueTaskRunnerTest {
     private SingleQueueTaskManager mockedTM;
     private ExternalOffsetStorage offsetStorage;
 
-    private MockGraknConsumer<TaskId, TaskState> consumer;
-    private MockGraknConsumer<TaskId, TaskState> recurringConsumer;
+    private MockGraknConsumer<TaskId, TaskState> lowPriorityConsumer;
+    private MockGraknConsumer<TaskId, TaskState> highPriorityConsumer;
     private TopicPartition partition;
 
     @Before
@@ -124,24 +124,24 @@ public class SingleQueueTaskRunnerTest {
 
         storage = new TaskStateInMemoryStore();
         offsetStorage = mock(ExternalOffsetStorage.class);
-        consumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
+        lowPriorityConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
-        partition = new TopicPartition("hi", 0);
+        partition = new TopicPartition("low-priority", 0);
 
-        consumer.assign(ImmutableSet.of(partition));
-        consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
-        consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
+        lowPriorityConsumer.assign(ImmutableSet.of(partition));
+        lowPriorityConsumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
+        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
 
-        recurringConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
+        highPriorityConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
         mockedTM = mock(SingleQueueTaskManager.class);
         when(mockedTM.storage()).thenReturn(storage);
-        when(mockedTM.newConsumer()).thenReturn(consumer);
-        when(mockedTM.newRecurringConsumer()).thenReturn(recurringConsumer);
+        when(mockedTM.newHighPriorityConsumer()).thenReturn(lowPriorityConsumer);
+        when(mockedTM.newLowPriorityConsumer()).thenReturn(highPriorityConsumer);
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
-        }).when(mockedTM).addTask(Mockito.any());
+        }).when(mockedTM).addLowPriorityTask(Mockito.any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
@@ -150,10 +150,10 @@ public class SingleQueueTaskRunnerTest {
         createValidQueue(tasks);
 
         for (List<TaskState> taskList : tasks) {
-            consumer.schedulePollTask(() -> taskList.forEach(this::addTask));
+            lowPriorityConsumer.schedulePollTask(() -> taskList.forEach(this::addTask));
         }
 
-        consumer.scheduleEmptyPollTask(() -> {
+        lowPriorityConsumer.scheduleEmptyPollTask(() -> {
             Thread closeTaskRunner = new Thread(() -> {
                 try {
                     taskRunner.close();
@@ -188,9 +188,9 @@ public class SingleQueueTaskRunnerTest {
     }
 
     private void addTask(TaskState task) {
-        Long offset = consumer.endOffsets(ImmutableSet.of(partition)).get(partition);
-        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task.copy()));
-        consumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
+        Long offset = lowPriorityConsumer.endOffsets(ImmutableSet.of(partition)).get(partition);
+        lowPriorityConsumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task.copy()));
+        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
     }
 
     @Property(trials=10)

@@ -43,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
@@ -63,7 +62,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testRunSingle() {
         TaskState task = createTask();
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         // Wait for task to be executed.
         waitToFinish(task.getId());
@@ -92,7 +91,7 @@ public class StandaloneTaskManagerTest {
         List<TaskId> ids = new ArrayList<>();
         for (int i = 0; i < 100000; i++) {
             TaskState task = createTask();
-            taskManager.addTask(task);
+            taskManager.addLowPriorityTask(task);
             ids.add(task.getId());
         }
 
@@ -118,7 +117,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testRunRecurring() throws Exception {
         TaskState task = createTask(ShortExecutionMockTask.class, recurring(now().plusSeconds(10), Duration.ofSeconds(100)));
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         Thread.sleep(2000);
 
@@ -131,7 +130,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testStopSingle() {
         TaskState task = createTask(ShortExecutionMockTask.class, at(now().plusSeconds(10)));
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();
         assertTrue(status == CREATED || status == RUNNING);

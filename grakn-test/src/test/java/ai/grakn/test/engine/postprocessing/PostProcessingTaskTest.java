@@ -32,7 +32,6 @@ import org.junit.Test;
 import java.util.Date;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static java.time.Instant.now;
@@ -46,7 +45,7 @@ public class PostProcessingTaskTest {
     @Test
     public void testStart() throws Exception {
         TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         // Wait for supervisor thread to mark task as completed
         final long initial = new Date().getTime();
@@ -65,7 +64,7 @@ public class PostProcessingTaskTest {
     @Test
     public void testStop() {
         TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
         taskManager.stopTask(task.getId());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());
     }

@@ -33,6 +33,9 @@ import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -41,14 +44,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
@@ -59,10 +61,12 @@ import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTask
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -97,7 +101,7 @@ public class SingleQueueTaskManagerTest {
 
     @Property(trials=10)
     public void afterSubmitting_AllTasksAreCompleted(List<@NewTask TaskState> tasks){
-        tasks.forEach(taskManager::addTask);
+        tasks.forEach(taskManager::addLowPriorityTask);
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 
         assertEquals(completableTasks(tasks), completedTasks());
@@ -108,7 +112,7 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(@NewTask TaskState task) {
         taskManager.stopTask(task.getId());
 
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -120,7 +124,7 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(@NewTask TaskState task) {
         taskManager.stopTask(task.getId());
 
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -132,7 +136,7 @@ public class SingleQueueTaskManagerTest {
             @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> taskManager.stopTask(id));
 
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -145,7 +149,7 @@ public class SingleQueueTaskManagerTest {
             @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> taskManager.stopTask(id));
 
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -156,7 +160,7 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(@NewTask TaskState task) {
         whenTaskFinishes(id -> taskManager.stopTask(id));
 
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -167,12 +171,31 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(@NewTask TaskState task) {
         whenTaskFinishes(id -> taskManager.stopTask(id));
 
-        taskManager.addTask(task);
+        taskManager.addLowPriorityTask(task);
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
         assertStatus(task, COMPLETED, FAILED);
     }
+
+    @Test
+    public void whenRunningHighPriorityTaskAndManyLowPriorityTasks_TheHighPriorityRunsFirst() throws InterruptedException {
+        List<TaskState> manyTasks = Stream.generate(BackgroundTaskTestUtils::createTask).limit(100).collect(toList());
+
+        TaskState highPriorityTask = createTask(ShortExecutionMockTask.class, now());
+
+        manyTasks.forEach(taskManager::addLowPriorityTask);
+        taskManager.addHighPriorityTask(highPriorityTask);
+
+        waitForDoneStatus(taskManager.storage(), ImmutableList.of(highPriorityTask));
+        waitForDoneStatus(taskManager.storage(), manyTasks);
+
+        Instant highPriorityCompletedAt = taskManager.storage().getState(highPriorityTask.getId()).statusChangeTime();
+        manyTasks.forEach(t -> {
+            assertThat(highPriorityCompletedAt, lessThanOrEqualTo(taskManager.storage().getState(t.getId()).statusChangeTime()));
+        });
+    }
+
 
     @Test
     public void whenRunningARecurringTaskAndManyOtherTasks_TheRecurringTaskRunsRegularly() throws InterruptedException {
@@ -195,8 +218,8 @@ public class SingleQueueTaskManagerTest {
             }
         });
 
-        manyTasks.forEach(taskManager::addTask);
-        taskManager.addTask(recurringTask);
+        manyTasks.forEach(taskManager::addLowPriorityTask);
+        taskManager.addHighPriorityTask(recurringTask);
 
         Thread.sleep(sleepDur.toMillis());
 

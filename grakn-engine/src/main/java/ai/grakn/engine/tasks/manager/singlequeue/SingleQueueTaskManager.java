@@ -48,8 +48,8 @@ import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
-import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.RECURRING_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
@@ -176,15 +176,17 @@ public class SingleQueueTaskManager implements TaskManager {
      * @param taskState Task to execute
      */
     @Override
-    public void addTask(TaskState taskState){
-        String topic;
-        if (taskState.schedule().isRecurring()) {
-            topic = RECURRING_TASKS_TOPIC;
-        } else {
-            topic = NEW_TASKS_TOPIC;
-        }
-        producer.send(new ProducerRecord<>(topic, taskState.getId(), taskState));
-        producer.flush();
+    public void addLowPriorityTask(TaskState taskState){
+        sendTask(taskState, LOW_PRIORITY_TASKS_TOPIC);
+    }
+
+    /**
+     * Create an instance of a task based on the given parameters and submit it a Kafka queue.
+     * @param taskState Task to execute
+     */
+    @Override
+    public void addHighPriorityTask(TaskState taskState){
+        sendTask(taskState, HIGH_PRIORITY_TASKS_TOPIC);
     }
 
     /**
@@ -214,21 +216,21 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Get a new kafka consumer listening on the new tasks topic
      */
-    public Consumer<TaskId, TaskState> newConsumer(){
-        return newConsumer(NEW_TASKS_TOPIC);
+    public Consumer<TaskId, TaskState> newHighPriorityConsumer(){
+        return newHighPriorityConsumer(HIGH_PRIORITY_TASKS_TOPIC);
     }
 
     /**
      * Get a new kafka consumer listening on the recurring tasks topic
      */
-    public Consumer<TaskId, TaskState> newRecurringConsumer(){
-        return newConsumer(RECURRING_TASKS_TOPIC);
+    public Consumer<TaskId, TaskState> newLowPriorityConsumer(){
+        return newHighPriorityConsumer(LOW_PRIORITY_TASKS_TOPIC);
     }
 
     /**
      * Get a new kafka consumer listening on the given topic
      */
-    private Consumer<TaskId, TaskState> newConsumer(String topic){
+    private Consumer<TaskId, TaskState> newHighPriorityConsumer(String topic){
         Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP + "-" + topic);
         consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;
@@ -241,6 +243,16 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     boolean isTaskMarkedStopped(TaskId taskId) {
         return stoppedTasks.getCurrentData(format(TASKS_STOPPED, taskId)) != null;
+    }
+
+    /**
+     * Serialize and send the given task to the given kafka queue
+     * @param taskState Task to send to kafka
+     * @param topic Queue to which to send the task
+     */
+    private void sendTask(TaskState taskState, String topic){
+        producer.send(new ProducerRecord<>(topic, taskState.getId(), taskState));
+        producer.flush();
     }
 
     /**
