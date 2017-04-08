@@ -34,7 +34,9 @@ import com.jayway.restassured.response.Response;
 import com.jayway.restassured.specification.RequestSpecification;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import spark.Service;
 
 import java.io.IOException;
@@ -42,13 +44,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 
+import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
-
-import static ai.grakn.engine.GraknEngineServer.configureSpark;
-import static ai.grakn.util.REST.Request.*;
+import static ai.grakn.util.REST.Request.ID_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_CREATOR_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_AT_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_RUN_INTERVAL_PARAMETER;
+import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
 import static ai.grakn.util.REST.WebPath.Tasks.GET;
 import static ai.grakn.util.REST.WebPath.Tasks.TASKS;
 import static com.jayway.restassured.RestAssured.with;
@@ -59,7 +65,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class TasksControllerTest {
     private static final int PORT = 4567;
@@ -357,7 +366,7 @@ public class TasksControllerTest {
         return with().get(String.format("http://%s%s", URI, GET.replace(ID_PARAMETER, taskId.getValue())));
     }
 
-    private class JsonMapper implements ObjectMapper{
+    public static class JsonMapper implements ObjectMapper{
 
         @Override
         public Object deserialize(ObjectMapperDeserializationContext objectMapperDeserializationContext) {

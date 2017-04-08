@@ -31,7 +31,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                 <div class="dd-item" v-for="(query,index) in favouriteQueries">
                     <div class="full-query">
                         <span class="list-key"> {{query.name}}</span>
-                        <span class="tooltiptext"> {{query.value}}</span>
                     </div>
                     <div class="line-buttons">
                         <button class="btn bold" @click="emitTypeQuery(query.value)">USE</button>
@@ -145,10 +144,6 @@ a {
 
 
 /* Show the tooltip text when you mouse over the tooltip container */
-
-.list-key:hover~.tooltiptext {
-    visibility: visible;
-}
 
 .full-query {
     display: inline-flex;
