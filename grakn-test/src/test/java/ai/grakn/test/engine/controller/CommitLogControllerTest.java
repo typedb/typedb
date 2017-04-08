@@ -28,6 +28,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
@@ -54,12 +55,15 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static com.jayway.restassured.RestAssured.baseURI;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class CommitLogControllerTest {
@@ -75,11 +79,13 @@ public class CommitLogControllerTest {
     public static void setupControllers() throws Exception {
         ensureCassandraRunning();
 
-        RestAssured.baseURI = "http://localhost:4567";
+        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
+
+        baseURI = "http://localhost:4567";
         spark = Service.ignite();
         configureSpark(spark, PORT);
 
-        manager = spy(new StandaloneTaskManager(EngineID.me()));
+        manager = mock(TaskManager.class);
 
         new CommitLogController(spark, manager);
         new SystemController(spark);
@@ -103,6 +109,7 @@ public class CommitLogControllerTest {
         }
 
         manager.close();
+        EngineCacheProvider.clearCache();
     }
 
     @Before
@@ -242,19 +249,21 @@ public class CommitLogControllerTest {
         addSomeData(bob);
         addSomeData(tim);
 
-        verify(manager, atLeastOnce()).addTask(argThat(argument ->
-                argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
-                argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
+        try {
+            verify(manager, atLeastOnce()).addTask(argThat(argument ->
+                    argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
+                            argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
 
-        verify(manager, atLeastOnce()).addTask(argThat(argument ->
-                argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
-                argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
+            verify(manager, atLeastOnce()).addTask(argThat(argument ->
+                    argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
+                            argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
+        } finally {
+            Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE).clear();
+            Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTxType.WRITE).clear();
 
-        Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE).clear();
-        Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTxType.WRITE).clear();
-
-        bob.close();
-        tim.close();
+            bob.close();
+            tim.close();
+        }
     }
 
     @Test
