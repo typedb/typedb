@@ -83,6 +83,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
             } catch (Throwable e) {
                 LOG.warn("Unable to updating instance counts of graph [" + keyspace + "]", e);
                 if(retry > 10){
+                    //TODO Resubmit this task somehow, so as not to lose counts
                     throw new RuntimeException("Failed 10 times in a row to update the counts of the types on graph [" + keyspace + "] giving up");
                 } else {
                     retry = performRetry(retry);
