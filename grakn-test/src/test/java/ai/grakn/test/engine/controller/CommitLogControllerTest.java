@@ -51,6 +51,7 @@ import java.util.UUID;
 import spark.Service;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
+import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.delete;
@@ -71,7 +72,9 @@ public class CommitLogControllerTest {
     private static TaskManager manager;
 
     @BeforeClass
-    public static void setupControllers(){
+    public static void setupControllers() throws Exception {
+        ensureCassandraRunning();
+
         RestAssured.baseURI = "http://localhost:4567";
         spark = Service.ignite();
         configureSpark(spark, PORT);
