@@ -19,9 +19,12 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -29,6 +32,8 @@ import ai.grakn.util.Schema;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import javax.ws.rs.DELETE;
+import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -40,6 +45,9 @@ import spark.Service;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
  *
@@ -49,13 +57,17 @@ public class CommitLogController {
     private final ConceptCache cache = EngineCacheProvider.getCache();
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
-    public CommitLogController(Service spark){
+    private final TaskManager manager;
+
+    public CommitLogController(Service spark, TaskManager manager){
+        this.manager = manager;
+
         spark.post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
         spark.delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }
 
 
-    @GET
+    @DELETE
     @Path("/commit_log")
     @ApiOperation(value = "Delete all the post processing jobs for a specific keyspace")
     @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
@@ -79,15 +91,15 @@ public class CommitLogController {
     @ApiImplicitParams({
         @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path"),
         @ApiImplicitParam(name = REST.Request.COMMIT_LOG_FIXING, value = "A Json Array of IDs representing concepts to be post processed", required = true, dataType = "string", paramType = "body"),
-        @ApiImplicitParam(name = REST.Request.COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
+        @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
-        String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        String keyspace = req.queryParams(REST.Request.KEYSPACE_PARAM);
 
-        if (graphName == null) {
-            graphName = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
+        if (keyspace == null) {
+            keyspace = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
         }
-        LOG.info("Commit log received for graph [" + graphName + "]");
+        LOG.info("Commit log received for graph [" + keyspace + "]");
 
         //Jobs to Fix
         JSONArray conceptsToFix = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_FIXING);
@@ -100,10 +112,10 @@ public class CommitLogController {
 
             switch (type) {
                 case CASTING:
-                    cache.addJobCasting(graphName, conceptIndex, ConceptId.of(conceptVertexId));
+                    cache.addJobCasting(keyspace, conceptIndex, ConceptId.of(conceptVertexId));
                     break;
                 case RESOURCE:
-                    cache.addJobResource(graphName, conceptIndex, ConceptId.of(conceptVertexId));
+                    cache.addJobResource(keyspace, conceptIndex, ConceptId.of(conceptVertexId));
                     break;
                 default:
                     LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptVertexId, type.name()));
@@ -111,14 +123,15 @@ public class CommitLogController {
         }
 
         //Instances to count
-        JSONArray instancesToCount = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_COUNTING);
-        for (Object object : instancesToCount) {
-            JSONObject jsonObject = (JSONObject) object;
-            TypeLabel name = TypeLabel.of(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE_NAME));
-            Long value = jsonObject.getLong(REST.Request.COMMIT_LOG_INSTANCE_COUNT);
-            cache.addJobInstanceCount(graphName, name, value);
-        }
+        Json configuration = Json.object();
+        configuration.set(KEYSPACE, keyspace);
+        configuration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
-        return "Graph [" + graphName + "] now has [" + cache.getNumJobs(graphName) + "] post processing jobs";
+        TaskState task = TaskState.of(
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), configuration);
+
+        manager.addTask(task);
+
+        return "Graph [" + keyspace + "] now has [" + cache.getNumJobs(keyspace) + "] post processing jobs";
     }
 }

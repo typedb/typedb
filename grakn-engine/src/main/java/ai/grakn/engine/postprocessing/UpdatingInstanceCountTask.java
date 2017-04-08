@@ -22,19 +22,22 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.ErrorMessage;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * <p>
@@ -49,19 +52,24 @@ import java.util.function.Consumer;
  */
 public class UpdatingInstanceCountTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
-    private ConceptCache cache = EngineCacheProvider.getCache();
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
-        cache.getKeyspaces().parallelStream().forEach(this::updateCountsOnKeySpace);
+        String keyspace = configuration.at(KEYSPACE).asString();
+        Json instancesToCount = configuration.at(COMMIT_LOG_COUNTING);
+
+        Map<TypeLabel, Long> instanceMap = instancesToCount
+                .asJsonList().stream()
+                .collect(toMap(
+                        e -> TypeLabel.of(e.at(COMMIT_LOG_TYPE_NAME).asString()),
+                        e -> e.at(COMMIT_LOG_INSTANCE_COUNT).asLong()));
+
+        updateCountsOnKeySpace(keyspace, instanceMap);
+
         return true;
     }
 
-    private void updateCountsOnKeySpace(String keyspace){
-        Map<TypeLabel, Long> jobs = new HashMap<>(cache.getInstanceCountJobs(keyspace));
-        //Clear the cache optimistically because we think we going to update successfully
-        jobs.forEach((key, value) -> cache.deleteJobInstanceCount(keyspace, key));
-
+    private void updateCountsOnKeySpace(String keyspace, Map<TypeLabel, Long> jobs){
         //TODO: All this boiler plate retry should be moved into a common graph mutating background task
 
         boolean notDone = true;
@@ -73,10 +81,9 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
                 graknGraph.admin().updateTypeCounts(jobs);
                 graknGraph.admin().commitNoLogs();
             } catch (Throwable e) {
-                LOG.error("Unable to updating instance counts of graph [" + keyspace + "]", e);
+                LOG.warn("Unable to updating instance counts of graph [" + keyspace + "]", e);
                 if(retry > 10){
-                    LOG.error("Failed 10 times in a row to update the counts of the types on graph [" + keyspace + "] giving up");
-                    jobs.forEach((key, value) -> cache.addJobInstanceCount(keyspace, key, value));
+                    throw new RuntimeException("Failed 10 times in a row to update the counts of the types on graph [" + keyspace + "] giving up");
                 } else {
                     retry = performRetry(retry);
                     notDone = true;

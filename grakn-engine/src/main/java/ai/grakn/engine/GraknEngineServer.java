@@ -135,9 +135,9 @@ public class GraknEngineServer implements AutoCloseable {
         new ConceptController(factory, spark);
         new DashboardController(factory, spark);
         new SystemController(spark);
-        new CommitLogController(spark);
         new AuthController(spark);
         new UserController(spark);
+        new CommitLogController(spark, taskManager);
         new TasksController(spark, taskManager);
 
         // This method will block until all the controllers are ready to serve requests
