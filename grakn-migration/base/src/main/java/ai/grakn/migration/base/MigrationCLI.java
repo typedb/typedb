@@ -64,7 +64,7 @@ public class MigrationCLI {
     public static <T extends MigrationOptions> List<Optional<T>> init(String[] args, Function<String[], T> constructor) {
 
         // get the options from the command line
-        T baseOptions = constructor.apply(args).parse(args);
+        T baseOptions = constructor.apply(args);
 
         // if there is configuration, create multiple options objects from the config
         if(baseOptions.getConfiguration() != null){
