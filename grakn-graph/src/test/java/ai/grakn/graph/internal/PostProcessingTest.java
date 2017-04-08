@@ -119,7 +119,7 @@ public class PostProcessingTest extends GraphTestBase{
 
     @Test
     public void whenMergingDuplicateResources_EnsureSingleResourceRemains(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
 
         //Create fake resources
         Set<ConceptId> resourceIds = new HashSet<>();
@@ -143,7 +143,7 @@ public class PostProcessingTest extends GraphTestBase{
         RoleType roleEntity = graknGraph.putRoleType("Entity Role");
         RoleType roleResource = graknGraph.putRoleType("Resource Role");
         RelationType relationType = graknGraph.putRelationType("Relation Type").relates(roleEntity).relates(roleResource);
-        ResourceType<String> resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
+        ResourceTypeImpl<String> resourceType = (ResourceTypeImpl<String>) graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING).plays(roleResource);
         EntityType entityType = graknGraph.putEntityType("Entity Type").plays(roleEntity);
         Entity e1 = entityType.addEntity();
         Entity e2 = entityType.addEntity();
@@ -196,11 +196,11 @@ public class PostProcessingTest extends GraphTestBase{
     }
 
 
-    private ResourceImpl<String> createFakeResource(ResourceType<String> type, String value){
+    private ResourceImpl<String> createFakeResource(ResourceTypeImpl<String> type, String value){
         String index = Schema.generateResourceIndex(type.getLabel(), value);
         Vertex resourceVertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
-        resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type).getVertex());
+        resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type.currentShard()).getVertex());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(), index);
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
