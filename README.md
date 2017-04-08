@@ -9,7 +9,7 @@
 
 Copyright (C) 2016  Grakn Labs Limited.  
 
-### Version 0.11.0
+### Version 0.12.0 ( 7 April 2017)
 
 For release notes, please see our separate changelog file.   
 
