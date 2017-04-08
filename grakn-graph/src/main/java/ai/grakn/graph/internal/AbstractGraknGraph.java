@@ -231,10 +231,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             inferenceRuleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), ruleType);
             constraintRuleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), ruleType);
 
+            //Manual creation of shards on meta types which have instances
+            createMetaShard(inferenceRuleType, Schema.BaseType.RULE_TYPE);
+            createMetaShard(constraintRuleType, Schema.BaseType.RULE_TYPE);
+
             return true;
         }
 
         return false;
+    }
+    private void createMetaShard(Vertex metaNode, Schema.BaseType baseType){
+        Vertex metaShard = addVertex(Schema.BaseType.RULE_TYPE);
+        metaShard.addEdge(Schema.EdgeLabel.SHARD.getLabel(), metaNode);
+        metaShard.property(Schema.ConceptProperty.IS_SHARD.name(), true);
+        metaNode.property(Schema.ConceptProperty.CURRENT_SHARD.name(), metaShard.id().toString());
     }
 
     private boolean isMetaOntologyNotInitialised(){
@@ -425,14 +435,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         checkOntologyMutation();
         TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
 
+        T finalType = validateConceptType(type, baseType, () -> {
+            throw new ConceptNotUniqueException(type, label.getValue());
+        });
+
         //Automatic shard creation - If this type does not have a shard create one
-        if(!type.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
+        if(!Schema.MetaSchema.isMetaLabel(label) &&
+                !type.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
             type.createShard();
         }
 
-        return validateConceptType(type, baseType, () -> {
-            throw new ConceptNotUniqueException(type, label.getValue());
-        });
+        return finalType;
     }
 
     private <T extends Concept> T validateConceptType(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler){
@@ -652,7 +665,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //-----------------------------------------------Casting Functionality----------------------------------------------
     //------------------------------------ Construction
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
+        CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role.currentShard()).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
             castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());

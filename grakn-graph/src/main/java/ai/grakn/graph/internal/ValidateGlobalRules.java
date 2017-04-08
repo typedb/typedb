@@ -28,7 +28,6 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.graql.Pattern;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -186,7 +185,7 @@ class ValidateGlobalRules {
      * @return An error message if the conceptType  abstract and has incoming isa edges
      */
     static Optional<String> validateIsAbstractHasNoIncomingIsaEdges(TypeImpl conceptType){
-        if(conceptType.isAbstract() && conceptType.getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext()){
+        if(conceptType.isAbstract() && ((TypeImpl) conceptType.currentShard()).getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent())  {
             return Optional.of(VALIDATION_IS_ABSTRACT.getMessage(conceptType.getLabel()));
         }
         return Optional.empty();

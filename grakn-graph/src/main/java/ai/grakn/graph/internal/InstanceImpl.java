@@ -246,8 +246,8 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     protected T type(V type) {
         if(type != null){
-            setInternalType(type.getLabel());
             putEdge(type, Schema.EdgeLabel.ISA);
+            setInternalType(type().getLabel());
         }
         return getThis();
     }

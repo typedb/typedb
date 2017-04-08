@@ -51,7 +51,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
         super(graknGraph, v, type);
         setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs, getLHS(), Pattern::toString);
         setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs, getRHS(), Pattern::toString);
-        setUniqueProperty(Schema.ConceptProperty.INDEX, generateRuleIndex(type, lhs, rhs));
+        setUniqueProperty(Schema.ConceptProperty.INDEX, generateRuleIndex(type(), lhs, rhs));
     }
 
     /**

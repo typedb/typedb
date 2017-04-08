@@ -596,6 +596,7 @@ abstract class ConceptImpl<T extends Concept> implements Concept {
         return this.<T>getIncomingNeighbours(Schema.EdgeLabel.SHARD).collect(Collectors.toSet());
     }
 
+    //TODO: Return implementation rather than interface
     T currentShard(){
         String currentShardId = getProperty(Schema.ConceptProperty.CURRENT_SHARD);
         if(currentShardId == null) throw new ConceptException(ErrorMessage.CONCEPT_HAS_NO_SHARD.getMessage(this));
