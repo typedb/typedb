@@ -175,29 +175,6 @@ public class EngineCacheTest {
         checkContentsOfCache(cache.getResourceJobs(keyspace2), key2_resourcesFake);
     }
 
-    @Theory
-    public void whenAddingAndRemovingInstanceJobsToCache_CacheIsUpdated(Caches caches){
-        ConceptCache cache = getCache(caches);
-        String keyspace1 = "key1";
-
-        //Create fake commit log
-        Map<TypeLabel, Long> fakeCache = new HashMap<>();
-        fakeCache.put(TypeLabel.of("A"), 1L);
-        fakeCache.put(TypeLabel.of("B"), 2L);
-        fakeCache.put(TypeLabel.of("C"), 3L);
-
-        fakeCache.entrySet().forEach(entry -> cache.addJobInstanceCount(keyspace1, entry.getKey(), entry.getValue()));
-
-        assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
-        fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));
-
-        fakeCache.remove(TypeLabel.of("B"));
-        cache.deleteJobInstanceCount(keyspace1, TypeLabel.of("B"));
-
-        assertEquals(fakeCache.keySet(), cache.getInstanceCountJobs(keyspace1).keySet());
-        fakeCache.entrySet().forEach(entry -> assertEquals(entry.getValue(), cache.getInstanceCountJobs(keyspace1).get(entry.getKey())));
-    }
-
     private Map<String, Set<ConceptId>> createFakeInternalConceptLog(String indexPrefix, int numIndex, int numJobs){
         Map<String, Set<ConceptId>> internalCache = new HashMap<>();
         for(int i = 0; i < numIndex; i ++){

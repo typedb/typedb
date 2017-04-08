@@ -241,44 +241,4 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
             indices.get().forEach(index -> cleanJobSet(jobType, keyspace, index, true));
         }
     }
-
-    //-------------------- Instance Count Jobs
-
-    @Override
-    public Map<TypeLabel, Long> getInstanceCountJobs(String keyspace) {
-        Map<TypeLabel, Long> results = new HashMap<>();
-        Optional<List<String>> types = getChildrenFromZookeeper(getPathJobRoot(COUNTING_JOB, keyspace));
-
-        if(types.isPresent()){
-            types.get().forEach(name -> {
-                String pathTypeIntanceCount = getPathTypeInstanceCount(keyspace, TypeLabel.of(name));
-                Optional<Object> value = getObjectFromZookeeper(pathTypeIntanceCount);
-                if(value.isPresent()){
-                    results.put(TypeLabel.of(name), (Long) value.get());
-                } else {
-                    deleteObjectFromZookeeper(pathTypeIntanceCount); //We have a type saved with no count. Kill it
-                }
-            });
-        }
-
-        return results;
-    }
-
-    @Override
-    public void addJobInstanceCount(String keyspace, TypeLabel name, long instanceCount) {
-        String path = getPathTypeInstanceCount(keyspace, name);
-        Optional<Object> currentValue = getObjectFromZookeeper(path);
-        long newValue = instanceCount;
-
-        if(currentValue.isPresent()){
-            newValue +=  (long) currentValue.get();
-        }
-
-        writeObjectToZookeeper(path, newValue);
-    }
-
-    @Override
-    public void deleteJobInstanceCount(String keyspace, TypeLabel name) {
-        deleteObjectFromZookeeper(getPathTypeInstanceCount(keyspace, name));
-    }
 }

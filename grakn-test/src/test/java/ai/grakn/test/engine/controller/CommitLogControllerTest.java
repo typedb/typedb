@@ -64,7 +64,7 @@ import static org.mockito.Mockito.verify;
 public class CommitLogControllerTest {
     private final ConceptCache cache = EngineCacheProvider.getCache();
 
-    private static final String TEST = "test";
+    private static final String TEST_KEYSPACE = "test";
     private static final int PORT = 4567;
 
     private static Service spark;
@@ -127,29 +127,27 @@ public class CommitLogControllerTest {
                 "}";
 
         given().contentType(ContentType.JSON).body(commitLog).when().
-                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + TEST).
+                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + TEST_KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
     }
 
     @After
     public void clearCache() throws InterruptedException {
-        cache.getCastingJobs(TEST).clear();
+        cache.getCastingJobs(TEST_KEYSPACE).clear();
     }
 
     @Test
     public void whenClearingGraph_CommitLogClearsCache(){
-        GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, TEST).open(GraknTxType.WRITE);
+        GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, TEST_KEYSPACE).open(GraknTxType.WRITE);
         test.admin().clear(EngineCacheProvider.getCache());
-        assertEquals(0, cache.getCastingJobs(TEST).size());
-        assertEquals(0, cache.getResourceJobs(TEST).size());
-        assertEquals(0, cache.getInstanceCountJobs(TEST).size());
+        assertEquals(0, cache.getCastingJobs(TEST_KEYSPACE).size());
+        assertEquals(0, cache.getResourceJobs(TEST_KEYSPACE).size());
     }
 
     @Test
     public void whenControllerReceivesLog_CacheIsUpdated() {
-        assertEquals(4, cache.getCastingJobs(TEST).size());
-        assertEquals(2, cache.getResourceJobs(TEST).size());
-        assertEquals(5, cache.getInstanceCountJobs(TEST).size());
+        assertEquals(4, cache.getCastingJobs(TEST_KEYSPACE).size());
+        assertEquals(2, cache.getResourceJobs(TEST_KEYSPACE).size());
     }
 
     @Test
@@ -164,17 +162,14 @@ public class CommitLogControllerTest {
 
         assertEquals(2, cache.getCastingJobs(BOB).size());
         assertEquals(1, cache.getResourceJobs(BOB).size());
-        assertEquals(3, cache.getInstanceCountJobs(BOB).size());
 
         assertEquals(0, cache.getCastingJobs(TIM).size());
         assertEquals(0, cache.getResourceJobs(TIM).size());
-        assertEquals(0, cache.getInstanceCountJobs(TIM).size());
 
         addSomeData(tim);
 
         assertEquals(2, cache.getCastingJobs(TIM).size());
         assertEquals(1, cache.getResourceJobs(TIM).size());
-        assertEquals(3, cache.getInstanceCountJobs(TIM).size());
 
         Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE).clear();
         Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTxType.WRITE).clear();
@@ -183,9 +178,6 @@ public class CommitLogControllerTest {
         assertEquals(0, cache.getCastingJobs(TIM).size());
         assertEquals(0, cache.getResourceJobs(BOB).size());
         assertEquals(0, cache.getResourceJobs(TIM).size());
-
-        assertEquals(0, cache.getInstanceCountJobs(BOB).size());
-        assertEquals(0, cache.getInstanceCountJobs(BOB).size());
 
         bob.close();
         tim.close();
@@ -207,14 +199,13 @@ public class CommitLogControllerTest {
 
     @Test
     public void whenDeletingViaController_CacheIsCleared() throws InterruptedException {
-        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + TEST).
+        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + TEST_KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
 
-        waitForCache(TEST, 0);
+        waitForCache(TEST_KEYSPACE, 0);
 
-        assertEquals(0, cache.getCastingJobs(TEST).size());
-        assertEquals(0, cache.getResourceJobs(TEST).size());
-        assertEquals(0, cache.getInstanceCountJobs(TEST).size());
+        assertEquals(0, cache.getCastingJobs(TEST_KEYSPACE).size());
+        assertEquals(0, cache.getResourceJobs(TEST_KEYSPACE).size());
     }
 
     private void waitForCache(String keyspace, int value) throws InterruptedException {
