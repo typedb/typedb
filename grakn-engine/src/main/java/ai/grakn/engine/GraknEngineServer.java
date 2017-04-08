@@ -174,9 +174,6 @@ public class GraknEngineServer implements AutoCloseable {
 
         TaskState postprocessing = TaskState.of(PostProcessingTask.class, creator, TaskSchedule.recurring(interval), Json.object());
         taskManager.addTask(postprocessing);
-
-        TaskState updatingInstanceCount = TaskState.of(UpdatingInstanceCountTask.class, creator, TaskSchedule.recurring(interval), Json.object());
-        taskManager.addTask(updatingInstanceCount);
     }
 
     public void stopHTTP() {
