@@ -240,4 +240,11 @@ public class EntityTest extends GraphTestBase{
         assertEquals(1, relationType.instances().size());
         assertEquals(0, implicitRelationType.instances().size());
     }
+
+    @Test
+    public void whenAddingEntity_EnsureInternalTypeIsTheSameAsRealType(){
+        EntityType et = graknGraph.putEntityType("et");
+        EntityImpl e = (EntityImpl) et.addEntity();
+        assertEquals(et.getLabel(), e.getInternalType());
+    }
 }

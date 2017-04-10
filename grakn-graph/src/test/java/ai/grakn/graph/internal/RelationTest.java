@@ -210,10 +210,10 @@ public class RelationTest extends GraphTestBase{
         Instance instance2 = type.addEntity();
 
         Relation relation1 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
-        relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
+        Relation relation2 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
         expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString()));
+        expectedException.expectMessage(VALIDATION_RELATION_DUPLICATE.getMessage(relation2.toString()));
 
         graknGraph.commit();
     }

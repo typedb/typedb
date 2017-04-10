@@ -144,9 +144,8 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      * @return The castings of this role
      */
     public Set<CastingImpl> castings(){
-        Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> castings.add((CastingImpl) concept));
-        return castings;
+        return shards().stream().flatMap(shard ->
+                ((TypeImpl<?,?>) shard).<CastingImpl>getIncomingNeighbours(Schema.EdgeLabel.ISA)).collect(Collectors.toSet());
     }
 
     /**

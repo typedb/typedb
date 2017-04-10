@@ -144,8 +144,8 @@ public class PostProcessingTest {
         Graph rawGraph = ((AbstractGraknGraph) this.graph).getTinkerPopGraph();
 
         //Get Needed Vertices
-        Vertex mainRoleTypeVertex = rawGraph.traversal().V().
-                hasId(mainRoleTypeId.getValue()).next();
+        Vertex mainRoleTypeVertexShard = rawGraph.traversal().V().
+                hasId(mainRoleTypeId.getValue()).in(Schema.EdgeLabel.SHARD.getLabel()).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
                 hasId(relationId.getValue()).next();
@@ -153,7 +153,7 @@ public class PostProcessingTest {
         Vertex mainInstanceVertex = rawGraph.traversal().V().
                 hasId(mainInstanceId.getValue()).next();
 
-        Vertex otherCasting = mainRoleTypeVertex.edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).next().outVertex();
+        Vertex otherCasting = mainRoleTypeVertexShard.edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).next().outVertex();
 
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
@@ -161,7 +161,7 @@ public class PostProcessingTest {
         castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
         castingVertex.property(Schema.ConceptProperty.INDEX.name(), otherCasting.value(Schema.ConceptProperty.INDEX.name()));
 
-        castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
+        castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertexShard);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleTypeId);

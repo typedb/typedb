@@ -79,6 +79,7 @@ import static ai.grakn.test.matcher.GraknMatchers.hasValue;
 import static ai.grakn.test.matcher.GraknMatchers.inferenceRule;
 import static ai.grakn.test.matcher.GraknMatchers.isCasting;
 import static ai.grakn.test.matcher.GraknMatchers.isInstance;
+import static ai.grakn.test.matcher.GraknMatchers.isShard;
 import static ai.grakn.test.matcher.GraknMatchers.resource;
 import static ai.grakn.test.matcher.GraknMatchers.results;
 import static ai.grakn.test.matcher.GraknMatchers.rule;
@@ -635,6 +636,9 @@ public class MatchQueryTest {
 
         // Make sure results never contain castings
         assertThat(query, variable("x", everyItem(not(isCasting()))));
+
+        // Make sure results never contain shards
+        assertThat(query, variable("x", everyItem(not(isShard()))));
     }
 
     @Test

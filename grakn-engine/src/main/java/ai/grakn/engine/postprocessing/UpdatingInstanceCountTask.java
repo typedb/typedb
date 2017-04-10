@@ -78,7 +78,7 @@ public class UpdatingInstanceCountTask implements BackgroundTask {
         while(notDone) {
             notDone = false;
             try (GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
-                graknGraph.admin().updateTypeCounts(jobs);
+                graknGraph.admin().updateTypeShards(jobs);
                 graknGraph.admin().commitNoLogs();
             } catch (Throwable e) {
                 LOG.warn("Unable to updating instance counts of graph [" + keyspace + "]", e);

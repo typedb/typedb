@@ -19,7 +19,6 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.Before;
@@ -30,13 +29,13 @@ import static org.junit.Assert.assertNotEquals;
 
 public class EdgeTest extends GraphTestBase{
 
-    private EntityType entityType;
+    private EntityTypeImpl entityType;
     private Entity entity;
     private EdgeImpl edge;
 
     @Before
     public void createEdge(){
-        entityType = graknGraph.putEntityType("My Entity Type");
+        entityType = (EntityTypeImpl) graknGraph.putEntityType("My Entity Type");
         entity = entityType.addEntity();
         Edge tinkerEdge = graknGraph.getTinkerTraversal().hasId(entity.getId().getValue()).outE().next();
         edge = new EdgeImpl(tinkerEdge, graknGraph);
@@ -59,7 +58,7 @@ public class EdgeTest extends GraphTestBase{
 
     @Test
     public void whenGettingTheTargetOfAnEdge_ReturnTheConceptTheEdgePointsTowards() throws Exception {
-        assertEquals(entityType, edge.getTarget());
+        assertEquals(entityType.currentShard(), edge.getTarget());
     }
 
     @Test
