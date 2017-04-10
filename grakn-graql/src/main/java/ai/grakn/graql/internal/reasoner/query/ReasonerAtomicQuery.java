@@ -358,7 +358,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                        boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
-        Stream<Answer> answerStream = cache.contains(this) ? cache.getAnswerStream(this) : dCache.record(this, lookup(cache));
+        Stream<Answer> answerStream = cache.contains(this) ? Stream.empty() : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
             Set<InferenceRule> rules = getAtom().getApplicableRules();
             for (InferenceRule rule : rules) {
