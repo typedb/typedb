@@ -26,10 +26,10 @@ import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.admin.Atomic;
-import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
+import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
@@ -41,19 +41,19 @@ import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.cache.Cache;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
 import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
-import java.util.Collections;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -358,7 +358,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                                        boolean differentialJoin){
         boolean queryAdmissible = !subGoals.contains(this);
 
-        Stream<Answer> answerStream = cache.contains(this)? Stream.empty() : dCache.record(this, lookup(cache));
+        Stream<Answer> answerStream = cache.contains(this) ? cache.getAnswerStream(this) : dCache.record(this, lookup(cache));
         if(queryAdmissible) {
             Set<InferenceRule> rules = getAtom().getApplicableRules();
             for (InferenceRule rule : rules) {
