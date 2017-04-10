@@ -27,6 +27,9 @@ import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.PostProcessing;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.tasks.TaskSchedule;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.admin.ConceptCache;
@@ -34,7 +37,9 @@ import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
+import mjson.Json;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -48,7 +53,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
+import static java.time.Instant.now;
+import static java.util.Collections.singleton;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
@@ -163,6 +174,25 @@ public class PostProcessingTestIT {
             String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
             assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
         }
+    }
+
+    @Test
+    public void afterRunningPostProcessingTask_TaskMarkedAsCompleted() throws Exception {
+        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
+        engine.getTaskManager().addTask(task);
+
+        waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
+
+        // Check that task has ran
+        assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
+    }
+
+    @Test
+    public void afterStoppingPostProcessingTask_TaskMarkedAsStopped() {
+        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
+        engine.getTaskManager().addTask(task);
+        engine.getTaskManager().stopTask(task.getId());
+        assertEquals(STOPPED, engine.getTaskManager().storage().getState(task.getId()).status());
     }
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})

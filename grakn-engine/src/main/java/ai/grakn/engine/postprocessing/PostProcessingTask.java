@@ -19,10 +19,15 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.graph.admin.ConceptCache;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
+import static java.time.Instant.now;
 
 /**
  * <p>
@@ -43,36 +49,69 @@ import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
  * @author Denis Lobanov, alexandraorth
  */
 public class PostProcessingTask implements BackgroundTask {
+
+    public static final String POST_PROCESSING_LOCK = "post-processing-lock";
+
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
-    private static final PostProcessing postProcessing = PostProcessing.getInstance();
     private static final ConceptCache cache = EngineCacheProvider.getCache();
 
-    private static final long timeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
+    private PostProcessing postProcessing = PostProcessing.getInstance();
+    private long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
+
+    public PostProcessingTask(){}
+
+    public PostProcessingTask(PostProcessing postProcessing, long maxTimeLapse){
+        this.postProcessing = postProcessing;
+        this.maxTimeLapse = maxTimeLapse;
+    }
 
     /**
      * Run postprocessing only if enough time has passed since the last job was added
-     * @param saveCheckpoint Consumer<String> which can be called at any time to save a state checkpoint that would allow
-     * @param configuration
      */
+    @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
-        long lastJob = cache.getLastTimeJobAdded();
-        long currentTime = System.currentTimeMillis();
-        LOG.info("Checking post processing should run: " + ((currentTime - lastJob) >= timeLapse));
-        if((currentTime - lastJob) >= timeLapse) {
-            return postProcessing.run();
-        } else {
-            return true;
+        Instant lastJobAdded = Instant.ofEpochMilli(cache.getLastTimeJobAdded());
+        long timeElapsed = Duration.between(lastJobAdded, now()).toMillis();
+
+        LOG.info("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
+
+        // Only try to run if enough time has passed
+        if(timeElapsed > maxTimeLapse){
+
+            Lock engineLock = LockProvider.getLock(POST_PROCESSING_LOCK);
+
+            try {
+
+                // Try to get lock for one second. If task cannot acquire lock, it should return successfully.
+                boolean hasLock = engineLock.tryLock(1, TimeUnit.SECONDS);
+
+                // If you have the lock, run (& return) PP and then release the lock
+                if (hasLock) {
+                    try {
+                        return postProcessing.run();
+                    } finally {
+                        engineLock.unlock();
+                    }
+                }
+            } catch (InterruptedException e){
+                throw new RuntimeException(e);
+            }
+
         }
+
+        return true;
     }
 
+    @Override
     public boolean stop() {
         return postProcessing.stop();
     }
 
-    public void pause() {
-    }
+    @Override
+    public void pause() {}
 
+    @Override
     public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         return false;
     }
