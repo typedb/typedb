@@ -101,25 +101,25 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public Boolean updateState(TaskState task){
         try {
-                // Get the previously stored task
-                TaskState previousTask = (TaskState) deserialize(zookeeper.connection().getData().forPath(taskPath(task)));
+            // Get the previously stored task
+            TaskState previousTask = (TaskState) deserialize(zookeeper.connection().getData().forPath(taskPath(task)));
 
-                // Remove any configuration information from the task state
-                task.clearConfiguration();
+            // Remove any configuration information from the task state
+            task.clearConfiguration();
 
-                // Start a transaction to write the current serialized task
-                CuratorTransactionBridge transaction = zookeeper.connection().inTransaction()
-                        .setData().forPath(taskPath(task), serialize(task));
+            // Start a transaction to write the current serialized task
+            CuratorTransactionBridge transaction = zookeeper.connection().inTransaction()
+                    .setData().forPath(taskPath(task), serialize(task));
 
-                EngineID currentEngineId = task.engineID();
-                EngineID previousEngineId = previousTask.engineID();
+            EngineID currentEngineId = task.engineID();
+            EngineID previousEngineId = previousTask.engineID();
 
-                registerTaskIsExecutingOnEngine(transaction, previousEngineId, currentEngineId, task);
+            registerTaskIsExecutingOnEngine(transaction, previousEngineId, currentEngineId, task);
 
-                // Execute transaction
-                transaction.and().commit();
+            // Execute transaction
+            transaction.and().commit();
 
-                return true;
+            return true;
         } catch (Exception e){
             throw new EngineStorageException(e);
         }
