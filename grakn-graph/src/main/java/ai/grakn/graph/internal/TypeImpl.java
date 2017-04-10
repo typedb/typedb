@@ -597,6 +597,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      * 2. The graph is not batch loading
      */
     void checkTypeMutation(){
+        if(isShard()) return;
         getGraknGraph().checkOntologyMutation();
         if(Schema.MetaSchema.isMetaLabel(getLabel())){
             throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(getLabel()));
