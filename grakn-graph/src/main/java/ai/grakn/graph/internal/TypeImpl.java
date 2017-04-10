@@ -95,7 +95,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             cachedTypeLabel = TypeLabel.of(v.value(Schema.ConceptProperty.TYPE_LABEL.name()));
             isShard(false);
         } else {
-            cachedTypeLabel = TypeLabel.of("SHARDED TYPE"); //This is just a place holder it is never actually committed
+            cachedTypeLabel = TypeLabel.of("SHARDED TYPE-" + getId().getValue()); //This is just a place holder it is never actually committed
             isShard(true);
         }
     }
