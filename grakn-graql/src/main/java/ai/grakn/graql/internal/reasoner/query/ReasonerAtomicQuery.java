@@ -326,7 +326,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(ans -> ans.explain(new RuleExplanation(rule)));
 
         if (materialise || rule.requiresMaterialisation()) {
-            if (!cache.contains(ruleHead)) ruleHead.lookup(cache);
+            if (!cache.contains(ruleHead)) dCache.record(ruleHead, ruleHead.lookup(cache));
             //filter known to make sure no duplicates are inserted (put behaviour)
             Map<Pair<VarName, Concept>, Set<Answer>> known = cache.getInverseAnswerMap(ruleHead);
             Map<Pair<VarName, Concept>, Set<Answer>> dknown = dCache.getInverseAnswerMap(ruleHead);
