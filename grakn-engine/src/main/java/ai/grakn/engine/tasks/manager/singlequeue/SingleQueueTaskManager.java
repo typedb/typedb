@@ -22,6 +22,8 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.cache.EngineCacheDistributed;
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
@@ -46,11 +48,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
+import static ai.grakn.engine.tasks.config.ZookeeperPaths.LOCK;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED;
@@ -134,6 +138,8 @@ public class SingleQueueTaskManager implements TaskManager {
 
         EngineCacheProvider.init(EngineCacheDistributed.init(zookeeper));
 
+        LockProvider.add(POST_PROCESSING_LOCK, new ZookeeperLock(zookeeper, LOCK));
+
         LOG.debug("TaskManager started");
     }
 
@@ -167,6 +173,7 @@ public class SingleQueueTaskManager implements TaskManager {
         noThrow(zookeeper::close, "Error waiting for zookeeper connection to close");
 
         EngineCacheProvider.clearCache();
+        LockProvider.clear();
 
         LOG.debug("TaskManager closed");
     }

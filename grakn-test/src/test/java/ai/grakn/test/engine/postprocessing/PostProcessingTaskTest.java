@@ -18,54 +18,117 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.cache.EngineCacheStandAlone;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.NonReentrantLock;
+import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.EngineContext;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import mjson.Json;
-import org.junit.Assert;
-import org.junit.ClassRule;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Date;
+import java.time.Duration;
+import java.util.function.Consumer;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.TaskSchedule.at;
-import static java.time.Instant.now;
+import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PostProcessingTaskTest {
-    private StandaloneTaskManager taskManager = new StandaloneTaskManager(EngineID.of("hello"));
 
-    @ClassRule
-    public static final EngineContext engine = EngineContext.startInMemoryServer();
+    private Json mockJson;
+    private Consumer<TaskCheckpoint> mockConsumer;
+    private PostProcessing mockPostProcessing;
 
-    @Test
-    public void testStart() throws Exception {
-        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
-        taskManager.addLowPriorityTask(task);
+    @BeforeClass
+    public static void mockEngineCache(){
+        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
+        LockProvider.add(POST_PROCESSING_LOCK, new NonReentrantLock());
+    }
 
-        // Wait for supervisor thread to mark task as completed
-        final long initial = new Date().getTime();
+    @AfterClass
+    public static void clearEngineCache(){
+        EngineCacheStandAlone.getCache().getKeyspaces().forEach(k -> EngineCacheStandAlone.getCache().clearAllJobs(k));
+        EngineCacheProvider.clearCache();
+        LockProvider.clear();
+    }
 
-        while ((new Date().getTime())-initial < 10000) {
-            if (taskManager.storage().getState(task.getId()).status() == COMPLETED)
-                break;
-
-            Thread.sleep(100);
-        }
-
-        // Check that task has ran
-        Assert.assertEquals(COMPLETED, taskManager.storage().getState(task.getId()).status());
+    @Before
+    public void mockPostProcessing(){
+        mockPostProcessing = mock(PostProcessing.class);
+        mockConsumer = mock(Consumer.class);
+        mockJson = mock(Json.class);
     }
 
     @Test
-    public void testStop() {
-        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
-        taskManager.addLowPriorityTask(task);
-        taskManager.stopTask(task.getId());
-        Assert.assertEquals(STOPPED, taskManager.storage().getState(task.getId()).status());
+    public void whenPPTaskStartCalledAndEnoughTimeElapsed_PostProcessingRunIsCalled(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+
+        task.start(mockConsumer, mockJson);
+
+        verify(mockPostProcessing, times(1)).run();
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingRunNotCalled(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
+
+        task.start(mockConsumer, mockJson);
+
+        verify(mockPostProcessing, times(0)).run();
+    }
+
+    @Test
+    public void whenPPTaskStopCalled_PostProcessingStopIsCalled(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 1000);
+
+        task.stop();
+
+        verify(mockPostProcessing, times(1)).stop();
+    }
+
+    @Test
+    public void whenTwoPPTasksStartCalledInDifferentThreads_PostProcessingOnlyRunsOnce() throws InterruptedException {
+        Object object = new Object();
+
+        when(mockPostProcessing.run()).thenAnswer(invocation -> {
+            synchronized (object){
+                object.wait(Duration.ofMinutes(1).toMillis());
+            }
+            return true;
+        });
+
+        // Add a bunch of jobs to the cache
+        PostProcessingTask task1 = new PostProcessingTask(mockPostProcessing, 0);
+        PostProcessingTask task2 = new PostProcessingTask(mockPostProcessing, 0);
+
+        Thread pp1 = new Thread(() -> {
+            task1.start(mockConsumer, mockJson);
+
+            synchronized (object) {
+                object.notifyAll();
+            }
+        });
+        Thread pp2 = new Thread(() -> {
+            task2.start(mockConsumer, mockJson);
+
+            synchronized (object) {
+                object.notifyAll();
+            }
+        });
+
+        pp1.start();
+        pp2.start();
+
+        pp1.join();
+        pp2.join();
+
+        verify(mockPostProcessing, times(1)).run();
     }
 }

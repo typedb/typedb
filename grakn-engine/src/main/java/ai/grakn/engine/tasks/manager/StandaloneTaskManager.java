@@ -21,6 +21,8 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.cache.EngineCacheStandAlone;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskCheckpoint;
@@ -31,6 +33,7 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
+import java.util.concurrent.locks.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,12 +44,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
+import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -67,7 +70,7 @@ public class StandaloneTaskManager implements TaskManager {
     private final Map<TaskId, BackgroundTask> runningTasks;
 
     private final TaskStateStorage storage;
-    private final ReentrantLock stateUpdateLock;
+    private final Lock stateUpdateLock;
 
     private final ExecutorService executorService;
     private final ScheduledExecutorService schedulingService;
@@ -79,13 +82,15 @@ public class StandaloneTaskManager implements TaskManager {
         runningTasks = new ConcurrentHashMap<>();
 
         storage = new TaskStateInMemoryStore();
-        stateUpdateLock = new ReentrantLock();
+        stateUpdateLock = new NonReentrantLock();
 
         GraknEngineConfig properties = GraknEngineConfig.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
+
+        LockProvider.add(POST_PROCESSING_LOCK, new NonReentrantLock());
     }
 
     @Override
@@ -94,6 +99,7 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService.shutdown();
         runningTasks.clear();
         EngineCacheProvider.clearCache();
+        LockProvider.clear();
     }
 
     @Override
