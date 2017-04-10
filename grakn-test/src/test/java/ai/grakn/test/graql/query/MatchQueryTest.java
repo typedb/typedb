@@ -63,9 +63,9 @@ import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.gte;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.lt;
 import static ai.grakn.graql.Graql.lte;
-import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
@@ -880,5 +880,13 @@ public class MatchQueryTest {
         query.forEach(result -> {
             assertNotEquals(result.get("x"), result.get("y"));
         });
+    }
+
+    @Test
+    public void whenQueryingForXSubY_ReturnOnlyTypes() {
+        MatchQuery query = qb.match(var("x").sub(var("y")));
+
+        assertThat(query, variable("x", everyItem(not(isInstance()))));
+        assertThat(query, variable("y", everyItem(not(isInstance()))));
     }
 }
