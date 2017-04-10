@@ -222,12 +222,13 @@ class GraqlSession {
                 errorMessage = e.getMessage();
                 LOG.error(errorMessage,e);
             } catch (Throwable e) {
-                errorMessage = "An unexpected error occurred";
+                errorMessage = "An unexpected error occurred:\n" + getFullStackTrace(e);
                 LOG.error(errorMessage,e);
             } finally {
                 if (errorMessage != null) {
                     if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
                         graph.close();
+                        attemptRefresh();
                     }
                     sendQueryError(errorMessage);
                 }
