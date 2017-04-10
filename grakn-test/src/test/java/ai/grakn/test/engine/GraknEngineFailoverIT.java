@@ -110,7 +110,6 @@ public class GraknEngineFailoverIT {
         assertTasksCompletedWithCorrectStatus(allTasks);
     }
 
-    @Ignore //Failing randomly - may be a race condition
     @Property(trials=1)
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
             @Size(min=1000, max=5000) List<@NewTask TaskState> tasks) throws Exception {
