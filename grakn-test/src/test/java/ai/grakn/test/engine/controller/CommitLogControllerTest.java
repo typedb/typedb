@@ -231,7 +231,7 @@ public class CommitLogControllerTest {
 
     @Test
     public void whenSendingCommitLogs_TaskManagerReceivesCountTask(){
-        verify(manager, atLeastOnce()).addTask(
+        verify(manager, atLeastOnce()).addHighPriorityTask(
                 argThat(argument ->
                         argument.taskClass().equals(UpdatingInstanceCountTask.class)
                         && argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 5)
@@ -250,11 +250,11 @@ public class CommitLogControllerTest {
         addSomeData(tim);
 
         try {
-            verify(manager, atLeastOnce()).addTask(argThat(argument ->
+            verify(manager, atLeastOnce()).addHighPriorityTask(argThat(argument ->
                     argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
                             argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
 
-            verify(manager, atLeastOnce()).addTask(argThat(argument ->
+            verify(manager, atLeastOnce()).addHighPriorityTask(argThat(argument ->
                     argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
                             argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
         } finally {
