@@ -18,10 +18,11 @@
 
 package ai.grakn.test.engine.lock;
 
+import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.exception.EngineStorageException;
 import ai.grakn.test.EngineContext;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import org.junit.AfterClass;
@@ -29,12 +30,17 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.theories.DataPoints;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ZookeeperLockTest {
+@RunWith(Theories.class)
+public class LockTest {
 
     private static final String LOCK_PATH = "/lock";
     private static ZookeeperConnection zookeeperConnection;
@@ -55,10 +61,36 @@ public class ZookeeperLockTest {
         zookeeperConnection.close();
     }
 
+    @DataPoints
+    public static Locks[] configValues = Locks.values();
+
+    private static enum Locks {
+        ZOOKEEPER, NONREENTRANT;
+    }
+
+    private Lock getLock(Locks lock){
+        switch (lock){
+            case ZOOKEEPER:
+                return new ZookeeperLock(zookeeperConnection, LOCK_PATH + UUID.randomUUID());
+            case NONREENTRANT:
+                return new NonReentrantLock();
+        }
+        throw new RuntimeException("Invalid lock [" + lock + "]");
+    }
+
+    private Lock copy(Lock lock){
+        if(lock instanceof ZookeeperLock){
+            return new ZookeeperLock(zookeeperConnection, ((ZookeeperLock) lock).getLockPath());
+        } else if(lock instanceof NonReentrantLock){
+            return lock;
+        }
+        throw new RuntimeException("Invalid lock [" + lock + "]");
+    }
+
     // this is allowed in a Reentrant lock
-    @Test
-    public void whenLockAcquired_ItCannotBeAcquiredAgain(){
-        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
+    @Theory
+    public void whenLockAcquired_ItCannotBeAcquiredAgain(Locks locks){
+        Lock lock = getLock(locks);
 
         lock.lock();
 
@@ -67,9 +99,9 @@ public class ZookeeperLockTest {
         lock.unlock();
     }
 
-    @Test
-    public void whenLockReleased_ItCanBeAcquiredAgain(){
-        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
+    @Theory
+    public void whenLockReleased_ItCanBeAcquiredAgain(Locks locks){
+        Lock lock = getLock(locks);
 
         lock.lock();
         lock.unlock();
@@ -79,18 +111,10 @@ public class ZookeeperLockTest {
         lock.unlock();
     }
 
-    @Test
-    public void whenUnownedLockIsReleased_EngineStorageExceptionThrown(){
-        exception.expect(EngineStorageException.class);
-
-        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
-        lock.unlock();
-    }
-
-    @Test
-    public void whenMultipleLocks_OnlyOneAtATimeCanBeAcquired(){
-        Lock lock1 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
-        Lock lock2 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
+    @Theory
+    public void whenMultipleOfSameLock_OnlyOneAtATimeCanBeAcquired(Locks locks){
+        Lock lock1 = getLock(locks);
+        Lock lock2 = copy(lock1);
 
         lock1.lock();
 
@@ -104,10 +128,10 @@ public class ZookeeperLockTest {
         lock2.unlock();
     }
 
-    @Test
-    public void whenMultipleLocks_TryLockSucceedsWhenFirstLockReleased() throws InterruptedException {
-        Lock lock1 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
-        Lock lock2 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
+    @Theory
+    public void whenMultipleLocks_TryLockSucceedsWhenFirstLockReleased(Locks locks) throws InterruptedException {
+        Lock lock1 = getLock(locks);
+        Lock lock2 = copy(lock1);
 
         lock1.lock();
 
@@ -125,24 +149,16 @@ public class ZookeeperLockTest {
         lock2.unlock();
     }
 
-    @Test
-    public void whenLockAcquiredOnPath_AnotherCanBeAcquiredOnDifferentPath(){
-        Lock lock1 = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
-        Lock lock2 = new ZookeeperLock(zookeeperConnection, LOCK_PATH + "2");
+    @Theory
+    public void whenTwoLocksCreated_TheyCanBothBeAcquired(Locks locks){
+        Lock lock1 = getLock(locks);
+        Lock lock2 = getLock(locks);
 
         assertThat(lock1.tryLock(), is(true));
         assertThat(lock2.tryLock(), is(true));
 
         lock1.unlock();
         lock2.unlock();
-    }
-
-    @Test
-    public void whenLockInterruptiblyCalled_UnsupportedOperationThrown() throws InterruptedException {
-        exception.expect(UnsupportedOperationException.class);
-
-        Lock lock = new ZookeeperLock(zookeeperConnection, LOCK_PATH);
-        lock.lockInterruptibly();
     }
 
     @Test

@@ -21,6 +21,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
@@ -48,7 +49,7 @@ public class PostProcessingTaskTest {
     @BeforeClass
     public static void mockEngineCache(){
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
-        LockProvider.add(POST_PROCESSING_LOCK, new ReentrantLock());
+        LockProvider.add(POST_PROCESSING_LOCK, new NonReentrantLock());
     }
 
     @AfterClass

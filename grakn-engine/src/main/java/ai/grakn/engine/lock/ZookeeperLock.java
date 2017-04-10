@@ -34,12 +34,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *
  * @author alexandraorth
  */
-// TODO: Evaluate the need of implementing this exact interface
 public class ZookeeperLock implements Lock {
 
+    private final String lockPath;
     private final InterProcessSemaphoreMutex mutex;
 
     public ZookeeperLock(ZookeeperConnection zookeeper, String lockPath){
+        this.lockPath = lockPath;
         this.mutex = new InterProcessSemaphoreMutex(zookeeper.connection(), lockPath);
     }
 
@@ -122,5 +123,9 @@ public class ZookeeperLock implements Lock {
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    public String getLockPath() {
+        return lockPath;
     }
 }

@@ -19,10 +19,10 @@
 package ai.grakn.test.engine.lock;
 
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.After;
 import org.junit.Rule;
@@ -48,7 +48,7 @@ public class LockProviderTest {
 
     @Test
     public void whenGivenReentrantLock_ReturnsReentrantLock(){
-        Lock lock = new ReentrantLock();
+        Lock lock = new NonReentrantLock();
 
         LockProvider.add(LOCK_NAME, lock);
 
@@ -69,7 +69,7 @@ public class LockProviderTest {
 
     @Test
     public void whenGivenLockAfterInitialization_ThrowsRunttimeException(){
-        Lock lock1 = new ReentrantLock();
+        Lock lock1 = new NonReentrantLock();
         Lock lock2 = new ZookeeperLock(mock(ZookeeperConnection.class), "/testlock");
 
         exception.expect(RuntimeException.class);
