@@ -45,8 +45,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class TaskStates extends Generator<TaskState> {
 
-    private boolean newTask = false;
-
     // TODO: make this generate more classes
     @SuppressWarnings("unchecked")
     private Class<? extends BackgroundTask>[] classes = new Class[] {
@@ -78,19 +76,8 @@ public class TaskStates extends Generator<TaskState> {
         return taskState;
     }
 
-    public void configure(NewTask newTask) {
-        this.newTask = newTask.value();
-    }
-
     public void configure(WithClass withClass) {
         this.classes = withClass.value();
-    }
-
-    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
-    @Retention(RUNTIME)
-    @GeneratorConfiguration
-    public @interface NewTask {
-        boolean value() default true;
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
