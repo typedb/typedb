@@ -48,6 +48,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
+
 /**
  * <p>
  *     A Type represents any ontological element in the graph.
@@ -243,7 +245,8 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
     public void delete(){
         checkTypeMutation();
         boolean hasSubs = getVertex().edges(Direction.IN, Schema.EdgeLabel.SUB.getLabel()).hasNext();
-        boolean hasInstances = ((TypeImpl) currentShard()).getIncomingNeighbours(Schema.EdgeLabel.ISA).findAny().isPresent();
+        boolean hasInstances = getGraknGraph().getTinkerTraversal().hasId(getId().getRawValue()).
+                in(Schema.EdgeLabel.SHARD.getLabel()).in(Schema.EdgeLabel.ISA.getLabel()).hasNext();
 
         if(hasSubs || hasInstances){
             throw new ConceptException(ErrorMessage.CANNOT_DELETE.getMessage(getLabel()));
@@ -357,7 +360,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
             GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
                     .has(Schema.ConceptProperty.TYPE_LABEL.name(), getLabel().getValue())
                     .union(__.identity(),
-                            __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()
+                            __.repeat(in(Schema.EdgeLabel.SUB.getLabel())).emit()
                     ).unfold()
                     .in(Schema.EdgeLabel.SHARD.getLabel())
                     .in(Schema.EdgeLabel.ISA.getLabel());
