@@ -30,13 +30,13 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
+import java.util.Set;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -50,12 +50,14 @@ import org.junit.Test;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.util.Schema.ConceptProperty.INDEX;
+import static java.util.Collections.emptySet;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private ConceptCache cache = EngineCacheProvider.getCache();
 
     private GraknGraph graph;
 
@@ -69,14 +71,11 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        EngineCacheProvider.getCache().getKeyspaces().forEach(k -> EngineCacheProvider.getCache().clearAllJobs(k));
         graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
     }
 
     @After
     public void takeDown() throws InterruptedException {
-        cache.getCastingJobs(graph.getKeyspace()).clear();
-        cache.getResourceJobs(graph.getKeyspace()).clear();
         graph.close();
     }
 
@@ -116,24 +115,29 @@ public class PostProcessingTest {
         Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
-        buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
-        buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
+        Set<Vertex> castings1 = buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
+        Set<Vertex> castings2 = buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
         assertEquals(6, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
-        waitForCache(true, graph.getKeyspace(), 4);
+        // Get the index
+        String castingIndex = castings1.iterator().next().value(INDEX.name()).toString();
+
+        // Merge the castings sets
+        Set<Vertex> merged = Sets.newHashSet();
+        merged.addAll(castings1);
+        merged.addAll(castings2);
+
         //Now fix everything
-        postProcessing.run();
+        postProcessing.run(graph.getKeyspace(), castingIndex,
+                merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()), null, emptySet());
 
         //Check it's all fixed
         assertEquals(4, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
-
-        //Check the cache has been cleaned
-        assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
     }
 
-    private void buildDuplicateCasting(ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
+    private Set<Vertex> buildDuplicateCasting(ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
         //Get Needed Grakn Objects
         RelationType relationType = graph.getConcept(relationTypeId);
         Instance otherInstance = graph.getConcept(otherInstanceId);
@@ -159,7 +163,7 @@ public class PostProcessingTest {
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
 
         castingVertex.property(Schema.ConceptProperty.ID.name(), castingVertex.id().toString());
-        castingVertex.property(Schema.ConceptProperty.INDEX.name(), otherCasting.value(Schema.ConceptProperty.INDEX.name()));
+        castingVertex.property(INDEX.name(), otherCasting.value(INDEX.name()));
 
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertexShard);
 
@@ -169,7 +173,7 @@ public class PostProcessingTest {
         edge = relationVertex.addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleTypeId);
 
-        cache.addJobCasting(graph.getKeyspace(), castingVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(castingVertex.id().toString()));
+        return Sets.newHashSet(otherCasting, castingVertex);
     }
 
     @Test
@@ -184,48 +188,33 @@ public class PostProcessingTest {
         GraknGraph graph = factory.open(GraknTxType.WRITE);
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 
-
         Resource<String> resource = resourceType.putResource(value);
         graph.commit();
         graph = factory.open(GraknTxType.WRITE);
 
         assertEquals(1, resourceType.instances().size());
-        waitForCache(false, keyspace, 1);
 
         //Check duplicates have been created
-        PostProcessingTestUtils.createDuplicateResource(graph, cache, resourceType, resource);
-        createDuplicateResource(graph, cache, resourceType, resource);
-        createDuplicateResource(graph, cache, resourceType, resource);
-        createDuplicateResource(graph, cache, resourceType, resource);
+        Set<Vertex> resource1 = createDuplicateResource(graph, resourceType, resource);
+        Set<Vertex> resource2 = createDuplicateResource(graph, resourceType, resource);
+        Set<Vertex> resource3 = createDuplicateResource(graph, resourceType, resource);
+        Set<Vertex> resource4 = createDuplicateResource(graph, resourceType, resource);
         assertEquals(5, resourceType.instances().size());
-        waitForCache(false, keyspace, 5);
+
+        // Resource vertex index
+        String resourceIndex = resource1.iterator().next().value(INDEX.name()).toString();
+
+        // Merge the resource sets
+        Set<Vertex> merged = Sets.newHashSet();
+        merged.addAll(resource1);
+        merged.addAll(resource2);
+        merged.addAll(resource3);
+        merged.addAll(resource4);
 
         //Now fix everything
-        postProcessing.run();
+        postProcessing.run(graph.getKeyspace(), null, emptySet(), resourceIndex, merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()));
 
         //Check it's fixed
         assertEquals(1, graph.getResourceType(sample).instances().size());
-
-        //Check the cache has been cleared
-        assertEquals(0, cache.getNumJobs(graph.getKeyspace()));
-    }
-
-    private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
-        boolean flag = true;
-        while(flag){
-            if(isCasting){
-                if(cache.getNumCastingJobs(keyspace) < value){
-                    Thread.sleep(1000);
-                } else{
-                    flag = false;
-                }
-            } else {
-                if(cache.getNumResourceJobs(keyspace) < value){
-                    Thread.sleep(1000);
-                } else {
-                    flag = false;
-                }
-            }
-        }
     }
 }

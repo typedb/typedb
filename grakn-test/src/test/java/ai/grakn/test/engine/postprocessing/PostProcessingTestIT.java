@@ -25,14 +25,12 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
@@ -67,7 +65,6 @@ import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private ConceptCache cache = EngineCacheProvider.getCache();
 
     private GraknSession factory;
     private GraknGraph graph;
@@ -83,8 +80,6 @@ public class PostProcessingTestIT {
 
     @After
     public void takeDown() throws InterruptedException {
-        cache.getCastingJobs(graph.getKeyspace()).clear();
-        cache.getResourceJobs(graph.getKeyspace()).clear();
         graph.close();
     }
 
@@ -152,14 +147,14 @@ public class PostProcessingTestIT {
         Thread.sleep(5000);
 
         //Wait for cache to have some jobs
-        waitForCache(graph.getKeyspace(), 2);
+//        waitForCache(graph.getKeyspace(), 2);
 
         //Check current broken state of graph
         graph = factory.open(GraknTxType.WRITE);
         assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
         //Force PP
-        postProcessing.run();
+        postProcessing.run(null, null, null, null, null);
 
         //Check current broken state of graph
         graph.close();
@@ -217,16 +212,5 @@ public class PostProcessingTestIT {
         Resource resource = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
         Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
         entity.resource(resource);
-    }
-
-    private void waitForCache(String keyspace, int value) throws InterruptedException {
-        boolean flag = true;
-        while(flag){
-            if(cache.getNumResourceJobs(keyspace) < value){
-                Thread.sleep(1000);
-            } else {
-                flag = false;
-            }
-        }
     }
 }
