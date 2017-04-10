@@ -116,7 +116,7 @@ public class SingleQueueTaskRunnerTest {
 
     private MockGraknConsumer<TaskId, TaskState> lowPriorityConsumer;
     private MockGraknConsumer<TaskId, TaskState> highPriorityConsumer;
-    private TopicPartition partition;
+    private TopicPartition lowPTopicPartition;
 
     @Before
     public void setUp() {
@@ -126,18 +126,18 @@ public class SingleQueueTaskRunnerTest {
         offsetStorage = mock(ExternalOffsetStorage.class);
         lowPriorityConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
-        partition = new TopicPartition("low-priority", 0);
+        lowPTopicPartition = new TopicPartition("low-priority", 0);
 
-        lowPriorityConsumer.assign(ImmutableSet.of(partition));
-        lowPriorityConsumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
-        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
+        lowPriorityConsumer.assign(ImmutableSet.of(lowPTopicPartition));
+        lowPriorityConsumer.updateBeginningOffsets(ImmutableMap.of(lowPTopicPartition, 0L));
+        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(lowPTopicPartition, 0L));
 
         highPriorityConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
         mockedTM = mock(SingleQueueTaskManager.class);
         when(mockedTM.storage()).thenReturn(storage);
-        when(mockedTM.newHighPriorityConsumer()).thenReturn(lowPriorityConsumer);
-        when(mockedTM.newLowPriorityConsumer()).thenReturn(highPriorityConsumer);
+        when(mockedTM.newHighPriorityConsumer()).thenReturn(highPriorityConsumer);
+        when(mockedTM.newLowPriorityConsumer()).thenReturn(lowPriorityConsumer);
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
@@ -188,9 +188,9 @@ public class SingleQueueTaskRunnerTest {
     }
 
     private void addTask(TaskState task) {
-        Long offset = lowPriorityConsumer.endOffsets(ImmutableSet.of(partition)).get(partition);
-        lowPriorityConsumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task.copy()));
-        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
+        Long offset = lowPriorityConsumer.endOffsets(ImmutableSet.of(lowPTopicPartition)).get(lowPTopicPartition);
+        lowPriorityConsumer.addRecord(new ConsumerRecord<>(lowPTopicPartition.topic(), lowPTopicPartition.partition(), offset, task.getId(), task.copy()));
+        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(lowPTopicPartition, offset + 1));
     }
 
     @Property(trials=10)
