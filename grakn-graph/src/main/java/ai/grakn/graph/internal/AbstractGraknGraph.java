@@ -78,6 +78,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_CASTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_RESOURCE;
 
 /**
  * <p>
@@ -868,9 +870,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private void submitCommitLogs(Set<Pair<String, ConceptId>> castings, Set<Pair<String, ConceptId>> resources){
         //Concepts In Need of Inspection
-        JSONArray conceptsForInspection = new JSONArray();
-        loadCommitLogConcepts(conceptsForInspection, Schema.BaseType.CASTING, castings);
-        loadCommitLogConcepts(conceptsForInspection, Schema.BaseType.RESOURCE, resources);
+        JSONObject conceptsForInspection = new JSONObject();
+        conceptsForInspection.put(COMMIT_LOG_FIX_CASTING, loadCommitLogConcepts(castings));
+        conceptsForInspection.put(COMMIT_LOG_FIX_RESOURCE, loadCommitLogConcepts(resources));
 
         //Types with instance changes
         JSONArray typesWithInstanceChanges = new JSONArray();
@@ -888,14 +890,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString()) + "]");
     }
-    private void loadCommitLogConcepts(JSONArray jsonArray, Schema.BaseType baseType, Set<Pair<String, ConceptId>> concepts){
-        concepts.forEach(concept -> {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put(REST.Request.COMMIT_LOG_TYPE, baseType.name());
-            jsonObject.put(REST.Request.COMMIT_LOG_INDEX, concept.getValue0());
-            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().getValue());
-            jsonArray.put(jsonObject);
-        });
+    private JSONObject loadCommitLogConcepts(Set<Pair<String, ConceptId>> concepts){
+        // Group the concepts by index
+        Map<String, Set<ConceptId>> conceptsByIndex = new HashMap<>();
+        for(Pair<String, ConceptId> concept:concepts){
+            conceptsByIndex.computeIfAbsent(concept.getValue0(), (e) -> new HashSet<>()).add(concept.getValue1());
+        }
+
+        return new JSONObject(conceptsByIndex);
     }
     private String getCommitLogEndPoint(){
         if(Grakn.IN_MEMORY.equals(engine)) {

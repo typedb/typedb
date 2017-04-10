@@ -63,6 +63,7 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
+//TODO FIX THIS I BROKE IT (alex)
 public class PostProcessingTestIT {
     private PostProcessing postProcessing = PostProcessing.getInstance();
 
@@ -154,7 +155,8 @@ public class PostProcessingTestIT {
         assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
         //Force PP
-        postProcessing.run(null, null, null, null, null);
+        postProcessing.performCastingFix(null, null, null);
+        postProcessing.performResourceFix(null, null, null);
 
         //Check current broken state of graph
         graph.close();

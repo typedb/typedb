@@ -51,7 +51,6 @@ import org.junit.Test;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
 import static ai.grakn.util.Schema.ConceptProperty.INDEX;
-import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
@@ -59,7 +58,7 @@ import static org.junit.Assume.assumeTrue;
 public class PostProcessingTest {
     private PostProcessing postProcessing = PostProcessing.getInstance();
 
-    private GraknGraph graph;
+    private GraknSession session;
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -71,16 +70,18 @@ public class PostProcessingTest {
 
     @Before
     public void setUp() throws Exception {
-        graph = engine.factoryWithNewKeyspace().open(GraknTxType.WRITE);
+        session = engine.factoryWithNewKeyspace();
     }
 
     @After
     public void takeDown() throws InterruptedException {
-        graph.close();
+        session.close();
     }
 
     @Test
     public void testMergingCastings() throws Exception {
+        GraknGraph graph = session.open(GraknTxType.WRITE);
+
         //Create Scenario
         RoleType roleType1 = graph.putRoleType("role 1");
         RoleType roleType2 = graph.putRoleType("role 2");
@@ -109,17 +110,18 @@ public class PostProcessingTest {
         ConceptId otherInstanceId4 = instance4.getId();
 
         graph.commit();
+
         graph = factory.open(GraknTxType.WRITE);
 
         //Check Number of castings is as expected
-        Assert.assertEquals(2, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        Assert.assertEquals(2, ((AbstractGraknGraph) graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
-        Set<Vertex> castings1 = buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
-        Set<Vertex> castings2 = buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
+        Set<Vertex> castings1 = buildDuplicateCasting(graph, relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
+        Set<Vertex> castings2 = buildDuplicateCasting(graph, relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractGraknGraph) graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         // Get the index
         String castingIndex = castings1.iterator().next().value(INDEX.name()).toString();
@@ -130,14 +132,14 @@ public class PostProcessingTest {
         merged.addAll(castings2);
 
         //Now fix everything
-        postProcessing.run(graph.getKeyspace(), castingIndex,
-                merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()), null, emptySet());
+        postProcessing.performCastingFix(graph.getKeyspace(), castingIndex,
+                merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()));
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractGraknGraph) this.graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractGraknGraph) graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
     }
 
-    private Set<Vertex> buildDuplicateCasting(ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
+    private Set<Vertex> buildDuplicateCasting(GraknGraph graph, ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
         //Get Needed Grakn Objects
         RelationType relationType = graph.getConcept(relationTypeId);
         Instance otherInstance = graph.getConcept(otherInstanceId);
@@ -145,7 +147,7 @@ public class PostProcessingTest {
         Relation relation = relationType.addRelation().addRolePlayer(otherRoleType, otherInstance);
         ConceptId relationId = relation.getId();
 
-        Graph rawGraph = ((AbstractGraknGraph) this.graph).getTinkerPopGraph();
+        Graph rawGraph = ((AbstractGraknGraph) graph).getTinkerPopGraph();
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertexShard = rawGraph.traversal().V().
@@ -178,19 +180,17 @@ public class PostProcessingTest {
 
     @Test
     public void testMergeDuplicateResources() throws GraknValidationException, InterruptedException {
-        String keyspace = "testbatchgraph";
         String value = "1";
         String sample = "Sample";
         //ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
-        GraknSession factory = Grakn.session(Grakn.DEFAULT_URI, keyspace);
-        GraknGraph graph = factory.open(GraknTxType.WRITE);
+        GraknGraph graph = session.open(GraknTxType.WRITE);
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 
         Resource<String> resource = resourceType.putResource(value);
         graph.commit();
-        graph = factory.open(GraknTxType.WRITE);
+        graph = session.open(GraknTxType.WRITE);
 
         assertEquals(1, resourceType.instances().size());
 
@@ -212,7 +212,8 @@ public class PostProcessingTest {
         merged.addAll(resource4);
 
         //Now fix everything
-        postProcessing.run(graph.getKeyspace(), null, emptySet(), resourceIndex, merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()));
+        postProcessing.performResourceFix(graph.getKeyspace(),resourceIndex,
+                merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()));
 
         //Check it's fixed
         assertEquals(1, graph.getResourceType(sample).instances().size());

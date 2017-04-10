@@ -33,9 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.postprocessing.ConceptFixer.checkCastings;
-import static ai.grakn.engine.postprocessing.ConceptFixer.checkResources;
-
 /**
  * <p>
  *     Post Processing Manager
@@ -73,35 +70,6 @@ public class PostProcessing {
         }
         return instance;
     }
-
-    public boolean run(String keyspace, String castingIndex, Set<ConceptId> castings, String resourceIndex, Set<ConceptId> resources) {
-        if (!isRunning.getAndSet(true)) {
-            LOG.info("Starting maintenance.");
-
-            dumpStats(keyspace, castings, resources);
-
-            // Run the post processing
-            if(castings.size() > 0) {
-                performCastingFix(keyspace, castingIndex, castings);
-                waitToContinue();
-            }
-
-            if(resources.size() > 0) {
-                performResourceFix(keyspace, resourceIndex, resources);
-                waitToContinue();
-            }
-
-            futures = ConcurrentHashMap.newKeySet();
-            boolean notCancelled = isRunning.getAndSet(false);
-
-            LOG.info("Maintenance completed.");
-
-            return notCancelled;
-        } else {
-            return true;
-        }
-    }
-
     public boolean stop() {
         boolean running = isRunning.getAndSet(false);
         
@@ -116,21 +84,43 @@ public class PostProcessing {
         return running;
     }
 
-    private void performCastingFix(String keyspace, String index, Set<ConceptId> castingsToPP) {
+    public void performCastingFix(String keyspace, String index, Set<ConceptId> castingsToPP) {
+        dumpStats(keyspace, "castings", castingsToPP);
+
+        run(keyspace, index, castingsToPP, ConceptFixer::checkCastings);
+    }
+
+    public void performResourceFix(String keyspace, String index, Set<ConceptId> resourcesToPP){
+        dumpStats(keyspace, "resources", resourcesToPP);
+
+        run(keyspace, index, resourcesToPP, ConceptFixer::checkResources);
+    }
+
+
+    private void run(String keyspace, String index, Set<ConceptId> concepts,
+                     Consumer<String, String, Set<ConceptId>> function) {
+
         try {
-            futures.add(postpool.submit(() -> checkCastings(keyspace, index, castingsToPP)));
-        } catch (RuntimeException e) {
-            LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
+            if (!isRunning.getAndSet(true)) {
+                LOG.info("Starting maintenance.");
+
+                // Run the post processing
+                if (concepts.size() > 0) {
+                    futures.add(postpool.submit(() -> function.apply(keyspace, index, concepts)));
+                    waitToContinue();
+                }
+
+                futures.clear();
+
+                LOG.info("Maintenance completed.");
+            }
+        } catch (RuntimeException e){
+            LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]", e);
+        } finally {
+            isRunning.getAndSet(false);
         }
     }
 
-    private void performResourceFix(String keyspace, String index, Set<ConceptId> resourcesToPP){
-        try {
-            futures.add(postpool.submit(() -> checkResources(keyspace, index, resourcesToPP)));
-        } catch (RuntimeException e) {
-            LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
-        }
-    }
 
     private void waitToContinue() {
         for (Future future : futures) {
@@ -145,11 +135,16 @@ public class PostProcessing {
         futures.clear();
     }
 
-    private void dumpStats(String keyspace, Set<ConceptId> castings, Set<ConceptId> resources) {
+    private void dumpStats(String keyspace, String type, Set<ConceptId> concepts) {
         LOG.info("--------------------Current Status of Post Processing--------------------");
         LOG.info("Keyspace      : " + keyspace);
-        LOG.info("Castings      : " + castings.size());
-        LOG.info("Resources     : " + resources.size());
+        LOG.info("" + type + "      : " + concepts.size());
         LOG.info("-------------------------------------------------------------------------");
+    }
+
+    @FunctionalInterface
+    public interface Consumer <A, B, C> {
+        //R is like Return, but doesn't have to be last in the list nor named R.
+        public void apply (A a, B b, C c);
     }
 }

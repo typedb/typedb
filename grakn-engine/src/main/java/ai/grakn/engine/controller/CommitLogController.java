@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
@@ -28,14 +28,13 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import java.time.Duration;
+import java.util.Optional;
 import javax.ws.rs.DELETE;
 import mjson.Json;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -45,8 +44,11 @@ import spark.Service;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 
 /**
  * A controller which core submits commit logs to so we can post-process jobs for cleanup.
@@ -72,11 +74,11 @@ public class CommitLogController {
     @ApiOperation(value = "Delete all the post processing jobs for a specific keyspace")
     @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
     private String deleteConcepts(Request req, Response res){
-        String graphName = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        String graphName = req.queryParams(KEYSPACE_PARAM);
 
         if(graphName == null){
             res.status(400);
-           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.KEYSPACE_PARAM, "delete");
+           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(KEYSPACE_PARAM, "delete");
         }
 
         cache.clearAllJobs(graphName);
@@ -94,43 +96,33 @@ public class CommitLogController {
         @ApiImplicitParam(name = COMMIT_LOG_COUNTING, value = "A Json Array types with new and removed instances", required = true, dataType = "string", paramType = "body")
     })
     private String submitConcepts(Request req, Response res) {
-        String keyspace = req.queryParams(REST.Request.KEYSPACE_PARAM);
+        String keyspace = Optional.ofNullable(req.queryParams(KEYSPACE_PARAM))
+                .orElse(GraknEngineConfig.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY));
 
-        if (keyspace == null) {
-            keyspace = GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY);
-        }
         LOG.info("Commit log received for graph [" + keyspace + "]");
 
-        //Jobs to Fix
-        JSONArray conceptsToFix = (JSONArray) new JSONObject(req.body()).get(REST.Request.COMMIT_LOG_FIXING);
-        for (Object object : conceptsToFix) {
-            JSONObject jsonObject = (JSONObject) object;
+        // Instances to post process
+        Json postProcessingConfiguration = Json.object();
+        postProcessingConfiguration.set(KEYSPACE, keyspace);
+        postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(req.body()).at(COMMIT_LOG_FIXING));
 
-            String conceptVertexId = jsonObject.getString(REST.Request.COMMIT_LOG_ID);
-            String conceptIndex = jsonObject.getString(REST.Request.COMMIT_LOG_INDEX);
-            Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString(REST.Request.COMMIT_LOG_TYPE));
-
-            switch (type) {
-                case CASTING:
-                    cache.addJobCasting(keyspace, conceptIndex, ConceptId.of(conceptVertexId));
-                    break;
-                case RESOURCE:
-                    cache.addJobResource(keyspace, conceptIndex, ConceptId.of(conceptVertexId));
-                    break;
-                default:
-                    LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptVertexId, type.name()));
-            }
-        }
+        // TODO Make interval configurable
+        TaskState postProcessingTask = TaskState.of(
+                PostProcessingTask.class, this.getClass().getName(),
+                TaskSchedule.recurring(Duration.ofMinutes(5)), postProcessingConfiguration);
 
         //Instances to count
-        Json configuration = Json.object();
-        configuration.set(KEYSPACE, keyspace);
-        configuration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
+        Json countingConfiguration = Json.object();
+        countingConfiguration.set(KEYSPACE, keyspace);
+        countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
-        TaskState task = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), configuration);
+        TaskState countingTask = TaskState.of(
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), countingConfiguration);
 
-        manager.addTask(task);
+
+        // Send two tasks to the pipeline
+        manager.addTask(postProcessingTask);
+        manager.addTask(countingTask);
 
         return "Graph [" + keyspace + "] now has [" + cache.getNumJobs(keyspace) + "] post processing jobs";
     }

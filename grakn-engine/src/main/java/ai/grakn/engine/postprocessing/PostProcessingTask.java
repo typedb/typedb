@@ -18,12 +18,14 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
-import ai.grakn.graph.admin.ConceptCache;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +37,11 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_CASTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_RESOURCE;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.time.Instant.now;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -54,12 +60,16 @@ public class PostProcessingTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
-    private static final ConceptCache cache = EngineCacheProvider.getCache();
 
     private PostProcessing postProcessing = PostProcessing.getInstance();
     private long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
-    public PostProcessingTask(){}
+    //TODO MAJOR Make this distributed in distributed environment
+    private static final AtomicLong lastPPTaskCreated = new AtomicLong(System.currentTimeMillis());
+
+    public PostProcessingTask(){
+        lastPPTaskCreated.set(System.currentTimeMillis());
+    }
 
     public PostProcessingTask(PostProcessing postProcessing, long maxTimeLapse){
         this.postProcessing = postProcessing;
@@ -71,7 +81,7 @@ public class PostProcessingTask implements BackgroundTask {
      */
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
-        Instant lastJobAdded = Instant.ofEpochMilli(cache.getLastTimeJobAdded());
+        Instant lastJobAdded = Instant.ofEpochMilli(lastPPTaskCreated.get());
         long timeElapsed = Duration.between(lastJobAdded, now()).toMillis();
 
         LOG.info("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
@@ -89,7 +99,11 @@ public class PostProcessingTask implements BackgroundTask {
                 // If you have the lock, run (& return) PP and then release the lock
                 if (hasLock) {
                     try {
-                        return postProcessing.run();
+                        String keyspace = configuration.at(KEYSPACE).asString();
+
+                        runPostProcessing(keyspace, configuration.at(COMMIT_LOG_FIX_CASTING).asJsonMap(), postProcessing::performCastingFix);
+                        runPostProcessing(keyspace, configuration.at(COMMIT_LOG_FIX_RESOURCE).asJsonMap(), postProcessing::performResourceFix);
+
                     } finally {
                         engineLock.unlock();
                     }
@@ -114,5 +128,17 @@ public class PostProcessingTask implements BackgroundTask {
     @Override
     public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         return false;
+    }
+
+    private void runPostProcessing(String keyspace, Map<String, Json> conceptsByIndex,
+                                   PostProcessing.Consumer<String, String, Set<ConceptId>> postProcessingMethod){
+
+        for(String castingIndex:conceptsByIndex.keySet()){
+            // Turn json
+            Set<ConceptId> conceptIds = conceptsByIndex.get(castingIndex)
+                    .asList().stream().map(ConceptId::of).collect(toSet());
+
+            postProcessingMethod.apply(keyspace, castingIndex, conceptIds);
+        }
     }
 }
