@@ -157,21 +157,4 @@ public class EngineCacheStandAlone extends EngineCacheAbstract{
         if(resources.containsKey(keyspace)) resources.remove(keyspace);
         if(instanceCounts.containsKey(keyspace)) instanceCounts.remove(keyspace);
     }
-
-    //-------------------- Instance Count Jobs
-
-    @Override
-    public Map<TypeLabel, Long> getInstanceCountJobs(String keyspace) {
-        return instanceCounts.computeIfAbsent(keyspace, (key) -> new ConcurrentHashMap<>());
-    }
-
-    @Override
-    public void addJobInstanceCount(String keyspace, TypeLabel name, long instanceCount) {
-        getInstanceCountJobs(keyspace).compute(name, (key, value) -> value == null ? instanceCount : value + instanceCount);
-    }
-
-    @Override
-    public void deleteJobInstanceCount(String keyspace, TypeLabel name) {
-        getInstanceCountJobs(keyspace).remove(name);
-    }
 }

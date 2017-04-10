@@ -3,14 +3,9 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -18,14 +13,16 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Date;
-
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 
 public class UpdatingInstanceCountTaskTest {
-    //Different task manager is required so we don't interfere with main engine running
-    private StandaloneTaskManager taskManager = new StandaloneTaskManager(EngineID.of("hello"));
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -35,35 +32,32 @@ public class UpdatingInstanceCountTaskTest {
         String keyspace = "mysimplekeyspace";
         String entityType1 = "e1";
         String entityType2 = "e2";
-        EngineCacheProvider.getCache().clearAllJobs(keyspace);
 
         //Create Simple Graph
         try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
             graknGraph.putEntityType(entityType1);
             graknGraph.putEntityType(entityType2);
-            graknGraph.commit();
+            graknGraph.admin().commitNoLogs();
         }
 
-        //Create Artificial Caches
-        ConceptCache cache = EngineCacheProvider.getCache();
-        cache.addJobInstanceCount(keyspace, TypeLabel.of(entityType1), 6);
-        cache.addJobInstanceCount(keyspace, TypeLabel.of(entityType2), 3);
+        //Create Artificial configuration
+        Json instanceCounts = Json.array();
+        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, entityType1, COMMIT_LOG_INSTANCE_COUNT, 6));
+        instanceCounts.add(Json.object(COMMIT_LOG_TYPE_NAME, entityType2, COMMIT_LOG_INSTANCE_COUNT, 3));
+        Json configuration = Json.object(
+                KEYSPACE, keyspace,
+                COMMIT_LOG_COUNTING, instanceCounts
+        );
 
         //Start up the Job
-        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
-        taskManager.addTask(task);
+        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), configuration);
+        engine.getTaskManager().addTask(task);
 
-        // Wait for supervisor thread to mark task as completed
-        final long initial = new Date().getTime();
-
-        while ((new Date().getTime())-initial < 10000) {
-            if (taskManager.storage().getState(task.getId()).status() == COMPLETED)
-                break;
-            Thread.sleep(100);
-        }
+        // Wait for task to complete
+        waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
 
         // Check that task has ran
-        assertEquals(COMPLETED, taskManager.storage().getState(task.getId()).status());
+        assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
 
         // Check the results of the task
         try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){

@@ -19,7 +19,6 @@
 package ai.grakn.engine.cache;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 
@@ -34,7 +33,6 @@ import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_CONCEPT_I
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_EXACT_JOB;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_JOB_TYPE;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_KEYSPACES;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_TYPE_INSTANCE_COUNT;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.ENGINE_CACHE_UPDATE_TIME;
 import static java.lang.String.format;
 import static org.apache.commons.lang.SerializationUtils.deserialize;
@@ -58,7 +56,6 @@ import static org.apache.spark.util.Utils.serialize;
  * @author fppt
  */
 public class EngineCacheDistributed extends EngineCacheAbstract{
-    private static final String COUNTING_JOB = "counting";
     private static final String RESOURCE_JOB = "resources";
     private static final String CASTING_JOB = "castings";
     private static EngineCacheDistributed instance = null;
@@ -81,9 +78,6 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
     }
     private String getPathExactJob(String jobType, String keyspace, String index, ConceptId conceptId){
         return format(ENGINE_CACHE_EXACT_JOB, keyspace, jobType, index, conceptId.getValue());
-    }
-    private String getPathTypeInstanceCount(String keyspace, TypeLabel name){
-        return format(ENGINE_CACHE_TYPE_INSTANCE_COUNT, keyspace, COUNTING_JOB, name);
     }
 
     @Override
@@ -240,45 +234,5 @@ public class EngineCacheDistributed extends EngineCacheAbstract{
         if(indices.isPresent()){
             indices.get().forEach(index -> cleanJobSet(jobType, keyspace, index, true));
         }
-    }
-
-    //-------------------- Instance Count Jobs
-
-    @Override
-    public Map<TypeLabel, Long> getInstanceCountJobs(String keyspace) {
-        Map<TypeLabel, Long> results = new HashMap<>();
-        Optional<List<String>> types = getChildrenFromZookeeper(getPathJobRoot(COUNTING_JOB, keyspace));
-
-        if(types.isPresent()){
-            types.get().forEach(name -> {
-                String pathTypeIntanceCount = getPathTypeInstanceCount(keyspace, TypeLabel.of(name));
-                Optional<Object> value = getObjectFromZookeeper(pathTypeIntanceCount);
-                if(value.isPresent()){
-                    results.put(TypeLabel.of(name), (Long) value.get());
-                } else {
-                    deleteObjectFromZookeeper(pathTypeIntanceCount); //We have a type saved with no count. Kill it
-                }
-            });
-        }
-
-        return results;
-    }
-
-    @Override
-    public void addJobInstanceCount(String keyspace, TypeLabel name, long instanceCount) {
-        String path = getPathTypeInstanceCount(keyspace, name);
-        Optional<Object> currentValue = getObjectFromZookeeper(path);
-        long newValue = instanceCount;
-
-        if(currentValue.isPresent()){
-            newValue +=  (long) currentValue.get();
-        }
-
-        writeObjectToZookeeper(path, newValue);
-    }
-
-    @Override
-    public void deleteJobInstanceCount(String keyspace, TypeLabel name) {
-        deleteObjectFromZookeeper(getPathTypeInstanceCount(keyspace, name));
     }
 }
