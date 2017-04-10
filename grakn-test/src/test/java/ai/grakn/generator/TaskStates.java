@@ -61,13 +61,7 @@ public class TaskStates extends Generator<TaskState> {
     public TaskState generate(SourceOfRandomness random, GenerationStatus status) {
         Class<? extends BackgroundTask> taskClass = random.choose(classes);
 
-        TaskId taskId;
-
-        if (newTask) {
-            taskId = TaskId.generate();
-        } else {
-            taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
-        }
+        TaskId taskId = TaskId.generate();
 
         // TODO: Make this generate random task statuses
 
