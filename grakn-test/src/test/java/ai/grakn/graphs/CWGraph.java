@@ -93,8 +93,7 @@ public class CWGraph extends TestGraph {
         person.resource(key);
         person.resource(nationality);
 
-        criminal = graph.putEntityType("criminal")
-                .superType(person);
+        criminal = graph.putEntityType("criminal");
 
         weapon = graph.putEntityType("weapon")
                 .plays(transactionItem)
