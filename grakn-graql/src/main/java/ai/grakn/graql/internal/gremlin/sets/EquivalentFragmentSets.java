@@ -113,10 +113,10 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is not a casting.
+     * An {@link EquivalentFragmentSet} that indicates a variable is not a casting or a shard.
      */
-    public static EquivalentFragmentSet notCasting(VarName start) {
-        return new NotCastingFragmentSet(start);
+    public static EquivalentFragmentSet notInternalFragmentSet(VarName start) {
+        return new NotInternalFragmentSet(start);
     }
 
     /**

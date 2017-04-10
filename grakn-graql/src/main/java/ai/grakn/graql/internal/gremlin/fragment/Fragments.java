@@ -145,8 +145,8 @@ public class Fragments {
         return new ValueFlagFragment(start);
     }
 
-    public static Fragment notCasting(VarName start) {
-        return new NotCastingFragment(start);
+    public static Fragment notInternal(VarName start) {
+        return new NotInternalFragment(start);
     }
 
     public static Fragment neq(VarName start, VarName other) {

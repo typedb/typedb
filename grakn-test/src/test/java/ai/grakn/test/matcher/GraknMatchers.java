@@ -172,6 +172,24 @@ public class GraknMatchers {
     }
 
     /**
+     * Create a matcher to test that the concept is a shard.
+     */
+    public static Matcher<MatchableConcept> isShard() {
+        return new TypeSafeMatcher<MatchableConcept>() {
+            @Override
+            public boolean matchesSafely(MatchableConcept concept) {
+                // TODO: Fix fairly dodgy way to recognise shards
+                return concept.get().isType() && concept.get().asType().getLabel().equals(TypeLabel.of("SHARDED TYPE"));
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("isShard()");
+            }
+        };
+    }
+
+    /**
      * Create a matcher to test that the concept is an instance.
      */
     public static Matcher<MatchableConcept> isInstance() {
