@@ -33,9 +33,6 @@ import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -44,7 +41,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
@@ -199,8 +199,8 @@ public class SingleQueueTaskManagerTest {
 
     @Test
     public void whenRunningARecurringTaskAndManyOtherTasks_TheRecurringTaskRunsRegularly() throws InterruptedException {
-        Duration recurDur = Duration.ofMillis(50);
-        Duration sleepDur = Duration.ofMillis(1000);
+        Duration recurDur = Duration.ofMillis(200);
+        Duration sleepDur = Duration.ofMillis(2000);
 
         Stream<TaskState> manyTasks = Stream.generate(BackgroundTaskTestUtils::createTask).limit(100);
 
