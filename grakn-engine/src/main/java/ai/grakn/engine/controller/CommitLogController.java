@@ -130,7 +130,7 @@ public class CommitLogController {
         TaskState task = TaskState.of(
                 UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), configuration);
 
-        manager.addTask(task);
+        manager.addHighPriorityTask(task);
 
         return "Graph [" + keyspace + "] now has [" + cache.getNumJobs(keyspace) + "] post processing jobs";
     }
