@@ -179,7 +179,7 @@ public class GraknMatchers {
             @Override
             public boolean matchesSafely(MatchableConcept concept) {
                 // TODO: Fix fairly dodgy way to recognise shards
-                return concept.get().isType() && concept.get().asType().getLabel().equals(TypeLabel.of("SHARDED TYPE"));
+                return concept.get().isType() && concept.get().asType().getLabel().getValue().startsWith("SHARDED TYPE-");
             }
 
             @Override
