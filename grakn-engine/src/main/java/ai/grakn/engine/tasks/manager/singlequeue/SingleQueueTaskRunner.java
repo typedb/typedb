@@ -247,6 +247,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             }
         } catch (Throwable throwable) {
             task.markFailed(throwable);
+            LOG.error("error in task", throwable);
         } finally {
             runningTask = null;
             runningTaskId = null;
