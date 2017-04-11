@@ -25,7 +25,6 @@ import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.UserController;
 import ai.grakn.engine.controller.GraqlController;
-import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.session.RemoteSession;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.util.EngineID;
@@ -120,7 +119,7 @@ public class GraknEngineServer implements AutoCloseable {
         }
     }
 
-    public void startHTTP() {
+    private void startHTTP() {
         configureSpark(spark, port);
 
         // Start all the controllers
@@ -161,7 +160,7 @@ public class GraknEngineServer implements AutoCloseable {
         spark.exception(Exception.class,                  (e, req, res) -> handleInternalError(e, res));
     }
 
-    public void stopHTTP() {
+    private void stopHTTP() {
         spark.stop();
 
         // Block until server is truly stopped
@@ -179,7 +178,6 @@ public class GraknEngineServer implements AutoCloseable {
     }
 
     private void stopTaskManager() {
-        PostProcessing.getInstance().stop();
         try {
             taskManager.close();
         } catch (Exception e){

@@ -75,7 +75,6 @@ public class PostProcessing {
         
         if(running) {
             LOG.warn("Shutting down running tasks");
-            System.out.println("Shutting down running tasks");
             futures.forEach(f -> f.cancel(true));
             postpool.shutdownNow();
             statDump.shutdownNow();
@@ -142,6 +141,12 @@ public class PostProcessing {
         LOG.info("-------------------------------------------------------------------------");
     }
 
+    /**
+     * Functional interface for the perform post processing methods
+     * @param <A> the keyspace
+     * @param <B> the index of the concept
+     * @param <C> the set of concept ids to post process
+     */
     @FunctionalInterface
     public interface Consumer <A, B, C> {
         //R is like Return, but doesn't have to be last in the list nor named R.
