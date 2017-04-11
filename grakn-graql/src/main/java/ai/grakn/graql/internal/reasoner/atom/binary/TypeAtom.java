@@ -67,9 +67,9 @@ public class TypeAtom extends Binary{
 
     @Override
     public boolean isSelectable() {
-        return isRuleResolvable()
-                || getPredicate() == null
-                || getType() != null && (getType().isResourceType() ||getType().isRelationType());
+        return getPredicate() == null
+                || getType() != null && (getType().isResourceType() ||getType().isRelationType())
+                || isRuleResolvable();
     }
 
     @Override
