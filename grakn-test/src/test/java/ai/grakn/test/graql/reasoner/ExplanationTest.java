@@ -56,7 +56,7 @@ public class ExplanationTest {
     public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql");
 
     private static Concept polibuda, uw;
-    private static Concept warsaw, wroclaw;
+    private static Concept warsaw;
     private static Concept masovia;
     private static Concept poland;
     private static Concept europe;
@@ -70,7 +70,6 @@ public class ExplanationTest {
         polibuda = getConcept(graph, "name", "Warsaw-Polytechnics");
         uw = getConcept(graph, "name", "University-of-Warsaw");
         warsaw = getConcept(graph, "name", "Warsaw");
-        wroclaw = getConcept(graph, "name", "Wroclaw");
         masovia = getConcept(graph, "name", "Masovia");
         poland = getConcept(graph, "name", "Poland");
         europe = getConcept(graph, "name", "Europe");
@@ -96,6 +95,12 @@ public class ExplanationTest {
         assertEquals(queryAnswer2, answer2);
         assertEquals(queryAnswer3, answer3);
         assertEquals(queryAnswer4, answer4);
+
+        assertEquals(queryAnswer1.getAnswers().size(), 1);
+        assertEquals(queryAnswer2.getAnswers().size(), 3);
+        assertEquals(queryAnswer3.getAnswers().size(), 5);
+        assertEquals(queryAnswer4.getAnswers().size(), 7);
+
         assertTrue(queryAnswer1.getExplanation().isLookupExplanation());
 
         assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
@@ -113,12 +118,12 @@ public class ExplanationTest {
 
     @Test
     public void testTransitiveExplanationWithTypes() {
-        String queryString = "match $x isa city;" +
+        String queryString = "match $x isa university;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland';";
 
-        Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), warsaw, VarName.of("y"), poland));
-        Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), wroclaw, VarName.of("y"), poland));
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), uw, VarName.of("y"), poland));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
 
@@ -130,10 +135,13 @@ public class ExplanationTest {
         assertTrue(queryAnswer1.getExplanation().isJoinExplanation());
         assertTrue(queryAnswer2.getExplanation().isJoinExplanation());
 
-        //assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
-        //assertEquals(2, getLookupExplanations(queryAnswer2).size());
-        //assertEquals(2, queryAnswer2.getExplicitPath().size());
+        assertEquals(queryAnswer1.getAnswers().size(), 7);
+        assertEquals(queryAnswer2.getAnswers().size(), 7);
 
+        assertEquals(4, getLookupExplanations(queryAnswer1).size());
+        assertEquals(4, queryAnswer1.getExplicitPath().size());
+        assertEquals(4, getLookupExplanations(queryAnswer2).size());
+        assertEquals(4, queryAnswer2.getExplicitPath().size());
     }
 
     @Test
