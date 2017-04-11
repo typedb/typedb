@@ -5,8 +5,12 @@ import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.cache.EngineCacheProvider;
+import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
+import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
@@ -78,6 +82,10 @@ public abstract class GraknTestEnv {
         // Kafka is using log4j, which is super annoying. We make sure it only logs error here
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
 
+        //TODO Remove this really quickly
+        ((Logger) LoggerFactory.getLogger(StandaloneTaskManager.class)).setLevel(Level.OFF);
+        ((Logger) LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.OFF);
+
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("starting kafka...");
@@ -110,7 +118,7 @@ public abstract class GraknTestEnv {
         // There is no way to stop the embedded Casssandra, no such API offered.
     }
 
-    static void clearGraphs() {
+    private static void clearGraphs() {
         // Drop all keyspaces
         EngineGraknGraphFactory engineGraknGraphFactory = EngineGraknGraphFactory.getInstance();
 

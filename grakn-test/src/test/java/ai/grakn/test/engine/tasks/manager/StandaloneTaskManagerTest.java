@@ -137,7 +137,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void consecutiveStopStart() {
         // Disable excessive logs for this test
-        ((Logger) LoggerFactory.getLogger(StandaloneTaskManager.class)).setLevel(Level.WARN);
+        ((Logger) LoggerFactory.getLogger(StandaloneTaskManager.class)).setLevel(Level.OFF);
 
         for (int i = 0; i < 100000; i++) {
             testStopSingle();
