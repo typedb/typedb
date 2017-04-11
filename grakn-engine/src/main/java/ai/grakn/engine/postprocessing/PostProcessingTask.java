@@ -19,22 +19,22 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.util.Schema;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
@@ -133,12 +133,10 @@ public class PostProcessingTask implements BackgroundTask {
     private void runPostProcessing(String keyspace, Map<String, Json> conceptsByIndex,
                                    PostProcessing.Consumer<String, String, Set<ConceptId>> postProcessingMethod){
 
-        for(String castingIndex:conceptsByIndex.keySet()){
+        for(Map.Entry<String, Json> castingIndex:conceptsByIndex.entrySet()){
             // Turn json
-            Set<ConceptId> conceptIds = conceptsByIndex.get(castingIndex)
-                    .asList().stream().map(ConceptId::of).collect(toSet());
-
-            postProcessingMethod.apply(keyspace, castingIndex, conceptIds);
+            Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
+            postProcessingMethod.apply(keyspace, castingIndex.getKey(), conceptIds);
         }
     }
 }
