@@ -54,6 +54,9 @@ public class PostProcessingTask extends LockingBackgroundTask {
     private PostProcessing postProcessing = PostProcessing.getInstance();
     private long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
+    //TODO: Get rid of these constructors. They only used in tests
+    public PostProcessingTask(){};
+
     public PostProcessingTask(PostProcessing postProcessing, long maxTimeLapse){
         this.postProcessing = postProcessing;
         this.maxTimeLapse = maxTimeLapse;
@@ -96,7 +99,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
     }
 
     @Override
-    protected boolean runLockingBackgroundTask(){
+    protected boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration){
         return postProcessing.run();
     }
 

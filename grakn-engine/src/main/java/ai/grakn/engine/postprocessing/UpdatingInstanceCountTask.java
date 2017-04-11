@@ -22,8 +22,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
 import mjson.Json;
@@ -50,11 +50,17 @@ import static java.util.stream.Collectors.toMap;
  *
  * @author fppt
  */
-public class UpdatingInstanceCountTask implements BackgroundTask {
+public class UpdatingInstanceCountTask extends LockingBackgroundTask {
+    public static final String LOCK_KEY = "updating-instance-count-lock";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
+    protected String getLockingKey() {
+        return LOCK_KEY;
+    }
+
+    @Override
+    protected boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
         String keyspace = configuration.at(KEYSPACE).asString();
         Json instancesToCount = configuration.at(COMMIT_LOG_COUNTING);
 

@@ -50,7 +50,7 @@ public abstract class LockingBackgroundTask implements BackgroundTask{
             // If you have the lock, run the job and then release the lock
             if (hasLock) {
                 try {
-                    return runLockingBackgroundTask();
+                    return runLockingBackgroundTask(saveCheckpoint, configuration);
                 } finally {
                     engineLock.unlock();
                 }
@@ -72,5 +72,5 @@ public abstract class LockingBackgroundTask implements BackgroundTask{
      *
      * @return The actual job to run once the job is acquired
      */
-    protected abstract boolean runLockingBackgroundTask();
+    protected abstract boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration);
 }
