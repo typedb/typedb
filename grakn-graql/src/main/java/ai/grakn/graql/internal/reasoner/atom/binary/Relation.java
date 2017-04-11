@@ -355,22 +355,6 @@ public class Relation extends TypeAtom {
         }
     }
 
-    @Override
-    public boolean isRuleResolvable() {
-        Type t = getType();
-        if (t != null) {
-            return !t.getRulesOfConclusion().isEmpty()
-                    && !this.getApplicableRules().isEmpty();
-        } else {
-            GraknGraph graph = getParentQuery().graph();
-            Set<Rule> rules = Reasoner.getRules(graph);
-            return rules.stream()
-                    .flatMap(rule -> rule.getConclusionTypes().stream())
-                    .filter(Type::isRelationType).count() != 0
-                    && !this.getApplicableRules().isEmpty();
-        }
-    }
-
     private Set<RoleType> getExplicitRoleTypes() {
         Set<RoleType> roleTypes = new HashSet<>();
         GraknGraph graph = getParentQuery().graph();

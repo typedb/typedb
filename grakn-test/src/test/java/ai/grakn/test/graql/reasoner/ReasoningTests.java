@@ -96,6 +96,12 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet18 = GraphContext.preLoad("testSet18.gql");
 
+    @ClassRule
+    public static final GraphContext testSet19 = GraphContext.preLoad("testSet19.gql");
+
+    @ClassRule
+    public static final GraphContext testSet20 = GraphContext.preLoad("testSet20.gql");
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -315,6 +321,28 @@ public class ReasoningTests {
         String queryString1 = "match $x isa entity1;(role1: $x, role2: $y) isa relation1;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString1));
         assertEquals(answers.size(), 2);
+    }
+
+    @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
+    public void reasoningOverRelationHierarchy(){
+        QueryBuilder qb = testSet19.graph().graql().infer(true);
+        String queryString = "match (role1: $x, role2: $y) isa relation1;";
+        String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers.size(), 1);
+        assertEquals(answers, answers2);
+    }
+
+    @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
+    public void reasoningOverEntityHierarchy(){
+        QueryBuilder qb = testSet20.graph().graql().infer(true);
+        String queryString = "match $x isa entity1;";
+        String queryString2 = "match $x isa sub-entity1;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers.size(), 1);
+        assertEquals(answers, answers2);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
