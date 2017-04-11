@@ -27,7 +27,6 @@ import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.migration.base.Migrator;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
@@ -37,7 +36,6 @@ import java.time.Instant;
 import mjson.Json;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +51,6 @@ import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.generate;
-import static org.junit.Assert.fail;
 
 /**
  * Class holding useful methods for use throughout background task tests
@@ -61,14 +58,6 @@ import static org.junit.Assert.fail;
 public class BackgroundTaskTestUtils {
 
     private final static Logger LOG = LoggerFactory.getLogger(BackgroundTaskTestUtils.class);
-
-    public static Set<TaskState> createTasks(int n) {
-        return generate(() -> createTask(ShortExecutionMockTask.class)).limit(n).collect(toSet());
-    }
-
-    public static Set<TaskState> createScheduledTasks(int n) {
-        return generate(() -> createTask(ShortExecutionMockTask.class).markScheduled()).limit(n).collect(toSet());
-    }
 
     public static Set<TaskState> createRunningTasks(int n, EngineID engineID) {
         return generate(() -> createTask(ShortExecutionMockTask.class).markRunning(engineID)).limit(n).collect(toSet());

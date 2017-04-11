@@ -22,6 +22,7 @@ package ai.grakn.graph.property;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RoleType;
+import ai.grakn.generator.AbstractTypeGenerator.Meta;
 import ai.grakn.generator.FromGraphGenerator.FromGraph;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
@@ -48,7 +49,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_ItIsAddedToTheCollectionOfRolePlayers(
-        Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
+        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -57,7 +58,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayerPlayingARole_TheRolePlayerIsAddedToTheCollectionOfRolePlayersForThatRole(
-        Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
+            Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
 
         relation.addRolePlayer(roleType, rolePlayer);
 
@@ -66,7 +67,7 @@ public class RelationPropertyTest {
 
     @Property
     public void whenAddingARolePlayer_NoRolePlayersAreRemoved(
-        Relation relation, @FromGraph RoleType roleType, @FromGraph Instance rolePlayer) {
+        Relation relation, @FromGraph @Meta(false) RoleType roleType, @FromGraph Instance rolePlayer) {
 
         Instance[] rolePlayers = relation.rolePlayers(roleType).toArray(new Instance[0]);
 

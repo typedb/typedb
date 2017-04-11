@@ -26,9 +26,9 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 /**
  * @author Felix Chapman
  */
-class NotCastingFragmentSet extends EquivalentFragmentSet {
+class NotInternalFragmentSet extends EquivalentFragmentSet {
 
-    NotCastingFragmentSet(VarName start) {
-        super(Fragments.notCasting(start));
+    NotInternalFragmentSet(VarName start) {
+        super(Fragments.notInternal(start));
     }
 }

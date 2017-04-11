@@ -56,7 +56,9 @@ public final class Schema {
         ROLE_PLAYER("role-player"),
         HYPOTHESIS("hypothesis"),
         CONCLUSION("conclusion"),
-        SHORTCUT("shortcut");
+        SHORTCUT("shortcut"),
+        SHARD("shard");
+
 
         private final String label;
 
@@ -148,9 +150,9 @@ public final class Schema {
         TYPE_LABEL(String.class), INDEX(String.class), ID(String.class),
 
         //Other Properties
-        TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class),
+        TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), INSTANCE_COUNT(Long.class),
-        RULE_LHS(String.class), RULE_RHS(String.class),
+        RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
 
         //Supported Data Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),

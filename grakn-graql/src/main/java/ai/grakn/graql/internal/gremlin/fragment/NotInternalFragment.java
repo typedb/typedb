@@ -19,25 +19,27 @@
 package ai.grakn.graql.internal.gremlin.fragment;
 
 import ai.grakn.graql.VarName;
-import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-class NotCastingFragment extends AbstractFragment {
+import static ai.grakn.util.Schema.BaseType.CASTING;
+import static ai.grakn.util.Schema.ConceptProperty.IS_SHARD;
 
-    NotCastingFragment(VarName start) {
+class NotInternalFragment extends AbstractFragment {
+
+    NotInternalFragment(VarName start) {
         super(start);
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.not(__.hasLabel(Schema.BaseType.CASTING.name()));
+        traversal.not(__.hasLabel(CASTING.name())).not(__.has(IS_SHARD.name(), true));
     }
 
     @Override
     public String getName() {
-        return "[not-casting]";
+        return "[not-internal]";
     }
 
     @Override

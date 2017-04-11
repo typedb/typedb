@@ -59,7 +59,17 @@ import java.util.stream.Collectors;
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
     private ComponentCache<TypeLabel> cachedInternalType = new ComponentCache<>(() -> TypeLabel.of(getProperty(Schema.ConceptProperty.TYPE)));
-    private ComponentCache<V> cachedType = new ComponentCache<>(() -> this.<V>getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null));
+
+    private ComponentCache<V> cachedType = new ComponentCache<>(() -> {
+        ConceptImpl<?> currentType = (ConceptImpl) this.getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null);
+
+        while (currentType.isShard()){
+            currentType = (ConceptImpl) currentType.getOutgoingNeighbours(Schema.EdgeLabel.SHARD).findFirst().orElse(null);
+        }
+
+        //noinspection unchecked
+        return (V) currentType;
+    });
 
     InstanceImpl(AbstractGraknGraph graknGraph, Vertex v) {
         super(graknGraph, v);
@@ -236,9 +246,8 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     protected T type(V type) {
         if(type != null){
-            setInternalType(type.getLabel());
             putEdge(type, Schema.EdgeLabel.ISA);
-            cachedType.set(type);
+            setInternalType(type().getLabel());
         }
         return getThis();
     }

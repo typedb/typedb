@@ -36,14 +36,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multiset;
-import com.google.common.collect.Sets;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -56,11 +54,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -145,8 +141,6 @@ public class SingleQueueTaskRunnerTest {
     public void setUpTasks(List<List<TaskState>> tasks) {
         taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF);
 
-        createValidQueue(tasks);
-
         for (List<TaskState> taskList : tasks) {
             consumer.schedulePollTask(() -> taskList.forEach(this::addTask));
         }
@@ -165,24 +159,6 @@ public class SingleQueueTaskRunnerTest {
 
     public static List<TaskState> tasks(List<? extends List<TaskState>> tasks) {
         return tasks.stream().flatMap(Collection::stream).collect(toList());
-    }
-
-    private void createValidQueue(List<List<TaskState>> tasks) {
-        Set<TaskId> appearedTasks = Sets.newHashSet();
-
-        tasks(tasks).forEach(task -> {
-            TaskId taskId = task.getId();
-
-            if (appearedTasks.contains(taskId)) {
-                // The second time a task appears it must be in RUNNING state
-                task.markRunning(engineID);
-                storage.updateState(task);
-            } else if(task.status().equals(RUNNING)){
-                storage.updateState(task);
-            }
-
-            appearedTasks.add(taskId);
-        });
     }
 
     private void addTask(TaskState task) {
