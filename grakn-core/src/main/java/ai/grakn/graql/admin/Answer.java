@@ -20,9 +20,11 @@ package ai.grakn.graql.admin;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 /**
  *
@@ -45,6 +47,8 @@ public interface Answer {
 
     Set<Map.Entry<VarName, Concept>> entrySet();
 
+    Concept get(String var);
+
     Concept get(VarName var);
 
     Concept put(VarName var, Concept con);
@@ -62,6 +66,8 @@ public interface Answer {
     boolean isEmpty();
 
     int size();
+
+    void forEach(BiConsumer<? super VarName, ? super Concept> consumer);
 
     /**
      * perform an answer merge without explanation

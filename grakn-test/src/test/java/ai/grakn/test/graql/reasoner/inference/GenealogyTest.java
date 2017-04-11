@@ -19,6 +19,7 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
@@ -26,10 +27,8 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graphs.GenealogyGraph;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.Sets;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -38,8 +37,8 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -278,10 +277,10 @@ public class GenealogyTest {
     public void testWife(){
         String queryString = "match $r (wife: $x) isa marriage;";
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
-        List<Map<String, Concept>> answerList = qb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answerList = qb.<MatchQuery>parse(queryString).execute();
         QueryAnswers requeriedAnswers = queryAnswers(iqb.parse(queryString));
         assertEquals(answers, requeriedAnswers);
-        List<Map<String, Concept>> answerList2 = qb.<MatchQuery>parse(queryString).execute();
+        List<Answer> answerList2 = qb.<MatchQuery>parse(queryString).execute();
         assertEquals(answerList, answerList2);
     }
 

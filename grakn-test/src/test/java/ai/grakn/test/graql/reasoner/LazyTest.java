@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graphs.MatrixGraphII;
 import ai.grakn.graql.MatchQuery;
@@ -40,14 +39,13 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -195,7 +193,7 @@ public class LazyTest {
         final int limit = 10;
         final long maxTime = 2000;
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> results = query.limit(limit).execute();
+        List<Answer> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
         assertEquals(results.size(), limit);

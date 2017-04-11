@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -31,6 +30,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
@@ -757,7 +757,7 @@ public class ReasonerTest {
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
-        List<Map<String, Concept>> answers = query.execute();
+        List<Answer> answers = query.execute();
         assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "19");
     }
 
@@ -767,9 +767,9 @@ public class ReasonerTest {
         MatchQuery query = nonMaterialisedsnbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
         final int offset = 4;
-        List<Map<String, Concept>> fullAnswers = query.execute();
-        List<Map<String, Concept>> answers = query.orderBy(VarName.of("a")).execute();
-        List<Map<String, Concept>> answers2 = query.orderBy(VarName.of("a")).offset(offset).execute();
+        List<Answer> fullAnswers = query.execute();
+        List<Answer> answers = query.orderBy(VarName.of("a")).execute();
+        List<Answer> answers2 = query.orderBy(VarName.of("a")).offset(offset).execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);

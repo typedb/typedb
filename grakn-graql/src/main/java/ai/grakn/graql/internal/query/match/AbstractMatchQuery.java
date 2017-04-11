@@ -36,7 +36,6 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
-import ai.grakn.graql.internal.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
@@ -72,7 +71,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final List<Map<String, Concept>> execute() {
+    public final List<Answer> execute() {
         return stream().collect(toList());
     }
 
@@ -99,8 +98,8 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final Stream<Map<String, Concept>> stream() {
-        return streamWithVarNames().map(CommonUtil::resultVarNameToString);
+    public final Stream<Answer> stream() {
+        return streamWithAnswers();
     }
 
     @Override
@@ -140,11 +139,12 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<Concept> get(String name) {
+        VarName var = VarName.of(name);
         return stream().map(result -> {
-            if (!result.containsKey(name)) {
+            if (!result.containsKey(var)) {
                 throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of(name)));
             }
-            return result.get(name);
+            return result.get(var);
         });
     }
 

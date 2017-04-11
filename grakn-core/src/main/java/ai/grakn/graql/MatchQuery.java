@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 
 import java.util.Collection;
@@ -38,7 +39,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
+public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
      * @param names an array of variable names to select
