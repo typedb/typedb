@@ -63,7 +63,7 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         queryPrime.addSubstitution(sub);
         Atom topAtom = queryPrime.getTopAtom();
         ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
-
+        
         boolean isAtomic = queryPrime.isAtomic();
         if (!isAtomic) queryPrime.removeAtom(topAtom);
 

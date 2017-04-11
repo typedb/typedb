@@ -492,12 +492,10 @@ public class ReasonerTest {
         assertEquals(answers, answers2);
     }
 
-    //TODO work on atom partitioning criteria
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingContradiction(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        //geoObject sub city always returns empty set
+        //geoObject sub city always returns an empty set
         String queryString = "match ($x, $y) isa is-located-in;geoObject sub city;";
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
