@@ -40,8 +40,11 @@ import org.junit.Test;
 
 import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -92,30 +95,42 @@ public class PostProcessingTaskTest {
 
         task.start(mockConsumer, mockJson);
 
-        verify(mockPostProcessing, times(0))
+        verify(mockPostProcessing, never())
                 .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
     }
 
     @Test
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
 
         task.start(mockConsumer, mockJson);
 
-        verify(mockPostProcessing, times(0))
+        verify(mockPostProcessing, times(1))
                 .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
     }
 
     @Test
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
-
-
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
 
         task.start(mockConsumer, mockJson);
 
-        verify(mockPostProcessing, times(0))
+        verify(mockPostProcessing, times(1))
                 .performResourceFix(TEST_KEYSPACE, mockResourceIndex, mockResourceSet);
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingStartReturnsTrue(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
+
+        assertTrue("Task " + task + " ran when it should not have", task.start(mockConsumer, mockJson));
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndPostProcessingRuns_PostProcessingStartReturnsFalse(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+
+        assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockJson));
     }
 
     @Test

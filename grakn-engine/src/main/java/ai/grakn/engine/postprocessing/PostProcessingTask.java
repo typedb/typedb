@@ -103,6 +103,8 @@ public class PostProcessingTask implements BackgroundTask {
                         runPostProcessing(keyspace, configuration.at(Schema.BaseType.CASTING.name()).asJsonMap(), postProcessing::performCastingFix);
                         runPostProcessing(keyspace, configuration.at(Schema.BaseType.RESOURCE.name()).asJsonMap(), postProcessing::performResourceFix);
 
+                        // If post processing ran successfully, stop the task
+                        return false;
                     } finally {
                         engineLock.unlock();
                     }
@@ -110,7 +112,6 @@ public class PostProcessingTask implements BackgroundTask {
             } catch (InterruptedException e){
                 throw new RuntimeException(e);
             }
-
         }
 
         return true;
