@@ -30,5 +30,6 @@ public interface KafkaTerms {
     String SCHEDULERS_GROUP = "schedulers";
     String WORK_QUEUE_TOPIC = "work-queue";
     String NEW_TASKS_TOPIC = "new-tasks";
+    String RECURRING_TASKS_TOPIC = "recurring-tasks";
     String LOG_TOPIC = "logs";
 }

@@ -25,12 +25,12 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
-import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.EngineContext;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.EngineID;
+import ai.grakn.test.EngineContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -43,7 +43,6 @@ import mjson.Json;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -60,7 +59,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -68,14 +66,14 @@ import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static java.time.Duration.between;
 import static java.time.Duration.ofMillis;
 import static java.time.Instant.now;
@@ -117,6 +115,7 @@ public class SingleQueueTaskRunnerTest {
     private ExternalOffsetStorage offsetStorage;
 
     private MockGraknConsumer<TaskId, TaskState> consumer;
+    private MockGraknConsumer<TaskId, TaskState> recurringConsumer;
     private TopicPartition partition;
 
     @Before
@@ -133,9 +132,12 @@ public class SingleQueueTaskRunnerTest {
         consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
         consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
 
+        recurringConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
+
         mockedTM = mock(SingleQueueTaskManager.class);
         when(mockedTM.storage()).thenReturn(storage);
         when(mockedTM.newConsumer()).thenReturn(consumer);
+        when(mockedTM.newRecurringConsumer()).thenReturn(recurringConsumer);
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;

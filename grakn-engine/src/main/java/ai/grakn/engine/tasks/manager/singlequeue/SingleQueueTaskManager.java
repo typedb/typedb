@@ -52,6 +52,7 @@ import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.RECURRING_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.LOCK;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
@@ -183,7 +184,13 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addTask(TaskState taskState){
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), taskState));
+        String topic;
+        if (taskState.schedule().isRecurring()) {
+            topic = RECURRING_TASKS_TOPIC;
+        } else {
+            topic = NEW_TASKS_TOPIC;
+        }
+        producer.send(new ProducerRecord<>(topic, taskState.getId(), taskState));
         producer.flush();
     }
 
@@ -215,8 +222,22 @@ public class SingleQueueTaskManager implements TaskManager {
      * Get a new kafka consumer listening on the new tasks topic
      */
     public Consumer<TaskId, TaskState> newConsumer(){
-        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, offsetStorage));
+        return newConsumer(NEW_TASKS_TOPIC);
+    }
+
+    /**
+     * Get a new kafka consumer listening on the recurring tasks topic
+     */
+    public Consumer<TaskId, TaskState> newRecurringConsumer(){
+        return newConsumer(RECURRING_TASKS_TOPIC);
+    }
+
+    /**
+     * Get a new kafka consumer listening on the given topic
+     */
+    private Consumer<TaskId, TaskState> newConsumer(String topic){
+        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP + "-" + topic);
+        consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;
     }
 

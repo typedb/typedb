@@ -27,7 +27,6 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
-import java.time.Instant;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -35,6 +34,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,6 +57,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
     private final Consumer<TaskId, TaskState> consumer;
+    private final Consumer<TaskId, TaskState> recurringConsumer;
     private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
     private final ExternalOffsetStorage offsetStorage;
@@ -71,6 +72,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private static final int INITIAL_BACKOFF = 1_000;
     private static final int MAX_BACKOFF = 60_000;
     private final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF;
+    private Instant timeTaskLastHandled;
 
     /**
      * Create a {@link SingleQueueTaskRunner} which retrieves tasks from the given {@param consumer} and uses the given
@@ -84,6 +86,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         this.manager = manager;
         this.storage = manager.storage();
         this.consumer = manager.newConsumer();
+        this.recurringConsumer = manager.newRecurringConsumer();
         this.engineID = engineID;
         this.offsetStorage = offsetStorage;
         this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
@@ -107,27 +110,15 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void run() {
         LOG.debug("started");
 
-        Instant timeTaskLastHandled = now();
+        timeTaskLastHandled = now();
         int backOff = INITIAL_BACKOFF;
 
         while (!wakeUp.get()) {
             try {
-                ConsumerRecords<TaskId, TaskState> records = consumer.poll(1000);
-                debugConsumerStatus(records);
-
-                // This TskRunner should only ever receive one record
-                for (ConsumerRecord<TaskId, TaskState> record : records) {
-                    TaskState task = record.value();
-                    boolean handled = handleTask(task);
-
-                    if (handled) {
-                        timeTaskLastHandled = now();
-                    }
-
-                    offsetStorage.saveOffset(consumer, new TopicPartition(record.topic(), record.partition()));
-
-                    LOG.trace("{} acknowledged", record.key().getValue());
-                }
+                // Reading from both the regular consumer and recurring consumer every time means that we will handle
+                // recurring tasks regularly, even if there are lots of non-recurring tasks to process.
+                readRecords(consumer);
+                readRecords(recurringConsumer);
 
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
                 long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
@@ -160,6 +151,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         wakeUp.set(true);
         noThrow(countDownLatch::await, "Error waiting for the TaskRunner loop to finish");
         noThrow(consumer::close, "Error closing the task runner");
+        noThrow(recurringConsumer::close, "Error closing the task runner");
     }
 
     /**
@@ -169,6 +161,28 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     public boolean stopTask(TaskId taskId) {
         return taskId.equals(runningTaskId) && runningTask.stop();
+    }
+
+    /**
+     * Read and handle some records from the given consumer
+     */
+    private void readRecords(Consumer<TaskId, TaskState> theConsumer) {
+        // This TaskRunner should only ever receive one record from each consumer
+        ConsumerRecords<TaskId, TaskState> records = theConsumer.poll(1000);
+        debugConsumerStatus(theConsumer, records);
+
+        for (ConsumerRecord<TaskId, TaskState> record : records) {
+            TaskState task = record.value();
+            boolean handled = handleTask(task);
+
+            if (handled) {
+                timeTaskLastHandled = now();
+            }
+
+            offsetStorage.saveOffset(theConsumer, new TopicPartition(record.topic(), record.partition()));
+
+            LOG.trace("{} acknowledged", record.key().getValue());
+        }
     }
 
     /**
@@ -318,10 +332,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * Log debug information about the given set of {@param records} polled from Kafka
      * @param records Polled-for records to return information about
      */
-    private void debugConsumerStatus(ConsumerRecords<TaskId, TaskState> records ){
-        for (TopicPartition partition : consumer.assignment()) {
+    private void debugConsumerStatus(Consumer<TaskId, TaskState> theConsumer, ConsumerRecords<TaskId, TaskState> records ){
+        for (TopicPartition partition : theConsumer.assignment()) {
             LOG.debug("Partition {}{} has offset {} after receiving {} records",
-                    partition.topic(), partition.partition(), consumer.position(partition), records.records(partition).size());
+                    partition.topic(), partition.partition(), theConsumer.position(partition), records.records(partition).size());
         }
     }
 
