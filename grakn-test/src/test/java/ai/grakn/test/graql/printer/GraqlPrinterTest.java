@@ -18,21 +18,19 @@
 
 package ai.grakn.test.graql.printer;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Type;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -117,7 +115,7 @@ public class GraqlPrinterTest {
     public void testEmptyResult() {
         Printer printer = Printers.graql();
 
-        Map<String, Concept> emptyResult = Maps.newHashMap();
+        Answer emptyResult = new QueryAnswer();
 
         assertEquals("{}", printer.graqlString(emptyResult));
     }
