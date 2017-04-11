@@ -729,7 +729,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void clear() {
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
         innerClear();
     }
 
