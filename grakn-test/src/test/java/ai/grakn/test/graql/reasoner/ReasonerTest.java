@@ -531,8 +531,6 @@ public class ReasonerTest {
         assertEquals(answers, answers2);
     }
 
-    //TODO takes ages - take a look at selection strategy
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingPlays2(){
         String queryString = "match $x isa person;$y isa $type;$type plays recommended-product;($x, $y) isa recommendation;";
@@ -558,8 +556,6 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    //TODO takes ages - look at atom selection strategy
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingTypeHas2(){
         String queryString = "match $x isa $type;$type has name;$y isa product;($x, $y) isa recommendation;";
