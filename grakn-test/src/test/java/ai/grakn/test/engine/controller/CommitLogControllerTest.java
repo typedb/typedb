@@ -43,9 +43,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import spark.Service;
 
 import java.util.UUID;
-import spark.Service;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
@@ -115,15 +115,6 @@ public class CommitLogControllerTest {
     @After
     public void resetMockitoMockCounts(){
         reset(manager);
-    }
-
-    @Test
-    @Ignore //TODO Add in stopping tasks
-    public void whenClearingGraph_CommitLogClearsCache(){
-        GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, TEST_KEYSPACE).open(GraknTxType.WRITE);
-        test.admin().clear(null);
-
-        verify(manager, times(1)).stopTask(any());
     }
 
     @Test

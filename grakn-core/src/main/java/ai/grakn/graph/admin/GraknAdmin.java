@@ -126,21 +126,6 @@ public interface GraknAdmin {
     //------------------------------------- Admin Specific Operations ----------------------------------
 
     /**
-     * Commits the graph and adds concepts for post processing directly to the cache bypassing the REST API.
-     *
-     * @param conceptCache The concept Cache to store concepts in for processing later
-     * @throws GraknValidationException when the graph does not conform to the object concept
-     */
-    void commit(ConceptCache conceptCache) throws GraknValidationException;
-
-    /**
-     * Clears the graph and empties the provided cache.
-     *
-     * @param conceptCache The concept Cache to store concepts in for processing later
-     */
-    void clear(ConceptCache conceptCache);
-
-    /**
      * Commits to the graph without submitting any commit logs.
      * @return the commit log that would have been submitted if it is needed.
      * @throws GraknValidationException when the graph does not conform to the object concept
