@@ -25,8 +25,9 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
+import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
@@ -35,6 +36,7 @@ import ai.grakn.graql.internal.pattern.property.RhsProperty;
 import ai.grakn.graql.internal.pattern.property.SubProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableMap;
@@ -115,21 +117,21 @@ public class InsertQueryExecutor {
     /**
      * Insert all the Vars
      */
-    Map<VarName, Concept> insertAll() {
-        return insertAll(new HashMap<>());
+    Answer insertAll() {
+        return insertAll(new QueryAnswer());
     }
 
     /**
      * Insert all the Vars
      * @param results the result of a match query
      */
-    Map<VarName, Concept> insertAll(Map<VarName, Concept> results) {
+    Answer insertAll(Answer results) {
         concepts.clear();
-        concepts.putAll(results);
+        concepts.putAll(results.map());
         namedConcepts.clear();
-        namedConcepts.putAll(results);
+        namedConcepts.putAll(results.map());
         vars.forEach(this::insertVar);
-        return namedConcepts;
+        return new QueryAnswer(namedConcepts);
     }
 
     /**

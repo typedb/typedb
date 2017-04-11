@@ -57,7 +57,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<String> resultsString(Printer printer) {
-        return streamWithVarNames().map(printer::graqlString);
+        return stream().map(printer::graqlString);
     }
 
     @Override
@@ -77,7 +77,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final List<Map<VarName, Concept>> results() {
-        return streamWithVarNames().collect(toList());
+        return stream(Optional.empty()).map(Answer::map).collect(toList());
     }
 
     /**
@@ -86,11 +86,6 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
      * @return a stream of results
      */
     public abstract Stream<Answer> stream(Optional<GraknGraph> graph);
-
-    @Override
-    public final Stream<Map<VarName, Concept>> streamWithVarNames() {
-        return stream(Optional.empty()).map(Answer::map);
-    }
 
     @Override
     public final Stream<Answer> stream() {
@@ -118,7 +113,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate) {
+    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 

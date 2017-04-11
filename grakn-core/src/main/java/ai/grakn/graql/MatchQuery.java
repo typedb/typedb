@@ -25,7 +25,6 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -154,7 +153,7 @@ public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
      * @param <S> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
-    <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate);
+    <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

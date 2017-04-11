@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting and manipulating a MatchQuery
@@ -43,13 +42,6 @@ public interface MatchQueryAdmin extends MatchQuery {
      * @return a list of results
      */
     List<Map<VarName, Concept>> results();
-
-    /**
-     * Get a stream of results. This differs from {@code MatchQuery#execute} because the keys are instances of
-     * {@code VarName}.
-     * @return a stream of results
-     */
-    Stream<Map<VarName, Concept>> streamWithVarNames();
 
     /**
      * @param graph the graph to use to get types from

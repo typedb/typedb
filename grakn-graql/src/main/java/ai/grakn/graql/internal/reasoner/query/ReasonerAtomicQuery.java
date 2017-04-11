@@ -23,7 +23,6 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
@@ -188,7 +187,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     private Stream<Answer> DBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
         AnswerExplanation exp = new LookupExplanation(this);
-        Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames()
+        Stream<Answer> dbStream = getMatchQuery().admin().stream()
                 .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
         return cache.record(this, dbStream);
@@ -199,7 +198,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Stream<Answer> DBlookup() {
         AnswerExplanation exp = new LookupExplanation(this);
-        return getMatchQuery().admin().streamWithVarNames()
+        return getMatchQuery().admin().stream()
                 .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
     }
@@ -208,10 +207,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private Stream<Answer> insert() {
-        InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
-        return insert.stream()
-                .map(m -> m.entrySet().stream().collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
-                .map(QueryAnswer::new);
+        return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
     }
 
     private Stream<Answer> materialiseDirect() {
@@ -372,7 +368,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
+            return this.getMatchQuery().admin().stream().map(QueryAnswer::new);
         } else {
             return new QueryAnswerIterator(materialise, explanation, cache, dCache).hasStream();
         }
