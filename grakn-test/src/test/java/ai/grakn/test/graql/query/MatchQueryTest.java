@@ -63,9 +63,9 @@ import static ai.grakn.graql.Graql.contains;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.gte;
+import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.lt;
 import static ai.grakn.graql.Graql.lte;
-import static ai.grakn.graql.Graql.label;
 import static ai.grakn.graql.Graql.neq;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.regex;
@@ -79,6 +79,7 @@ import static ai.grakn.test.matcher.GraknMatchers.hasValue;
 import static ai.grakn.test.matcher.GraknMatchers.inferenceRule;
 import static ai.grakn.test.matcher.GraknMatchers.isCasting;
 import static ai.grakn.test.matcher.GraknMatchers.isInstance;
+import static ai.grakn.test.matcher.GraknMatchers.isShard;
 import static ai.grakn.test.matcher.GraknMatchers.resource;
 import static ai.grakn.test.matcher.GraknMatchers.results;
 import static ai.grakn.test.matcher.GraknMatchers.rule;
@@ -635,6 +636,9 @@ public class MatchQueryTest {
 
         // Make sure results never contain castings
         assertThat(query, variable("x", everyItem(not(isCasting()))));
+
+        // Make sure results never contain shards
+        assertThat(query, variable("x", everyItem(not(isShard()))));
     }
 
     @Test
@@ -876,5 +880,13 @@ public class MatchQueryTest {
         query.forEach(result -> {
             assertNotEquals(result.get("x"), result.get("y"));
         });
+    }
+
+    @Test
+    public void whenQueryingForXSubY_ReturnOnlyTypes() {
+        MatchQuery query = qb.match(var("x").sub(var("y")));
+
+        assertThat(query, variable("x", everyItem(not(isInstance()))));
+        assertThat(query, variable("y", everyItem(not(isInstance()))));
     }
 }

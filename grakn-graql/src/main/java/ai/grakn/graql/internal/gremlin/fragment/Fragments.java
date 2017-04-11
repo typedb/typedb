@@ -29,6 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 
+import static ai.grakn.util.Schema.ConceptProperty.TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 
 /**
@@ -145,8 +146,8 @@ public class Fragments {
         return new ValueFlagFragment(start);
     }
 
-    public static Fragment notCasting(VarName start) {
-        return new NotCastingFragment(start);
+    public static Fragment notInternal(VarName start) {
+        return new NotInternalFragment(start);
     }
 
     public static Fragment neq(VarName start, VarName other) {
@@ -162,11 +163,13 @@ public class Fragments {
 
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
+        // These traversals make sure to only navigate types by checking they do not have a `TYPE` property
+        return traversal.union(__.not(__.has(TYPE.name())), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
     }
 
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.union(__.identity(), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
+        // These traversals make sure to only navigate types by checking they do not have a `TYPE` property
+        return traversal.union(__.not(__.has(TYPE.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 }

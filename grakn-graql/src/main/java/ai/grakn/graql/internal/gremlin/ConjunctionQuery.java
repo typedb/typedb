@@ -158,8 +158,8 @@ class ConjunctionQuery {
         } else if (!traversals.isEmpty()) {
             return traversals.stream();
         } else {
-            // If this variable has no properties, only confirm that it is not a casting and nothing else.
-            return Stream.of(EquivalentFragmentSets.notCasting(start));
+            // If this variable has no properties, only confirm that it is not internal and nothing else.
+            return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(start));
         }
     }
 

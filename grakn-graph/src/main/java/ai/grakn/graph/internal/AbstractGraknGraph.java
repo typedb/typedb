@@ -101,6 +101,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
 
+    //TODO: Make this a config option
+    private final long shardingFactor = 100_000;
+
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
@@ -231,10 +234,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             inferenceRuleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), ruleType);
             constraintRuleType.addEdge(Schema.EdgeLabel.SUB.getLabel(), ruleType);
 
+            //Manual creation of shards on meta types which have instances
+            createMetaShard(inferenceRuleType, Schema.BaseType.RULE_TYPE);
+            createMetaShard(constraintRuleType, Schema.BaseType.RULE_TYPE);
+
             return true;
         }
 
         return false;
+    }
+    private void createMetaShard(Vertex metaNode, Schema.BaseType baseType){
+        Vertex metaShard = addVertex(baseType);
+        metaShard.addEdge(Schema.EdgeLabel.SHARD.getLabel(), metaNode);
+        metaShard.property(Schema.ConceptProperty.IS_SHARD.name(), true);
+        metaNode.property(Schema.ConceptProperty.CURRENT_SHARD.name(), metaShard.id().toString());
     }
 
     private boolean isMetaOntologyNotInitialised(){
@@ -402,7 +415,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = addVertex(baseType);
             vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
         } else {
-            if(!baseType.name().equals(concept.getBaseType())) {
+            if(!baseType.equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
             }
             vertex = concept.getVertex();
@@ -421,12 +434,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 v -> getElementFactory().buildEntityType(v, getMetaEntityType()));
     }
 
-    private <T extends Type> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
+    private <T extends TypeImpl> T putType(TypeLabel label, Schema.BaseType baseType, Function<Vertex, T> factory){
         checkOntologyMutation();
-        Type type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
-        return validateConceptType(type, baseType, () -> {
+        TypeImpl type = buildType(label, () -> factory.apply(putVertex(label, baseType)));
+
+        T finalType = validateConceptType(type, baseType, () -> {
             throw new ConceptNotUniqueException(type, label.getValue());
         });
+
+        //Automatic shard creation - If this type does not have a shard create one
+        if(!Schema.MetaSchema.isMetaLabel(label) &&
+                !type.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).findAny().isPresent()){
+            type.createShard();
+        }
+
+        return finalType;
     }
 
     private <T extends Concept> T validateConceptType(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler){
@@ -446,7 +468,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      *
      * @return The type which was either cached or built via a DB read or write
      */
-    private Type buildType(TypeLabel label, Supplier<Type> dbBuilder){
+    private TypeImpl buildType(TypeLabel label, Supplier<TypeImpl> dbBuilder){
         if(getConceptLog().isTypeCached(label)){
             return getConceptLog().getCachedType(label);
         } else {
@@ -646,7 +668,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //-----------------------------------------------Casting Functionality----------------------------------------------
     //------------------------------------ Construction
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
+        CastingImpl casting = getElementFactory().buildCasting(addVertex(Schema.BaseType.CASTING), role.currentShard()).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
             castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
@@ -945,6 +967,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 if(transferEdge) {
                     EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, Schema.EdgeLabel.CASTING);
                     assertionToCasting.setProperty(Schema.EdgeProperty.ROLE_TYPE_LABEL, role.getId().getValue());
+                    relations = mainCasting.getRelations();
                 }
             }
 
@@ -1051,11 +1074,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public void updateTypeCounts(Map<TypeLabel, Long> typeCounts){
+    public void updateTypeShards(Map<TypeLabel, Long> typeCounts){
        typeCounts.entrySet().forEach(entry -> {
            if(entry.getValue() != 0) {
                TypeImpl type = getType(entry.getKey());
-               type.setInstanceCount(type.getInstanceCount() + entry.getValue());
+
+               long newValue = type.getInstanceCount() + entry.getValue();
+               if(newValue < shardingFactor) {
+                   type.setInstanceCount(type.getInstanceCount() + entry.getValue());
+               } else {
+                   //TODO: Maintain the count properly. We reset so we can split with simpler logic
+                   type.setInstanceCount(0L);
+                   type.createShard();
+               }
            }
        });
     }

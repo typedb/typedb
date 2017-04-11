@@ -75,7 +75,7 @@ public abstract class BinaryBase extends Atom {
         Atom ruleAtom = child.getHead().getAtom();
         return (ruleAtom instanceof BinaryBase)
                 && this.getType() != null
-                && this.getType().equals(ruleAtom.getType());
+                && this.getType().subTypes().contains(ruleAtom.getType());
     }
 
     @Override

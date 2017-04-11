@@ -584,12 +584,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             childAtomicQuery = qit.next();
             Set<VarName> joinVars = Sets.intersection(joinedVars, childAtomicQuery.getVarNames());
             Stream<Answer> localSubs = childAtomicQuery.answerStream(subGoals, cache, dCache, materialise, explanation, false);
-            join = joinWithInverse(
-                    join,
-                    localSubs,
-                    cache.getInverseAnswerMap(childAtomicQuery, joinVars),
-                    ImmutableSet.copyOf(joinVars),
-                    explanation);
+            join = join(join, localSubs, ImmutableSet.copyOf(joinVars), explanation);
             joinedVars.addAll(childAtomicQuery.getVarNames());
         }
         return join;

@@ -194,8 +194,8 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         if (shouldStopTask(latestState)) {
             stopTask(latestState);
             return true;
-        } else if(shouldDelayTask(taskFromkafka)){
-            resubmitTask(taskFromkafka, priority);
+        } else if(shouldDelayTask(latestState)){
+            resubmitTask(latestState, priority);
             return false;
         } else {
             // Need updated state to reflect task state changes in the execute method

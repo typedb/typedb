@@ -25,6 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static ai.grakn.util.Schema.BaseType.CASTING;
 import static ai.grakn.util.Schema.EdgeLabel.ISA;
+import static ai.grakn.util.Schema.EdgeLabel.SHARD;
 
 class OutIsaFragment extends AbstractFragment {
 
@@ -41,7 +42,7 @@ class OutIsaFragment extends AbstractFragment {
             // Make sure we never get castings' types
             traversal.not(__.hasLabel(CASTING.name()));
         }
-        Fragments.outSubs(traversal.out(ISA.getLabel()));
+        Fragments.outSubs(traversal.out(ISA.getLabel()).out(SHARD.getLabel()));
     }
 
     @Override

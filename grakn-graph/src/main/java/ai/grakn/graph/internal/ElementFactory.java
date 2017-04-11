@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import static org.apache.tinkerpop.gremlin.structure.T.label;
+
 /**
  * <p>
  *     Constructs Concepts And Edges
@@ -198,9 +200,10 @@ final class ElementFactory {
             return Schema.BaseType.valueOf(vertex.label());
         } catch (IllegalArgumentException e){
             //Base type appears to be invalid. Let's try getting the type via the isa edge
-            Iterator<Edge> iterator = vertex.edges(Direction.OUT, Schema.EdgeLabel.ISA.getLabel());
+            Iterator<Edge> iterator = vertex.edges(Direction.OUT, Schema.EdgeLabel.SHARD.getLabel());
             if(iterator.hasNext()){
-                Edge typeVertex = iterator.next();
+                Vertex shardVertex = iterator.next().inVertex();
+                Vertex typeVertex = shardVertex.edges(Direction.OUT, Schema.EdgeLabel.ISA.getLabel()).next().inVertex();
                 String label = typeVertex.label();
                 if(label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
                 if(label.equals(Schema.BaseType.ROLE_TYPE.name())) return Schema.BaseType.CASTING;

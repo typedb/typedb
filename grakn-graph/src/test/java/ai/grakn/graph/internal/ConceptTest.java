@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static ai.grakn.util.ErrorMessage.INVALID_OBJECT_TYPE;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
@@ -80,21 +79,14 @@ public class ConceptTest extends GraphTestBase{
         EntityTypeImpl entityType2 = (EntityTypeImpl) graknGraph.putEntityType("entity type 1").superType(entityType1);
         EntityType entityType3 = graknGraph.putEntityType("entity type 2").superType(entityType2);
 
-        Entity entity1 = entityType2.addEntity();
-        Entity entity2 = entityType2.addEntity();
-
         Set<EdgeImpl> superType = entityType2.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
         Set<EdgeImpl> subs = entityType2.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
-        Set<EdgeImpl> instances = entityType2.getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).collect(Collectors.toSet());
 
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));
-        assertThat(instances, is(not(empty())));
 
         superType.forEach(edge -> assertEquals(entityType1, edge.getTarget()));
         subs.forEach(edge -> assertEquals(entityType3, edge.getSource()));
-        assertThat(instances.stream().map(EdgeImpl::getSource).collect(Collectors.toSet()),
-                containsInAnyOrder(entity1, entity2));
     }
 
     @Test

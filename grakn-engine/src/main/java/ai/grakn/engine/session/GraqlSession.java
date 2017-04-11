@@ -117,6 +117,7 @@ class GraqlSession {
     }
 
     private void refreshGraph() {
+        if (graph != null && !graph.isClosed()) graph.close();
         graph = factory.open(GraknTxType.WRITE);
         graph.showImplicitConcepts(showImplicitTypes);
     }
@@ -227,7 +228,7 @@ class GraqlSession {
             } finally {
                 if (errorMessage != null) {
                     if (queries != null && !queries.stream().allMatch(Query::isReadOnly)) {
-                        graph.close();
+                        attemptRefresh();
                     }
                     sendQueryError(errorMessage);
                 }

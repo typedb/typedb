@@ -93,8 +93,11 @@ public abstract class Atom extends AtomBase {
     protected abstract boolean isRuleApplicable(InferenceRule child);
 
     public Set<InferenceRule> getApplicableRules() {
-        Collection<Rule> rulesFromType = getType() != null? getType().getRulesOfConclusion() : Reasoner.getRules(graph());
-        return rulesFromType.stream()
+        Type type = getType();
+        Set<Rule> rulesWithCompatibleHead = type != null?
+                type.subTypes().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
+                Reasoner.getRules(graph());
+        return rulesWithCompatibleHead.stream()
                 .map(rule -> new InferenceRule(rule, graph()))
                 .filter(this::isRuleApplicable)
                 .collect(Collectors.toSet());
@@ -102,10 +105,7 @@ public abstract class Atom extends AtomBase {
 
     @Override
     public boolean isRuleResolvable() {
-        Type type = getType();
-        return type != null
-                && !type.getRulesOfConclusion().isEmpty()
-                && !this.getApplicableRules().isEmpty();
+        return !this.getApplicableRules().isEmpty();
     }
 
     @Override
