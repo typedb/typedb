@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.lock;
 
-import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
@@ -42,7 +41,7 @@ public class ZookeeperLock implements Lock {
     private final InterProcessSemaphoreMutex mutex;
 
     public ZookeeperLock(ZookeeperConnection zookeeper, String lockPath){
-        this.lockPath = ZookeeperPaths.LOCK + lockPath;
+        this.lockPath = lockPath;
         this.mutex = new InterProcessSemaphoreMutex(zookeeper.connection(), lockPath);
     }
 
