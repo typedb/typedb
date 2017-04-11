@@ -150,6 +150,6 @@ public class PostProcessing {
     @FunctionalInterface
     public interface Consumer <A, B, C> {
         //R is like Return, but doesn't have to be last in the list nor named R.
-        public void apply (A a, B b, C c);
+        void apply (A a, B b, C c);
     }
 }
