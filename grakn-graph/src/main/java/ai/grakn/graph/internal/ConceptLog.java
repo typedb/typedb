@@ -22,6 +22,10 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -238,5 +242,37 @@ class ConceptLog {
     }
     private void cleanupInstanceCount(TypeLabel name){
         if(instanceCount.get(name) == 0) instanceCount.remove(name);
+    }
+
+
+    JSONObject getFormattedLog(){
+        //Concepts In Need of Inspection
+        JSONObject conceptsForInspection = new JSONObject();
+        conceptsForInspection.put(Schema.BaseType.CASTING.name(), loadConceptsForFixing(getModifiedCastings()));
+        conceptsForInspection.put(Schema.BaseType.RESOURCE.name(), loadConceptsForFixing(getModifiedResources()));
+
+        //Types with instance changes
+        JSONArray typesWithInstanceChanges = new JSONArray();
+
+        getInstanceCount().forEach((key, value) -> {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put(REST.Request.COMMIT_LOG_TYPE_NAME, key.getValue());
+            jsonObject.put(REST.Request.COMMIT_LOG_INSTANCE_COUNT, value);
+            typesWithInstanceChanges.put(jsonObject);
+        });
+
+        //Final Commit Log
+        JSONObject formattedLog = new JSONObject();
+        formattedLog.put(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
+        formattedLog.put(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
+
+        return formattedLog;
+    }
+
+    private  <X extends InstanceImpl> JSONObject loadConceptsForFixing(Set<X> instances){
+        Map<String, Set<ConceptId>> conceptByIndex = new HashMap<>();
+        instances.forEach(concept ->
+                conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId()));
+        return;new JSONObject(conceptByIndex);
     }
 }

@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -141,10 +142,10 @@ public interface GraknAdmin {
 
     /**
      * Commits to the graph without submitting any commit logs.
-     *
+     * @return the commit log that would have been submitted if it is needed.
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
-    void commitNoLogs() throws GraknValidationException;
+    Optional<String> commitNoLogs() throws GraknValidationException;
 
     /**
      * Merges the provided duplicate castings.

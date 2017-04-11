@@ -57,7 +57,6 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +68,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -754,7 +754,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public void close(){
-        close(false);
+        close(false, false);
     }
 
     @Override
@@ -764,18 +764,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public void commit() throws GraknValidationException{
-        close(true);
+        close(true, true);
     }
 
-    private void close(boolean commitRequired){
-        if(isClosed()) return;
-
+    private Optional<String> close(boolean commitRequired, boolean submitLogs){
+        Optional<String> logs = Optional.empty();
+        if(isClosed()) return logs;
         String closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
 
         try{
             if(commitRequired) {
                 closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
-                commit(this::submitCommitLogs);
+                logs = commitWithLogs();
+                if(logs.isPresent() && submitLogs) {
+                    LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logs.get()) + "]");
+                }
                 getConceptLog().writeToCentralCache(true);
             } else {
                 getConceptLog().writeToCentralCache(isReadOnly());
@@ -783,6 +786,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } finally {
             closeTransaction(closeMessage);
         }
+        return logs;
     }
 
     private void closeTransaction(String closedReason){
@@ -802,6 +806,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param conceptCache The concept Cache to store concepts in for processing later
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
+    //TODO: Kill this method
     @Override
     public void commit(ConceptCache conceptCache) throws GraknValidationException{
         commit((castings, resources) -> {
@@ -818,10 +823,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
     @Override
-    public void commitNoLogs() throws GraknValidationException {
-        commit((x, y) -> {});
+    public Optional<String> commitNoLogs() throws GraknValidationException {
+        return close(true, false);
     }
 
+    //TODO: Kill this method
     public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
@@ -846,6 +852,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
+    private Optional<String> commitWithLogs() throws GraknValidationException {
+        validateGraph();
+
+        boolean submissionNeeded = !getConceptLog().getInstanceCount().isEmpty() ||
+                !getConceptLog().getModifiedCastings().isEmpty() ||
+                !getConceptLog().getModifiedResources().isEmpty();
+        JSONObject conceptLog = getConceptLog().getFormattedLog();
+
+        LOG.trace("Graph is valid. Committing graph . . . ");
+        commitTransactionInternal();
+
+        //TODO: Kill when analytics no longer needs this
+        GraknSparkComputer.refresh();
+
+        LOG.trace("Graph committed.");
+
+        //No post processing should ever be done for the system keyspace
+        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && submissionNeeded) {
+            return Optional.of(conceptLog.toString());
+        }
+        return Optional.empty();
+    }
+
     void commitTransactionInternal(){
         try {
             getTinkerPopGraph().tx().commit();
@@ -853,7 +882,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //IGNORED
         }
     }
-
 
     void validateGraph() throws GraknValidationException {
         Validator validator = new Validator(this);
@@ -868,37 +896,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void submitCommitLogs(Set<Pair<String, ConceptId>> castings, Set<Pair<String, ConceptId>> resources){
-        //Concepts In Need of Inspection
-        JSONObject conceptsForInspection = new JSONObject();
-        conceptsForInspection.put(COMMIT_LOG_FIX_CASTING, loadCommitLogConcepts(castings));
-        conceptsForInspection.put(COMMIT_LOG_FIX_RESOURCE, loadCommitLogConcepts(resources));
-
-        //Types with instance changes
-        JSONArray typesWithInstanceChanges = new JSONArray();
-        getConceptLog().getInstanceCount().entrySet().forEach(entry -> {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put(REST.Request.COMMIT_LOG_TYPE_NAME, entry.getKey().getValue());
-            jsonObject.put(REST.Request.COMMIT_LOG_INSTANCE_COUNT, entry.getValue());
-            typesWithInstanceChanges.put(jsonObject);
-        });
-
-        //Final Commit Log
-        JSONObject postObject = new JSONObject();
-        postObject.put(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
-        postObject.put(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
-
-        LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString()) + "]");
-    }
-    private JSONObject loadCommitLogConcepts(Set<Pair<String, ConceptId>> concepts){
-        // Group the concepts by index
-        Map<String, Set<ConceptId>> conceptsByIndex = new HashMap<>();
-        for(Pair<String, ConceptId> concept:concepts){
-            conceptsByIndex.computeIfAbsent(concept.getValue0(), (e) -> new HashSet<>()).add(concept.getValue1());
-        }
-
-        return new JSONObject(conceptsByIndex);
-    }
     private String getCommitLogEndPoint(){
         if(Grakn.IN_MEMORY.equals(engine)) {
             return Grakn.IN_MEMORY;
