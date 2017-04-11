@@ -61,6 +61,8 @@ import static java.util.stream.Collectors.joining;
  */
 public class DistributionContext extends ExternalResource {
 
+    private static final String LOG_LEVEL = "INFO";
+
     private static final FilenameFilter jarFiles = (dir, name) -> name.toLowerCase().endsWith(".jar");
     private static final String ZIP = "grakn-dist-" + GraknVersion.VERSION + ".zip";
     private static final String CURRENT_DIRECTORY = System.getProperty("user.dir");
@@ -133,7 +135,7 @@ public class DistributionContext extends ExternalResource {
     private Process newEngineProcess(Integer port) throws IOException {
         // Set correct port & task manager
         Properties properties = GraknEngineConfig.getInstance().getProperties();
-        properties.setProperty(LOGGING_LEVEL, "INFO");
+        properties.setProperty(LOGGING_LEVEL, LOG_LEVEL);
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
 

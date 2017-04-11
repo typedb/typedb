@@ -83,7 +83,6 @@ public class SingleQueueTaskManager implements TaskManager {
     private final Producer<TaskId, TaskState> producer;
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
-    private final FailoverElector failover;
     private final PathChildrenCache stoppedTasks;
     private final ExternalOffsetStorage offsetStorage;
 
@@ -121,7 +120,6 @@ public class SingleQueueTaskManager implements TaskManager {
         }
 
         //TODO check that the number of partitions is at least the capacity
-        this.failover = new FailoverElector(engineId, zookeeper, storage);
         this.producer = kafkaProducer();
 
         registerSelfForFailover(engineId, zookeeper);
@@ -165,9 +163,6 @@ public class SingleQueueTaskManager implements TaskManager {
         noThrow(taskRunnerThreadPool::shutdown, "Error closing task runner thread pool");
         noThrow(() -> taskRunnerThreadPool.awaitTermination(1, TimeUnit.MINUTES),
                 "Error waiting for TaskRunner executor to shutdown.");
-
-        // remove this engine from leadership election
-        noThrow(failover::renounce, "Error renouncing participation in leadership election");
 
         // stop zookeeper connection
         noThrow(zookeeper::close, "Error waiting for zookeeper connection to close");

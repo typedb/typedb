@@ -26,13 +26,13 @@ import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.generator.TaskStates.WithClass;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import java.util.List;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -100,7 +100,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void afterSubmitting_AllTasksAreCompleted(List<@NewTask TaskState> tasks){
+    public void afterSubmitting_AllTasksAreCompleted(List<TaskState> tasks){
         tasks.forEach(taskManager::addLowPriorityTask);
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 
@@ -109,7 +109,7 @@ public class SingleQueueTaskManagerTest {
 
     @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(@NewTask TaskState task) {
+    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task) {
         taskManager.stopTask(task.getId());
 
         taskManager.addLowPriorityTask(task);
@@ -121,7 +121,7 @@ public class SingleQueueTaskManagerTest {
 
     @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
-    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(@NewTask TaskState task) {
+    public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task) {
         taskManager.stopTask(task.getId());
 
         taskManager.addLowPriorityTask(task);
@@ -133,7 +133,7 @@ public class SingleQueueTaskManagerTest {
 
     @Property(trials=10)
     public void whenStoppingATaskDuringExecution_TheTaskIsCancelled(
-            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+            @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> taskManager.stopTask(id));
 
         taskManager.addLowPriorityTask(task);
@@ -146,7 +146,7 @@ public class SingleQueueTaskManagerTest {
 
     @Property(trials=10)
     public void whenStoppingATaskDuringExecution_TheTaskIsMarkedAsStopped(
-            @NewTask @WithClass(EndlessExecutionMockTask.class) TaskState task) {
+            @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> taskManager.stopTask(id));
 
         taskManager.addLowPriorityTask(task);
@@ -157,7 +157,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(@NewTask TaskState task) {
+    public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(TaskState task) {
         whenTaskFinishes(id -> taskManager.stopTask(id));
 
         taskManager.addLowPriorityTask(task);
@@ -168,7 +168,7 @@ public class SingleQueueTaskManagerTest {
     }
 
     @Property(trials=10)
-    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(@NewTask TaskState task) {
+    public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(TaskState task) {
         whenTaskFinishes(id -> taskManager.stopTask(id));
 
         taskManager.addLowPriorityTask(task);

@@ -20,7 +20,6 @@
 package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskCheckpoint;
@@ -38,8 +37,6 @@ import java.time.Instant;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
 import static ai.grakn.engine.TaskStatus.STOPPED;
@@ -189,26 +186,25 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Returns whether the task was succesfully handled, or was just re-submitted.
      */
-    private boolean handleTask(TaskState task, String priority) {
-        LOG.debug("{}\treceived", task);
+    private boolean handleTask(TaskState taskFromkafka, String priority) {
+        LOG.debug("{}\treceived", taskFromkafka);
 
-        if (shouldStopTask(task)) {
-            stopTask(task);
+        TaskState latestState = getLatestState(taskFromkafka);
+
+        if (shouldStopTask(latestState)) {
+            stopTask(latestState);
             return true;
-        } else if(shouldDelayTask(task)){
-            resubmitTask(task, priority);
+        } else if(shouldDelayTask(taskFromkafka)){
+            resubmitTask(taskFromkafka, priority);
             return false;
-        } else if (shouldExecuteTask(task)) {
-            executeTask(task);
+        } else {
+            // Need updated state to reflect task state changes in the execute method
+            TaskState updatedState = executeTask(latestState);
 
-            if(taskShouldRecur(task)){
-                // re-schedule
-                task.schedule(task.schedule().incrementByInterval());
-                resubmitTask(task, priority);
+            if(taskShouldRecur(updatedState)){
+                resubmitTask(updatedState, priority);
             }
 
-            return true;
-        } else {
             return true;
         }
     }
@@ -219,16 +215,19 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * If a task is resuming, it should not be re-marked as running and should be started from it's checkpoint.
      * If a task is seen for the first time, it should be marked as running and started with it's original configuration.
      *
-     * @param task the task to execute
+     * @param task the task to execute from the kafka queue
      */
-    private void executeTask(TaskState task){
-        // Execute task
+    private TaskState executeTask(TaskState task){
         try {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
 
             boolean completed;
+
+            //TODO pass a method to retrieve checkpoint from storage to task and remove "resume" method in interface
             if(taskShouldResume(task)){
+                LOG.debug("{}\tresuming ", task);
+
                 completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
             } else {
                 //Mark as running
@@ -251,9 +250,18 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         } finally {
             runningTask = null;
             runningTaskId = null;
+
+            // Update the schedule of the task if it should recur
+            if(taskShouldRecur(task)) {
+                task.schedule(task.schedule().incrementByInterval());
+            }
+
             storage.updateState(task);
+
             LOG.debug("{}\tmarked as {}", task, task.status());
         }
+
+        return task;
     }
 
     /**
@@ -276,23 +284,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         LOG.debug("{}\t marked as stopped", task);
     }
 
-    private boolean shouldExecuteTask(TaskState task) {
-        TaskId taskId = task.getId();
-
-        if (task.status().equals(CREATED)) {
-            // Only run created tasks if they are not being retried
-            return !storage.containsTask(taskId);
-        } else {
-            // Only run retried tasks if they are not failed and if not completed or recurring)
-            // TODO: what if another task runner is running this task? (due to rebalance)
-            TaskStatus status = storage.getState(taskId).status();
-            return !status.equals(STOPPED) && !status.equals(FAILED) &&
-                    (!status.equals(COMPLETED) || task.schedule().isRecurring());
-        }
-    }
-
     /**
-     * Tasks should be delayed when their schedule is set for
+     * Tasks should be delayed when their schedule is set for after the current moment.
+     * This applies to recurring tasks as well.
      * @return If the provided task should be delayed.
      */
     private boolean shouldDelayTask(TaskState task){
@@ -305,23 +299,37 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @return If the task should be run again
      */
     private boolean taskShouldRecur(TaskState task){
-        return task.schedule().isRecurring() && !task.status().equals(FAILED)&& !task.status().equals(STOPPED);
+        return task.schedule().isRecurring() && !task.status().equals(FAILED) && !task.status().equals(STOPPED);
     }
 
     /**
      * Tasks should resume from the last checkpoint when their checkpoint is
-     * non null and they are in the RUNNING state.
+     * non null and they are in the RUNNING state. This status should be taken from
+     * the latest snapshot of task state in storage.
      *
      * Recurring tasks should
      * @param task Task that should be checked
      * @return If the given task can resume
      */
     private boolean taskShouldResume(TaskState task){
-        return task.checkpoint() != null && task.status().equals(RUNNING);
+        return task.status() == RUNNING;
     }
 
     private boolean shouldStopTask(TaskState task) {
-        return manager.isTaskMarkedStopped(task.getId());
+        return task.status() == STOPPED || manager.isTaskMarkedStopped(task.getId());
+    }
+
+    /**
+     * Return the latest state of the task from storage. If the task
+     * has not been saved in storage, return the state that was given.
+     * @return Latest state of the given task
+     */
+    private TaskState getLatestState(TaskState task){
+        if(storage.containsTask(task.getId())){
+            return storage.getState(task.getId());
+        }
+
+        return task;
     }
 
     private void putState(TaskState taskState) {
