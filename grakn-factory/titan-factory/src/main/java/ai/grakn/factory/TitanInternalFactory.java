@@ -76,7 +76,7 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
 
     @Override
     GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph, boolean batchLoading) {
-        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
+        return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading, super.properties);
     }
 
     @Override
