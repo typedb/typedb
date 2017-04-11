@@ -27,7 +27,7 @@ package ai.grakn.engine.tasks.config;
  * */
 //TODO FIX THIS WHOLE CLASS IT IS AWFUL
 public interface ZookeeperPaths {
-    String LOCK = "/lock";
+    String LOCK = "/lock/";
     String TASKS_NAMESPACE = "grakn";
     String SCHEDULER = "/scheduler";
     String FAILOVER = "/failover";

@@ -31,7 +31,6 @@ import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
@@ -136,8 +135,8 @@ public class SingleQueueTaskManager implements TaskManager {
 
         EngineCacheProvider.init(EngineCacheDistributed.init(zookeeper));
 
-        LockProvider.add(PostProcessingTask.LOCK_KEY, new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK));
-        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK));
+        LockProvider.add(PostProcessingTask.LOCK_KEY, new ZookeeperLock(zookeeper, PostProcessingTask.LOCK_KEY));
+        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new ZookeeperLock(zookeeper, UpdatingInstanceCountTask.LOCK_KEY));
 
         LOG.debug("TaskManager started");
     }
