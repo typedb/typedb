@@ -72,7 +72,7 @@ public class UpdatingInstanceCountTask extends LockingBackgroundTask {
 
         updateCountsOnKeySpace(keyspace, instanceMap);
 
-        return true;
+        return false;
     }
 
     private void updateCountsOnKeySpace(String keyspace, Map<TypeLabel, Long> jobs){
