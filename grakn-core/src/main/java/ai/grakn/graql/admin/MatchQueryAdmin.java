@@ -19,13 +19,10 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,13 +32,6 @@ import java.util.Set;
  * @author Felix Chapman
  */
 public interface MatchQueryAdmin extends MatchQuery {
-
-    /**
-     * Get a list of results. This differs from {@code MatchQuery#execute} because the keys are instances of
-     * {@code VarName}.
-     * @return a list of results
-     */
-    List<Map<VarName, Concept>> results();
 
     /**
      * @param graph the graph to use to get types from

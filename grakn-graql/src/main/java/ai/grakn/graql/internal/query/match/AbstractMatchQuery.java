@@ -42,7 +42,6 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -73,11 +72,6 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     @Override
     public final List<Answer> execute() {
         return stream().collect(toList());
-    }
-
-    @Override
-    public final List<Map<VarName, Concept>> results() {
-        return stream(Optional.empty()).map(Answer::map).collect(toList());
     }
 
     /**
