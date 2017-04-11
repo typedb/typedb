@@ -162,11 +162,8 @@ public class GraknEngineFailoverIT {
     private static boolean isDone(TaskId taskId){
         try {
             TaskStatus status = storage.getState(taskId).status();
-
-            System.out.println(taskId + "     " + status);
             return status == FAILED || status == COMPLETED || status == STOPPED;
         } catch (EngineStorageException e){
-            System.out.println(taskId + " not found");
             return false;
         }
     }
