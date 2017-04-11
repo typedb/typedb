@@ -310,7 +310,7 @@ public class GenealogyTest {
         String queryString = "match (sibling1:$x, sibling2:$y) isa siblings;";
         MatchQuery query = iqb.materialise(true).parse(queryString);
 
-        QueryAnswers answers = new QueryAnswers(query.admin().streamWithAnswers().collect(Collectors.toSet()));
+        QueryAnswers answers = new QueryAnswers(query.admin().stream().collect(Collectors.toSet()));
         assertEquals(answers.size(), 166);
         assertTrue(!hasDuplicates(answers));
         assertEquals(answers, queryAnswers(qb.<MatchQueryAdmin>parse(queryString)));

@@ -93,13 +93,8 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final Stream<Answer> streamWithAnswers(){
-        return stream(Optional.empty());
-    }
-
-    @Override
     public final Stream<Answer> stream() {
-        return streamWithAnswers();
+        return stream(Optional.empty());
     }
 
     @Override

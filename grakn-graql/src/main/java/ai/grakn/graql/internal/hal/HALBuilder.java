@@ -64,7 +64,7 @@ public class HALBuilder {
 
 
     public static Json renderHALArrayData(MatchQuery matchQuery, int offset, int limit){
-        Collection<Answer> answers = matchQuery.admin().streamWithAnswers().collect(toSet());
+        Collection<Answer> answers = matchQuery.admin().stream().collect(toSet());
         return renderHALArrayData(matchQuery, answers, offset, limit, false);
     }
 
