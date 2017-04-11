@@ -19,21 +19,22 @@
 
 package ai.grakn.engine.tasks.manager;
 
+import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.TaskId;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
-import java.util.concurrent.locks.Lock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,12 +45,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -90,7 +91,8 @@ public class StandaloneTaskManager implements TaskManager {
 
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
 
-        LockProvider.add(POST_PROCESSING_LOCK, new NonReentrantLock());
+        LockProvider.add(PostProcessingTask.LOCK_KEY, new NonReentrantLock());
+        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new NonReentrantLock());
     }
 
     public TaskManager open() {

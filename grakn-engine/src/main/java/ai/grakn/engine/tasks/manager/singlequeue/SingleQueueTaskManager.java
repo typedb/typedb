@@ -19,23 +19,26 @@
 
 package ai.grakn.engine.tasks.manager.singlequeue;
 
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.cache.EngineCacheDistributed;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.ZookeeperLock;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.util.EngineID;
-import com.google.common.collect.ImmutableList;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.zookeeper.CreateMode;
@@ -48,16 +51,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.LOCK;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
-import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED_PREFIX;
+import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.String.format;
 import static java.util.concurrent.Executors.newFixedThreadPool;
@@ -135,7 +136,8 @@ public class SingleQueueTaskManager implements TaskManager {
 
         EngineCacheProvider.init(EngineCacheDistributed.init(zookeeper));
 
-        LockProvider.add(POST_PROCESSING_LOCK, new ZookeeperLock(zookeeper, LOCK));
+        LockProvider.add(PostProcessingTask.LOCK_KEY, new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + PostProcessingTask.LOCK_KEY));
+        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + UpdatingInstanceCountTask.LOCK_KEY));
 
         LOG.debug("TaskManager started");
     }
