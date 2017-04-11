@@ -27,25 +27,20 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.SystemController;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.util.EngineID;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.REST;
-import ai.grakn.util.Schema;
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
+import mjson.Json;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -54,32 +49,39 @@ import spark.Service;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_CASTING;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_RESOURCE;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static com.jayway.restassured.RestAssured.baseURI;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.assertEquals;
+import static mjson.Json.array;
+import static mjson.Json.object;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+//TODO Stopping commit log tasks when clearing graph
 public class CommitLogControllerTest {
-    private final ConceptCache cache = EngineCacheProvider.getCache();
 
     private static final String TEST_KEYSPACE = "test";
     private static final int PORT = 4567;
 
     private static Service spark;
     private static TaskManager manager;
+    private Json commitLog;
 
     @BeforeClass
     public static void setupControllers() throws Exception {
         ensureCassandraRunning();
-
-        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
 
         baseURI = "http://localhost:" + PORT;
         spark = Service.ignite();
@@ -109,59 +111,35 @@ public class CommitLogControllerTest {
         }
 
         manager.close();
-        EngineCacheProvider.clearCache();
-    }
-
-    @Before
-    public void sendFakeCommitLog() throws Exception {
-        String commitLog = "{\n" +
-                "    \"" + REST.Request.COMMIT_LOG_FIXING + "\":[\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"10\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"1\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"20\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"2\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"30\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"3\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"40\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"4\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"50\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"5\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"60\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"6\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"70\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"7\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"80\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"8\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"90\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"9\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"},\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_INDEX + "\":\"100\", \"" + REST.Request.COMMIT_LOG_ID + "\":\"10\", \"" + REST.Request.COMMIT_LOG_TYPE + "\":\"" + Schema.BaseType.RELATION + "\"}\n" +
-                "    ],\n" +
-                "    \"" + REST.Request.COMMIT_LOG_COUNTING + "\":[\n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Alpha\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"-3\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Bravo\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"-2\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Charlie\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"-1\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Delta\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"1\"}, \n" +
-                "        {\"" + REST.Request.COMMIT_LOG_TYPE_NAME + "\":\"Foxtrot\", \"" + REST.Request.COMMIT_LOG_INSTANCE_COUNT + "\":\"2\"} \n" +
-                "    ]\n" +
-                "}";
-
-        given().contentType(ContentType.JSON).body(commitLog).when().
-                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + TEST_KEYSPACE).
-                then().statusCode(200).extract().response().andReturn();
     }
 
     @After
-    public void clearCache() throws InterruptedException {
-        cache.getCastingJobs(TEST_KEYSPACE).clear();
+    public void resetMockitoMockCounts(){
+        reset(manager);
     }
 
     @Test
+    @Ignore //TODO Add in stopping tasks
     public void whenClearingGraph_CommitLogClearsCache(){
         GraknGraph test = Grakn.session(Grakn.DEFAULT_URI, TEST_KEYSPACE).open(GraknTxType.WRITE);
-        test.admin().clear(EngineCacheProvider.getCache());
-        assertEquals(0, cache.getCastingJobs(TEST_KEYSPACE).size());
-        assertEquals(0, cache.getResourceJobs(TEST_KEYSPACE).size());
+        test.admin().clear(null);
+
+        verify(manager, times(1)).stopTask(any());
     }
 
     @Test
-    public void whenControllerReceivesLog_CacheIsUpdated() {
-        assertEquals(4, cache.getCastingJobs(TEST_KEYSPACE).size());
-        assertEquals(2, cache.getResourceJobs(TEST_KEYSPACE).size());
+    public void whenControllerReceivesLog_TaskManagerReceivesPPTask() {
+        sendFakeCommitLog();
+
+        verify(manager, times(1)).addTask(
+                argThat(argument ->
+                                argument.taskClass().equals(PostProcessingTask.class) &&
+                                argument.configuration().at(COMMIT_LOG_FIXING).equals(commitLog.at(COMMIT_LOG_FIXING)))
+        );
     }
 
     @Test
-    public void whenCommittingGraph_CommitLogIsSent() throws GraknValidationException {
+    public void whenCommittingGraph_TaskManagerReceivesPPTask() throws GraknValidationException {
         final String BOB = "bob";
         final String TIM = "tim";
 
@@ -170,71 +148,43 @@ public class CommitLogControllerTest {
 
         addSomeData(bob);
 
-        assertEquals(2, cache.getCastingJobs(BOB).size());
-        assertEquals(1, cache.getResourceJobs(BOB).size());
+        verify(manager, times(1)).addTask(argThat(argument ->
+                        argument.taskClass().equals(PostProcessingTask.class) &&
+                        argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_CASTING).asJsonMap().size() == 2 &&
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_RESOURCE).asJsonMap().size() == 1));
 
-        assertEquals(0, cache.getCastingJobs(TIM).size());
-        assertEquals(0, cache.getResourceJobs(TIM).size());
+        verify(manager, never()).addTask(argThat(arg -> arg.configuration().at(KEYSPACE).asString().equals(TIM)));
 
         addSomeData(tim);
 
-        assertEquals(2, cache.getCastingJobs(TIM).size());
-        assertEquals(1, cache.getResourceJobs(TIM).size());
-
-        Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE).clear();
-        Grakn.session(Grakn.DEFAULT_URI, TIM).open(GraknTxType.WRITE).clear();
-
-        assertEquals(0, cache.getCastingJobs(BOB).size());
-        assertEquals(0, cache.getCastingJobs(TIM).size());
-        assertEquals(0, cache.getResourceJobs(BOB).size());
-        assertEquals(0, cache.getResourceJobs(TIM).size());
+        verify(manager, times(1)).addTask(argThat(argument ->
+                        argument.taskClass().equals(PostProcessingTask.class) &&
+                        argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_CASTING).asJsonMap().size() == 2 &&
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_RESOURCE).asJsonMap().size() == 1));
 
         bob.close();
         tim.close();
     }
 
-    private void addSomeData(GraknGraph graph) throws GraknValidationException {
-        RoleType role1 = graph.putRoleType("Role 1");
-        RoleType role2 = graph.putRoleType("Role 2");
-        RelationType relationType = graph.putRelationType("A Relation Type").relates(role1).relates(role2);
-        EntityType type = graph.putEntityType("A Thing").plays(role1).plays(role2);
-        ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).plays(role1).plays(role2);
-        Entity entity = type.addEntity();
-        Resource resource = resourceType.putResource(UUID.randomUUID().toString());
-
-        relationType.addRelation().addRolePlayer(role1, entity).addRolePlayer(role2, resource);
-
-        graph.commit();
-    }
-
     @Test
+    @Ignore //TODO Add in stopping tasks
     public void whenDeletingViaController_CacheIsCleared() throws InterruptedException {
         delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + TEST_KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
 
-        waitForCache(TEST_KEYSPACE, 0);
-
-        assertEquals(0, cache.getCastingJobs(TEST_KEYSPACE).size());
-        assertEquals(0, cache.getResourceJobs(TEST_KEYSPACE).size());
-    }
-
-    private void waitForCache(String keyspace, int value) throws InterruptedException {
-        boolean flag = true;
-        while(flag){
-            if(cache.getCastingJobs(keyspace).size() != value){
-                Thread.sleep(1000);
-            } else{
-                flag = false;
-            }
-        }
+        verify(manager, times(1)).stopTask(any());
     }
 
     @Test
     public void whenSendingCommitLogs_TaskManagerReceivesCountTask(){
+        sendFakeCommitLog();
+
         verify(manager, atLeastOnce()).addTask(
                 argThat(argument ->
-                        argument.taskClass().equals(UpdatingInstanceCountTask.class)
-                        && argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 5)
+                                argument.taskClass().equals(UpdatingInstanceCountTask.class) &&
+                                argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 5)
         );
     }
 
@@ -251,11 +201,13 @@ public class CommitLogControllerTest {
 
         try {
             verify(manager, atLeastOnce()).addTask(argThat(argument ->
-                    argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
+                            argument.taskClass().equals(UpdatingInstanceCountTask.class) &&
+                            argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
                             argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
 
             verify(manager, atLeastOnce()).addTask(argThat(argument ->
-                    argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
+                            argument.taskClass().equals(UpdatingInstanceCountTask.class) &&
+                            argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
                             argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
         } finally {
             Grakn.session(Grakn.DEFAULT_URI, BOB).open(GraknTxType.WRITE).clear();
@@ -275,6 +227,52 @@ public class CommitLogControllerTest {
         resourceType.putResource("c");
         graph1.commit();
 
-        assertEquals(0, cache.getResourceJobs(SystemKeyspace.SYSTEM_GRAPH_NAME).size());
+        verify(manager, never()).addTask(any());
+    }
+    
+    private void sendFakeCommitLog() {
+        Json commitLogFixCasting = object();
+        commitLogFixCasting.set("10", array(1));
+        commitLogFixCasting.set("20", array(2));
+        commitLogFixCasting.set("30", array(3));
+        commitLogFixCasting.set("40", array(4));
+
+        Json commitLogFixResource = object();
+        commitLogFixResource.set("60", array(6));
+        commitLogFixResource.set("70", array(7));
+
+        Json commitLogFixing = object();
+        commitLogFixing.set(COMMIT_LOG_FIX_CASTING, commitLogFixCasting);
+        commitLogFixing.set(COMMIT_LOG_FIX_RESOURCE, commitLogFixResource);
+
+        Json commitLogCounting = array();
+        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Alpha", COMMIT_LOG_INSTANCE_COUNT, -3));
+        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Bravo", COMMIT_LOG_INSTANCE_COUNT, -2));
+        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Delta", COMMIT_LOG_INSTANCE_COUNT, -1));
+        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Charlie", COMMIT_LOG_INSTANCE_COUNT,1));
+        commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Foxtrot", COMMIT_LOG_INSTANCE_COUNT, 2));
+
+        commitLog = object(
+                COMMIT_LOG_FIXING, commitLogFixing,
+                COMMIT_LOG_COUNTING, commitLogCounting
+        );
+
+        given().contentType(ContentType.JSON).body(commitLog.toString()).when().
+                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.KEYSPACE_PARAM + "=" + TEST_KEYSPACE).
+                then().statusCode(200).extract().response().andReturn();
+    }
+
+    private void addSomeData(GraknGraph graph) throws GraknValidationException {
+        RoleType role1 = graph.putRoleType("Role 1");
+        RoleType role2 = graph.putRoleType("Role 2");
+        RelationType relationType = graph.putRelationType("A Relation Type").relates(role1).relates(role2);
+        EntityType type = graph.putEntityType("A Thing").plays(role1).plays(role2);
+        ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).plays(role1).plays(role2);
+        Entity entity = type.addEntity();
+        Resource resource = resourceType.putResource(UUID.randomUUID().toString());
+
+        relationType.addRelation().addRolePlayer(role1, entity).addRolePlayer(role2, resource);
+
+        graph.commit();
     }
 }

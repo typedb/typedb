@@ -25,6 +25,7 @@ import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
+import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
@@ -55,8 +56,8 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
  *
  * @author Filipe Teixeira
  */
+//TODO Implement delete
 public class CommitLogController {
-    private final ConceptCache cache = EngineCacheProvider.getCache();
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
     private final TaskManager manager;
@@ -74,16 +75,7 @@ public class CommitLogController {
     @ApiOperation(value = "Delete all the post processing jobs for a specific keyspace")
     @ApiImplicitParam(name = "keyspace", value = "The key space of an opened graph", required = true, dataType = "string", paramType = "path")
     private String deleteConcepts(Request req, Response res){
-        String graphName = req.queryParams(KEYSPACE_PARAM);
-
-        if(graphName == null){
-            res.status(400);
-           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(KEYSPACE_PARAM, "delete");
-        }
-
-        cache.clearAllJobs(graphName);
-
-        return "The cache of Graph [" + graphName + "] has been cleared";
+        return "Delete not implemented";
     }
 
 
@@ -124,6 +116,6 @@ public class CommitLogController {
         manager.addTask(postProcessingTask);
         manager.addTask(countingTask);
 
-        return "Graph [" + keyspace + "] now has [" + cache.getNumJobs(keyspace) + "] post processing jobs";
+        return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
     }
 }
