@@ -191,7 +191,7 @@ public class SingleQueueTaskManagerTest {
 
         Instant highPriorityCompletedAt = taskManager.storage().getState(highPriorityTask.getId()).statusChangeTime();
         manyTasks.forEach(t -> {
-            assertThat(highPriorityCompletedAt, lessThanOrEqualTo(taskManager.storage().getState(t.getId()).statusChangeTime()));
+            assertThat(highPriorityCompletedAt, lessThanOrEqualTo(taskManager.storage().getState(t.getId()).statusChangeTime().plusSeconds(1)));
         });
     }
 
