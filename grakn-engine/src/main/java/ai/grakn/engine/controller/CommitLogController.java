@@ -19,15 +19,11 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
-import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.graph.admin.ConceptCache;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
