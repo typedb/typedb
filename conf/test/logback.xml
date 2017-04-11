@@ -35,13 +35,4 @@
     <logger name="ai.grakn.engine.GraknEngineServer" level="WARN">
         <appender-ref ref="STDOUT"/>
     </logger>
-
-    <!--This is because otherwise the logs overwhelm travis-->
-    <logger name="ai.grakn.engine.tasks.manager.StandaloneTaskManager" level="OFF">
-        <appender-ref ref="STDOUT"/>
-    </logger>
-
-    <logger name="ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager" level="OFF">
-        <appender-ref ref="STDOUT"/>
-    </logger>
 </configuration>

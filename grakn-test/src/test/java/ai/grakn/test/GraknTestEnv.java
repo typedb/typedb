@@ -82,10 +82,6 @@ public abstract class GraknTestEnv {
         // Kafka is using log4j, which is super annoying. We make sure it only logs error here
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
 
-        //TODO Remove this really quickly
-        ((Logger) LoggerFactory.getLogger(StandaloneTaskManager.class)).setLevel(Level.OFF);
-        ((Logger) LoggerFactory.getLogger(SingleQueueTaskRunner.class)).setLevel(Level.OFF);
-
         // Clean-up ironically uses a lot of memory
         if (KAFKA_COUNTER.getAndIncrement() == 0) {
             LOG.info("starting kafka...");
