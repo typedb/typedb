@@ -273,6 +273,6 @@ class ConceptLog {
         Map<String, Set<ConceptId>> conceptByIndex = new HashMap<>();
         instances.forEach(concept ->
                 conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId()));
-        return;new JSONObject(conceptByIndex);
+        return new JSONObject(conceptByIndex);
     }
 }

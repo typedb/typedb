@@ -26,6 +26,7 @@ import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import java.time.Duration;
 import java.util.Set;
@@ -38,8 +39,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_CASTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_RESOURCE;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -82,8 +81,8 @@ public class PostProcessingTaskTest {
         mockResourceSet = Sets.newHashSet();
         mockJson = Json.object(
                 KEYSPACE, TEST_KEYSPACE,
-                COMMIT_LOG_FIX_CASTING, Json.object(mockCastingIndex, mockCastingSet),
-                COMMIT_LOG_FIX_RESOURCE, Json.object(mockResourceIndex, mockResourceSet)
+                Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
+                Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
         );
     }
 

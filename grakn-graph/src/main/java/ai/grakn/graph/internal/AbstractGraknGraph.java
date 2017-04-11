@@ -78,8 +78,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_CASTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_RESOURCE;
 
 /**
  * <p>

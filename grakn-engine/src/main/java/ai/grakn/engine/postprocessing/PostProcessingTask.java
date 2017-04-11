@@ -23,6 +23,7 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.util.Schema;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -37,8 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_CASTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_RESOURCE;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.time.Instant.now;
 import static java.util.stream.Collectors.toSet;
@@ -101,8 +100,8 @@ public class PostProcessingTask implements BackgroundTask {
                     try {
                         String keyspace = configuration.at(KEYSPACE).asString();
 
-                        runPostProcessing(keyspace, configuration.at(COMMIT_LOG_FIX_CASTING).asJsonMap(), postProcessing::performCastingFix);
-                        runPostProcessing(keyspace, configuration.at(COMMIT_LOG_FIX_RESOURCE).asJsonMap(), postProcessing::performResourceFix);
+                        runPostProcessing(keyspace, configuration.at(Schema.BaseType.CASTING.name()).asJsonMap(), postProcessing::performCastingFix);
+                        runPostProcessing(keyspace, configuration.at(Schema.BaseType.RESOURCE.name()).asJsonMap(), postProcessing::performResourceFix);
 
                     } finally {
                         engineLock.unlock();

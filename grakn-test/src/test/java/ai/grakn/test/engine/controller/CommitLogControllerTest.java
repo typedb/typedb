@@ -35,6 +35,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
 import com.jayway.restassured.http.ContentType;
 import mjson.Json;
 import org.junit.After;
@@ -50,8 +51,6 @@ import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.test.GraknTestEnv.ensureCassandraRunning;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_CASTING;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIX_RESOURCE;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -151,8 +150,8 @@ public class CommitLogControllerTest {
         verify(manager, times(1)).addTask(argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class) &&
                         argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
-                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_CASTING).asJsonMap().size() == 2 &&
-                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_RESOURCE).asJsonMap().size() == 1));
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(Schema.BaseType.RESOURCE.name()).asJsonMap().size() == 1));
 
         verify(manager, never()).addTask(argThat(arg -> arg.configuration().at(KEYSPACE).asString().equals(TIM)));
 
@@ -161,8 +160,8 @@ public class CommitLogControllerTest {
         verify(manager, times(1)).addTask(argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class) &&
                         argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
-                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_CASTING).asJsonMap().size() == 2 &&
-                        argument.configuration().at(COMMIT_LOG_FIXING).at(COMMIT_LOG_FIX_RESOURCE).asJsonMap().size() == 1));
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
+                        argument.configuration().at(COMMIT_LOG_FIXING).at(Schema.BaseType.RESOURCE.name()).asJsonMap().size() == 1));
 
         bob.close();
         tim.close();
@@ -242,8 +241,8 @@ public class CommitLogControllerTest {
         commitLogFixResource.set("70", array(7));
 
         Json commitLogFixing = object();
-        commitLogFixing.set(COMMIT_LOG_FIX_CASTING, commitLogFixCasting);
-        commitLogFixing.set(COMMIT_LOG_FIX_RESOURCE, commitLogFixResource);
+        commitLogFixing.set(Schema.BaseType.CASTING.name(), commitLogFixCasting);
+        commitLogFixing.set(Schema.BaseType.RESOURCE.name(), commitLogFixResource);
 
         Json commitLogCounting = array();
         commitLogCounting.add(object(COMMIT_LOG_TYPE_NAME, "Alpha", COMMIT_LOG_INSTANCE_COUNT, -3));

@@ -103,11 +103,6 @@ public class REST {
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
-        public static final String COMMIT_LOG_TYPE = "concept-base-type";
-        public static final String COMMIT_LOG_ID = "concept-vertex-id";
-        public static final String COMMIT_LOG_INDEX = "concept-index";
-        public static final String COMMIT_LOG_FIX_CASTING = "concept-to-fix-casting";
-        public static final String COMMIT_LOG_FIX_RESOURCE = "concept-to-fix-resource";
         public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
         public static final String COMMIT_LOG_TYPE_NAME = "type-name";
         public static final String COMMIT_LOG_INSTANCE_COUNT = "instance-count";
