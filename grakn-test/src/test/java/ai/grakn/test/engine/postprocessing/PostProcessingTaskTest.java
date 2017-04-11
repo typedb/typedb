@@ -19,8 +19,6 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessing;
@@ -62,14 +60,11 @@ public class PostProcessingTaskTest {
 
     @BeforeClass
     public static void mockEngineCache(){
-        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
         LockProvider.add(POST_PROCESSING_LOCK, new NonReentrantLock());
     }
 
     @AfterClass
     public static void clearEngineCache(){
-        EngineCacheStandAlone.getCache().getKeyspaces().forEach(k -> EngineCacheStandAlone.getCache().clearAllJobs(k));
-        EngineCacheProvider.clearCache();
         LockProvider.clear();
     }
 
