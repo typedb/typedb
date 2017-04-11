@@ -129,8 +129,6 @@ public class TaskState implements Serializable {
         this.engineID = engineID;
         this.statusChangeTime = now();
 
-        removeConfigUnlessRecurring();
-
         return this;
     }
 
