@@ -219,20 +219,20 @@ public class SingleQueueTaskManager implements TaskManager {
      * Get a new kafka consumer listening on the new tasks topic
      */
     public Consumer<TaskId, TaskState> newHighPriorityConsumer(){
-        return newHighPriorityConsumer(HIGH_PRIORITY_TASKS_TOPIC);
+        return newConsumer(HIGH_PRIORITY_TASKS_TOPIC);
     }
 
     /**
      * Get a new kafka consumer listening on the recurring tasks topic
      */
     public Consumer<TaskId, TaskState> newLowPriorityConsumer(){
-        return newHighPriorityConsumer(LOW_PRIORITY_TASKS_TOPIC);
+        return newConsumer(LOW_PRIORITY_TASKS_TOPIC);
     }
 
     /**
      * Get a new kafka consumer listening on the given topic
      */
-    private Consumer<TaskId, TaskState> newHighPriorityConsumer(String topic){
+    private Consumer<TaskId, TaskState> newConsumer(String topic){
         Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP + "-" + topic);
         consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;

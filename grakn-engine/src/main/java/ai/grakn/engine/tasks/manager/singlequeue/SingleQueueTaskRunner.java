@@ -121,7 +121,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
                 long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
                 if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
-                    LOG.debug("has been  " + timeSinceLastHandledTask + " ms since handeled task, sleeping for " + backOff + "ms");
+                    LOG.debug("has been  " + timeSinceLastHandledTask + " ms since handled task, sleeping for " + backOff + "ms");
                     Thread.sleep(backOff);
                     backOff *= 2;
                     if (backOff > MAX_BACKOFF) backOff = MAX_BACKOFF;
@@ -166,7 +166,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private void readRecords(Consumer<TaskId, TaskState> theConsumer) {
         // This TaskRunner should only ever receive one record from each consumer
-        ConsumerRecords<TaskId, TaskState> records = theConsumer.poll(1000);
+        ConsumerRecords<TaskId, TaskState> records = theConsumer.poll(10);
         debugConsumerStatus(theConsumer, records);
 
         for (ConsumerRecord<TaskId, TaskState> record : records) {
