@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.time.Instant.now;
 import static java.util.stream.Collectors.toSet;
@@ -107,11 +108,12 @@ public class PostProcessingTask extends LockingBackgroundTask {
     }
 
     @Override
-    protected boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration){
+    public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration){
         String keyspace = configuration.at(KEYSPACE).asString();
 
-        runPostProcessing(keyspace, configuration.at(Schema.BaseType.CASTING.name()).asJsonMap(), postProcessing::performCastingFix);
-        runPostProcessing(keyspace, configuration.at(Schema.BaseType.RESOURCE.name()).asJsonMap(), postProcessing::performResourceFix);
+        Json innerConfig = configuration.at(COMMIT_LOG_FIXING);
+        runPostProcessing(keyspace, innerConfig.at(Schema.BaseType.CASTING.name()).asJsonMap(), postProcessing::performCastingFix);
+        runPostProcessing(keyspace, innerConfig.at(Schema.BaseType.RESOURCE.name()).asJsonMap(), postProcessing::performResourceFix);
 
         return false;
     }

@@ -270,9 +270,9 @@ class ConceptLog {
     }
 
     private  <X extends InstanceImpl> JSONObject loadConceptsForFixing(Set<X> instances){
-        Map<String, Set<ConceptId>> conceptByIndex = new HashMap<>();
+        Map<String, Set<String>> conceptByIndex = new HashMap<>();
         instances.forEach(concept ->
-                conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId()));
+                conceptByIndex.computeIfAbsent(concept.getIndex(), (e) -> new HashSet<>()).add(concept.getId().getValue()));
         return new JSONObject(conceptByIndex);
     }
 }

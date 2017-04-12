@@ -25,7 +25,6 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -33,7 +32,6 @@ import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
-import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import mjson.Json;
@@ -42,7 +40,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
@@ -121,7 +118,7 @@ public class PostProcessingTestIT {
         graph.commit();
 
         //Try to force duplicate resources
-        Set<TaskState> taskStates = ConcurrentHashMap.newKeySet();
+        Set<Json> jsonLogs = ConcurrentHashMap.newKeySet();
 
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
@@ -137,7 +134,7 @@ public class PostProcessingTestIT {
                     }
 
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
-                    taskStates.add(createPPJobsFromCommitLogs(graph.getKeyspace(), graph.admin().commitNoLogs().get()));
+                    jsonLogs.add(createPPJobsFromCommitLogs(graph.getKeyspace(), graph.admin().commitNoLogs().get()));
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
@@ -153,7 +150,11 @@ public class PostProcessingTestIT {
         graph = factory.open(GraknTxType.WRITE);
         assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
-        BackgroundTaskTestUtils.waitForStatus(engine.getTaskManager().storage(), taskStates, TaskStatus.STOPPED);
+        //TODO: Find a better way of doing this
+        jsonLogs.forEach(log -> {
+            PostProcessingTask ppTask = new PostProcessingTask();
+            ppTask.runLockingBackgroundTask(null, log);
+        });
 
         //Check current broken state of graph
         graph.close();
@@ -169,20 +170,11 @@ public class PostProcessingTestIT {
             assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
         }
     }
-    private TaskState createPPJobsFromCommitLogs(String keyspace, String commitLog){
+    private Json createPPJobsFromCommitLogs(String keyspace, String commitLog){
         Json postProcessingConfiguration = Json.object();
         postProcessingConfiguration.set(KEYSPACE, keyspace);
         postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(commitLog).at(COMMIT_LOG_FIXING));
-
-        TaskState postProcessingTask = TaskState.of(
-                PostProcessingTask.class, this.getClass().getName(),
-                TaskSchedule.recurring(Duration.ofMillis(500)), postProcessingConfiguration);
-
-        engine.getTaskManager().addTask(postProcessingTask);
-
-        PostProcessingTask.lastPPTaskCreated.set(System.currentTimeMillis());
-
-        return postProcessingTask;
+        return postProcessingConfiguration;
     }
 
     @Test

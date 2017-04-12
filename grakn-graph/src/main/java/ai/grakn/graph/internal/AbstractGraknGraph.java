@@ -912,6 +912,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
 
+            //Restore the index
+            String newIndex = mainCasting.getIndex();
+            mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
+
             return true;
         }
 
@@ -1004,6 +1008,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 otherResource.deleteNode();
             }
 
+            //Restore the index
             String newIndex = mainResource.getIndex();
             mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
