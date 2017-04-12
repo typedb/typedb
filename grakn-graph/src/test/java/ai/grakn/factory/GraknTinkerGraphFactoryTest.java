@@ -24,11 +24,18 @@ import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 
 import static ai.grakn.util.ErrorMessage.NULL_VALUE;
 import static ai.grakn.util.ErrorMessage.TRANSACTION_ALREADY_OPEN;
@@ -38,13 +45,25 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 public class GraknTinkerGraphFactoryTest {
+    private final static String TEST_CONFIG = "../conf/test/tinker/grakn.properties";
+    private final static Properties TEST_PROPERTIES = new Properties();
     private InternalFactory tinkerGraphFactory;
+
+    @BeforeClass
+    public static void setupProperties(){
+        try (InputStream in = new FileInputStream(TEST_CONFIG)){
+            TEST_PROPERTIES.load(in);
+        } catch (IOException e) {
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(TEST_CONFIG), e);
+        }
+    }
+
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setupTinkerGraphFactory(){
-        tinkerGraphFactory = new TinkerInternalFactory("test", Grakn.IN_MEMORY, null);
+        tinkerGraphFactory = new TinkerInternalFactory("test", Grakn.IN_MEMORY, TEST_PROPERTIES);
     }
 
     @Test
@@ -88,7 +107,7 @@ public class GraknTinkerGraphFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryWithAlreadyOpenGraph_Throw(){
-        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, null);
+        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         factory.open(GraknTxType.WRITE);
         expectedException.expect(GraphRuntimeException.class);
         expectedException.expectMessage(TRANSACTION_ALREADY_OPEN.getMessage("mytest"));
@@ -97,7 +116,7 @@ public class GraknTinkerGraphFactoryTest {
 
     @Test
     public void whenGettingGraphFromFactoryClosingItAndGettingItAgain_ReturnGraph(){
-        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, null);
+        TinkerInternalFactory factory = new TinkerInternalFactory("mytest", Grakn.IN_MEMORY, TEST_PROPERTIES);
         GraknGraph graph1 = factory.open(GraknTxType.WRITE);
         graph1.close();
         GraknTinkerGraph graph2 = factory.open(GraknTxType.WRITE);

@@ -30,6 +30,8 @@ import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Properties;
+
 /**
  * <p>
  *     A Grakn Graph using {@link TitanGraph} as a vendor backend.
@@ -47,8 +49,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     private final StandardTitanGraph rootGraph;
 
-    public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
-        super(graph, name, engineUrl, batchLoading);
+    public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading, Properties properties){
+        super(graph, name, engineUrl, batchLoading, properties);
         this.rootGraph = (StandardTitanGraph) graph;
     }
 
