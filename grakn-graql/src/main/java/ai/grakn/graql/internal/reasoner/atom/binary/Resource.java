@@ -39,7 +39,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -109,7 +108,7 @@ public class Resource extends MultiPredicateBinary{
     @Override
     public int resolutionPriority(){
         int priority = super.resolutionPriority();
-        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(toSet());
+        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
 
         priority += ResolutionStrategy.IS_RESOURCE_ATOM;
         priority += vps.stream().filter(ValuePredicateAdmin::isSpecific).count() * ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
