@@ -28,7 +28,6 @@ import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
-import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
@@ -111,7 +110,7 @@ public class Resource extends MultiPredicateBinary{
     public int resolutionPriority(){
         int priority = super.resolutionPriority();
         Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(toSet());
-        
+
         priority += ResolutionStrategy.IS_RESOURCE_ATOM;
         priority += vps.stream().filter(ValuePredicateAdmin::isSpecific).count() * ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
         priority += vps.stream().filter(vp -> !vp.isSpecific()).count() * ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
