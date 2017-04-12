@@ -348,7 +348,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private void debugConsumerStatus(Consumer<TaskId, TaskState> theConsumer, ConsumerRecords<TaskId, TaskState> records ){
         for (TopicPartition partition : theConsumer.assignment()) {
-            LOG.debug("Partition {}{} has offset {} after receiving {} records",
+            LOG.trace("Partition {}{} has offset {} after receiving {} records",
                     partition.topic(), partition.partition(), theConsumer.position(partition), records.records(partition).size());
         }
     }
