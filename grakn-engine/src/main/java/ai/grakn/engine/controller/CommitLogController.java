@@ -32,7 +32,6 @@ import ai.grakn.util.Schema;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import javax.ws.rs.DELETE;
 import mjson.Json;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -42,8 +41,10 @@ import spark.Request;
 import spark.Response;
 import spark.Service;
 
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import java.time.Duration;
 
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.KEYSPACE;
@@ -128,7 +129,7 @@ public class CommitLogController {
         configuration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
         TaskState task = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), configuration);
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.recurring(Duration.ofSeconds(20)), configuration);
 
         manager.addHighPriorityTask(task);
 

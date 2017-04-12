@@ -34,7 +34,7 @@ import org.junit.Test;
 import java.time.Duration;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
+import static ai.grakn.engine.postprocessing.PostProcessingTask.LOCK_KEY;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -49,7 +49,7 @@ public class PostProcessingTaskTest {
     @BeforeClass
     public static void mockEngineCache(){
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
-        LockProvider.add(POST_PROCESSING_LOCK, new NonReentrantLock());
+        LockProvider.add(LOCK_KEY, new NonReentrantLock());
     }
 
     @AfterClass
