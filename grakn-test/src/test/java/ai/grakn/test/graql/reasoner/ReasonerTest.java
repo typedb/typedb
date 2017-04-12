@@ -556,6 +556,7 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
+    @Ignore
     @Test
     public void testReasoningWithQueryContainingTypeHas2(){
         String queryString = "match $x isa $type;$type has name;$y isa product;($x, $y) isa recommendation;";

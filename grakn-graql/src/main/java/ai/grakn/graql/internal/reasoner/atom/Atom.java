@@ -90,6 +90,16 @@ public abstract class Atom extends AtomBase {
      */
     public boolean hasSubstitution(){ return false;}
 
+    /**
+     * @return measure of priority with which this atom should be resolved
+     */
+    public int resolutionPriority(){
+        int priority = 0;
+        Set<InferenceRule> applicableRules = getApplicableRules();
+        for (InferenceRule ignored : applicableRules) priority += ResolutionStrategy.APPLICABLE_RULE;
+        return priority;
+    }
+
     protected abstract boolean isRuleApplicable(InferenceRule child);
 
     /**

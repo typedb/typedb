@@ -38,6 +38,7 @@ import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
@@ -213,6 +214,18 @@ public class Relation extends TypeAtom {
 
     @Override
     public boolean isType(){ return getType() != null;}
+
+    @Override
+    public int resolutionPriority(){
+        int priority = super.resolutionPriority();
+        priority += ResolutionStrategy.IS_RELATION_ATOM;
+        Set<VarName> rolePlayers = getRolePlayers();
+        Set<IdPredicate> partialSubstitutions =getIdPredicates().stream()
+                .filter(pred -> rolePlayers.contains(pred.getVarName()))
+                .collect(toSet());
+        for (IdPredicate ignored : partialSubstitutions) priority += ResolutionStrategy.PARTIAL_SUBSTITUTION;
+        return priority;
+    }
 
     @Override
     public boolean hasSubstitution() {

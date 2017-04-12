@@ -26,6 +26,8 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
@@ -36,6 +38,8 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -101,6 +105,14 @@ public class Resource extends MultiPredicateBinary{
     public boolean isSelectable(){ return true;}
     @Override
     public boolean requiresMaterialisation(){ return true;}
+
+    @Override
+    public int resolutionPriority(){
+        int priority = super.resolutionPriority();
+        priority += ResolutionStrategy.IS_RESOURCE_ATOM;
+        for (Predicate ignored : getMultiPredicate()) priority += ResolutionStrategy.VALUE_PREDICATE;
+        return priority;
+    }
 
     @Override
     public Unifier getUnifier(Atomic parentAtom) {
