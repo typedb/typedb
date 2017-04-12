@@ -40,7 +40,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.time.Duration;
 import java.util.Optional;
-import java.time.Duration;
 
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
