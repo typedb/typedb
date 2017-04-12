@@ -561,7 +561,6 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingTypeHas2(){
         String queryString = "match $x isa $type;$type has name;$y isa product;($x, $y) isa recommendation;";
-        //String queryString2 = "match $x isa $type;$y isa product;($x, $y) isa recommendation;";
         String explicitQuery = "match $x isa person, has name $xName;$x isa $type;$y has name $yName;" +
                 "{$type label 'person' or $type label 'entity2';};" +
                 "{$xName val 'Alice';$yName val 'War of the Worlds';} or" +
