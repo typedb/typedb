@@ -41,6 +41,10 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doAnswer;
+import java.time.Duration;
+import java.util.function.Consumer;
+
+import static ai.grakn.engine.postprocessing.PostProcessingTask.LOCK_KEY;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;

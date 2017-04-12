@@ -68,6 +68,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -94,15 +95,20 @@ import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
+
+    //TODO: Is this the correct place for these config paths
+    //----------------------------- Config Paths
+    public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
+
+    //----------------------------- Graph Shared Variable
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
+    private final long shardingFactor;
 
-    //TODO: Make this a config option
-    private final long shardingFactor = 100_000;
-
+    //----------------------------- Transaction Thread Bound
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
@@ -115,10 +121,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             .expireAfterAccess(10, TimeUnit.MINUTES)
             .build();
 
-    public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
+    public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
+        shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
+
         elementFactory = new ElementFactory(this);
 
         localIsOpen.set(true);

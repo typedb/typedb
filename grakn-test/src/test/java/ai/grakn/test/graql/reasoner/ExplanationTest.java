@@ -55,8 +55,7 @@ public class ExplanationTest {
     @ClassRule
     public static final GraphContext explanationGraph = GraphContext.preLoad("explanationTest.gql");
 
-    private static Concept polibuda;
-    private static Concept uw;
+    private static Concept polibuda, uw;
     private static Concept warsaw;
     private static Concept masovia;
     private static Concept poland;
@@ -92,6 +91,16 @@ public class ExplanationTest {
         Answer queryAnswer3 = findAnswer(answer3, answers);
         Answer queryAnswer4 = findAnswer(answer4, answers);
 
+        assertEquals(queryAnswer1, answer1);
+        assertEquals(queryAnswer2, answer2);
+        assertEquals(queryAnswer3, answer3);
+        assertEquals(queryAnswer4, answer4);
+
+        assertEquals(queryAnswer1.getAnswers().size(), 1);
+        assertEquals(queryAnswer2.getAnswers().size(), 3);
+        assertEquals(queryAnswer3.getAnswers().size(), 5);
+        assertEquals(queryAnswer4.getAnswers().size(), 7);
+
         assertTrue(queryAnswer1.getExplanation().isLookupExplanation());
 
         assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
@@ -105,6 +114,34 @@ public class ExplanationTest {
         assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
         assertEquals(4, queryAnswer4.getExplicitPath().size());
+    }
+
+    @Test
+    public void testTransitiveExplanationWithTypes() {
+        String queryString = "match $x isa university;" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "$y isa country;$y has name 'Poland';";
+
+        Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
+        Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), uw, VarName.of("y"), poland));
+
+        List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
+
+        Answer queryAnswer1 = findAnswer(answer1, answers);
+        Answer queryAnswer2 = findAnswer(answer2, answers);
+        assertEquals(queryAnswer1, answer1);
+        assertEquals(queryAnswer2, answer2);
+
+        assertTrue(queryAnswer1.getExplanation().isJoinExplanation());
+        assertTrue(queryAnswer2.getExplanation().isJoinExplanation());
+
+        assertEquals(queryAnswer1.getAnswers().size(), 7);
+        assertEquals(queryAnswer2.getAnswers().size(), 7);
+
+        assertEquals(4, getLookupExplanations(queryAnswer1).size());
+        assertEquals(4, queryAnswer1.getExplicitPath().size());
+        assertEquals(4, getLookupExplanations(queryAnswer2).size());
+        assertEquals(4, queryAnswer2.getExplicitPath().size());
     }
 
     @Test

@@ -430,14 +430,27 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * remove given atom together with its disjoint neigbours (atoms it is connected to)
+     * remove given atom together with its disjoint neighbours (atoms it is connected to)
      * @param atom to be removed
      * @return modified query
      */
     ReasonerQueryImpl removeAtom(Atom atom){
+        //selectability may change after removing the top atom so determine first
+        Set<TypeAtom> nonSelectableTypes = atom.getTypeConstraints().stream()
+                .filter(at -> !at.isSelectable())
+                .collect(Collectors.toSet());
+
+        //remove atom of interest
         removeAtomic(atom);
-        atom.getNonSelectableConstraints().stream()
-                .filter(at -> findNextJoinable(atom) == null)
+
+        //remove disjoint type constraints
+        nonSelectableTypes.stream()
+                .filter(at -> findNextJoinable(at) == null)
+                .forEach(this::removeAtomic);
+
+        //remove dangling predicates
+        atom.getPredicates().stream()
+                .filter(pred -> getVarNames().contains(pred.getVarName()))
                 .forEach(this::removeAtomic);
         return this;
     }

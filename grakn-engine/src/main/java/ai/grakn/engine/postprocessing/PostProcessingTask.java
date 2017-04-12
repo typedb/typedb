@@ -20,9 +20,8 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -32,9 +31,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
@@ -53,10 +50,8 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class PostProcessingTask implements BackgroundTask {
-
-    public static final String POST_PROCESSING_LOCK = "post-processing-lock";
-
+public class PostProcessingTask extends LockingBackgroundTask {
+    public static final String LOCK_KEY = "post-processing-lock";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
 
@@ -83,35 +78,11 @@ public class PostProcessingTask implements BackgroundTask {
         Instant lastJobAdded = Instant.ofEpochMilli(lastPPTaskCreated.get());
         long timeElapsed = Duration.between(lastJobAdded, now()).toMillis();
 
-        LOG.info("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
+        LOG.trace("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
 
         // Only try to run if enough time has passed
         if(timeElapsed > maxTimeLapse){
-
-            Lock engineLock = LockProvider.getLock(POST_PROCESSING_LOCK);
-
-            try {
-
-                // Try to get lock for one second. If task cannot acquire lock, it should return successfully.
-                boolean hasLock = engineLock.tryLock(1, TimeUnit.SECONDS);
-
-                // If you have the lock, run (& return) PP and then release the lock
-                if (hasLock) {
-                    try {
-                        String keyspace = configuration.at(KEYSPACE).asString();
-
-                        runPostProcessing(keyspace, configuration.at(Schema.BaseType.CASTING.name()).asJsonMap(), postProcessing::performCastingFix);
-                        runPostProcessing(keyspace, configuration.at(Schema.BaseType.RESOURCE.name()).asJsonMap(), postProcessing::performResourceFix);
-
-                        // If post processing ran successfully, stop the task
-                        return false;
-                    } finally {
-                        engineLock.unlock();
-                    }
-                }
-            } catch (InterruptedException e){
-                throw new RuntimeException(e);
-            }
+            super.start(saveCheckpoint, configuration);
         }
 
         return true;
@@ -129,6 +100,22 @@ public class PostProcessingTask implements BackgroundTask {
     public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         return false;
     }
+
+    @Override
+    protected String getLockingKey(){
+        return LOCK_KEY;
+    }
+
+    @Override
+    protected boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration){
+        String keyspace = configuration.at(KEYSPACE).asString();
+
+        runPostProcessing(keyspace, configuration.at(Schema.BaseType.CASTING.name()).asJsonMap(), postProcessing::performCastingFix);
+        runPostProcessing(keyspace, configuration.at(Schema.BaseType.RESOURCE.name()).asJsonMap(), postProcessing::performResourceFix);
+
+        return false;
+    }
+
 
     private void runPostProcessing(String keyspace, Map<String, Json> conceptsByIndex,
                                    PostProcessing.Consumer<String, String, Set<ConceptId>> postProcessingMethod){

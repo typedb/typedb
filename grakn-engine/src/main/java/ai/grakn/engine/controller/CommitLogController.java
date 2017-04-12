@@ -40,6 +40,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import java.time.Duration;
 import java.util.Optional;
+import java.time.Duration;
 
 import static ai.grakn.engine.GraknEngineConfig.DEFAULT_KEYSPACE_PROPERTY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
@@ -105,7 +106,7 @@ public class CommitLogController {
         countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
         TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), countingConfiguration);
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.recurring(Duration.ofSeconds(20)), countingConfiguration);
 
 
         // Send two tasks to the pipeline

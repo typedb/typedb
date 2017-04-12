@@ -20,10 +20,11 @@ package ai.grakn.engine.lock;
 
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.exception.EngineStorageException;
+import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
-import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreMutex;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
