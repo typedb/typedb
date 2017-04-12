@@ -392,11 +392,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      */
     @Override
     public Map<VarName, Type> getVarTypeMap() {
-        Map<VarName, Type> map = new HashMap<>();
+        Map<VarName, Type> typeMap = new HashMap<>();
         getTypeConstraints().stream()
                 .filter(at -> Objects.nonNull(at.getType()))
-                .forEach(atom -> map.putIfAbsent(atom.getVarName(), atom.getType()));
-        return map;
+                .forEach(atom -> typeMap.putIfAbsent(atom.getVarName(), atom.getType()));
+        return typeMap;
     }
 
     /**

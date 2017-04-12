@@ -441,6 +441,15 @@ public class Utility {
      * @return true if child is subtype of parent
      */
     public static boolean checkTypesCompatible(Type parent, Type child) {
-        return parent.equals(child) || parent.subTypes().contains(child);
+        return parent.subTypes().contains(child);
+    }
+
+    /**
+     * @param parent type
+     * @param child type
+     * @return true if types do not belong to the same type hierarchy
+     */
+    public static boolean checkTypesDisjoint(Type parent, Type child) {
+        return !parent.subTypes().contains(child) && !child.subTypes().contains(parent);
     }
 }

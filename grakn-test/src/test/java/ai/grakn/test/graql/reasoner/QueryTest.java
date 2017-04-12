@@ -108,6 +108,7 @@ public class QueryTest {
         assertEquals(query.hashCode(), query2.hashCode());
     }
 
+    //TODO update id
     @Test
     public void testAlphaEquivalence2() {
         String patternString = "{$X id 'a'; (ancestor-friend: $X, person: $Y), isa Ancestor-friend;}";
@@ -118,6 +119,7 @@ public class QueryTest {
         assertNotEquals(query.hashCode(), query2.hashCode());
     }
 
+    //TODO update id
     @Test
     public void testAlphaEquivalence3() {
         GraknGraph graph = geoGraph.graph();

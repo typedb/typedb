@@ -20,7 +20,6 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.Graql;
@@ -33,7 +32,6 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
@@ -66,7 +64,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graql.internal.reasoner.Utility.capture;
-import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.Utility.checkTypesDisjoint;
 import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRelationTypes;
 import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
 import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
@@ -247,9 +245,9 @@ public class Relation extends TypeAtom {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getValue()));
     }
 
-    private boolean isRuleApplicableViaType(Relation childAtom) {
+    private boolean isRuleApplicableViaType(Relation headAtom) {
         Map<VarName, Type> varTypeMap = getParentQuery().getVarTypeMap();
-        Map<RoleType, Pair<VarName, Type>> childRoleMap = childAtom.getRoleVarTypeMap();
+        Map<RoleType, Pair<VarName, Type>> childRoleMap = headAtom.getRoleVarTypeMap();
         Set<RoleType> roles = childRoleMap.keySet();
 
         //TODO consider adding type and reusing ViaAtom applicability
@@ -275,7 +273,7 @@ public class Relation extends TypeAtom {
                             .collect(toSet());
                     //check if from all possible mappings at least one doesn't lead to type contradiction
                     if (!childTypes.isEmpty()
-                            && childTypes.stream().filter(t -> checkTypesCompatible(type, t)).count() == 0){
+                            && childTypes.stream().filter(t -> !checkTypesDisjoint(type, t)).count() == 0){
                         return false;
                     }
                     mappedRoles.addAll(roleIntersection);
@@ -290,15 +288,15 @@ public class Relation extends TypeAtom {
         return mappedRoles.size() + roleWildcards >= getRolePlayers().size();
     }
 
-    private boolean isRuleApplicableViaAtom(Relation childAtom, InferenceRule child) {
+    private boolean isRuleApplicableViaAtom(Relation headAtom, ReasonerQueryImpl ruleBody) {
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        Map<RoleType, Pair<VarName, Type>> childRoleMap = childAtom.getRoleVarTypeMap();
+        Map<RoleType, Pair<VarName, Type>> childRoleMap = headAtom.getRoleVarTypeMap();
         Map<RoleType, Pair<VarName, Type>> parentRoleMap = getRoleVarTypeMap();
 
         Pair<Unifier, Map<RoleType, RoleType>> unificationMappings = getRelationPlayerMappings(
-                childAtom.getRoleMap(),
+                headAtom.getRoleMap(),
                 getRoleMap(),
-                childAtom.getRelationPlayers().stream().map(rp -> rp.getRolePlayer().getVarName()).collect(Collectors.toList()),
+                headAtom.getRelationPlayers().stream().map(rp -> rp.getRolePlayer().getVarName()).collect(Collectors.toList()),
                 getRelationPlayers().stream().map(rp -> rp.getRolePlayer().getVarName()).collect(Collectors.toList())
                );
 
@@ -317,13 +315,13 @@ public class Relation extends TypeAtom {
                 Type pType = parentRoleMap.get(parentRole).getValue();
                 //check type compatibility
                 if (pType != null) {
-                    if (!checkTypesCompatible(pType, chType)) {
+                    if (checkTypesDisjoint(pType, chType)) {
                         return false;
                     }
                     //Check for any constraints on the variables
                     VarName chVar = entry.getValue().getKey();
                     VarName pVar = parentRoleMap.get(parentRole).getKey();
-                    Predicate childPredicate = child.getBody().getIdPredicate(chVar);
+                    Predicate childPredicate = ruleBody.getIdPredicate(chVar);
                     Predicate parentPredicate = parent.getIdPredicate(pVar);
                     if (childPredicate != null
                             && parentPredicate != null
@@ -342,16 +340,16 @@ public class Relation extends TypeAtom {
         Atom ruleAtom = child.getRuleConclusionAtom();
         if (!(ruleAtom instanceof Relation)) return false;
 
-        Relation childAtom = (Relation) ruleAtom;
+        Relation headAtom = (Relation) ruleAtom;
         //discard if child has less rolePlayers
-        if (childAtom.getRelationPlayers().size() < this.getRelationPlayers().size()) return false;
+        if (headAtom.getRelationPlayers().size() < this.getRelationPlayers().size()) return false;
 
         Type type = getType();
         //Case: relation without type - match all
         if (type == null) {
-            return isRuleApplicableViaType(childAtom);
+            return isRuleApplicableViaType(headAtom);
         } else {
-            return isRuleApplicableViaAtom(childAtom, child);
+            return isRuleApplicableViaAtom(headAtom, child.getBody());
         }
     }
 
