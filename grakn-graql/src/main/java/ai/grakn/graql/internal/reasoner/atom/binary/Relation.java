@@ -187,7 +187,7 @@ public class Relation extends TypeAtom {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         Relation a2 = (Relation) obj;
-        return (isUserDefinedName() == a2.isUserDefinedName() )
+        return (isUserDefinedName() == a2.isUserDefinedName())
                 && Objects.equals(this.typeId, a2.getTypeId())
                 && getRoleConceptIdMap().equals(a2.getRoleConceptIdMap())
                 && getRoleTypeMap().equals(a2.getRoleTypeMap());
@@ -213,26 +213,23 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public boolean isType(){ return getType() != null;}
+    public boolean isType() {
+        return getType() != null;
+    }
 
     @Override
-    public int resolutionPriority(){
+    public int resolutionPriority() {
         int priority = super.resolutionPriority();
         priority += ResolutionStrategy.IS_RELATION_ATOM;
-        Set<VarName> rolePlayers = getRolePlayers();
-        Set<IdPredicate> partialSubstitutions =getIdPredicates().stream()
-                .filter(pred -> rolePlayers.contains(pred.getVarName()))
-                .collect(toSet());
-        for (IdPredicate ignored : partialSubstitutions) priority += ResolutionStrategy.PARTIAL_SUBSTITUTION;
         return priority;
     }
 
     @Override
-    public boolean hasSubstitution() {
+    public Set<IdPredicate> getPartialSubstitutions() {
         Set<VarName> rolePlayers = getRolePlayers();
         return getIdPredicates().stream()
                 .filter(pred -> rolePlayers.contains(pred.getVarName()))
-                .count() > 0;
+                .collect(toSet());
     }
 
     /**

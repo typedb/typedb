@@ -107,6 +107,14 @@ public class Resource extends MultiPredicateBinary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
+    public Set<IdPredicate> getPartialSubstitutions() {
+        Set<VarName> varNames = getVarNames();
+        return getIdPredicates().stream()
+                .filter(pred -> varNames.contains(pred.getVarName()))
+                .collect(toSet());
+    }
+
+    @Override
     public int resolutionPriority(){
         int priority = super.resolutionPriority();
         priority += ResolutionStrategy.IS_RESOURCE_ATOM;
