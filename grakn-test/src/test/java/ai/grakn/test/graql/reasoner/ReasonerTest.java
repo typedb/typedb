@@ -556,6 +556,7 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
+    //TODO returns wrong result if wrong resolution order picked
     @Ignore
     @Test
     public void testReasoningWithQueryContainingTypeHas2(){
