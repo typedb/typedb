@@ -21,7 +21,6 @@ package ai.grakn.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.cache.EngineCacheDistributed;
 import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.lock.LockProvider;
