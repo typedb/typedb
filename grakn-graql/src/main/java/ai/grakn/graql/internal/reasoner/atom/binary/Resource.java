@@ -20,6 +20,7 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.VarName;
@@ -107,18 +108,13 @@ public class Resource extends MultiPredicateBinary{
     public boolean requiresMaterialisation(){ return true;}
 
     @Override
-    public Set<IdPredicate> getPartialSubstitutions() {
-        Set<VarName> varNames = getVarNames();
-        return getIdPredicates().stream()
-                .filter(pred -> varNames.contains(pred.getVarName()))
-                .collect(toSet());
-    }
-
-    @Override
     public int resolutionPriority(){
         int priority = super.resolutionPriority();
+        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(toSet());
+        
         priority += ResolutionStrategy.IS_RESOURCE_ATOM;
-        for (Predicate ignored : getMultiPredicate()) priority += ResolutionStrategy.VALUE_PREDICATE;
+        priority += vps.stream().filter(ValuePredicateAdmin::isSpecific).count() * ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+        priority += vps.stream().filter(vp -> !vp.isSpecific()).count() * ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
         return priority;
     }
 

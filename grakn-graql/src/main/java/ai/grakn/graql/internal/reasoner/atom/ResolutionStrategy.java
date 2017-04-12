@@ -50,9 +50,14 @@ public final class ResolutionStrategy {
     public static final int IS_TYPE_ATOM = 0;
 
     /**
-     * priority modifier for each value predicate a given atom (resource) has
+     * priority modifier for each specific value predicate a given atom (resource) has
      */
-    public static final int VALUE_PREDICATE = 10;
+    public static final int SPECIFIC_VALUE_PREDICATE = 10;
+
+    /**
+     * priority modifier for each non-specific value predicate a given atom (resource) has
+     */
+    public static final int NON_SPECIFIC_VALUE_PREDICATE = 5;
 
     /**
      * priority modifier if a given atom is a relation atom
