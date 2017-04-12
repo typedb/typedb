@@ -37,7 +37,6 @@ import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import mjson.Json;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -146,9 +145,6 @@ public class PostProcessingTestIT {
 
         //Give some time for jobs to go through REST API
         Thread.sleep(5000);
-
-        //Wait for cache to have some jobs
-//        waitForCache(graph.getKeyspace(), 2);
 
         //Check current broken state of graph
         graph = factory.open(GraknTxType.WRITE);
