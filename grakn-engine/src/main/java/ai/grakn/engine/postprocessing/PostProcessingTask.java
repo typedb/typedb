@@ -81,11 +81,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
         LOG.trace("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
 
         // Only try to run if enough time has passed
-        if(timeElapsed > maxTimeLapse){
-            super.start(saveCheckpoint, configuration);
-        }
-
-        return true;
+        return timeElapsed <= maxTimeLapse || super.start(saveCheckpoint, configuration);
     }
 
     @Override
