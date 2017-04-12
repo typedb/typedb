@@ -74,6 +74,8 @@ class ConceptFixer {
         boolean notDone = true;
         int retry = 0;
 
+        System.out.println("LOOKG THINGS!!!! ->>>>>>>>>>>>>>> " + conceptIndex);
+
         while (notDone) {
             //Try to Fix the job
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE))  {

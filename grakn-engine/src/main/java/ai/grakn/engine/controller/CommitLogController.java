@@ -108,6 +108,9 @@ public class CommitLogController {
                 UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.recurring(Duration.ofSeconds(20)), countingConfiguration);
 
 
+        //TODO: Get rid of this update
+        PostProcessingTask.lastPPTaskCreated.set(System.currentTimeMillis());
+
         // Send two tasks to the pipeline
         manager.addTask(postProcessingTask);
         manager.addTask(countingTask);

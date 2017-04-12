@@ -59,10 +59,10 @@ public class PostProcessingTask extends LockingBackgroundTask {
     private long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
     //TODO MAJOR Make this distributed in distributed environment
-    private static final AtomicLong lastPPTaskCreated = new AtomicLong(System.currentTimeMillis());
+    public static final AtomicLong lastPPTaskCreated = new AtomicLong(System.currentTimeMillis());
 
     public PostProcessingTask(){
-        lastPPTaskCreated.set(System.currentTimeMillis());
+
     }
 
     public PostProcessingTask(PostProcessing postProcessing, long maxTimeLapse){
@@ -81,7 +81,11 @@ public class PostProcessingTask extends LockingBackgroundTask {
         LOG.trace("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
 
         // Only try to run if enough time has passed
-        return timeElapsed <= maxTimeLapse || super.start(saveCheckpoint, configuration);
+        if(timeElapsed > maxTimeLapse){
+            return super.start(saveCheckpoint, configuration);
+        }
+
+        return true;
     }
 
     @Override
