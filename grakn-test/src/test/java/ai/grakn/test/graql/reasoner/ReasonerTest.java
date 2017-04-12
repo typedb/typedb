@@ -492,12 +492,10 @@ public class ReasonerTest {
         assertEquals(answers, answers2);
     }
 
-    //TODO work on atom partitioning criteria
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingContradiction(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        //geoObject sub city always returns empty set
+        //geoObject sub city always returns an empty set
         String queryString = "match ($x, $y) isa is-located-in;geoObject sub city;";
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
@@ -533,8 +531,6 @@ public class ReasonerTest {
         assertEquals(answers, answers2);
     }
 
-    //TODO takes ages - take a look at selection strategy
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingPlays2(){
         String queryString = "match $x isa person;$y isa $type;$type plays recommended-product;($x, $y) isa recommendation;";
@@ -560,8 +556,6 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    //TODO takes ages - look at atom selection strategy
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingTypeHas2(){
         String queryString = "match $x isa $type;$type has name;$y isa product;($x, $y) isa recommendation;";
