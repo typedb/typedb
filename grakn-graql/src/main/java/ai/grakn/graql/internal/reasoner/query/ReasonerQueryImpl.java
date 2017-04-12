@@ -736,6 +736,5 @@ public class ReasonerQueryImpl implements ReasonerQuery {
             answers.add(ans);
             return ans;
         }
-
     }
 }
