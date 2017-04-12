@@ -312,39 +312,33 @@ public class ReasoningTests {
         assertEquals(answers.size(), 1);
     }
 
-    @Test //Expected result: Single answer obtained only if checked the the rule query containing sub type is correctly executed.
+    @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected(){
         QueryBuilder qb = testSet18.graph().graql().infer(true);
-        String queryString1 = "match " +
+        String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa entity1;" +
                 "(role1: $x, role2: $y) isa relation1;";
-        QueryAnswers answers = queryAnswers(qb.parse(queryString1));
+        String queryString2 = queryString + "$y has name 'a';";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 2);
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 2);
     }
 
-    @Test //Expected result: Single answer obtained only if checked the the rule query containing sub type is correctly executed.
-    public void instanceTypeHierarchyRespected2(){
-        QueryBuilder qb = testSet18.graph().graql().infer(true);
-        String queryString1 = "match " +
-                "$x isa entity1;" +
-                "$y isa entity1;" +
-                "(role1: $x, role2: $y) isa relation1;" +
-                "$y has name 'a';";
-        QueryAnswers answers = queryAnswers(qb.parse(queryString1));
-        assertEquals(answers.size(), 2);
-    }
-
-    @Test //Expected result: Single answer obtained only if checked the the rule query containing sub type is correctly executed.
+    @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected3(){
         QueryBuilder qb = testSet18.graph().graql().infer(true);
-        String queryString1 = "match " +
+        String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa subEntity1;" +
-                "(role1: $x, role2: $y) isa relation1;" +
-                "$y has name 'a';";
-        QueryAnswers answers = queryAnswers(qb.parse(queryString1));
+                "(role1: $x, role2: $y) isa relation1;";
+        String queryString2 = queryString + "$y has name 'a';";
+
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 1);
+        QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
+        assertEquals(answers2.size(), 1);
     }
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
