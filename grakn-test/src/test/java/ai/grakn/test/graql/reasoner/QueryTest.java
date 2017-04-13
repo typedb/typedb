@@ -199,7 +199,7 @@ public class QueryTest {
         ReasonerQueryImpl query5 = new ReasonerQueryImpl(pattern5, graph);
         assertNotEquals(query, query2);
         assertNotEquals(query2, query3);
-        assertNotEquals(query3, query4);
+        assertEquals(query3, query4);
         assertNotEquals(query4, query5);
     }
 

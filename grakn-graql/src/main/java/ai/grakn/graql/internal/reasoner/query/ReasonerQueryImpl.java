@@ -695,7 +695,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         private int iter = 0;
         private long oldAns = 0;
-        Set<Answer> answers = new HashSet<>();
+        final Set<Answer> answers = new HashSet<>();
 
         private final QueryCache<ReasonerAtomicQuery> cache;
         private Iterator<Answer> answerIterator;

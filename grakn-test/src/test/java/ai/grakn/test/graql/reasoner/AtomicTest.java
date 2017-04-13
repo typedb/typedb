@@ -334,21 +334,6 @@ public class AtomicTest {
         assertEquals(1, relation.getApplicableRules().size());
     }
 
-    @Test
-    public void testRuleApplicabilityViaType_InstancesDoNotMatchRule(){
-        GraknGraph graph = ruleApplicabilityInstanceTypesSet.graph();
-        Concept concept = getConcept(graph, "name", "b");
-        Concept concept2 = getConcept(graph, "name", "b2");
-        String relationString = "{" +
-                "(role1: $x, role2: $y) isa relation1;" +
-                "$x id '" + concept.getId().getValue() + "';" +
-                "$y id '" + concept2.getId().getValue() + "';" +
-                "}";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(relationString, graph), graph);
-        Relation relation = (Relation) query.getAtom();
-        assertEquals(0, relation.getApplicableRules().size());
-    }
-
     //NB: although the rule will be triggered it will find no results
     @Ignore
     @Test
