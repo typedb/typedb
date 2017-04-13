@@ -192,6 +192,7 @@ public class QueryTest {
         Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
         Conjunction<VarAdmin> pattern4 = conjunction(patternString4, graph);
         Conjunction<VarAdmin> pattern5 = conjunction(patternString5, graph);
+
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, graph);
         ReasonerQueryImpl query2 = new ReasonerQueryImpl(pattern2, graph);
         ReasonerQueryImpl query3 = new ReasonerQueryImpl(pattern3, graph);
