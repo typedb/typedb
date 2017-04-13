@@ -35,7 +35,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -116,29 +115,21 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return new ReasonerQueryImpl(this);
     }
 
-    public static long equalsTime = 0;
-    public static long hashTime = 0;
-
     //alpha-equivalence equality
     @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        long startTime = System.currentTimeMillis();
         ReasonerQueryImpl a2 = (ReasonerQueryImpl) obj;
-        boolean isEqual = this.isEquivalent(a2);
-        equalsTime += System.currentTimeMillis() - startTime;
-        return isEqual;
+        return this.isEquivalent(a2);
     }
 
     @Override
     public int hashCode() {
-        long startTime = System.currentTimeMillis();
         int hashCode = 1;
         SortedSet<Integer> hashes = new TreeSet<>();
         atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
-        hashTime += System.currentTimeMillis() - startTime;
         return hashCode;
     }
 
