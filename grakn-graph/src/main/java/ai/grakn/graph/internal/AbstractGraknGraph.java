@@ -398,9 +398,9 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     void checkOntologyMutation(){
         checkMutation();
-        if(isBatchLoadingEnabled()){
-            throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
-        }
+        //if(isBatchLoadingEnabled()){
+        //    throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
+        //}
     }
 
     void checkMutation(){
