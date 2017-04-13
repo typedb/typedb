@@ -109,7 +109,8 @@ public class LoaderTask implements BackgroundTask {
             inserts.forEach(q -> q.withGraph(graph).execute());
 
             // commit the transaction
-            graph.admin().commit(EngineCacheProvider.getCache());
+            //TODO This commit uses the rest API, it shouldn't
+            graph.commit();
         } catch (GraknValidationException e) {
             //If it's a validation exception there is no point in re-trying
             throwException(FAILED_VALIDATION.getMessage(e.getMessage()), inserts);

@@ -99,7 +99,7 @@ public class BackgroundTaskTestUtils {
 
         while(true) {
             long duration = Duration.between(initial, Instant.now()).toMillis();
-            if (duration > 60000){
+            if (duration > 120000){
                 TaskStatus finalStatus = storage.containsTask(task) ? storage.getState(task).status() : null;
                 LOG.warn("Waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
                 initial = Instant.now();
