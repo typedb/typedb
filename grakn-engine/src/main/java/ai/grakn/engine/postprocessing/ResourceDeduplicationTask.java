@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * <p>
@@ -62,17 +61,18 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceDeduplicationTask.class);
     private Long totalEliminated = null;
     
-    static <T> T transact(GraknSession factory, Function<GraknGraph, T> work, String description) {
+    static void transact(GraknSession factory, Consumer<GraknGraph> work, String description) {
         while (true) {
             try (GraknGraph graph = factory.open(GraknTxType.WRITE)) {
-                return work.apply(graph);
+                work.accept(graph);
+                return;
             }
             catch (GraknLockingException ex) {
                 // Ignore - this exception means we must eventually succeed.
             }
             catch (Throwable t) {
                 LOG.error("ResourceDeduplicationTask, while " + description, t);
-                return null;
+                return;
             }
         }
     }

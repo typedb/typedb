@@ -18,13 +18,15 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -32,30 +34,38 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.postprocessing.PostProcessingTask.LOCK_KEY;
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class PostProcessingTaskTest {
 
+    private static final String TEST_KEYSPACE = UUID.randomUUID().toString();
+
+    private String mockCastingIndex;
+    private String mockResourceIndex;
+    private Set<ConceptId> mockCastingSet;
+    private Set<ConceptId> mockResourceSet;
     private Json mockJson;
     private Consumer<TaskCheckpoint> mockConsumer;
     private PostProcessing mockPostProcessing;
 
     @BeforeClass
     public static void mockEngineCache(){
-        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
-        LockProvider.add(LOCK_KEY, new NonReentrantLock());
+        LockProvider.add(PostProcessingTask.LOCK_KEY, new NonReentrantLock());
     }
 
     @AfterClass
     public static void clearEngineCache(){
-        EngineCacheStandAlone.getCache().getKeyspaces().forEach(k -> EngineCacheStandAlone.getCache().clearAllJobs(k));
-        EngineCacheProvider.clearCache();
         LockProvider.clear();
     }
 
@@ -63,16 +73,18 @@ public class PostProcessingTaskTest {
     public void mockPostProcessing(){
         mockPostProcessing = mock(PostProcessing.class);
         mockConsumer = mock(Consumer.class);
-        mockJson = mock(Json.class);
-    }
 
-    @Test
-    public void whenPPTaskStartCalledAndEnoughTimeElapsed_PostProcessingRunIsCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
-
-        task.start(mockConsumer, mockJson);
-
-        verify(mockPostProcessing, times(1)).run();
+        mockCastingIndex = UUID.randomUUID().toString();
+        mockResourceIndex = UUID.randomUUID().toString();
+        mockCastingSet = Sets.newHashSet();
+        mockResourceSet = Sets.newHashSet();
+        mockJson = Json.object(
+                KEYSPACE, TEST_KEYSPACE,
+                REST.Request.COMMIT_LOG_FIXING, Json.object(
+                    Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
+                    Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
+                )
+        );
     }
 
     @Test
@@ -81,7 +93,42 @@ public class PostProcessingTaskTest {
 
         task.start(mockConsumer, mockJson);
 
-        verify(mockPostProcessing, times(0)).run();
+        verify(mockPostProcessing, never())
+                .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
+    }
+
+    @Test
+    public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+
+        task.start(mockConsumer, mockJson);
+
+        verify(mockPostProcessing, times(1))
+                .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
+    }
+
+    @Test
+    public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+
+        task.start(mockConsumer, mockJson);
+
+        verify(mockPostProcessing, times(1))
+                .performResourceFix(TEST_KEYSPACE, mockResourceIndex, mockResourceSet);
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingStartReturnsTrue(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
+
+        assertTrue("Task " + task + " ran when it should not have", task.start(mockConsumer, mockJson));
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndPostProcessingRuns_PostProcessingStartReturnsFalse(){
+        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+
+        assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockJson));
     }
 
     @Test
@@ -97,12 +144,12 @@ public class PostProcessingTaskTest {
     public void whenTwoPPTasksStartCalledInDifferentThreads_PostProcessingOnlyRunsOnce() throws InterruptedException {
         Object object = new Object();
 
-        when(mockPostProcessing.run()).thenAnswer(invocation -> {
+        doAnswer(invocation -> {
             synchronized (object){
                 object.wait(Duration.ofMinutes(1).toMillis());
             }
             return true;
-        });
+        }).when(mockPostProcessing).performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
 
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask(mockPostProcessing, 0);
@@ -129,6 +176,7 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockPostProcessing, times(1)).run();
+        verify(mockPostProcessing, times(1))
+                .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
     }
 }

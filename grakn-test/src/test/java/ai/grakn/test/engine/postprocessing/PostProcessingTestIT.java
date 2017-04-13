@@ -25,21 +25,15 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.TaskSchedule;
-import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import mjson.Json;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -48,26 +42,21 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
-import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
-import static java.time.Instant.now;
-import static java.util.Collections.singleton;
+import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingTestIT {
-    private PostProcessing postProcessing = PostProcessing.getInstance();
-    private ConceptCache cache = EngineCacheProvider.getCache();
 
     private GraknSession factory;
     private GraknGraph graph;
@@ -83,8 +72,6 @@ public class PostProcessingTestIT {
 
     @After
     public void takeDown() throws InterruptedException {
-        cache.getCastingJobs(graph.getKeyspace()).clear();
-        cache.getResourceJobs(graph.getKeyspace()).clear();
         graph.close();
     }
 
@@ -123,6 +110,8 @@ public class PostProcessingTestIT {
         graph.commit();
 
         //Try to force duplicate resources
+        Set<Json> jsonLogs = ConcurrentHashMap.newKeySet();
+
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
                 try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
@@ -137,7 +126,7 @@ public class PostProcessingTestIT {
                     }
 
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
-                    graph.commit();
+                    jsonLogs.add(createPPJobsFromCommitLogs(graph.getKeyspace(), graph.admin().commitNoLogs().get()));
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
@@ -148,18 +137,16 @@ public class PostProcessingTestIT {
             future.get();
         }
 
-        //Give some time for jobs to go through REST API
-        Thread.sleep(5000);
-
-        //Wait for cache to have some jobs
-        waitForCache(graph.getKeyspace(), 2);
 
         //Check current broken state of graph
         graph = factory.open(GraknTxType.WRITE);
         assertTrue("Failed at breaking graph", graphIsBroken(graph));
 
-        //Force PP
-        postProcessing.run();
+        //TODO: Find a better way of doing this
+        jsonLogs.forEach(log -> {
+            PostProcessingTask ppTask = new PostProcessingTask();
+            ppTask.runLockingBackgroundTask(null, log);
+        });
 
         //Check current broken state of graph
         graph.close();
@@ -175,24 +162,11 @@ public class PostProcessingTestIT {
             assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
         }
     }
-
-    @Test
-    public void afterRunningPostProcessingTask_TaskMarkedAsCompleted() throws Exception {
-        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
-        engine.getTaskManager().addTask(task);
-
-        waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
-
-        // Check that task has ran
-        assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
-    }
-
-    @Test
-    public void afterStoppingPostProcessingTask_TaskMarkedAsStopped() {
-        TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
-        engine.getTaskManager().addTask(task);
-        engine.getTaskManager().stopTask(task.getId());
-        assertEquals(STOPPED, engine.getTaskManager().storage().getState(task.getId()).status());
+    private Json createPPJobsFromCommitLogs(String keyspace, String commitLog){
+        Json postProcessingConfiguration = Json.object();
+        postProcessingConfiguration.set(KEYSPACE, keyspace);
+        postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(commitLog).at(COMMIT_LOG_FIXING));
+        return postProcessingConfiguration;
     }
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
@@ -217,16 +191,5 @@ public class PostProcessingTestIT {
         Resource resource = graph.getResourceType("res" + resourceTypeNum).putResource(resourceValueNum);
         Entity entity = (Entity) graph.getEntityType("ent" + entityTypeNum).instances().toArray()[entityNum]; //Randomly pick an entity
         entity.resource(resource);
-    }
-
-    private void waitForCache(String keyspace, int value) throws InterruptedException {
-        boolean flag = true;
-        while(flag){
-            if(cache.getNumResourceJobs(keyspace) < value){
-                Thread.sleep(1000);
-            } else {
-                flag = false;
-            }
-        }
     }
 }

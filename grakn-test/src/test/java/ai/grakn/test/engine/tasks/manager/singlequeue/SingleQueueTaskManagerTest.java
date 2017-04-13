@@ -19,7 +19,6 @@
 package ai.grakn.test.engine.tasks.manager.singlequeue;
 
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
@@ -69,8 +68,6 @@ public class SingleQueueTaskManagerTest {
 
     @BeforeClass
     public static void setup() throws Exception{
-        //TODO: Get rid of this patch when we better isolate tests
-        EngineCacheProvider.clearCache();
         taskManager = new SingleQueueTaskManager(EngineID.me());
     }
 
