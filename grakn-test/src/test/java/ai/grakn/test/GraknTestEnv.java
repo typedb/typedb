@@ -88,8 +88,8 @@ public abstract class GraknTestEnv {
 
             kafkaUnit.setKafkaBrokerConfig("log.cleaner.enable", "false");
             kafkaUnit.startup();
-            kafkaUnit.createTopic(HIGH_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 4);
-            kafkaUnit.createTopic(LOW_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 4);
+            kafkaUnit.createTopic(HIGH_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
+            kafkaUnit.createTopic(LOW_PRIORITY_TASKS_TOPIC, properties.getAvailableThreads() * 2);
 
             LOG.info("kafka started.");
         }
