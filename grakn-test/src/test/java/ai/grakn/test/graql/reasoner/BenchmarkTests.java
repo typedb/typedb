@@ -30,13 +30,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
-import ai.grakn.graql.internal.reasoner.cache.Cache;
-import ai.grakn.graql.internal.reasoner.cache.QueryCache;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImplIterator;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.Rule;
@@ -175,11 +168,8 @@ public class BenchmarkTests {
 
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute2 = query2.execute();
-        System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
-        System.out.println("ReasonerQueryImpl::equals time: " + ReasonerQueryImpl.equalsTime);
-        System.out.println("ReasonerQueryImpl::hashCode time: " + ReasonerQueryImpl.hashTime);
-        System.out.println("ReasonerQueryImplIterator::init time: " + ReasonerQueryImplIterator.initTime);
         assertEquals(execute2.size(), N);
+        System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
 
         /*
         int limit = 10;
