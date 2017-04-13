@@ -38,6 +38,7 @@ import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.stream.Stream;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
@@ -130,10 +131,13 @@ public class SingleQueueTaskManager implements TaskManager {
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
                 .setNameFormat(TASK_RUNNER_THREAD_POOL_NAME)
                 .build();
-        this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY, taskRunnerPoolFactory);
+        this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY * 2, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        this.taskRunners = generate(() -> newTaskRunner(engineId)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, HIGH_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, LOW_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+
+        this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
@@ -219,20 +223,6 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
-     * Get a new kafka consumer listening on the new tasks topic
-     */
-    public Consumer<TaskId, TaskState> newHighPriorityConsumer(){
-        return newConsumer(HIGH_PRIORITY_TASKS_TOPIC);
-    }
-
-    /**
-     * Get a new kafka consumer listening on the recurring tasks topic
-     */
-    public Consumer<TaskId, TaskState> newLowPriorityConsumer(){
-        return newConsumer(LOW_PRIORITY_TASKS_TOPIC);
-    }
-
-    /**
      * Get a new kafka consumer listening on the given topic
      */
     private Consumer<TaskId, TaskState> newConsumer(String topic){
@@ -266,8 +256,8 @@ public class SingleQueueTaskManager implements TaskManager {
      * @param engineId Identifier of the engine on which this taskrunner is running
      * @return New instance of a SingleQueueTaskRunner
      */
-    private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
-        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF);
+    private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
+        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, () -> newConsumer(priority));
     }
 
     /**

@@ -207,6 +207,7 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
         if (current != null) {
 
             // Ensure there is a path for the current engine
+            //TODO Dont use the exception here
             try {
                 zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(enginePath(current));
             } catch (KeeperException.NodeExistsException e){

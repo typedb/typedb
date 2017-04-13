@@ -113,7 +113,6 @@ public class SingleQueueTaskRunnerTest {
     private ExternalOffsetStorage offsetStorage;
 
     private MockGraknConsumer<TaskId, TaskState> lowPriorityConsumer;
-    private MockGraknConsumer<TaskId, TaskState> highPriorityConsumer;
     private TopicPartition lowPTopicPartition;
 
     @Before
@@ -130,12 +129,8 @@ public class SingleQueueTaskRunnerTest {
         lowPriorityConsumer.updateBeginningOffsets(ImmutableMap.of(lowPTopicPartition, 0L));
         lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(lowPTopicPartition, 0L));
 
-        highPriorityConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
-
         mockedTM = mock(SingleQueueTaskManager.class);
         when(mockedTM.storage()).thenReturn(storage);
-        when(mockedTM.newHighPriorityConsumer()).thenReturn(highPriorityConsumer);
-        when(mockedTM.newLowPriorityConsumer()).thenReturn(lowPriorityConsumer);
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
@@ -143,7 +138,7 @@ public class SingleQueueTaskRunnerTest {
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF, () -> lowPriorityConsumer);
 
         for (List<TaskState> taskList : tasks) {
             lowPriorityConsumer.schedulePollTask(() -> taskList.forEach(this::addTask));

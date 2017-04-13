@@ -54,6 +54,7 @@ public class ConfigHelper {
 
         // The max poll time should be set to its largest value
         // Our task runners will only poll again after the tasks have completed
+        //TODO Make this number more reasonable
         properties.put("max.poll.interval.ms", Integer.MAX_VALUE);
 
         // Max poll records should be set to one: each TaskRunner should only handle one record at a time

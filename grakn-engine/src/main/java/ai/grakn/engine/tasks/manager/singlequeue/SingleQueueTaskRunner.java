@@ -26,6 +26,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
+import java.util.function.Supplier;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -54,8 +55,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
-    private final Consumer<TaskId, TaskState> highPriorityConsumer;
-    private final Consumer<TaskId, TaskState> lowPriorityConsumer;
+    private final Consumer<TaskId, TaskState> consumer;
     private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
     private final ExternalOffsetStorage offsetStorage;
@@ -80,11 +80,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param manager a place to control the lifecycle of tasks
      * @param offsetStorage a place to externally store kafka offsets
      */
-    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff){
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff, Supplier<Consumer<TaskId, TaskState>> consumerSupplier){
         this.manager = manager;
         this.storage = manager.storage();
-        this.highPriorityConsumer = manager.newHighPriorityConsumer();
-        this.lowPriorityConsumer = manager.newLowPriorityConsumer();
+        this.consumer = consumerSupplier.get();
         this.engineID = engineID;
         this.offsetStorage = offsetStorage;
         this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
@@ -115,8 +114,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             try {
                 // Reading from both the regular consumer and recurring consumer every time means that we will handle
                 // recurring tasks regularly, even if there are lots of non-recurring tasks to process.
-                readRecords(highPriorityConsumer);
-                readRecords(lowPriorityConsumer);
+                readRecords(consumer);
 
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
                 long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
@@ -148,8 +146,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     public void close() throws Exception {
         wakeUp.set(true);
         noThrow(countDownLatch::await, "Error waiting for the TaskRunner loop to finish");
-        noThrow(highPriorityConsumer::close, "Error closing the task runner");
-        noThrow(lowPriorityConsumer::close, "Error closing the task runner");
+        noThrow(consumer::close, "Error closing the task runner");
     }
 
     /**
