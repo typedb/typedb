@@ -33,15 +33,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -85,6 +84,8 @@ public class PostProcessingTaskTest {
                     Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
                 )
         );
+
+        Mockito.reset(mockPostProcessing);
     }
 
     @Test
@@ -141,33 +142,16 @@ public class PostProcessingTaskTest {
     }
 
     @Test
-    public void whenTwoPPTasksStartCalledInDifferentThreads_PostProcessingOnlyRunsOnce() throws InterruptedException {
-        Object object = new Object();
-
-        doAnswer(invocation -> {
-            synchronized (object){
-                object.wait(Duration.ofMinutes(1).toMillis());
-            }
-            return true;
-        }).when(mockPostProcessing).performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
-
+    public void whenTwoPPTasksStartCalledInDifferentThreads_PostProcessingRunsTwice() throws InterruptedException {
         // Add a bunch of jobs to the cache
         PostProcessingTask task1 = new PostProcessingTask(mockPostProcessing, 0);
         PostProcessingTask task2 = new PostProcessingTask(mockPostProcessing, 0);
 
         Thread pp1 = new Thread(() -> {
             task1.start(mockConsumer, mockJson);
-
-            synchronized (object) {
-                object.notifyAll();
-            }
         });
         Thread pp2 = new Thread(() -> {
             task2.start(mockConsumer, mockJson);
-
-            synchronized (object) {
-                object.notifyAll();
-            }
         });
 
         pp1.start();
@@ -176,7 +160,7 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockPostProcessing, times(1))
+        verify(mockPostProcessing, times(2))
                 .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
     }
 }
