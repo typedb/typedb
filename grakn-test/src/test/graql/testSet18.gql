@@ -42,12 +42,12 @@ isa inference-rule
 #Data
 
 $x isa subEntity1, has name "a";
-$y isa entity1;
+$y isa entity1, has name "b";
 $z isa entity1, has name "a";
-$w isa entity1;
+$w isa entity1, has name "b2";
 $v isa subEntity1, has name "a";
 
-(role1:$x, role2:$z) isa relation2;     #satisfies rule
-(role1:$y, role2:$z) isa relation2;     #doesn't satisfy rule
-(role1:$x, role2:$v) isa relation2;     #satisfies rule
-(role1:$y, role2:$v) isa relation2;     #doesn't satisfy rule
+(role1:$x, role2:$z) isa relation2;     # subEntity1 - entity1    -> satisfies rule
+(role1:$y, role2:$z) isa relation2;     # entity1 - entity1       -> doesn't satisfy rule
+(role1:$x, role2:$v) isa relation2;     # subEntity1 - subEntity1 -> satisfies rule
+(role1:$y, role2:$v) isa relation2;     # entity1 - subEntity1    -> doesn't satisfy rule
