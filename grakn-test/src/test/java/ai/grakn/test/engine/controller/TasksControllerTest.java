@@ -35,8 +35,10 @@ import com.jayway.restassured.specification.RequestSpecification;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 import spark.Service;
 
 import java.io.IOException;
@@ -106,6 +108,11 @@ public class TasksControllerTest {
                 running = false;
             }
         }
+    }
+
+    @Before
+    public void clearMockito(){
+        Mockito.reset(manager);
     }
 
     @Test
