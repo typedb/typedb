@@ -35,6 +35,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
@@ -115,21 +116,29 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         return new ReasonerQueryImpl(this);
     }
 
+    public static long equalsTime = 0;
+    public static long hashTime = 0;
+
     //alpha-equivalence equality
     @Override
     public boolean equals(Object obj) {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
+        long startTime = System.currentTimeMillis();
         ReasonerQueryImpl a2 = (ReasonerQueryImpl) obj;
-        return this.isEquivalent(a2);
+        boolean isEqual = this.isEquivalent(a2);
+        equalsTime += System.currentTimeMillis() - startTime;
+        return isEqual;
     }
 
     @Override
     public int hashCode() {
+        long startTime = System.currentTimeMillis();
         int hashCode = 1;
         SortedSet<Integer> hashes = new TreeSet<>();
         atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
+        hashTime += System.currentTimeMillis() - startTime;
         return hashCode;
     }
 
@@ -699,10 +708,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         private final QueryCache<ReasonerAtomicQuery> cache;
         private Iterator<Answer> answerIterator;
+        public long iterTime = System.currentTimeMillis();
 
-        QueryAnswerIterator(){ this(new QueryCache<>());}
-        QueryAnswerIterator(QueryCache<ReasonerAtomicQuery> qc){
-            this.cache = qc;
+        QueryAnswerIterator(){
+            this.cache = new QueryCache<>();
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
         }
 
@@ -716,6 +725,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 //iter finished
             else {
                 long dAns = answers.size() - oldAns;
+                System.out.println("iter time:" + (System.currentTimeMillis() - iterTime));
+                iterTime = System.currentTimeMillis();
+                System.out.println("Record hits: " + QueryCache.recordHits);
+                System.out.println("Record total: " + QueryCache.recordHits);
+                System.out.println("####################################################################################");
                 if (dAns != 0 || iter == 0) {
                     LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                     iter++;

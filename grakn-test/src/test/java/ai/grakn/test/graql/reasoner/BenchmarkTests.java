@@ -30,6 +30,13 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.cache.Cache;
+import ai.grakn.graql.internal.reasoner.cache.QueryCache;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImplIterator;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.Rule;
@@ -124,7 +131,7 @@ public class BenchmarkTests {
      */
     @Test
     public void testTransitiveChain()  {
-        final int N = 20;
+        final int N = 2;
 
         // DJ - differential joins
         // IC - inverse cache
@@ -159,16 +166,22 @@ public class BenchmarkTests {
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a';";
         MatchQuery query2 = iqb.parse(queryString2);
 
+        /*
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute = query.execute();
         assertEquals(execute.size(), N*N/2 + N/2);
         System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
+        */
 
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> execute2 = query2.execute();
-        assertEquals(execute2.size(), N);
         System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
+        System.out.println("ReasonerQueryImpl::equals time: " + ReasonerQueryImpl.equalsTime);
+        System.out.println("ReasonerQueryImpl::hashCode time: " + ReasonerQueryImpl.hashTime);
+        System.out.println("ReasonerQueryImplIterator::init time: " + ReasonerQueryImplIterator.initTime);
+        assertEquals(execute2.size(), N);
 
+        /*
         int limit = 10;
         startTime = System.currentTimeMillis();
         List<Map<String, Concept>> results = query.limit(limit).execute();
@@ -179,6 +192,7 @@ public class BenchmarkTests {
         results = query2.limit(limit).execute();
         answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
+        */
     }
 
     /**

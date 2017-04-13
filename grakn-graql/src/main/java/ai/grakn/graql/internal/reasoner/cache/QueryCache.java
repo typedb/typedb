@@ -22,6 +22,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import java.util.HashMap;
 import javafx.util.Pair;
 
 import java.util.Set;
@@ -58,23 +59,38 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
 
     @Override
     public Stream<Answer> record(Q query, Stream<Answer> answerStream) {
-        QueryAnswers answers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
+        QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            QueryAnswers unifiedAnswers = answers.unify(getRecordUnifier(query));
-            match.getValue().addAll(unifiedAnswers);
-            return match.getValue().stream();
-        } else {
-            cache.put(query, new Pair<>(query, answers));
+            Q equivalentQuery = match.getKey();
+            QueryAnswers answers = match.getValue();
+            QueryAnswers unifiedAnswers = newAnswers.unify(query.getUnifier(equivalentQuery));
+            answers.addAll(unifiedAnswers);
             return answers.stream();
+        } else {
+            cache.put(query, new Pair<>(query, newAnswers));
+            return newAnswers.stream();
         }
     }
 
+    public  HashMap<Q, Long> records = new HashMap<>();
+    public static long recordHits = 0;
+    public static long recordsTotal = 0;
+
     public Answer recordAnswer(Q query, Answer answer){
+        recordsTotal++;
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            Answer unifiedAnswer = answer.unify(getRecordUnifier(query));
-            match.getValue().add(unifiedAnswer);
+            //System.out.println("Cache hit:" + query.toString());
+            recordHits++;
+            Long bla = records.get(query);
+            if (bla != null)  records.put(query, bla  + 1);
+            else records.put(query, 1L);
+            Q equivalentQuery = match.getKey();
+            QueryAnswers answers = match.getValue();
+            Answer unifiedAnswer = answer.unify(query.getUnifier(equivalentQuery));
+            answers.add(unifiedAnswer);
+
         } else {
             cache.put(query, new Pair<>(query, new QueryAnswers(answer)));
         }
@@ -88,9 +104,11 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
 
     @Override
     public QueryAnswers getAnswers(Q query) {
-        Q equivalentQuery = contains(query)? cache.get(query).getKey() : null;
-        if (equivalentQuery != null) {
-            return QueryAnswers.getUnifiedAnswers(query, equivalentQuery, cache.get(equivalentQuery).getValue());
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            Q equivalentQuery = match.getKey();
+            QueryAnswers answers = match.getValue();
+            return QueryAnswers.getUnifiedAnswers(query, equivalentQuery, answers);
         }
         else return new QueryAnswers();
     }
