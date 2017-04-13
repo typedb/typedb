@@ -37,6 +37,7 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import java.util.HashSet;
@@ -108,6 +109,7 @@ public class GraknEngineFailoverIT {
         assertTasksCompletedWithCorrectStatus(allTasks);
     }
 
+    @Ignore
     @Property(trials=1)
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
             @Size(min=1000, max=5000) List<TaskState> tasks) throws Exception {
