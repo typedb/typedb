@@ -860,7 +860,6 @@ public class ReasonerTest {
         assertEquals(answers2, answers3);
     }
 
-
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation(){
         String queryString = "match $x isa is-located-in;";

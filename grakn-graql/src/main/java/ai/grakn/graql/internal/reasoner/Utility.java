@@ -438,10 +438,15 @@ public class Utility {
     /**
      * @param parent type
      * @param child type
-     * @return true if child is subtype of parent
+     * @return true if child is a subtype of parent
      */
     public static boolean checkTypesCompatible(Type parent, Type child) {
-        return parent.subTypes().contains(child);
+        Type superType = child;
+        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
+            if (superType.equals(parent)) return true;
+            superType = superType.superType();
+        }
+        return false;
     }
 
     /**
@@ -450,6 +455,6 @@ public class Utility {
      * @return true if types do not belong to the same type hierarchy
      */
     public static boolean checkTypesDisjoint(Type parent, Type child) {
-        return !parent.subTypes().contains(child) && !child.subTypes().contains(parent);
+        return !checkTypesCompatible(parent, child) && !checkTypesCompatible(child, parent);
     }
 }
