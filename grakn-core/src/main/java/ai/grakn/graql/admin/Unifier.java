@@ -98,6 +98,9 @@ public interface Unifier{
 
     Unifier removeTrivialMappings();
 
+    /**
+     * @return unifier with inverted mappings
+     */
     Unifier invert();
 
     /**
