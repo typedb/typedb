@@ -119,6 +119,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
         return getInverseAnswerMap(query, query.getVarNames());
     }
 
+    /*
     Unifier getRecordUnifier(Q toRecord){
         Q equivalentQuery = contains(toRecord)? cache.get(toRecord).getKey() : null;
         if (equivalentQuery != null) return toRecord.getUnifier(equivalentQuery);
@@ -130,6 +131,7 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
         if (equivalentQuery != null) return  equivalentQuery.getUnifier(toRetrieve);
         else return new UnifierImpl();
     }
+    */
 
     /**
      * cache union

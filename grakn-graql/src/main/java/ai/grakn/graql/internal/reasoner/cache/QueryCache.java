@@ -73,19 +73,9 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
         }
     }
 
-    public  HashMap<Q, Long> records = new HashMap<>();
-    public static long recordHits = 0;
-    public static long recordsTotal = 0;
-
     public Answer recordAnswer(Q query, Answer answer){
-        recordsTotal++;
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            //System.out.println("Cache hit:" + query.toString());
-            recordHits++;
-            Long bla = records.get(query);
-            if (bla != null)  records.put(query, bla  + 1);
-            else records.put(query, 1L);
             Q equivalentQuery = match.getKey();
             QueryAnswers answers = match.getValue();
             Answer unifiedAnswer = answer.unify(query.getUnifier(equivalentQuery));
@@ -108,7 +98,7 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
         if (match != null) {
             Q equivalentQuery = match.getKey();
             QueryAnswers answers = match.getValue();
-            return QueryAnswers.getUnifiedAnswers(query, equivalentQuery, answers);
+            return answers.unify(equivalentQuery.getUnifier(query));
         }
         else return new QueryAnswers();
     }

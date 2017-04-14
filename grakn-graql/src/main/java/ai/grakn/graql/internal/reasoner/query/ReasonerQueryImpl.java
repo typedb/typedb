@@ -699,7 +699,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         private final QueryCache<ReasonerAtomicQuery> cache;
         private Iterator<Answer> answerIterator;
-        public long iterTime = System.currentTimeMillis();
 
         QueryAnswerIterator(){
             this.cache = new QueryCache<>();
@@ -716,11 +715,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 //iter finished
             else {
                 long dAns = answers.size() - oldAns;
-                System.out.println("iter time:" + (System.currentTimeMillis() - iterTime));
-                iterTime = System.currentTimeMillis();
-                System.out.println("Record hits: " + QueryCache.recordHits);
-                System.out.println("Record total: " + QueryCache.recordHits);
-                System.out.println("####################################################################################");
                 if (dAns != 0 || iter == 0) {
                     LOG.debug("iter: " + iter + " answers: " + answers.size() + " dAns = " + dAns);
                     iter++;
