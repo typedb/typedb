@@ -22,9 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
-import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import javafx.util.Pair;
 
 import java.util.HashMap;
@@ -118,20 +116,6 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
     public Map<Pair<VarName, Concept>, Set<Answer>> getInverseAnswerMap(Q query){
         return getInverseAnswerMap(query, query.getVarNames());
     }
-
-    /*
-    Unifier getRecordUnifier(Q toRecord){
-        Q equivalentQuery = contains(toRecord)? cache.get(toRecord).getKey() : null;
-        if (equivalentQuery != null) return toRecord.getUnifier(equivalentQuery);
-        else return new UnifierImpl();
-    }
-
-    Unifier getRetrieveUnifier(Q toRetrieve){
-        Q equivalentQuery = contains(toRetrieve)? cache.get( toRetrieve).getKey() : null;
-        if (equivalentQuery != null) return  equivalentQuery.getUnifier(toRetrieve);
-        else return new UnifierImpl();
-    }
-    */
 
     /**
      * cache union
