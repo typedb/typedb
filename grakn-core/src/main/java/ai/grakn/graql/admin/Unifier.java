@@ -98,6 +98,8 @@ public interface Unifier{
 
     Unifier removeTrivialMappings();
 
+    Unifier invert();
+
     /**
      * @return number of mappings that consittute this unifier
      */

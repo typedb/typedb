@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import javafx.util.Pair;
 
@@ -79,7 +80,9 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
     public abstract LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers);
 
     public abstract T getAnswers(Q query);
+    public abstract Pair<T, Unifier> getAnswersWithUnifier(Q query);
     public abstract Stream<Answer> getAnswerStream(Q query);
+    public abstract Pair<Stream<Answer>, Unifier> getAnswerStreamWithUnifier(Q query);
     public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
     /**

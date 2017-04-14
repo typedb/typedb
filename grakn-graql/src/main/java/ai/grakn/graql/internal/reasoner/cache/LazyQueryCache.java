@@ -25,6 +25,7 @@ import ai.grakn.graql.internal.reasoner.explanation.LookupExplanation;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyAnswerIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import javafx.util.Pair;
 
 import java.util.HashMap;
@@ -93,37 +94,49 @@ public class LazyQueryCache<Q extends ReasonerQuery> extends Cache<Q, LazyAnswer
      */
     @Override
     public LazyAnswerIterator getAnswers(Q query) {
+        return getAnswersWithUnifier(query).getKey();
+    }
+
+    @Override
+    public Pair<LazyAnswerIterator, Unifier> getAnswersWithUnifier(Q query) {
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Q equivalentQuery = match.getKey();
             AnswerExplanation exp = new LookupExplanation(query);
             Unifier unifier = equivalentQuery.getUnifier(query);
             LazyAnswerIterator unified = match.getValue().unify(unifier);
-            return explanation? unified.explain(exp) : unified;
+            if (explanation) unified = unified.explain(exp);
+            return new Pair<>(unified, unifier);
         }
-        else return new LazyAnswerIterator(Stream.empty());
+        else return new Pair<>(new LazyAnswerIterator(Stream.empty()), new UnifierImpl());
     }
 
     @Override
     public Stream<Answer> getAnswerStream(Q query){
+        return getAnswerStreamWithUnifier(query).getKey();
+    }
+
+    @Override
+    public Pair<Stream<Answer>, Unifier> getAnswerStreamWithUnifier(Q query) {
         Pair<Q, LazyAnswerIterator> match =  cache.get(query);
         if (match != null) {
             Q equivalentQuery = match.getKey();
             Unifier unifier = equivalentQuery.getUnifier(query);
             AnswerExplanation exp = new LookupExplanation(query);
             Stream<Answer> unified = match.getValue().stream().map(a -> a.unify(unifier));
-            return explanation?
-                    unified.map(a -> {
-                        if (a.getExplanation() == null || a.getExplanation().isLookupExplanation()) {
-                            a.explain(exp);
-                        } else {
-                            a.getExplanation().setQuery(query);
-                        }
-                        return a;
-                    })
-                    : unified;
+            if (explanation) {
+                unified = unified.map(a -> {
+                    if (a.getExplanation() == null || a.getExplanation().isLookupExplanation()) {
+                        a.explain(exp);
+                    } else {
+                        a.getExplanation().setQuery(query);
+                    }
+                    return a;
+                });
+            }
+            return new Pair<>(unified, unifier);
         }
-        else return Stream.empty();
+        else return new Pair<>(Stream.empty(), new UnifierImpl());
     }
 
     @Override

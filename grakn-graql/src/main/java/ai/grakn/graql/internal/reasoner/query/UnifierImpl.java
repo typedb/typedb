@@ -121,5 +121,13 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
+    public Unifier invert() {
+        return new UnifierImpl(
+                unifier.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))
+        );
+    }
+
+    @Override
     public int size(){ return unifier.size();}
 }
