@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+
 /**
  *
  * <p>
@@ -86,9 +87,22 @@ public abstract class Atom extends AtomBase {
     public boolean isResource(){ return false;}
 
     /**
-     * @return true if atom contains a substitution (id predicates)
+     * @return partial substitutions for this atom (NB: instances)
      */
-    public boolean hasSubstitution(){ return false;}
+    public Set<IdPredicate> getPartialSubstitutions(){ return new HashSet<>();}
+
+    /**
+     * @return measure of priority with which this atom should be resolved
+     */
+    public int resolutionPriority(){
+        int priority = 0;
+        Set<IdPredicate> partialSubstitutions = getPartialSubstitutions();
+        if (!partialSubstitutions.isEmpty()){
+            priority += partialSubstitutions.size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
+            priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
+        }
+        return priority;
+    }
 
     protected abstract boolean isRuleApplicable(InferenceRule child);
 

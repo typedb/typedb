@@ -35,7 +35,6 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
 import ai.grakn.graql.internal.reasoner.atom.binary.BinaryBase;
-import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -183,38 +182,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
      * @return atom that should be prioritised for resolution
      */
     Atom getTopAtom() {
-        //TODO redo based on priority function
-        Set<Atom> atoms = selectAtoms();
-
-        //favour atoms with substitutions
-        List<Atom> subbedAtoms = atoms.stream()
-                .filter(Atom::hasSubstitution)
-                .sorted(Comparator.comparing(at -> at.getApplicableRules().size()))
+        List<Atom> orderedAtoms = selectAtoms().stream()
+                .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
                 .collect(Collectors.toList());
-        if (!subbedAtoms.isEmpty()) return subbedAtoms.iterator().next();
-
-        //favour resources with value predicates
-        Set<Resource> resources = atoms.stream()
-                .filter(Atom::isResource).map(at -> (Resource) at)
-                .filter(r -> !r.getMultiPredicate().isEmpty())
-                .collect(Collectors.toSet());
-        if (!resources.isEmpty()) return resources.iterator().next();
-
-        //favour non-resolvable relations
-        Set<Atom> relations = atoms.stream()
-                .filter(Atom::isRelation)
-                .filter(at -> !at.isRuleResolvable())
-                .collect(Collectors.toSet());
-        if (!relations.isEmpty()) return relations.iterator().next();
-
-        //favour resolvable relations
-        Set<Atom> resolvableRelations = atoms.stream()
-                .filter(Atom::isRelation)
-                .filter(Atom::isRuleResolvable)
-                .collect(Collectors.toSet());
-        if (!resolvableRelations.isEmpty()) return resolvableRelations.iterator().next();
-
-        return atoms.stream().findFirst().orElse(null);
+        return orderedAtoms.stream().findFirst().orElse(null);
     }
 
     /**
