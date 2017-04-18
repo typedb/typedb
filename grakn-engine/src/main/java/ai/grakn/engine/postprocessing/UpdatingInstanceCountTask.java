@@ -83,6 +83,9 @@ public class UpdatingInstanceCountTask extends LockingBackgroundTask {
 
         while(notDone) {
             notDone = false;
+
+            //TODO Using the BATCH transaction type for synchronicity with LoaderTask - had to disable ontology
+            //TODO mutation check in AbstractGraknGraph to do so
             try (GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH)) {
                 graknGraph.admin().updateTypeShards(jobs);
                 graknGraph.admin().commitNoLogs();
