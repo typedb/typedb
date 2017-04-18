@@ -4,13 +4,8 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.GraknEngineServer;
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
-import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.slf4j.LoggerFactory;
@@ -124,7 +119,8 @@ public abstract class GraknTestEnv {
                     .forEach(x -> x.values().forEach(y -> {
                         String name = y.asResource().getValue().toString();
                         GraknGraph graph = engineGraknGraphFactory.getGraph(name, GraknTxType.WRITE);
-                        graph.admin().clear(EngineCacheProvider.getCache());
+                        graph.clear();
+                        graph.admin().commitNoLogs();
                     }));
         }
         engineGraknGraphFactory.refreshConnections();

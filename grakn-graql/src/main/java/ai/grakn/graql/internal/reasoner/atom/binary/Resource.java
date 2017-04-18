@@ -20,12 +20,14 @@ package ai.grakn.graql.internal.reasoner.atom.binary;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
@@ -36,6 +38,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 
 /**
  *
@@ -114,6 +117,17 @@ public class Resource extends MultiPredicateBinary{
     public boolean requiresMaterialisation(){
         //requires materialisation if value variable is user defined
         return getMultiPredicate().isEmpty();
+    }
+
+    @Override
+    public int resolutionPriority(){
+        int priority = super.resolutionPriority();
+        Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
+
+        priority += ResolutionStrategy.IS_RESOURCE_ATOM;
+        priority += vps.stream().filter(ValuePredicateAdmin::isSpecific).count() * ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+        priority += vps.stream().filter(vp -> !vp.isSpecific()).count() * ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+        return priority;
     }
 
     @Override

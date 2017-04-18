@@ -22,9 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import org.slf4j.Logger;
@@ -34,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * <p>
@@ -71,7 +68,7 @@ class ConceptFixer {
      * @param conceptIndex The unique index of the concept which must exist at the end
      * @param conceptIds The conceptIds which effectively need to be merged.
      */
-    private static void runPostProcessingJob(Function<GraknGraph, Consumer<ConceptCache>> postProcessor,
+    private static void runPostProcessingJob(Consumer<GraknGraph> postProcessor,
                                                 String keyspace, String conceptIndex, Set<ConceptId> conceptIds){
         String jobId = UUID.randomUUID().toString();
         boolean notDone = true;
@@ -82,7 +79,7 @@ class ConceptFixer {
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE))  {
 
                 //Perform the fix
-                Consumer<ConceptCache> jobFinaliser = postProcessor.apply(graph);
+                postProcessor.accept(graph);
 
                 //Check if the fix worked
                 validateMerged(graph, conceptIndex, conceptIds).
@@ -92,9 +89,6 @@ class ConceptFixer {
 
                 //Commit the fix
                 graph.admin().commitNoLogs();
-
-                //Finally clear the cache
-                jobFinaliser.accept(EngineCacheProvider.getCache());
 
                 return; //If it can get here. All post processing has succeeded.
 
@@ -150,20 +144,12 @@ class ConceptFixer {
         return Optional.empty();
     }
 
-    static Consumer<ConceptCache> runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+    static void runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         graph.admin().fixDuplicateResources(index, conceptIds);
-        return (cache) -> {
-            conceptIds.forEach(conceptId -> cache.deleteJobResource(graph.getKeyspace(), index, conceptId));
-            cache.clearJobSetResources(graph.getKeyspace(), index);
-        };
     }
 
-    private static Consumer<ConceptCache> runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+    private static void runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         graph.admin().fixDuplicateCastings(index, conceptIds);
-        return (cache) -> {
-            conceptIds.forEach(conceptId -> cache.deleteJobCasting(graph.getKeyspace(), index, conceptId));
-            cache.clearJobSetCastings(graph.getKeyspace(), index);
-        };
     }
 
     private static int performRetry(int retry){

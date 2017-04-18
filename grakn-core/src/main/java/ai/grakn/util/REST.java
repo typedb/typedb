@@ -99,15 +99,10 @@ public class REST {
         public static final String TASK_LOADER_INSERTS = "inserts";
         public static final String LIMIT_PARAM = "limit";
         public static final String OFFSET_PARAM = "offset";
-        public static final String HAL_CONTENTTYPE = "application/hal+json";
-        public static final String GRAQL_CONTENTTYPE = "application/graql";
         public static final String KEYSPACE = "keyspace";
 
         //Commit Logs
         public static final String COMMIT_LOG_FIXING = "concepts-to-fix";
-        public static final String COMMIT_LOG_TYPE = "concept-base-type";
-        public static final String COMMIT_LOG_ID = "concept-vertex-id";
-        public static final String COMMIT_LOG_INDEX = "concept-index";
         public static final String COMMIT_LOG_COUNTING = "types-with-new-counts";
         public static final String COMMIT_LOG_TYPE_NAME = "type-name";
         public static final String COMMIT_LOG_INSTANCE_COUNT = "instance-count";

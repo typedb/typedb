@@ -21,8 +21,6 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -89,8 +87,6 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
-
         LockProvider.add(PostProcessingTask.LOCK_KEY, new NonReentrantLock());
         LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new NonReentrantLock());
     }
@@ -100,7 +96,6 @@ public class StandaloneTaskManager implements TaskManager {
         executorService.shutdown();
         schedulingService.shutdown();
         runningTasks.clear();
-        EngineCacheProvider.clearCache();
         LockProvider.clear();
     }
 
