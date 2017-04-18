@@ -117,7 +117,7 @@ public class GraknEngineFailoverIT {
         Set<TaskId> taskIds = sendTasks(engine1.port(), tasks);
 
         // Randomly restart one of the other engines until all of the tasks are done
-        int lowerBoundMs = 3000;
+        int lowerBoundMs = 5000;
         Random random = new Random();
         List<DistributionContext> enginesToKill = ImmutableList.of(engine2, engine3);
         do{

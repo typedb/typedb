@@ -189,7 +189,7 @@ public class TasksController {
 
         // Create and schedule the task
         TaskState taskState = TaskState.of(clazz, createdBy, schedule, configuration);
-        manager.addTask(taskState);
+        manager.addLowPriorityTask(taskState);
 
         // Configure the response
         response.type(APPLICATION_JSON.getMimeType());

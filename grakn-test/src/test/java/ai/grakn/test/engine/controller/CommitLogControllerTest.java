@@ -121,7 +121,7 @@ public class CommitLogControllerTest {
     public void whenControllerReceivesLog_TaskManagerReceivesPPTask() {
         sendFakeCommitLog();
 
-        verify(manager, times(1)).addTask(
+        verify(manager, times(1)).addLowPriorityTask(
                 argThat(argument ->
                                 argument.taskClass().equals(PostProcessingTask.class) &&
                                 argument.configuration().at(COMMIT_LOG_FIXING).equals(commitLog.at(COMMIT_LOG_FIXING)))
@@ -138,17 +138,17 @@ public class CommitLogControllerTest {
 
         addSomeData(bob);
 
-        verify(manager, times(1)).addTask(argThat(argument ->
+        verify(manager, times(1)).addLowPriorityTask(argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class) &&
                         argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
                         argument.configuration().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
                         argument.configuration().at(COMMIT_LOG_FIXING).at(Schema.BaseType.RESOURCE.name()).asJsonMap().size() == 1));
 
-        verify(manager, never()).addTask(argThat(arg -> arg.configuration().at(KEYSPACE).asString().equals(TIM)));
+        verify(manager, never()).addLowPriorityTask(argThat(arg -> arg.configuration().at(KEYSPACE).asString().equals(TIM)));
 
         addSomeData(tim);
 
-        verify(manager, times(1)).addTask(argThat(argument ->
+        verify(manager, times(1)).addLowPriorityTask(argThat(argument ->
                         argument.taskClass().equals(PostProcessingTask.class) &&
                         argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
                         argument.configuration().at(COMMIT_LOG_FIXING).at(Schema.BaseType.CASTING.name()).asJsonMap().size() == 2 &&
@@ -171,7 +171,7 @@ public class CommitLogControllerTest {
     public void whenSendingCommitLogs_TaskManagerReceivesCountTask(){
         sendFakeCommitLog();
 
-        verify(manager, atLeastOnce()).addTask(
+        verify(manager, atLeastOnce()).addHighPriorityTask(
                 argThat(argument ->
                                 argument.taskClass().equals(UpdatingInstanceCountTask.class) &&
                                 argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 5)
@@ -190,12 +190,12 @@ public class CommitLogControllerTest {
         addSomeData(tim);
 
         try {
-            verify(manager, atLeastOnce()).addTask(argThat(argument ->
+            verify(manager, atLeastOnce()).addHighPriorityTask(argThat(argument ->
                             argument.taskClass().equals(UpdatingInstanceCountTask.class) &&
                             argument.configuration().at(KEYSPACE).asString().equals(BOB) &&
                             argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
 
-            verify(manager, atLeastOnce()).addTask(argThat(argument ->
+            verify(manager, atLeastOnce()).addHighPriorityTask(argThat(argument ->
                             argument.taskClass().equals(UpdatingInstanceCountTask.class) &&
                             argument.configuration().at(KEYSPACE).asString().equals(TIM) &&
                             argument.configuration().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
@@ -217,9 +217,10 @@ public class CommitLogControllerTest {
         resourceType.putResource("c");
         graph1.commit();
 
-        verify(manager, never()).addTask(any());
+        verify(manager, never()).addLowPriorityTask(any());
+        verify(manager, never()).addHighPriorityTask(any());
     }
-    
+
     private void sendFakeCommitLog() {
         Json commitLogFixCasting = object();
         commitLogFixCasting.set("10", array(1));

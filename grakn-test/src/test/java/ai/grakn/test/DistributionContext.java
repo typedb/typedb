@@ -38,6 +38,7 @@ import org.junit.rules.ExternalResource;
 import static ai.grakn.engine.GraknEngineConfig.LOGGING_LEVEL;
 import static ai.grakn.engine.GraknEngineConfig.SERVER_PORT_NUMBER;
 import static ai.grakn.engine.GraknEngineConfig.TASK_MANAGER_IMPLEMENTATION;
+import static ai.grakn.engine.GraknEngineConfig.USE_ZOOKEEPER_STORAGE;
 import static ai.grakn.test.GraknTestEnv.startKafka;
 import static ai.grakn.test.GraknTestEnv.stopKafka;
 import static java.lang.System.currentTimeMillis;
@@ -138,6 +139,7 @@ public class DistributionContext extends ExternalResource {
         properties.setProperty(LOGGING_LEVEL, LOG_LEVEL);
         properties.setProperty(SERVER_PORT_NUMBER, port.toString());
         properties.setProperty(TASK_MANAGER_IMPLEMENTATION, SingleQueueTaskManager.class.getName());
+        properties.setProperty(USE_ZOOKEEPER_STORAGE, "true");
 
         // Write new properties to disk
         File propertiesFile = new File("grakn-engine-" + port + ".properties");

@@ -29,6 +29,6 @@ public interface KafkaTerms {
     String TASK_RUNNER_GROUP = "task-runners";
     String SCHEDULERS_GROUP = "schedulers";
     String WORK_QUEUE_TOPIC = "work-queue";
-    String NEW_TASKS_TOPIC = "new-tasks";
-    String LOG_TOPIC = "logs";
+    String HIGH_PRIORITY_TASKS_TOPIC = "high-priority-tasks";
+    String LOW_PRIORITY_TASKS_TOPIC = "low-priority-tasks";
 }

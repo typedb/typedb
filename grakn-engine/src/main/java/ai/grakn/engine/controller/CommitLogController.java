@@ -112,8 +112,8 @@ public class CommitLogController {
         PostProcessingTask.lastPPTaskCreated.set(System.currentTimeMillis());
 
         // Send two tasks to the pipeline
-        manager.addTask(postProcessingTask);
-        manager.addTask(countingTask);
+        manager.addLowPriorityTask(postProcessingTask);
+        manager.addHighPriorityTask(countingTask);
 
         return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
     }
