@@ -58,7 +58,7 @@ public abstract class BinaryBase extends Atom {
     }
 
     protected abstract VarName extractValueVariableName(VarAdmin var);
-    protected abstract boolean predicatesEquivalent(BinaryBase atom);
+    protected abstract boolean hasEquivalentPredicatesWith(BinaryBase atom);
 
     public VarName getValueVariable() {
         return valueVariable;
@@ -103,7 +103,7 @@ public abstract class BinaryBase extends Atom {
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
         return Objects.equals(this.typeId, a2.getTypeId())
-                && predicatesEquivalent(a2);
+                && hasEquivalentPredicatesWith(a2);
     }
 
     /**

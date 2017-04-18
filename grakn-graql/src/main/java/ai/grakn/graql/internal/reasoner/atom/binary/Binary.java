@@ -74,7 +74,7 @@ public abstract class Binary extends BinaryBase {
     protected void setPredicate(IdPredicate p) { predicate = p;}
 
     @Override
-    protected boolean predicatesEquivalent(BinaryBase atom) {
+    protected boolean hasEquivalentPredicatesWith(BinaryBase atom) {
         Predicate pred = getPredicate();
         Predicate objPredicate = ((Binary) atom).getPredicate();
         return (pred == null && objPredicate == null)

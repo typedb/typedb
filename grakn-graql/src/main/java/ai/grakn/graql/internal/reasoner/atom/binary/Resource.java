@@ -27,8 +27,8 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -49,11 +49,33 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class Resource extends MultiPredicateBinary{
+public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
     public Resource(VarAdmin pattern, Set<ValuePredicate> p, ReasonerQuery par){ super(pattern, p, par);}
-    private Resource(Resource a) { super(a);}
+    private Resource(Resource a) {
+        super(a);
+        Set<ValuePredicate> multiPredicate = getMultiPredicate();
+        a.getMultiPredicate().stream()
+                .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
+                .forEach(multiPredicate::add);
+        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
+    }
+
+    @Override
+    protected boolean hasEquivalentPredicatesWith(BinaryBase at) {
+        if (!(at instanceof Resource)) return false;
+        Resource atom = (Resource) at;
+        for (ValuePredicate predicate : getMultiPredicate()) {
+            Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
+            boolean predicateHasEquivalent = false;
+            while (objIt.hasNext() && !predicateHasEquivalent) {
+                predicateHasEquivalent = predicate.isEquivalent(objIt.next());
+            }
+            if (!predicateHasEquivalent) return false;
+        }
+        return true;
+    }
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
@@ -62,17 +84,15 @@ public class Resource extends MultiPredicateBinary{
         Resource childAtom = (Resource) ruleAtom;
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
 
-        for (Predicate childPredicate : childAtom.getMultiPredicate()) {
-            Iterator<Predicate> parentIt = getMultiPredicate().iterator();
+        for (ValuePredicate childPredicate : childAtom.getMultiPredicate()) {
+            Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
             while (parentIt.hasNext() && !predicateCompatible) {
                 predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
             }
-            if (predicateCompatible) {
-                return true;
-            }
+            if (!predicateCompatible) return false;
         }
-        return false;
+        return true;
     }
 
     @Override
@@ -109,7 +129,7 @@ public class Resource extends MultiPredicateBinary{
         if (getType() == null || getMultiPredicate().size() > 1) return false;
         if (getMultiPredicate().isEmpty()) return true;
 
-        ValuePredicate predicate = (ValuePredicate) getMultiPredicate().iterator().next();
+        ValuePredicate predicate = getMultiPredicate().iterator().next();
         return predicate.getPredicate().isSpecific();
     }
 
@@ -143,7 +163,7 @@ public class Resource extends MultiPredicateBinary{
     @Override
     public Set<ValuePredicate> getValuePredicates(){
         Set<ValuePredicate> valuePredicates = super.getValuePredicates();
-        getMultiPredicate().stream().map(p -> (ValuePredicate) p).forEach(valuePredicates::add);
+        getMultiPredicate().forEach(valuePredicates::add);
         return valuePredicates;
     }
 
