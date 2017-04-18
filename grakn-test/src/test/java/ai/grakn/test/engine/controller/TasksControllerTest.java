@@ -112,7 +112,7 @@ public class TasksControllerTest {
     public void afterSendingTask_ItReceivedByStorage(){
         send();
 
-        verify(manager, atLeastOnce()).addTask(
+        verify(manager, atLeastOnce()).addLowPriorityTask(
                 argThat(argument -> argument.taskClass().equals(ShortExecutionMockTask.class)));
     }
 
@@ -135,7 +135,7 @@ public class TasksControllerTest {
         Instant runAt = now();
         send(Json.object().toString(), defaultParams());
 
-        verify(manager).addTask(argThat(argument -> argument.schedule().runAt().equals(runAt)));
+        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().runAt().equals(runAt)));
     }
 
     @Test
@@ -150,8 +150,8 @@ public class TasksControllerTest {
                 )
         );
 
-        verify(manager).addTask(argThat(argument -> argument.schedule().interval().isPresent()));
-        verify(manager).addTask(argThat(argument -> argument.schedule().isRecurring()));
+        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().interval().isPresent()));
+        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().isRecurring()));
     }
 
     @Test

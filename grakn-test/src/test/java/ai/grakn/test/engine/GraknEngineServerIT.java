@@ -82,7 +82,6 @@ public class GraknEngineServerIT {
         assertNotEquals(engine1.getTaskManager(), engine2.getTaskManager());
     }
 
-    @Ignore // Failing randomly
     @Property(trials=10)
     public void whenSendingTasksToTwoEngines_TheyAllComplete(
             List<TaskState> tasks1, List<TaskState> tasks2) {
@@ -90,8 +89,8 @@ public class GraknEngineServerIT {
         List<TaskState> allTasks = Lists.newArrayList(tasks1);
         allTasks.addAll(tasks2);
 
-        tasks1.forEach(engine1.getTaskManager()::addTask);
-        tasks2.forEach(engine2.getTaskManager()::addTask);
+        tasks1.forEach(engine1.getTaskManager()::addLowPriorityTask);
+        tasks2.forEach(engine2.getTaskManager()::addLowPriorityTask);
 
         waitForStatus(storage, allTasks, COMPLETED, STOPPED, FAILED);
 
@@ -103,7 +102,7 @@ public class GraknEngineServerIT {
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
-        engine1.getTaskManager().addTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task);
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 
@@ -115,7 +114,7 @@ public class GraknEngineServerIT {
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
-        engine1.getTaskManager().addTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task);
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 
@@ -127,7 +126,7 @@ public class GraknEngineServerIT {
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
-        engine1.getTaskManager().addTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task);
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 
@@ -139,7 +138,7 @@ public class GraknEngineServerIT {
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
-        engine1.getTaskManager().addTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task);
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 

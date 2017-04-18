@@ -128,6 +128,7 @@ public class TaskState implements Serializable {
         this.status = RUNNING;
         this.engineID = engineID;
         this.statusChangeTime = now();
+
         return this;
     }
 
@@ -136,9 +137,8 @@ public class TaskState implements Serializable {
         this.statusChangeTime = now();
 
         // Clearing out any not relevant information
-        if(!this.schedule.isRecurring()) {
-            this.configuration = null;
-        }
+        removeConfigUnlessRecurring();
+
         this.taskCheckpoint = null;
 
         return this;
@@ -147,6 +147,9 @@ public class TaskState implements Serializable {
     public TaskState markScheduled(){
         this.status = SCHEDULED;
         this.statusChangeTime = now();
+
+        removeConfigUnlessRecurring();
+
         return this;
     }
 
@@ -155,9 +158,7 @@ public class TaskState implements Serializable {
         this.statusChangeTime = now();
 
         // Clearing out any not relevant information
-        if(!this.schedule.isRecurring()) {
-            this.configuration = null;
-        }
+        removeConfig();
 
         return this;
     }
@@ -228,8 +229,14 @@ public class TaskState implements Serializable {
         return configuration;
     }
 
-    public void clearConfiguration(){
+    private void removeConfig(){
         this.configuration = null;
+    }
+
+    private void removeConfigUnlessRecurring(){
+        if(!schedule.isRecurring()) {
+            removeConfig();
+        }
     }
 
     public TaskState copy() {

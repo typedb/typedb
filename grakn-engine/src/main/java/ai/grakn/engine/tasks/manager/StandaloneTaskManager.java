@@ -95,10 +95,6 @@ public class StandaloneTaskManager implements TaskManager {
         LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new NonReentrantLock());
     }
 
-    public TaskManager open() {
-        return this;
-    }
-
     @Override
     public void close(){
         executorService.shutdown();
@@ -109,21 +105,15 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     @Override
-    public void addTask(TaskState taskState){
-        storage.newState(taskState);
+    public void addLowPriorityTask(TaskState taskState){
+        addTask(taskState);
+    }
 
-        // Schedule task to run.
-        Instant now = Instant.now();
-        TaskSchedule schedule = taskState.schedule();
-        long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
-
-        Runnable taskExecution = submitTaskForExecution(taskState);
-
-        if(schedule.isRecurring()){
-            schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), MILLISECONDS);
-        } else {
-            schedulingService.schedule(taskExecution, delay, MILLISECONDS);
-        }
+    //TODO IMPLEMENT HIGH AND LOW PRIORITY IN STANDALONE MODE
+    @Override
+    public void addHighPriorityTask(TaskState taskState){
+        LOG.info("Standalone mode only has a single priority.");
+        addTask(taskState);
     }
 
     public void stopTask(TaskId id) {
@@ -157,6 +147,23 @@ public class StandaloneTaskManager implements TaskManager {
 
     public TaskStateStorage storage() {
         return storage;
+    }
+
+    private void addTask(TaskState taskState){
+        storage.newState(taskState);
+
+        // Schedule task to run.
+        Instant now = Instant.now();
+        TaskSchedule schedule = taskState.schedule();
+        long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
+
+        Runnable taskExecution = submitTaskForExecution(taskState);
+
+        if(schedule.isRecurring()){
+            schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), MILLISECONDS);
+        } else {
+            schedulingService.schedule(taskExecution, delay, MILLISECONDS);
+        }
     }
 
     private Runnable executeTask(TaskState task) {

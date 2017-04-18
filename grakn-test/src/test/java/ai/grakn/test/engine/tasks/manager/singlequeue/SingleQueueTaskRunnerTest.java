@@ -25,12 +25,12 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
-import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
-import ai.grakn.engine.util.EngineID;
-import ai.grakn.test.EngineContext;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.LongExecutionMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
+import ai.grakn.engine.util.EngineID;
+import ai.grakn.test.EngineContext;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultiset;
@@ -64,14 +64,14 @@ import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
-import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
-import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static java.time.Duration.between;
 import static java.time.Duration.ofMillis;
 import static java.time.Instant.now;
@@ -112,8 +112,8 @@ public class SingleQueueTaskRunnerTest {
     private SingleQueueTaskManager mockedTM;
     private ExternalOffsetStorage offsetStorage;
 
-    private MockGraknConsumer<TaskId, TaskState> consumer;
-    private TopicPartition partition;
+    private MockGraknConsumer<TaskId, TaskState> lowPriorityConsumer;
+    private TopicPartition lowPTopicPartition;
 
     @Before
     public void setUp() {
@@ -121,31 +121,30 @@ public class SingleQueueTaskRunnerTest {
 
         storage = new TaskStateInMemoryStore();
         offsetStorage = mock(ExternalOffsetStorage.class);
-        consumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
+        lowPriorityConsumer = new MockGraknConsumer<>(OffsetResetStrategy.EARLIEST);
 
-        partition = new TopicPartition("hi", 0);
+        lowPTopicPartition = new TopicPartition("low-priority", 0);
 
-        consumer.assign(ImmutableSet.of(partition));
-        consumer.updateBeginningOffsets(ImmutableMap.of(partition, 0L));
-        consumer.updateEndOffsets(ImmutableMap.of(partition, 0L));
+        lowPriorityConsumer.assign(ImmutableSet.of(lowPTopicPartition));
+        lowPriorityConsumer.updateBeginningOffsets(ImmutableMap.of(lowPTopicPartition, 0L));
+        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(lowPTopicPartition, 0L));
 
         mockedTM = mock(SingleQueueTaskManager.class);
         when(mockedTM.storage()).thenReturn(storage);
-        when(mockedTM.newConsumer()).thenReturn(consumer);
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
-        }).when(mockedTM).addTask(Mockito.any());
+        }).when(mockedTM).addLowPriorityTask(Mockito.any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF, () -> lowPriorityConsumer);
 
         for (List<TaskState> taskList : tasks) {
-            consumer.schedulePollTask(() -> taskList.forEach(this::addTask));
+            lowPriorityConsumer.schedulePollTask(() -> taskList.forEach(this::addTask));
         }
 
-        consumer.scheduleEmptyPollTask(() -> {
+        lowPriorityConsumer.scheduleEmptyPollTask(() -> {
             Thread closeTaskRunner = new Thread(() -> {
                 try {
                     taskRunner.close();
@@ -162,9 +161,9 @@ public class SingleQueueTaskRunnerTest {
     }
 
     private void addTask(TaskState task) {
-        Long offset = consumer.endOffsets(ImmutableSet.of(partition)).get(partition);
-        consumer.addRecord(new ConsumerRecord<>(partition.topic(), partition.partition(), offset, task.getId(), task.copy()));
-        consumer.updateEndOffsets(ImmutableMap.of(partition, offset + 1));
+        Long offset = lowPriorityConsumer.endOffsets(ImmutableSet.of(lowPTopicPartition)).get(lowPTopicPartition);
+        lowPriorityConsumer.addRecord(new ConsumerRecord<>(lowPTopicPartition.topic(), lowPTopicPartition.partition(), offset, task.getId(), task.copy()));
+        lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(lowPTopicPartition, offset + 1));
     }
 
     @Property(trials=10)

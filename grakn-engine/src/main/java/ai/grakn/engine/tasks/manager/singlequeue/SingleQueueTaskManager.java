@@ -37,6 +37,7 @@ import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.stream.Stream;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
@@ -53,7 +54,8 @@ import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
-import static ai.grakn.engine.tasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
+import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED;
@@ -128,10 +130,13 @@ public class SingleQueueTaskManager implements TaskManager {
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
                 .setNameFormat(TASK_RUNNER_THREAD_POOL_NAME)
                 .build();
-        this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY, taskRunnerPoolFactory);
+        this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY * 2, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        this.taskRunners = generate(() -> newTaskRunner(engineId)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, HIGH_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, LOW_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+
+        this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         EngineCacheProvider.init(EngineCacheStandAlone.getCache());
@@ -179,9 +184,17 @@ public class SingleQueueTaskManager implements TaskManager {
      * @param taskState Task to execute
      */
     @Override
-    public void addTask(TaskState taskState){
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskState.getId(), taskState));
-        producer.flush();
+    public void addLowPriorityTask(TaskState taskState){
+        sendTask(taskState, LOW_PRIORITY_TASKS_TOPIC);
+    }
+
+    /**
+     * Create an instance of a task based on the given parameters and submit it a Kafka queue.
+     * @param taskState Task to execute
+     */
+    @Override
+    public void addHighPriorityTask(TaskState taskState){
+        sendTask(taskState, HIGH_PRIORITY_TASKS_TOPIC);
     }
 
     /**
@@ -209,11 +222,11 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
-     * Get a new kafka consumer listening on the new tasks topic
+     * Get a new kafka consumer listening on the given topic
      */
-    public Consumer<TaskId, TaskState> newConsumer(){
-        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-        consumer.subscribe(ImmutableList.of(NEW_TASKS_TOPIC), rebalanceListener(consumer, offsetStorage));
+    private Consumer<TaskId, TaskState> newConsumer(String topic){
+        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP + "-" + topic);
+        consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;
     }
 
@@ -227,13 +240,23 @@ public class SingleQueueTaskManager implements TaskManager {
     }
 
     /**
+     * Serialize and send the given task to the given kafka queue
+     * @param taskState Task to send to kafka
+     * @param topic Queue to which to send the task
+     */
+    private void sendTask(TaskState taskState, String topic){
+        producer.send(new ProducerRecord<>(topic, taskState.getId(), taskState));
+        producer.flush();
+    }
+
+    /**
      * Create a new instance of {@link SingleQueueTaskRunner} with the configured {@link #storage}}
      * and {@link #zookeeper} connection.
      * @param engineId Identifier of the engine on which this taskrunner is running
      * @return New instance of a SingleQueueTaskRunner
      */
-    private SingleQueueTaskRunner newTaskRunner(EngineID engineId){
-        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF);
+    private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
+        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, () -> newConsumer(priority));
     }
 
     /**

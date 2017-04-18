@@ -39,7 +39,6 @@ import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import mjson.Json;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -179,7 +178,7 @@ public class PostProcessingTestIT {
     @Test
     public void afterRunningPostProcessingTask_TaskMarkedAsCompleted() throws Exception {
         TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), TaskSchedule.now(), Json.object());
-        engine.getTaskManager().addTask(task);
+        engine.getTaskManager().addLowPriorityTask(task);
 
         waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
 
@@ -190,7 +189,7 @@ public class PostProcessingTestIT {
     @Test
     public void afterStoppingPostProcessingTask_TaskMarkedAsStopped() {
         TaskState task = TaskState.of(PostProcessingTask.class, getClass().getName(), at(now().plusSeconds(10)), Json.object());
-        engine.getTaskManager().addTask(task);
+        engine.getTaskManager().addLowPriorityTask(task);
         engine.getTaskManager().stopTask(task.getId());
         assertEquals(STOPPED, engine.getTaskManager().storage().getState(task.getId()).status());
     }
