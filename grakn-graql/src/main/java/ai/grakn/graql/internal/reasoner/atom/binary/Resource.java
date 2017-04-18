@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
 public class Resource extends MultiPredicateBinary{
 
     public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
-    public Resource(VarAdmin pattern, Set<Predicate> p, ReasonerQuery par){ super(pattern, p, par);}
+    public Resource(VarAdmin pattern, Set<ValuePredicate> p, ReasonerQuery par){ super(pattern, p, par);}
     private Resource(Resource a) { super(a);}
 
     @Override
@@ -97,10 +97,24 @@ public class Resource extends MultiPredicateBinary{
 
     @Override
     public boolean isResource(){ return true;}
+
     @Override
     public boolean isSelectable(){ return true;}
+
     @Override
-    public boolean requiresMaterialisation(){ return true;}
+    public boolean isAllowedToFormRuleHead(){
+        if (getType() == null || getMultiPredicate().size() > 1) return false;
+        if (getMultiPredicate().isEmpty()) return true;
+
+        ValuePredicate predicate = (ValuePredicate) getMultiPredicate().iterator().next();
+        return predicate.getPredicate().isSpecific();
+    }
+
+    @Override
+    public boolean requiresMaterialisation(){
+        //requires materialisation if value variable is user defined
+        return getMultiPredicate().isEmpty();
+    }
 
     @Override
     public Unifier getUnifier(Atomic parentAtom) {

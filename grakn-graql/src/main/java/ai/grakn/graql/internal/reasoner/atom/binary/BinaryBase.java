@@ -79,11 +79,6 @@ public abstract class BinaryBase extends Atom {
     }
 
     @Override
-    public boolean requiresMaterialisation(){
-        return isUserDefinedName() && getType() != null && getType().isRelationType();
-    }
-
-    @Override
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + (this.typeId != null? this.typeId.hashCode() : 0);

@@ -150,8 +150,8 @@ public class Utility {
      * @param parent reasoner query the mapped predicate should belong to
      * @return set of mapped ValuePredicates
      */
-    public static Set<Predicate> getValuePredicates(VarName valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
-        Set<Predicate> predicates = new HashSet<>();
+    public static Set<ValuePredicate> getValuePredicates(VarName valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        Set<ValuePredicate> predicates = new HashSet<>();
         if(valueVar.isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))

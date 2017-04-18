@@ -574,9 +574,9 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
-            if (atom.requiresMaterialisation() && atom.isRuleResolvable()) return true;
+            //if (atom.requiresMaterialisation() && atom.isRuleResolvable()) return true;
             for (InferenceRule rule : atom.getApplicableRules())
-                if (rule.requiresMaterialisation()){
+                if (rule.requiresMaterialisation(atom)){
                     return true;
                 }
         }

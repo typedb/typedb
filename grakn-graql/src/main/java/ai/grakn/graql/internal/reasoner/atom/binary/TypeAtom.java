@@ -79,6 +79,16 @@ public class TypeAtom extends Binary{
     }
 
     @Override
+    public boolean isAllowedToFormRuleHead(){
+        return getType() != null;
+    }
+
+    @Override
+    public boolean requiresMaterialisation(){
+        return isUserDefinedName() && getType() != null && getType().isRelationType();
+    }
+
+    @Override
     public Type getType() {
         return getPredicate() != null ?
                 getParentQuery().graph().getConcept(getPredicate().getPredicate()) : null;

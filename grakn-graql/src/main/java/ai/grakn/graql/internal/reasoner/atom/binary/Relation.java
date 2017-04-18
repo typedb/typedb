@@ -213,6 +213,13 @@ public class Relation extends TypeAtom {
     public boolean isType(){ return getType() != null;}
 
     @Override
+    public boolean isAllowedToFormRuleHead(){
+        //can form a rule head if specified type and all relation players have a specified/unambiguously inferrable role type
+        return super.isAllowedToFormRuleHead()
+                && this.getRoleVarTypeMap().keySet().size() == this.getRelationPlayers().size();
+    }
+
+    @Override
     public boolean hasSubstitution() {
         Set<VarName> rolePlayers = getRolePlayers();
         return getIdPredicates().stream()

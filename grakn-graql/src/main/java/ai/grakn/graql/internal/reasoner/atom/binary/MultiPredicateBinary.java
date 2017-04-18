@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 public abstract class MultiPredicateBinary extends BinaryBase {
     private final  Set<Predicate> multiPredicate = new HashSet<>();
 
-    protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, ReasonerQuery par) {
+    protected MultiPredicateBinary(VarAdmin pattern, Set<? extends Predicate> preds, ReasonerQuery par) {
         super(pattern, par);
         this.multiPredicate.addAll(preds);
         this.typeId = extractTypeId(atomPattern.asVar());
