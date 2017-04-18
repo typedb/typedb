@@ -108,7 +108,7 @@ public class LoaderTask implements BackgroundTask {
             inserts.forEach(q -> q.withGraph(graph).execute());
 
             // commit the transaction
-            //TODO This commit method submits through the REST API and we should probably remove this
+            //TODO This commit uses the rest API, it shouldn't
             graph.commit();
         } catch (GraknValidationException e) {
             //If it's a validation exception there is no point in re-trying

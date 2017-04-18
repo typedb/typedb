@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -31,12 +32,14 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Map;
 import javafx.util.Pair;
 
 import java.util.Objects;
@@ -152,12 +155,24 @@ public class InferenceRule {
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
         Set<Predicate> predicates = parentAtom.getPredicates().stream()
                 .collect(toSet());
-        Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                .collect(toSet());
 
+        //propagate predicates
         head.addAtomConstraints(predicates);
         body.addAtomConstraints(predicates);
-        body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
+
+        Set<TypeAtom> types = parentAtom.getTypeConstraints().stream()
+                .collect(toSet());
+        Set<VarName> typeVars = types.stream().map(Atom::getVarName).collect(toSet());
+        Map<VarName, Type> varTypeMap = parentAtom.getParentQuery().getVarTypeMap();
+
+        //remove less specific types if present
+        body.getTypeConstraints().stream()
+                .filter(type -> typeVars.contains(type.getVarName()))
+                .filter(type -> !type.equals(varTypeMap.get(type.getVarName())))
+                .filter(type -> type.getType().subTypes().contains(varTypeMap.get(type.getVarName())))
+                .forEach(body::removeAtomic);
+
+        body.addAtomConstraints(types.stream().filter(type -> !body.getTypeConstraints().contains(type)).collect(toSet()));
         return this;
     }
 
