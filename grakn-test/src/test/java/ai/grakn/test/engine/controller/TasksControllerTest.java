@@ -38,7 +38,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 import spark.Service;
 
 import java.io.IOException;
@@ -112,7 +111,7 @@ public class TasksControllerTest {
 
     @Before
     public void clearMockito(){
-        Mockito.reset(manager);
+//        Mockito.reset(manager);
     }
 
     @Test
