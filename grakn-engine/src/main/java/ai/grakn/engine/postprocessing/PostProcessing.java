@@ -18,13 +18,11 @@
 
 package ai.grakn.engine.postprocessing;
 
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.graph.admin.ConceptCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -51,8 +49,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class PostProcessing {
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
-    private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
-    private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
     private static PostProcessing instance = null;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -60,13 +56,10 @@ public class PostProcessing {
     private ExecutorService postpool;
     private ExecutorService statDump;
     private Set<Future> futures;
-    private String currentStage;
-    private final ConceptCache cache;
 
     private PostProcessing() {
         postpool = Executors.newFixedThreadPool(Integer.parseInt(GraknEngineConfig.getInstance().getProperty(GraknEngineConfig.POST_PROCESSING_THREADS)));
         statDump = Executors.newSingleThreadExecutor();
-        cache = EngineCacheProvider.getCache();
         futures = ConcurrentHashMap.newKeySet();
         isRunning.set(false);
     }
@@ -77,31 +70,11 @@ public class PostProcessing {
         }
         return instance;
     }
-
-    public boolean run() {
-        if (!isRunning.getAndSet(true)) {
-            LOG.info("Starting maintenance.");
-
-            statDump.execute(this::dumpStats);
-            performTasks();
-
-            futures = ConcurrentHashMap.newKeySet();
-            boolean notCancelled = isRunning.getAndSet(false);
-
-            LOG.info("Maintenance completed.");
-
-            return notCancelled;
-        } else {
-            return true;
-        }
-    }
-
     public boolean stop() {
         boolean running = isRunning.getAndSet(false);
         
         if(running) {
             LOG.warn("Shutting down running tasks");
-            System.out.println("Shutting down running tasks");
             futures.forEach(f -> f.cancel(true));
             postpool.shutdownNow();
             statDump.shutdownNow();
@@ -110,55 +83,43 @@ public class PostProcessing {
         return running;
     }
 
-    private void performTasks() {
-        currentStage = CASTING_STAGE;
-        LOG.info(currentStage);
-        performCastingFix();
-        waitToContinue();
+    public void performCastingFix(String keyspace, String index, Set<ConceptId> castingsToPP) {
+        dumpStats(keyspace, "castings", castingsToPP);
 
-        currentStage = RESOURCE_STAGE;
-        LOG.info(currentStage);
-        performResourceFix();
-        waitToContinue();
+        run(keyspace, index, castingsToPP, ConceptFixer::checkCastings);
     }
 
-    private void performCastingFix() {
-        cache.getKeyspaces().parallelStream().forEach(keyspace -> {
-            try {
-                Set<String> completedJobs = new HashSet<>();
-                cache.getCastingJobs(keyspace).
-                        forEach((index, ids) -> {
-                            if(ids.isEmpty()) {
-                                completedJobs.add(index);
-                            }else{
-                                futures.add(postpool.submit(() -> ConceptFixer.checkCastings(keyspace, index, ids)));
-                            }
-                        });
-                completedJobs.forEach(index -> cache.clearJobSetCastings(keyspace, index));
-            } catch (RuntimeException e) {
-                LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
+    public void performResourceFix(String keyspace, String index, Set<ConceptId> resourcesToPP){
+        dumpStats(keyspace, "resources", resourcesToPP);
+
+        run(keyspace, index, resourcesToPP, ConceptFixer::checkResources);
+    }
+
+
+    private void run(String keyspace, String index, Set<ConceptId> concepts,
+                     Consumer<String, String, Set<ConceptId>> function) {
+
+        try {
+            if (!isRunning.getAndSet(true)) {
+                LOG.info("Starting maintenance.");
+
+                // Run the post processing
+                if (concepts.size() > 0) {
+                    futures.add(postpool.submit(() -> function.apply(keyspace, index, concepts)));
+                    waitToContinue();
+                }
+
+                futures.clear();
+
+                LOG.info("Maintenance completed.");
             }
-        });
+        } catch (RuntimeException e){
+            LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]", e);
+        } finally {
+            isRunning.getAndSet(false);
+        }
     }
 
-    private void performResourceFix(){
-        cache.getKeyspaces().parallelStream().forEach(keyspace -> {
-            try {
-                Set<String> completedJobs = new HashSet<>();
-                cache.getResourceJobs(keyspace).
-                        forEach((index, ids) -> {
-                            if(ids.isEmpty()) {
-                                completedJobs.add(index);
-                            } else {
-                                futures.add(postpool.submit(() -> ConceptFixer.checkResources(keyspace, index, ids)));
-                            }
-                        });
-                completedJobs.forEach(index -> cache.clearJobSetResources(keyspace, index));
-            } catch (RuntimeException e) {
-                LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
-            }
-        });
-    }
 
     private void waitToContinue() {
         for (Future future : futures) {
@@ -173,37 +134,22 @@ public class PostProcessing {
         futures.clear();
     }
 
-    private void dumpStats() {
-        while (isRunning.get()) {
-            LOG.info("--------------------Current Status of Post Processing--------------------");
-            dumpStatsType("Casting");
-            dumpStatsType("Resources");
-            LOG.info("Current Stage: " + currentStage);
-            LOG.info("-------------------------------------------------------------------------");
-
-            try {
-                Thread.sleep(30000);
-            } catch (InterruptedException e) {
-                LOG.error("Exception",e);
-            }
-        }
+    private void dumpStats(String keyspace, String type, Set<ConceptId> concepts) {
+        LOG.info("--------------------Current Status of Post Processing--------------------");
+        LOG.info("Keyspace      : " + keyspace);
+        LOG.info("" + type + "      : " + concepts.size());
+        LOG.info("-------------------------------------------------------------------------");
     }
 
-    private void dumpStatsType(String typeName) {
-        long total = 0L;
-        LOG.info(typeName + " Jobs:");
-
-        for (String keyspace : cache.getKeyspaces()) {
-            long numJobs = 0L;
-            if(typeName.equals("Casting")){
-                numJobs = cache.getNumCastingJobs(keyspace);
-            } else if(typeName.equals("Resources")){
-                numJobs = cache.getNumResourceJobs(keyspace);
-            }
-            LOG.info("        For Graph [" + keyspace + "] has jobs : " + numJobs);
-            total += numJobs;
-        }
-
-        LOG.info("    Total Jobs: " + total);
+    /**
+     * Functional interface for the perform post processing methods
+     * @param <A> the keyspace
+     * @param <B> the index of the concept
+     * @param <C> the set of concept ids to post process
+     */
+    @FunctionalInterface
+    public interface Consumer <A, B, C> {
+        //R is like Return, but doesn't have to be last in the list nor named R.
+        void apply (A a, B b, C c);
     }
 }

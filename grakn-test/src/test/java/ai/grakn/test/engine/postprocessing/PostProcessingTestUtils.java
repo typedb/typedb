@@ -1,13 +1,13 @@
 package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.exception.MoreThanOneConceptException;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
+import java.util.Set;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public class PostProcessingTestUtils {
@@ -45,7 +45,7 @@ public class PostProcessingTestUtils {
     }
     
     @SuppressWarnings("unchecked")
-    static <T> Resource<T> createDuplicateResource(GraknGraph graknGraph, ConceptCache cache, ResourceType<T> resourceType, Resource<T> resource) {
+    static <T> Set<Vertex> createDuplicateResource(GraknGraph graknGraph, ResourceType<T> resourceType, Resource<T> resource) {
         AbstractGraknGraph<?> graph = (AbstractGraknGraph<?>) graknGraph;
         Vertex originalResource = graph.getTinkerTraversal()
                 .hasId(resource.getId().getValue()).next();
@@ -58,7 +58,7 @@ public class PostProcessingTestUtils {
         resourceVertex.property(Schema.ConceptProperty.ID.name(), resourceVertex.id().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceTypeShard);
-        cache.addJobResource(graknGraph.getKeyspace(), resourceVertex.value(Schema.ConceptProperty.INDEX.name()).toString(), ConceptId.of(resourceVertex.id().toString()));        
-        return (Resource<T>)graknGraph.admin().buildConcept(resourceVertex);
+        graknGraph.admin().buildConcept(resourceVertex);
+        return Sets.newHashSet(originalResource, resourceVertex);
     }
 }
