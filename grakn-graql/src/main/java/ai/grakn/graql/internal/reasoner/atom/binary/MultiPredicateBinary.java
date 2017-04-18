@@ -37,6 +37,8 @@ import java.util.stream.Collectors;
  * Base implementation for binary atoms with multiple predicate.
  * </p>
  *
+ * @param <T> type of the contained predicate
+ *
  * @author Kasper Piskorski
  *
  */
