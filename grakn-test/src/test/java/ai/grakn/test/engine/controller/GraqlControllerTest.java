@@ -528,7 +528,7 @@ public class GraqlControllerTest {
     }
 
     protected static String stringResponse(Response response){
-        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE).toString();
+        return response.getBody().as(Json.class, jsonMapper).at(RESPONSE).asString();
     }
 
     protected static Json jsonResponse(Response response){
