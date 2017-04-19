@@ -16,6 +16,8 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
+/* @flow */
+
 import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
 

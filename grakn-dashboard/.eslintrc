@@ -1,8 +1,9 @@
-module.exports = {
+{
     "extends": "airbnb-base",
     "plugins": [
         "import",
-        "html"
+        "html",
+        "flowtype"
     ],
     "globals": {
         "window": true,
@@ -15,6 +16,8 @@ module.exports = {
         "toastr": true
     },
     "rules": {
+        "flowtype/define-flow-type": 1,
+        "flowtype/use-flow-type": 1,
         "no-plusplus": [
             1,
             {
@@ -32,4 +35,4 @@ module.exports = {
             }
         ]
     }
-};
+}

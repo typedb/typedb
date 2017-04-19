@@ -6,6 +6,7 @@
   },
   "name": "grakn-dashboard",
   "version": "0.13.0-SNAPSHOT",
+  "description": "Grakn Web Dashboard",
   "author": "Grakn Labs",
   "bugs": {
     "url": "https://github.com/graknlabs/grakn/issues"
@@ -26,15 +27,21 @@
   },
   "devDependencies": {
     "ava": "^0.16.0",
+    "babel-eslint": "^7.2.2",
     "babel-jest": "^19.0.0",
+    "babel-plugin-syntax-flow": "^6.18.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-runtime": "^6.12.0",
     "babel-preset-es2015": "^6.13.2",
     "babelify": "^7.3.0",
     "browserify": "^13.1.0",
     "eslint": "^3.13.1",
     "eslint-config-airbnb-base": "^11.0.0",
+    "eslint-plugin-flowtype": "^2.32.1",
     "eslint-plugin-html": "^2.0.1",
     "eslint-plugin-import": "^2.2.0",
+    "flow-bin": "^0.44.2",
     "jest": "^19.0.2",
     "jest-vue-preprocessor": "^0.2.0",
     "nyc": "^10.0.0",
@@ -58,8 +65,9 @@
     "watchify": "watchify src/main.js -o static/dashboard.js -v",
     "preinstall": "npm install browserify vueify babelify",
     "test": "jest",
-    "test-coverage":"jest --coverage --coverageDirectory=./coverage/",
-    "coverage": "nyc report --temp-directory=coverage --reporter=text-lcov"
+    "test-coverage": "jest --coverage --coverageDirectory=./coverage/",
+    "coverage": "nyc report --temp-directory=coverage --reporter=text-lcov",
+    "flow": "flow"
   },
   "jest": {
     "moduleFileExtensions": [
