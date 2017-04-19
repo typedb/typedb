@@ -25,7 +25,7 @@
     <groupId>ai.grakn</groupId>
     <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
-    <version>0.12.0</version>
+    <version>0.12.1</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
     <url>https://grakn.ai/pages/platform/index.html</url>
@@ -432,6 +432,24 @@
             </activation>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.4</version>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                            <header><![CDATA[<a href="https://grakn.ai" target="_top">Grakn</a>]]></header>
+                            <bottom><![CDATA[Copyright &#169; {currentYear} <a href="https://grakn.ai" target="_top">Grakn Labs Ltd</a>. All rights reserved.]]></bottom>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-aggregate-javadocs</id>
+                                <goals>
+                                    <goal>aggregate-jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>                    
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
