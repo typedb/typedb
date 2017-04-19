@@ -58,7 +58,8 @@
     "watchify": "watchify src/main.js -o static/dashboard.js -v",
     "preinstall": "npm install browserify vueify babelify",
     "test": "jest",
-    "coverage": "nyc report --reporter=lcov"
+    "test-coverage":"jest --coverage --coverageDirectory=./coverage/",
+    "coverage": "nyc report --temp-directory=coverage --reporter=text-lcov | coveralls"
   },
   "jest": {
     "moduleFileExtensions": [
