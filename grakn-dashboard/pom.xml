@@ -60,7 +60,7 @@
                         <configuration>
                             <executable>npm</executable>
                             <arguments>
-                                <argument>test</argument>
+                                <argument>test-coverage</argument>
                             </arguments>
                         </configuration>
                     </execution>
