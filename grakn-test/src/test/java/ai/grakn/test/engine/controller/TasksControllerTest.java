@@ -109,11 +109,6 @@ public class TasksControllerTest {
         }
     }
 
-    @Before
-    public void clearMockito(){
-//        Mockito.reset(manager);
-    }
-
     @Test
     public void afterSendingTask_ItReceivedByStorage(){
         send();
