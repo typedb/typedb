@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 class NeqPredicate extends ComparatorPredicate {
@@ -38,4 +39,7 @@ class NeqPredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return P.neq(value);
     }
+
+    @Override
+    public boolean isCompatibleWith(ValuePredicateAdmin p) { return !this.equals(p);}
 }

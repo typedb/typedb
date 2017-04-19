@@ -75,6 +75,8 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         this.var = Optional.of(var.admin());
     }
 
+    protected Optional<Object> getValue(){ return value; }
+
     protected abstract String getSymbol();
 
     abstract <V> P<V> gremlinPredicate(V value);
@@ -97,6 +99,15 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
         return value != null ? value.equals(that.value) : that.value == null;
 
     }
+
+    @Override
+    public boolean isCompatibleWith(ValuePredicateAdmin p) {
+        if (!(p instanceof EqPredicate)) return false;
+        EqPredicate eqPredicate = (EqPredicate) p;
+        return isCompatibleWithEqPredicate(eqPredicate);
+    }
+
+    protected boolean isCompatibleWithEqPredicate(EqPredicate p){ return false;};
 
     @Override
     public int hashCode() {

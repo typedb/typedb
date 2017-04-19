@@ -46,4 +46,17 @@ class ContainsPredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return new P<>((v, s) -> ((String) v).contains((String) s), value);
     }
+
+    @Override
+    protected boolean isCompatibleWithEqPredicate(EqPredicate p) {
+        Object val = p.getValue().orElse(null);
+        Object thisVal = this.getValue().orElse(null);
+        //if no value present then a variable hence compatible
+        if (val == null || thisVal == null) return true;
+        if (val.getClass() != thisVal.getClass()) return false;
+
+        String strVal = (String) val;
+        String thisStrVal = (String) thisVal;
+        return strVal.contains(thisStrVal);
+    }
 }

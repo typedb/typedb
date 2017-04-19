@@ -18,6 +18,7 @@
 
 package ai.grakn.graql.internal.query.predicate;
 
+import javax.lang.model.type.PrimitiveType;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 class GtePredicate extends ComparatorPredicate {
@@ -37,5 +38,18 @@ class GtePredicate extends ComparatorPredicate {
     @Override
     <V> P<V> gremlinPredicate(V value) {
         return P.gte(value);
+    }
+
+    @Override
+    protected boolean isCompatibleWithEqPredicate(EqPredicate p) {
+        Object val = p.getValue().orElse(null);
+        Object thisVal = this.getValue().orElse(null);
+        //if no value present then a variable hence compatible
+        if (val == null || thisVal == null) return true;
+        if (val.getClass() != thisVal.getClass()) return false;
+
+        float v2 = (float) val;
+        float v = (float) thisVal;
+        return v >= v2;
     }
 }
