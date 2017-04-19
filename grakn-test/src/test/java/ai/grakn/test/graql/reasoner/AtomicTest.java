@@ -483,6 +483,7 @@ public class AtomicTest {
         GraknGraph graph = genealogyOntology.graph();
         String childRelation = "{($r1: $x1, $r2: $x2) isa parentship;$r1 label 'father';$r2 label 'daughter';}";
         String parentRelation = "{($R1: $x, $R2: $y) isa parentship;$R1 label 'father';$R2 label 'daughter';}";
+
         Atom childAtom = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph).getAtom();
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
 
@@ -501,13 +502,14 @@ public class AtomicTest {
     }
 
     @Test
-    public void testIndirectRoleUnification2(){
+    public void testIndirectRoleUnification_NoRelationType(){
         GraknGraph graph = genealogyOntology.graph();
         String childRelation = "{($r1: $x1, $r2: $x2);$r1 label 'father';$r2 label 'daughter';}";
-        String parentRelation = "{($R1: $x, $R2: $y);$R1 label 'father';$R2 label 'daughter';}";
+        String parentRelation = "{($R2: $y, $R1: $x);$R1 label 'father';$R2 label 'daughter';}";
 
         Atom childAtom = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph).getAtom();
         Atom parentAtom = new ReasonerAtomicQuery(conjunction(parentRelation, graph), graph).getAtom();
+
         Unifier unifiers = childAtom.getUnifier(parentAtom);
         Unifier correctUnifiers = new UnifierImpl(
                 ImmutableMap.of(

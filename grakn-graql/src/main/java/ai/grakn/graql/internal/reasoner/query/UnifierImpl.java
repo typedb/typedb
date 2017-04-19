@@ -50,6 +50,11 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
+    public String toString(){
+        return unifier.toString();
+    }
+
+    @Override
     public boolean equals(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
