@@ -364,6 +364,18 @@ public class Relation extends TypeAtom {
         }
     }
 
+    /**
+     * @return true if any of the relation's role types are meta role types
+     */
+    public boolean hasMetaRoles(){
+        Set<RoleType> parentRoles = getRoleVarTypeMap().keySet();
+        for(RoleType role : parentRoles) {
+            if (Schema.MetaSchema.isMetaLabel(role.getLabel())) return true;
+        }
+        return false;
+    }
+
+
     private Set<RoleType> getExplicitRoleTypes() {
         Set<RoleType> roleTypes = new HashSet<>();
         GraknGraph graph = getParentQuery().graph();
@@ -494,7 +506,10 @@ public class Relation extends TypeAtom {
     }
 
     private Set<VarName> getMappedRolePlayers() {
-        return getRoleVarTypeMap().values().stream().map(Pair::getKey).collect(toSet());
+        return getRoleVarTypeMap().entries().stream()
+                .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey().getLabel()))
+                .map(Map.Entry::getValue)
+                .map(Pair::getKey).collect(toSet());
     }
 
     /**
@@ -587,6 +602,7 @@ public class Relation extends TypeAtom {
 
         //remaining roles
         //role types can repeat so no mather what has been allocated still the full spectrum of possibilities is present
+        //TODO make restrictions based on cardinality constraints
         Set<RoleType> possibleRoles = Sets.newHashSet(relType.relates());
 
         //possible role types for each casting based on its type
@@ -621,9 +637,15 @@ public class Relation extends TypeAtom {
             }
         }
 
-        //update pattern and castings
+        //fill in unallocated roles with metarole
+        RoleType metaRole = graph.admin().getMetaRoleType();
+        VarAdmin metaRoleVar = Graql.var().label(metaRole.getLabel()).admin();
         Sets.difference(getRelationPlayers(), allocatedRelationPlayers)
-                .forEach(casting -> rolePlayerMappings.add(new Pair<>(casting.getRolePlayer().getVarName(), null)));
+                .forEach(casting -> {
+                    VarName varName = casting.getRolePlayer().getVarName();
+                    roleVarTypeMap.put(metaRole, new Pair<>(varName, varTypeMap.get(varName)));
+                    rolePlayerMappings.add(new Pair<>(varName, metaRoleVar));
+                });
 
         //pattern mutation!
         atomPattern = constructRelationVar(isUserDefinedName() ? varName : VarName.of(""), getValueVariable(), rolePlayerMappings);
@@ -663,29 +685,40 @@ public class Relation extends TypeAtom {
                                               List<VarName> parentVars) {
         Unifier unifier = new UnifierImpl();
 
-        //roles satisfy P >= C in terms of generality
-        parentMap.asMap().entrySet()
-                .forEach(entry -> {
-                    RoleType parentRole = entry.getKey();
-                    Set<RoleType> compatibleChildRoles = Sets.intersection(new HashSet<>(parentRole.subTypes()), childMap.keySet());
-                    if (compatibleChildRoles.size() == 1){
-                        RoleType childRole = compatibleChildRoles.iterator().next();
-
-                        Iterator<VarName> pVars = entry.getValue().iterator();
-                        Iterator<VarName> chVars = childMap.get(childRole).iterator();
-                        while(chVars.hasNext() && pVars.hasNext()) {
-                            unifier.addMapping(chVars.next(), pVars.next());
-                        }
-                    }
-                });
-
-        //assign unallocated vars if parent empty
-        if (parentMap.isEmpty()) {
+        //case when all parent roles are meta roles (not specified)
+        Set<RoleType> parentRoles = parentMap.keySet();
+        if (parentRoles.size() == 1 && Schema.MetaSchema.isMetaLabel(parentRoles.iterator().next().getLabel())) {
             Iterator<VarName> cit = childVars.iterator();
             for (VarName pVar : parentVars) {
                 VarName chVar = cit.next();
                 unifier.addMapping(chVar, pVar);
             }
+            return unifier;
+        }
+
+        //roles satisfy P >= C in terms of generality
+        //self-consistent procedure
+        List<RoleType> rolesToAllocate = childMap.entries().stream().map(Map.Entry::getKey).collect(Collectors.toList());
+        while(!rolesToAllocate.isEmpty()) {
+            parentMap.asMap().entrySet()
+                    .forEach(entry -> {
+                        RoleType parentRole = entry.getKey();
+
+                        Set<RoleType> rolesAvailable = new HashSet<>(rolesToAllocate);
+                        Set<RoleType> compatibleChildRoles = !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ?
+                                Sets.intersection(new HashSet<>(parentRole.subTypes()), rolesAvailable) : rolesAvailable;
+                        if (compatibleChildRoles.size() == 1) {
+                            RoleType childRole = compatibleChildRoles.iterator().next();
+
+                            Iterator<VarName> pVars = entry.getValue().iterator();
+                            Iterator<VarName> chVars = childMap.get(childRole).iterator();
+                            while (chVars.hasNext() && pVars.hasNext()) {
+                                unifier.addMapping(chVars.next(), pVars.next());
+                                rolesToAllocate.remove(childRole);
+                            }
+                        }
+                        else if (compatibleChildRoles.isEmpty()) rolesToAllocate.clear();
+                    });
         }
         return unifier;
     }

@@ -71,7 +71,7 @@ public class InferenceRule {
         //if head query is a relation query, require roles to be specified
         if (head.getAtom().isRelation()){
             Relation headAtom = (Relation) head.getAtom();
-            if (headAtom.getRoleVarTypeMap().size() < headAtom.getRelationPlayers().size()) {
+            if (headAtom.hasMetaRoles()) {
                 throw new IllegalArgumentException(ErrorMessage.HEAD_ROLES_MISSING.getMessage(this.toString()));
             }
         }

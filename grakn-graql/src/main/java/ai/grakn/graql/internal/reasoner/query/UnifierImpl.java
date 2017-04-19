@@ -41,7 +41,7 @@ public class UnifierImpl implements Unifier {
     //TODO turn it to multimap to accommodate all cases
     private Map<VarName, VarName> unifier = new HashMap<>();
 
-    public UnifierImpl(){};
+    public UnifierImpl(){}
     public UnifierImpl(Map<VarName, VarName> map){
         unifier.putAll(map);
     }

@@ -522,22 +522,6 @@ public class AtomicTest {
     @Test
     public void testMatchAllUnification(){
         GraknGraph graph = snbGraph.graph();
-        String childString = "{($z, $b) isa recommendation;}";
-        String parentString = "{($a, $x);}";
-        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(childString, graph), graph).getAtom();
-        Relation parentRelation = (Relation) new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
-        Unifier unifier = relation.getUnifier(parentRelation);
-        relation.unify(unifier);
-        assertEquals(unifier.size(), 2);
-        Set<VarName> vars = relation.getVarNames();
-        Set<VarName> correctVars = Sets.newHashSet(VarName.of("a"), VarName.of("x"));
-        assertTrue(!vars.contains(VarName.of("")));
-        assertTrue(vars.containsAll(correctVars));
-    }
-
-    @Test
-    public void testMatchAllUnification2(){
-        GraknGraph graph = snbGraph.graph();
         String parentString = "{$r($a, $x);}";
         Relation parent = (Relation) new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
 
