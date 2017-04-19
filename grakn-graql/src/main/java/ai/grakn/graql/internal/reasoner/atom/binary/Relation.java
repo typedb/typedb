@@ -717,7 +717,9 @@ public class Relation extends TypeAtom {
                                 rolesToAllocate.remove(childRole);
                             }
                         }
-                        else if (compatibleChildRoles.isEmpty()) rolesToAllocate.clear();
+                        else if (compatibleChildRoles.isEmpty()){
+                            rolesToAllocate.clear();
+                        }
                     });
         }
         return unifier;

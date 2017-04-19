@@ -108,6 +108,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet21 = GraphContext.preLoad("testSet21.gql");
 
+    @ClassRule
+    public static final GraphContext testSet22 = GraphContext.preLoad("testSet22.gql");
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -369,12 +372,24 @@ public class ReasoningTests {
         assertEquals(answers, answers2);
     }
 
-    @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
+    @Test //Expected result: Returns db and inferred relations + their inverses and relations with self for all entities
     public void reasoningWithRepeatingRoles(){
         QueryBuilder qb = testSet21.graph().graql().infer(true);
         String queryString = "match (friend:$x1, friend:$x2) isa knows-trans;";
-        List<Answer> answers = qb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 16);
+    }
+
+    @Test //Expected result: The same set of results is always returned
+    public void reasoningWithLimitHigherThanNumberOfResultsReturnsConsistentResults(){
+        QueryBuilder qb = testSet22.graph().graql().infer(true);
+        String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60;";
+        QueryAnswers oldAnswers = queryAnswers(qb.parse(queryString));
+        for(int i = 0; i < 5 ; i++) {
+            QueryAnswers answers =queryAnswers(qb.parse(queryString));
+            assertEquals(answers.size(), 6);
+            assertEquals(answers, oldAnswers);
+        }
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
