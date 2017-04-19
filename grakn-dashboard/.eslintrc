@@ -1,5 +1,6 @@
 {
     "extends": "airbnb-base",
+    "parser": "babel-eslint",
     "plugins": [
         "import",
         "html",
@@ -17,7 +18,8 @@
     },
     "rules": {
         "flowtype/define-flow-type": 1,
-        "flowtype/use-flow-type": 1,
+        "flowtype/use-flow-type": 1,  
+        "no-use-before-define": ["error", { "functions": false, "classes": true }],
         "no-plusplus": [
             1,
             {

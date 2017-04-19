@@ -44,48 +44,42 @@ const metaTypesSet = {
   RULE_TYPE: true,
 };
 
-export default {
+
    /**
-    * Given a JSON object/array in HAL format returns a set of graph nodes and edges
-    * @param {Object|Object[]} data HAL object/array
-    * @param {Boolean} showIsa boolean used to determine whether we should parse "isa" embedded objects
-    * @returns {Object} Object containing two arrays containing graph nodes and edges
-    * @public
+    * Parse HAL object to extract default properties, resources and links.
+    * Add new node object to the nodes array that will be returned to invoker of HALParser.
+    * @param {*} nodeObj HAL object that will be turned into graph node
+    * @param {*} nodes array containing the resulting set of graph nodes
+    * @private
     */
-  parseResponse(data, showIsa) {
-    const nodes = [];
-    const edges = [];
 
-    try {
-      const dataArray = (Array.isArray(data)) ? data : [data];
-      dataArray.forEach((x) => { this.parseHalObject(x, showIsa, nodes, edges); });
-    } catch (error) {
-      console.log(`GRAKN Exception while parsing HAL response: \n ${error.stack}`);
-    }
+function newNode(nodeObj:Object, nodes:Object[]) {
+  const links = Utils.nodeLinks(nodeObj);
+  const properties = Utils.defaultProperties(nodeObj);
+  const resources = Utils.extractResources(nodeObj);
+  nodes.push({ properties, resources, links });
+}
 
-    return { nodes, edges };
-  },
 
   /**
-   * Parse single HAL object and its embedded into graph nodes
-   * @param {Object} obj HAL object that needs to be parsed into graph node
-   * @param {Boolean} showIsa boolean used to determine whether we should parse "isa" embedded objects
-   * @param {Object[]} nodes array containing the resulting set of graph nodes
-   * @param {Object[]} edges array containing the resulting set of graph edges
+   * Add a new edge to the edges array that will be returned to the invoker of HALParser.
+   * @param {*} parent HAL object in which child is embedded
+   * @param {*} child  HAL object embedded in parent object that is connected to it
+   * @param {*} roleName label describing relation between parent and child
+   * @param {*} edges array containing the resulting set of graph edges
    * @private
    */
-  parseHalObject(obj, showIsa, nodes, edges) {
-    this.newNode(obj, nodes);
+function newEdge(parent:Object, child:Object, roleName:string, edges:Object[]) {
+  const idC = child[API.KEY_ID];
+  const idP = parent[API.KEY_ID];
+  const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
 
-    if (API.KEY_EMBEDDED in obj) {
-      Object.keys(obj[API.KEY_EMBEDDED]).forEach((key) => {
-        if ((key !== 'isa') || showIsa === true || obj._baseType in metaTypesSet) {
-          this.parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key, showIsa, nodes, edges);
-        }
-      });
-    }
-  },
-
+  if (Utils.edgeLeftToRight(parent, child)) {
+    edges.push({ from: idC, to: idP, label: edgeLabel });
+  } else {
+    edges.push({ from: idP, to: idC, label: edgeLabel });
+  }
+}
 
    /**
     * Given a set of embedded HAL objects parse them into graph nodes, recursively
@@ -97,46 +91,54 @@ export default {
     * @param {*} edges array containing the resulting set of graph edges
     * @private
     */
-  parseEmbedded(objs, parent, roleName, showIsa, nodes, edges) {
-    objs.forEach((child) => {
-      this.newEdge(parent, child, roleName, edges);
-      this.parseHalObject(child, showIsa, nodes, edges);
-    });
-  },
-
-
-   /**
-    * Parse HAL object to extract default properties, resources and links.
-    * Add new node object to the nodes array that will be returned to invoker of HALParser.
-    * @param {*} nodeObj HAL object that will be turned into graph node
-    * @param {*} nodes array containing the resulting set of graph nodes
-    * @private
-    */
-  newNode(nodeObj, nodes) {
-    const links = Utils.nodeLinks(nodeObj);
-    const properties = Utils.defaultProperties(nodeObj);
-    const resources = Utils.extractResources(nodeObj);
-    nodes.push({ properties, resources, links });
-  },
+function parseEmbedded(objs:Object[], parent:Object, roleName:string, showIsa:boolean, nodes:Object[], edges:Object[]) {
+  objs.forEach((child) => {
+    newEdge(parent, child, roleName, edges);
+    parseHalObject(child, showIsa, nodes, edges);
+  });
+}
 
 
   /**
-   * Add a new edge to the edges array that will be returned to the invoker of HALParser.
-   * @param {*} parent HAL object in which child is embedded
-   * @param {*} child  HAL object embedded in parent object that is connected to it
-   * @param {*} roleName label describing relation between parent and child
-   * @param {*} edges array containing the resulting set of graph edges
+   * Parse single HAL object and its embedded into graph nodes
+   * @param {Object} obj HAL object that needs to be parsed into graph node
+   * @param {boolean} showIsa boolean used to determine whether we should parse "isa" embedded objects
+   * @param {Object[]} nodes array containing the resulting set of graph nodes
+   * @param {Object[]} edges array containing the resulting set of graph edges
    * @private
    */
-  newEdge(parent, child, roleName, edges) {
-    const idC = child[API.KEY_ID];
-    const idP = parent[API.KEY_ID];
-    const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
+function parseHalObject(obj:Object, showIsa:boolean, nodes:Object[], edges:Object[]) {
+  newNode(obj, nodes);
 
-    if (Utils.edgeLeftToRight(parent, child)) {
-      edges.push({ from: idC, to: idP, label: edgeLabel });
-    } else {
-      edges.push({ from: idP, to: idC, label: edgeLabel });
+  if (API.KEY_EMBEDDED in obj) {
+    Object.keys(obj[API.KEY_EMBEDDED]).forEach((key) => {
+      if ((key !== 'isa') || showIsa === true || obj._baseType in metaTypesSet) {
+        parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key, showIsa, nodes, edges);
+      }
+    });
+  }
+}
+
+
+export default {
+   /**
+    * Given a JSON object/array in HAL format returns a set of graph nodes and edges
+    * @param {Object|Object[]} data HAL object/array
+    * @param {boolean} showIsa boolean used to determine whether we should parse "isa" embedded objects
+    * @returns {Object} Object containing two arrays containing graph nodes and edges
+    * @public
+    */
+  parseResponse(data: Object|Object[], showIsa:boolean) {
+    const nodes = [];
+    const edges = [];
+
+    try {
+      const dataArray = (Array.isArray(data)) ? data : [data];
+      dataArray.forEach((x) => { parseHalObject(x, showIsa, nodes, edges); });
+    } catch (error) {
+      console.log(`GRAKN Exception while parsing HAL response: \n ${error.stack}`);
     }
+
+    return { nodes, edges };
   },
 };
