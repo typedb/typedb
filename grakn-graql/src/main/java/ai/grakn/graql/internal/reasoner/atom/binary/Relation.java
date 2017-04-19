@@ -375,7 +375,6 @@ public class Relation extends TypeAtom {
         return false;
     }
 
-
     private Set<RoleType> getExplicitRoleTypes() {
         Set<RoleType> roleTypes = new HashSet<>();
         GraknGraph graph = getParentQuery().graph();
