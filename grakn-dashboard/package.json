@@ -59,7 +59,7 @@
     "preinstall": "npm install browserify vueify babelify",
     "test": "jest",
     "test-coverage":"jest --coverage --coverageDirectory=./coverage/",
-    "coverage": "nyc report --temp-directory=coverage --reporter=text-lcov | coveralls"
+    "coverage": "nyc report --temp-directory=coverage --reporter=text-lcov"
   },
   "jest": {
     "moduleFileExtensions": [
