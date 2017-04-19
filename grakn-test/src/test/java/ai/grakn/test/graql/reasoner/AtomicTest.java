@@ -114,6 +114,7 @@ public class AtomicTest {
         assertTrue(res.isResource());
     }
 
+    /*
     @Test
     public void testRoleInference(){
         GraknGraph graph = cwGraph.graph();
@@ -239,6 +240,8 @@ public class AtomicTest {
         Map<RoleType, Pair<VarName, Type>> roleVarTypeMap = relation.getRoleVarTypeMap();
         assertTrue(roleVarTypeMap.toString(), relation.getRoleVarTypeMap().isEmpty());
     }
+    */
+
     //test rule applicability for atom with unspecified roles but with possible unambiguous role mapping
     @Test
     public void testRuleApplicabilityViaType_UnambiguousRoleMapping(){
@@ -434,6 +437,7 @@ public class AtomicTest {
         );
     }
 
+    /*
     @Test
     public void testRewriteAndUnification(){
         GraknGraph graph = genealogyOntology.graph();
@@ -451,6 +455,7 @@ public class AtomicTest {
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getKey()));
         assertTrue(roleMap.get(graph.getRoleType("wife")).equals(VarName.of("x")));
     }
+    */
 
     @Test
     public void testRewrite(){
