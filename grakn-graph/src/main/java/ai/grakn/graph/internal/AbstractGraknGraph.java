@@ -130,7 +130,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         localIsOpen.set(true);
 
         int cacheTimeout = Integer.parseInt(
-                properties.getProperty(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS));
+                properties.get(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS).toString());
         cachedOntology = CacheBuilder.newBuilder()
                 .maximumSize(1000)
                 .expireAfterWrite(cacheTimeout, TimeUnit.MILLISECONDS)
