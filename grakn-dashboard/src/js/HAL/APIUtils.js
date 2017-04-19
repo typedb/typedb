@@ -69,22 +69,31 @@ export function edgeLeftToRight(a, b) {
 }
 
 /**
- * Build a properties object for HalAPI.newResource() callback.
+ * Extract default properties from HAL object, mainly properties from the HAL's state
+ * @param {Object} resource HAL Object 
+ * @returns {Object} Object containing all the resources embedded in a HAL object
+ * @public
  */
 export function defaultProperties(resource) {
   return {
     id: resource[API.KEY_ID],
+    href: resource[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF],
     type: resource[API.KEY_TYPE] || '',
     baseType: resource[API.KEY_BASE_TYPE],
     label: buildLabel(resource),
     explore: resource[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF],
   };
 }
+
+
 /**
-* Extract from "_embedded" all the nodes that are "resource-type" and
-* build a new object that lists all the resources related to a node.
-* Structure: e.g. {"title":"Skyfall","duration":"263"}
-*/
+ * Extract from "_embedded" all the nodes that are "resource-type" and
+ * build a new object that lists all the resources related to a node.
+ * Structure: e.g. {"title":"Skyfall","duration":"263"}
+ * @param {Object} resource HAL object 
+ * @returns {Object} Object containing all the resources embedded in a HAL object
+ * @public
+ */
 export function extractResources(resource) {
   if (!(API.KEY_EMBEDDED in resource)) return {};
 
@@ -103,6 +112,7 @@ export function extractResources(resource) {
     return newResourcesObject;
   }, {});
 }
+
 /**
  *Work in progress to generate links, this will need to change to use AJAX requests.
  */

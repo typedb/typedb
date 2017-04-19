@@ -146,109 +146,106 @@ td {
 </style>
 
 <script>
-import EngineClient from '../../js/EngineClient.js';
+import EngineClient from '../../js/EngineClient';
 
 export default {
-    name: "TasksPage",
-    data: () => {
-        let sortOrders = {};
-        let columns = [{
-            label: "Creator",
-            value: "creator"
-        }, {
-            label: "Run at",
-            value: 'runAt'
-        }, {
-            label: "Recurring",
-            value: 'recurring'
-        }, {
-            label: "Class name",
-            value: 'className'
-        }, {
-            label: "Status",
-            value: 'status'
-        }];
-        let stoppableStatus = {
-            CREATED: true,
-            RUNNING: true,
-        }
-        let filtersMap = {
-            creator: "",
-            runAt: "",
-            recurring: "",
-            className: "",
-            status: "",
-        }
-        columns.forEach(function(key) {
-            sortOrders[key.value] = 1;
-        })
+  name: 'TasksPage',
+  data: () => {
+    const sortOrders = {};
+    const columns = [{
+      label: 'Creator',
+      value: 'creator',
+    }, {
+      label: 'Run at',
+      value: 'runAt',
+    }, {
+      label: 'Recurring',
+      value: 'recurring',
+    }, {
+      label: 'Class name',
+      value: 'className',
+    }, {
+      label: 'Status',
+      value: 'status',
+    }];
+    const stoppableStatus = {
+      CREATED: true,
+      RUNNING: true,
+    };
+    const filtersMap = {
+      creator: '',
+      runAt: '',
+      recurring: '',
+      className: '',
+      status: '',
+    };
+    columns.forEach((key) => {
+      sortOrders[key.value] = 1;
+    });
 
-        return {
-            tasksArray: [],
-            columns,
-            sortKey: '',
-            sortOrders: sortOrders,
-            filtersMap,
-            stoppableStatus,
-        };
-    },
-    computed: {
-        filteredData: function() {
-            const sortKey = this.sortKey;
-            const order = this.sortOrders[sortKey] || 1;
-            let data = this.tasksArray;
-            data = data.filter((row) => {
-                return Object.keys(row).every((key) => {
-                    if (key in this.filtersMap && this.filtersMap[key].length) {
-                        return String(row[key]).toLowerCase().indexOf(this.filtersMap[key]) > -1;
-                    } else {
-                        return true;
-                    }
-                });
-            })
-
-            if (sortKey) {
-                data = data.slice().sort(function compare(a, b) {
-                    a = a[sortKey];
-                    b = b[sortKey];
-                    return (a === b ? 0 : a > b ? 1 : -1) * order;
-                })
-            }
-            return data;
+    return {
+      tasksArray: [],
+      columns,
+      sortKey: '',
+      sortOrders,
+      filtersMap,
+      stoppableStatus,
+    };
+  },
+  computed: {
+    filteredData() {
+      const sortKey = this.sortKey;
+      const order = this.sortOrders[sortKey] || 1;
+      let data = this.tasksArray;
+      data = data.filter(row => Object.keys(row).every((key) => {
+        if (key in this.filtersMap && this.filtersMap[key].length) {
+          return String(row[key]).toLowerCase().indexOf(this.filtersMap[key]) > -1;
         }
-    },
-    created() {},
-    mounted() {
-        this.$nextTick(function() {
-            this.requestAllTasks();
+        return true;
+      }));
+
+      if (sortKey) {
+        data = data.slice().sort((a, b) => {
+          a = a[sortKey];
+          b = b[sortKey];
+          return (a === b ? 0 : a > b ? 1 : -1) * order;
         });
+      }
+      return data;
     },
+  },
+  created() {},
+  mounted() {
+    this.$nextTick(function () {
+      this.requestAllTasks();
+    });
+  },
 
-    methods: {
-        sortBy(key) {
-            this.sortKey = key;
-            this.sortOrders[key] = this.sortOrders[key] * -1;
-        },
-        requestAllTasks() {
-            EngineClient.getAllTasks().then(this.populateTasksTable, (error) => {
-                console.log(error);
-            });
-        },
-        populateTasksTable(response) {
-            this.tasksArray = [];
-            JSON.parse(response).forEach((task) => {
-                this.tasksArray.push(Object.assign(task, this.createActionButtons(task.status)));
-            });
-        },
-        createActionButtons(status) {
-            return {
-                stoppable: (status in this.stoppableStatus)
-            };
-        },
-        stopTask(id) {
-            EngineClient.stopTask(id).then(this.requestAllTasks);
-        }
-    }
+  methods: {
+    sortBy(key) {
+      this.sortKey = key;
+      this.sortOrders[key] = this.sortOrders[key] * -1;
+    },
+    requestAllTasks() {
+      EngineClient.getAllTasks().then(this.populateTasksTable, (error) => {
+        console.log(error);
+      });
+    },
+    populateTasksTable(response) {
+      this.tasksArray = [];
+      JSON.parse(response).forEach((task) => {
+        this.tasksArray.push(Object.assign(task, this.createActionButtons(task.status)));
+      });
+    },
+    createActionButtons(status) {
+      return {
+        stoppable: (status in this.stoppableStatus),
+      };
+    },
+    stopTask(id) {
+      EngineClient.stopTask(id).then(this.requestAllTasks);
+    },
+  },
 
-}
+};
 </script>

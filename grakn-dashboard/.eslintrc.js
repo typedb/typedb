@@ -9,8 +9,10 @@ module.exports = {
         "localStorage": true,
         "$": true,
         "visualiser": true,
-        "vis":true,
-        "XMLHttpRequest":true,
+        "vis": true,
+        "XMLHttpRequest": true,
+        "document": true,
+        "toastr": true
     },
     "rules": {
         "no-plusplus": [

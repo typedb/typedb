@@ -122,24 +122,24 @@ a:hover {
 </style>
 <script>
 export default {
-    name: 'TypeInstacesPanel',
-    props: ['typeInstances', 'showTypeInstances'],
-    data: function() {
-        return {
-            currentTab: undefined,
-        }
+  name: 'TypeInstacesPanel',
+  props: ['typeInstances', 'showTypeInstances'],
+  data() {
+    return {
+      currentTab: undefined,
+    };
+  },
+  mounted() {
+    this.$nextTick(() => {});
+  },
+  methods: {
+    updateCurrentTab(key) {
+      if (this.currentTab === key) {
+        this.currentTab = undefined;
+      } else {
+        this.currentTab = key;
+      }
     },
-    mounted: function() {
-        this.$nextTick(function() {});
-    },
-    methods: {
-        updateCurrentTab(key) {
-            if (this.currentTab === key) {
-                this.currentTab = undefined;
-            } else {
-                this.currentTab = key;
-            }
-        }
-    }
-}
+  },
+};
 </script>

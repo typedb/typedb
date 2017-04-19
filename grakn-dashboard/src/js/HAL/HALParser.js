@@ -16,15 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-import _ from 'underscore';
-
 import * as API from '../util/HALTerms';
 import * as Utils from './APIUtils';
-import EngineClient from '../EngineClient';
 
-
-/*
- * Parses HAL responses with callbacks (for found HAL resources & relationships).
+/**
+ * Regular expression used to match URIs contained in resources values
  */
 export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
     '(?!(?:10|127)(?:\\.\\d{1,3}){3})' +
@@ -38,212 +34,107 @@ export const URL_REGEX = '^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:' +
     '(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?' +
     '(?:[/?#]\\S*)?$';
 
-export default class HALParser {
+const metaTypesSet = {
+  ENTITY_TYPE: true,
+  RESOURCE_TYPE: true,
+  ROLE_TYPE: true,
+  RELATION_TYPE: true,
+  RULE_TYPE: true,
+};
 
-  constructor() {
-    this.newResource = () => {};
-    this.newRelationship = () => {};
-    this.nodeAlreadyInGraph = () => {};
+export default {
+   /**
+    * Given a JSON object/array in HAL format returns a set of graph nodes and edges
+    * @param {Object|Object[]} data HAL object/array
+    * @param {Boolean} showIsa boolean used to determine whether we should parse "isa" embedded objects
+    * @returns {Object} Object containing two arrays containing graph nodes and edges
+    * @public
+    */
+  parseResponse(data, showIsa) {
+    const nodes = [];
+    const edges = [];
 
-    this.metaTypesSet = {
-      ENTITY_TYPE: true,
-      RESOURCE_TYPE: true,
-      ROLE_TYPE: true,
-      RELATION_TYPE: true,
-      RULE_TYPE: true,
-    };
-
-    this.instances = [];
-  }
-
-    /**
-     * Callback for processing a resource. @fn(id, properties)
-     */
-  setNewResource(fn) {
-    this.newResource = fn;
-  }
-
-  setNodeAlreadyInGraph(fn) {
-    this.nodeAlreadyInGraph = fn;
-  }
-
-    /**
-     * Callback for processing a relationship between two resources. @fn(from, to, label)
-     */
-  setNewRelationship(fn) {
-    this.newRelationship = fn;
-  }
-
-    /**
-     * Start parsing HAL response in @data.
-     * Will call functions set by setNewResource() and setNewRelationship().
-     */
-  parseResponse(data, showIsa, showResources, nodeId) {
-    let responseLength;
-
-    if (Array.isArray(data)) {
-      const hashSet = {};
-      const objLength = data.length;
-
-      // Populate hashSet containing all the first level objects returned in the response, they MUST be added to the graph.
-      for (let i = 0; i < objLength; i++) {
-        hashSet[data[i]._id] = true;
-      }
-
-      data.forEach((x) => {
-        this.parseHalObject(x, hashSet, showIsa, showResources, nodeId);
-      });
-
-      responseLength = data.length;
-    } else {
-      this.parseHalObject(data, {}, showIsa, showResources, nodeId);
-      responseLength = 1;
+    try {
+      const dataArray = (Array.isArray(data)) ? data : [data];
+      dataArray.forEach((x) => { this.parseHalObject(x, showIsa, nodes, edges); });
+    } catch (error) {
+      console.log(`GRAKN Exception while parsing HAL response: \n ${error.stack}`);
     }
 
-    // Load all the resources of the new instances added to the graph
-    this.loadInstancesResources(0, this.instances);
-    this.emptyInstances();
+    return { nodes, edges };
+  },
 
-    return responseLength;
-  }
+  /**
+   * Parse single HAL object and its embedded into graph nodes
+   * @param {Object} obj HAL object that needs to be parsed into graph node
+   * @param {Boolean} showIsa boolean used to determine whether we should parse "isa" embedded objects
+   * @param {Object[]} nodes array containing the resulting set of graph nodes
+   * @param {Object[]} edges array containing the resulting set of graph edges
+   * @private
+   */
+  parseHalObject(obj, showIsa, nodes, edges) {
+    this.newNode(obj, nodes);
 
-  loadInstancesResources(start, instances) {
-    const batchSize = 50;
-    const promises = [];
-
-    // Add a batchSize number of requests to the promises array
-    for (let i = start; i < start + batchSize; i++) {
-      if (i >= instances.length) {
-        // When all the requests are loaded in promises flush the remaining ones and update labels on nodes
-        this.flushPromisesAndRefreshLabels(promises, instances);
-        return;
-      }
-      promises.push(EngineClient.request({
-        url: instances[i].href,
-      }));
-    }
-
-    // Execute all the promises and once they are all done recursively call this function again
-    Promise.all(promises).then((responses) => {
-      responses.forEach((resp) => {
-        const respObj = JSON.parse(resp).response;
-        // Check if some of the resources attached to this node are already drawn in the graph:
-        // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
-        // we need to draw the edges connecting this node to the resource node.
-        if (API.KEY_EMBEDDED in respObj) {
-          Object.keys(respObj[API.KEY_EMBEDDED]).forEach((key) => {
-            if ((key !== 'isa') || (respObj._baseType === API.RESOURCE)) {
-              this.parseEmbedded(respObj[API.KEY_EMBEDDED][key], respObj, key, {}, false, false);
-            }
-          });
+    if (API.KEY_EMBEDDED in obj) {
+      Object.keys(obj[API.KEY_EMBEDDED]).forEach((key) => {
+        if ((key !== 'isa') || showIsa === true || obj._baseType in metaTypesSet) {
+          this.parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key, showIsa, nodes, edges);
         }
-        visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
       });
-      visualiser.flushUpdates();
-      this.loadInstancesResources(start + batchSize, instances);
-    });
-  }
-
-  flushPromisesAndRefreshLabels(promises, instances) {
-    Promise.all(promises).then((responses) => {
-      responses.forEach((resp) => {
-        const respObj = JSON.parse(resp).response;
-
-        // Check if some of the resources attached to this node are already drawn in the graph:
-        // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
-        // we need to draw the edges connecting this node to the resource node.
-        if (API.KEY_EMBEDDED in respObj) {
-           Object.keys(respObj[API.KEY_EMBEDDED]).forEach((key) => {
-            if ((key !== 'isa') || (respObj._baseType === API.RESOURCE)) {
-              this.parseEmbedded(respObj[API.KEY_EMBEDDED][key], respObj, key, {}, false, false);
-            }
-          });
-         }
-        visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
-      });
-      visualiser.flushUpdates();
-      visualiser.refreshLabels(instances);
-    });
-  }
-  parseHalObject(obj, hashSet, showIsa, showResources, nodeId) {
-    if (obj !== null) {
-            // The response from Analytics will be a string instead of object. That's why we need this check.
-            // we need this because when we loop through embedded we want to draw the edge that points to all the first order nodes.
-      const objResponse = (typeof obj === 'string') ? JSON.parse(obj) : obj;
-
-      this.newNode(objResponse, nodeId);
-
-            // Add assertions from _embedded
-      if (API.KEY_EMBEDDED in objResponse) {
-        _.map(Object.keys(objResponse[API.KEY_EMBEDDED]), (key) => {
-          if ((key !== 'isa') || showIsa === true || objResponse._baseType in this.metaTypesSet) {
-            this.parseEmbedded(objResponse[API.KEY_EMBEDDED][key], objResponse, key, hashSet, showIsa, showResources, nodeId);
-          }
-        });
-      }
     }
-  }
+  },
 
-  emptyInstances() {
-    this.instances = [];
-  }
-    /*
-    Internal Methods
-     */
-    /**
-     * Parse resources from _embedded field of parent
-     */
-  parseEmbedded(objs, parent, roleName, hashSet, showIsa, showResources, nodeId) {
+
+   /**
+    * Given a set of embedded HAL objects parse them into graph nodes, recursively
+    * @param {*} objs HAL objects that need to be parsed into graph nodes
+    * @param {*} parent parent HAL object in which objs are embedded
+    * @param {*} roleName label describing relation between parent and objects in objs
+    * @param {*} showIsa boolean used to determine whether we should parse "isa" embedded objects
+    * @param {*} nodes array containing the resulting set of graph nodes
+    * @param {*} edges array containing the resulting set of graph edges
+    * @private
+    */
+  parseEmbedded(objs, parent, roleName, showIsa, nodes, edges) {
     objs.forEach((child) => {
-            // Add embedded object to the graph only if one of the following is satisfied:
-            // - the current node is not a RESOURCE_TYPE || showResources is set to true
-            // - the current node is already drawn in the graph
-            // - the current node is contained in the response as first level object (not embdedded)
-            //    if it's contained in the hashset it means it MUST be drawn and so all the edges pointing to it.
-
-      if (((child[API.KEY_BASE_TYPE] !== API.RESOURCE_TYPE)
-          && (child[API.KEY_BASE_TYPE] !== API.RESOURCE)
-          || showResources)
-          || (hashSet !== undefined && hashSet[child._id])
-          || this.nodeAlreadyInGraph(child._id)) {
-                // Add resource and iterate its _embedded field
-        const idC = child[API.KEY_ID];
-        const idP = parent[API.KEY_ID];
-
-        this.newNode(child, nodeId);
-
-        const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
-
-        if (Utils.edgeLeftToRight(parent, child)) {
-          this.newRelationship(idC, idP, edgeLabel);
-        } else {
-          this.newRelationship(idP, idC, edgeLabel);
-        }
-
-        this.parseHalObject(child, hashSet, showIsa, showResources, nodeId);
-      }
+      this.newEdge(parent, child, roleName, edges);
+      this.parseHalObject(child, showIsa, nodes, edges);
     });
-  }
+  },
 
-  newNode(nodeObj, nodeId) {
+
+   /**
+    * Parse HAL object to extract default properties, resources and links.
+    * Add new node object to the nodes array that will be returned to invoker of HALParser.
+    * @param {*} nodeObj HAL object that will be turned into graph node
+    * @param {*} nodes array containing the resulting set of graph nodes
+    * @private
+    */
+  newNode(nodeObj, nodes) {
     const links = Utils.nodeLinks(nodeObj);
-  // Load instance resouces if the node is not already in the graph
-    if (nodeObj[API.KEY_BASE_TYPE] === API.ENTITY || nodeObj[API.KEY_BASE_TYPE] === API.RELATION || nodeObj[API.KEY_BASE_TYPE] === API.RULE) {
-      if (!visualiser.nodeExists(nodeObj[API.KEY_ID])) {
-        this.instances.push({ id: nodeObj[API.KEY_ID], href: nodeObj[API.KEY_LINKS][API.KEY_EXPLORE][0][API.KEY_HREF] });
-      }
-    }
-    this.newResource(HALParser.getHref(nodeObj),
-              Utils.defaultProperties(nodeObj),
-              Utils.extractResources(nodeObj), links, nodeId);
-  }
+    const properties = Utils.defaultProperties(nodeObj);
+    const resources = Utils.extractResources(nodeObj);
+    nodes.push({ properties, resources, links });
+  },
 
-    /**
-     * Returns href of current resource.
-     * @param resource Object
-     * @returns {string|string|*|o}
-     */
-  static getHref(resource) {
-    return resource[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF];
-  }
-}
+
+  /**
+   * Add a new edge to the edges array that will be returned to the invoker of HALParser.
+   * @param {*} parent HAL object in which child is embedded
+   * @param {*} child  HAL object embedded in parent object that is connected to it
+   * @param {*} roleName label describing relation between parent and child
+   * @param {*} edges array containing the resulting set of graph edges
+   * @private
+   */
+  newEdge(parent, child, roleName, edges) {
+    const idC = child[API.KEY_ID];
+    const idP = parent[API.KEY_ID];
+    const edgeLabel = (roleName === API.KEY_EMPTY_ROLE_NAME) ? '' : roleName;
+
+    if (Utils.edgeLeftToRight(parent, child)) {
+      edges.push({ from: idC, to: idP, label: edgeLabel });
+    } else {
+      edges.push({ from: idP, to: idC, label: edgeLabel });
+    }
+  },
+};

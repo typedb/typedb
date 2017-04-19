@@ -66,92 +66,86 @@ pre {
 </style>
 
 <script>
-import _ from 'underscore';
 import Prism from 'prismjs';
-import CodeMirror from 'codemirror';
-import placeholder from 'codemirror/addon/display/placeholder.js';
-import simpleMode from 'codemirror/addon/mode/simple.js';
-import * as API from '../js/util/HALTerms';
 
-import HALParser from '../js/HAL/HALParser.js';
-import EngineClient from '../js/EngineClient.js';
-import PLang from '../js/prismGraql.js';
-import User from '../js/User.js'
+import EngineClient from '../js/EngineClient';
+import PLang from '../js/prismGraql';
+import User from '../js/User';
 
 // Components
 import ConsolePageState from '../js/state/consolePageState';
 
 
 export default {
-    name: "ConsolePage",
-    data() {
-        return {
-            graqlResponse: undefined,
-            halParser: {},
-            useReasoner: User.getReasonerStatus(),
-            materialiseReasoner: User.getMaterialiseStatus(),
-            typeInstances: false,
-            typeKeys: [],
-            state: ConsolePageState,
-            codeMirror: {}
-        }
-    },
+  name: 'ConsolePage',
+  data() {
+    return {
+      graqlResponse: undefined,
+      halParser: {},
+      useReasoner: User.getReasonerStatus(),
+      materialiseReasoner: User.getMaterialiseStatus(),
+      typeInstances: false,
+      typeKeys: [],
+      state: ConsolePageState,
+      codeMirror: {},
+    };
+  },
 
-    created() {
+  created() {
         // Register listened on State events
-        this.state.eventHub.$on('click-submit', this.onClickSubmit);
-        this.state.eventHub.$on('load-ontology', this.onLoadOntology);
-        this.state.eventHub.$on('clear-page', this.onClear);
-    },
-    beforeDestroy() {
-        this.state.eventHub.$off('click-submit', this.onClickSubmit);
-        this.state.eventHub.$off('load-ontology', this.onLoadOntology);
-        this.state.eventHub.$off('clear-page', this.onClear);
-    },
+    this.state.eventHub.$on('click-submit', this.onClickSubmit);
+    this.state.eventHub.$on('load-ontology', this.onLoadOntology);
+    this.state.eventHub.$on('clear-page', this.onClear);
+  },
+  beforeDestroy() {
+    this.state.eventHub.$off('click-submit', this.onClickSubmit);
+    this.state.eventHub.$off('load-ontology', this.onLoadOntology);
+    this.state.eventHub.$off('clear-page', this.onClear);
+  },
 
-    mounted: function() {
-        this.$nextTick(function() {
+  mounted() {
+    this.$nextTick(() => {
             // code for previous attach() method.
-        });
-    },
+    });
+  },
 
-    methods: {
+  methods: {
         /*
          * Listener methods on emit from GraqlEditor
          */
-        onClickSubmit(query) {
-            this.errorMessage = undefined;
-            this.queryEngine(query);
-        },
-        onLoadOntology(type) {
-            const querySub = `match $x sub ${type};`;
-            EngineClient.graqlShell(querySub).then(this.shellResponse, (err) => {
-                this.state.eventHub.$emit('error-message', err.message);
-            });
-        },
-        queryEngine(query){
-          EngineClient.graqlShell(query).then(this.shellResponse, (err) => {
-              this.state.eventHub.$emit('error-message', err.message);
-          });
-        },
-        onClear() {
-            this.graqlResponse = undefined;
-            this.errorMessage = undefined;
-        },
-        onCloseError() {
-            this.errorMessage = undefined;
-        },
+    onClickSubmit(query) {
+      this.errorMessage = undefined;
+      this.queryEngine(query);
+    },
+    onLoadOntology(type) {
+      const querySub = `match $x sub ${type};`;
+      EngineClient.graqlShell(querySub).then(this.shellResponse, (err) => {
+        this.state.eventHub.$emit('error-message', err.message);
+      });
+    },
+    queryEngine(query) {
+      EngineClient.graqlShell(query).then(this.shellResponse, (err) => {
+        this.state.eventHub.$emit('error-message', err.message);
+      });
+    },
+    onClear() {
+      this.graqlResponse = undefined;
+      this.errorMessage = undefined;
+    },
+    onCloseError() {
+      this.errorMessage = undefined;
+    },
         /*
          * EngineClient callbacks
          */
-        shellResponse(resp, err) {
-            if (resp.length == 0) {
-                this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
-            } else {
-                this.graqlResponse = Prism.highlight(JSON.parse(resp).response, PLang);
-            }
-        },
+    shellResponse(resp, err) {
+      if (resp.length === 0) {
+        this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
+      } else {
+        this.graqlResponse = Prism.highlight(JSON.parse(resp).response, PLang);
+      }
+    },
 
-    }
-}
+  },
+};
 </script>
