@@ -99,6 +99,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //TODO: Is this the correct place for these config paths
     //----------------------------- Config Paths
     public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
+    public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.ontology-cache-timeout-ms";
+    public static final String BATCH_CACHE_TIMEOUT_MS = "graph.batch.ontology-cache-timeout-ms";
 
     //----------------------------- Graph Shared Variable
     private final String keyspace;
@@ -107,6 +109,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
     private final long shardingFactor;
+    private final Cache<TypeLabel, Type> cachedOntology;
 
     //----------------------------- Transaction Thread Bound
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
@@ -115,11 +118,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
-
-    private Cache<TypeLabel, Type> cachedOntology = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterAccess(10, TimeUnit.MINUTES)
-            .build();
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
         this.graph = graph;
@@ -130,6 +128,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         elementFactory = new ElementFactory(this);
 
         localIsOpen.set(true);
+
+        int cacheTimeout = Integer.parseInt(
+                properties.getProperty(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS));
+        cachedOntology = CacheBuilder.newBuilder()
+                .maximumSize(1000)
+                .expireAfterWrite(cacheTimeout, TimeUnit.MILLISECONDS)
+                .build();
 
         if(initialiseMetaConcepts()) commitTransactionInternal();
 
@@ -792,10 +797,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             graph.tx().close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
+        } finally {
+            localClosedReason.set(closedReason);
+            localIsOpen.remove();
+            localConceptLog.remove();
         }
-        localClosedReason.set(closedReason);
-        localIsOpen.remove();
-        localConceptLog.remove();
     }
 
     /**
@@ -1072,6 +1078,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                    type.setInstanceCount(0L);
                    type.createShard();
                }
+
+
            }
        });
     }
