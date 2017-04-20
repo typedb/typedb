@@ -100,12 +100,12 @@ span {
 <script>
 // Third party libs
 import CodeMirror from 'codemirror';
-import placeholder from 'codemirror/addon/display/placeholder.js';
-import simpleMode from 'codemirror/addon/mode/simple.js';
-import simpleGraql from '../../js/codemirrorGraql.js';
+import placeholder from 'codemirror/addon/display/placeholder';
+import simpleMode from 'codemirror/addon/mode/simple';
+import simpleGraql from '../../js/codemirrorGraql';
 
 // Modules
-import EngineClient from '../../js/EngineClient.js';
+import EngineClient from '../../js/EngineClient';
 import GraphPageState from '../../js/state/graphPageState';
 import ConsolePageState from '../../js/state/consolePageState';
 
@@ -150,7 +150,7 @@ export default {
     });
   },
   mounted() {
-    this.$nextTick(function () {
+    this.$nextTick(() => {
       this.codeMirror = CodeMirror.fromTextArea(this.$refs.graqlEditor, {
         lineNumbers: false,
         theme: 'dracula',
@@ -239,7 +239,7 @@ export default {
       this.showMessagePanel = false;
 
             // Empty query.
-      if (query == undefined || query.length === 0) { return; }
+      if (query === undefined || query.length === 0) { return; }
 
             // Add trailing semi-colon
       if (query.charAt(query.length - 1) !== ';') {

@@ -54,17 +54,14 @@ export const HALParserTestResponse1 = {
             },
           ],
           creator: [
-            {
-              _direction: 'OUT',
+            { _direction: 'OUT',
               _baseType: 'ENTITY',
               _links: {
                 explore: [{ href: '/dashboard/explore/52064336?keyspace=snb&offsetEmbedded=0&limitEmbedded=5' }],
                 self: { href: '/graph/concept/52064336?keyspace=snb&offsetEmbedded=0&limitEmbedded=5' } },
               _type: 'person',
               _id: '52064336',
-            },
-          ],
-        },
+            }] },
         _type: 'has-creator',
         _id: '3396772072',
       },
@@ -87,8 +84,7 @@ export const HALParserTestResponse1 = {
                   href: '/graph/concept/984997984?keyspace=snb&offsetEmbedded=0&limitEmbedded=5' } },
               _type: 'post',
               _id: '984997984',
-            },
-          ],
+            }],
           reply: [
             {
               _direction: 'OUT',
@@ -98,9 +94,7 @@ export const HALParserTestResponse1 = {
                 self: { href: '/graph/concept/35004512?keyspace=snb&offsetEmbedded=0&limitEmbedded=5' } },
               _type: 'comment',
               _id: '35004512',
-            },
-          ],
-        },
+            }] },
         _type: 'reply-of',
         _id: '2285097056',
       },

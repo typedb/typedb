@@ -15,6 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+/* @flow */
+
+
 import Visualiser from '../../../js/visualiser/Visualiser';
 import HALParser from '../../../js/HAL/HALParser';
 import * as Utils from '../../../js/HAL/APIUtils';
@@ -24,8 +27,11 @@ import * as API from '../../../js/util/HALTerms';
 
 export default class CanvasHandler {
 
-  constructor(graphPageState) {
+  constructor(graphPageState:Object) {
     this.state = graphPageState;
+    this.state.eventHub.$on('clear-page', () => this.clearGraph());
+    this.state.eventHub.$on('click-submit', query => this.onClickSubmit(query));
+    this.state.eventHub.$on('load-ontology', type => this.onLoadOntology(type));
     // TODO: make a more clear division of functions used to draw selection rectangle
     this.graphOffsetTop = undefined;
     window.visualiser = new Visualiser();
@@ -226,7 +232,7 @@ export default class CanvasHandler {
       this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
       return;
     }
-    
+
     const filteredNodes = this.filterNodesToRender(responseObject, parsedResponse, showResources);
 
     // Collect instances from filteredNodes to lazy load their resources.
@@ -325,6 +331,12 @@ export default class CanvasHandler {
     }).then(resp => this.onGraphResponse(resp, false, false), (err) => {
       this.state.eventHub.$emit('error-message', err.message);
     });
+  }
+
+  loadResourceOwners(resourceId:string) {
+    EngineClient.request({
+      url: id,
+    }).then(resp => this.onGraphResponse(resp, false, true));
   }
 
 }

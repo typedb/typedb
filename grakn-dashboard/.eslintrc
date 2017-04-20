@@ -4,7 +4,8 @@
     "plugins": [
         "import",
         "html",
-        "flowtype"
+        "flowtype",
+        "vue"
     ],
     "globals": {
         "window": true,

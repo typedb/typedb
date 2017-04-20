@@ -66,29 +66,25 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <script>
 
-import GraphPageState from '../../../js/state/graphPageState';
-import NodeSettings from '../../../js/NodeSettings';
-
-
 export default {
-    name: 'ColourPicker',
-    props:['node'],
-    data() {
-        return {
+  name: 'ColourPicker',
+  props: ['node'],
+  data() {
+    return {
 
-        };
-    },
-    created() {
-    },
-    mounted() {
-        this.$nextTick(function nextTickVisualiser() {
+    };
+  },
+  created() {
+  },
+  mounted() {
+    this.$nextTick(() => {
 
-        });
+    });
+  },
+  methods: {
+    setColourOnType(colourString) {
+      visualiser.setColourOnNodeType(this.node.baseType, this.node.type, colourString);
     },
-    methods: {
-      setColourOnType(colourString){
-        visualiser.setColourOnNodeType(this.node.baseType,this.node.type, colourString);
-      }
-    }
+  },
 };
 </script>

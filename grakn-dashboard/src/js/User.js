@@ -78,7 +78,6 @@ export default {
 
   getCurrentKeySpace() {
     if (!localStorage.getItem('current_keyspace')) {
-      //  TODO: check if the default keyspace has been created on server side.
       this.setCurrentKeySpace(DEFAULT_KEYSPACE);
     }
     return localStorage.getItem('current_keyspace');
