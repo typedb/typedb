@@ -175,12 +175,16 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     /**
      * resolve the query by performing either a db or memory lookup, depending on which is more appropriate
-     *
      * @param cache container of already performed query resolutions
      */
     public Stream<Answer> lookup(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
         return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
+    }
+
+    public Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
+        boolean queryVisited = cache.contains(this);
+        return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(cache), new UnifierImpl());
     }
 
     /**
@@ -192,16 +196,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
         return cache.record(this, dbStream);
-    }
-
-    /**
-     * resolve the query by performing a db lookup
-     */
-    public Stream<Answer> DBlookup() {
-        AnswerExplanation exp = new LookupExplanation(this);
-        return getMatchQuery().admin().streamWithVarNames()
-                .map(QueryAnswer::new)
-                .map(a -> a.explain(exp));
     }
 
     /**
@@ -482,6 +476,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         private final Set<ReasonerAtomicQuery> subGoals;
         private final Iterator<InferenceRule> ruleIterator;
         private Iterator<Answer> queryIterator = Collections.emptyIterator();
+        private Unifier cacheUnifier = new UnifierImpl();
 
         private InferenceRule currentRule = null;
 
@@ -490,7 +485,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.cache = qc;
 
             boolean hasFullSubstitution = hasFullSubstitution();
-            this.queryIterator = lookup(cache).iterator();
+            Pair<Stream<Answer>, Unifier> streamUnifierPair = lookupWithUnifier(cache);
+            this.queryIterator = streamUnifierPair.getKey().iterator();
+            this.cacheUnifier = streamUnifierPair.getValue().invert();
 
             //if this already has full substitution and exists in the db then do not resolve further
             if(subGoals.contains(ReasonerAtomicQuery.this)
@@ -542,7 +539,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .merge(getIdPredicateAnswer())
                     .filterVars(getVarNames());
             if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
-            return cache.recordAnswer(ReasonerAtomicQuery.this, sub);
+            return cache.recordAnswerWithUnifier(ReasonerAtomicQuery.this, sub, cacheUnifier);
         }
 
     }

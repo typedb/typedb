@@ -83,7 +83,7 @@ public class LazyTest {
         ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(pattern2, graph);
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
-        Stream<Answer> dbStream = query.DBlookup();
+        Stream<Answer> dbStream = query.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
         cache.record(query, dbStream);
 
         Set<Answer> collect2 = cache.getAnswerStream(query2).collect(toSet());
