@@ -76,6 +76,13 @@ public class Resource extends MultiPredicateBinary{
     }
 
     @Override
+    public Set<VarName> getVarNames() {
+        Set<VarName> vars = super.getVarNames();
+        getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(vars::add);
+        return vars;
+    }
+
+    @Override
     protected ConceptId extractTypeId(VarAdmin var) {
         HasResourceProperty resProp = var.getProperties(HasResourceProperty.class).findFirst().orElse(null);
         TypeLabel typeLabel = resProp != null? resProp.getType() : null;
@@ -111,8 +118,16 @@ public class Resource extends MultiPredicateBinary{
         Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
 
         priority += ResolutionStrategy.IS_RESOURCE_ATOM;
-        priority += vps.stream().filter(ValuePredicateAdmin::isSpecific).count() * ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-        priority += vps.stream().filter(vp -> !vp.isSpecific()).count() * ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+
+        for(ValuePredicateAdmin vp : vps){
+            if (vp.isSpecific()){
+                priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+            } else if (vp.getInnerVar().isPresent()) {
+                priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+            } else {
+                priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+            }
+        }
         return priority;
     }
 
