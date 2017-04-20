@@ -105,7 +105,7 @@ public class CommitLogController {
         countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
         TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.recurring(Duration.ofSeconds(20)), countingConfiguration);
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), countingConfiguration);
 
 
         //TODO: Get rid of this update

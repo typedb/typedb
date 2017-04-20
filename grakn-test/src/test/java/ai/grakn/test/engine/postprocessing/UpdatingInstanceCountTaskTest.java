@@ -13,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
@@ -58,7 +59,7 @@ public class UpdatingInstanceCountTaskTest {
 
         // Check that task has ran
         // STOPPED because it is a recurring task
-        assertEquals(STOPPED, engine.getTaskManager().storage().getState(task.getId()).status());
+        assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
 
         // Check the results of the task
         try(GraknGraph graknGraph = Grakn.session(Grakn.DEFAULT_URI, keyspace).open(GraknTxType.WRITE)){
