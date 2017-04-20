@@ -80,6 +80,7 @@ public abstract class MultiPredicateBinary extends BinaryBase {
     @Override
     protected boolean predicatesEquivalent(BinaryBase at) {
         MultiPredicateBinary atom = (MultiPredicateBinary) at;
+        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
         for (Predicate predicate : getMultiPredicate()) {
             Iterator<Predicate> objIt = atom.getMultiPredicate().iterator();
             boolean predicateHasEquivalent = false;

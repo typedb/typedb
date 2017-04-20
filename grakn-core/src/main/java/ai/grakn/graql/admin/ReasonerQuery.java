@@ -84,7 +84,8 @@ public interface ReasonerQuery{
     void unify(Unifier unifier);
 
     /**
-     * @return
+     * @param parent query to unify wth
+     * @return unifier such that this and parent are equal
      */
     Unifier getUnifier(ReasonerQuery parent);
 

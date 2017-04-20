@@ -72,7 +72,7 @@ public class UpdatingInstanceCountTask extends LockingBackgroundTask {
 
         updateCountsOnKeySpace(keyspace, instanceMap);
 
-        return false;
+        return true;
     }
 
     private void updateCountsOnKeySpace(String keyspace, Map<TypeLabel, Long> jobs){
@@ -83,7 +83,7 @@ public class UpdatingInstanceCountTask extends LockingBackgroundTask {
 
         while(notDone) {
             notDone = false;
-            try (GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
+            try (GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH)) {
                 graknGraph.admin().updateTypeShards(jobs);
                 graknGraph.admin().commitNoLogs();
             } catch (Throwable e) {

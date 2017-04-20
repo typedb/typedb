@@ -666,14 +666,13 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         private int iter = 0;
         private long oldAns = 0;
-        Set<Answer> answers = new HashSet<>();
+        final Set<Answer> answers = new HashSet<>();
 
         private final QueryCache<ReasonerAtomicQuery> cache;
         private Iterator<Answer> answerIterator;
 
-        QueryAnswerIterator(){ this(new QueryCache<>());}
-        QueryAnswerIterator(QueryCache<ReasonerAtomicQuery> qc){
-            this.cache = qc;
+        QueryAnswerIterator(){
+            this.cache = new QueryCache<>();
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
         }
 

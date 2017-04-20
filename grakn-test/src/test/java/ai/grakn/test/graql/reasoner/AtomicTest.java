@@ -36,7 +36,6 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
-import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.test.GraphContext;
@@ -91,7 +90,7 @@ public class AtomicTest {
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void testAtomRecursive(){
+    public void testAtomsAreCorrectlyIdentifiedAsRecursive(){
         GraknGraph graph = snbGraph.graph();
         String recRelString = "{($x, $y) isa resides;}";
         String nrecRelString = "{($x, $y) isa recommendation;}";
@@ -102,7 +101,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testAtomFactory(){
+    public void testAtomFactoryProducesAtomsOfCorrectType(){
         GraknGraph graph = snbGraph.graph();
         String atomString = "{$x isa person;}";
         String relString = "{($x, $y) isa recommendation;}";
@@ -119,7 +118,7 @@ public class AtomicTest {
 
 
     @Test
-    public void testRoleInference(){
+    public void testRoleInference_BasedOnPresentTypes(){
         GraknGraph graph = cwGraph.graph();
         String patternString = "{($z, $y) isa owns; $z isa country; $y isa rocket;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
@@ -139,7 +138,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testRoleInference_WithWildcard(){
+    public void testRoleInference_WithWildcardRelationPlayer(){
         GraknGraph graph = cwGraph.graph();
         String patternString = "{($z, $y, $x), isa transaction;$z isa country;$x isa person;}";
         ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
@@ -203,11 +202,10 @@ public class AtomicTest {
         assertTrue(relation2.getRoleVarTypeMap().equals(correctFullRelation2.getRoleVarTypeMap()));
     }
 
-    //tests unambiguous role mapping
     @Test
-    public void testRoleInference_UnambiguousRoleMapping(){
+    public void testRoleInference_WithMetaType(){
         GraknGraph graph = ruleApplicabilitySet.graph();
-        String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
+        String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         ImmutableListMultimap<RoleType, VarName> roleMap = ImmutableListMultimap.of(
                 graph.getRoleType("role1"), VarName.of("x"),
@@ -216,10 +214,11 @@ public class AtomicTest {
         assertEquals(roleMap, roleMap(relation.getRoleVarTypeMap()));
     }
 
+    //tests unambiguous role mapping
     @Test
-    public void testRoleInference_WithMetaType(){
+    public void testRoleInference_RoleMappingUnambiguous(){
         GraknGraph graph = ruleApplicabilitySet.graph();
-        String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity;}";
+        String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         ImmutableListMultimap<RoleType, VarName> roleMap = ImmutableListMultimap.of(
                 graph.getRoleType("role1"), VarName.of("x"),
@@ -248,7 +247,7 @@ public class AtomicTest {
 
     //test rule applicability for atom with unspecified roles but with possible unambiguous role mapping
     @Test
-    public void testRuleApplicabilityViaType_UnambiguousRoleMapping(){
+    public void testRuleApplicabilityViaType_RoleMappingUnambiguous(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity1; $y isa entity2; $z isa entity3;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -257,7 +256,7 @@ public class AtomicTest {
 
     //test rule applicability for atom with unspecified roles but with possible unambiguous role mapping
     @Test
-    public void testRuleApplicabilityViaType_UnambiguousRoleMapping2(){
+    public void testRuleApplicabilityViaType_RoleMappingUnambiguous2(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity1; $y isa entity2; $z isa entity4;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -266,7 +265,7 @@ public class AtomicTest {
 
     //test rule applicability for atom with unspecified roles but with possible ambiguous role mapping
     @Test
-    public void testRuleApplicabilityViaType_AmbiguousRoleMapping(){
+    public void testRuleApplicabilityViaType_RoleMappingAmbiguous(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity2; $y isa entity3; $z isa entity4;}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
@@ -275,20 +274,11 @@ public class AtomicTest {
 
     //test rule applicability for match-all atom
     @Test
-    public void testRuleApplicabilityViaType_MatchAll(){
+    public void testRuleApplicabilityViaType_MatchAllAtom(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y);}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(1, relation.getApplicableRules().size());
-    }
-
-    //test rule applicability for atom with unspecified roles with missing relation players without possible role mapping
-    @Test
-    public void testRuleApplicabilityViaType_MissingRelationPlayers2(){
-        GraknGraph graph = ruleApplicabilitySet.graph();
-        String relationString = "{($x, $y);$x isa entity1; $y isa entity5;}";
-        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
-        assertEquals(0, relation.getApplicableRules().size());
     }
 
     //test rule applicability for atom with unspecified roles with conflicting roles inferred from types with a wildcard
@@ -317,6 +307,15 @@ public class AtomicTest {
         assertEquals(1, relation.getApplicableRules().size());
     }
 
+    //test rule applicability for atom with unspecified roles with missing relation players without possible role mapping
+    @Test
+    public void testRuleApplicabilityViaType_MissingRelationPlayers2(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{($x, $y);$x isa entity1; $y isa entity5;}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(0, relation.getApplicableRules().size());
+    }
+
     //test rule applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping
     @Test
     public void testRuleApplicabilityViaType_MissingRelationPlayers_TypeContradiction(){
@@ -342,27 +341,30 @@ public class AtomicTest {
         assertEquals(1, relation.getApplicableRules().size());
     }
 
+    //NB: although the rule will be triggered it will find no results
     @Ignore
     @Test
-    public void testRuleApplicabilityViaType_InstancesDoNotMatchRule(){
+    public void testRuleApplicabilityViaType_InstancesDoNotMatchRule_NoRoleTypes(){
         GraknGraph graph = ruleApplicabilityInstanceTypesSet.graph();
-        Concept concept = getConcept(graph, "name", "a");
-        Concept concept2 = getConcept(graph, "name", "a2");
+        Concept concept = getConcept(graph, "name", "b");
+        Concept concept2 = getConcept(graph, "name", "b2");
         String relationString = "{" +
                 "($x, $y) isa relation1;" +
                 "$x id '" + concept.getId().getValue() + "';" +
                 "$y id '" + concept2.getId().getValue() + "';" +
                 "}";
-        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(relationString, graph), graph);
+        Relation relation = (Relation) query.getAtom();
         assertEquals(0, relation.getApplicableRules().size());
     }
 
+    //NB: although the rule will be triggered it will find no results
     @Ignore
     @Test
-    public void testRuleApplicabilityViaType_InstancesDoNotMatchRule_NoRelationType(){
+    public void testRuleApplicabilityViaType_InstancesDoNotMatchRule_NoRoleTypes_NoRelationType(){
         GraknGraph graph = ruleApplicabilityInstanceTypesSet.graph();
-        Concept concept = getConcept(graph, "name", "a");
-        Concept concept2 = getConcept(graph, "name", "a2");
+        Concept concept = getConcept(graph, "name", "b");
+        Concept concept2 = getConcept(graph, "name", "b2");
         String relationString = "{" +
                 "($x, $y);" +
                 "$x id '" + concept.getId().getValue() + "';" +
@@ -461,7 +463,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testRewrite(){
+    public void testRewritingAtomToAtomWithUserDefinedName(){
         GraknGraph graph = genealogyOntology.graph();
         String childRelation = "{(father: $x1, daughter: $x2) isa parentship;}";
         ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(conjunction(childRelation, graph), graph);
@@ -479,7 +481,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testIndirectRoleUnification(){
+    public void testRoleUnification_WithIndirectRoles(){
         GraknGraph graph = genealogyOntology.graph();
         String childRelation = "{($r1: $x1, $r2: $x2) isa parentship;$r1 label 'father';$r2 label 'daughter';}";
         String parentRelation = "{($R1: $x, $R2: $y) isa parentship;$R1 label 'father';$R2 label 'daughter';}";
@@ -502,7 +504,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testIndirectRoleUnification_NoRelationType(){
+    public void testRoleUnification_WithIndirectRoles_NoRelationType(){
         GraknGraph graph = genealogyOntology.graph();
         String childRelation = "{($r1: $x1, $r2: $x2);$r1 label 'father';$r2 label 'daughter';}";
         String parentRelation = "{($R2: $y, $R1: $x);$R1 label 'father';$R2 label 'daughter';}";
@@ -525,7 +527,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testMatchAllUnification(){
+    public void testUnification_WithMatchAllAtom(){
         GraknGraph graph = snbGraph.graph();
         String parentString = "{$r($a, $x);}";
         Relation parent = (Relation) new ReasonerAtomicQuery(conjunction(parentString, graph), graph).getAtom();
@@ -545,27 +547,7 @@ public class AtomicTest {
     }
 
     @Test
-    public void testValuePredicateComparison(){
-        GraknGraph graph = snbGraph.graph();
-        String valueString = "{$x val '0';}";
-        String valueString2 = "{$x val != 0;}";
-        Atomic atom = new ReasonerQueryImpl(conjunction(valueString, graph), graph).getAtoms().iterator().next();
-        Atomic atom2 =new ReasonerQueryImpl(conjunction(valueString2, graph), graph).getAtoms().iterator().next();
-        assertTrue(!atom.isEquivalent(atom2));
-    }
-
-    @Test
-    public void testMultiPredResourceEquivalence(){
-        GraknGraph graph = snbGraph.graph();
-        String patternString = "{$x has age $a;$a val >23; $a val <27;}";
-        String patternString2 = "{$p has age $a;$a val >23;}";
-        ReasonerAtomicQuery query = new ReasonerAtomicQuery(conjunction(patternString, graph), graph);
-        ReasonerAtomicQuery query2 = new ReasonerAtomicQuery(conjunction(patternString2, graph), graph);
-        assertTrue(!query.getAtom().isEquivalent(query2.getAtom()));
-    }
-
-    @Test
-    public void testNonexistentType(){
+    public void testWhenCreatingQueryWithNonexistentType_ExceptionIsThrown(){
         GraknGraph graph = snbGraph.graph();
         String patternString = "{$x isa someType;}";
         exception.expect(IllegalArgumentException.class);

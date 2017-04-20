@@ -23,7 +23,6 @@ import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import mjson.Json;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
@@ -38,28 +37,21 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, fppt
  */
-public abstract class LockingBackgroundTask implements BackgroundTask{
+public abstract class LockingBackgroundTask implements BackgroundTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
         Lock engineLock = LockProvider.getLock(getLockingKey());
+
+        // Try to get lock.
+        engineLock.lock();
+
+        // When you have the lock, run the job and then release the lock
         try {
-            // Try to get lock for one second. If task cannot acquire lock, it should return successfully.
-            boolean hasLock = engineLock.tryLock(1, TimeUnit.SECONDS);
-
-            // If you have the lock, run the job and then release the lock
-            if (hasLock) {
-                try {
-                    return runLockingBackgroundTask(saveCheckpoint, configuration);
-                } finally {
-                    engineLock.unlock();
-                }
-            }
-        } catch (InterruptedException e){
-            throw new RuntimeException(e);
+            return runLockingBackgroundTask(saveCheckpoint, configuration);
+        } finally {
+            engineLock.unlock();
         }
-
-        return true;
     }
 
     /**

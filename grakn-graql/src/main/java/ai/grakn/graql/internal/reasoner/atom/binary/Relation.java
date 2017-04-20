@@ -39,6 +39,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -89,10 +90,10 @@ public class Relation extends TypeAtom {
     private int hashCode = 0;
     private Multimap<RoleType, Pair<VarName, Type>> roleVarTypeMap = null;
     private Multimap<RoleType, String> roleConceptIdMap = null;
+    private Set<RelationPlayer> relationPlayers = null;
 
-    public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) {
-        super(pattern, predicate, par);
-    }
+
+    public Relation(VarAdmin pattern, IdPredicate predicate, ReasonerQuery par) { super(pattern, predicate, par);}
 
     public Relation(VarName name, VarName typeVariable, Map<VarName, Var> roleMap, IdPredicate pred, ReasonerQuery par) {
         super(constructRelationVar(name, typeVariable, roleMap), pred, par);
@@ -103,15 +104,18 @@ public class Relation extends TypeAtom {
     }
 
     public Set<RelationPlayer> getRelationPlayers() {
-        Set<RelationPlayer> rps = new HashSet<>();
-        this.atomPattern.asVar().getProperty(RelationProperty.class)
-                .ifPresent(prop -> prop.getRelationPlayers().forEach(rps::add));
-        return rps;
+        if (relationPlayers == null) {
+            relationPlayers = new HashSet<>();
+            this.atomPattern.asVar().getProperty(RelationProperty.class)
+                    .ifPresent(prop -> prop.getRelationPlayers().forEach(relationPlayers::add));
+        }
+        return relationPlayers;
     }
 
     private void modifyRelationPlayers(UnaryOperator<RelationPlayer> mapper) {
         this.atomPattern = this.atomPattern.asVar().mapProperty(RelationProperty.class,
                 prop -> new RelationProperty(prop.getRelationPlayers().map(mapper).collect(toImmutableMultiset())));
+        relationPlayers = null;
     }
 
     @Override
@@ -409,7 +413,7 @@ public class Relation extends TypeAtom {
                 .findFirst().orElse(null);
         if (hrAtom != null) {
             ReasonerAtomicQuery hrQuery = new ReasonerAtomicQuery(hrAtom);
-            QueryAnswers answers = new QueryAnswers(hrQuery.DBlookup().collect(toSet()));
+            QueryAnswers answers = new QueryAnswers(hrQuery.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
             if (answers.size() == 1) {
                 IdPredicate newPredicate = new IdPredicate(IdPredicate.createIdVar(hrAtom.getVarName(),
                         answers.stream().findFirst().orElse(null).get(hrAtom.getVarName()).getId()), parent);
@@ -642,7 +646,7 @@ public class Relation extends TypeAtom {
                 .map(RelationPlayer::getRoleType)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(rt -> new Pair<>(rt, parent.getIdPredicate(rt.getVarName())))
-                .filter(e -> e.getValue() != null)
+                .filter(e -> Objects.nonNull(e.getValue()))
                 .forEach(p -> indirectRoleMap.put(graph.getConcept(p.getValue().getPredicate()), p.getKey().getVarName()));
         return indirectRoleMap;
     }
@@ -728,7 +732,6 @@ public class Relation extends TypeAtom {
             //get role type unifiers
             unifier.merge(getRoleTypeUnifier(parentAtom));
         }
-
         return unifier.removeTrivialMappings();
     }
 
