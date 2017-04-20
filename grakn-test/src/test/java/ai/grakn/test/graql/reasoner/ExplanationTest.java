@@ -76,7 +76,7 @@ public class ExplanationTest {
     }
 
     @Test
-    public void testTransitiveExplanation() {
+    public void testExplanationTreeCorrect_TransitiveClosure() {
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
         Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), warsaw));
@@ -117,7 +117,7 @@ public class ExplanationTest {
     }
 
     @Test
-    public void testTransitiveExplanationWithTypes() {
+    public void testExplanationTreeCorrect_TransitiveClosureWithSpecificResourceAndTypes() {
         String queryString = "match $x isa university;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$y isa country;$y has name 'Poland';";
@@ -145,7 +145,7 @@ public class ExplanationTest {
     }
 
     @Test
-    public void testExplainingSpecificAnswer(){
+    public void testExplanationTreeCorrect_QueryingSpecificAnswer(){
         String queryString = "match " +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "$x id '" + polibuda.getId() + "';" +
