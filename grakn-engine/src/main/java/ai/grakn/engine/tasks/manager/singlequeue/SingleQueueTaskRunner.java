@@ -68,7 +68,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private BackgroundTask runningTask = null;
 
     private static final int INITIAL_BACKOFF = 1_000;
-    private static final int MAX_BACKOFF = 60_000;
+    private static final int MAX_BACKOFF = 5_000;
     private final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF;
     private Instant timeTaskLastHandled;
 
