@@ -50,6 +50,8 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -70,7 +72,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -350,7 +351,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param conceptLog The thread bound concept log to read the snapshot into.
      */
     private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
-        ConcurrentMap<TypeLabel, Type> cachedOntologySnapshot = getCachedOntology().asMap();
+        ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(getCachedOntology().asMap());
 
         //Read central cache into conceptLog cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -359,7 +360,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Iterate through cached clones completing the cloning process.
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
-        for (Type type : getCloneCache().values()) {
+        for (Type type : ImmutableSet.copyOf(getCloneCache().values())) {
             //noinspection unchecked
             ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
         }
