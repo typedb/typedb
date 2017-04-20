@@ -66,6 +66,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     protected boolean hasEquivalentPredicatesWith(BinaryBase at) {
         if (!(at instanceof Resource)) return false;
         Resource atom = (Resource) at;
+        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
         for (ValuePredicate predicate : getMultiPredicate()) {
             Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
             boolean predicateHasEquivalent = false;

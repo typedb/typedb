@@ -670,9 +670,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         private final QueryCache<ReasonerAtomicQuery> cache;
         private Iterator<Answer> answerIterator;
 
-        QueryAnswerIterator(){ this(new QueryCache<>());}
-        QueryAnswerIterator(QueryCache<ReasonerAtomicQuery> qc){
-            this.cache = qc;
+        QueryAnswerIterator(){
+            this.cache = new QueryCache<>();
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
         }
 

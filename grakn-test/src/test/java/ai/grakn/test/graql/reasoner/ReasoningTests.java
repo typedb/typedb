@@ -18,11 +18,15 @@
 
 package ai.grakn.test.graql.reasoner;
 
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import org.junit.Assert;
 import org.junit.Before;
@@ -327,7 +331,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
-    public void instanceTypeHierarchyRespected3(){
+    public void instanceTypeHierarchyRespected2(){
         QueryBuilder qb = testSet18.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +

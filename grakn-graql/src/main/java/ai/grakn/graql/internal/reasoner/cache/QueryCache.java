@@ -20,8 +20,10 @@ package ai.grakn.graql.internal.reasoner.cache;
 
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
+import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import javafx.util.Pair;
 
 import java.util.Set;
@@ -58,23 +60,39 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
 
     @Override
     public Stream<Answer> record(Q query, Stream<Answer> answerStream) {
-        QueryAnswers answers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
+        QueryAnswers newAnswers = new QueryAnswers(answerStream.collect(Collectors.toSet()));
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            QueryAnswers unifiedAnswers = answers.unify(getRecordUnifier(query));
-            match.getValue().addAll(unifiedAnswers);
-            return match.getValue().stream();
-        } else {
-            cache.put(query, new Pair<>(query, answers));
+            Q equivalentQuery = match.getKey();
+            QueryAnswers answers = match.getValue();
+            QueryAnswers unifiedAnswers = newAnswers.unify(query.getUnifier(equivalentQuery));
+            answers.addAll(unifiedAnswers);
             return answers.stream();
+        } else {
+            cache.put(query, new Pair<>(query, newAnswers));
+            return newAnswers.stream();
         }
     }
 
     public Answer recordAnswer(Q query, Answer answer){
         Pair<Q, QueryAnswers> match =  cache.get(query);
         if (match != null) {
-            Answer unifiedAnswer = answer.unify(getRecordUnifier(query));
-            match.getValue().add(unifiedAnswer);
+            Q equivalentQuery = match.getKey();
+            QueryAnswers answers = match.getValue();
+            Answer unifiedAnswer = answer.unify(query.getUnifier(equivalentQuery));
+            answers.add(unifiedAnswer);
+        } else {
+            cache.put(query, new Pair<>(query, new QueryAnswers(answer)));
+        }
+        return answer;
+    }
+
+    public Answer recordAnswerWithUnifier(Q query, Answer answer, Unifier unifier){
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            QueryAnswers answers = match.getValue();
+            Answer unifiedAnswer = answer.unify(unifier);
+            answers.add(unifiedAnswer);
         } else {
             cache.put(query, new Pair<>(query, new QueryAnswers(answer)));
         }
@@ -88,11 +106,19 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
 
     @Override
     public QueryAnswers getAnswers(Q query) {
-        Q equivalentQuery = contains(query)? cache.get(query).getKey() : null;
-        if (equivalentQuery != null) {
-            return QueryAnswers.getUnifiedAnswers(query, equivalentQuery, cache.get(equivalentQuery).getValue());
+        return getAnswersWithUnifier(query).getKey();
+    }
+
+    @Override
+    public Pair<QueryAnswers, Unifier> getAnswersWithUnifier(Q query) {
+        Pair<Q, QueryAnswers> match =  cache.get(query);
+        if (match != null) {
+            Q equivalentQuery = match.getKey();
+            QueryAnswers answers = match.getValue();
+            Unifier unifier = equivalentQuery.getUnifier(query);
+            return new Pair<>(answers.unify(unifier), unifier);
         }
-        else return new QueryAnswers();
+        else return new Pair<>(new QueryAnswers(), new UnifierImpl());
     }
 
     @Override
@@ -100,6 +126,11 @@ public class QueryCache<Q extends ReasonerQuery> extends Cache<Q, QueryAnswers> 
         return getAnswers(query).stream();
     }
 
+    @Override
+    public Pair<Stream<Answer>, Unifier> getAnswerStreamWithUnifier(Q query) {
+        Pair<QueryAnswers, Unifier> answersWithUnifier = getAnswersWithUnifier(query);
+        return new Pair<>(answersWithUnifier.getKey().stream(), answersWithUnifier.getValue());
+    }
 
     @Override
     public LazyIterator<Answer> getAnswerIterator(Q query) {
