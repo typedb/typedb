@@ -54,7 +54,7 @@ public class ExternalOffsetStorage {
             String partitionPath = getPartitionPath(partition);
             long offset = (long) deserialize(zookeeper.connection().getData().forPath(partitionPath));
 
-            LOG.debug("Offset {} read for partition %{}", partitionPath, partitionPath);
+            LOG.trace("Offset {} read for partition %{}", partitionPath, partitionPath);
 
             return offset;
         } catch (RuntimeException e) {
@@ -74,7 +74,7 @@ public class ExternalOffsetStorage {
             long currentOffset = consumer.position(partition);
             String partitionPath = getPartitionPath(partition);
 
-            LOG.debug("Offset at {} writing for partition {}", currentOffset, partitionPath);
+            LOG.trace("Offset at {} writing for partition {}", currentOffset, partitionPath);
             try {
                 zookeeper.connection().setData()
                         .forPath(partitionPath, serialize(currentOffset));

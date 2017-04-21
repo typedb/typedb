@@ -151,6 +151,11 @@ public abstract class Atom extends AtomBase {
     }
 
     /**
+     * @return true if the atom can constitute a head of a rule
+     */
+    public boolean isAllowedToFormRuleHead(){ return false; }
+
+    /**
      * @return true if the atom requires materialisation in order to be referenced
      */
     public boolean requiresMaterialisation(){ return false; }

@@ -204,6 +204,16 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testAddingRuleWithNonSpecificResourceInTheHeadNotAllowed() {
+        GraknGraph graph = testGraph.graph();
+        Pattern body = Graql.and(graph.graql().parsePatterns("$x isa country;"));
+        Pattern head = Graql.and(graph.graql().parsePatterns("$x has name contains 'land';"));
+        exception.expect(IllegalArgumentException.class);
+        Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
+        InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
+    }
+
+    @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
         GraknGraph graph = testGraph.graph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();

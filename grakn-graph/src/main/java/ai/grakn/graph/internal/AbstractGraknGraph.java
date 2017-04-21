@@ -50,6 +50,8 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -70,7 +72,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -99,6 +100,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //TODO: Is this the correct place for these config paths
     //----------------------------- Config Paths
     public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
+    public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.ontology-cache-timeout-ms";
+    public static final String BATCH_CACHE_TIMEOUT_MS = "graph.batch.ontology-cache-timeout-ms";
 
     //----------------------------- Graph Shared Variable
     private final String keyspace;
@@ -107,6 +110,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final G graph;
     private final ElementFactory elementFactory;
     private final long shardingFactor;
+    private final Cache<TypeLabel, Type> cachedOntology;
 
     //----------------------------- Transaction Thread Bound
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
@@ -115,11 +119,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
-
-    private Cache<TypeLabel, Type> cachedOntology = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterAccess(10, TimeUnit.MINUTES)
-            .build();
 
     public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
         this.graph = graph;
@@ -130,6 +129,13 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         elementFactory = new ElementFactory(this);
 
         localIsOpen.set(true);
+
+        int cacheTimeout = Integer.parseInt(
+                properties.get(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS).toString());
+        cachedOntology = CacheBuilder.newBuilder()
+                .maximumSize(1000)
+                .expireAfterWrite(cacheTimeout, TimeUnit.MILLISECONDS)
+                .build();
 
         if(initialiseMetaConcepts()) commitTransactionInternal();
 
@@ -345,7 +351,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param conceptLog The thread bound concept log to read the snapshot into.
      */
     private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
-        ConcurrentMap<TypeLabel, Type> cachedOntologySnapshot = getCachedOntology().asMap();
+        ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(getCachedOntology().asMap());
 
         //Read central cache into conceptLog cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -354,7 +360,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Iterate through cached clones completing the cloning process.
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
-        for (Type type : getCloneCache().values()) {
+        for (Type type : ImmutableSet.copyOf(getCloneCache().values())) {
             //noinspection unchecked
             ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
         }
@@ -792,10 +798,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             graph.tx().close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
+        } finally {
+            localClosedReason.set(closedReason);
+            localIsOpen.remove();
+            localConceptLog.remove();
         }
-        localClosedReason.set(closedReason);
-        localIsOpen.remove();
-        localConceptLog.remove();
     }
 
     /**
@@ -1072,6 +1079,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                    type.setInstanceCount(0L);
                    type.createShard();
                }
+
+
            }
        });
     }
