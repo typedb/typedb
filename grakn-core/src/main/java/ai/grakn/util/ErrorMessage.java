@@ -185,6 +185,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     GRAPH_MISSING("Provided query does not have an associated graph"),
     NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
+    DISALLOWED_ATOM_IN_RULE_HEAD("Atom [%s] is not allowed to form a head of the rule [%s]."),
     HEAD_ROLES_MISSING("The specified rule [%s] is ambiguous - it does not specify all role types in the head."),
     PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
@@ -193,7 +194,7 @@ public enum ErrorMessage {
     NO_VAL_IN_RELATION("Attempted to return value from a relation atom"),
     NO_TYPE_CONSTRAINTS("Attempted to return constraints from non-relation atom"),
     LOOP_CLAUSE("Unable to find suitable starting atom (loop?)"),
-    NON_ATOMIC_QUERY("Addressed query is not atomic [%s]"),
+    NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
     MULTI_VALUE_VAR("Multi value variable found [%s] on query construction"),
     NO_ATOMS_SELECTED("No atoms were selected from query [%s]"),
     MATERIALIZATION_ERROR("Not enough information available to materialize query [%s]"),

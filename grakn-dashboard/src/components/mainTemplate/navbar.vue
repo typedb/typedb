@@ -130,9 +130,9 @@ nav a {
 </style>
 
 <script>
-import User from '../../js/User.js';
-const GraqlEditor = require('../graqlEditor/graqlEditor.vue');
-const KeyspacesSelect = require('../keyspacesSelect.vue');
+import User from '../../js/User';
+import GraqlEditor from '../graqlEditor/graqlEditor.vue';
+import KeyspacesSelect from '../keyspacesSelect.vue';
 
 
 export default {

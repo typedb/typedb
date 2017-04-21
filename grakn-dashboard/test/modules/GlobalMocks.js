@@ -16,32 +16,32 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks;
+import XHRmock from 'xhr-mock';
 
+class LocalStorageMock {
+  constructor() {
+    this.store = {};
+  }
 
-import ai.grakn.engine.TaskId;
-import org.apache.kafka.common.serialization.Deserializer;
+  clear() {
+    this.store = {};
+  }
 
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
+  getItem(key) {
+    return this.store[key];
+  }
 
-/**
- * <p>
- * Implementation of {@link org.apache.kafka.common.serialization.Deserializer} that allows usage of {@link TaskId} as
- * kafka queue keys
- * </p>
- *
- * @author alexandraorth
- */
-public class TaskIdDeserializer implements Deserializer<TaskId> {
-    @Override
-    public void configure(Map<String, ?> configs, boolean isKey) {}
-
-    @Override
-    public TaskId deserialize(String topic, byte[] data) {
-        return TaskId.of(new String(data, StandardCharsets.UTF_8));
-    }
-
-    @Override
-    public void close() {}
+  setItem(key, value) {
+    this.store[key] = value.toString();
+  }
 }
+
+export const MockLocalStorage = () => {
+  global.localStorage = new LocalStorageMock();
+};
+
+export const MockXHR = () => {
+  XHRmock.setup();
+};
+
+export const stopXHRMock = () => { XHRmock.teardown(); };

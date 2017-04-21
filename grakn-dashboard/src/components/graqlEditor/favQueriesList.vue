@@ -138,6 +138,7 @@ a {
     word-break: normal;
     overflow: scroll;
     -moz-user-select: none;
+    user-select: none;
     -ms-overflow-style: none;
     overflow: -moz-scrollbars-none;
 }
@@ -156,58 +157,56 @@ a {
 </style>
 
 <script>
-import FavQueries from '../../js/FavQueries.js'
-import _ from 'underscore';
-
+import FavQueries from '../../js/FavQueries';
 
 export default {
-    name: "FavQueriesList",
-    data() {
-        return {
-            favouriteQueries: [],
-            showFavourites: false
-        }
-    },
-    created() {},
-    mounted: function() {
-        this.$nextTick(function() {
+  name: 'FavQueriesList',
+  data() {
+    return {
+      favouriteQueries: [],
+      showFavourites: false,
+    };
+  },
+  created() {},
+  mounted() {
+    this.$nextTick(() => {
 
-        });
-    },
+    });
+  },
 
-    methods: {
-        loadFavQueries() {
-            if (!this.showFavourites) {
-                this.favouriteQueries = this.objectToArray(FavQueries.getFavQueries());
-                this.showFavourites = true;
-            } else {
-                this.showFavourites = false;
-            }
-        },
-        refreshList() {
-            this.favouriteQueries = this.objectToArray(FavQueries.getFavQueries());
-        },
-        closeFavQueriesList() {
-            this.showFavourites = false;
-        },
-        objectToArray(object) {
-            return Object.keys(object).reduce(
+  methods: {
+    loadFavQueries() {
+      if (!this.showFavourites) {
+        this.favouriteQueries = this.objectToArray(FavQueries.getFavQueries());
+        this.showFavourites = true;
+      } else {
+        this.showFavourites = false;
+      }
+    },
+    refreshList() {
+      this.favouriteQueries = this.objectToArray(FavQueries.getFavQueries());
+    },
+    closeFavQueriesList() {
+      this.showFavourites = false;
+    },
+    objectToArray(object) {
+      return Object.keys(object).reduce(
                 (r, k) => {
-                    r.push({
-                        name: k,
-                        value: object[k].replace("\n", " ")
-                    });
-                    return r;
+                  r.push({
+                    name: k,
+                    value: object[k].replace('\n', ' '),
+                  });
+                  return r;
                 }, []);
-        },
-        removeFavQuery(index, queryName) {
-            this.favouriteQueries.splice(index, 1);
-            FavQueries.removeFavQuery(queryName);
-        },
-        emitTypeQuery(query) {
-            this.$emit('type-query', query);
-            this.showFavourites = false;
-        }
-    }
-}
+    },
+    removeFavQuery(index, queryName) {
+      this.favouriteQueries.splice(index, 1);
+      FavQueries.removeFavQuery(queryName);
+    },
+    emitTypeQuery(query) {
+      this.$emit('type-query', query);
+      this.showFavourites = false;
+    },
+  },
+};
 </script>

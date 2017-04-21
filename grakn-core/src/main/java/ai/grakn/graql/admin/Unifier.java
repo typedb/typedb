@@ -99,6 +99,11 @@ public interface Unifier{
     Unifier removeTrivialMappings();
 
     /**
+     * @return unifier with inverted mappings
+     */
+    Unifier invert();
+
+    /**
      * @return number of mappings that consittute this unifier
      */
     int size();

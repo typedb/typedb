@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  */
 public class QueryAnswer implements Answer {
 
-    private Map<VarName, Concept> map = new HashMap<>();
+    private final Map<VarName, Concept> map = new HashMap<>();
     private AnswerExplanation explanation = new Explanation();
 
     public QueryAnswer(){}

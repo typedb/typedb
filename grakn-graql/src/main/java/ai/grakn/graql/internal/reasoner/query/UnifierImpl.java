@@ -39,14 +39,19 @@ import java.util.stream.Collectors;
 public class UnifierImpl implements Unifier {
 
     //TODO turn it to multimap to accommodate all cases
-    private Map<VarName, VarName> unifier = new HashMap<>();
+    private final Map<VarName, VarName> unifier = new HashMap<>();
 
-    public UnifierImpl(){};
+    public UnifierImpl(){}
     public UnifierImpl(Map<VarName, VarName> map){
         unifier.putAll(map);
     }
     public UnifierImpl(Unifier u){
         unifier.putAll(u.map());
+    }
+
+    @Override
+    public String toString(){
+        return unifier.toString();
     }
 
     @Override
@@ -112,11 +117,20 @@ public class UnifierImpl implements Unifier {
 
     @Override
     public Unifier removeTrivialMappings() {
+        Set<VarName> toRemove = unifier.entrySet().stream()
+                .filter(e -> e.getKey() == e.getValue())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+        toRemove.forEach(unifier::remove);
+        return this;
+    }
+
+    @Override
+    public Unifier invert() {
         return new UnifierImpl(
                 unifier.entrySet().stream()
-                .filter(e -> e.getKey() != e.getValue())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)))
-                ;
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey))
+        );
     }
 
     @Override

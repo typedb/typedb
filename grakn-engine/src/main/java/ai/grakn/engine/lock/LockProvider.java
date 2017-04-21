@@ -18,36 +18,48 @@
 
 package ai.grakn.engine.lock;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
+import java.util.function.Supplier;
 
 /**
  * <p>
- *     This class provides the correct {@link Lock} based on how it was initialised.
+ *     This class provides the correct {@link Lock} based the supplier that was provided when it was
+ *     initialized.
  * </p>
  *
  * @author alexandraorth
  */
 public class LockProvider {
 
-    private static final Map<String, Lock> locks = new HashMap<>();
+    private static final Map<String, Supplier<Lock>> locks = new ConcurrentHashMap<>();
 
     private LockProvider(){}
 
-    public static void add(String lockName, Lock providedLock){
-        if(locks.containsKey(lockName) && !locks.get(lockName).getClass().equals(providedLock.getClass())){
-            throw new RuntimeException("Lock class has already been initialised with another lock.");
-        }
-
-        locks.put(lockName, providedLock);
+    /**
+     * Instantiates a lock supplier with a name.
+     *
+     * @param lockName Name of the lock to supply
+     * @param instantiateLock Supplier of the lock
+     */
+    public static void add(String lockName, Supplier<Lock> instantiateLock){
+        locks.put(lockName, instantiateLock);
     }
 
+    /**
+     * Uses the named lock supplier to retrieve the correct lock
+     *
+     * @param lockToObtain Name of the lock to obtain from the supplier
+     * @return An initialized lock
+     */
     public static Lock getLock(String lockToObtain){
         if(!locks.containsKey(lockToObtain)){
             throw new RuntimeException("Lock is not available with name " + lockToObtain);
         }
-        return locks.get(lockToObtain);
+
+        // Instantiate a new lock
+        return locks.get(lockToObtain).get();
     }
 
     public static void clear(){

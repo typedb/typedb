@@ -26,9 +26,9 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknLockingException;
 import ai.grakn.util.Schema;
-import mjson.Json;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -198,13 +198,13 @@ public class ResourceDeduplicationTask implements BackgroundTask {
     }
     
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoin, Json configuration) {
-        LOG.info("Starting ResourceDeduplicationTask : " + configuration);
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        LOG.info("Starting ResourceDeduplicationTask : " + configuration.json());
         
-        String keyspace = configuration.at("keyspace", KEYSPACE_DEFAULT).asString();
+        String keyspace = configuration.json().at("keyspace", KEYSPACE_DEFAULT).asString();
         GraknComputer computer = Grakn.session(Grakn.DEFAULT_URI, keyspace).getGraphComputer();
         Job job = new Job().keyspace(keyspace)
-                           .deleteUnattached(configuration.at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
+                           .deleteUnattached(configuration.json().at("deletedUnattached", DELETE_UNATTACHED_DEFAULT ).asBoolean());
         this.totalEliminated = computer.compute(job).memory().get(job.getMemoryKey());
         return true;
     }

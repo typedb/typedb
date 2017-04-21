@@ -2,59 +2,40 @@ insert
 
 #Roles
 
-original sub role;
-reply sub role;
-predecessor sub role;
-successor sub role;
+friend sub role;
 
 #Entities
 
-post sub entity
-    plays original
-    plays reply
-    plays predecessor
-    plays successor
-    has creation-date;
+person sub entity
+    plays friend;
 
 #Relations
 
-reply-of sub relation
-    relates original
-    relates reply;
+knows-trans sub relation
+    relates friend;
 
-message-succession sub relation
-    relates predecessor
-    relates successor;
-
-creation-date sub resource datatype long;
+knows sub knows-trans
+    relates friend;
 
 #Rules
 
-
-
-$rule2 isa inference-rule
-    lhs{
-        (original:$p, reply:$s) isa reply-of;
-        $s has creation-date $d1;
-        (original:$p, reply:$r) isa reply-of;
-        $r has creation-date $d2;
-        $d1 val < $d2;
+$rule0 isa inference-rule
+    lhs {
+        (friend:$x, friend:$y);
+        (friend:$y, friend:$z);
     }
     rhs {
-        (predecessor:$s, successor:$r) isa message-succession;
+        (friend:$x, friend:$z) isa knows-trans;
     };
 
 #Data
 
-$x isa post, has creation-date 0;
-$x1 isa post, has creation-date 1;
-$x2 isa post, has creation-date 2;
-$x3 isa post, has creation-date 3;
-$x4 isa post, has creation-date 4;
-$x5 isa post, has creation-date 5;
+$p1 isa person;
+$p2 isa person;
+$p3 isa person;
+$p4 isa person;
 
-(original:$x, reply:$x1) isa reply-of;
-(original:$x, reply:$x2) isa reply-of;
-(original:$x, reply:$x3) isa reply-of;
-(original:$x, reply:$x4) isa reply-of;
-(original:$x, reply:$x5) isa reply-of;
+(friend:$p1, friend:$p2) isa knows;
+(friend:$p2, friend:$p3) isa knows;
+(friend:$p3, friend:$p4) isa knows;
+

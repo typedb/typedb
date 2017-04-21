@@ -105,6 +105,12 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet21 = GraphContext.preLoad("testSet21.gql");
 
+    @ClassRule
+    public static final GraphContext testSet22 = GraphContext.preLoad("testSet22.gql");
+
+    @ClassRule
+    public static final GraphContext testSet24 = GraphContext.preLoad("testSet24.gql");
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -330,7 +336,7 @@ public class ReasoningTests {
     }
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
-    public void instanceTypeHierarchyRespected3(){
+    public void instanceTypeHierarchyRespected2(){
         QueryBuilder qb = testSet18.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
@@ -366,9 +372,29 @@ public class ReasoningTests {
         assertEquals(answers, answers2);
     }
 
-    @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
-    public void reasoningWithResourceValueComparison(){
+    @Test //Expected result: Returns db and inferred relations + their inverses and relations with self for all entities
+    public void reasoningWithRepeatingRoles(){
         QueryBuilder qb = testSet21.graph().graql().infer(true);
+        String queryString = "match (friend:$x1, friend:$x2) isa knows-trans;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 16);
+    }
+
+    @Test //Expected result: The same set of results is always returned
+    public void reasoningWithLimitHigherThanNumberOfResultsReturnsConsistentResults(){
+        QueryBuilder qb = testSet22.graph().graql().infer(true);
+        String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60;";
+        QueryAnswers oldAnswers = queryAnswers(qb.parse(queryString));
+        for(int i = 0; i < 5 ; i++) {
+            QueryAnswers answers =queryAnswers(qb.parse(queryString));
+            assertEquals(answers.size(), 6);
+            assertEquals(answers, oldAnswers);
+        }
+    }
+
+    @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
+    public void reasoningWithResourceValueComparison() {
+        QueryBuilder qb = testSet24.graph().graql().infer(true);
         String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 10);

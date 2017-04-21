@@ -7,9 +7,9 @@
 [![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
 [![Download count](http://shields.grakn.ai/github/downloads/graknlabs/grakn/total.svg)](https://grakn.ai/download/latest)
 
-Copyright (C) 2016  Grakn Labs Limited.  
+Copyright (C) 2016-2017  Grakn Labs Limited.  
 
-### Version 0.11.0
+### Version 0.12.1
 
 For release notes, please see our separate changelog file.   
 
