@@ -67,8 +67,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private TaskId runningTaskId = null;
     private BackgroundTask runningTask = null;
 
-    private static final int INITIAL_BACKOFF = 1_000;
-    private static final int MAX_BACKOFF = 5_000;
+    private final int BACKOFF = 100;
     private final int MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF;
     private Instant timeTaskLastHandled;
 
@@ -108,7 +107,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
         LOG.debug("started");
 
         timeTaskLastHandled = now();
-        int backOff = INITIAL_BACKOFF;
 
         while (!wakeUp.get()) {
             try {
@@ -119,14 +117,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
                 long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
                 if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
-                    LOG.debug("has been  " + timeSinceLastHandledTask + " ms since handled task, sleeping for " + backOff + "ms");
-                    Thread.sleep(backOff);
-                    backOff *= 2;
-                    if (backOff > MAX_BACKOFF) backOff = MAX_BACKOFF;
-                } else {
-                    backOff = INITIAL_BACKOFF;
+                    LOG.debug("has been  " + timeSinceLastHandledTask + " ms since handled task, sleeping for " + BACKOFF + "ms");
+                    Thread.sleep(BACKOFF);
                 }
-
             } catch (Throwable throwable){
                 LOG.error("error thrown", throwable);
                 assert false; // This should be unreachable, but in production we still handle it for robustness
