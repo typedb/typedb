@@ -137,8 +137,8 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
-        LockProvider.add(PostProcessingTask.LOCK_KEY, new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + PostProcessingTask.LOCK_KEY));
-        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + UpdatingInstanceCountTask.LOCK_KEY));
+        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + PostProcessingTask.LOCK_KEY));
+        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + UpdatingInstanceCountTask.LOCK_KEY));
 
         LOG.debug("TaskManager started");
     }

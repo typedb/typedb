@@ -87,8 +87,10 @@ public class StandaloneTaskManager implements TaskManager {
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
-        LockProvider.add(PostProcessingTask.LOCK_KEY, new NonReentrantLock());
-        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, new NonReentrantLock());
+        Lock postProcessingLock = new NonReentrantLock();
+        Lock countUpdateLock = new NonReentrantLock();
+        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> postProcessingLock);
+        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, () -> countUpdateLock);
     }
 
     @Override

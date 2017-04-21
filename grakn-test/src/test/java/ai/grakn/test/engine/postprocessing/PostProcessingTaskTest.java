@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
+import java.util.concurrent.locks.Lock;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -60,7 +61,8 @@ public class PostProcessingTaskTest {
 
     @BeforeClass
     public static void mockEngineCache(){
-        LockProvider.add(PostProcessingTask.LOCK_KEY, new NonReentrantLock());
+        Lock lock = new NonReentrantLock();
+        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> lock);
     }
 
     @AfterClass
