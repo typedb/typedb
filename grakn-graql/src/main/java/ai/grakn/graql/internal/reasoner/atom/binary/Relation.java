@@ -218,6 +218,13 @@ public class Relation extends TypeAtom {
     }
 
     @Override
+    public boolean isAllowedToFormRuleHead(){
+        //can form a rule head if specified type and all relation players have a specified/unambiguously inferrable role type
+        return super.isAllowedToFormRuleHead()
+                && this.getRoleVarTypeMap().keySet().size() == this.getRelationPlayers().size();
+    }
+
+    @Override
     public int resolutionPriority() {
         int priority = super.resolutionPriority();
         priority += ResolutionStrategy.IS_RELATION_ATOM;

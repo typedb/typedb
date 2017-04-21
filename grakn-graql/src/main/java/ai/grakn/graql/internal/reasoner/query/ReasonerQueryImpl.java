@@ -525,7 +525,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         );
     }
 
-    ReasonerQuery addSubstitution(Answer sub){
+    ReasonerQueryImpl addSubstitution(Answer sub){
         Set<VarName> varNames = getVarNames();
 
         //skip predicates from types
@@ -545,9 +545,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     private boolean requiresMaterialisation(){
         for(Atom atom : selectAtoms()){
-            if (atom.requiresMaterialisation() && atom.isRuleResolvable()) return true;
             for (InferenceRule rule : atom.getApplicableRules())
-                if (rule.requiresMaterialisation()){
+                if (rule.requiresMaterialisation(atom)){
                     return true;
                 }
         }
@@ -666,7 +665,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         private int iter = 0;
         private long oldAns = 0;
-        final Set<Answer> answers = new HashSet<>();
+        private final Set<Answer> answers = new HashSet<>();
 
         private final QueryCache<ReasonerAtomicQuery> cache;
         private Iterator<Answer> answerIterator;

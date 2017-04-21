@@ -80,6 +80,16 @@ public class TypeAtom extends Binary{
     }
 
     @Override
+    public boolean isAllowedToFormRuleHead(){
+        return getType() != null;
+    }
+
+    @Override
+    public boolean requiresMaterialisation() {
+        return isUserDefinedName() && getType() != null && getType().isRelationType();
+    }
+
+    @Override
     public int resolutionPriority(){
         int priority = super.resolutionPriority();
         priority += ResolutionStrategy.IS_TYPE_ATOM;
