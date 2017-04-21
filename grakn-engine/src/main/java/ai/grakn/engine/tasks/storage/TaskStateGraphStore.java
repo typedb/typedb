@@ -66,7 +66,6 @@ import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_TIME;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
-import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_ID;
 import static ai.grakn.graql.Graql.var;

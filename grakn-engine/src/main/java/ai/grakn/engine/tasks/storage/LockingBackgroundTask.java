@@ -22,7 +22,6 @@ import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import mjson.Json;
 
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;

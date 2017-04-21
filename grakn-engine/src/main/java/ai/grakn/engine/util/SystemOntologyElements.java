@@ -32,7 +32,6 @@ public interface SystemOntologyElements {
     TypeLabel SCHEDULED_TASK = TypeLabel.of("scheduled-task");
     TypeLabel STATUS = TypeLabel.of("status");
     TypeLabel STATUS_CHANGE_TIME = TypeLabel.of("status-change-time");
-    TypeLabel STATUS_CHANGE_BY = TypeLabel.of("status-change-by");
     TypeLabel TASK_CLASS_NAME = TypeLabel.of("task-class-name");
     TypeLabel CREATED_BY = TypeLabel.of("created-by");
     TypeLabel ENGINE_ID = TypeLabel.of("engine-id");
@@ -42,6 +41,5 @@ public interface SystemOntologyElements {
     TypeLabel STACK_TRACE = TypeLabel.of("stack-trace");
     TypeLabel TASK_EXCEPTION = TypeLabel.of("task-exception");
     TypeLabel TASK_CHECKPOINT = TypeLabel.of("task-checkpoint");
-    TypeLabel TASK_CONFIGURATION = TypeLabel.of("task-configuration");
     TypeLabel SERIALISED_TASK = TypeLabel.of("task-serialized");
 }
