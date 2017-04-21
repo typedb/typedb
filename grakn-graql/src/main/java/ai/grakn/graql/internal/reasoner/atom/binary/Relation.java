@@ -100,6 +100,11 @@ public class Relation extends TypeAtom {
         super(a);
     }
 
+    @Override
+    public String toString(){
+        return (getType() != null? getType().getLabel() : "") + getRelationPlayers().toString();
+    }
+
     public Set<RelationPlayer> getRelationPlayers() {
         if (relationPlayers == null) {
             relationPlayers = new HashSet<>();

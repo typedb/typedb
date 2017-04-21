@@ -45,6 +45,11 @@ public class TypeAtom extends Binary{
     protected TypeAtom(TypeAtom a) { super(a);}
 
     @Override
+    public String toString(){
+        return (getType() != null? getType().getLabel() : "") + "(" + getVarName() + ")";
+    }
+
+    @Override
     protected ConceptId extractTypeId() {
         return getPredicate() != null? getPredicate().getPredicate() : null;
     }
