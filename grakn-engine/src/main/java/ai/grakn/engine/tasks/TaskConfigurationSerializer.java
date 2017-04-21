@@ -18,28 +18,30 @@
 
 package ai.grakn.engine.tasks;
 
-
 import ai.grakn.engine.TaskId;
-import org.apache.kafka.common.serialization.Deserializer;
+import org.apache.kafka.common.serialization.Serializer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
  * <p>
- * Implementation of {@link org.apache.kafka.common.serialization.Deserializer} that allows usage of {@link TaskId} as
+ * Implementation of {@link org.apache.kafka.common.serialization.Serializer} that allows usage of {@link TaskId} as
  * kafka queue keys
  * </p>
  *
  * @author alexandraorth
  */
-public class TaskIdDeserializer implements Deserializer<TaskId> {
-    @Override
-    public void configure(Map<String, ?> configs, boolean isKey) {}
+public class TaskConfigurationSerializer implements Serializer<TaskConfiguration> {
 
     @Override
-    public TaskId deserialize(String topic, byte[] data) {
-        return TaskId.of(new String(data, StandardCharsets.UTF_8));
+    public void configure(Map<String, ?> configs, boolean isKey) {
+
+    }
+
+    @Override
+    public byte[] serialize(String topic, TaskConfiguration data) {
+        return data.json().toString().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

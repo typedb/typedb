@@ -23,10 +23,10 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.util.EngineID;
-import java.util.function.Supplier;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -55,7 +55,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
     private final static Logger LOG = LoggerFactory.getLogger(SingleQueueTaskRunner.class);
 
-    private final Consumer<TaskId, TaskState> consumer;
+    private final Consumer<TaskState, TaskConfiguration> consumer;
     private final SingleQueueTaskManager manager;
     private final TaskStateStorage storage;
     private final ExternalOffsetStorage offsetStorage;
@@ -80,10 +80,10 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * @param manager a place to control the lifecycle of tasks
      * @param offsetStorage a place to externally store kafka offsets
      */
-    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff, Supplier<Consumer<TaskId, TaskState>> consumerSupplier){
+    public SingleQueueTaskRunner(SingleQueueTaskManager manager, EngineID engineID, ExternalOffsetStorage offsetStorage, int timeUntilBackoff, Consumer<TaskState, TaskConfiguration> consumer){
         this.manager = manager;
         this.storage = manager.storage();
-        this.consumer = consumerSupplier.get();
+        this.consumer = consumer;
         this.engineID = engineID;
         this.offsetStorage = offsetStorage;
         this.MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF = timeUntilBackoff;
@@ -161,29 +161,30 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     /**
      * Read and handle some records from the given consumer
      */
-    private void readRecords(Consumer<TaskId, TaskState> theConsumer) {
+    private void readRecords(Consumer<TaskState, TaskConfiguration> theConsumer) {
         // This TaskRunner should only ever receive one record from each consumer
-        ConsumerRecords<TaskId, TaskState> records = theConsumer.poll(0);
+        ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(0);
         debugConsumerStatus(theConsumer, records);
 
-        for (ConsumerRecord<TaskId, TaskState> record : records) {
-            TaskState task = record.value();
-            boolean handled = handleTask(task, record.topic());
+        for (ConsumerRecord< TaskState, TaskConfiguration> record : records) {
+            TaskState task = record.key();
+            TaskConfiguration configuration = record.value();
 
+            boolean handled = handleTask(task, configuration, record.topic());
             if (handled) {
                 timeTaskLastHandled = now();
             }
 
             offsetStorage.saveOffset(theConsumer, new TopicPartition(record.topic(), record.partition()));
 
-            LOG.trace("{} acknowledged", record.key().getValue());
+            LOG.trace("{} acknowledged", task.getId());
         }
     }
 
     /**
      * Returns whether the task was succesfully handled, or was just re-submitted.
      */
-    private boolean handleTask(TaskState taskFromkafka, String priority) {
+    private boolean handleTask(TaskState taskFromkafka, TaskConfiguration configuration, String priority) {
         LOG.debug("{}\treceived", taskFromkafka);
 
         TaskState latestState = getLatestState(taskFromkafka);
@@ -192,14 +193,14 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             stopTask(latestState);
             return true;
         } else if(shouldDelayTask(latestState)){
-            resubmitTask(latestState, priority);
+            resubmitTask(latestState, configuration, priority);
             return false;
         } else {
             // Need updated state to reflect task state changes in the execute method
-            TaskState updatedState = executeTask(latestState);
+            TaskState updatedState = executeTask(latestState, configuration);
 
             if(taskShouldRecur(updatedState)){
-                resubmitTask(updatedState, priority);
+                resubmitTask(updatedState, configuration, priority);
             }
 
             return true;
@@ -214,7 +215,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      *
      * @param task the task to execute from the kafka queue
      */
-    private TaskState executeTask(TaskState task){
+    private TaskState executeTask(TaskState task, TaskConfiguration configuration){
         try {
             runningTaskId = task.getId();
             runningTask = task.taskClass().newInstance();
@@ -234,7 +235,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
 
                 LOG.debug("{}\tmarked as running", task);
 
-                completed = runningTask.start(saveCheckpoint(task), task.configuration());
+                completed = runningTask.start(saveCheckpoint(task), configuration);
             }
 
             if (completed) {
@@ -267,11 +268,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * to be executed
      * @param task Task to be delayed
      */
-    private void resubmitTask(TaskState task, String priority){
+    private void resubmitTask(TaskState task, TaskConfiguration configuration, String priority){
         if(priority.equals(HIGH_PRIORITY_TASKS_TOPIC)){
-            manager.addHighPriorityTask(task);
+            manager.addHighPriorityTask(task, configuration);
         } else {
-            manager.addLowPriorityTask(task);
+            manager.addLowPriorityTask(task, configuration);
         }
         LOG.debug("{}\tresubmitted with {}", task, priority);
     }
@@ -343,7 +344,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      * Log debug information about the given set of {@param records} polled from Kafka
      * @param records Polled-for records to return information about
      */
-    private void debugConsumerStatus(Consumer<TaskId, TaskState> theConsumer, ConsumerRecords<TaskId, TaskState> records ){
+    private void debugConsumerStatus(Consumer<TaskState, TaskConfiguration> theConsumer, ConsumerRecords<TaskState, TaskConfiguration> records ){
         for (TopicPartition partition : theConsumer.assignment()) {
             LOG.trace("Partition {}{} has offset {} after receiving {} records",
                     partition.topic(), partition.partition(), theConsumer.position(partition), records.records(partition).size());

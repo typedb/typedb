@@ -104,10 +104,6 @@ public class TaskStateGraphStore implements TaskStateStorage {
             state = state.has(RECUR_INTERVAL, var().val(interval.getSeconds()));
         }
 
-        if(task.configuration() != null) {
-            state = state.has(TASK_CONFIGURATION, var().val(task.configuration().toString()));
-        }
-
         if(task.engineID() != null){
             state = state.has(ENGINE_ID, var().val(task.engineID().value()));
         }
@@ -160,10 +156,6 @@ public class TaskStateGraphStore implements TaskStateStorage {
         if(task.checkpoint() != null) {
             resourcesToDettach.add(TASK_CHECKPOINT);
             resources = resources.has(TASK_CHECKPOINT, var().val(task.checkpoint()));
-        }
-        if(task.configuration() != null) {
-            resourcesToDettach.add(TASK_CONFIGURATION);            
-            resources = resources.has(TASK_CONFIGURATION, var().val(task.configuration().toString()));
         }
 
         Var finalResources = resources;

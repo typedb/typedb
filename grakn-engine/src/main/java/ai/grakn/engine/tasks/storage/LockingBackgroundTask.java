@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.storage;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import mjson.Json;
 
 import java.util.concurrent.locks.Lock;
@@ -40,7 +41,7 @@ import java.util.function.Consumer;
 public abstract class LockingBackgroundTask implements BackgroundTask {
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Lock engineLock = LockProvider.getLock(getLockingKey());
 
         // Try to get lock.
@@ -64,5 +65,5 @@ public abstract class LockingBackgroundTask implements BackgroundTask {
      *
      * @return The actual job to run once the job is acquired
      */
-    protected abstract boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration);
+    protected abstract boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
 }
