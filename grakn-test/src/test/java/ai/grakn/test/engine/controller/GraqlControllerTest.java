@@ -68,6 +68,7 @@ import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -117,7 +118,7 @@ public class GraqlControllerTest {
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
     @AfterClass
