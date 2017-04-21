@@ -4,7 +4,7 @@
     "eslint.validate": [
         "javascript",
         "javascriptreact",
-        { "language": "vue", "autoFix": true }"vue"
+        { "language": "vue", "autoFix": true }
     ]
 
 }

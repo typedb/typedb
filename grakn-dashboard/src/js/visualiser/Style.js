@@ -202,10 +202,4 @@ export default class Style {
       },
     };
   }
-
-  clusterFont() {
-    return {
-      color: '#ffffff',
-    };
-  }
 }

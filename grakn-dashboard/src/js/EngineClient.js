@@ -31,26 +31,29 @@ export default {
      */
   request(requestData) {
     return new Promise((resolve, reject) => {
+      try {
+        const req = new XMLHttpRequest();
+        req.open(requestData.requestType || 'GET', requestData.url);
+        this.setHeaders(req, requestData);
 
-      const req = new XMLHttpRequest();
-      req.open(requestData.requestType || 'GET', requestData.url);
-      this.setHeaders(req, requestData);
-
-      req.onload = function setOnLoad() {
-        if (req.status === 200) {
-          resolve(req.response);
-        } else {
-          reject(Error(req.response));
-        }
-      };
+        req.onload = function setOnLoad() {
+          if (req.status === 200) {
+            resolve(req.response);
+          } else {
+            reject(Error(req.response));
+          }
+        };
 
         // Handle network errors
-      req.onerror = function setOnError() {
-        reject(Error('Network Error'));
-      };
+        req.onerror = function setOnError() {
+          reject(Error('Network Error'));
+        };
 
     // Make the request
-      req.send(requestData.data);
+        req.send(requestData.data);
+      } catch (exception) {
+        reject(exception);
+      }
     });
   },
 
@@ -134,14 +137,9 @@ export default {
       accepts: 'application/text',
     });
   },
-
-  explainQuery(query) {
-    return this.request({
-      url: `/dashboard/explain?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}`,
-    });
-  },            /**
-             * Get current engine configuration.
-             */
+  /**
+   * Get current engine configuration.
+   */
   getConfig() {
     return this.request({
       url: '/configuration',

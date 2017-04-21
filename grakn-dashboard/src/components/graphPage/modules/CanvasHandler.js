@@ -16,9 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 import Visualiser from '../../../js/visualiser/Visualiser';
-import HALParser, { URL_REGEX } from '../../../js/HAL/HALParser';
-import EngineClient from '../../../js/EngineClient';
+import HALParser from '../../../js/HAL/HALParser';
 import * as Utils from '../../../js/HAL/APIUtils';
+import EngineClient from '../../../js/EngineClient';
 import User from '../../../js/User';
 import * as API from '../../../js/util/HALTerms';
 
@@ -38,15 +38,8 @@ export default class CanvasHandler {
     visualiser.setCallbackOnEvent('blurNode', param => this.blurNode(param));
     visualiser.setCallbackOnEvent('dragStart', param => this.onDragStart(param));
 
-    this.halParser = new HALParser();
-
-    this.halParser.setNewResource((id, p, a, l, cn) => visualiser.addNode(id, p, a, l, cn));
-    this.halParser.setNewRelationship((f, t, l) => visualiser.addEdge(f, t, l));
-    this.halParser.setNodeAlreadyInGraph(id => visualiser.nodeExists(id));
-
     // vars
     this.doubleClickTime = 0;
-    this.alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
   }
 
   renderGraph(graphElement, graphOffsetTop) {
@@ -80,37 +73,23 @@ export default class CanvasHandler {
     if (eventKeys.shiftKey) {
       this.requestExplore(nodeObj);
     } else {
-      const generatedNode = (nodeObj.baseType === API.GENERATED_RELATION_TYPE);
-
       EngineClient.request({
         url: nodeObj.href,
-      }).then(resp => this.onGraphResponse(resp, node), (err) => {
+      }).then(resp => this.onGraphResponse(resp, false, false, node), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
-      if (generatedNode) {
+      if (nodeObj.baseType === API.GENERATED_RELATION_TYPE) {
         visualiser.deleteNode(node);
       }
     }
   }
 
-  fetchFilteredRelations(href) {
-    EngineClient.request({
-      url: href,
-    }).then(resp => this.onGraphResponse(resp), (err) => {
-      this.state.eventHub.$emit('error-message', err.message);
-    });
-  }
-
   rightClick(param) {
     const node = param.nodes[0];
-    if (node === undefined) {
-      return;
-    }
+    if (node === undefined) { return; }
 
     if (param.event.shiftKey) {
-      param.nodes.forEach((x) => {
-        visualiser.deleteNode(x);
-      });
+      param.nodes.forEach((x) => { visualiser.deleteNode(x); });
     }
   }
 
@@ -121,15 +100,17 @@ export default class CanvasHandler {
   blurNode() {
     this.state.eventHub.$emit('blur-node');
   }
+
   requestExplore(nodeObj) {
     if (nodeObj.explore) {
       EngineClient.request({
         url: nodeObj.explore,
-      }).then(resp => this.onGraphResponseExplore(resp, nodeObj.id), (err) => {
+      }).then(resp => this.onGraphResponse(resp, false, true, nodeObj.id), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
     }
   }
+
   leftClick(param) {
     const node = param.nodes[0];
     const eventKeys = param.event.srcEvent;
@@ -152,16 +133,7 @@ export default class CanvasHandler {
     if (eventKeys.shiftKey) {
       this.requestExplore(nodeObj);
     } else {
-          // Show node properties on node panel.
-      const ontologyProps = {
-        id: nodeObj.id,
-        type: nodeObj.type,
-        baseType: nodeObj.baseType,
-      };
-
-      const nodeResources = CanvasHandler.prepareResources(nodeObj.properties);
-      const nodeLabel = visualiser.getNodeLabel(node);
-      this.state.eventHub.$emit('show-node-panel', ontologyProps, nodeResources, nodeLabel);
+      this.state.eventHub.$emit('show-node-panel', nodeObj);
     }
   }
 
@@ -212,7 +184,7 @@ export default class CanvasHandler {
     if (query.startsWith('compute')) {
       // If analytics query contains path we execute a HAL request
       if (query.includes('path')) {
-        EngineClient.graqlHAL(query).then(resp => this.onGraphResponse(resp), (err) => {
+        EngineClient.graqlHAL(query).then(resp => this.onGraphResponse(resp, false, false), (err) => {
           this.state.eventHub.$emit('error-message', err.message);
         });
       } else {
@@ -226,7 +198,7 @@ export default class CanvasHandler {
       if (!(query.includes('offset')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} offset 0;`; }
       if (!(query.includes('limit')) && !(query.includes('delete'))) { queryToExecute = `${queryToExecute} limit ${User.getQueryLimit()};`; }
       this.state.eventHub.$emit('inject-query', queryToExecute);
-      EngineClient.graqlHAL(queryToExecute).then((resp, nodeId) => this.onGraphResponse(resp, nodeId), (err) => {
+      EngineClient.graqlHAL(queryToExecute).then((resp, nodeId) => this.onGraphResponse(resp, false, false, nodeId), (err) => {
         this.state.eventHub.$emit('error-message', err.message);
       });
     }
@@ -235,7 +207,7 @@ export default class CanvasHandler {
 
   onLoadOntology(type) {
     const querySub = `match $x sub ${type};`;
-    EngineClient.graqlHAL(querySub).then((resp, nodeId) => this.onGraphResponse(resp, nodeId), (err) => {
+    EngineClient.graqlHAL(querySub).then(resp => this.onGraphResponse(resp, false, false), (err) => {
       this.state.eventHub.$emit('error-message', err.message);
     });
   }
@@ -246,30 +218,94 @@ export default class CanvasHandler {
     this.state.eventHub.$emit('analytics-string-response', responseObject);
   }
 
-  onGraphResponse(resp, nodeId) {
+  onGraphResponse(resp, showIsa, showResources, nodeId) {
     const responseObject = JSON.parse(resp).response;
-    if (!this.halParser.parseResponse(responseObject, false, false, nodeId)) {
+    const parsedResponse = HALParser.parseResponse(responseObject, showIsa);
+
+    if (!parsedResponse.nodes.length) {
       this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
-    } else if (nodeId) {
-      // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
-      // which will contain a new value for offset
-      // Check if the node still in the Dataset, if not (generated relation), don't update href
-      if (visualiser.getNode(nodeId) && ('_links' in responseObject)) {
-        visualiser.updateNode({
-          id: nodeId,
-          href: responseObject._links.self.href,
-        });
-      }
+      return;
     }
+    
+    const filteredNodes = this.filterNodesToRender(responseObject, parsedResponse, showResources);
+
+    // Collect instances from filteredNodes to lazy load their resources.
+    const instances = filteredNodes.map(x => x.properties).filter(node => ((node.baseType === API.ENTITY || node.baseType === API.RELATION || node.baseType === API.RULE) && (!visualiser.nodeExists(node.id))));
+
+    filteredNodes.forEach(node => visualiser.addNode(node.properties, node.resources, node.links, nodeId));
+    parsedResponse.edges.forEach(edge => visualiser.addEdge(edge.from, edge.to, edge.label));
+
+    this.loadInstancesResources(0, instances);
+
+    if (nodeId) this.updateNodeHref(nodeId, responseObject);
+
     visualiser.fitGraphToWindow();
   }
 
-  onGraphResponseExplore(resp, nodeId) {
-    if (!this.halParser.parseResponse(JSON.parse(resp).response, false, true, nodeId)) {
-      this.state.eventHub.$emit('warning-message', 'No results were found for your query.');
-    }
-    visualiser.fitGraphToWindow();
+  filterNodesToRender(responseObject, parsedResponse, showResources) {
+    const dataArray = (Array.isArray(responseObject)) ? responseObject : [responseObject];
+    // Populate map containing all the first level objects returned in the response, they MUST be added to the graph.
+    const firstLevelNodes = dataArray.reduce((accumulator, current) => Object.assign(accumulator, { [current._id]: true }), {});
+
+    // Add embedded object to the graph only if one of the following is satisfied:
+    // - the current node is not a RESOURCE_TYPE || showResources is set to true
+    // - the current node is already drawn in the graph
+    // - the current node is contained in the response as first level object (not embdedded)
+    //    if it's contained in firstLevelNodes it means it MUST be drawn and so all the edges pointing to it.
+
+    return parsedResponse.nodes.filter(node => (((node.properties.baseType !== API.RESOURCE_TYPE)
+          && (node.properties.baseType !== API.RESOURCE)
+          || showResources)
+          || (firstLevelNodes[node.properties.id])
+          || visualiser.nodeExists(node.properties.id)));
   }
+
+  updateNodeHref(nodeId, responseObject) {
+     // When a nodeId is provided is because the user double-clicked on a node, so we need to update its href
+      // which will contain a new value for offset
+      // Check if the node still in the Dataset, if not (generated relation), don't update href
+    if (visualiser.getNode(nodeId) && ('_links' in responseObject)) {
+      visualiser.updateNode({
+        id: nodeId,
+        href: responseObject._links.self.href,
+      });
+    }
+  }
+
+  // --------------------------------------- LAZY LOAD RESOURCESSSSS  ------------------------
+
+  loadInstancesResources(start, instances) {
+    const batchSize = 50;
+    const promises = [];
+
+    // Add a batchSize number of requests to the promises array
+    for (let i = start; i < start + batchSize; i++) {
+      if (i >= instances.length) {
+        // When all the requests are loaded in promises flush the remaining ones and update labels on nodes
+        this.flushPromises(promises).then(() => visualiser.refreshLabels(instances));
+        return;
+      }
+      promises.push(EngineClient.request({
+        url: instances[i].explore,
+      }));
+    }
+    this.flushPromises(promises).then(() => this.loadInstancesResources(start + batchSize, instances));
+  }
+
+  flushPromises(promises) {
+    return Promise.all(promises).then((responses) => {
+      responses.forEach((resp) => {
+        const respObj = JSON.parse(resp).response;
+        // Check if some of the resources attached to this node are already drawn in the graph:
+        // if a resource is already in the graph (because explicitly asked for (e.g. all relations with weight > 0.5 ))
+        // we need to draw the edges connecting this node to the resource node.
+        this.onGraphResponse(resp, false, false);
+        visualiser.updateNodeResources(respObj[API.KEY_ID], Utils.extractResources(respObj));
+      });
+      visualiser.flushUpdates();
+    });
+  }
+  // --------------------------------------------------------------- End of LAZY LOAD RESOURCES ----------------------------------------------
 
   checkSelectionRectangleStatus(node, eventKeys, param) {
       // If we were drawing rectangle and we click again we stop the drawing and compute selected nodes
@@ -283,28 +319,12 @@ export default class CanvasHandler {
     }
   }
 
-  /**
-   * Prepare the list of resources to be shown in the right div panel
-   * It sorts them alphabetically and then check if a resource value is a URL
-   */
-  static prepareResources(originalObject) {
-    if (originalObject == null) return {};
-    return Object.keys(originalObject).sort().reduce(
-          // sortedObject is the accumulator variable, i.e. new object with sorted keys
-          // k is the current key
-          (sortedObject, k) => {
-              // Add 'href' field to the current object, it will be set to TRUE if it contains a valid URL, FALSE otherwise
-            const currentResourceWithHref = Object.assign({}, originalObject[k], {
-              href: CanvasHandler.validURL(originalObject[k].label),
-            });
-            return Object.assign({}, sortedObject, {
-              [k]: currentResourceWithHref,
-            });
-          }, {});
-  }
-  static validURL(str) {
-    const pattern = new RegExp(URL_REGEX, 'i');
-    return pattern.test(str);
+  fetchFilteredRelations(href) {
+    EngineClient.request({
+      url: href,
+    }).then(resp => this.onGraphResponse(resp, false, false), (err) => {
+      this.state.eventHub.$emit('error-message', err.message);
+    });
   }
 
 }
