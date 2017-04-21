@@ -44,11 +44,6 @@ public class LockProvider {
      * @param instantiateLock Supplier of the lock
      */
     public static void add(String lockName, Supplier<Lock> instantiateLock){
-
-        if(locks.containsKey(lockName)){
-            throw new RuntimeException("Lock class has already been initialised with another lock.");
-        }
-
         locks.put(lockName, instantiateLock);
     }
 
