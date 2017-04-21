@@ -366,7 +366,7 @@ public class ReasoningTests {
         assertEquals(answers, answers2);
     }
 
-    @Test //Expected result: Relations between all entity instances
+    @Test //Expected result: Relations between all entity instances including relation between each instance and itself
     public void reasoningWithEntityTypes(){
         QueryBuilder qb = testSet23.graph().graql().infer(true);
         QueryBuilder qbm = testSet23.graph().graql().infer(true).materialise(true);
