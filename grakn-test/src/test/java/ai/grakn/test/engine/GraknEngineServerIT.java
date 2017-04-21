@@ -46,6 +46,7 @@ import static ai.grakn.engine.tasks.mock.MockBackgroundTask.clearTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
 import static org.hamcrest.Matchers.empty;
@@ -89,8 +90,8 @@ public class GraknEngineServerIT {
         List<TaskState> allTasks = Lists.newArrayList(tasks1);
         allTasks.addAll(tasks2);
 
-        tasks1.forEach(engine1.getTaskManager()::addLowPriorityTask);
-        tasks2.forEach(engine2.getTaskManager()::addLowPriorityTask);
+        tasks1.forEach((taskState) -> engine1.getTaskManager().addLowPriorityTask(taskState, configuration(taskState)));
+        tasks2.forEach((taskState) -> engine2.getTaskManager().addLowPriorityTask(taskState, configuration(taskState)));
 
         waitForStatus(storage, allTasks, COMPLETED, STOPPED, FAILED);
 
@@ -102,7 +103,7 @@ public class GraknEngineServerIT {
     public void whenEngine1StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
-        engine1.getTaskManager().addLowPriorityTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 
@@ -114,7 +115,7 @@ public class GraknEngineServerIT {
     public void whenEngine2StopsATaskBeforeExecution_TheTaskIsStopped(TaskState task) {
         assertTrue(TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
-        engine1.getTaskManager().addLowPriorityTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 
@@ -126,7 +127,7 @@ public class GraknEngineServerIT {
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> TaskClient.of("localhost", PORT1).stopTask(task.getId()));
 
-        engine1.getTaskManager().addLowPriorityTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 
@@ -138,7 +139,7 @@ public class GraknEngineServerIT {
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> TaskClient.of("localhost", PORT2).stopTask(task.getId()));
 
-        engine1.getTaskManager().addLowPriorityTask(task);
+        engine1.getTaskManager().addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(storage, ImmutableList.of(task));
 

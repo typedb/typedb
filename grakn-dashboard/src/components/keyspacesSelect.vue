@@ -74,71 +74,64 @@ li:hover {
 </style>
 <script>
 import User, {
-    DEFAULT_KEYSPACE
-} from '../js/User.js'
+    DEFAULT_KEYSPACE,
+} from '../js/User.js';
 import EngineClient from '../js/EngineClient.js';
 import GraphPageState from '../js/state/graphPageState';
 import ConsolePageState from '../js/state/consolePageState';
 
 
 export default {
-    name: "KeyspacesSelect",
-    data() {
-        return {
-            keyspaces: [],
-            currentKeyspace: undefined,
-            showList: false,
-            state: undefined,
-        }
-    },
+  name: 'KeyspacesSelect',
+  data() {
+    return {
+      keyspaces: [],
+      currentKeyspace: undefined,
+      showList: false,
+      state: undefined,
+    };
+  },
 
-    created() {
-        this.loadState();
-    },
-    watch: {
+  created() {
+    this.loadState();
+  },
+  watch: {
         // When the route changes we need to check which state we need to emit the events to.
-        '$route': function(newRoute) {
-            this.loadState();
-        }
+    $route(newRoute) {
+      this.loadState();
     },
-    mounted: function() {
-        this.$nextTick(function() {
+  },
+  mounted() {
+    this.$nextTick(function () {
+      EngineClient.fetchKeyspaces().then((res, err) => {
+        const list = JSON.parse(res);
 
-            EngineClient.fetchKeyspaces().then((res, err) => {
-                const checkCurrentKeySpace = function checkKS() {
-                    EngineClient.fetchKeyspaces().then((resp) => {
-                        const keyspaces = JSON.parse(resp);
-                    });
-                };
-                let list = JSON.parse(res);
+        this.currentKeyspace = User.getCurrentKeySpace();
 
-                this.currentKeyspace = User.getCurrentKeySpace();
-              
-
-                for (let i = 0; i < list.length; i++) {
-                    this.keyspaces.push(list[i]);
-                }
-            });
-        });
-    },
-    methods: {
-        loadState() {
-            switch (this.$route.fullPath) {
-                case "/console":
-                    this.state = ConsolePageState;
-                    break;
-                case "/graph":
-                    this.state = GraphPageState;
-                    break;
-            }
-        },
-        setKeySpace(name) {
-            User.setCurrentKeySpace(name);
-            this.currentKeyspace = name;
-            this.state.eventHub.$emit('keyspace-changed');
-            this.showList = false;
+        for (let i = 0; i < list.length; i++) {
+          this.keyspaces.push(list[i]);
         }
+      });
+    });
+  },
+  methods: {
+    loadState() {
+      switch (this.$route.fullPath) {
+        case '/console':
+          this.state = ConsolePageState;
+          break;
+        case '/graph':
+          this.state = GraphPageState;
+          break;
+      }
+    },
+    setKeySpace(name) {
+      User.setCurrentKeySpace(name);
+      this.currentKeyspace = name;
+      this.state.eventHub.$emit('keyspace-changed');
+      this.showList = false;
+    },
 
-    }
-}
+  },
+};
 </script>

@@ -163,37 +163,35 @@ td {
 </style>
 
 <script>
-import EngineClient from '../js/EngineClient.js';
+import EngineClient from '../js/EngineClient';
 
 export default {
-    name: "ConfigurationPage",
-    data: () => {
-        return {
-            configuration: undefined,
-            errorMessage: undefined,
-        };
+  name: 'ConfigurationPage',
+  data: () => ({
+    configuration: undefined,
+    errorMessage: undefined,
+  }),
+
+  created() {},
+  mounted() {
+    this.$nextTick(function () {
+      this.loadConfig();
+    });
+  },
+
+  methods: {
+    showError(msg) {
+      this.response = undefined;
+      this.errorMessage = msg;
     },
-
-    created() {},
-    mounted() {
-        this.$nextTick(function() {
-            this.loadConfig();
-        });
+    loadConfig() {
+      EngineClient.getConfig().then((resp) => {
+        this.configuration = JSON.parse(resp);
+      }, (err) => {
+        this.showError(err);
+      });
     },
+  },
 
-    methods: {
-        showError(msg) {
-            this.response = undefined;
-            this.errorMessage = msg;
-        },
-        loadConfig() {
-            EngineClient.getConfig().then((resp) => {
-                this.configuration = JSON.parse(resp);
-            }, (err) => {
-                this.showError(err);
-            });
-        },
-    }
-
-}
+};
 </script>

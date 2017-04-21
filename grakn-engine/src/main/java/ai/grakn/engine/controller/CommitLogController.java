@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -97,7 +98,7 @@ public class CommitLogController {
         // TODO Make interval configurable
         TaskState postProcessingTask = TaskState.of(
                 PostProcessingTask.class, this.getClass().getName(),
-                TaskSchedule.recurring(Duration.ofMinutes(5)), postProcessingConfiguration);
+                TaskSchedule.recurring(Duration.ofMinutes(5)));
 
         //Instances to count
         Json countingConfiguration = Json.object();
@@ -105,15 +106,15 @@ public class CommitLogController {
         countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
         TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now(), countingConfiguration);
+                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now());
 
 
         //TODO: Get rid of this update
         PostProcessingTask.lastPPTaskCreated.set(System.currentTimeMillis());
 
         // Send two tasks to the pipeline
-        manager.addLowPriorityTask(postProcessingTask);
-        manager.addHighPriorityTask(countingTask);
+        manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));
+        manager.addHighPriorityTask(countingTask, TaskConfiguration.of(countingConfiguration));
 
         return "PP Task [ " + postProcessingTask.getId().getValue() + " ] and Counting task [" + countingTask.getId().getValue() + "] created for graph [" + keyspace + "]";
     }

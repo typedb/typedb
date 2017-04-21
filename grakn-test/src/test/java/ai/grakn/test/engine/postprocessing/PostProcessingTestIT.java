@@ -26,6 +26,7 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
@@ -145,7 +146,7 @@ public class PostProcessingTestIT {
         //TODO: Find a better way of doing this
         jsonLogs.forEach(log -> {
             PostProcessingTask ppTask = new PostProcessingTask();
-            ppTask.runLockingBackgroundTask(null, log);
+            ppTask.runLockingBackgroundTask(null, TaskConfiguration.of(log));
         });
 
         //Check current broken state of graph

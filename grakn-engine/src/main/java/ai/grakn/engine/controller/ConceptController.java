@@ -107,7 +107,7 @@ public class ConceptController {
             response.type(APPLICATION_HAL);
             response.status(200);
 
-            body.set(RESPONSE,renderHALConceptData(concept, separationDegree, keyspace, offset, limit));
+            body.set(RESPONSE,Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit)));
 
             return body;
         }

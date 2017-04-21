@@ -35,6 +35,7 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,7 +126,7 @@ public class HALBuilder {
                 Map<VarName, Representation> mapFromVarNameToHALObject = new HashMap<>();
                 Stream<Map.Entry<VarName,Concept>> entriesStream = answer.map().entrySet().stream();
                 // Filter to work only with Instances when building HAL for explanation tree from Reasoner
-                if(filterInstances) entriesStream=entriesStream.filter(entry->entry.getValue().isInstance());
+                if(filterInstances) entriesStream = entriesStream.filter(entry->entry.getValue().isInstance());
                 entriesStream.forEach(currentMapEntry -> {
                     Concept currentConcept = currentMapEntry.getValue();
 
@@ -141,14 +142,15 @@ public class HALBuilder {
                 // All the variables of current map have an HAL representation. Add _direction OUT
                 mapFromVarNameToHALObject.values().forEach(hal -> hal.withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE));
                 // Check if we need also to generate a "generated-relation" and embed in it all its role players' HAL representations
-                loopThroughRelations(roleTypes, mapFromVarNameToHALObject, answer.map(), keyspace, limit, inferredRelations).asList().forEach(generatedRelation -> lines.add(generatedRelation));
+                loopThroughRelations(roleTypes, mapFromVarNameToHALObject, answer.map(), keyspace, limit, inferredRelations).forEach(generatedRelation ->
+                        lines.add(Json.read(generatedRelation.toString(RepresentationFactory.HAL_JSON))));
         });
         return lines;
     }
 
-    private static Json loopThroughRelations(Map<VarAdmin, Pair<Map<VarName, String>, String>> roleTypes, Map<VarName, Representation> mapFromVarNameToHALObject, Map<VarName, Concept> resultLine, String keyspace, int limit, Map<VarAdmin, Boolean> inferredRelations) {
+    private static Collection<Representation> loopThroughRelations(Map<VarAdmin, Pair<Map<VarName, String>, String>> roleTypes, Map<VarName, Representation> mapFromVarNameToHALObject, Map<VarName, Concept> resultLine, String keyspace, int limit, Map<VarAdmin, Boolean> inferredRelations) {
 
-        final Json generatedRelations = Json.array();
+        final Collection<Representation> generatedRelations = new ArrayList<>();
         // For each relation (VarAdmin key in roleTypes) we fetch all the role-players representations and embed them in the generated-relation's HAL representation.
         roleTypes.entrySet().forEach(currentEntry -> {
             Collection<VarName> varNamesInCurrentRelation = currentEntry.getValue().getKey().keySet();
@@ -166,7 +168,7 @@ public class HALBuilder {
             // Embed each role player's HAL representation in the current relation _embedded
             varNamesInCurrentRelation.forEach(varName -> genRelation.withRepresentation(currentEntry.getValue().getKey().get(varName), mapFromVarNameToHALObject.get(varName)));
 
-            generatedRelations.add(genRelation.toString(RepresentationFactory.HAL_JSON));
+            generatedRelations.add(genRelation);
         });
         return generatedRelations;
     }

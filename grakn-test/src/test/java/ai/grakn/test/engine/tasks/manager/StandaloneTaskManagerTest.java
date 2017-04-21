@@ -49,6 +49,7 @@ import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.at;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
@@ -75,7 +76,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testRunSingle() {
         TaskState task = createTask();
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         // Wait for task to be executed.
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
@@ -86,7 +87,7 @@ public class StandaloneTaskManagerTest {
     @Property(trials=10)
     public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(List<TaskState> tasks) {
         // Schedule tasks
-        tasks.forEach(taskManager::addLowPriorityTask);
+        tasks.forEach((taskState) -> taskManager.addLowPriorityTask(taskState, configuration(taskState)));
 
         waitForDoneStatus(taskManager.storage(), tasks);
 
@@ -98,7 +99,7 @@ public class StandaloneTaskManagerTest {
     @Property(trials=10)
     public void afterRunning_AllFailingTasksAreRecordedAsFailed(List<TaskState> tasks) {
         // Schedule tasks
-        tasks.forEach(taskManager::addLowPriorityTask);
+        tasks.forEach((taskState) -> taskManager.addLowPriorityTask(taskState, configuration(taskState)));
 
         waitForDoneStatus(taskManager.storage(), tasks);
 
@@ -110,7 +111,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testRunRecurring() throws Exception {
         TaskState task = createTask(ShortExecutionMockTask.class, recurring(Duration.ofMillis(100)));
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         Thread.sleep(2000);
 
@@ -123,7 +124,7 @@ public class StandaloneTaskManagerTest {
     @Test
     public void testStopSingle() {
         TaskState task = createTask(ShortExecutionMockTask.class, at(now().plusSeconds(1000)));
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         TaskStatus status = taskManager.storage().getState(task.getId()).status();
         assertTrue(status == CREATED || status == RUNNING);
