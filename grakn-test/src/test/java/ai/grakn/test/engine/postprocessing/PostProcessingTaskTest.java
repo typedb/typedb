@@ -24,6 +24,7 @@ import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
@@ -55,7 +56,7 @@ public class PostProcessingTaskTest {
     private String mockResourceIndex;
     private Set<ConceptId> mockCastingSet;
     private Set<ConceptId> mockResourceSet;
-    private Json mockJson;
+    private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
     private PostProcessing mockPostProcessing;
 
@@ -79,12 +80,13 @@ public class PostProcessingTaskTest {
         mockResourceIndex = UUID.randomUUID().toString();
         mockCastingSet = Sets.newHashSet();
         mockResourceSet = Sets.newHashSet();
-        mockJson = Json.object(
-                KEYSPACE, TEST_KEYSPACE,
-                REST.Request.COMMIT_LOG_FIXING, Json.object(
-                    Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
-                    Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
-                )
+        mockConfiguration = TaskConfiguration.of(
+                Json.object(
+                        KEYSPACE, TEST_KEYSPACE,
+                    REST.Request.COMMIT_LOG_FIXING, Json.object(
+                        Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
+                        Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
+                    ))
         );
 
         Mockito.reset(mockPostProcessing);
@@ -94,7 +96,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingRunNotCalled(){
         PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
 
-        task.start(mockConsumer, mockJson);
+        task.start(mockConsumer, mockConfiguration);
 
         verify(mockPostProcessing, never())
                 .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
@@ -104,7 +106,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
 
-        task.start(mockConsumer, mockJson);
+        task.start(mockConsumer, mockConfiguration);
 
         verify(mockPostProcessing, times(1))
                 .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
@@ -114,7 +116,7 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
 
-        task.start(mockConsumer, mockJson);
+        task.start(mockConsumer, mockConfiguration);
 
         verify(mockPostProcessing, times(1))
                 .performResourceFix(TEST_KEYSPACE, mockResourceIndex, mockResourceSet);
@@ -124,14 +126,14 @@ public class PostProcessingTaskTest {
     public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingStartReturnsTrue(){
         PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
 
-        assertTrue("Task " + task + " ran when it should not have", task.start(mockConsumer, mockJson));
+        assertTrue("Task " + task + " ran when it should not have", task.start(mockConsumer, mockConfiguration));
     }
 
     @Test
     public void whenPPTaskStartCalledAndPostProcessingRuns_PostProcessingStartReturnsFalse(){
         PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
 
-        assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockJson));
+        assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockConfiguration));
     }
 
     @Test
@@ -150,10 +152,10 @@ public class PostProcessingTaskTest {
         PostProcessingTask task2 = new PostProcessingTask(mockPostProcessing, 0);
 
         Thread pp1 = new Thread(() -> {
-            task1.start(mockConsumer, mockJson);
+            task1.start(mockConsumer, mockConfiguration);
         });
         Thread pp2 = new Thread(() -> {
-            task2.start(mockConsumer, mockJson);
+            task2.start(mockConsumer, mockConfiguration);
         });
 
         pp1.start();

@@ -26,7 +26,6 @@ import ai.grakn.engine.tasks.storage.TaskStateGraphStore;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.test.EngineContext;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
-import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -45,7 +44,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class TaskStateGraphStoreTest {
@@ -64,9 +62,8 @@ public class TaskStateGraphStoreTest {
     public void testTaskStateStoreRetrieve() {
         ShortExecutionMockTask task = new ShortExecutionMockTask();
         Instant runAt = Instant.now();
-        Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task(at(runAt), configuration));
+        TaskId id = stateStorage.newState(task(at(runAt)));
         assertNotNull(id);
 
         TaskState state = stateStorage.getState(id);
@@ -77,15 +74,13 @@ public class TaskStateGraphStoreTest {
         assertEquals(runAt, state.schedule().runAt());
         assertFalse(state.schedule().isRecurring());
         assertEquals(Optional.empty(), state.schedule().interval());
-        assertEquals(configuration.toString(), state.configuration().toString());
     }
 
     @Test
     public void testUpdateTaskState() {
         Instant runAt = Instant.now();
-        Json configuration = Json.object("test key", "test value");
 
-        TaskId id = stateStorage.newState(task(at(runAt), configuration));
+        TaskId id = stateStorage.newState(task(at(runAt)));
         assertNotNull(id);
 
         // Get current values
@@ -124,7 +119,7 @@ public class TaskStateGraphStoreTest {
 
     @Test
     public void testGetTaskStateByCreator() {
-        TaskId id = stateStorage.newState(task(TaskSchedule.now(), Json.object(), "other"));
+        TaskId id = stateStorage.newState(task(TaskSchedule.now(), "other"));
         assertNotNull(id);
 
         Set<TaskState> res = stateStorage.getTasks(null, null, "other", null, 0, 0);
@@ -191,14 +186,14 @@ public class TaskStateGraphStoreTest {
     }
 
     public TaskState task(){
-        return task(TaskSchedule.now(), Json.object(), getClass().getName());
+        return task(TaskSchedule.now(), getClass().getName());
     }
 
-    public TaskState task(TaskSchedule schedule, Json configuration){
-        return task(schedule, configuration, getClass().getName());
+    public TaskState task(TaskSchedule schedule){
+        return task(schedule, getClass().getName());
     }
 
-    public TaskState task(TaskSchedule schedule, Json configuration, String creator){
-        return TaskState.of(ShortExecutionMockTask.class, creator, schedule, configuration);
+    public TaskState task(TaskSchedule schedule, String creator){
+        return TaskState.of(ShortExecutionMockTask.class, creator, schedule);
     }
 }

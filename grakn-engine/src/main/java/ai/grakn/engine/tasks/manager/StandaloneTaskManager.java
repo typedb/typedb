@@ -27,6 +27,7 @@ import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -102,15 +103,15 @@ public class StandaloneTaskManager implements TaskManager {
     }
 
     @Override
-    public void addLowPriorityTask(TaskState taskState){
-        addTask(taskState);
+    public void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration){
+        addTask(taskState, configuration);
     }
 
     //TODO IMPLEMENT HIGH AND LOW PRIORITY IN STANDALONE MODE
     @Override
-    public void addHighPriorityTask(TaskState taskState){
+    public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
         LOG.info("Standalone mode only has a single priority.");
-        addTask(taskState);
+        addTask(taskState, configuration);
     }
 
     public void stopTask(TaskId id) {
@@ -146,7 +147,7 @@ public class StandaloneTaskManager implements TaskManager {
         return storage;
     }
 
-    private void addTask(TaskState taskState){
+    private void addTask(TaskState taskState, TaskConfiguration taskConfiguration){
         storage.newState(taskState);
 
         // Schedule task to run.
@@ -154,7 +155,7 @@ public class StandaloneTaskManager implements TaskManager {
         TaskSchedule schedule = taskState.schedule();
         long delay = Duration.between(now, taskState.schedule().runAt()).toMillis();
 
-        Runnable taskExecution = submitTaskForExecution(taskState);
+        Runnable taskExecution = submitTaskForExecution(taskState, taskConfiguration);
 
         if(schedule.isRecurring()){
             schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), MILLISECONDS);
@@ -163,7 +164,7 @@ public class StandaloneTaskManager implements TaskManager {
         }
     }
 
-    private Runnable executeTask(TaskState task) {
+    private Runnable executeTask(TaskState task, TaskConfiguration configuration) {
         return () -> {
             try {
                 task.markRunning(engineID);
@@ -173,7 +174,7 @@ public class StandaloneTaskManager implements TaskManager {
                 BackgroundTask runningTask = task.taskClass().newInstance();
                 runningTasks.put(task.getId(), runningTask);
 
-                boolean completed = runningTask.start(saveCheckpoint(task), task.configuration());
+                boolean completed = runningTask.start(saveCheckpoint(task), configuration);
 
                 if (completed) {
                     task.markCompleted();
@@ -191,10 +192,10 @@ public class StandaloneTaskManager implements TaskManager {
         };
     }
 
-    private Runnable submitTaskForExecution(TaskState taskState) {
+    private Runnable submitTaskForExecution(TaskState taskState, TaskConfiguration configuration) {
         return () -> {
             if (shouldRunTask(storage.getState(taskState.getId()))) {
-                executorService.submit(executeTask(taskState));
+                executorService.submit(executeTask(taskState, configuration));
             }
         };
     }

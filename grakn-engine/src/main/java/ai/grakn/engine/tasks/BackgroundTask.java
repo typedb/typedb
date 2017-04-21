@@ -18,8 +18,6 @@
 
 package ai.grakn.engine.tasks;
 
-import mjson.Json;
-
 import java.util.function.Consumer;
 
 /**
@@ -35,7 +33,7 @@ public interface BackgroundTask {
      *
      * @return true if the task successfully completed, or false if it was stopped.
      */
-    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration);
+    boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
 
     /**
      * Called to stop execution of the task, may be called on a running or paused task.

@@ -48,6 +48,7 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -153,7 +154,7 @@ public class GraknEngineFailoverIT {
                 t.creator(),
                 t.schedule().runAt(),
                 t.schedule().interval().orElse(null),
-                t.configuration())).collect(toSet());
+                configuration(t).json())).collect(toSet());
     }
 
     private static void waitForStatus(Set<TaskId> taskIds, TaskStatus... status) {

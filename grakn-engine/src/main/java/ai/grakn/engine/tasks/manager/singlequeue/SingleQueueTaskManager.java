@@ -26,6 +26,7 @@ import ai.grakn.engine.lock.ZookeeperLock;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -80,7 +81,7 @@ public class SingleQueueTaskManager implements TaskManager {
     private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
     private final static int TIME_UNTIL_BACKOFF = 60_000;
 
-    private final Producer<TaskId, TaskState> producer;
+    private final Producer<TaskState, TaskConfiguration> producer;
     private final ZookeeperConnection zookeeper;
     private final TaskStateStorage storage;
     private final PathChildrenCache stoppedTasks;
@@ -179,8 +180,8 @@ public class SingleQueueTaskManager implements TaskManager {
      * @param taskState Task to execute
      */
     @Override
-    public void addLowPriorityTask(TaskState taskState){
-        sendTask(taskState, LOW_PRIORITY_TASKS_TOPIC);
+    public void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration){
+        sendTask(taskState, configuration, LOW_PRIORITY_TASKS_TOPIC);
     }
 
     /**
@@ -188,8 +189,8 @@ public class SingleQueueTaskManager implements TaskManager {
      * @param taskState Task to execute
      */
     @Override
-    public void addHighPriorityTask(TaskState taskState){
-        sendTask(taskState, HIGH_PRIORITY_TASKS_TOPIC);
+    public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
+        sendTask(taskState, configuration, HIGH_PRIORITY_TASKS_TOPIC);
     }
 
     /**
@@ -219,8 +220,8 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Get a new kafka consumer listening on the given topic
      */
-    private Consumer<TaskId, TaskState> newConsumer(String topic){
-        Consumer<TaskId, TaskState> consumer = kafkaConsumer(TASK_RUNNER_GROUP + "-" + topic);
+    private Consumer<TaskState, TaskConfiguration> newConsumer(String topic){
+        Consumer<TaskState, TaskConfiguration> consumer = kafkaConsumer(TASK_RUNNER_GROUP + "-" + topic);
         consumer.subscribe(ImmutableList.of(topic), rebalanceListener(consumer, offsetStorage));
         return consumer;
     }
@@ -237,10 +238,11 @@ public class SingleQueueTaskManager implements TaskManager {
     /**
      * Serialize and send the given task to the given kafka queue
      * @param taskState Task to send to kafka
+     * @param configuration Configuration of the given task
      * @param topic Queue to which to send the task
      */
-    private void sendTask(TaskState taskState, String topic){
-        producer.send(new ProducerRecord<>(topic, taskState.getId(), taskState));
+    private void sendTask(TaskState taskState, TaskConfiguration configuration, String topic){
+        producer.send(new ProducerRecord<>(topic, taskState, configuration));
         producer.flush();
     }
 
@@ -251,7 +253,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return New instance of a SingleQueueTaskRunner
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
-        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, () -> newConsumer(priority));
+        return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
     }
 
     /**

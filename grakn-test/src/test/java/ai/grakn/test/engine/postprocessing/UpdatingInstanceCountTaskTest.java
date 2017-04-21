@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.test.EngineContext;
@@ -51,8 +52,8 @@ public class UpdatingInstanceCountTaskTest {
         );
 
         //Start up the Job
-        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), configuration);
-        engine.getTaskManager().addLowPriorityTask(task);
+        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now());
+        engine.getTaskManager().addLowPriorityTask(task, TaskConfiguration.of(configuration));
 
         // Wait for task to complete
         waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
