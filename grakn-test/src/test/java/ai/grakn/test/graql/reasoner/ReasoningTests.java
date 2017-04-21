@@ -18,15 +18,11 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
 import org.junit.Assert;
 import org.junit.Before;
@@ -105,6 +101,9 @@ public class ReasoningTests {
 
     @ClassRule
     public static final GraphContext testSet20 = GraphContext.preLoad("testSet20.gql");
+
+    @ClassRule
+    public static final GraphContext testSet23 = GraphContext.preLoad("testSet23.gql");
 
     @Before
     public void onStartup() throws Exception {
@@ -364,6 +363,18 @@ public class ReasoningTests {
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers.size(), 1);
+        assertEquals(answers, answers2);
+    }
+
+    @Test //Expected result: Relations between all entity instances
+    public void reasoningWithEntityTypes(){
+        QueryBuilder qb = testSet23.graph().graql().infer(true);
+        QueryBuilder qbm = testSet23.graph().graql().infer(true).materialise(true);
+        String queryString = "match (role1:$x1, role2:$x2) isa relation1;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qbm.parse(queryString));
+        assertEquals(answers.size(), 9);
+        assertEquals(answers2.size(), 9);
         assertEquals(answers, answers2);
     }
 
