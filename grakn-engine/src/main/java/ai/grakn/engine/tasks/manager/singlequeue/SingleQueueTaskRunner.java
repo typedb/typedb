@@ -164,7 +164,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
     private void readRecords(Consumer<TaskState, TaskConfiguration> theConsumer) {
         // This TaskRunner should only ever receive one record from each consumer
         ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(0);
-        debugConsumerStatus(theConsumer, records);
 
         for (ConsumerRecord< TaskState, TaskConfiguration> record : records) {
             TaskState task = record.key();
@@ -337,17 +336,6 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             storage.updateState(taskState);
         } else {
             storage.newState(taskState);
-        }
-    }
-
-    /**
-     * Log debug information about the given set of {@param records} polled from Kafka
-     * @param records Polled-for records to return information about
-     */
-    private void debugConsumerStatus(Consumer<TaskState, TaskConfiguration> theConsumer, ConsumerRecords<TaskState, TaskConfiguration> records ){
-        for (TopicPartition partition : theConsumer.assignment()) {
-            LOG.trace("Partition {}{} has offset {} after receiving {} records",
-                    partition.topic(), partition.partition(), theConsumer.position(partition), records.records(partition).size());
         }
     }
 
