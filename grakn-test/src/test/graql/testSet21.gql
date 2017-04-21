@@ -34,6 +34,8 @@ $p1 isa person;
 $p2 isa person;
 $p3 isa person;
 $p4 isa person;
+
 (friend:$p1, friend:$p2) isa knows;
 (friend:$p2, friend:$p3) isa knows;
 (friend:$p3, friend:$p4) isa knows;
+
