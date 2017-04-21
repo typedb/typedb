@@ -163,9 +163,9 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
      */
     private void readRecords(Consumer<TaskState, TaskConfiguration> theConsumer) {
         // This TaskRunner should only ever receive one record from each consumer
-        ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(0);
+        ConsumerRecords<TaskState, TaskConfiguration> records = theConsumer.poll(1000);
 
-        for (ConsumerRecord< TaskState, TaskConfiguration> record : records) {
+        for (ConsumerRecord<TaskState, TaskConfiguration> record : records) {
             TaskState task = record.key();
             TaskConfiguration configuration = record.value();
 
