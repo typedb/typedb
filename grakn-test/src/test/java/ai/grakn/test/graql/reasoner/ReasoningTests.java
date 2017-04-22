@@ -111,6 +111,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet23 = GraphContext.preLoad("testSet23.gql");
 
+    @ClassRule
+    public static final GraphContext testSet24 = GraphContext.preLoad("testSet24.gql");
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -402,6 +405,14 @@ public class ReasoningTests {
         assertEquals(answers.size(), 9);
         assertEquals(answers2.size(), 9);
         assertEquals(answers, answers2);
+    }
+
+    @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
+    public void reasoningWithResourceValueComparison() {
+        QueryBuilder qb = testSet24.graph().graql().infer(true);
+        String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        assertEquals(answers.size(), 10);
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
