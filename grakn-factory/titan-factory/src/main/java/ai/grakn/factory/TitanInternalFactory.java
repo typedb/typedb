@@ -28,6 +28,8 @@ import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -208,7 +210,12 @@ class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, Tita
                 if (isUnique) {
                     indexBuilder.unique();
                 }
-                indexBuilder.buildCompositeIndex();
+                TitanGraphIndex newIndex = indexBuilder.buildCompositeIndex();
+                //Set Index Enforcement
+                if(isUnique){
+                    management.setConsistency(key, ConsistencyModifier.LOCK);
+                    management.setConsistency(newIndex, ConsistencyModifier.LOCK);
+                }
             }
         }
     }
