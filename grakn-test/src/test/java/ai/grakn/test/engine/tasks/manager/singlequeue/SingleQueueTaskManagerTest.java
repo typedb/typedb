@@ -104,7 +104,6 @@ public class SingleQueueTaskManagerTest {
         assertEquals(completableTasks(tasks), completedTasks());
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task) {
         taskManager.stopTask(task.getId());
@@ -116,7 +115,6 @@ public class SingleQueueTaskManagerTest {
         assertThat(completedTasks(), empty());
     }
 
-    @Ignore// Failing randomly - may be a race condition
     @Property(trials=10)
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task) {
         taskManager.stopTask(task.getId());
