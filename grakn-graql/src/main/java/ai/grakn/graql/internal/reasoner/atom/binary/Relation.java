@@ -607,7 +607,7 @@ public class Relation extends TypeAtom {
                     }
                 });
 
-        //resolve ambiguities until no  unambiguous mapping exist
+        //resolve ambiguities until no unambiguous mapping exist
         while( mappings.values().stream().filter(s -> s.size() == 1).count() != 0) {
             for (Map.Entry<RelationPlayer, Set<RoleType>> entry : mappings.entrySet()) {
                 Set<RoleType> compatibleRoles = entry.getValue();
@@ -617,7 +617,9 @@ public class Relation extends TypeAtom {
                     Type type = varTypeMap.get(varName);
                     RoleType roleType = entry.getValue().iterator().next();
                     VarAdmin roleVar = Graql.var().label(roleType.getLabel()).admin();
-                    mappings.values().forEach(s -> s.remove(roleType));
+
+                    //TODO remove from all mappings if it follows from cardinality constraints
+                    mappings.get(casting).remove(roleType);
 
                     rolePlayerMappings.add(new Pair<>(varName, roleVar));
                     roleVarTypeMap.put(roleType, new Pair<>(varName, type));
