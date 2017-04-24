@@ -38,7 +38,7 @@ test('Visualiser try to add edge from non existing node to and existing one : ch
 
   v.addNode({ id: 'id-2' }, {})
    .addEdge('id-1', 'id-2', 'e');
-  expect(v.alreadyConnected('id-1', 'id-2')).toBeFalsy();
+  expect(v.alreadyConnected('id-1', 'id-2', 'e')).toBeFalsy();
 });
 
 test('Visualiser add edge between two existing node: check the edge is created', () => {
@@ -48,7 +48,7 @@ test('Visualiser add edge between two existing node: check the edge is created',
     .addNode({ id: 'id-2' }, {})
    .addEdge('id-1', 'id-2', 'e');
 
-  expect(v.alreadyConnected('id-1', 'id-2')).toBeTruthy();
+  expect(v.alreadyConnected('id-1', 'id-2', 'e')).toBeTruthy();
 });
 
 test('Visualiser test \'alreadyConnected\' method', () => {
@@ -59,6 +59,6 @@ test('Visualiser test \'alreadyConnected\' method', () => {
     .addNode({ id: 'id-3' }, {})
    .addEdge('id-1', 'id-2', 'e');
 
-  expect(v.alreadyConnected('id-1', 'id-2')).toBeTruthy();
-  expect(v.alreadyConnected('id-1', 'id-3')).toBeFalsy();
+  expect(v.alreadyConnected('id-1', 'id-2', 'e')).toBeTruthy();
+  expect(v.alreadyConnected('id-1', 'id-3', 'e')).toBeFalsy();
 });

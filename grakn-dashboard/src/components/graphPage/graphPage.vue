@@ -21,7 +21,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <div>
     <div class="graph-panel-body">
         <div v-on:contextmenu="customContextMenu" v-on:mousemove="updateRectangle" id="graph-div" ref="graph"></div>
-        <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeOntologyProps="allNodeOntologyProps" :node="selectedNodeObject" v-on:graph-response="onGraphResponse" v-on:close-node-panel="showNodePanel=false"></node-panel>
+        <node-panel :showNodePanel="showNodePanel" :allNodeResources="allNodeResources" :allNodeOntologyProps="allNodeOntologyProps" :node="selectedNodeObject" v-on:load-resource-owners="onLoadResourceOwners" v-on:close-node-panel="showNodePanel=false"></node-panel>
         <context-menu :showContextMenu="showContextMenu" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop" v-on:type-query="emitInjectQuery" v-on:close-context="showContextMenu=false" v-on:fetch-relations="fetchFilteredRelations"></context-menu>
         <node-tool-tip :showToolTip="showToolTip" :mouseEvent="mouseEvent" :graphOffsetTop="graphOffsetTop"></node-tool-tip>
         <footer-bar></footer-bar>
@@ -42,6 +42,8 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </style>
 
 <script>
+/* @flow */
+
 // Modules
 import GraphPageState from '../../js/state/graphPageState';
 import CanvasHandler from './modules/CanvasHandler';
@@ -79,8 +81,6 @@ export default {
     this.canvasHandler = new CanvasHandler(this.state);
 
     // Register listened on State events
-    this.state.eventHub.$on('click-submit', query => this.canvasHandler.onClickSubmit(query));
-    this.state.eventHub.$on('load-ontology', type => this.canvasHandler.onLoadOntology(type));
     this.state.eventHub.$on('clear-page', this.onClear);
     // Events from canvasHandler
     this.state.eventHub.$on('show-node-panel', this.onShowNodePanel);
@@ -91,8 +91,6 @@ export default {
   },
   beforeDestroy() {
     // Destroy listeners when component is destroyed - although it never gets destroyed for now. [keep-alive]
-    this.state.eventHub.$off('click-submit', this.onClickSubmit);
-    this.state.eventHub.$off('load-ontology', this.onLoadOntology);
     this.state.eventHub.$off('clear-page', this.onClear);
   },
   mounted() {
@@ -143,7 +141,6 @@ export default {
     onClear() {
       this.showNodeLabelPanel = false;
       this.showNodePanel = false;
-      this.canvasHandler.clearGraph();
     },
 
     emitInjectQuery(query) {
@@ -151,8 +148,8 @@ export default {
       this.state.eventHub.$emit('inject-query', query);
     },
 
-    onGraphResponse(resp) {
-      this.canvasHandler.onGraphResponse(resp);
+    onLoadResourceOwners(resourceId) {
+      this.canvasHandler.loadResourceOwners(resourceId);
     },
 
   },

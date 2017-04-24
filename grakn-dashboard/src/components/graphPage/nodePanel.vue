@@ -123,7 +123,8 @@ h4{
 </style>
 
 <script>
-import EngineClient from '../../js/EngineClient';
+/* @flow */
+
 import { URL_REGEX } from '../../js/HAL/HALParser';
 
 export default {
@@ -162,10 +163,8 @@ export default {
     },
   },
   methods: {
-    addResourceNodeWithOwners(id) {
-      EngineClient.request({
-        url: id,
-      }).then(resp => this.$emit('graph-response', resp));
+    addResourceNodeWithOwners(resourceId) {
+      this.$emit('load-resource-owners', resourceId);
     },
     closePanel() {
       this.$emit('close-node-panel');

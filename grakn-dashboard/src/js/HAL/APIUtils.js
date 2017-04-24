@@ -16,6 +16,8 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
+/* @flow */
+
 import * as API from '../util/HALTerms';
 
 /*
@@ -60,7 +62,7 @@ function buildLabel(resource) {
  * Used to decide the directionality of a relationship between two resources,
  * based on the API.KEY_DIRECTION property.
  */
-export function edgeLeftToRight(a, b) {
+export function edgeLeftToRight(a:Object, b:Object) {
   if (API.KEY_DIRECTION in b) {
     if (b[API.KEY_DIRECTION] === 'OUT') { return false; }
   }
@@ -70,11 +72,11 @@ export function edgeLeftToRight(a, b) {
 
 /**
  * Extract default properties from HAL object, mainly properties from the HAL's state
- * @param {Object} resource HAL Object 
+ * @param {Object} resource HAL Object
  * @returns {Object} Object containing all the resources embedded in a HAL object
  * @public
  */
-export function defaultProperties(resource) {
+export function defaultProperties(resource:Object) {
   return {
     id: resource[API.KEY_ID],
     href: resource[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF],
@@ -90,11 +92,11 @@ export function defaultProperties(resource) {
  * Extract from "_embedded" all the nodes that are "resource-type" and
  * build a new object that lists all the resources related to a node.
  * Structure: e.g. {"title":"Skyfall","duration":"263"}
- * @param {Object} resource HAL object 
+ * @param {Object} resource HAL object
  * @returns {Object} Object containing all the resources embedded in a HAL object
  * @public
  */
-export function extractResources(resource) {
+export function extractResources(resource:Object) {
   if (!(API.KEY_EMBEDDED in resource)) return {};
 
   const embeddedObject = resource[API.KEY_EMBEDDED];
@@ -116,7 +118,7 @@ export function extractResources(resource) {
 /**
  *Work in progress to generate links, this will need to change to use AJAX requests.
  */
-export function nodeLinks(resource) {
+export function nodeLinks(resource:Object) {
   const linksObject = resource[API.KEY_LINKS];
   return Object.keys(linksObject)
         .filter(x => (x !== API.KEY_SELF && x !== API.KEY_EXPLORE))
