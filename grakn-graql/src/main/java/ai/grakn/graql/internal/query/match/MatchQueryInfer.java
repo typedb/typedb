@@ -58,7 +58,8 @@ class MatchQueryInfer extends MatchQueryModifier {
         ReasonerQuery conjQuery = new ReasonerQueryImpl(conj, graph);
         Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise, true) : graph.graql().match(conj).admin().streamWithAnswers();
         while(conjIt.hasNext()) {
-            conjQuery = new ReasonerQueryImpl(conjIt.next(), graph);
+            conj = conjIt.next();
+            conjQuery = new ReasonerQueryImpl(conj, graph);
             Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise, true) : graph.graql().match(conj).admin().streamWithAnswers();
             answerStream = Stream.concat(answerStream, localStream);
         }
