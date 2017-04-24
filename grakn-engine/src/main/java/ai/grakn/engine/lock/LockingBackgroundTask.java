@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.tasks.storage;
+package ai.grakn.engine.lock;
 
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.tasks.BackgroundTask;

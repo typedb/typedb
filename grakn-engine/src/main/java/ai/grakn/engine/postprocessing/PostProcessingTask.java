@@ -24,7 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
+import ai.grakn.engine.lock.LockingBackgroundTask;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
