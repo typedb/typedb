@@ -20,9 +20,9 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
 import ai.grakn.util.Schema;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class PostProcessingTask extends LockingBackgroundTask {
+public class PostProcessingTask implements BackgroundTask {
     public static final String LOCK_KEY = "post-processing-lock";
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
@@ -84,7 +84,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
 
         // Only try to run if enough time has passed
         if(timeElapsed > maxTimeLapse){
-            return super.start(saveCheckpoint, configuration);
+            return run(configuration);
         }
 
         return true;
@@ -103,13 +103,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
         return false;
     }
 
-    @Override
-    protected String getLockingKey(){
-        return LOCK_KEY;
-    }
-
-    @Override
-    public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration){
+    public boolean run(TaskConfiguration configuration){
         String keyspace = configuration.json().at(KEYSPACE).asString();
 
         Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
