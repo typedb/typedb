@@ -30,10 +30,6 @@
 
     <artifactId>grakn-dist</artifactId>
 
-    <properties>
-        <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
-    </properties>
-
     <dependencies>
         <!--Logging dependencies: Compile scope needed to override parent test scope-->
         <dependency>
