@@ -104,7 +104,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
     }
 
     @Override
-    protected String getLockingKey(){
+    public String getLockingKey(){
         return LOCK_KEY;
     }
 

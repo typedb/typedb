@@ -18,16 +18,20 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
+import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
+import java.util.concurrent.locks.Lock;
 import mjson.Json;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Set;
@@ -55,6 +59,17 @@ public class PostProcessingTaskTest {
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
+
+    @BeforeClass
+    public static void mockEngineCache(){
+        Lock lock = new NonReentrantLock();
+        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> lock);
+    }
+
+    @AfterClass
+    public static void clearEngineCache(){
+        LockProvider.clear();
+    }
 
     @Before
     public void mockPostProcessing(){
@@ -92,7 +107,9 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = mock(PostProcessingTask.class);
 
+        doCallRealMethod().when(task).getLockingKey();
         doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
+        doCallRealMethod().when(task).runLockingBackgroundTask(any(), eq(mockConfiguration));
 
         task.start(mockConsumer, mockConfiguration);
 
@@ -104,7 +121,9 @@ public class PostProcessingTaskTest {
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = mock(PostProcessingTask.class);
 
+        doCallRealMethod().when(task).getLockingKey();
         doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
+        doCallRealMethod().when(task).runLockingBackgroundTask(any(), eq(mockConfiguration));
 
         task.start(mockConsumer, mockConfiguration);
 
@@ -128,6 +147,7 @@ public class PostProcessingTaskTest {
         PostProcessingTask task = mock(PostProcessingTask.class);
         task.setTimeLapse(0);
 
+        doCallRealMethod().when(task).getLockingKey();
         doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
 
         assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockConfiguration));
@@ -139,6 +159,10 @@ public class PostProcessingTaskTest {
         PostProcessingTask task1 = mock(PostProcessingTask.class);
         PostProcessingTask task2 = mock(PostProcessingTask.class);
 
+        doCallRealMethod().when(task1).getLockingKey();
+        doCallRealMethod().when(task2).getLockingKey();
+        doCallRealMethod().when(task1).runLockingBackgroundTask(any(), eq(mockConfiguration));
+        doCallRealMethod().when(task2).runLockingBackgroundTask(any(), eq(mockConfiguration));
         doCallRealMethod().when(task1).start(mockConsumer, mockConfiguration);
         doCallRealMethod().when(task2).start(mockConsumer, mockConfiguration);
 
