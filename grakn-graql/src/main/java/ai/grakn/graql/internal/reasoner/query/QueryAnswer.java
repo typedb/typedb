@@ -57,6 +57,9 @@ public class QueryAnswer implements Answer {
     }
 
     @Override
+    public String toString(){ return map.toString();}
+
+    @Override
     public Answer copy(){ return new QueryAnswer(this);}
 
     @Override

@@ -65,6 +65,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -114,7 +115,7 @@ public class TasksControllerTest {
         send();
 
         verify(manager, atLeastOnce()).addLowPriorityTask(
-                argThat(argument -> argument.taskClass().equals(ShortExecutionMockTask.class)));
+                argThat(argument -> argument.taskClass().equals(ShortExecutionMockTask.class)), any());
     }
 
     @Test
@@ -136,7 +137,7 @@ public class TasksControllerTest {
         Instant runAt = now();
         send(Json.object().toString(), defaultParams());
 
-        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().runAt().equals(runAt)));
+        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().runAt().equals(runAt)), any());
     }
 
     @Test
@@ -151,8 +152,8 @@ public class TasksControllerTest {
                 )
         );
 
-        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().interval().isPresent()));
-        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().isRecurring()));
+        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().interval().isPresent()), any());
+        verify(manager).addLowPriorityTask(argThat(argument -> argument.schedule().isRecurring()), any());
     }
 
     @Test
@@ -259,7 +260,6 @@ public class TasksControllerTest {
         assertThat(json.at(TASK_CREATOR_PARAMETER).asString(), equalTo(task.creator()));
         assertThat(json.at(TASK_RUN_AT_PARAMETER).asLong(), equalTo(task.schedule().runAt().toEpochMilli()));
         assertThat(json.at(TASK_STATUS_PARAMETER).asString(), equalTo(task.status().name()));
-        assertThat(json.at("configuration"), equalTo(task.configuration()));
     }
 
     @Test

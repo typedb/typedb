@@ -21,6 +21,7 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
 import ai.grakn.util.Schema;
 import mjson.Json;
@@ -75,7 +76,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
      * Run postprocessing only if enough time has passed since the last job was added
      */
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Instant lastJobAdded = Instant.ofEpochMilli(lastPPTaskCreated.get());
         long timeElapsed = Duration.between(lastJobAdded, now()).toMillis();
 
@@ -108,10 +109,10 @@ public class PostProcessingTask extends LockingBackgroundTask {
     }
 
     @Override
-    public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration){
-        String keyspace = configuration.at(KEYSPACE).asString();
+    public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration){
+        String keyspace = configuration.json().at(KEYSPACE).asString();
 
-        Json innerConfig = configuration.at(COMMIT_LOG_FIXING);
+        Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
         runPostProcessing(keyspace, innerConfig.at(Schema.BaseType.CASTING.name()).asJsonMap(), postProcessing::performCastingFix);
         runPostProcessing(keyspace, innerConfig.at(Schema.BaseType.RESOURCE.name()).asJsonMap(), postProcessing::performResourceFix);
 

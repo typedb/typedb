@@ -29,7 +29,7 @@ export default {
     const currentKeyspace = User.getCurrentKeySpace();
     const nodesLabels = localStorage.getItem(NODE_LABELS_KEY);
 
-    if (nodesLabels === null) {
+    if (nodesLabels == null) {
       localStorage.setItem(NODE_LABELS_KEY, JSON.stringify({ [currentKeyspace]: { [type]: [] } }));
       return [];
     }
@@ -73,8 +73,7 @@ export default {
     if (type !== undefined && type.length) {
       const currentKeyspace = User.getCurrentKeySpace();
       const nodesColours = localStorage.getItem(NODE_COLOURS_KEY);
-
-      if (nodesColours === null) {
+      if (nodesColours == null) {
         localStorage.setItem(NODE_COLOURS_KEY, JSON.stringify({ [currentKeyspace]: { [type]: {} } }));
         return {};
       }

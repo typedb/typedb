@@ -236,23 +236,23 @@ public class Utility {
      * @param role input role type
      * @return set of all non-meta super types of the role
      */
-    public static Set<RoleType> getSuperTypes(RoleType role){
-        Set<RoleType> superTypes = new HashSet<>();
-        RoleType superRole = role.superType();
-        while(!Schema.MetaSchema.isMetaLabel(superRole.getLabel())) {
-            superTypes.add(superRole);
-            superRole = superRole.superType();
+    public static Set<Type> getSuperTypes(Type role){
+        Set<Type> superTypes = new HashSet<>();
+        Type superType = role.superType();
+        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+            superTypes.add(superType);
+            superType = superType.superType();
         }
         return superTypes;
     }
 
     /**
-     * @param roleTypes entry role type set
-     * @return non-meta role types from within the provided set of role types
+     * @param types entry type set
+     * @return top non-meta types from within the provided set of role types
      */
-    public static Set<RoleType> getTopRoles(Set<RoleType> roleTypes) {
-        return roleTypes.stream()
-                .filter(rt -> Sets.intersection(getSuperTypes(rt), roleTypes).isEmpty())
+    public static Set<Type> getTopTypes(Set<? extends Type> types) {
+        return types.stream()
+                .filter(rt -> Sets.intersection(getSuperTypes(rt), types).isEmpty())
                 .collect(toSet());
     }
 

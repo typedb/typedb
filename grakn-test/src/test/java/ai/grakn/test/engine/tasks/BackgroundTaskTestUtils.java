@@ -21,6 +21,7 @@ package ai.grakn.test.engine.tasks;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
@@ -33,13 +34,13 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import java.time.Duration;
 import java.time.Instant;
-import mjson.Json;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,10 @@ public class BackgroundTaskTestUtils {
         return generate(() -> createTask(ShortExecutionMockTask.class).markRunning(engineID)).limit(n).collect(toSet());
     }
 
+    public static TaskConfiguration configuration(TaskState taskState){
+        return TaskConfiguration.of(Json.object("id", taskState.getId().getValue()));
+    }
+
     public static TaskState createTask() {
         return createTask(ShortExecutionMockTask.class);
     }
@@ -72,13 +77,7 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule) {
-        return createTask(clazz, schedule, Json.object());
-    }
-
-    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule, Json configuration) {
-        TaskState taskState = TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule, configuration);
-        configuration.set("id", taskState.getId().getValue());
-        return taskState;
+        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule);
     }
 
     public static void waitForDoneStatus(TaskStateStorage storage, Collection<TaskState> tasks) {

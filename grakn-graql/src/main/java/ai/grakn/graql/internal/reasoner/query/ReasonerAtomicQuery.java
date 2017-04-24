@@ -20,11 +20,8 @@ package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.RelationType;
-import ai.grakn.concept.RoleType;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
-import ai.grakn.graql.Var;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -33,7 +30,6 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -54,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -209,33 +204,14 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Answer> materialiseDirect() {
-        //extrapolate if needed
+        //check if unambiguous
         if (atom.isRelation()) {
-            Relation relAtom = (Relation) atom;
-            Set<VarName> rolePlayers = relAtom.getRolePlayers();
-            if (relAtom.getRoleVarTypeMap().size() != rolePlayers.size()) {
-                RelationType relType = (RelationType) relAtom.getType();
-                Set<RoleType> roles = Sets.newHashSet(relType.relates());
-                Set<Map<VarName, Var>> roleMaps = new HashSet<>();
-                Utility.computeRoleCombinations(rolePlayers, roles, new HashMap<>(), roleMaps);
-
-                Stream<Answer> answerStream = Stream.empty();
-                for (Map<VarName, Var> roleMap : roleMaps) {
-                    Relation relationWithRoles = new Relation(relAtom.getVarName(), relAtom.getValueVariable(),
-                            roleMap, relAtom.getPredicate(), this);
-                    this.removeAtomic(relAtom);
-                    this.addAtomic(relationWithRoles);
-                    answerStream = Stream.concat(answerStream, insert());
-                    this.removeAtomic(relationWithRoles);
-                    this.addAtomic(relAtom);
-                }
-                return answerStream;
-            } else {
-                return insert();
+            Relation relationAtom = (Relation) atom;
+            if (relationAtom.hasMetaRoles()) {
+                throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(this));
             }
-        } else {
-            return insert();
         }
+        return insert();
     }
 
     public Stream<Answer> materialise(Answer answer) {

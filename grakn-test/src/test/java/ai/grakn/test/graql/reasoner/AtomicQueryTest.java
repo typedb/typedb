@@ -56,6 +56,8 @@ import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFu
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.subFilter;
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
+
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -107,7 +109,7 @@ public class AtomicQueryTest {
     @Test
     public void testWhenModifyingAQuery_TheCopyDoesNotChange(){
         GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-item: $x, recommended-customer: $y) isa recommendation;}";
+        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, graph);
         ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
@@ -121,7 +123,7 @@ public class AtomicQueryTest {
     @Test
     public void testWhenCopyingAQuery_TheyHaveTheSameRoleVarTypeMaps(){
         GraknGraph graph = snbGraph.graph();
-        String patternString = "{(recommended-item: $x, recommended-customer: $y) isa recommendation;}";
+        String patternString = "{(recommended-product: $x, recommended-customer: $y) isa recommendation;}";
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, graph);
         ReasonerAtomicQuery copy = new ReasonerAtomicQuery(atomicQuery);
@@ -132,12 +134,13 @@ public class AtomicQueryTest {
 
     @Test
     public void testWhenMaterialising_MaterialisedInformationIsPresentInGraph(){
-        QueryBuilder qb = snbGraph.graph().graql().infer(false);
-        String explicitQuery = "match ($x, $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic';";
+        GraknGraph graph = snbGraph.graph();
+        QueryBuilder qb = graph.graql().infer(false);
+        String explicitQuery = "match (recommended-customer: $x, recommended-product: $y) isa recommendation;$x has name 'Bob';$y has name 'Colour of Magic';";
         assertTrue(!qb.<MatchQuery>parse(explicitQuery).ask().execute());
 
-        String patternString = "{($x, $y) isa recommendation;}";
-        Conjunction<VarAdmin> pattern = conjunction(patternString, snbGraph.graph());
+        String patternString = "{(recommended-customer: $x, recommended-product: $y) isa recommendation;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         QueryAnswers answers = new QueryAnswers();
 
         answers.add(new QueryAnswer(
@@ -145,8 +148,9 @@ public class AtomicQueryTest {
                         VarName.of("x"), getConcept("Bob"),
                         VarName.of("y"), getConcept("Colour of Magic")))
         );
-        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, snbGraph.graph());
+        ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(pattern, graph);
 
+        assertFalse(qb.<MatchQuery>parse(explicitQuery).ask().execute());
         answers.stream().flatMap(atomicQuery::materialise).collect(Collectors.toList());
         assertTrue(qb.<MatchQuery>parse(explicitQuery).ask().execute());
     }
