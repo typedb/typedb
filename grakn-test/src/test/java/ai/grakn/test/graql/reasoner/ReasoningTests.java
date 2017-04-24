@@ -109,6 +109,9 @@ public class ReasoningTests {
     public static final GraphContext testSet22 = GraphContext.preLoad("testSet22.gql");
 
     @ClassRule
+    public static final GraphContext testSet23 = GraphContext.preLoad("testSet23.gql");
+
+    @ClassRule
     public static final GraphContext testSet24 = GraphContext.preLoad("testSet24.gql");
 
     @Before
@@ -390,6 +393,18 @@ public class ReasoningTests {
             assertEquals(answers.size(), 6);
             assertEquals(answers, oldAnswers);
         }
+    }
+
+    @Test //Expected result: Relations between all entity instances including relation between each instance and itself
+    public void reasoningWithEntityTypes() {
+        QueryBuilder qb = testSet23.graph().graql().infer(true);
+        QueryBuilder qbm = testSet23.graph().graql().infer(true).materialise(true);
+        String queryString = "match (role1:$x1, role2:$x2) isa relation1;";
+        QueryAnswers answers = queryAnswers(qb.parse(queryString));
+        QueryAnswers answers2 = queryAnswers(qbm.parse(queryString));
+        assertEquals(answers.size(), 9);
+        assertEquals(answers2.size(), 9);
+        assertEquals(answers, answers2);
     }
 
     @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
