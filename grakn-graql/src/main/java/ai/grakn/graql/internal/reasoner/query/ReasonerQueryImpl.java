@@ -621,9 +621,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
-        if (!this.isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
-        }
         if (materialise || requiresMaterialisation()) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {

@@ -54,11 +54,12 @@ class MatchQueryInfer extends MatchQueryModifier {
         if (!Reasoner.hasRules(graph)) return inner.stream(optionalGraph);
 
         Iterator<Conjunction<VarAdmin>> conjIt = getPattern().getDisjunctiveNormalForm().getPatterns().iterator();
-        ReasonerQuery conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-        Stream<Answer> answerStream = conjunctiveQuery.resolve(materialise, true);
+        Conjunction<VarAdmin> conj = conjIt.next();
+        ReasonerQuery conjQuery = new ReasonerQueryImpl(conj, graph);
+        Stream<Answer> answerStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise, true) : graph.graql().match(conj).admin().streamWithAnswers();
         while(conjIt.hasNext()) {
-            conjunctiveQuery = new ReasonerQueryImpl(conjIt.next(), graph);
-            Stream<Answer> localStream = conjunctiveQuery.resolve(materialise, true);
+            conjQuery = new ReasonerQueryImpl(conjIt.next(), graph);
+            Stream<Answer> localStream = conjQuery.isRuleResolvable()? conjQuery.resolve(materialise, true) : graph.graql().match(conj).admin().streamWithAnswers();
             answerStream = Stream.concat(answerStream, localStream);
         }
         return answerStream.map(result -> result.filterVars(getSelectedNames()));
