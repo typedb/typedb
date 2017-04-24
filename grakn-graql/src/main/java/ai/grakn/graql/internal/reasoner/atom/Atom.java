@@ -95,11 +95,14 @@ public abstract class Atom extends AtomBase {
      */
     public int resolutionPriority(){
         int priority = 0;
-        Set<IdPredicate> partialSubstitutions = getPartialSubstitutions();
-        if (!partialSubstitutions.isEmpty()){
-            priority += partialSubstitutions.size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-            priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
-        }
+        priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
+        priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
+        priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+        Set<VarName> otherVars = getParentQuery().getAtoms().stream()
+                .filter(a -> a != this)
+                .flatMap(at -> at.getVarNames().stream())
+                .collect(Collectors.toSet());
+        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
         return priority;
     }
 

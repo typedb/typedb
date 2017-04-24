@@ -62,6 +62,11 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
+    public String toString(){
+        return getVarName() + " has " + (getMultiPredicate().isEmpty()? getValueVariable() :getMultiPredicate().toString());
+    }
+
+    @Override
     protected boolean hasEquivalentPredicatesWith(BinaryBase at) {
         if (!(at instanceof Resource)) return false;
         Resource atom = (Resource) at;

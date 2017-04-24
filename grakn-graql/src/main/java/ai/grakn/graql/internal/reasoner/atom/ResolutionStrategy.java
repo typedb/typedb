@@ -37,7 +37,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each rule that is applicable to a given atom
      */
-    public static final int APPLICABLE_RULE = -1;
+    public static final int APPLICABLE_RULE = 1;
 
     /**
      * priority modifier if a given atom is a resource atom
@@ -48,6 +48,16 @@ public final class ResolutionStrategy {
      * priority modifier if a given atom is a type atom
      */
     public static final int IS_TYPE_ATOM = 0;
+
+    /**
+     * priority modifier for guard (type atom) the atom has
+     */
+    public static final int GUARD = 3;
+
+    /**
+     * priority modifier for guard (type atom) the atom has
+     */
+    public static final int BOUND_VARIABLE = 2;
 
     /**
      * priority modifier for each specific value predicate a given atom (resource) has
