@@ -20,8 +20,6 @@ package ai.grakn.test.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -29,9 +27,7 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import mjson.Json;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Set;
@@ -59,16 +55,6 @@ public class PostProcessingTaskTest {
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
-
-    @BeforeClass
-    public static void initlock(){
-        LockProvider.add(PostProcessingTask.LOCK_KEY, NonReentrantLock::new);
-    }
-
-    @AfterClass
-    public static void clearLock(){
-        LockProvider.clear();
-    }
 
     @Before
     public void mockPostProcessing(){
@@ -107,9 +93,6 @@ public class PostProcessingTaskTest {
         PostProcessingTask task = mock(PostProcessingTask.class);
 
         doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task).runLockingBackgroundTask(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task).applyPPToMapEntry(any(), any(), any(), any());
-        doCallRealMethod().when(task).getLockingKey();
 
         task.start(mockConsumer, mockConfiguration);
 
@@ -122,9 +105,6 @@ public class PostProcessingTaskTest {
         PostProcessingTask task = mock(PostProcessingTask.class);
 
         doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task).runLockingBackgroundTask(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task).applyPPToMapEntry(any(), any(), any(), any());
-        doCallRealMethod().when(task).getLockingKey();
 
         task.start(mockConsumer, mockConfiguration);
 
@@ -149,9 +129,6 @@ public class PostProcessingTaskTest {
         task.setTimeLapse(0);
 
         doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task).runLockingBackgroundTask(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task).applyPPToMapEntry(any(), any(), any(), any());
-        doCallRealMethod().when(task).getLockingKey();
 
         assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockConfiguration));
     }
@@ -163,13 +140,7 @@ public class PostProcessingTaskTest {
         PostProcessingTask task2 = mock(PostProcessingTask.class);
 
         doCallRealMethod().when(task1).start(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task1).runLockingBackgroundTask(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task1).applyPPToMapEntry(any(), any(), any(), any());
-        doCallRealMethod().when(task1).getLockingKey();
         doCallRealMethod().when(task2).start(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task2).runLockingBackgroundTask(mockConsumer, mockConfiguration);
-        doCallRealMethod().when(task2).applyPPToMapEntry(any(), any(), any(), any());
-        doCallRealMethod().when(task2).getLockingKey();
 
         Thread pp1 = new Thread(() -> task1.start(mockConsumer, mockConfiguration));
         Thread pp2 = new Thread(() -> task2.start(mockConsumer, mockConfiguration));
