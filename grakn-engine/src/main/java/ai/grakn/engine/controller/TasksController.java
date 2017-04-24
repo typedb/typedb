@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -169,7 +170,7 @@ public class TasksController {
         String intervalParam = request.queryParams(TASK_RUN_INTERVAL_PARAMETER);
 
         TaskSchedule schedule;
-        Json configuration;
+        TaskConfiguration configuration;
         try {
             // Get the schedule of the task
             Optional<Duration> optionalInterval = Optional.ofNullable(intervalParam).map(Long::valueOf).map(Duration::ofMillis);
@@ -179,7 +180,7 @@ public class TasksController {
                     .orElse(TaskSchedule.at(time));
 
             // Get the configuration of the task
-            configuration = request.body().isEmpty() ? Json.object() : Json.read(request.body());
+            configuration = TaskConfiguration.of(request.body().isEmpty() ? Json.object() : Json.read(request.body()));
         } catch (Exception e){
             throw new GraknEngineServerException(400, e);
         }
@@ -188,8 +189,8 @@ public class TasksController {
         Class<?> clazz = getClass(className);
 
         // Create and schedule the task
-        TaskState taskState = TaskState.of(clazz, createdBy, schedule, configuration);
-        manager.addLowPriorityTask(taskState);
+        TaskState taskState = TaskState.of(clazz, createdBy, schedule);
+        manager.addLowPriorityTask(taskState, configuration);
 
         // Configure the response
         response.type(APPLICATION_JSON.getMimeType());
@@ -245,7 +246,6 @@ public class TasksController {
                 .set("recurring", state.schedule().isRecurring())
                 .set("exception", state.exception())
                 .set("stackTrace", state.stackTrace())
-                .set("engineID", state.engineID() != null ? state.engineID().value() : null)
-                .set("configuration", state.configuration());
+                .set("engineID", state.engineID() != null ? state.engineID().value() : null);
     }
 }

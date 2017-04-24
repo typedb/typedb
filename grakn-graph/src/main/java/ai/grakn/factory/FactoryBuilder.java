@@ -114,6 +114,8 @@ class FactoryBuilder {
     /**
      * Clears all connections.
      */
+    //TODO Should this close each of the factories (and wait for all open transactions to be closed?)
+    //TODO Calling this from within the code causes a memory leak
     static void refresh(){
         openFactories.clear();
     }

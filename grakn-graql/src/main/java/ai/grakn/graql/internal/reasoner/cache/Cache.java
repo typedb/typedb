@@ -24,7 +24,6 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.internal.reasoner.iterator.LazyIterator;
-import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import javafx.util.Pair;
 
 import java.util.HashMap;
@@ -81,7 +80,9 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
     public abstract LazyIterator<Answer> recordRetrieveLazy(Q query, Stream<Answer> answers);
 
     public abstract T getAnswers(Q query);
+    public abstract Pair<T, Unifier> getAnswersWithUnifier(Q query);
     public abstract Stream<Answer> getAnswerStream(Q query);
+    public abstract Pair<Stream<Answer>, Unifier> getAnswerStreamWithUnifier(Q query);
     public abstract LazyIterator<Answer> getAnswerIterator(Q query);
 
     /**
@@ -117,18 +118,6 @@ public abstract class Cache<Q extends ReasonerQuery, T extends Iterable<Answer>>
      */
     public Map<Pair<VarName, Concept>, Set<Answer>> getInverseAnswerMap(Q query){
         return getInverseAnswerMap(query, query.getVarNames());
-    }
-
-    Unifier getRecordUnifier(Q toRecord){
-        Q equivalentQuery = contains(toRecord)? cache.get(toRecord).getKey() : null;
-        if (equivalentQuery != null) return toRecord.getUnifier(equivalentQuery);
-        else return new UnifierImpl();
-    }
-
-    Unifier getRetrieveUnifier(Q toRetrieve){
-        Q equivalentQuery = contains(toRetrieve)? cache.get( toRetrieve).getKey() : null;
-        if (equivalentQuery != null) return  equivalentQuery.getUnifier(toRetrieve);
-        else return new UnifierImpl();
     }
 
     /**

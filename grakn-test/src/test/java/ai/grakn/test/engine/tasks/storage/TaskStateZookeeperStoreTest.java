@@ -251,7 +251,7 @@ public class TaskStateZookeeperStoreTest {
     }
 
     public TaskState task(String creator){
-        return TaskState.of(ShortExecutionMockTask.class, creator, TaskSchedule.now(), null);
+        return TaskState.of(ShortExecutionMockTask.class, creator, TaskSchedule.now());
     }
 
     /**

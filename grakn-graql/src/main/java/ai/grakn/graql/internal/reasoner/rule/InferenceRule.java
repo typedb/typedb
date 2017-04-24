@@ -32,8 +32,10 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
@@ -68,12 +70,9 @@ public class InferenceRule {
         body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
 
-        //if head query is a relation query, require roles to be specified
-        if (head.getAtom().isRelation()){
-            Relation headAtom = (Relation) head.getAtom();
-            if (headAtom.getRoleVarTypeMap().keySet().size() < headAtom.getRelationPlayers().size()) {
-                throw new IllegalArgumentException(ErrorMessage.HEAD_ROLES_MISSING.getMessage(this.toString()));
-            }
+        //run time check for head atom validity
+        if (!getHead().getAtom().isAllowedToFormRuleHead()){
+            throw new IllegalArgumentException(ErrorMessage.DISALLOWED_ATOM_IN_RULE_HEAD.getMessage(getHead().getAtom(), this.toString()));
         }
     }
 
@@ -120,11 +119,15 @@ public class InferenceRule {
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
 
-    /**rule needs to be materialised if head atom requires materialisation or if its head contains only fresh variables
+    /**
+     * rule requires materialisation in the context of resolving parentatom
+     * if parent atom requires materialisation, head atom requires materialisation or if the head contains only fresh variables
+     *
      * @return true if the rule needs to be materialised
      */
-    public boolean requiresMaterialisation(){
-        return getHead().getAtom().requiresMaterialisation()
+    public boolean requiresMaterialisation(Atom parentAtom){
+        return parentAtom.requiresMaterialisation()
+            || getHead().getAtom().requiresMaterialisation()
             || hasDisconnectedHead();}
 
     /**
@@ -153,12 +156,18 @@ public class InferenceRule {
      */
     public  InferenceRule propagateConstraints(Atom parentAtom){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
-        Set<Predicate> predicates = parentAtom.getPredicates().stream()
-                .collect(toSet());
 
-        //propagate predicates
-        head.addAtomConstraints(predicates);
-        body.addAtomConstraints(predicates);
+        Set<IdPredicate> idPredicates = parentAtom.getIdPredicates();
+        body.addAtomConstraints(idPredicates);
+        head.addAtomConstraints(idPredicates);
+
+        //only transfer value predicates if head has a user specified value variable
+        Atom headAtom = head.getAtom();
+        if(headAtom.isResource() && ((Resource) headAtom).getMultiPredicate().isEmpty()){
+            Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates();
+            head.addAtomConstraints(valuePredicates);
+            body.addAtomConstraints(valuePredicates);
+        }
 
         Set<TypeAtom> types = parentAtom.getTypeConstraints().stream()
                 .collect(toSet());

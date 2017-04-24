@@ -224,87 +224,85 @@ input {
 </style>
 
 <script>
-import User from '../../js/User.js'
-import EngineClient from '../../js/EngineClient.js';
-
+import EngineClient from '../../js/EngineClient';
 
 export default {
-    name: "SignUpModal",
-    data() {
-        return {
-            credentials: {
-                name: undefined,
-                surname: undefined,
-                email: undefined
-            },
-            formSubmitted: false
-        }
-    },
+  name: 'SignUpModal',
+  data() {
+    return {
+      credentials: {
+        name: undefined,
+        surname: undefined,
+        email: undefined,
+      },
+      formSubmitted: false,
+    };
+  },
 
-    created() {},
+  created() {},
 
-    mounted: function() {
-        this.$nextTick(function() {
+  mounted() {
+    this.$nextTick(() => {
             // Get the modal
-            var modal = document.getElementById('myModal');
+      const modal = document.getElementById('myModal');
 
             // Get the button that opens the modal
-            var btn = document.getElementById("myBtn");
+      const btn = document.getElementById('myBtn');
 
             // Get the <span> element that closes the modal
-            var span = document.getElementsByClassName("close")[0];
+      const span = document.getElementsByClassName('close')[0];
 
             // When the user clicks the button, open the modal
-            btn.onclick = function() {
-                modal.style.display = "block";
-            }
+      btn.onclick = () => {
+        modal.style.display = 'block';
+      };
 
             // When the user clicks on <span> (x), close the modal
-            span.onclick = function() {
-                modal.style.display = "none";
-            }
+      span.onclick = () => {
+        modal.style.display = 'none';
+      };
 
             // When the user clicks anywhere outside of the modal, close it
-            window.onclick = function(event) {
-                if (event.target == modal) {
-                    modal.style.display = "none";
-                }
-            }
-        });
-    },
+      window.onclick = (event) => {
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      };
+    });
+  },
 
-    methods: {
+  methods: {
         /*
          * Listener methods on emit from GraqlEditor
          */
-        validateBeforeSubmit(e) {
-            this.$validator.validateAll();
-            if (!this.errors.any()) {
-                this.signUp();
-            }
-        },
-        signUp() {
-            this.formSubmitted = true
-            EngineClient.sendInvite(this.credentials, this.signupComplete);
-        },
-        signupComplete(response) {
-            var modal = document.getElementById('myModal');
-            modal.style.display = "none";
-            modal = document.getElementById('myModalSuccess');
-            modal.style.display = "block";
+    validateBeforeSubmit(e) {
+      this.$validator.validateAll();
+      if (!this.errors.any()) {
+        this.signUp();
+      }
+    },
+    signUp() {
+      this.formSubmitted = true;
+      EngineClient.sendInvite(this.credentials, this.signupComplete);
+    },
+    signupComplete(response) {
+      let modal = document.getElementById('myModal');
+      modal.style.display = 'none';
+      modal = document.getElementById('myModalSuccess');
+      modal.style.display = 'block';
             // When the user clicks anywhere outside of the modal, close it
-            window.onclick = function(event) {
-                if (event.target == modal) {
-                    modal.style.display = "none";
-                }
-            }
-            this.formSubmitted = false;
-            this.credentials.name = undefined;
-            this.credentials.surname = undefined;
-            this.credentials.email = undefined;
+      window.onclick = (event) => {
+        if (event.target === modal) {
+          modal.style.display = 'none';
         }
+      };
+      this.formSubmitted = false;
+      this.credentials.name = undefined;
+      this.credentials.surname = undefined;
+      this.credentials.email = undefined;
+    },
 
 
-    }
-}
+  },
+};
 </script>

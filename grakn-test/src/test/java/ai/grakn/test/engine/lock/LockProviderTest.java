@@ -50,7 +50,7 @@ public class LockProviderTest {
     public void whenGivenReentrantLock_ReturnsReentrantLock(){
         Lock lock = new NonReentrantLock();
 
-        LockProvider.add(LOCK_NAME, lock);
+        LockProvider.add(LOCK_NAME, () -> lock);
 
         assertThat(LockProvider.getLock(LOCK_NAME), equalTo(lock));
     }
@@ -62,20 +62,8 @@ public class LockProviderTest {
 
         Lock lock = new ZookeeperLock(zookeeperConnection, "/lock");
 
-        LockProvider.add(LOCK_NAME, lock);
+        LockProvider.add(LOCK_NAME, () -> lock);
 
         assertThat(LockProvider.getLock(LOCK_NAME), equalTo(lock));
-    }
-
-    @Test
-    public void whenGivenLockAfterInitialization_ThrowsRunttimeException(){
-        Lock lock1 = new NonReentrantLock();
-        Lock lock2 = new ZookeeperLock(mock(ZookeeperConnection.class), "/testlock");
-
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Lock class has already been initialised with another lock.");
-
-        LockProvider.add(LOCK_NAME, lock1);
-        LockProvider.add(LOCK_NAME, lock2);
     }
 }

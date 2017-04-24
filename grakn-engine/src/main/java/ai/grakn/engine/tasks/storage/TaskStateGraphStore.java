@@ -66,7 +66,6 @@ import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
 import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_TIME;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
-import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
 import static ai.grakn.engine.util.SystemOntologyElements.TASK_ID;
 import static ai.grakn.graql.Graql.var;
@@ -102,10 +101,6 @@ public class TaskStateGraphStore implements TaskStateStorage {
         if (schedule.interval().isPresent()) {
             Duration interval = schedule.interval().get();
             state = state.has(RECUR_INTERVAL, var().val(interval.getSeconds()));
-        }
-
-        if(task.configuration() != null) {
-            state = state.has(TASK_CONFIGURATION, var().val(task.configuration().toString()));
         }
 
         if(task.engineID() != null){
@@ -160,10 +155,6 @@ public class TaskStateGraphStore implements TaskStateStorage {
         if(task.checkpoint() != null) {
             resourcesToDettach.add(TASK_CHECKPOINT);
             resources = resources.has(TASK_CHECKPOINT, var().val(task.checkpoint()));
-        }
-        if(task.configuration() != null) {
-            resourcesToDettach.add(TASK_CONFIGURATION);            
-            resources = resources.has(TASK_CONFIGURATION, var().val(task.configuration().toString()));
         }
 
         Var finalResources = resources;

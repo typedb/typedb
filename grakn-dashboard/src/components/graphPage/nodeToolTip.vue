@@ -48,34 +48,34 @@ font {
 export default {
   name: 'NodeToolTip',
   props: ['showToolTip', 'mouseEvent', 'graphOffsetTop'],
-  data () {
-      return {
-          nodeType: '',
-          toolTipElement: undefined,
-        };
-    },
+  data() {
+    return {
+      nodeType: '',
+      toolTipElement: undefined,
+    };
+  },
   watch: {
-      showToolTip(newValue) {
-          if (newValue) {
-              const nodeId = this.mouseEvent.node;
-              const nodeDOMCoordinates = visualiser.network.canvasToDOM(visualiser.network.getPositions(nodeId)[nodeId]);
-              const nodeBoundingBox = visualiser.network.canvasToDOM({ x: 0, y: visualiser.network.getBoundingBox(nodeId).top });
+    showToolTip(newValue) {
+      if (newValue) {
+        const nodeId = this.mouseEvent.node;
+        const nodeDOMCoordinates = visualiser.network.canvasToDOM(visualiser.network.getPositions(nodeId)[nodeId]);
+        const nodeBoundingBox = visualiser.network.canvasToDOM({ x: 0, y: visualiser.network.getBoundingBox(nodeId).top });
 
-              const offsetX = $('#tool-tip').width() / 2;
-              const offsetY = $('#tool-tip').height() + 10;
+        const offsetX = $('#tool-tip').width() / 2;
+        const offsetY = $('#tool-tip').height() + 10;
 
-              this.toolTipElement.style.left = `${nodeDOMCoordinates.x - offsetX  }px`;
-              this.toolTipElement.style.top = `${nodeBoundingBox.y - offsetY }px`;
-              const nodeObj = visualiser.getNode(nodeId);
-              this.nodeType = (nodeObj.type !== '') ? nodeObj.type : nodeObj.baseType;
-            }
-        },
+        this.toolTipElement.style.left = `${nodeDOMCoordinates.x - offsetX}px`;
+        this.toolTipElement.style.top = `${nodeBoundingBox.y - offsetY}px`;
+        const nodeObj = visualiser.getNode(nodeId);
+        this.nodeType = (nodeObj.type !== '') ? nodeObj.type : nodeObj.baseType;
+      }
     },
-  mounted () {
-      this.$nextTick(function nextTickVisualiser() {
-        this.toolTipElement = document.getElementById('tool-tip');
-      });
-    },
+  },
+  mounted() {
+    this.$nextTick(function nextTickVisualiser() {
+      this.toolTipElement = document.getElementById('tool-tip');
+    });
+  },
   methods: {},
 };
 </script>

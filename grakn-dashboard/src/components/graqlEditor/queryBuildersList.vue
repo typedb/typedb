@@ -109,29 +109,29 @@ a {
 
 <script>
 export default {
-    data() {
-        return {
-            showList: false,
-            queryBuilderFunctions: [{
-                    label: 'Shortest Path',
-                    value: 'computePath'
-                },
-                {
-                    label: 'Explore relations',
-                    value: 'relationsBetweenNodes'
-                }
-            ],
-        }
-    },
+  data() {
+    return {
+      showList: false,
+      queryBuilderFunctions: [{
+        label: 'Shortest Path',
+        value: 'computePath',
+      },
+      {
+        label: 'Explore relations',
+        value: 'relationsBetweenNodes',
+      },
+      ],
+    };
+  },
 
-    created() {},
+  created() {},
 
-    mounted: function() {
-        this.$nextTick(function() {
+  mounted() {
+    this.$nextTick(() => {
             // code for previous attach() method.
-        });
-    },
+    });
+  },
 
-    methods: {}
-}
+  methods: {},
+};
 </script>

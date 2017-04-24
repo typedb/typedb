@@ -58,7 +58,7 @@ public abstract class BinaryBase extends Atom {
     }
 
     protected abstract VarName extractValueVariableName(VarAdmin var);
-    protected abstract boolean predicatesEquivalent(BinaryBase atom);
+    protected abstract boolean hasEquivalentPredicatesWith(BinaryBase atom);
 
     public VarName getValueVariable() {
         return valueVariable;
@@ -76,11 +76,6 @@ public abstract class BinaryBase extends Atom {
         return (ruleAtom instanceof BinaryBase)
                 && this.getType() != null
                 && this.getType().subTypes().contains(ruleAtom.getType());
-    }
-
-    @Override
-    public boolean requiresMaterialisation(){
-        return isUserDefinedName() && getType() != null && getType().isRelationType();
     }
 
     @Override
@@ -108,7 +103,7 @@ public abstract class BinaryBase extends Atom {
         if (obj == this) return true;
         BinaryBase a2 = (BinaryBase) obj;
         return Objects.equals(this.typeId, a2.getTypeId())
-                && predicatesEquivalent(a2);
+                && hasEquivalentPredicatesWith(a2);
     }
 
     /**

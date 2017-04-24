@@ -59,8 +59,6 @@ public class TaskStates extends Generator<TaskState> {
     public TaskState generate(SourceOfRandomness random, GenerationStatus status) {
         Class<? extends BackgroundTask> taskClass = random.choose(classes);
 
-        TaskId taskId = TaskId.generate();
-
         // TODO: Make this generate random task statuses
 
         String creator = gen().type(String.class).generate(random, status);
@@ -70,10 +68,7 @@ public class TaskStates extends Generator<TaskState> {
         // A bit in the past, because Instant is not monotonic
         TaskSchedule schedule = TaskSchedule.at(Instant.now().minusSeconds(60));
 
-        Json configuration = Json.object();
-        TaskState taskState = TaskState.of(taskClass, creator, schedule, configuration, taskId);
-        configuration.set("id", taskState.getId().getValue());
-        return taskState;
+        return TaskState.of(taskClass, creator, schedule);
     }
 
     public void configure(WithClass withClass) {

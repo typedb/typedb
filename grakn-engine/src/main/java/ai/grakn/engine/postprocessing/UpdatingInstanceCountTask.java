@@ -23,6 +23,7 @@ import ai.grakn.GraknTxType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
@@ -60,9 +61,9 @@ public class UpdatingInstanceCountTask extends LockingBackgroundTask {
     }
 
     @Override
-    protected boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
-        String keyspace = configuration.at(KEYSPACE).asString();
-        Json instancesToCount = configuration.at(COMMIT_LOG_COUNTING);
+    protected boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        String keyspace = configuration.json().at(KEYSPACE).asString();
+        Json instancesToCount = configuration.json().at(COMMIT_LOG_COUNTING);
 
         Map<TypeLabel, Long> instanceMap = instancesToCount
                 .asJsonList().stream()
@@ -72,7 +73,7 @@ public class UpdatingInstanceCountTask extends LockingBackgroundTask {
 
         updateCountsOnKeySpace(keyspace, instanceMap);
 
-        return false;
+        return true;
     }
 
     private void updateCountsOnKeySpace(String keyspace, Map<TypeLabel, Long> jobs){
@@ -83,7 +84,7 @@ public class UpdatingInstanceCountTask extends LockingBackgroundTask {
 
         while(notDone) {
             notDone = false;
-            try (GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE)) {
+            try (GraknGraph graknGraph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH)) {
                 graknGraph.admin().updateTypeShards(jobs);
                 graknGraph.admin().commitNoLogs();
             } catch (Throwable e) {
