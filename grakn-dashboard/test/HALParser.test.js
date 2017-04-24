@@ -59,6 +59,12 @@ test('Parse HAL response with embedded', () => {
   expect(collectedIds[35004512]).toBe(1);
 });
 
+test('Parse single object HAL response with reflexive relation', () => {
+  const responseObj = MockedResponses.HALParserTestResponse0;
+  const obj = HALParser.parseResponse(responseObj, true);
+  expect(obj.nodes.length).toBe(2);
+  expect(obj.edges.length).toBe(2);
+});
 
 test('Parse empty HAL response', () => {
   const responseObj = [];

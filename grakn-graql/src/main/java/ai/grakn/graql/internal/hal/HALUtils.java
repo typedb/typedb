@@ -132,8 +132,12 @@ public class HALUtils {
             if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
                 Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
                 if (atom.isRelation()) {
+                    boolean isItThere = matchQuery.admin().getPattern().getVars().iterator().next().getProperty(RelationProperty.class).isPresent();
+                    VarAdmin var = matchQuery.admin().getPattern().getVars().iterator().next();
                     VarAdmin varAdmin = atom.getPattern().asVar();
-                    roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
+                    if(isItThere && !var.isUserDefinedName())
+                        roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
+
                 }
             } else {
                 firstAnswer.getExplanation().getAnswers().forEach(answer -> {

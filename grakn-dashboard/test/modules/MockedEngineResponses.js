@@ -103,3 +103,57 @@ export const HALParserTestResponse1 = {
   _type: 'post',
   _id: '984997984',
 };
+
+export const HALParserTestResponseReflexive = {
+  _baseType: 'RELATION',
+  _links: {
+    explore: [
+      {
+        href: '/dashboard/explore/122884320?keyspace=yoshi&offsetEmbedded=0&limitEmbedded=5',
+      },
+    ],
+    self: {
+      href: '/graph/concept/122884320?keyspace=yoshi&offsetEmbedded=0&limitEmbedded=5',
+    },
+  },
+  _embedded: {
+    pobj: [
+      {
+        _direction: 'OUT',
+        _baseType: 'ENTITY',
+        _links: {
+          explore: [
+            {
+              href: '/dashboard/explore/24712?keyspace=yoshi&offsetEmbeddeåd=0&limitEmbedded=5',
+            },
+          ],
+          self: {
+            href: '/graph/concept/24712?keyspace=yoshi&offsetEmbedded=0&limitEmbedded=5',
+          },
+        },
+        _type: 'word',
+        _id: '24712',
+      },
+    ],
+    prep: [
+      {
+        _direction: 'OUT',
+        _baseType: 'ENTITY',
+        _links: {
+          explore: [
+            {
+              href: '/dashboard/explore/24712?keyspace=yoshi&offsetEmbedded=0&limitEmbedded=5',
+            },
+          ],
+          self: {
+            href: '/graph/concept/24712?keyspace=yoshi&offsetEmbedded=0&limitEmbedded=5',
+          },
+        },
+        _type: 'word',
+        _id: '24712',
+      },
+    ],
+  },
+  _type: 'pair',
+  _id: '122884320',
+};
