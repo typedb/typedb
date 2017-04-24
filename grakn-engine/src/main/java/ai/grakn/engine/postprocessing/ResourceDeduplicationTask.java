@@ -164,7 +164,7 @@ public class ResourceDeduplicationTask implements BackgroundTask {
             if (conceptIds.size() > 1) {
                 // TODO: what if we fail here due to some read-write conflict?
                 transact(Grakn.session(Grakn.DEFAULT_URI, keyspace),
-                         (graph) -> ConceptFixer.runResourceFix(graph, key, conceptIds),
+                         (graph) -> PostProcessingTask.runResourceFix(graph, key, conceptIds),
                          "Reducing resource duplicate set " + conceptIds);
                 emitter.emit(key, (long) (conceptIds.size() - 1));
             }
