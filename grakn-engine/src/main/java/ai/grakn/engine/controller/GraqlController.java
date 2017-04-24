@@ -271,7 +271,9 @@ public class GraqlController {
         return result;
     }
 
-    static String getAcceptType(Request request){
-        return request.headers("Accept").split(",")[0];
+    static String getAcceptType(Request request) {
+        // TODO - we are not handling multiple values here and we should!
+        String header = request.headers("Accept");
+        return header == null ? "" : request.headers("Accept").split(",")[0];
     }
 }

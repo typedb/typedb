@@ -19,6 +19,7 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
@@ -61,6 +62,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -520,8 +522,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
         predicates.addAll(getIdPredicates());
 
+        // the mapping function is declared separately to please the Eclipse compiler
+        Function<IdPredicate, Concept> f = p -> graph().getConcept(p.getPredicate());
+        
         return new QueryAnswer(predicates.stream()
-                .collect(Collectors.toMap(IdPredicate::getVarName, p -> graph().getConcept(p.getPredicate())))
+                .collect(Collectors.toMap(IdPredicate::getVarName, f))
         );
     }
 
