@@ -335,7 +335,7 @@ export default class Visualiser {
      * This can be called at any time *after* render().
      */
   addEdge(fromNode, toNode, label) {
-    if (this.nodeExists(fromNode) && this.nodeExists(toNode) && !this.alreadyConnected(fromNode, toNode)) {
+    if (this.nodeExists(fromNode) && this.nodeExists(toNode) && !this.alreadyConnected(fromNode, toNode, label)) {
       this.edges.add({
         from: fromNode,
         to: toNode,
@@ -529,13 +529,13 @@ export default class Visualiser {
     /**
      * Check if two nodes (a,b) are already connected by an edge.
      */
-  alreadyConnected(a, b) {
+  alreadyConnected(a, b, label) {
     if (!(this.nodes.get(a) && this.nodes.get(b))) {
       return false;
     }
 
     return _.contains(_.values(this.edges.get())
-            .map(x => Visualiser.matching(a, b, x.to, x.from)),
+            .map(x => (Visualiser.matching(a, b, x.to, x.from)&&label===x.label)),
             true);
   }
 

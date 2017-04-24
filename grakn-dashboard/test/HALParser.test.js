@@ -60,9 +60,9 @@ test('Parse HAL response with embedded', () => {
 });
 
 test('Parse single object HAL response with reflexive relation', () => {
-  const responseObj = MockedResponses.HALParserTestResponse0;
+  const responseObj = MockedResponses.HALParserTestResponseReflexive;
   const obj = HALParser.parseResponse(responseObj, true);
-  expect(obj.nodes.length).toBe(2);
+  expect(obj.nodes.length).toBe(3);
   expect(obj.edges.length).toBe(2);
 });
 

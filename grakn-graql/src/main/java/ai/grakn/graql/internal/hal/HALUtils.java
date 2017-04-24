@@ -130,26 +130,22 @@ public class HALUtils {
             return computeRoleTypesFromQueryNoReasoner(matchQuery);
         } else {
             if (firstExplanation.isRuleExplanation() || firstExplanation.isLookupExplanation()) {
-                Atom atom = ((ReasonerAtomicQuery) firstAnswer.getExplanation().getQuery()).getAtom();
-                if (atom.isRelation()) {
-                    boolean isItThere = matchQuery.admin().getPattern().getVars().iterator().next().getProperty(RelationProperty.class).isPresent();
-                    VarAdmin var = matchQuery.admin().getPattern().getVars().iterator().next();
-                    VarAdmin varAdmin = atom.getPattern().asVar();
-                    if(isItThere && !var.isUserDefinedName())
-                        roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
-
-                }
+                updateRoleTypesFromAnswer(roleTypes, firstAnswer);
             } else {
-                firstAnswer.getExplanation().getAnswers().forEach(answer -> {
-                    Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
-                    if (atom.isRelation()) {
-                        VarAdmin varAdmin = atom.getPattern().asVar();
-                        roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
-                    }
-                });
+                firstAnswer.getExplanation().getAnswers().forEach(answer -> updateRoleTypesFromAnswer(roleTypes, answer));
             }
-
             return roleTypes;
+        }
+    }
+
+    private static void updateRoleTypesFromAnswer(Map<VarAdmin, Pair<Map<VarName, String>, String>> roleTypes, Answer answer) {
+        Atom atom = ((ReasonerAtomicQuery) answer.getExplanation().getQuery()).getAtom();
+        if (atom.isRelation()) {
+            Optional<VarAdmin> var = atom.getPattern().getVars().stream().filter(x -> x.hasProperty(RelationProperty.class)).findFirst();
+            VarAdmin varAdmin = atom.getPattern().asVar();
+            if (var.isPresent() && !var.get().isUserDefinedName()) {
+                roleTypes.put(varAdmin, pairVarNamesRelationType(atom));
+            }
         }
     }
 
@@ -165,10 +161,10 @@ public class HALUtils {
                         }
                 );
                 String relationType = null;
-                if(var.getProperty(IsaProperty.class).isPresent()) {
+                if (var.getProperty(IsaProperty.class).isPresent()) {
                     Optional<TypeLabel> relOptional = var.getProperty(IsaProperty.class).get().getType().getTypeLabel();
                     relationType = (relOptional.isPresent()) ? relOptional.get().getValue() : "";
-                }else{
+                } else {
                     relationType = "";
                 }
 
@@ -184,8 +180,7 @@ public class HALUtils {
         // Put all the varNames in the map with EMPTY-ROLE role
         reasonerRel.getRolePlayers().forEach(varName -> varNamesToRole.put(varName, HAS_EMPTY_ROLE_EDGE));
         // Overrides the varNames that have roles in the previous map
-        
-        reasonerRel.getRoleVarTypeMap().entries().forEach(entry -> varNamesToRole.put(entry.getValue().getKey(), entry.getKey().getLabel().getValue()));
+        reasonerRel.getRoleVarTypeMap().entries().stream().filter(entry -> !Schema.MetaSchema.isMetaLabel(entry.getKey().getLabel())).forEach(entry -> varNamesToRole.put(entry.getValue().getKey(), entry.getKey().getLabel().getValue()));
 
         String relationType = (reasonerRel.getType() != null) ? reasonerRel.getType().getLabel().getValue() : "";
         return new Pair<>(varNamesToRole, relationType);
