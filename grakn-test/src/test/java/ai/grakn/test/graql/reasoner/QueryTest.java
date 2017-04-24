@@ -184,19 +184,37 @@ public class QueryTest {
         String patternString = "{$x has GRE $gre;$gre val > 1099;}";
         String patternString2 = "{$x has GRE $gre;$gre val < 1099;}";
         String patternString3 = "{$x has GRE $gre;$gre val = 1099;}";
-        String patternString4 = "{$x has GRE $gre;$gre val > $var;}";
+        String patternString4 = "{$x has GRE $gre;$gre val '1099';}";
+        String patternString5 = "{$x has GRE $gre;$gre val > $var;}";
 
         Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
         Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
         Conjunction<VarAdmin> pattern3 = conjunction(patternString3, graph);
         Conjunction<VarAdmin> pattern4 = conjunction(patternString4, graph);
+        Conjunction<VarAdmin> pattern5 = conjunction(patternString5, graph);
+
         ReasonerQueryImpl query = new ReasonerQueryImpl(pattern, graph);
         ReasonerQueryImpl query2 = new ReasonerQueryImpl(pattern2, graph);
         ReasonerQueryImpl query3 = new ReasonerQueryImpl(pattern3, graph);
         ReasonerQueryImpl query4 = new ReasonerQueryImpl(pattern4, graph);
+        ReasonerQueryImpl query5 = new ReasonerQueryImpl(pattern5, graph);
         assertNotEquals(query, query2);
         assertNotEquals(query2, query3);
-        assertNotEquals(query3, query4);
+        assertEquals(query3, query4);
+        assertNotEquals(query4, query5);
+    }
+
+    @Test //tests alpha-equivalence of queries with resources with multi predicate
+    public void testAlphaEquivalence_WithMultiPredicateResources(){
+        GraknGraph graph = snbGraph.graph();
+        String patternString = "{$x has age $a;$a val >23; $a val <27;}";
+        String patternString2 = "{$p has age $a;$a val >23;}";
+        String patternString3 = "{$a has age $p;$p val <27;$p val >23;}";
+        ReasonerQueryImpl query = new ReasonerQueryImpl(conjunction(patternString, graph), graph);
+        ReasonerQueryImpl query2 = new ReasonerQueryImpl(conjunction(patternString2, graph), graph);
+        ReasonerQueryImpl query3 = new ReasonerQueryImpl(conjunction(patternString3, graph), graph);
+        assertNotEquals(query, query2);
+        assertEquals(query, query3);
     }
 
     @Test //tests alpha-equivalence of queries with indirect types

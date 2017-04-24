@@ -21,9 +21,7 @@ package ai.grakn.engine.tasks;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.util.EngineID;
-import mjson.Json;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Instant;
 
@@ -82,27 +80,17 @@ public class TaskState implements Serializable {
      * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
      */
     private TaskCheckpoint taskCheckpoint;
-    /**
-     * Configuration passed to the task on startup, can contain data/location of data for task to process, etc.
-     */
-    private Json configuration;
 
-    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration) {
-        return of(taskClass, creator, schedule, configuration, TaskId.generate());
+    public static TaskState of(Class<?> taskClass, String creator, TaskSchedule schedule) {
+        return new TaskState(taskClass, creator, schedule, TaskId.generate());
     }
 
-    public static TaskState of(
-            Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
-        return new TaskState(taskClass, creator, schedule, configuration, id);
-    }
-
-    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, Json configuration, TaskId id) {
+    private TaskState(Class<?> taskClass, String creator, TaskSchedule schedule, TaskId id) {
         this.status = CREATED;
         this.statusChangeTime = now();
         this.taskClassName = taskClass != null ? taskClass.getName() : null;
         this.creator = creator;
         this.schedule = schedule;
-        this.configuration = configuration;
         this.taskId = id.getValue();
     }
 
@@ -117,7 +105,6 @@ public class TaskState implements Serializable {
         this.stackTrace = taskState.stackTrace;
         this.exception = taskState.exception;
         this.taskCheckpoint = taskState.taskCheckpoint;
-        this.configuration = taskState.configuration;
     }
 
     public TaskId getId() {
@@ -137,8 +124,6 @@ public class TaskState implements Serializable {
         this.statusChangeTime = now();
 
         // Clearing out any not relevant information
-        removeConfigUnlessRecurring();
-
         this.taskCheckpoint = null;
 
         return this;
@@ -148,17 +133,12 @@ public class TaskState implements Serializable {
         this.status = SCHEDULED;
         this.statusChangeTime = now();
 
-        removeConfigUnlessRecurring();
-
         return this;
     }
 
     public TaskState markStopped(){
         this.status = STOPPED;
         this.statusChangeTime = now();
-
-        // Clearing out any not relevant information
-        removeConfig();
 
         return this;
     }
@@ -223,20 +203,6 @@ public class TaskState implements Serializable {
 
     public TaskCheckpoint checkpoint() {
         return taskCheckpoint;
-    }
-
-    public @Nullable Json configuration() {
-        return configuration;
-    }
-
-    private void removeConfig(){
-        this.configuration = null;
-    }
-
-    private void removeConfigUnlessRecurring(){
-        if(!schedule.isRecurring()) {
-            removeConfig();
-        }
     }
 
     public TaskState copy() {

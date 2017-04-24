@@ -22,6 +22,7 @@ package ai.grakn.test.engine.tasks.manager.singlequeue;
 import ai.grakn.engine.TaskId;
 import ai.grakn.engine.tasks.ExternalOffsetStorage;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskManager;
 import ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner;
@@ -69,6 +70,7 @@ import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createRunningTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
@@ -83,7 +85,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -112,7 +113,7 @@ public class SingleQueueTaskRunnerTest {
     private SingleQueueTaskManager mockedTM;
     private ExternalOffsetStorage offsetStorage;
 
-    private MockGraknConsumer<TaskId, TaskState> lowPriorityConsumer;
+    private MockGraknConsumer<TaskState, TaskConfiguration> lowPriorityConsumer;
     private TopicPartition lowPTopicPartition;
 
     @Before
@@ -134,11 +135,11 @@ public class SingleQueueTaskRunnerTest {
         doAnswer(invocation -> {
             addTask(invocation.getArgument(0));
             return null;
-        }).when(mockedTM).addLowPriorityTask(Mockito.any());
+        }).when(mockedTM).addLowPriorityTask(Mockito.any(), Mockito.any());
     }
 
     public void setUpTasks(List<List<TaskState>> tasks) {
-        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF, () -> lowPriorityConsumer);
+        taskRunner = new SingleQueueTaskRunner(mockedTM, engineID, offsetStorage, TIME_UNTIL_BACKOFF, lowPriorityConsumer);
 
         for (List<TaskState> taskList : tasks) {
             lowPriorityConsumer.schedulePollTask(() -> taskList.forEach(this::addTask));
@@ -162,7 +163,7 @@ public class SingleQueueTaskRunnerTest {
 
     private void addTask(TaskState task) {
         Long offset = lowPriorityConsumer.endOffsets(ImmutableSet.of(lowPTopicPartition)).get(lowPTopicPartition);
-        lowPriorityConsumer.addRecord(new ConsumerRecord<>(lowPTopicPartition.topic(), lowPTopicPartition.partition(), offset, task.getId(), task.copy()));
+        lowPriorityConsumer.addRecord(new ConsumerRecord<>(lowPTopicPartition.topic(), lowPTopicPartition.partition(), offset, task.copy(), configuration(task)));
         lowPriorityConsumer.updateEndOffsets(ImmutableMap.of(lowPTopicPartition, offset + 1));
     }
 
@@ -185,17 +186,6 @@ public class SingleQueueTaskRunnerTest {
 
         completableTasks(tasks(tasks)).forEach(task ->
                 assertThat("Task " + task + " should have completed.", storage.getState(task).status(), is(COMPLETED))
-        );
-    }
-
-    @Property(trials=10)
-    public void afterRunning_AllNonFailingTasksHaveConfigurationRemoved(List<List<TaskState>> tasks) throws Exception {
-        setUpTasks(tasks);
-
-        taskRunner.run();
-
-        completableTasks(tasks(tasks)).forEach(task ->
-                assertThat("Task " + task + " should not have configuration.", storage.getState(task).configuration(), nullValue())
         );
     }
 

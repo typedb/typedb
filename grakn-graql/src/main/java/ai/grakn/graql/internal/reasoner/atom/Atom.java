@@ -34,16 +34,15 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-
 
 /**
  *
@@ -96,11 +95,14 @@ public abstract class Atom extends AtomBase {
      */
     public int resolutionPriority(){
         int priority = 0;
-        Set<IdPredicate> partialSubstitutions = getPartialSubstitutions();
-        if (!partialSubstitutions.isEmpty()){
-            priority += partialSubstitutions.size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-            priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
-        }
+        priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
+        priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
+        priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+        Set<VarName> otherVars = getParentQuery().getAtoms().stream()
+                .filter(a -> a != this)
+                .flatMap(at -> at.getVarNames().stream())
+                .collect(Collectors.toSet());
+        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
         return priority;
     }
 
@@ -150,6 +152,11 @@ public abstract class Atom extends AtomBase {
             atomRecursive |= presentInHypothesis.contains(rule);
         return atomRecursive;
     }
+
+    /**
+     * @return true if the atom can constitute a head of a rule
+     */
+    public boolean isAllowedToFormRuleHead(){ return false; }
 
     /**
      * @return true if the atom requires materialisation in order to be referenced
@@ -233,10 +240,11 @@ public abstract class Atom extends AtomBase {
     public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
 
+    //TODO move down to relation only
     /**
      * @return map of role type- (var name, var type) pairs
      */
-    public Map<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() { return new HashMap<>();}
+    public Multimap<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() { return ArrayListMultimap.create();}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible

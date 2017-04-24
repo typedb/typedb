@@ -27,8 +27,8 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -39,7 +39,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
 /**
  *
  * <p>
@@ -49,11 +48,39 @@ import java.util.stream.Collectors;
  * @author Kasper Piskorski
  *
  */
-public class Resource extends MultiPredicateBinary{
+public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     public Resource(VarAdmin pattern, ReasonerQuery par) { this(pattern, Collections.emptySet(), par);}
-    public Resource(VarAdmin pattern, Set<Predicate> p, ReasonerQuery par){ super(pattern, p, par);}
-    private Resource(Resource a) { super(a);}
+    public Resource(VarAdmin pattern, Set<ValuePredicate> p, ReasonerQuery par){ super(pattern, p, par);}
+    private Resource(Resource a) {
+        super(a);
+        Set<ValuePredicate> multiPredicate = getMultiPredicate();
+        a.getMultiPredicate().stream()
+                .map(pred -> (ValuePredicate) AtomicFactory.create(pred, getParentQuery()))
+                .forEach(multiPredicate::add);
+        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
+    }
+
+    @Override
+    public String toString(){
+        return getVarName() + " has " + (getMultiPredicate().isEmpty()? getValueVariable() :getMultiPredicate().toString());
+    }
+
+    @Override
+    protected boolean hasEquivalentPredicatesWith(BinaryBase at) {
+        if (!(at instanceof Resource)) return false;
+        Resource atom = (Resource) at;
+        if(this.getMultiPredicate().size() != atom.getMultiPredicate().size()) return false;
+        for (ValuePredicate predicate : getMultiPredicate()) {
+            Iterator<ValuePredicate> objIt = atom.getMultiPredicate().iterator();
+            boolean predicateHasEquivalent = false;
+            while (objIt.hasNext() && !predicateHasEquivalent) {
+                predicateHasEquivalent = predicate.isEquivalent(objIt.next());
+            }
+            if (!predicateHasEquivalent) return false;
+        }
+        return true;
+    }
 
     @Override
     protected boolean isRuleApplicable(InferenceRule child) {
@@ -62,17 +89,22 @@ public class Resource extends MultiPredicateBinary{
         Resource childAtom = (Resource) ruleAtom;
         if (childAtom.getMultiPredicate().isEmpty() || getMultiPredicate().isEmpty()) return true;
 
-        for (Predicate childPredicate : childAtom.getMultiPredicate()) {
-            Iterator<Predicate> parentIt = getMultiPredicate().iterator();
+        for (ValuePredicate childPredicate : childAtom.getMultiPredicate()) {
+            Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
             while (parentIt.hasNext() && !predicateCompatible) {
                 predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
             }
-            if (predicateCompatible) {
-                return true;
-            }
+            if (!predicateCompatible) return false;
         }
-        return false;
+        return true;
+    }
+
+    @Override
+    public Set<VarName> getVarNames() {
+        Set<VarName> vars = super.getVarNames();
+        getMultiPredicate().stream().flatMap(p -> p.getVarNames().stream()).forEach(vars::add);
+        return vars;
     }
 
     @Override
@@ -100,10 +132,24 @@ public class Resource extends MultiPredicateBinary{
 
     @Override
     public boolean isResource(){ return true;}
+
     @Override
     public boolean isSelectable(){ return true;}
+
     @Override
-    public boolean requiresMaterialisation(){ return true;}
+    public boolean isAllowedToFormRuleHead(){
+        if (getType() == null || getMultiPredicate().size() > 1) return false;
+        if (getMultiPredicate().isEmpty()) return true;
+
+        ValuePredicate predicate = getMultiPredicate().iterator().next();
+        return predicate.getPredicate().isSpecific();
+    }
+
+    @Override
+    public boolean requiresMaterialisation(){
+        //requires materialisation if value variable is user defined
+        return getMultiPredicate().isEmpty();
+    }
 
     @Override
     public int resolutionPriority(){
@@ -111,8 +157,16 @@ public class Resource extends MultiPredicateBinary{
         Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
 
         priority += ResolutionStrategy.IS_RESOURCE_ATOM;
-        priority += vps.stream().filter(ValuePredicateAdmin::isSpecific).count() * ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-        priority += vps.stream().filter(vp -> !vp.isSpecific()).count() * ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+
+        for(ValuePredicateAdmin vp : vps){
+            if (vp.isSpecific()){
+                priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+            } else if (vp.getInnerVar().isPresent()) {
+                priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+            } else {
+                priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+            }
+        }
         return priority;
     }
 
@@ -129,7 +183,7 @@ public class Resource extends MultiPredicateBinary{
     @Override
     public Set<ValuePredicate> getValuePredicates(){
         Set<ValuePredicate> valuePredicates = super.getValuePredicates();
-        getMultiPredicate().stream().map(p -> (ValuePredicate) p).forEach(valuePredicates::add);
+        getMultiPredicate().forEach(valuePredicates::add);
         return valuePredicates;
     }
 
