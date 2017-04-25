@@ -39,11 +39,13 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -79,6 +81,9 @@ public class AtomicQueryTest {
 
     @ClassRule
     public static final GraphContext ancestorGraph = GraphContext.preLoad("ancestor-friend-test.gql");
+
+    @ClassRule
+    public static final GraphContext unificationWithTypesSet = GraphContext.preLoad("unificationWithTypesTest.gql");
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -214,7 +219,80 @@ public class AtomicQueryTest {
         ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern, graph);
         Unifier unifier = childQuery.getUnifier(parentQuery);
         assertTrue(Sets.intersection(unifier.keySet(), Sets.newHashSet(VarName.of("x"), VarName.of("y"))).isEmpty());
+    }
 
+    @Ignore
+    @Test
+    public void testWhenUnifiyingBinaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
+        GraknGraph graph =  unificationWithTypesSet.graph();
+        String patternString = "{$x1 isa entity1;($x1, $x2) isa binary;}";
+        String patternString2 = "{$y1 isa entity1;($y1, $y2) isa binary;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern2, graph);
+        Unifier unifier = childQuery.getUnifier(parentQuery);
+        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+                VarName.of("y1"), VarName.of("x1"),
+                VarName.of("y2"), VarName.of("x2")
+        ));
+        assertTrue(unifier.containsAll(correctUnifier));
+    }
+
+    @Ignore
+    @Test
+    public void testWhenUnifiyingBinaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
+        GraknGraph graph =  unificationWithTypesSet.graph();
+        String patternString = "{$x1 isa entity1;$x2 isa entity2;($x1, $x2) isa binary;}";
+        String patternString2 = "{$y1 isa entity1;$y2 isa entity2;($y1, $y2) isa binary;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern2, graph);
+        Unifier unifier = childQuery.getUnifier(parentQuery);
+        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+                VarName.of("y1"), VarName.of("x1"),
+                VarName.of("y2"), VarName.of("x2")
+        ));
+        assertTrue(unifier.containsAll(correctUnifier));
+    }
+
+    @Ignore
+    @Test
+    public void testWhenUnifiyingTernaryRelationWithTypes__SomeVarsHaveTypes_UnifierMatchesTypes(){
+        GraknGraph graph =  unificationWithTypesSet.graph();
+        String patternString = "{$x1 isa entity3;$x3 isa entity5;($x1, $x2, $x3) isa ternary;}";
+        String patternString2 = "{$y1 isa entity3;$y3 isa entity5;($y1, $y2, $y3) isa ternary;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern2, graph);
+        Unifier unifier = childQuery.getUnifier(parentQuery);
+        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+                VarName.of("y1"), VarName.of("x1"),
+                VarName.of("y2"), VarName.of("x2"),
+                VarName.of("y3"), VarName.of("x3")
+        ));
+        assertTrue(unifier.containsAll(correctUnifier));
+    }
+
+    @Ignore
+    @Test
+    public void testWhenUnifiyingTernaryRelationWithTypes__AllVarsHaveTypes_UnifierMatchesTypes(){
+        GraknGraph graph =  unificationWithTypesSet.graph();
+        String patternString = "{$x1 isa entity3;$x2 isa entity4; $x3 isa entity5;($x1, $x2, $x3) isa ternary;}";
+        String patternString2 = "{$y1 isa entity3;$y2 isa entity4; $y3 isa entity5;($y1, $y2, $y3) isa ternary;}";
+        Conjunction<VarAdmin> pattern = conjunction(patternString, graph);
+        Conjunction<VarAdmin> pattern2 = conjunction(patternString2, graph);
+        ReasonerAtomicQuery parentQuery = new ReasonerAtomicQuery(pattern, graph);
+        ReasonerAtomicQuery childQuery = new ReasonerAtomicQuery(pattern2, graph);
+        Unifier unifier = childQuery.getUnifier(parentQuery);
+        Unifier correctUnifier = new UnifierImpl(ImmutableMap.of(
+                VarName.of("y1"), VarName.of("x1"),
+                VarName.of("y2"), VarName.of("x2"),
+                VarName.of("y3"), VarName.of("x3")
+        ));
+        assertTrue(unifier.containsAll(correctUnifier));
     }
 
     private Conjunction<VarAdmin> conjunction(PatternAdmin pattern){

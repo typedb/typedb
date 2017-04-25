@@ -6,11 +6,11 @@ role1 sub role;
 role2 sub role;
 role3 sub role;
 
-
 #Entities
 
 entity1 sub entity
-	plays role1;
+	plays role1
+	plays role2;
 
 entity2 sub entity
 	plays role1
@@ -22,36 +22,24 @@ entity3 sub entity
     plays role3;
 
 entity4 sub entity
+    plays role1
     plays role2
     plays role3;
 
 entity5 sub entity
-    plays role1;
+    plays role1
+    plays role2
+    plays role3;
 
 #Relations
-
-relation1 sub relation
-	relates role1
-	relates role2
-	relates role3;
-
-relation2 sub relation
-    relates role1
-    relates role2
-    relates role3;
 
 binary sub relation
     relates role1
     relates role2;
 
-#Rules
+ternary sub relation
+    relates role1
+    relates role2
+    relates role3;
 
-isa inference-rule
-	lhs {
-		(role1: $x, role2: $y) isa binary;
-		(role1: $y, role2: $z) isa binary;
-	}
-	rhs {
-		(role1:$x, role2:$y, role3: $z) isa relation1;
-	};
 
