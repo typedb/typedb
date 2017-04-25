@@ -103,6 +103,7 @@ public abstract class Atom extends AtomBase {
                 .flatMap(at -> at.getVarNames().stream())
                 .collect(Collectors.toSet());
         priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+        priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
         return priority;
     }
 

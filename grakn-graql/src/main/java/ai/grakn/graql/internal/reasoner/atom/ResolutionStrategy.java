@@ -50,6 +50,11 @@ public final class ResolutionStrategy {
     public static final int IS_TYPE_ATOM = 0;
 
     /**
+     * priority modifier if a given atom is recursive atom
+     */
+    public static final int RECURSIVE_ATOM = -10;
+
+    /**
      * priority modifier for guard (type atom) the atom has
      */
     public static final int GUARD = 3;
