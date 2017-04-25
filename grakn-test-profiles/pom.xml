@@ -14,7 +14,6 @@
     <packaging>pom</packaging>
 
     <properties>
-        <grakn.test-profile>tinker</grakn.test-profile>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
         <docker-tests>true</docker-tests>
     </properties>
@@ -61,6 +60,9 @@
     <profiles>
         <profile>
             <id>tinker</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
                 <grakn.test-profile>tinker</grakn.test-profile>
                 <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
