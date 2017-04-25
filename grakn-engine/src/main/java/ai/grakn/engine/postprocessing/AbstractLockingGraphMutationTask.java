@@ -16,10 +16,9 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.lock;
+package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 
@@ -37,7 +36,7 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, fppt
  */
-public abstract class LockingBackgroundTask implements BackgroundTask {
+public abstract class AbstractLockingGraphMutationTask extends AbstractGraphMutationTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
@@ -48,7 +47,7 @@ public abstract class LockingBackgroundTask implements BackgroundTask {
 
         // When you have the lock, run the job and then release the lock
         try {
-            return runLockingBackgroundTask(saveCheckpoint, configuration);
+            return super.start(saveCheckpoint, configuration);
         } finally {
             engineLock.unlock();
         }
@@ -59,10 +58,4 @@ public abstract class LockingBackgroundTask implements BackgroundTask {
      * @return The key used to acquire the lock needed before running this job
      */
     protected abstract String getLockingKey();
-
-    /**
-     *
-     * @return The actual job to run once the job is acquired
-     */
-    protected abstract boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
 }

@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.postprocessing.FixInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskSchedule;
@@ -106,7 +106,7 @@ public class CommitLogController {
         countingConfiguration.set(COMMIT_LOG_COUNTING, Json.read(req.body()).at(COMMIT_LOG_COUNTING));
 
         TaskState countingTask = TaskState.of(
-                UpdatingInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now());
+                FixInstanceCountTask.class, this.getClass().getName(), TaskSchedule.now());
 
 
         //TODO: Get rid of this update

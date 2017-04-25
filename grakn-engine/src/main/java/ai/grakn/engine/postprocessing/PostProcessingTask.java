@@ -19,14 +19,10 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.lock.LockingBackgroundTask;
-import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import java.util.Optional;
 import mjson.Json;
@@ -43,7 +39,6 @@ import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.time.Instant.now;
 import static java.util.stream.Collectors.toSet;
 
@@ -58,13 +53,12 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class PostProcessingTask extends LockingBackgroundTask {
+public class PostProcessingTask extends AbstractGraphMutationTask {
     public static final String LOCK_KEY = "post-processing-lock";
 
     private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
     private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
 
-    private static final long MAX_RETRY = 10;
     private long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
 
     //TODO MAJOR Make this distributed in distributed environment
@@ -89,97 +83,35 @@ public class PostProcessingTask extends LockingBackgroundTask {
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Post processing cannot be stopped while in progress");
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Post processing cannot be paused");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        return false;
-    }
-
-    @Override
-    protected String getLockingKey(){
-        return LOCK_KEY;
-    }
-
-    @Override
-    public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        String keyspace = configuration.json().at(KEYSPACE).asString();
-
-        applyPPToMapEntry(configuration, Schema.BaseType.CASTING.name(), keyspace, PostProcessingTask::runCastingFix);
-        applyPPToMapEntry(configuration, Schema.BaseType.RESOURCE.name(), keyspace, PostProcessingTask::runResourceFix);
+    public boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        applyPPToMapEntry(graph, configuration, Schema.BaseType.CASTING.name(), PostProcessingTask::runCastingFix);
+        applyPPToMapEntry(graph, configuration, Schema.BaseType.RESOURCE.name(), PostProcessingTask::runResourceFix);
 
         return false;
     }
 
-    private void applyPPToMapEntry(TaskConfiguration configuration, String type, String keyspace,
-                TriConsumer<GraknGraph, String, Set<ConceptId>> postProcessingMethod){
-
-        Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
-        Map<String, Json> conceptsByIndex = innerConfig.at(type).asJsonMap();
-
-        for(Map.Entry<String, Json> castingIndex:conceptsByIndex.entrySet()){
-            // Turn json
-            Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
-
-            runPostProcessingJob((graph) -> postProcessingMethod.accept(graph, castingIndex.getKey(), conceptIds),
-                    keyspace, castingIndex.getKey(), conceptIds);
-        }
-    }
 
     /**
      * Main method which attempts to run all post processing jobs.
      *
-     * @param postProcessor The post processing job.
+     * @param postProcessingMethod The post processing job.
      *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#runResourceFix(GraknGraph, String, Set)} or
      *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#runCastingFix(GraknGraph, String, Set)}.
      *                      This then returns a function which will complete the job after going through validation
-     * @param keyspace The keyspace to post process against.
-     * @param conceptIndex The unique index of the concept which must exist at the end
-     * @param conceptIds The conceptIds which effectively need to be merged.
+
      */
-    public void runPostProcessingJob(Consumer<GraknGraph> postProcessor,
-                                             String keyspace, String conceptIndex, Set<ConceptId> conceptIds){
-        boolean notDone = true;
-        int retry = 0;
+    private void applyPPToMapEntry(GraknGraph graph, TaskConfiguration configuration, String type,
+                                   TriConsumer<GraknGraph, String, Set<ConceptId>> postProcessingMethod){
+        Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
 
-        while (notDone) {
-            //Try to Fix the job
-            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE))  {
+        Map<String, Json> conceptsByIndex = innerConfig.at(type).asJsonMap();
+        for(Map.Entry<String, Json> castingIndex:conceptsByIndex.entrySet()){
+            // Turn json
+            Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
 
-                //Perform the fix
-                postProcessor.accept(graph);
-
-                //Check if the fix worked
-                validateMerged(graph, conceptIndex, conceptIds).
-                        ifPresent(message -> {
-                            throw new RuntimeException(message);
-                        });
-
-                //Commit the fix
-                graph.admin().commitNoLogs();
-
-                return; //If it can get here. All post processing has succeeded.
-
-            } catch (Throwable t) { //These exceptions need to become more specialised
-                LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage(t.getMessage()), t);
-            }
-
-            //Fixing the job has failed after several attempts
-            if (retry > MAX_RETRY) {
-                notDone = false;
-            }
-
-            retry = performRetry(retry);
+            postProcessingMethod.accept(graph, castingIndex.getKey(), conceptIds);
+            validateMerged(graph, castingIndex.getKey(), conceptIds);
         }
-
-        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(conceptIds));
     }
 
     public void setTimeLapse(long time){
@@ -219,26 +151,24 @@ public class PostProcessingTask extends LockingBackgroundTask {
         return Optional.empty();
     }
 
+    /**
+     * Run a a resource duplication merge on the provided concepts
+     * @param graph Graph on which to apply the fixes
+     * @param index The unique index of the concept which must exist at the end
+     * @param conceptIds The conceptIds which effectively need to be merged.
+     */
     static void runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         graph.admin().fixDuplicateResources(index, conceptIds);
     }
 
+
+    /**
+     * Run a casting duplication merge job on the provided concepts
+     * @param graph Graph on which to apply the fixes
+     * @param index The unique index of the concept which must exist at the end
+     * @param conceptIds The conceptIds which effectively need to be merged.
+     */
     static void runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         graph.admin().fixDuplicateCastings(index, conceptIds);
-    }
-
-    private int performRetry(int retry){
-        retry ++;
-        double seed = 1.0 + (Math.random() * 5.0);
-        double waitTime = (retry * 2.0)  + seed;
-        LOG.debug(ErrorMessage.BACK_OFF_RETRY.getMessage(waitTime));
-
-        try {
-            Thread.sleep((long) Math.ceil(waitTime * 1000));
-        } catch (InterruptedException e1) {
-            LOG.error("Exception",e1);
-        }
-
-        return retry;
     }
 }
