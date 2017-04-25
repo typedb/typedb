@@ -57,6 +57,7 @@ public abstract class Atom extends AtomBase {
 
     protected Type type = null;
     protected ConceptId typeId = null;
+    protected int priority = Integer.MAX_VALUE;
 
     protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
@@ -94,15 +95,17 @@ public abstract class Atom extends AtomBase {
      * @return measure of priority with which this atom should be resolved
      */
     public int resolutionPriority(){
-        int priority = 0;
-        priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-        priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
-        priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
-        Set<VarName> otherVars = getParentQuery().getAtoms().stream()
-                .filter(a -> a != this)
-                .flatMap(at -> at.getVarNames().stream())
-                .collect(Collectors.toSet());
-        priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+        if (priority == Integer.MAX_VALUE) {
+            priority = 0;
+            priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
+            priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
+            priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+            Set<VarName> otherVars = getParentQuery().getAtoms().stream()
+                    .filter(a -> a != this)
+                    .flatMap(at -> at.getVarNames().stream())
+                    .collect(Collectors.toSet());
+            priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+        }
         return priority;
     }
 
