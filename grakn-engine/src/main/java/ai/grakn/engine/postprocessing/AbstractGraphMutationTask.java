@@ -20,6 +20,7 @@ package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
+import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -31,6 +32,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
 import static ai.grakn.util.REST.Request.KEYSPACE;
 
 /**
@@ -47,15 +49,15 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 public abstract class AbstractGraphMutationTask implements BackgroundTask {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractGraphMutationTask.class);
-    private static final int MAX_RETRY = 10;
+    private static final int MAX_RETRY = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
 
     /**
-     * Implementation should mutate the given graph using the task configuration
+     * Implementation should mutate the given graph using the given task configuration
      *
      * @param graph Graph object on which to perform mutations
      * @return Implementation of the graph mutating code
      */
-    abstract boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
+    public abstract boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
 
     /**
      *  Template method calls the abstract method {@link #runGraphMutatingTask(GraknGraph, Consumer, TaskConfiguration)}
@@ -93,7 +95,7 @@ public abstract class AbstractGraphMutationTask implements BackgroundTask {
 
     @Override
     public void pause() {
-        throw new UnsupportedOperationException("Post processing cannot be paused");
+        throw new UnsupportedOperationException("Graph mutation task cannot be paused");
     }
 
     @Override
