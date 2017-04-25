@@ -157,7 +157,7 @@ public class PostProcessingTask extends AbstractGraphMutationTask {
      * @param index The unique index of the concept which must exist at the end
      * @param conceptIds The conceptIds which effectively need to be merged.
      */
-    static void runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+    public static void runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         graph.admin().fixDuplicateResources(index, conceptIds);
     }
 
@@ -168,7 +168,7 @@ public class PostProcessingTask extends AbstractGraphMutationTask {
      * @param index The unique index of the concept which must exist at the end
      * @param conceptIds The conceptIds which effectively need to be merged.
      */
-    static void runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+    public static void runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         graph.admin().fixDuplicateCastings(index, conceptIds);
     }
 }

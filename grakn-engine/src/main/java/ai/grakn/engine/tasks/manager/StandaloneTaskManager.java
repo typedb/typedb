@@ -24,7 +24,7 @@ import ai.grakn.engine.TaskId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.FixInstanceCountTask;
+import ai.grakn.engine.postprocessing.UpdateInstanceCountTask;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -91,7 +91,7 @@ public class StandaloneTaskManager implements TaskManager {
         Lock postProcessingLock = new NonReentrantLock();
         Lock countUpdateLock = new NonReentrantLock();
         LockProvider.add(PostProcessingTask.LOCK_KEY, () -> postProcessingLock);
-        LockProvider.add(FixInstanceCountTask.LOCK_KEY, () -> countUpdateLock);
+        LockProvider.add(UpdateInstanceCountTask.LOCK_KEY, () -> countUpdateLock);
     }
 
     @Override

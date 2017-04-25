@@ -43,7 +43,7 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
  *
  * @author fppt
  */
-public class FixInstanceCountTask extends AbstractLockingGraphMutationTask {
+public class UpdateInstanceCountTask extends AbstractLockingGraphMutationTask {
 
     public static final String LOCK_KEY = "updating-instance-count-lock";
 

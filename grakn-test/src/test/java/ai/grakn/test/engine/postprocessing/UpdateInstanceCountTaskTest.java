@@ -3,7 +3,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.postprocessing.FixInstanceCountTask;
+import ai.grakn.engine.postprocessing.UpdateInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -23,7 +23,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 
-public class FixInstanceCountTaskTest {
+public class UpdateInstanceCountTaskTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -51,7 +51,7 @@ public class FixInstanceCountTaskTest {
         );
 
         //Start up the Job
-        TaskState task = TaskState.of(FixInstanceCountTask.class, getClass().getName(), TaskSchedule.now());
+        TaskState task = TaskState.of(UpdateInstanceCountTask.class, getClass().getName(), TaskSchedule.now());
         engine.getTaskManager().addLowPriorityTask(task, TaskConfiguration.of(configuration));
 
         // Wait for task to complete

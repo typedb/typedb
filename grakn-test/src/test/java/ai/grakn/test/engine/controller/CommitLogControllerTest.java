@@ -30,7 +30,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.postprocessing.FixInstanceCountTask;
+import ai.grakn.engine.postprocessing.UpdateInstanceCountTask;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.SystemKeyspace;
@@ -177,7 +177,7 @@ public class CommitLogControllerTest {
 
         verify(manager, atLeastOnce()).addHighPriorityTask(
                 argThat(argument ->
-                                argument.taskClass().equals(FixInstanceCountTask.class)),
+                                argument.taskClass().equals(UpdateInstanceCountTask.class)),
                 argThat(argument ->
                                 argument.json().at(COMMIT_LOG_COUNTING).asJsonList().size() == 5)
         );
@@ -197,14 +197,14 @@ public class CommitLogControllerTest {
         try {
             verify(manager, atLeastOnce()).addHighPriorityTask(
                     argThat(argument ->
-                            argument.taskClass().equals(FixInstanceCountTask.class)),
+                            argument.taskClass().equals(UpdateInstanceCountTask.class)),
                     argThat(argument ->
                             argument.json().at(KEYSPACE).asString().equals(BOB) &&
                             argument.json().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
 
             verify(manager, atLeastOnce()).addHighPriorityTask(
                     argThat(argument ->
-                            argument.taskClass().equals(FixInstanceCountTask.class)),
+                            argument.taskClass().equals(UpdateInstanceCountTask.class)),
                     argThat(argument ->
                             argument.json().at(KEYSPACE).asString().equals(TIM) &&
                             argument.json().at(COMMIT_LOG_COUNTING).asJsonList().size() == 3));
