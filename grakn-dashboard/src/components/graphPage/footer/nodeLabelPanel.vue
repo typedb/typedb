@@ -136,52 +136,51 @@ import ColourPicker from './colourPicker.vue';
 
 
 export default {
-    name: 'NodeLabelPanel',
-    components:{
-      ColourPicker,
+  name: 'NodeLabelPanel',
+  components: {
+    ColourPicker,
+  },
+  data() {
+    return {
+      state: GraphPageState,
+      showNodeLabelPanel: false,
+      allNodeProps: [],
+      currentTypeProperties: {},
+      nodeType: undefined,
+      node: undefined,
+    };
+  },
+  created() {
+    this.state.eventHub.$on('show-label-panel', this.openNodeLabelPanel);
+  },
+  mounted() {
+    this.$nextTick(() => {
+
+    });
+  },
+  methods: {
+    configureNode(p) {
+      if (NodeSettings.getLabelProperties(this.nodeType).includes(p)) {
+        NodeSettings.removeTypeLabel(this.nodeType, p);
+      } else {
+        NodeSettings.addTypeLabel(this.nodeType, p);
+      }
+      this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
+      visualiser.setDisplayProperties(this.nodeType, this.currentTypeProperties);
     },
-    data() {
-        return {
-            state:GraphPageState,
-            showNodeLabelPanel:false,
-            allNodeProps: [],
-            currentTypeProperties: {},
-            nodeType: undefined,
-            node:undefined,
-            allNodeProps: [],
-        };
+
+    openNodeLabelPanel(allNodePropsParam, nodeTypeParam, nodeId) {
+      this.node = visualiser.getNode(nodeId);
+
+      this.allNodeProps = allNodePropsParam;
+
+      if ((this.node.type !== '')) this.allNodeProps.push('type');
+
+      this.nodeType = nodeTypeParam;
+      this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
+
+      this.showNodeLabelPanel = true;
     },
-    created() {
-        this.state.eventHub.$on('show-label-panel',this.openNodeLabelPanel);
-    },
-    mounted() {
-        this.$nextTick(function nextTickVisualiser() {
-
-        });
-    },
-    methods: {
-      configureNode(p) {
-          if (NodeSettings.getLabelProperties(this.nodeType).includes(p)){
-              NodeSettings.removeTypeLabel(this.nodeType, p);
-          } else {
-              NodeSettings.addTypeLabel(this.nodeType, p);
-          }
-          this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
-          visualiser.setDisplayProperties(this.nodeType, this.currentTypeProperties);
-      },
-
-      openNodeLabelPanel(allNodePropsParam,nodeTypeParam, nodeId){
-        this.node = visualiser.getNode(nodeId);
-
-        this.allNodeProps=allNodePropsParam;
-
-        if((this.node.type != "")) this.allNodeProps.push('type');
-
-        this.nodeType=nodeTypeParam;
-        this.currentTypeProperties = NodeSettings.getLabelProperties(this.nodeType);
-
-        this.showNodeLabelPanel=true;
-      },
-    }
+  },
 };
 </script>

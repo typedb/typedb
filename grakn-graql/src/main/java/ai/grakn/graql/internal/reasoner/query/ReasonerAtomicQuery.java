@@ -177,20 +177,23 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
     }
 
-    public Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
+    private Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
-        return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(cache), new UnifierImpl());
+        return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
+    }
+
+    private Stream<Answer> DBlookup() {
+        AnswerExplanation exp = new LookupExplanation(this);
+        return getMatchQuery().admin().streamWithVarNames()
+                .map(QueryAnswer::new)
+                .map(a -> a.explain(exp));
     }
 
     /**
      * resolve the query by performing a db lookup with subsequent cache update
      */
     private Stream<Answer> DBlookup(Cache<ReasonerAtomicQuery, ?> cache) {
-        AnswerExplanation exp = new LookupExplanation(this);
-        Stream<Answer> dbStream = getMatchQuery().admin().streamWithVarNames()
-                .map(QueryAnswer::new)
-                .map(a -> a.explain(exp));
-        return cache.record(this, dbStream);
+        return cache.record(this, DBlookup());
     }
 
     /**
@@ -461,6 +464,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             this.cache = qc;
 
             boolean hasFullSubstitution = hasFullSubstitution();
+
             Pair<Stream<Answer>, Unifier> streamUnifierPair = lookupWithUnifier(cache);
             this.queryIterator = streamUnifierPair.getKey().iterator();
             this.cacheUnifier = streamUnifierPair.getValue().invert();

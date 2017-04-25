@@ -63,6 +63,7 @@
             <id>tinker</id>
             <properties>
                 <grakn.test-profile>tinker</grakn.test-profile>
+                <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
             </properties>
         </profile>
 

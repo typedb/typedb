@@ -34,7 +34,6 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import java.util.ArrayList;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import spark.Request;
@@ -44,11 +43,12 @@ import spark.Service;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import java.util.ArrayList;
 import java.util.Optional;
 
-import static ai.grakn.GraknTxType.READ;
-import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
+import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
+import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
 import static ai.grakn.util.ErrorMessage.INVALID_CONTENT_TYPE;
 import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
@@ -57,9 +57,9 @@ import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
-import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
 import static java.lang.Boolean.parseBoolean;
@@ -102,16 +102,19 @@ public class GraqlController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        Json responseBody;
 
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
+        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
             if(!readOnly(query)){
                 throw new GraknEngineServerException(405, "Only \"read-only\" queries are allowed.");
             }
-
-            return respond(request, query, response);
+            //Do not return directly inside the try block otherwise open transactions will not autocommit and close properly.
+            responseBody = respond(request, query, response);
         }
+
+        return responseBody;
     }
 
     /**
@@ -268,7 +271,9 @@ public class GraqlController {
         return result;
     }
 
-    static String getAcceptType(Request request){
-        return request.headers("Accept").split(",")[0];
+    static String getAcceptType(Request request) {
+        // TODO - we are not handling multiple values here and we should!
+        String header = request.headers("Accept");
+        return header == null ? "" : request.headers("Accept").split(",")[0];
     }
 }

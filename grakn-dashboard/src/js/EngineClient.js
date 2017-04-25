@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+/* @flow */
+
 import User from './User';
 
 /*
@@ -29,7 +31,7 @@ export default {
      *  - cache
      * @param requestData
      */
-  request(requestData) {
+  request(requestData:Object) {
     return new Promise((resolve, reject) => {
       try {
         const req = new XMLHttpRequest();
@@ -57,7 +59,7 @@ export default {
     });
   },
 
-  setHeaders(xhr, requestData) {
+  setHeaders(xhr:Object, requestData:Object) {
     const token = localStorage.getItem('id_token');
     if (token != null) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
@@ -66,7 +68,7 @@ export default {
     xhr.setRequestHeader('Accept', requestData.accepts || 'application/hal+json');
   },
 
-  sendInvite(credentials, callbackFn) {
+  sendInvite(credentials:Object, callbackFn:()=>mixed) {
     $.ajax({
       type: 'POST',
       contentType: 'application/json; charset=utf-8',
@@ -89,7 +91,7 @@ export default {
     });
   },
 
-  newSession(creds) {
+  newSession(creds:Object) {
     return this.request({
       url: '/auth/session/',
       data: JSON.stringify({
@@ -112,7 +114,7 @@ export default {
             /**
              * Send graql shell command to engine. Returns a string representing shell output.
              */
-  graqlShell(query) {
+  graqlShell(query:string) {
     return this.request({
       url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}`,
       contentType: 'application/text',
@@ -122,7 +124,7 @@ export default {
             /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
-  graqlHAL(query) {
+  graqlHAL(query:string) {
       // In match queries we are also attaching a limit for the embedded objects of the resulting nodes, this is not the query limit.
     return this.request({
       url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=${User.getReasonerStatus()}&materialise=${User.getMaterialiseStatus()}&limitEmbedded=${User.getQueryLimit()}`,
@@ -131,7 +133,7 @@ export default {
             /**
              * Send graql query to Engine, returns an array of HAL objects.
              */
-  graqlAnalytics(query) {
+  graqlAnalytics(query:string) {
     return this.request({
       url: `/graph/graql?keyspace=${User.getCurrentKeySpace()}&query=${encodeURIComponent(query)}&infer=false&materialise=false`,
       accepts: 'application/text',
@@ -154,7 +156,7 @@ export default {
     });
   },
 
-  getConceptTypes(id) {
+  getConceptTypes(id:string) {
     return this.request({
       url: `/dashboard/types/${id}?keyspace=${User.getCurrentKeySpace()}&limitEmbedded=${User.getQueryLimit()}`,
     });
@@ -169,7 +171,7 @@ export default {
     });
   },
 
-  stopTask(uuid) {
+  stopTask(uuid:string) {
     return this.request({
       url: `/tasks/${uuid}/stop`,
       requestType: 'PUT',
