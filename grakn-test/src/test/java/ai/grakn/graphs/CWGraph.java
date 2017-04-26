@@ -36,11 +36,7 @@ public class CWGraph extends TestGraph {
 
     private static EntityType person, criminal, weapon, rocket, missile, country;
     
-    private static ResourceType<String> alignment;
-
-    private static ResourceType<String> propulsion;
-
-    private static ResourceType<String> nationality;
+    private static ResourceType<String> alignment, propulsion, nationality;
 
     private static RelationType isEnemyOf, isPaidBy, owns, transaction;
     
@@ -59,66 +55,73 @@ public class CWGraph extends TestGraph {
     protected void buildOntology(GraknGraph graph) {
         key = graph.putResourceType("name", ResourceType.DataType.STRING);
 
+        //Resources
         nationality = graph.putResourceType("nationality", ResourceType.DataType.STRING);
         propulsion = graph.putResourceType("propulsion", ResourceType.DataType.STRING);
         alignment = graph.putResourceType("alignment", ResourceType.DataType.STRING);
 
-        enemySource = graph.putRoleType("enemy-source");
-        enemyTarget = graph.putRoleType("enemy-target");
-        isEnemyOf = graph.putRelationType("is-enemy-of")
-                .relates(enemySource).relates(enemyTarget);
-
-        //owns
+        //Roles
         owner = graph.putRoleType("item-owner");
         ownedItem = graph.putRoleType("owned-item");
-        owns = graph.putRelationType("owns")
-                .relates(owner).relates(ownedItem);
-
-        //transaction
         seller = graph.putRoleType("seller");
         buyer = graph.putRoleType("buyer");
-        transactionItem = graph.putRoleType("transaction-item");
-        transaction = graph.putRelationType("transaction")
-                .relates(seller).relates(buyer).relates(transactionItem);
-
-        //isPaidBy
         payee = graph.putRoleType("payee");
         payer = graph.putRoleType("payer");
-        isPaidBy = graph.putRelationType("is-paid-by")
-                .relates(payee).relates(payer);
+        enemySource = graph.putRoleType("enemy-source");
+        enemyTarget = graph.putRoleType("enemy-target");
+        transactionItem = graph.putRoleType("transaction-item");
 
+        //Entitites
         person = graph.putEntityType("person")
                 .plays(seller)
-                .plays(payee);
-        person.resource(key);
-        person.resource(nationality);
+                .plays(payee)
+                .resource(key)
+                .resource(nationality);
 
         criminal = graph.putEntityType("criminal");
 
         weapon = graph.putEntityType("weapon")
                 .plays(transactionItem)
-                .plays(ownedItem);
-        weapon.resource(key);
+                .plays(ownedItem)
+                .resource(key);
 
         rocket = graph.putEntityType("rocket")
                 .plays(transactionItem)
-                .plays(ownedItem);
-        rocket.resource(key);
-        rocket.resource(propulsion);
+                .plays(ownedItem)
+                .resource(key)
+                .resource(propulsion);
 
         missile = graph.putEntityType("missile")
                 .superType(weapon)
-                .plays(transactionItem);
-        missile.resource(key);
+                .plays(transactionItem)
+                .resource(key);
 
         country = graph.putEntityType("country")
                 .plays(buyer)
                 .plays(owner)
                 .plays(enemyTarget)
                 .plays(payer)
-                .plays(enemySource);
-        country.resource(key);
-        country.resource(alignment);
+                .plays(enemySource)
+                .resource(key)
+                .resource(alignment);
+
+        //Relations
+        owns = graph.putRelationType("owns")
+                .relates(owner)
+                .relates(ownedItem);
+
+        isEnemyOf = graph.putRelationType("is-enemy-of")
+                .relates(enemySource)
+                .relates(enemyTarget);
+
+        transaction = graph.putRelationType("transaction")
+                .relates(seller)
+                .relates(buyer)
+                .relates(transactionItem);
+
+        isPaidBy = graph.putRelationType("is-paid-by")
+                .relates(payee)
+                .relates(payer);
     }
 
     @Override
