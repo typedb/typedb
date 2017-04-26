@@ -440,6 +440,7 @@ public class Utility {
      * @return true if child is a subtype of parent
      */
     public static boolean checkTypesCompatible(Type parent, Type child) {
+        if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
         Type superType = child;
         while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
             if (superType.equals(parent)) return true;

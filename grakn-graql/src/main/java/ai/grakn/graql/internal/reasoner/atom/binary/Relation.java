@@ -232,6 +232,11 @@ public class Relation extends TypeAtom {
     }
 
     @Override
+    public boolean requiresMaterialisation() {
+        return isUserDefinedName();
+    }
+
+    @Override
     public boolean isAllowedToFormRuleHead(){
         //can form a rule head if specified type and all relation players have a specified/unambiguously inferrable role type
         return super.isAllowedToFormRuleHead()
