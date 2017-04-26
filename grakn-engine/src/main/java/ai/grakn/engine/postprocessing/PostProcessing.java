@@ -131,7 +131,7 @@ public class PostProcessing {
     }
 
     private void dumpStats(String keyspace, String type, Set<ConceptId> concepts) {
-        LOG.trace("Keyspace: " + keyspace + "  - Type: " + type + "  - Quantity: " + concepts.size());
+        LOG.debug("Keyspace: " + keyspace + "  - Type: " + type + "  - Quantity: " + concepts.size());
     }
 
     /**
