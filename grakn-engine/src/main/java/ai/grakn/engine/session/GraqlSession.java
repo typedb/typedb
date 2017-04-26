@@ -380,7 +380,7 @@ class GraqlSession {
                 return Printers.hal();
             case "graql":
             default:
-                return Printers.graql(resources);
+                return Printers.graql(true, resources);
         }
     }
 }

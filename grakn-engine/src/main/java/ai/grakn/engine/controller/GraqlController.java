@@ -202,7 +202,7 @@ public class GraqlController {
 
         switch (acceptType){
             case APPLICATION_TEXT:
-                body.set(RESPONSE, formatAsGraql(Printers.graql(), query));
+                body.set(RESPONSE, formatAsGraql(Printers.graql(false), query));
                 break;
             case APPLICATION_JSON_GRAQL:
                 body.set(RESPONSE, Json.read(formatAsGraql(Printers.json(), query)));
@@ -260,15 +260,7 @@ public class GraqlController {
      * @return Graql representation
      */
     private String formatAsGraql(Printer printer, Query<?> query) {
-        //TODO Make the Graql printer take in a "should colorize" argument
-        //TODO Frontend does not need to unescape
-
-        String result = printer.graqlString( query.execute());
-
-        // unescape result
-        result = result.replaceAll("\u001B\\[\\d+m", "");
-
-        return result;
+        return printer.graqlString( query.execute());
     }
 
     static String getAcceptType(Request request) {
