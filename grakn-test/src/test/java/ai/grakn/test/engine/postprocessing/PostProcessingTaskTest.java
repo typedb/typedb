@@ -18,35 +18,32 @@
 
 package ai.grakn.test.engine.postprocessing;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
-import ai.grakn.engine.lock.LockProvider;
-import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
-import java.util.concurrent.locks.Lock;
 import mjson.Json;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import org.mockito.Mockito;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PostProcessingTaskTest {
 
@@ -58,105 +55,88 @@ public class PostProcessingTaskTest {
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
-    private PostProcessing mockPostProcessing;
-
-    @BeforeClass
-    public static void mockEngineCache(){
-        Lock lock = new NonReentrantLock();
-        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> lock);
-    }
-
-    @AfterClass
-    public static void clearEngineCache(){
-        LockProvider.clear();
-    }
+    private GraknGraph mockGraph;
 
     @Before
     public void mockPostProcessing(){
-        mockPostProcessing = mock(PostProcessing.class);
         mockConsumer = mock(Consumer.class);
-
+        mockGraph = mock(GraknGraph.class);
+        when(mockGraph.admin()).thenReturn(mock(GraknAdmin.class));
         mockCastingIndex = UUID.randomUUID().toString();
         mockResourceIndex = UUID.randomUUID().toString();
         mockCastingSet = Sets.newHashSet();
         mockResourceSet = Sets.newHashSet();
-        mockConfiguration = TaskConfiguration.of(
-                Json.object(
-                        KEYSPACE, TEST_KEYSPACE,
-                    REST.Request.COMMIT_LOG_FIXING, Json.object(
+        mockConfiguration = mock(TaskConfiguration.class);
+        when(mockConfiguration.json()).thenReturn(Json.object(
+                KEYSPACE, TEST_KEYSPACE,
+                REST.Request.COMMIT_LOG_FIXING, Json.object(
                         Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
                         Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
-                    ))
-        );
-
-        Mockito.reset(mockPostProcessing);
+                )));
     }
 
     @Test
     public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingRunNotCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
+        PostProcessingTask task = new PostProcessingTask();
 
+        task.setTimeLapse(Long.MAX_VALUE);
         task.start(mockConsumer, mockConfiguration);
 
-        verify(mockPostProcessing, never())
-                .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
+        verify(mockConfiguration, never()).json();
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndEnoughTimeElapsed_PostProcessingRunCalled(){
+        PostProcessingTask task = new PostProcessingTask();
+
+        task.setTimeLapse(0);
+        task.start(mockConsumer, mockConfiguration);
+
+        verify(mockConfiguration, times(3)).json();
     }
 
     @Test
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+        PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration);
+        task.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration);
 
-        verify(mockPostProcessing, times(1))
-                .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
+        verify(mockGraph.admin(), times(1)).fixDuplicateCastings(eq(mockCastingIndex), eq(mockCastingSet));
     }
 
     @Test
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+        PostProcessingTask task = new PostProcessingTask();
 
-        task.start(mockConsumer, mockConfiguration);
+        task.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration);
 
-        verify(mockPostProcessing, times(1))
-                .performResourceFix(TEST_KEYSPACE, mockResourceIndex, mockResourceSet);
+        verify(mockGraph.admin(), times(1)).fixDuplicateResources(eq(mockResourceIndex), eq(mockResourceSet));
     }
 
     @Test
     public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingStartReturnsTrue(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
+        PostProcessingTask task = new PostProcessingTask();
+        task.setTimeLapse(Long.MAX_VALUE);
 
         assertTrue("Task " + task + " ran when it should not have", task.start(mockConsumer, mockConfiguration));
     }
 
     @Test
     public void whenPPTaskStartCalledAndPostProcessingRuns_PostProcessingStartReturnsFalse(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
+        PostProcessingTask task = new PostProcessingTask();
+        task.setTimeLapse(0);
 
         assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockConfiguration));
     }
 
     @Test
-    public void whenPPTaskStopCalled_PostProcessingStopIsCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 1000);
-
-        task.stop();
-
-        verify(mockPostProcessing, times(1)).stop();
-    }
-
-    @Test
     public void whenTwoPPTasksStartCalledInDifferentThreads_PostProcessingRunsTwice() throws InterruptedException {
         // Add a bunch of jobs to the cache
-        PostProcessingTask task1 = new PostProcessingTask(mockPostProcessing, 0);
-        PostProcessingTask task2 = new PostProcessingTask(mockPostProcessing, 0);
+        PostProcessingTask task1 = new PostProcessingTask();
+        PostProcessingTask task2 = new PostProcessingTask();
 
-        Thread pp1 = new Thread(() -> {
-            task1.start(mockConsumer, mockConfiguration);
-        });
-        Thread pp2 = new Thread(() -> {
-            task2.start(mockConsumer, mockConfiguration);
-        });
+        Thread pp1 = new Thread(() -> task1.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration));
+        Thread pp2 = new Thread(() -> task2.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration));
 
         pp1.start();
         pp2.start();
@@ -164,7 +144,8 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockPostProcessing, times(2))
-                .performCastingFix(TEST_KEYSPACE, mockCastingIndex, mockCastingSet);
+        verify(mockGraph.admin(), times(2)).fixDuplicateResources(eq(mockResourceIndex), eq(mockResourceSet));
+
+        verify(mockGraph.admin(), times(2)).fixDuplicateCastings(eq(mockCastingIndex), eq(mockCastingSet));
     }
 }

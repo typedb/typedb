@@ -19,29 +19,17 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
-import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.BackgroundTask;
+import ai.grakn.engine.postprocessing.AbstractGraphMutationTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.GraknEngineConfig.LOADER_REPEAT_COMMITS;
-import static ai.grakn.util.ErrorMessage.FAILED_VALIDATION;
 import static ai.grakn.util.ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
 import static java.util.stream.Collectors.toList;
 
@@ -53,45 +41,18 @@ import static java.util.stream.Collectors.toList;
  *
  * @author Alexandra Orth
  */
-public class LoaderTask implements BackgroundTask {
+public class LoaderTask extends AbstractGraphMutationTask {
 
-    private static final Logger LOG = LoggerFactory.getLogger(LoaderTask.class);
-    private static final int repeatCommits = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        attemptInsertions(
-                getKeyspace(configuration),
-                getInserts(configuration));
-        return true;
+    public boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        return insertQueriesInOneTransaction(graph, getInserts(configuration));
     }
 
     @Override
     public boolean stop() {
         return false;
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Loader task cannot be paused");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException("Loader task cannot be resumed");
-    }
-
-    private void attemptInsertions(String keyspace, Collection<InsertQuery> inserts) {
-        try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH)) {
-            for (int i = 0; i < repeatCommits; i++) {
-                if(insertQueriesInOneTransaction(graph, inserts)){
-                    return;
-                }
-            }
-
-            throwException("Could not insert");
-        }
     }
 
     /**
@@ -101,57 +62,14 @@ public class LoaderTask implements BackgroundTask {
      * @return true if the data was inserted, false otherwise
      */
     private boolean insertQueriesInOneTransaction(GraknGraph graph, Collection<InsertQuery> inserts) {
+        graph.showImplicitConcepts(true);
 
-        try {
-            graph.showImplicitConcepts(true);
+        inserts.forEach(q -> q.withGraph(graph).execute());
 
-            inserts.forEach(q -> q.withGraph(graph).execute());
-
-            // commit the transaction
-            //TODO This commit uses the rest API, it shouldn't
-            graph.commit();
-        } catch (GraknValidationException e) {
-            //If it's a validation exception there is no point in re-trying
-            throwException(FAILED_VALIDATION.getMessage(e.getMessage()), inserts);
-        } catch (IllegalArgumentException e){
-            throwException(ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()), inserts);
-        } catch (Throwable throwable){
-            handleError(throwable, 1);
-            return false;
-        }
+        //TODO This commit uses the rest API, it shouldn't
+        graph.commit();
 
         return true;
-    }
-
-    /**
-     * Throw a RuntimeException with the given message
-     * @param message cause of the error
-     */
-    private void throwException(String message){
-        throwException(message, Collections.emptyList());
-    }
-
-    /**
-     * Throw a RuntimeException with the given information
-     * @param message cause of the error
-     * @param inserts insert queries that caused the error
-     */
-    private void throwException(String message, Collection<InsertQuery> inserts){
-        throw new RuntimeException(message + inserts);
-    }
-
-    /**
-     * Log the exception and sleep
-     * @param e exception to log
-     * @param i amount of time to sleep
-     */
-    private void handleError(Throwable e, long i) {
-        LOG.error("Caught exception ", e);
-        try {
-            Thread.sleep((i + 2) * 1000);
-        } catch (InterruptedException e1) {
-            LOG.error("Caught exception ", e1);
-        }
     }
 
     /**
@@ -161,28 +79,13 @@ public class LoaderTask implements BackgroundTask {
      */
     private Collection<InsertQuery> getInserts(TaskConfiguration configuration){
         if(configuration.json().has(TASK_LOADER_INSERTS)){
-            List<String> inserts = new ArrayList<>();
-            configuration.json().at(TASK_LOADER_INSERTS).asJsonList().forEach(i -> inserts.add(i.asString()));
-
-            return inserts.stream()
+            return configuration.json().at(TASK_LOADER_INSERTS).asJsonList()
+                    .stream()
+                    .map(j -> j.asString())
                     .map(builder::<InsertQuery>parse)
                     .collect(toList());
         }
 
         throw new IllegalArgumentException(ILLEGAL_ARGUMENT_EXCEPTION.getMessage("No inserts", configuration));
-    }
-
-    /**
-     * Extract the keyspace from a configuration object
-     * @param configuration JSONObject containing configuration
-     * @return keyspace from the configuration
-     */
-    private String getKeyspace(TaskConfiguration configuration){
-        if(configuration.json().has(KEYSPACE)){
-            return configuration.json().at(KEYSPACE).asString();
-        }
-
-        //TODO default graph name
-        throw new IllegalArgumentException(ILLEGAL_ARGUMENT_EXCEPTION.getMessage("No keyspace", configuration));
     }
 }

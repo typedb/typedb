@@ -146,7 +146,7 @@ public class PostProcessingTestIT {
         //TODO: Find a better way of doing this
         jsonLogs.forEach(log -> {
             PostProcessingTask ppTask = new PostProcessingTask();
-            ppTask.runLockingBackgroundTask(null, TaskConfiguration.of(log));
+            ppTask.start(null, TaskConfiguration.of(log));
         });
 
         //Check current broken state of graph

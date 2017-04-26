@@ -3,7 +3,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.postprocessing.UpdateInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
@@ -15,7 +15,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
@@ -24,7 +23,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 
-public class UpdatingInstanceCountTaskTest {
+public class UpdateInstanceCountTaskTest {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -52,7 +51,7 @@ public class UpdatingInstanceCountTaskTest {
         );
 
         //Start up the Job
-        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now());
+        TaskState task = TaskState.of(UpdateInstanceCountTask.class, getClass().getName(), TaskSchedule.now());
         engine.getTaskManager().addLowPriorityTask(task, TaskConfiguration.of(configuration));
 
         // Wait for task to complete

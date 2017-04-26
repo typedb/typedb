@@ -173,8 +173,8 @@ public enum ErrorMessage {
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
-    POSTPROCESSING_ERROR("Unexpected error during post processing on Job [%s] fix due to [%s]"),
-    UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concepts [%s] part of job [%s] due to several repeating errors"),
+    GRAPH_MUTATION_ERROR("Unexpected error during graph mutation due to [%s]"),
+    UNABLE_TO_MUTATE_GRAPH("Unable to mutate graph [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host. Message:[%s] \n Transaction string: [%s] "),
