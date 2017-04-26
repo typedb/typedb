@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author fppt
  */
 public class PostProcessing {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
+    private static final Logger LOG = LoggerFactory.getLogger(PostProcessing.class);
 
     private static PostProcessing instance = null;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -101,8 +101,6 @@ public class PostProcessing {
 
         try {
             if (!isRunning.getAndSet(true)) {
-                LOG.info("Starting maintenance.");
-
                 // Run the post processing
                 if (concepts.size() > 0) {
                     futures.add(postpool.submit(() -> function.apply(keyspace, index, concepts)));
@@ -110,8 +108,6 @@ public class PostProcessing {
                 }
 
                 futures.clear();
-
-                LOG.info("Maintenance completed.");
             }
         } catch (RuntimeException e){
             LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]", e);
@@ -135,10 +131,7 @@ public class PostProcessing {
     }
 
     private void dumpStats(String keyspace, String type, Set<ConceptId> concepts) {
-        LOG.info("--------------------Current Status of Post Processing--------------------");
-        LOG.info("Keyspace      : " + keyspace);
-        LOG.info("" + type + "      : " + concepts.size());
-        LOG.info("-------------------------------------------------------------------------");
+        LOG.trace("Keyspace: " + keyspace + "  - Type: " + type + "  - Quantity: " + concepts.size());
     }
 
     /**
