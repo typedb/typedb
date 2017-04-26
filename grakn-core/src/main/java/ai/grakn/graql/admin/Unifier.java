@@ -91,6 +91,12 @@ public interface Unifier{
     boolean containsValue(VarName value);
 
     /**
+     * @param u unifier to compare with
+     * @return true if this unifier contains all mappings of u
+     */
+    boolean containsAll(Unifier u);
+
+    /**
      * @param d unifier to be merged with this unifier
      * @return merged unifier
      */
