@@ -101,8 +101,6 @@ public class PostProcessing {
 
         try {
             if (!isRunning.getAndSet(true)) {
-                LOG.info("Starting maintenance.");
-
                 // Run the post processing
                 if (concepts.size() > 0) {
                     futures.add(postpool.submit(() -> function.apply(keyspace, index, concepts)));
@@ -110,8 +108,6 @@ public class PostProcessing {
                 }
 
                 futures.clear();
-
-                LOG.info("Maintenance completed.");
             }
         } catch (RuntimeException e){
             LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]", e);
