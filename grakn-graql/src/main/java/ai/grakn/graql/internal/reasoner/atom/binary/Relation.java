@@ -541,7 +541,6 @@ public class Relation extends TypeAtom {
                 .collect(toSet());
     }
 
-    //move to relation
     @Override
     public Set<Unifier> getPermutationUnifiers(Atom headAtom) {
         if (!headAtom.isRelation()) return new HashSet<>();
@@ -611,25 +610,25 @@ public class Relation extends TypeAtom {
                     }
                 });
 
+
         //resolve ambiguities until no unambiguous mapping exist
         while( mappings.values().stream().filter(s -> s.size() == 1).count() != 0) {
-            for (Map.Entry<RelationPlayer, Set<RoleType>> entry : mappings.entrySet()) {
-                Set<RoleType> compatibleRoles = entry.getValue();
-                if (compatibleRoles.size() == 1) {
-                    RelationPlayer casting = entry.getKey();
-                    VarName varName = casting.getRolePlayer().getVarName();
-                    Type type = varTypeMap.get(varName);
-                    RoleType roleType = entry.getValue().iterator().next();
-                    VarAdmin roleVar = Graql.var().label(roleType.getLabel()).admin();
+            Map.Entry<RelationPlayer, Set<RoleType>> entry = mappings.entrySet().stream()
+                    .filter(e -> e.getValue().size() == 1)
+                    .findFirst().orElse(null);
 
-                    //TODO remove from all mappings if it follows from cardinality constraints
-                    mappings.get(casting).remove(roleType);
+            RelationPlayer casting = entry.getKey();
+            VarName varName = casting.getRolePlayer().getVarName();
+            Type type = varTypeMap.get(varName);
+            RoleType roleType = entry.getValue().iterator().next();
+            VarAdmin roleVar = Graql.var().label(roleType.getLabel()).admin();
 
-                    rolePlayerMappings.add(new Pair<>(varName, roleVar));
-                    roleVarTypeMap.put(roleType, new Pair<>(varName, type));
-                    allocatedRelationPlayers.add(casting);
-                }
-            }
+            //TODO remove from all mappings if it follows from cardinality constraints
+            mappings.get(casting).remove(roleType);
+
+            rolePlayerMappings.add(new Pair<>(varName, roleVar));
+            roleVarTypeMap.put(roleType, new Pair<>(varName, type));
+            allocatedRelationPlayers.add(casting);
         }
 
         //fill in unallocated roles with metarole
@@ -654,23 +653,7 @@ public class Relation extends TypeAtom {
         return roleVarTypeMap;
     }
 
-    /**
-     * @return map of role variable - role type from a predicate
-     */
-    private Multimap<RoleType, VarName> getIndirectRoleMap() {
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        GraknGraph graph = parent.graph();
-        Multimap<RoleType, VarName> indirectRoleMap = ArrayListMultimap.create();
-        getRelationPlayers().stream()
-                .map(RelationPlayer::getRoleType)
-                .flatMap(CommonUtil::optionalToStream)
-                .map(rt -> new Pair<>(rt, parent.getIdPredicate(rt.getVarName())))
-                .filter(e -> Objects.nonNull(e.getValue()))
-                .forEach(p -> indirectRoleMap.put(graph.getConcept(p.getValue().getPredicate()), p.getKey().getVarName()));
-        return indirectRoleMap;
-    }
-
-    public Multimap<RoleType, RelationPlayer> getRoleRelationPlayerMap(){
+    private Multimap<RoleType, RelationPlayer> getRoleRelationPlayerMap(){
         Multimap<RoleType, RelationPlayer> roleRelationPlayerMap = HashMultimap.create();
         Multimap<RoleType, Pair<VarName, Type>> roleVarTypeMap = getRoleVarTypeMap();
         Set<RelationPlayer> relationPlayers = getRelationPlayers();
@@ -754,10 +737,8 @@ public class Relation extends TypeAtom {
 
             Set<Pair<RelationPlayer, RelationPlayer>> relationPlayerMappings = getRelationPlayerMappings(parentAtom);
             relationPlayerMappings.forEach(rpm -> unifier.addMapping(rpm.getKey().getRolePlayer().getVarName(), rpm.getValue().getRolePlayer().getVarName()));
-            //get role player unifiers
-            //unifier.merge(getRolePlayerUnifier(parentAtom));
-            //get role type unifiers
-            //unifier.merge(getRoleTypeUnifier(parentAtom));
+
+            //TODO overwrite by looking at types
         }
         return unifier.removeTrivialMappings();
     }
