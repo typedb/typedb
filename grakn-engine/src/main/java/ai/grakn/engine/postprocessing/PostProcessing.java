@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author fppt
  */
 public class PostProcessing {
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
+    private static final Logger LOG = LoggerFactory.getLogger(PostProcessing.class);
 
     private static PostProcessing instance = null;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -135,10 +135,7 @@ public class PostProcessing {
     }
 
     private void dumpStats(String keyspace, String type, Set<ConceptId> concepts) {
-        LOG.info("--------------------Current Status of Post Processing--------------------");
-        LOG.info("Keyspace      : " + keyspace);
-        LOG.info("" + type + "      : " + concepts.size());
-        LOG.info("-------------------------------------------------------------------------");
+        LOG.debug("Keyspace: " + keyspace + "  - Type: " + type + "  - Quantity: " + concepts.size());
     }
 
     /**
