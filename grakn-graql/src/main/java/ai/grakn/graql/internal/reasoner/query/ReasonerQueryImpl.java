@@ -181,21 +181,31 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return atom that should be prioritised for resolution
-     */
-    Atom getTopAtom() {
-        List<Atom> orderedAtoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
-                .collect(Collectors.toList());
-        return orderedAtoms.stream().findFirst().orElse(null);
-    }
-
-    /**
      * @return atom set constituting this query
      */
     @Override
     public Set<Atomic> getAtoms() {
         return Sets.newHashSet(atomSet);
+    }
+
+    private List<Atom> getPrioritisedAtoms(){
+        return selectAtoms().stream()
+                .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @return atom that should be prioritised for resolution
+     */
+    Atom getTopAtom() {
+        return getPrioritisedAtoms().stream().findFirst().orElse(null);
+    }
+
+    /**
+     * @return resolution plan in a form a atom[priority]->... string
+     */
+    String getResolutionPlan(){
+        return getPrioritisedAtoms().stream().map(at -> at + "[" + at.resolutionPriority()+ "]").collect(Collectors.joining(" -> "));
     }
 
     /**
@@ -675,6 +685,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         QueryAnswerIterator(){
             this.cache = new QueryCache<>();
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
+            LOG.trace(ReasonerQueryImpl.this.getResolutionPlan());
         }
 
         /**
