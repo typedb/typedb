@@ -50,12 +50,9 @@ import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.Optional;
 import javafx.util.Pair;
 
 import java.util.ArrayList;
@@ -69,7 +66,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import org.antlr.v4.runtime.misc.MultiMap;
 
 import static ai.grakn.graql.internal.reasoner.Utility.capture;
 import static ai.grakn.graql.internal.reasoner.Utility.checkTypesDisjoint;
@@ -80,7 +76,6 @@ import static ai.grakn.graql.internal.reasoner.Utility.roleToRelationTypes;
 import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.filter;
 
 /**
  *
@@ -163,14 +158,11 @@ public class Relation extends TypeAtom {
      * @return corresponding Var
      */
     private static VarAdmin constructRelationVar(VarName varName, VarName typeVariable, List<Pair<VarName, Var>> rolePlayerMappings) {
-        Var var;
-        if (!varName.getValue().isEmpty()) var = Graql.var(varName);
-        else var = Graql.var();
+        Var var = !varName.getValue().isEmpty()? Graql.var(varName) : Graql.var();
         for (Pair<VarName, Var> mapping : rolePlayerMappings) {
             VarName rp = mapping.getKey();
             Var role = mapping.getValue();
-            if (role == null) var = var.rel(Graql.var(rp));
-            else var = var.rel(role, Graql.var(rp));
+            var = role == null? var.rel(Graql.var(rp)) : var.rel(role, Graql.var(rp));
         }
         var = var.isa(Graql.var(typeVariable));
         return var.admin().asVar();
@@ -307,6 +299,7 @@ public class Relation extends TypeAtom {
         Map<VarName, Type> parentVarTypeMap = parent.getVarTypeMap();
         Map<VarName, Type> childVarTypeMap = ruleBody.getVarTypeMap();
 
+        //TODO this should be part of assigning relation player mappings
         for(VarName chVar : unifier.keySet()){
             VarName pVar = unifier.get(chVar);
             Type chType = childVarTypeMap.get(chVar);
@@ -684,8 +677,8 @@ public class Relation extends TypeAtom {
 
         //establish compatible castings for each parent casting
         Map<RelationPlayer, Set<RelationPlayer>> compatibleMappings = new HashMap<>();
-        Multimap<RoleType, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
         parentAtom.getRoleRelationPlayerMap();
+        Multimap<RoleType, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
         Set<RoleType> rolesAvailable = childRoleRPMap.keySet();
         parentAtom.getRelationPlayers().stream()
                 .filter(rp -> rp.getRoleType().isPresent())
@@ -693,6 +686,7 @@ public class Relation extends TypeAtom {
                     VarAdmin roleTypeVar = rp.getRoleType().orElse(null);
                     TypeLabel roleTypeLabel = roleTypeVar.getTypeLabel().orElse(null);
 
+                    //TODO if roleTypeLabel is meta then look at types
                     //TODO take into account indirect roles
                     RoleType parentRole = roleTypeLabel != null ? graph().getType(roleTypeLabel) : null;
 
@@ -740,10 +734,8 @@ public class Relation extends TypeAtom {
         if (((Atom) pAtom).isRelation()) {
             Relation parentAtom = (Relation) pAtom;
 
-            Set<Pair<RelationPlayer, RelationPlayer>> relationPlayerMappings = getRelationPlayerMappings(parentAtom);
-            relationPlayerMappings.forEach(rpm -> unifier.addMapping(rpm.getKey().getRolePlayer().getVarName(), rpm.getValue().getRolePlayer().getVarName()));
-
-            //TODO overwrite by looking at types
+            getRelationPlayerMappings(parentAtom)
+                    .forEach(rpm -> unifier.addMapping(rpm.getKey().getRolePlayer().getVarName(), rpm.getValue().getRolePlayer().getVarName()));
         }
         return unifier.removeTrivialMappings();
     }
