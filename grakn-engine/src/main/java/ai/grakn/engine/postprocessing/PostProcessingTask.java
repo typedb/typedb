@@ -152,15 +152,8 @@ public class PostProcessingTask implements BackgroundTask {
                                 throw new RuntimeException(message);
                             });
 
-                    if(conceptIndex.contains("RESOURCE")) {
-                        System.out.println("Validated " + conceptIndex + conceptIds);
-                    }
                     //Commit the fix
                     graph.admin().commitNoLogs();
-
-                    if(conceptIndex.contains("RESOURCE")) {
-                        System.out.println("Committed " + conceptIndex + conceptIds);
-                    }
                 }
 
                 notDone = false;
