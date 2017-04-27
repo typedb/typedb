@@ -74,6 +74,8 @@ public class SingleQueueTaskManager implements TaskManager {
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
     private final static int TIME_UNTIL_BACKOFF = 60_000;
+    private final static String TASKS_STOPPED = "/stopped/%s";
+    private final static String TASKS_STOPPED_PREFIX = "/stopped";
 
     private final Producer<TaskState, TaskConfiguration> producer;
     private final ZookeeperConnection zookeeper;
@@ -192,7 +194,7 @@ public class SingleQueueTaskManager implements TaskManager {
     public void stopTask(TaskId id) {
         byte[] serializedId = id.getValue().getBytes(zkCharset);
         try {
-            zookeeper.connection().create().creatingParentsIfNeeded().forPath(format(TASKS_STOPPED, id), serializedId);
+            zookeeper.connection().create().creatingParentsIfNeeded().forPath(String.format(TASKS_STOPPED, id), serializedId);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -224,7 +226,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return true if the task has been marked stopped
      */
     boolean isTaskMarkedStopped(TaskId taskId) {
-        return stoppedTasks.getCurrentData(format(TASKS_STOPPED, taskId)) != null;
+        return stoppedTasks.getCurrentData(String.format(TASKS_STOPPED, taskId)) != null;
     }
 
     /**

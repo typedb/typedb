@@ -63,12 +63,8 @@ public class TaskStateZookeeperStore implements TaskStateStorage {
     @Override
     public TaskId newState(TaskState task){
         try {
-            // Start a transaction to write the current serialized task
-            CuratorTransactionBridge transaction = zookeeper.connection().inTransaction()
-                    .create().forPath(taskPath(task), serialize(task));
-
-            // Execute
-            transaction.and().commit();
+            // Write the current serialized task
+            zookeeper.connection().create().creatingParentContainersIfNeeded().forPath(taskPath(task), serialize(task));
 
             return task.getId();
         } catch (Exception exception){
