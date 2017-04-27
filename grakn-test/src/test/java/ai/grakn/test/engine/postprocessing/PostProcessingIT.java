@@ -25,15 +25,14 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.postprocessing.PostProcessingTask;
-import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
-import mjson.Json;
+import java.time.Duration;
+import java.time.Instant;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -41,21 +40,20 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingIT {
+
+    private static final Duration MAX_DURATION = Duration.ofMinutes(1);
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -95,11 +93,9 @@ public class PostProcessingIT {
                     graph.getEntityType("ent" + j).resource(rt);
                 }
             }
+
             graph.commit();
         }
-
-        //Try to force duplicate resources
-        Set<Json> jsonLogs = ConcurrentHashMap.newKeySet();
 
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
@@ -115,7 +111,8 @@ public class PostProcessingIT {
                     }
 
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
-                    jsonLogs.add(createPPJobsFromCommitLogs(graph.getKeyspace(), graph.admin().commitNoLogs().get()));
+
+                    graph.commit();
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
@@ -127,21 +124,17 @@ public class PostProcessingIT {
         }
 
         //Check current broken state of graph
-        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            assertTrue("Failed at breaking graph", graphIsBroken(graph));
+        assertTrue("Failed at breaking graph", graphIsBroken(session));
+
+        // Check graph fixed
+        Instant start = Instant.now();
+        while(graphIsBroken(session) && Duration.between(start, Instant.now()).compareTo(MAX_DURATION) < 0){
+            Thread.sleep(1000);
         }
 
-        //TODO: Find a better way of doing this
-        jsonLogs.forEach(log -> {
-            PostProcessingTask ppTask = new PostProcessingTask();
-            ppTask.runLockingBackgroundTask(null, TaskConfiguration.of(log));
-        });
-
+        assertFalse("Failed at fixing graph", graphIsBroken(session));
 
         try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
-            // Check graph fixed
-            assertFalse("Failed at fixing graph", graphIsBroken(graph));
-
             //Check the resource indices are working
             for (Object object : graph.admin().getMetaResourceType().instances()) {
                 Resource resource = (Resource) object;
@@ -150,24 +143,20 @@ public class PostProcessingIT {
             }
         }
     }
-    private Json createPPJobsFromCommitLogs(String keyspace, String commitLog){
-        Json postProcessingConfiguration = Json.object();
-        postProcessingConfiguration.set(KEYSPACE, keyspace);
-        postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(commitLog).at(COMMIT_LOG_FIXING));
-        return postProcessingConfiguration;
-    }
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
-    private boolean graphIsBroken(GraknGraph graph){
-        Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
-        for (ResourceType<?> resourceType : resourceTypes) {
-            if(!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
-                Set<Integer> foundValues = new HashSet<>();
-                for (Resource<?> resource : resourceType.instances()) {
-                    if (foundValues.contains(resource.getValue())) {
-                        return true;
-                    } else {
-                        foundValues.add((Integer) resource.getValue());
+    private boolean graphIsBroken(GraknSession session){
+        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
+            for (ResourceType<?> resourceType : resourceTypes) {
+                if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
+                    Set<Integer> foundValues = new HashSet<>();
+                    for (Resource<?> resource : resourceType.instances()) {
+                        if (foundValues.contains(resource.getValue())) {
+                            return true;
+                        } else {
+                            foundValues.add((Integer) resource.getValue());
+                        }
                     }
                 }
             }

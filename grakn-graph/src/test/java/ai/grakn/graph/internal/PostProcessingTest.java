@@ -27,6 +27,9 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import java.util.UUID;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -37,12 +40,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+//TODO This test mimics what post processing would have done when we had the cache
+//TODO It no longer works in the same manner
 public class PostProcessingTest extends GraphTestBase{
     private RoleType roleType1;
     private RoleType roleType2;
@@ -235,4 +241,21 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(4L, t2.getInstanceCount());
         assertEquals(5L, t3.getInstanceCount());
     }
+
+    @Test
+    public void whenPostProcessingCastingThatDoesNotExist_FixDuplicateCastingsReturnsFalse(){
+        String invalidCastingIndex = UUID.randomUUID().toString();
+
+        assertFalse("Fix duplicate castings returns false",
+                graknGraph.fixDuplicateCastings(invalidCastingIndex, ImmutableSet.of(ConceptId.of(invalidCastingIndex))));
+    }
+
+    @Test
+    public void whenPostProcessingCastingThatExists_FixDuplicateCastingsReturnsTrue(){
+        CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
+
+        assertTrue("Fix duplicate castings returns true",
+                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
+    }
+
 }

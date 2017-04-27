@@ -22,15 +22,16 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import java.util.Optional;
+import java.util.function.Function;
 import mjson.Json;
-import org.apache.tinkerpop.gremlin.util.function.TriConsumer;
+import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class PostProcessingTask extends LockingBackgroundTask {
+public class PostProcessingTask implements BackgroundTask {
     public static final String LOCK_KEY = "post-processing-lock";
 
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
@@ -81,7 +82,12 @@ public class PostProcessingTask extends LockingBackgroundTask {
 
         // Only try to run if enough time has passed
         if(timeElapsed > maxTimeLapse){
-            return super.start(saveCheckpoint, configuration);
+            String keyspace = configuration.json().at(KEYSPACE).asString();
+
+            applyPPToMapEntry(configuration, Schema.BaseType.CASTING.name(), keyspace, PostProcessingTask::runCastingFix);
+            applyPPToMapEntry(configuration, Schema.BaseType.RESOURCE.name(), keyspace, PostProcessingTask::runResourceFix);
+
+            return false;
         }
 
         return true;
@@ -102,23 +108,8 @@ public class PostProcessingTask extends LockingBackgroundTask {
         return false;
     }
 
-    @Override
-    public String getLockingKey(){
-        return LOCK_KEY;
-    }
-
-    @Override
-    public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        String keyspace = configuration.json().at(KEYSPACE).asString();
-
-        applyPPToMapEntry(configuration, Schema.BaseType.CASTING.name(), keyspace, PostProcessingTask::runCastingFix);
-        applyPPToMapEntry(configuration, Schema.BaseType.RESOURCE.name(), keyspace, PostProcessingTask::runResourceFix);
-
-        return false;
-    }
-
     public void applyPPToMapEntry(TaskConfiguration configuration, String type, String keyspace,
-                TriConsumer<GraknGraph, String, Set<ConceptId>> postProcessingMethod){
+                TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
 
         Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
         Map<String, Json> conceptsByIndex = innerConfig.at(type).asJsonMap();
@@ -127,7 +118,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
             // Turn json
             Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
 
-            runPostProcessingJob((graph) -> postProcessingMethod.accept(graph, castingIndex.getKey(), conceptIds),
+            runPostProcessingJob((graph) -> postProcessingMethod.apply(graph, castingIndex.getKey(), conceptIds),
                     keyspace, castingIndex.getKey(), conceptIds);
         }
     }
@@ -143,7 +134,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
      * @param conceptIndex The unique index of the concept which must exist at the end
      * @param conceptIds The conceptIds which effectively need to be merged.
      */
-    public void runPostProcessingJob(Consumer<GraknGraph> postProcessor,
+    public void runPostProcessingJob(Function<GraknGraph, Boolean> postProcessor,
                                              String keyspace, String conceptIndex, Set<ConceptId> conceptIds){
         boolean notDone = true;
         int retry = 0;
@@ -153,21 +144,32 @@ public class PostProcessingTask extends LockingBackgroundTask {
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE))  {
 
                 //Perform the fix
-                postProcessor.accept(graph);
+                if(postProcessor.apply(graph)) {
 
-                //Check if the fix worked
-                validateMerged(graph, conceptIndex, conceptIds).
-                        ifPresent(message -> {
-                            throw new RuntimeException(message);
-                        });
+                    //Check if the fix worked
+                    validateMerged(graph, conceptIndex, conceptIds).
+                            ifPresent(message -> {
+                                throw new RuntimeException(message);
+                            });
 
-                //Commit the fix
-                graph.admin().commitNoLogs();
+                    if(conceptIndex.contains("RESOURCE")) {
+                        System.out.println("Validated " + conceptIndex + conceptIds);
+                    }
+                    //Commit the fix
+                    graph.admin().commitNoLogs();
 
-                return; //If it can get here. All post processing has succeeded.
+                    if(conceptIndex.contains("RESOURCE")) {
+                        System.out.println("Committed " + conceptIndex + conceptIds);
+                    }
+                }
 
+                notDone = false;
             } catch (Throwable t) { //These exceptions need to become more specialised
                 LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage(t.getMessage()), t);
+            }
+
+            if(!notDone){
+                return;
             }
 
             //Fixing the job has failed after several attempts
@@ -218,12 +220,12 @@ public class PostProcessingTask extends LockingBackgroundTask {
         return Optional.empty();
     }
 
-    static void runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        graph.admin().fixDuplicateResources(index, conceptIds);
+    static boolean runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        return graph.admin().fixDuplicateResources(index, conceptIds);
     }
 
-    static void runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
-        graph.admin().fixDuplicateCastings(index, conceptIds);
+    static boolean runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+        return graph.admin().fixDuplicateCastings(index, conceptIds);
     }
 
     private int performRetry(int retry){

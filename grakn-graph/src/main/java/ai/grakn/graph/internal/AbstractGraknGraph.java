@@ -52,6 +52,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.Objects;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -79,6 +80,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -398,7 +400,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return the set of concepts deep cloned
      */
     <X extends Type> Set<X> clone(Set<X> types){
-        return types.stream().map(this::clone).collect(Collectors.toSet());
+        return types.stream().map(this::clone).collect(toSet());
     }
 
     void checkOntologyMutation(){
@@ -820,10 +822,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         validateGraph();
 
         Set<Pair<String, ConceptId>> castings = getConceptLog().getModifiedCastings().stream().
-                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(Collectors.toSet());
+                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(toSet());
 
         Set<Pair<String, ConceptId>> resources = getConceptLog().getModifiedResources().stream().
-                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(Collectors.toSet());
+                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(toSet());
 
 
         LOG.trace("Graph is valid. Committing graph . . . ");
@@ -902,12 +904,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Merges the provided duplicate castings.
      *
      * @param castingVertexIds The vertex Ids of the duplicate castings
-     * @return if castings were merged and a commit is required.
+     * @return if castings were merged, a commit is required and the casting index exists
      */
     @Override
+    //TODO Why do we pass both of these as parameters: after removal of the cache they are always the same
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
-        Set<CastingImpl> castings = castingVertexIds.stream().
-                map(id -> this.<CastingImpl>getConceptRawId(id.getValue())).collect(Collectors.toSet());
+        Set<CastingImpl> castings = castingVertexIds.stream()
+                .map(id -> this.<CastingImpl>getConceptRawId(id.getValue()))
+                //filter non-null, will be null if previously deleted/merged
+                .filter(Objects::nonNull)
+                .collect(toSet());
+
+        //TODO Why equal to 1? If it is one, it is already the only casting with that index in the
+        //TODO graph and does not need to be merged
         if(castings.size() >= 1){
             //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
             CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
@@ -919,6 +928,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
 
+            //TODO Why do we need to restore the index if it has not changed?
             //Restore the index
             String newIndex = mainCasting.getIndex();
             mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
@@ -986,15 +996,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if a commit is required.
      */
     @Override
+    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
-        Set<ResourceImpl> duplicates = resourceVertexIds.stream().
-                map(id -> this.<ResourceImpl>getConceptRawId(id.getValue())).collect(Collectors.toSet());
+        Set<ResourceImpl> duplicates = resourceVertexIds.stream()
+                .map(id -> this.<ResourceImpl>getConceptRawId(id.getValue()))
+                //filter non-null, will be null if previously deleted/merged
+                .filter(Objects::nonNull)
+                .collect(toSet());
 
-        if(duplicates.size() >= 1){
-            //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
-            ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
-            duplicates.remove(mainResource);
+        //The "main resource" will be the one returned by the index
+        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        duplicates.remove(mainResource);
 
+        //Remove any resources associated with this index that are not the main resource
+        if(duplicates.size() > 0){
             Iterator<ResourceImpl> it = duplicates.iterator();
 
             while(it.hasNext()){
@@ -1010,12 +1025,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                     copyRelation(mainResource, otherResource, (RelationImpl) otherRelation);
                 }
 
+                System.out.println(otherResource.type() + " " + otherResource);
                 //Delete the node and it's castings directly so we don't accidentally delete copied relations
                 otherResource.castings().forEach(ConceptImpl::deleteNode);
                 otherResource.deleteNode();
             }
 
             //Restore the index
+            //TODO Why do we need to do this
             String newIndex = mainResource.getIndex();
             mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
