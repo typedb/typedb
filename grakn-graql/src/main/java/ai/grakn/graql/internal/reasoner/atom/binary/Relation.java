@@ -681,27 +681,46 @@ public class Relation extends TypeAtom {
         Multimap<RoleType, RelationPlayer> childRoleRPMap = getRoleRelationPlayerMap();
         Set<RoleType> rolesAvailable = childRoleRPMap.keySet();
         parentAtom.getRelationPlayers().stream()
-                .filter(rp -> rp.getRoleType().isPresent())
-                .forEach(rp -> {
-                    VarAdmin roleTypeVar = rp.getRoleType().orElse(null);
+                .filter(prp -> prp.getRoleType().isPresent())
+                .forEach(prp -> {
+                    VarAdmin roleTypeVar = prp.getRoleType().orElse(null);
                     TypeLabel roleTypeLabel = roleTypeVar.getTypeLabel().orElse(null);
 
-                    //TODO if roleTypeLabel is meta then look at types
                     //TODO take into account indirect roles
                     RoleType parentRole = roleTypeLabel != null ? graph().getType(roleTypeLabel) : null;
 
                     if (parentRole != null) {
-                        Set<RoleType> compatibleChildRoles = !Schema.MetaSchema.isMetaLabel(parentRole.getLabel()) ?
-                                Sets.intersection(new HashSet<>(parentRole.subTypes()), rolesAvailable) : rolesAvailable;
+                        boolean isMetaRole = Schema.MetaSchema.isMetaLabel(parentRole.getLabel());
+                        Set<RoleType> compatibleChildRoles = isMetaRole? rolesAvailable : Sets.intersection(new HashSet<>(parentRole.subTypes()), rolesAvailable);
+
                         compatibleChildRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .forEach(r -> {
-                                    if(!compatibleMappings.containsKey(rp)) {
-                                        compatibleMappings.put(rp, new HashSet<>(childRoleRPMap.get(r)));
+                                    if (!compatibleMappings.containsKey(prp)) {
+                                        compatibleMappings.put(prp, new HashSet<>(childRoleRPMap.get(r)));
                                     } else {
-                                        compatibleMappings.get(rp).addAll(new HashSet<>(childRoleRPMap.get(r)));
+                                        compatibleMappings.get(prp).addAll(new HashSet<>(childRoleRPMap.get(r)));
                                     }
                                 });
+
+                        //if roleTypeLabel is meta then look at constraints from types
+                        if (isMetaRole){
+                            VarName parentRolePlayer = prp.getRolePlayer().getVarName();
+                            Map<VarName, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
+                            Map<VarName, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
+                            Type parentType = parentVarTypeMap.get(parentRolePlayer);
+                            if (parentType != null) {
+                                Set<RelationPlayer> compatibleRelationPlayers = compatibleMappings.get(prp);
+                                Set<RelationPlayer> compatibleWithTypes = compatibleRelationPlayers.stream().filter(rp -> {
+                                    VarName childRolePlayer = rp.getRolePlayer().getVarName();
+                                    Type childType = childVarTypeMap.get(childRolePlayer);
+                                    return childType != null && !checkTypesDisjoint(parentType, childType);
+                                }).collect(toSet());
+                                if (!compatibleWithTypes.isEmpty()){
+                                    compatibleMappings.put(prp, compatibleWithTypes);
+                                };
+                            }
+                        }
                     }
 
                 });
