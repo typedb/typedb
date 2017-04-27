@@ -225,7 +225,7 @@ public class AtomicTest {
         assertEquals(correctRoleMap2, roleMap2);
     }
 
-    @Test //entity1 plays role1 but entity2 plays roles role1, role2 hence ambiguous and metarole has to be assigned
+    @Test //entity1 plays role1 but entity2 plays roles role1, role2 hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_WithMetaType(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity;}";
@@ -237,7 +237,7 @@ public class AtomicTest {
         assertEquals(roleMap, roleSetMap(relation.getRoleVarTypeMap()));
     }
 
-    @Test //entity1 plays role1, entity2 plays 2 roles, entity3 plays 3 roles  hence ambiguous and metarole has to be assigned
+    @Test //entity1 plays role1, entity2 plays 2 roles, entity3 plays 3 roles hence ambiguous and metarole has to be assigned, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRoleInference_RoleMappingUnambiguous(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z) isa relation1;$x isa entity1; $y isa entity2; $z isa entity3;}";
@@ -276,7 +276,7 @@ public class AtomicTest {
         assertEquals(roleMap, roleSetMap(relation.getRoleVarTypeMap()));
     }
 
-    @Test //should assign (role1: $x, role: $y, role: $z) which is compatible with 2 rules
+    @Test //should assign (role1: $x, role: $y, role: $z) which is compatible with 2 rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRuleApplicability_RoleMappingUnambiguous(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity1; $y isa entity2; $z isa entity3;}";
@@ -284,7 +284,7 @@ public class AtomicTest {
         assertEquals(2, relation.getApplicableRules().size());
     }
 
-    @Test //should assign (role1: $x, role: $y, role: $z) which is compatible with 2 rules
+    @Test //should assign (role1: $x, role: $y, role: $z) which is compatible with 2 rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRuleApplicability_RoleMappingUnambiguous2(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$x isa entity1; $y isa entity2; $z isa entity4;}";
@@ -300,7 +300,7 @@ public class AtomicTest {
         assertEquals(2, relation.getApplicableRules().size());
     }
 
-    @Test //should assign (role: $x, role1: $y, role: $z) which is compatible with 2 rules
+    @Test //should assign (role: $x, role1: $y, role: $z) which is compatible with 2 rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRuleApplicability_WithWildcard(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity2;}";
@@ -308,7 +308,7 @@ public class AtomicTest {
         assertEquals(2, relation.getApplicableRules().size());
     }
 
-    @Test //test rule applicability for match-all atom
+    @Test //should assign (role: $x, role: $y) which is compatible with 2 rules
     public void testRuleApplicability_MatchAllAtom(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y);}";
@@ -316,7 +316,7 @@ public class AtomicTest {
         assertEquals(2, relation.getApplicableRules().size());
     }
 
-    @Test //test rule applicability for atom with unspecified roles with conflicting roles inferred from types with a wildcard
+    @Test //should assign (role1: $x, role: $y, role1: $z) which is incompatible with any of the rule heads
     public void testRuleApplicability_WithWildcard_MissingMappings(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity5;}";
@@ -324,7 +324,7 @@ public class AtomicTest {
         assertEquals(0, relation.getApplicableRules().size());
     }
 
-    @Test
+    @Test //should assign (role: $x, role: $y) which matches two rules, EXPECTED TO CHANGE WITH CARDINALITY CONSTRAINTS
     public void testRuleApplicability_MissingRelationPlayers(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y);$x isa entity2; $y isa entity4;}";
@@ -332,7 +332,7 @@ public class AtomicTest {
         assertEquals(2, relation.getApplicableRules().size());
     }
 
-    @Test //test rule applicability for atom with unspecified roles with missing relation players without possible role mapping
+    @Test //should assign (role1: $x, role1: $y) which is inadequate for any of the rules
     public void testRuleApplicability_MissingRelationPlayers2(){
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{($x, $y);$x isa entity1; $y isa entity5;}";
