@@ -103,7 +103,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
     }
 
     @Override
-    protected String getLockingKey(){
+    public String getLockingKey(){
         return LOCK_KEY;
     }
 
@@ -117,7 +117,7 @@ public class PostProcessingTask extends LockingBackgroundTask {
         return false;
     }
 
-    private void applyPPToMapEntry(TaskConfiguration configuration, String type, String keyspace,
+    public void applyPPToMapEntry(TaskConfiguration configuration, String type, String keyspace,
                 TriConsumer<GraknGraph, String, Set<ConceptId>> postProcessingMethod){
 
         Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
