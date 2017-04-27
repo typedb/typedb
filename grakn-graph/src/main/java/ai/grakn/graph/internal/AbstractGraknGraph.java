@@ -907,23 +907,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return if castings were merged, a commit is required and the casting index exists
      */
     @Override
-    //TODO Why do we pass both of these as parameters: after removal of the cache they are always the same
+    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
-        Set<CastingImpl> castings = castingVertexIds.stream()
+        Set<CastingImpl> duplicated = castingVertexIds.stream()
                 .map(id -> this.<CastingImpl>getConceptRawId(id.getValue()))
                 //filter non-null, will be null if previously deleted/merged
                 .filter(Objects::nonNull)
                 .collect(toSet());
 
-        //TODO Why equal to 1? If it is one, it is already the only casting with that index in the
-        //TODO graph and does not need to be merged
-        if(castings.size() >= 1){
-            //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
-            CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
-            castings.remove(mainCasting);
+        //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
+        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        duplicated.remove(mainCasting);
 
+        if(duplicated.size() > 0){
             //Fix the duplicates
-            Set<Relation> duplicateRelations = mergeCastings(mainCasting, castings);
+            Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
 
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());

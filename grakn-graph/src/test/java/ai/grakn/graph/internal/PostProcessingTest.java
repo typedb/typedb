@@ -28,7 +28,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import java.util.UUID;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -47,8 +46,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-//TODO This test mimics what post processing would have done when we had the cache
-//TODO It no longer works in the same manner
 public class PostProcessingTest extends GraphTestBase{
     private RoleType roleType1;
     private RoleType roleType2;
@@ -251,11 +248,24 @@ public class PostProcessingTest extends GraphTestBase{
     }
 
     @Test
-    public void whenPostProcessingCastingThatExists_FixDuplicateCastingsReturnsTrue(){
+    public void whenPostProcessingCastingThatExistsButNoDuplicate_FixDuplicateCastingsReturnsFalse(){
         CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
 
-        assertTrue("Fix duplicate castings returns true",
+        assertFalse("Fix duplicate castings returns false",
                 graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
     }
 
+    @Test
+    public void whenPostProcessingCastingThatExistsAndDuplicate_FixDuplicateCastingsReturnsTrue(){
+        CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
+        ConceptId otherCasting = ConceptId.of(buildDuplicateCastingWithNewRelation(validCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue());
+        assertEquals(2, instance1.castings().size());
+
+        assertTrue("Fix duplicate castings returns true",
+                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId()))
+                        ||
+                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(otherCasting)));
+
+        assertEquals(1, instance1.castings().size());
+    }
 }
