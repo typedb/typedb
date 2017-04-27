@@ -34,8 +34,6 @@ import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
 import mjson.Json;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -59,26 +57,14 @@ import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingIT {
 
-    private GraknSession factory;
-    private GraknGraph graph;
-
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
-
-    @Before
-    public void setUp() throws Exception {
-        factory = engine.factoryWithNewKeyspace();
-        graph = factory.open(GraknTxType.WRITE);
-    }
-
-    @After
-    public void takeDown() throws InterruptedException {
-        graph.close();
-    }
 
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws GraknValidationException, ExecutionException, InterruptedException {
         assumeFalse(usingTinker());
+
+        GraknSession session = engine.factoryWithNewKeyspace();
 
         int transactionSize = 50;
         int numAttempts = 200;
@@ -94,28 +80,30 @@ public class PostProcessingIT {
         ExecutorService pool = Executors.newFixedThreadPool(40);
         Set<Future> futures = new HashSet<>();
 
-        //Create Simple Ontology
-        for(int i = 0; i < numEntTypes; i ++){
-            EntityType entityType = graph.putEntityType("ent" + i);
-            for(int j = 0; j < numEntVar; j ++){
-                entityType.addEntity();
+        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            //Create Simple Ontology
+            for (int i = 0; i < numEntTypes; i++) {
+                EntityType entityType = graph.putEntityType("ent" + i);
+                for (int j = 0; j < numEntVar; j++) {
+                    entityType.addEntity();
+                }
             }
-        }
 
-        for(int i = 0; i < numResTypes; i ++){
-            ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
-            for(int j = 0; j < numEntTypes; j ++){
-                graph.getEntityType("ent" + j).resource(rt);
+            for (int i = 0; i < numResTypes; i++) {
+                ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
+                for (int j = 0; j < numEntTypes; j++) {
+                    graph.getEntityType("ent" + j).resource(rt);
+                }
             }
+            graph.commit();
         }
-        graph.commit();
 
         //Try to force duplicate resources
         Set<Json> jsonLogs = ConcurrentHashMap.newKeySet();
 
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
-                try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+                try(GraknGraph graph = session.open(GraknTxType.WRITE)){
                     Random r = new Random();
 
                     for(int j = 0; j < transactionSize; j ++) {
@@ -138,10 +126,10 @@ public class PostProcessingIT {
             future.get();
         }
 
-
         //Check current broken state of graph
-        graph = factory.open(GraknTxType.WRITE);
-        assertTrue("Failed at breaking graph", graphIsBroken(graph));
+        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            assertTrue("Failed at breaking graph", graphIsBroken(graph));
+        }
 
         //TODO: Find a better way of doing this
         jsonLogs.forEach(log -> {
@@ -149,18 +137,17 @@ public class PostProcessingIT {
             ppTask.runLockingBackgroundTask(null, TaskConfiguration.of(log));
         });
 
-        //Check current broken state of graph
-        graph.close();
-        factory.close();
-        graph = factory.open(GraknTxType.WRITE);
 
-        assertFalse("Failed at fixing graph", graphIsBroken(graph));
+        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            // Check graph fixed
+            assertFalse("Failed at fixing graph", graphIsBroken(graph));
 
-        //Check the resource indices are working
-        for (Object object : graph.admin().getMetaResourceType().instances()) {
-            Resource resource = (Resource) object;
-            String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
-            assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+            //Check the resource indices are working
+            for (Object object : graph.admin().getMetaResourceType().instances()) {
+                Resource resource = (Resource) object;
+                String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
+                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+            }
         }
     }
     private Json createPPJobsFromCommitLogs(String keyspace, String commitLog){
