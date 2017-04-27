@@ -54,11 +54,10 @@ import static java.util.stream.Collectors.toSet;
  */
 public class PostProcessingTask extends LockingBackgroundTask {
     public static final String LOCK_KEY = "post-processing-lock";
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
-    private static final GraknEngineConfig properties = GraknEngineConfig.getInstance();
+    private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
 
     private PostProcessing postProcessing = PostProcessing.getInstance();
-    private long maxTimeLapse = properties.getPropertyAsLong(POST_PROCESSING_DELAY);
+    private long maxTimeLapse = GraknEngineConfig.getInstance().getPropertyAsLong(POST_PROCESSING_DELAY);
 
     //TODO MAJOR Make this distributed in distributed environment
     public static final AtomicLong lastPPTaskCreated = new AtomicLong(System.currentTimeMillis());

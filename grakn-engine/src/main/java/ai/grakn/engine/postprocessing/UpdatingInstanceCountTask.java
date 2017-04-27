@@ -21,7 +21,6 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
@@ -53,7 +52,7 @@ import static java.util.stream.Collectors.toMap;
  */
 public class UpdatingInstanceCountTask extends LockingBackgroundTask {
     public static final String LOCK_KEY = "updating-instance-count-lock";
-    private static final Logger LOG = LoggerFactory.getLogger(GraknEngineConfig.LOG_NAME_POSTPROCESSING_DEFAULT);
+    private static final Logger LOG = LoggerFactory.getLogger(UpdatingInstanceCountTask.class);
 
     @Override
     protected String getLockingKey() {

@@ -53,7 +53,6 @@ public class GraknEngineConfig {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
     public static final String POST_PROCESSING_DELAY = "backgroundTasks.post-processing-delay";
-    public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
     public static final String LOGGING_FILE_PATH_MAIN = "logging.file.main";
@@ -63,12 +62,6 @@ public class GraknEngineConfig {
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "grakn.conf";
     public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN = "grakn.log.file.main";
     public static final String LOG_LEVEL_SYSTEM_PROPERTY = "grakn.log.level";
-
-    //Post Processing Logging
-    public static final String LOG_NAME_POSTPROCESSING_PROPERTY = "grakn.log.name.postprocessing";
-    public static final String LOG_NAME_POSTPROCESSING_DEFAULT = "post-processing";
-    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING = "grakn.log.file.postprocessing";
-    public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
 
     public static final String POST_PROCESSING_THREADS = "postprocessing.threads";
 
@@ -142,8 +135,6 @@ public class GraknEngineConfig {
         }
 
         System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN, getPath(LOGGING_FILE_PATH_MAIN));
-        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING, getPath(LOGGING_FILE_PATH_POST_PROCESSING));
-        System.setProperty(LOG_NAME_POSTPROCESSING_PROPERTY, LOG_NAME_POSTPROCESSING_DEFAULT);
 
         setLogLevel();
 

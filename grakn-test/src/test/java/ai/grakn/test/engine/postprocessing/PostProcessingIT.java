@@ -57,7 +57,7 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class PostProcessingTestIT {
+public class PostProcessingIT {
 
     private GraknSession factory;
     private GraknGraph graph;
