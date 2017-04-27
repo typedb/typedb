@@ -156,13 +156,9 @@ public class PostProcessingTask implements BackgroundTask {
                     graph.admin().commitNoLogs();
                 }
 
-                notDone = false;
+                return;
             } catch (Throwable t) { //These exceptions need to become more specialised
                 LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage(t.getMessage()), t);
-            }
-
-            if(!notDone){
-                return;
             }
 
             //Fixing the job has failed after several attempts
