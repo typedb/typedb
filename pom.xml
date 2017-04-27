@@ -325,7 +325,7 @@
                 <version>2.19.1</version>
                 <configuration>
                     <systemProperties>
-                        <logback.configurationFile>${main.basedir}/conf/test/logback.xml</logback.configurationFile>
+                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
                     </systemProperties>
                 </configuration>
                 <executions>
@@ -343,7 +343,7 @@
                 <version>2.19.1</version>
                 <configuration>
                     <systemProperties>
-                        <logback.configurationFile>${main.basedir}/conf/test/logback.xml</logback.configurationFile>
+                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
                     </systemProperties>
                 </configuration>
             </plugin>
