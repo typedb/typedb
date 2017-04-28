@@ -146,7 +146,7 @@ public class PostProcessingIT {
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     private boolean graphIsBroken(GraknSession session){
-        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+        try(GraknGraph graph = session.open(GraknTxType.BATCH)) {
             Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
             for (ResourceType<?> resourceType : resourceTypes) {
                 if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {

@@ -19,17 +19,12 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.factory.EngineGraknGraphFactory;
-import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import java.util.Optional;
-import java.util.function.Function;
 import mjson.Json;
 import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 import org.slf4j.Logger;
@@ -44,7 +39,6 @@ import java.util.function.Consumer;
 
 import static ai.grakn.engine.GraknEngineConfig.POST_PROCESSING_DELAY;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static java.time.Instant.now;
 import static java.util.stream.Collectors.toSet;
 
@@ -59,12 +53,11 @@ import static java.util.stream.Collectors.toSet;
  *
  * @author Denis Lobanov, alexandraorth
  */
-public class PostProcessingTask implements BackgroundTask {
+public class PostProcessingTask extends AbstractGraphMutationTask {
     public static final String LOCK_KEY = "post-processing-lock";
 
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
 
-    private static final long MAX_RETRY = 10;
     private long maxTimeLapse = GraknEngineConfig.getInstance().getPropertyAsLong(POST_PROCESSING_DELAY);
 
     //TODO MAJOR Make this distributed in distributed environment
@@ -81,95 +74,49 @@ public class PostProcessingTask implements BackgroundTask {
         LOG.trace("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
 
         // Only try to run if enough time has passed
-        if(timeElapsed > maxTimeLapse){
-            String keyspace = configuration.json().at(KEYSPACE).asString();
-
-            applyPPToMapEntry(configuration, Schema.BaseType.CASTING.name(), keyspace, PostProcessingTask::runCastingFix);
-            applyPPToMapEntry(configuration, Schema.BaseType.RESOURCE.name(), keyspace, PostProcessingTask::runResourceFix);
-
-            return false;
+        if(timeElapsed >= maxTimeLapse){
+            return super.start(saveCheckpoint, configuration);
         }
 
         return true;
     }
 
     @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Post processing cannot be stopped while in progress");
-    }
+    public boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        applyPPToMapEntry(graph, configuration, Schema.BaseType.CASTING.name(), PostProcessingTask::runCastingFix);
+        applyPPToMapEntry(graph, configuration, Schema.BaseType.RESOURCE.name(), PostProcessingTask::runResourceFix);
 
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Post processing cannot be paused");
-    }
+        graph.admin().commitNoLogs();
 
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
         return false;
     }
 
-    public void applyPPToMapEntry(TaskConfiguration configuration, String type, String keyspace,
-                TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
-
-        Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
-        Map<String, Json> conceptsByIndex = innerConfig.at(type).asJsonMap();
-
-        for(Map.Entry<String, Json> castingIndex:conceptsByIndex.entrySet()){
-            // Turn json
-            Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
-
-            runPostProcessingJob((graph) -> postProcessingMethod.apply(graph, castingIndex.getKey(), conceptIds),
-                    keyspace, castingIndex.getKey(), conceptIds);
-        }
-    }
 
     /**
      * Main method which attempts to run all post processing jobs.
      *
-     * @param postProcessor The post processing job.
+     * @param postProcessingMethod The post processing job.
      *                      Either {@link ai.grakn.engine.postprocessing.PostProcessingTask#runResourceFix(GraknGraph, String, Set)} or
      *                      {@link ai.grakn.engine.postprocessing.PostProcessingTask#runCastingFix(GraknGraph, String, Set)}.
      *                      This then returns a function which will complete the job after going through validation
-     * @param keyspace The keyspace to post process against.
-     * @param conceptIndex The unique index of the concept which must exist at the end
-     * @param conceptIds The conceptIds which effectively need to be merged.
+
      */
-    public void runPostProcessingJob(Function<GraknGraph, Boolean> postProcessor,
-                                             String keyspace, String conceptIndex, Set<ConceptId> conceptIds){
-        boolean notDone = true;
-        int retry = 0;
+    private void applyPPToMapEntry(GraknGraph graph, TaskConfiguration configuration, String type,
+                                   TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
+        Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
 
-        while (notDone) {
-            //Try to Fix the job
-            try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.WRITE))  {
+        Map<String, Json> conceptsByIndex = innerConfig.at(type).asJsonMap();
+        for(Map.Entry<String, Json> castingIndex:conceptsByIndex.entrySet()){
+            // Turn json
+            Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
 
-                //Perform the fix
-                if(postProcessor.apply(graph)) {
-
-                    //Check if the fix worked
-                    validateMerged(graph, conceptIndex, conceptIds).
-                            ifPresent(message -> {
-                                throw new RuntimeException(message);
-                            });
-
-                    //Commit the fix
-                    graph.admin().commitNoLogs();
-                }
-
-                return;
-            } catch (Throwable t) { //These exceptions need to become more specialised
-                LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage(t.getMessage()), t);
+            if(postProcessingMethod.apply(graph, castingIndex.getKey(), conceptIds)) {
+                validateMerged(graph, castingIndex.getKey(), conceptIds).
+                        ifPresent(message -> {
+                            throw new RuntimeException(message);
+                        });
             }
-
-            //Fixing the job has failed after several attempts
-            if (retry > MAX_RETRY) {
-                notDone = false;
-            }
-
-            retry = performRetry(retry);
         }
-
-        LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(conceptIds));
     }
 
     public void setTimeLapse(long time){
@@ -209,26 +156,24 @@ public class PostProcessingTask implements BackgroundTask {
         return Optional.empty();
     }
 
-    static boolean runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+    /**
+     * Run a a resource duplication merge on the provided concepts
+     * @param graph Graph on which to apply the fixes
+     * @param index The unique index of the concept which must exist at the end
+     * @param conceptIds The conceptIds which effectively need to be merged.
+     */
+    private static boolean runResourceFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         return graph.admin().fixDuplicateResources(index, conceptIds);
     }
 
-    static boolean runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
+
+    /**
+     * Run a casting duplication merge job on the provided concepts
+     * @param graph Graph on which to apply the fixes
+     * @param index The unique index of the concept which must exist at the end
+     * @param conceptIds The conceptIds which effectively need to be merged.
+     */
+    private static boolean runCastingFix(GraknGraph graph, String index, Set<ConceptId> conceptIds) {
         return graph.admin().fixDuplicateCastings(index, conceptIds);
-    }
-
-    private int performRetry(int retry){
-        retry ++;
-        double seed = 1.0 + (Math.random() * 5.0);
-        double waitTime = (retry * 2.0)  + seed;
-        LOG.debug(ErrorMessage.BACK_OFF_RETRY.getMessage(waitTime));
-
-        try {
-            Thread.sleep((long) Math.ceil(waitTime * 1000));
-        } catch (InterruptedException e1) {
-            LOG.error("Exception",e1);
-        }
-
-        return retry;
     }
 }
