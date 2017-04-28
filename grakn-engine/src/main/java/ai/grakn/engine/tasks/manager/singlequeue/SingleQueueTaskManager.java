@@ -30,13 +30,14 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
+import ai.grakn.engine.tasks.config.KafkaTerms;
 import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.util.stream.Stream;
+import java.util.HashSet;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
@@ -53,8 +54,6 @@ import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaConsumer;
 import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
-import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
-import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
 import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED;
@@ -132,10 +131,14 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunnerThreadPool = newFixedThreadPool(CAPACITY * 2, taskRunnerPoolFactory);
 
         // Create and start the task runners
-        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, HIGH_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
-        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, LOW_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> highPriorityTaskRunners = generate(() -> newTaskRunner(engineId, KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> medPriorityTaskRunners = generate(() -> newTaskRunner(engineId, KafkaTerms.MED_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
+        Set<SingleQueueTaskRunner> lowPriorityTaskRunners = generate(() -> newTaskRunner(engineId, KafkaTerms.LOW_PRIORITY_TASKS_TOPIC)).limit(CAPACITY).collect(toSet());
 
-        this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
+        this.taskRunners = new HashSet<>();
+        taskRunners.addAll(highPriorityTaskRunners);
+        taskRunners.addAll(medPriorityTaskRunners);
+        taskRunners.addAll(lowPriorityTaskRunners);
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
         LockProvider.add(PostProcessingTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + PostProcessingTask.LOCK_KEY));
@@ -181,7 +184,16 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration, LOW_PRIORITY_TASKS_TOPIC);
+        sendTask(taskState, configuration, KafkaTerms.LOW_PRIORITY_TASKS_TOPIC);
+    }
+
+    /**
+     * Create an instance of a task based on the given parameters and submit it a Kafka queue.
+     * @param taskState Task to execute
+     */
+    @Override
+    public void addMedPriorityTask(TaskState taskState, TaskConfiguration configuration){
+        sendTask(taskState, configuration, KafkaTerms.MED_PRIORITY_TASKS_TOPIC);
     }
 
     /**
@@ -190,7 +202,7 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     @Override
     public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
-        sendTask(taskState, configuration, HIGH_PRIORITY_TASKS_TOPIC);
+        sendTask(taskState, configuration, KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC);
     }
 
     /**

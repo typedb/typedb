@@ -27,8 +27,7 @@ package ai.grakn.engine.tasks.config;
  */
 public interface KafkaTerms {
     String TASK_RUNNER_GROUP = "task-runners";
-    String SCHEDULERS_GROUP = "schedulers";
-    String WORK_QUEUE_TOPIC = "work-queue";
     String HIGH_PRIORITY_TASKS_TOPIC = "high-priority-tasks";
+    String MED_PRIORITY_TASKS_TOPIC = "med-priority-tasks";
     String LOW_PRIORITY_TASKS_TOPIC = "low-priority-tasks";
 }

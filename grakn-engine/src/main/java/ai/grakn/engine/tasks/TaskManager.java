@@ -46,6 +46,13 @@ public interface TaskManager extends AutoCloseable {
     void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration);
 
     /**
+     * Schedule a {@link BackgroundTask} for execution, giving it priority to run behind all high priority
+     * but before all low priority tasks
+     * @param taskState Task to execute
+     */
+    void addMedPriorityTask(TaskState taskState, TaskConfiguration configuration);
+
+    /**
      * Schedule a {@link BackgroundTask} for execution, giving it priority to run before all other tasks
      * @param taskState Task to execute
      */

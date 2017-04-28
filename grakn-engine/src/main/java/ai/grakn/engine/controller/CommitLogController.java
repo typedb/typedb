@@ -98,7 +98,7 @@ public class CommitLogController {
         // TODO Make interval configurable
         TaskState postProcessingTask = TaskState.of(
                 PostProcessingTask.class, this.getClass().getName(),
-                TaskSchedule.recurring(Duration.ofMinutes(5)));
+                TaskSchedule.recurring(Duration.ofSeconds(10)));
 
         //Instances to count
         Json countingConfiguration = Json.object();
