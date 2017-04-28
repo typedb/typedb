@@ -55,3 +55,12 @@ isa inference-rule
 		(role1:$x, role2:$y, role3: $z) isa relation1;
 	};
 
+isa inference-rule
+	lhs {
+		(role1: $x, role2: $y) isa binary;
+		(role1: $y, role2: $z) isa binary;
+	}
+	rhs {
+		(role1:$x, role2:$y, role2: $z) isa relation2;
+	};
+
