@@ -25,6 +25,8 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -50,6 +52,8 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     private Iterator<Answer> queryIterator;
     private final Iterator<Answer> atomicQueryIterator;
 
+    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImplIterator.class);
+
     ReasonerQueryImplIterator(ReasonerQueryImpl query,
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
@@ -63,6 +67,8 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         queryPrime.addSubstitution(sub);
         Atom topAtom = queryPrime.getTopAtom();
         ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
+
+        LOG.debug("top atom: " + topAtom);
 
         boolean isAtomic = queryPrime.isAtomic();
         if (!isAtomic) queryPrime.removeAtom(topAtom);
