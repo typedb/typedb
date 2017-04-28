@@ -506,7 +506,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             else{
                 if (ruleIterator.hasNext()) {
                     currentRule = ruleIterator.next();
-                    LOG.trace(currentRule.getBody().getResolutionPlan());
+                    LOG.debug("Created resolution plan for rule " + currentRule.getRuleId());
+                    LOG.debug(currentRule.getBody().getResolutionPlan());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                     return hasNext();
                 }
