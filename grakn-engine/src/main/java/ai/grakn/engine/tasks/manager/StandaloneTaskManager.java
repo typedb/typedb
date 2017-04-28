@@ -109,6 +109,13 @@ public class StandaloneTaskManager implements TaskManager {
 
     //TODO IMPLEMENT HIGH AND LOW PRIORITY IN STANDALONE MODE
     @Override
+    public void addMedPriorityTask(TaskState taskState, TaskConfiguration configuration){
+        LOG.info("Standalone mode only has a single priority.");
+        addTask(taskState, configuration);
+    }
+
+    //TODO IMPLEMENT HIGH AND LOW PRIORITY IN STANDALONE MODE
+    @Override
     public void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration){
         LOG.info("Standalone mode only has a single priority.");
         addTask(taskState, configuration);
