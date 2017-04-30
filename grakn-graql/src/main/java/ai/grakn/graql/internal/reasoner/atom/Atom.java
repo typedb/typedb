@@ -41,7 +41,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
