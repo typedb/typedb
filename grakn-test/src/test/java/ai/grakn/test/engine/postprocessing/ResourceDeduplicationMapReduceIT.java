@@ -32,7 +32,7 @@ import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.create
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.indexOf;
 import static org.junit.Assume.assumeTrue;
 
-public class ResourceDeduplicationMapReduceTestIT {
+public class ResourceDeduplicationMapReduceIT {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
