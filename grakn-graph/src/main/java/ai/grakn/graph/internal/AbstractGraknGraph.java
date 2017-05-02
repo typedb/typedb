@@ -52,13 +52,11 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.util.Objects;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.javatuples.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,11 +68,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -817,31 +815,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return close(true, false);
     }
 
-    //TODO: Kill this method
-    public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
-        validateGraph();
-
-        Set<Pair<String, ConceptId>> castings = getConceptLog().getModifiedCastings().stream().
-                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(toSet());
-
-        Set<Pair<String, ConceptId>> resources = getConceptLog().getModifiedResources().stream().
-                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(toSet());
-
-
-        LOG.trace("Graph is valid. Committing graph . . . ");
-        commitTransactionInternal();
-
-        //TODO: Kill when analytics no longer needs this
-        GraknSparkComputer.refresh();
-
-        LOG.trace("Graph committed.");
-
-        //No post processing should ever be done for the system keyspace
-        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
-            conceptLogger.accept(castings, resources);
-        }
-    }
-
     private Optional<String> commitWithLogs() throws GraknValidationException {
         validateGraph();
 
@@ -907,7 +880,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return if castings were merged, a commit is required and the casting index exists
      */
     @Override
-    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
         Set<CastingImpl> duplicated = castingVertexIds.stream()
                 .map(id -> this.<CastingImpl>getConceptRawId(id.getValue()))
@@ -926,7 +898,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
 
-            //TODO Why do we need to restore the index if it has not changed?
             //Restore the index
             String newIndex = mainCasting.getIndex();
             mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
@@ -994,7 +965,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if a commit is required.
      */
     @Override
-    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
         Set<ResourceImpl> duplicates = resourceVertexIds.stream()
                 .map(id -> this.<ResourceImpl>getConceptRawId(id.getValue()))
@@ -1029,7 +999,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             }
 
             //Restore the index
-            //TODO Why do we need to do this
             String newIndex = mainResource.getIndex();
             mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
