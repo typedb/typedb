@@ -83,8 +83,8 @@ public class PostProcessingTask extends AbstractGraphMutationTask {
 
     @Override
     public boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        applyPPToMapEntry(graph, configuration, Schema.BaseType.CASTING.name(), PostProcessingTask::runCastingFix);
-        applyPPToMapEntry(graph, configuration, Schema.BaseType.RESOURCE.name(), PostProcessingTask::runResourceFix);
+        runPostProcessingTask(graph, configuration, Schema.BaseType.CASTING.name(), PostProcessingTask::runCastingFix);
+        runPostProcessingTask(graph, configuration, Schema.BaseType.RESOURCE.name(), PostProcessingTask::runResourceFix);
 
         graph.admin().commitNoLogs();
 
@@ -101,17 +101,17 @@ public class PostProcessingTask extends AbstractGraphMutationTask {
      *                      This then returns a function which will complete the job after going through validation
 
      */
-    private void applyPPToMapEntry(GraknGraph graph, TaskConfiguration configuration, String type,
+    private void runPostProcessingTask(GraknGraph graph, TaskConfiguration configuration, String type,
                                    TriFunction<GraknGraph, String, Set<ConceptId>, Boolean> postProcessingMethod){
         Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
 
         Map<String, Json> conceptsByIndex = innerConfig.at(type).asJsonMap();
-        for(Map.Entry<String, Json> castingIndex:conceptsByIndex.entrySet()){
+        for(Map.Entry<String, Json> conceptIndex:conceptsByIndex.entrySet()){
             // Turn json
-            Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
+            Set<ConceptId> conceptIds = conceptIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
 
-            if(postProcessingMethod.apply(graph, castingIndex.getKey(), conceptIds)) {
-                validateMerged(graph, castingIndex.getKey(), conceptIds).
+            if(postProcessingMethod.apply(graph, conceptIndex.getKey(), conceptIds)) {
+                validateMerged(graph, conceptIndex.getKey(), conceptIds).
                         ifPresent(message -> {
                             throw new RuntimeException(message);
                         });
