@@ -126,7 +126,7 @@ public class ExplanationTest {
         Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), uw, VarName.of("y"), poland));
 
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
+        List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
