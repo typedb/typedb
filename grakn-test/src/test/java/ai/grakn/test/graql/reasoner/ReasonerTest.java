@@ -77,13 +77,16 @@ public class ReasonerTest {
     public static final GraphContext snbGraph3 = GraphContext.preLoad(SNBGraph.get());
 
     @ClassRule
-    public static final GraphContext testGraph = GraphContext.preLoad(GeoGraph.get());
+    public static final GraphContext testSnbGraph = GraphContext.preLoad(SNBGraph.get());
+
+    @ClassRule
+    public static final GraphContext testGeoGraph = GraphContext.preLoad(GeoGraph.get());
 
     @ClassRule
     public static final GraphContext nonMaterialisedGeoGraph = GraphContext.preLoad(GeoGraph.get());
 
     @ClassRule
-    public static final GraphContext nonMaterialisedsnbGraph = GraphContext.preLoad(SNBGraph.get());
+    public static final GraphContext nonMaterialisedSnbGraph = GraphContext.preLoad(SNBGraph.get());
 
     @ClassRule
     public static final GraphContext geoGraph = GraphContext.preLoad(GeoGraph.get());
@@ -104,7 +107,7 @@ public class ReasonerTest {
 
     @Test
     public void testSubPropertyRuleCreation() {
-        GraknGraph graph = snbGraph.graph();
+        GraknGraph graph = testSnbGraph.graph();
         Map<TypeLabel, TypeLabel> roleMap = new HashMap<>();
         RelationType parent = graph.getRelationType("sublocate");
         RelationType child = graph.getRelationType("resides");
@@ -125,7 +128,7 @@ public class ReasonerTest {
 
     @Test
     public void testTransitiveRuleCreation() {
-        GraknGraph graph = snbGraph.graph();
+        GraknGraph graph = testSnbGraph.graph();
         Rule rule = Utility.createTransitiveRule(
                 graph.getRelationType("sublocate"),
                 graph.getRoleType("member-location").getLabel(),
@@ -145,7 +148,7 @@ public class ReasonerTest {
 
     @Test
     public void testReflexiveRuleCreation() {
-        GraknGraph graph = snbGraph.graph();
+        GraknGraph graph = testSnbGraph.graph();
         Rule rule = Utility.createReflexiveRule(
                 graph.getRelationType("knows"),
                 graph.getRoleType("acquaintance1").getLabel(),
@@ -163,7 +166,7 @@ public class ReasonerTest {
 
     @Test
     public void testPropertyChainRuleCreation() {
-        GraknGraph graph = snbGraph.graph();
+        GraknGraph graph = testSnbGraph.graph();
         RelationType resides = graph.getRelationType("resides");
         RelationType sublocate = graph.getRelationType("sublocate");
 
@@ -192,7 +195,7 @@ public class ReasonerTest {
 
     @Test
     public void testAddingRuleWithHeadWithoutRoleTypesNotAllowed() {
-        GraknGraph graph = testGraph.graph();
+        GraknGraph graph = testGeoGraph.graph();
         Pattern body = Graql.and(graph.graql().parsePatterns(
                         "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                         "(geo-entity: $y, entity-location: $z) isa is-located-in;"));
@@ -203,8 +206,18 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testAddingRuleWithNonSpecificResourceInTheHeadNotAllowed() {
+        GraknGraph graph = testGeoGraph.graph();
+        Pattern body = Graql.and(graph.graql().parsePatterns("$x isa country;"));
+        Pattern head = Graql.and(graph.graql().parsePatterns("$x has name contains 'land';"));
+        exception.expect(IllegalArgumentException.class);
+        Rule rule = graph.admin().getMetaRuleInference().putRule(body, head);
+        InferenceRule irule = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
+    }
+
+    @Test
     public void testTwoRulesOnlyDifferingByVarNamesAreEquivalent() {
-        GraknGraph graph = testGraph.graph();
+        GraknGraph graph = testGeoGraph.graph();
         RuleType inferenceRule = graph.admin().getMetaRuleInference();
 
         Pattern body1 = Graql.and(graph.graql().parsePatterns(
@@ -491,12 +504,10 @@ public class ReasonerTest {
         assertEquals(answers, answers2);
     }
 
-    //TODO work on atom partitioning criteria
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingContradiction(){
         GraknGraph graph = nonMaterialisedGeoGraph.graph();
-        //geoObject sub city always returns empty set
+        //geoObject sub city always returns an empty set
         String queryString = "match ($x, $y) isa is-located-in;geoObject sub city;";
         QueryBuilder iqb = graph.graql().infer(true).materialise(false);
         MatchQuery query = iqb.parse(queryString);
@@ -532,8 +543,6 @@ public class ReasonerTest {
         assertEquals(answers, answers2);
     }
 
-    //TODO takes ages - take a look at selection strategy
-    @Ignore
     @Test
     public void testReasoningWithQueryContainingPlays2(){
         String queryString = "match $x isa person;$y isa $type;$type plays recommended-product;($x, $y) isa recommendation;";
@@ -559,12 +568,11 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
-    //TODO takes ages - look at atom selection strategy
+    //TODO returns wrong result if wrong resolution order picked
     @Ignore
     @Test
     public void testReasoningWithQueryContainingTypeHas2(){
         String queryString = "match $x isa $type;$type has name;$y isa product;($x, $y) isa recommendation;";
-        //String queryString2 = "match $x isa $type;$y isa product;($x, $y) isa recommendation;";
         String explicitQuery = "match $x isa person, has name $xName;$x isa $type;$y has name $yName;" +
                 "{$type label 'person' or $type label 'entity2';};" +
                 "{$xName val 'Alice';$yName val 'War of the Worlds';} or" +
@@ -616,13 +624,14 @@ public class ReasonerTest {
         assertQueriesEqual(query, query2);
     }
 
+    @Ignore
     @Test
     public void testReasoningWithRuleContainingVarContraction(){
-            Utility.createReflexiveRule(
-                    snbGraph.graph().getRelationType("knows"),
-                    snbGraph.graph().getRoleType("acquaintance1").getLabel(),
-                    snbGraph.graph().getRoleType("acquaintance2").getLabel(),
-                    snbGraph.graph());
+        Utility.createReflexiveRule(
+                snbGraph.graph().getRelationType("knows"),
+                snbGraph.graph().getRoleType("acquaintance1").getLabel(),
+                snbGraph.graph().getRoleType("acquaintance2").getLabel(),
+                snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
@@ -634,11 +643,11 @@ public class ReasonerTest {
     @Test
     //propagated sub [x/Bob] prevents from capturing the right inference
     public void testReasoningWithRuleContainingVarContraction2(){
-            Utility.createReflexiveRule(
-                    snbGraph.graph().getRelationType("knows"),
-                    snbGraph.graph().getRoleType("acquaintance1").getLabel(),
-                    snbGraph.graph().getRoleType("acquaintance2").getLabel(),
-                    snbGraph.graph());
+        Utility.createReflexiveRule(
+                snbGraph.graph().getRelationType("knows"),
+                snbGraph.graph().getRoleType("acquaintance1").getLabel(),
+                snbGraph.graph().getRoleType("acquaintance2").getLabel(),
+                snbGraph.graph());
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
@@ -763,7 +772,7 @@ public class ReasonerTest {
     @Test
     public void testReasoningWithQueryContainingOrderAndOffset(){
         String queryString = "match $p isa person, has age $a, has name $n;$pr isa product;($p, $pr) isa recommendation;";
-        MatchQuery query = nonMaterialisedsnbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
+        MatchQuery query = nonMaterialisedSnbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
         final int offset = 4;
         List<Answer> fullAnswers = query.execute();
@@ -864,7 +873,6 @@ public class ReasonerTest {
         assertEquals(answers2, answers3);
     }
 
-
     @Test
     public void testReasoningWithQueryContainingRelationVariableWithMaterialisation(){
         String queryString = "match $x isa is-located-in;";
@@ -928,7 +936,7 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithMatchAllQuery(){
-        String queryString = "match $y isa product;$r($x, $y);$x isa entity;";
+        String queryString = "match $y isa product;$r($x, $y);$x isa entity2;";
         String queryString2 = "match $y isa product;$x isa entity2;{" +
                 "$r($x, $y) isa recommendation or " +
                 "$r($x, $y) isa typing or " +

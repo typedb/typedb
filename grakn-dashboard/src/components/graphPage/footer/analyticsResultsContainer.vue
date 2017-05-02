@@ -74,27 +74,27 @@ import GraphPageState from '../../../js/state/graphPageState';
 
 
 export default {
-    name: 'AnalyticsResultsPanel',
-    data() {
-        return {
-            state:GraphPageState,
-            showAnalyticsPanel:false,
-            analyticsResponse:''
-        };
-    },
-    created() {
-        this.state.eventHub.$on('analytics-string-response',this.addAnalyticsResponse);
-    },
-    mounted() {
-        this.$nextTick(function nextTickVisualiser() {
+  name: 'AnalyticsResultsPanel',
+  data() {
+    return {
+      state: GraphPageState,
+      showAnalyticsPanel: false,
+      analyticsResponse: '',
+    };
+  },
+  created() {
+    this.state.eventHub.$on('analytics-string-response', this.addAnalyticsResponse);
+  },
+  mounted() {
+    this.$nextTick(() => {
 
-        });
+    });
+  },
+  methods: {
+    addAnalyticsResponse(response) {
+      this.analyticsResponse = response;
+      this.showAnalyticsPanel = true;
     },
-    methods: {
-      addAnalyticsResponse(response){
-          this.analyticsResponse=response;
-          this.showAnalyticsPanel=true;
-      }
-    }
+  },
 };
 </script>

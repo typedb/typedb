@@ -39,22 +39,6 @@
         </encoder>
     </appender>
 
-    <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.file.postprocessing}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
-            <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${grakn.log.file.postprocessing}-%d{yyyy-MM}.%i.log</fileNamePattern>
-            <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
-            <maxFileSize>50MB</maxFileSize>
-            <maxHistory>60</maxHistory>
-            <totalSizeCap>1GB</totalSizeCap>
-        </rollingPolicy>
-        <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
     <root level="INFO">
         <!--<appender-ref ref="STDOUT"/>-->
     </root>
@@ -64,10 +48,6 @@
 
     <logger name="ai.grakn" level="${grakn.log.level:-INFO}">
         <appender-ref ref="MAIN"/>
-    </logger>
-
-    <logger name="${grakn.log.name.postprocessing}" level="${grakn.log.level:-INFO}">
-        <appender-ref ref="POST-PROCESSING"/>
     </logger>
 
     <!--ASCII TEXT-->

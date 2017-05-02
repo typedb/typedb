@@ -63,43 +63,43 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </style>
 
 <script>
-import User from '../js/User.js'
+import User from '../js/User.js';
 
 export default {
-    name: "LoginPage",
-    data() {
-        return {
-            credentials: {
-                username: undefined,
-                password: undefined
-            }
-        }
-    },
+  name: 'LoginPage',
+  data() {
+    return {
+      credentials: {
+        username: undefined,
+        password: undefined,
+      },
+    };
+  },
 
-    created() {},
+  created() {},
 
-    mounted: function() {
-        this.$nextTick(function() {
+  mounted() {
+    this.$nextTick(() => {
             // code for previous attach() method.
-        });
-    },
+    });
+  },
 
-    methods: {
+  methods: {
         /*
          * Listener methods on emit from GraqlEditor
          */
-        submit() {
-            User.newSession(this.credentials).then(this.onLoginResponse);
-        },
-        onLoginResponse(res, err) {
-            if (res != null) {
-                User.setAuthToken(res);
-                this.$router.push("/");
-            } else {
-                //implement promise so that we can send back the failure to the login.vue controller?
-            }
-        },
+    submit() {
+      User.newSession(this.credentials).then(this.onLoginResponse);
+    },
+    onLoginResponse(res, err) {
+      if (res != null) {
+        User.setAuthToken(res);
+        this.$router.push('/');
+      } else {
+                // implement promise so that we can send back the failure to the login.vue controller?
+      }
+    },
 
-    }
-}
+  },
+};
 </script>

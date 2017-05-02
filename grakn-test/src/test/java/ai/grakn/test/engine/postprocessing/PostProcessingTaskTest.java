@@ -18,110 +18,140 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.engine.cache.EngineCacheProvider;
-import ai.grakn.engine.cache.EngineCacheStandAlone;
+import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
-import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
-import java.time.Duration;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
+import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.util.REST;
+import ai.grakn.util.Schema;
+import com.google.common.collect.Sets;
 import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static ai.grakn.engine.postprocessing.PostProcessingTask.POST_PROCESSING_LOCK;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
+
+import static ai.grakn.util.REST.Request.KEYSPACE;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class PostProcessingTaskTest {
 
-    private Json mockJson;
+    private static final String TEST_KEYSPACE = UUID.randomUUID().toString();
+
+    private String mockCastingIndex;
+    private String mockResourceIndex;
+    private Set<ConceptId> mockCastingSet;
+    private Set<ConceptId> mockResourceSet;
+    private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
-    private PostProcessing mockPostProcessing;
-
-    @BeforeClass
-    public static void mockEngineCache(){
-        EngineCacheProvider.init(EngineCacheStandAlone.getCache());
-        LockProvider.add(POST_PROCESSING_LOCK, new NonReentrantLock());
-    }
-
-    @AfterClass
-    public static void clearEngineCache(){
-        EngineCacheStandAlone.getCache().getKeyspaces().forEach(k -> EngineCacheStandAlone.getCache().clearAllJobs(k));
-        EngineCacheProvider.clearCache();
-        LockProvider.clear();
-    }
 
     @Before
     public void mockPostProcessing(){
-        mockPostProcessing = mock(PostProcessing.class);
         mockConsumer = mock(Consumer.class);
-        mockJson = mock(Json.class);
-    }
 
-    @Test
-    public void whenPPTaskStartCalledAndEnoughTimeElapsed_PostProcessingRunIsCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 0);
-
-        task.start(mockConsumer, mockJson);
-
-        verify(mockPostProcessing, times(1)).run();
+        mockCastingIndex = UUID.randomUUID().toString();
+        mockResourceIndex = UUID.randomUUID().toString();
+        mockCastingSet = Sets.newHashSet();
+        mockResourceSet = Sets.newHashSet();
+        mockConfiguration = TaskConfiguration.of(
+                Json.object(
+                        KEYSPACE, TEST_KEYSPACE,
+                    REST.Request.COMMIT_LOG_FIXING, Json.object(
+                        Schema.BaseType.CASTING.name(), Json.object(mockCastingIndex, mockCastingSet),
+                        Schema.BaseType.RESOURCE.name(), Json.object(mockResourceIndex, mockResourceSet)
+                    ))
+        );
     }
 
     @Test
     public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingRunNotCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, Long.MAX_VALUE);
+        PostProcessingTask task = mock(PostProcessingTask.class);
 
-        task.start(mockConsumer, mockJson);
+        doCallRealMethod().when(task).setTimeLapse(Long.MAX_VALUE);
+        doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
 
-        verify(mockPostProcessing, times(0)).run();
+        task.setTimeLapse(Long.MAX_VALUE);
+        task.start(mockConsumer, mockConfiguration);
+
+        verify(task, never())
+                .runPostProcessingJob(any(), eq(TEST_KEYSPACE), eq(mockCastingIndex), eq(mockCastingSet));
     }
 
     @Test
-    public void whenPPTaskStopCalled_PostProcessingStopIsCalled(){
-        PostProcessingTask task = new PostProcessingTask(mockPostProcessing, 1000);
+    public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
+        PostProcessingTask task = mock(PostProcessingTask.class);
 
-        task.stop();
+        doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
+        doCallRealMethod().when(task).applyPPToMapEntry(any(), any(), any(), any());
 
-        verify(mockPostProcessing, times(1)).stop();
+        task.start(mockConsumer, mockConfiguration);
+
+        verify(task, times(1))
+                .runPostProcessingJob(any(), eq(TEST_KEYSPACE), eq(mockCastingIndex), eq(mockCastingSet));
     }
 
     @Test
-    public void whenTwoPPTasksStartCalledInDifferentThreads_PostProcessingOnlyRunsOnce() throws InterruptedException {
-        Object object = new Object();
+    public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
+        PostProcessingTask task = mock(PostProcessingTask.class);
 
-        when(mockPostProcessing.run()).thenAnswer(invocation -> {
-            synchronized (object){
-                object.wait(Duration.ofMinutes(1).toMillis());
-            }
-            return true;
-        });
+        doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
+        doCallRealMethod().when(task).applyPPToMapEntry(any(), any(), any(), any());
 
+        task.start(mockConsumer, mockConfiguration);
+
+        verify(task, times(1))
+                .runPostProcessingJob(any(), eq(TEST_KEYSPACE), eq(mockResourceIndex), eq(mockResourceSet));
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndNotEnoughTimeElapsed_PostProcessingStartReturnsTrue(){
+        PostProcessingTask task = mock(PostProcessingTask.class);
+
+        doCallRealMethod().when(task).setTimeLapse(Long.MAX_VALUE);
+        doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
+
+        task.setTimeLapse(Long.MAX_VALUE);
+        assertTrue("Task " + task + " ran when it should not have", task.start(mockConsumer, mockConfiguration));
+    }
+
+    @Test
+    public void whenPPTaskStartCalledAndPostProcessingRuns_PostProcessingStartReturnsFalse(){
+        PostProcessingTask task = mock(PostProcessingTask.class);
+        task.setTimeLapse(0);
+
+        doCallRealMethod().when(task).start(mockConsumer, mockConfiguration);
+        doCallRealMethod().when(task).applyPPToMapEntry(any(), any(), any(), any());
+
+        assertFalse("Task " + task + " did not run when it should have", task.start(mockConsumer, mockConfiguration));
+    }
+
+    @Test
+    public void whenTwoPPTasksStartCalledInDifferentThreads_PostProcessingRunsTwice() throws InterruptedException {
         // Add a bunch of jobs to the cache
-        PostProcessingTask task1 = new PostProcessingTask(mockPostProcessing, 0);
-        PostProcessingTask task2 = new PostProcessingTask(mockPostProcessing, 0);
+        PostProcessingTask task1 = mock(PostProcessingTask.class);
+        PostProcessingTask task2 = mock(PostProcessingTask.class);
 
-        Thread pp1 = new Thread(() -> {
-            task1.start(mockConsumer, mockJson);
+        doCallRealMethod().when(task1).start(mockConsumer, mockConfiguration);
+        doCallRealMethod().when(task1).applyPPToMapEntry(any(), any(), any(), any());
+        doCallRealMethod().when(task2).start(mockConsumer, mockConfiguration);
+        doCallRealMethod().when(task2).applyPPToMapEntry(any(), any(), any(), any());
 
-            synchronized (object) {
-                object.notifyAll();
-            }
-        });
-        Thread pp2 = new Thread(() -> {
-            task2.start(mockConsumer, mockJson);
-
-            synchronized (object) {
-                object.notifyAll();
-            }
-        });
+        Thread pp1 = new Thread(() -> task1.start(mockConsumer, mockConfiguration));
+        Thread pp2 = new Thread(() -> task2.start(mockConsumer, mockConfiguration));
 
         pp1.start();
         pp2.start();
@@ -129,6 +159,10 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockPostProcessing, times(1)).run();
+        verify(task1, times(1))
+                .runPostProcessingJob(any(), eq(TEST_KEYSPACE), eq(mockResourceIndex), eq(mockResourceSet));
+
+        verify(task2, times(1))
+                .runPostProcessingJob(any(), eq(TEST_KEYSPACE), eq(mockCastingIndex), eq(mockCastingSet));
     }
 }

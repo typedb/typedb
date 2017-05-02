@@ -115,7 +115,7 @@ public interface Answer {
     Set<Answer> getExplicitPath();
 
     /**
-     * @return all answers taking part in the derivation of this answer
+     * @return set of all answers taking part in the derivation of this answer
      */
     Set<Answer> getAnswers();
 

@@ -4,6 +4,7 @@ import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.test.EngineContext;
@@ -14,6 +15,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
+import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_COUNTING;
 import static ai.grakn.util.REST.Request.COMMIT_LOG_INSTANCE_COUNT;
@@ -50,13 +52,14 @@ public class UpdatingInstanceCountTaskTest {
         );
 
         //Start up the Job
-        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now(), configuration);
-        engine.getTaskManager().addTask(task);
+        TaskState task = TaskState.of(UpdatingInstanceCountTask.class, getClass().getName(), TaskSchedule.now());
+        engine.getTaskManager().addLowPriorityTask(task, TaskConfiguration.of(configuration));
 
         // Wait for task to complete
         waitForDoneStatus(engine.getTaskManager().storage(), singleton(task));
 
         // Check that task has ran
+        // STOPPED because it is a recurring task
         assertEquals(COMPLETED, engine.getTaskManager().storage().getState(task.getId()).status());
 
         // Check the results of the task

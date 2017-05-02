@@ -104,13 +104,12 @@ public class TaskClientTest {
 
         TaskId identifier = client.sendTask(taskClass, creator, runAt, interval, configuration);
 
-        verify(manager).addTask(argThat(argument ->
+        verify(manager).addLowPriorityTask(argThat(argument ->
                 argument.getId().equals(identifier)
                 && argument.taskClass().equals(taskClass)
-                && argument.configuration().equals(configuration)
                 && argument.schedule().runAt().equals(runAt)
                 && argument.schedule().interval().get().equals(interval)
-                && argument.creator().equals(creator)));
+                && argument.creator().equals(creator)), argThat(argument -> argument.json().toString().equals(configuration.toString())));
     }
 
     @Test

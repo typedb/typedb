@@ -91,12 +91,23 @@ public interface Unifier{
     boolean containsValue(VarName value);
 
     /**
+     * @param u unifier to compare with
+     * @return true if this unifier contains all mappings of u
+     */
+    boolean containsAll(Unifier u);
+
+    /**
      * @param d unifier to be merged with this unifier
      * @return merged unifier
      */
     Unifier merge(Unifier d);
 
     Unifier removeTrivialMappings();
+
+    /**
+     * @return unifier with inverted mappings
+     */
+    Unifier invert();
 
     /**
      * @return number of mappings that consittute this unifier

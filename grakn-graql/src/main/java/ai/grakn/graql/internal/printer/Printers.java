@@ -33,8 +33,8 @@ public class Printers {
 
     private Printers() {}
 
-    public static Printer<Function<StringBuilder, StringBuilder>> graql(ResourceType... resourceTypes) {
-        return new GraqlPrinter(resourceTypes);
+    public static Printer<Function<StringBuilder, StringBuilder>> graql(boolean colorize, ResourceType... resourceTypes) {
+        return new GraqlPrinter(colorize, resourceTypes);
     }
 
     public static Printer<Json> json() {

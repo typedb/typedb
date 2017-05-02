@@ -51,105 +51,102 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
 <script>
 // Sub-components
-const NavBar = require('./navbar.vue');
-const SignupModal = require('./signupModal.vue');
-const SideBar = require('./sidebar.vue');
+import NavBar from './navbar.vue';
+import SignupModal from './signupModal.vue';
+import SideBar from './sidebar.vue';
+import User from '../../js/User';
 
 
-const computeComponentCenter = function(path) {
-    switch (path) {
-        case '/graph':
-        case '/console':
-            return 'GraqlEditor';
-            break;
-        default:
-            return null;
-    }
-};
-const computeComponentCenterRight = function(path) {
+const computeComponentCenter = function computeComponentCenter(path) {
   switch (path) {
-      case '/graph':
-      case '/console':
-          return 'KeyspacesSelect';
-          break;
-      default:
-          return null;
+    case '/graph':
+    case '/console':
+      return 'GraqlEditor';
+      break;
+    default:
+      return null;
+  }
+};
+const computeComponentCenterRight = function computeComponentRight(path) {
+  switch (path) {
+    case '/graph':
+    case '/console':
+      return 'KeyspacesSelect';
+      break;
+    default:
+      return null;
   }
 };
 
 // TODO: decide whether keep this component or not. Not used for now.
-const computeComponentCenterLeft = function(path) {
-    return null;
+const computeComponentCenterLeft = function (path) {
+  return null;
 };
 
-import User from '../../js/User';
-
-
 export default {
-    name: 'MainTemplate',
-    components: {
-        NavBar,
-        SignupModal,
-        SideBar,
-    },
-    beforeRouteEnter(to, from, next) {
-        next(vm => {
-            vm.componentCenterLeft = computeComponentCenterLeft(to.path);
-            vm.componentCenterRight = computeComponentCenterRight(to.path);
-            vm.componentCenter = computeComponentCenter(to.path);
-        })
-    },
-    data() {
-        return {
-            componentCenterLeft: undefined,
-            componentCenterRight: undefined,
-            componentCenter: undefined,
-            showSideBar: false,
-        };
-    },
+  name: 'MainTemplate',
+  components: {
+    NavBar,
+    SignupModal,
+    SideBar,
+  },
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      vm.componentCenterLeft = computeComponentCenterLeft(to.path);
+      vm.componentCenterRight = computeComponentCenterRight(to.path);
+      vm.componentCenter = computeComponentCenter(to.path);
+    });
+  },
+  data() {
+    return {
+      componentCenterLeft: undefined,
+      componentCenterRight: undefined,
+      componentCenter: undefined,
+      showSideBar: false,
+    };
+  },
 
-    created() {},
+  created() {},
 
-    mounted() {
-        this.$nextTick(function nextTickVisualiser() {
+  mounted() {
+    this.$nextTick(() => {
           // Initialise toastr.js plugin to use custom options
-          toastr.options = {
-              "closeButton": true,
-              "debug": false,
-              "newestOnTop": false,
-              "progressBar": false,
-              "positionClass": "toast-bottom-right",
-              "preventDuplicates": false,
-              "showDuration": "300",
-              "hideDuration": "1000",
-              "timeOut": "3000",
-              "extendedTimeOut": "1000",
-              "showEasing": "swing",
-              "hideEasing": "linear",
-              "showMethod": "fadeIn",
-              "hideMethod": "fadeOut"
-          };
+      toastr.options = {
+        closeButton: true,
+        debug: false,
+        newestOnTop: false,
+        progressBar: false,
+        positionClass: 'toast-bottom-right',
+        preventDuplicates: false,
+        showDuration: '300',
+        hideDuration: '1000',
+        timeOut: '3000',
+        extendedTimeOut: '1000',
+        showEasing: 'swing',
+        hideEasing: 'linear',
+        showMethod: 'fadeIn',
+        hideMethod: 'fadeOut',
+      };
 
-          if (!User.getModalShown()){
-            var modal = document.getElementById('myModal');
-            modal.style.display = "block";
-            User.setModalShown(true);
-          }
-
-        });
-    },
-    watch: {
+      if (!User.getModalShown()) {
+        const modal = document.getElementById('myModal');
+        modal.style.display = 'block';
+        User.setModalShown(true);
+      }
+    });
+  },
+  watch: {
         // When the route changes we need to tell the navbar what to inject in computeComponentCenter && componentCenterLeft && componentCenterRight
         // based on the component we are rendering in the router-view
-        '$route': function(newRoute) {
-            this.componentCenterLeft = computeComponentCenterLeft(newRoute.path);
-            this.componentCenterRight = computeComponentCenterRight(newRoute.path);
-            this.componentCenter = computeComponentCenter(newRoute.path);
-        }
+    $route(newRoute) {
+      this.componentCenterLeft = computeComponentCenterLeft(newRoute.path);
+      this.componentCenterRight = computeComponentCenterRight(newRoute.path);
+      this.componentCenter = computeComponentCenter(newRoute.path);
     },
+  },
 
-    methods: {
+  methods: {
 
-    },
+  },
 };
 </script>

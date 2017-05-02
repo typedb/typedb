@@ -46,7 +46,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testRelationOutput() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         MatchQuery query = rule.graph().graql().match(var("r").isa("has-cast")
                 .rel(var().has("name", "Al Pacino"))
@@ -63,7 +63,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void whenGettingOutputForRelation_TheResultShouldHaveCommasBetweenRolePlayers() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         MatchQuery query = rule.graph().graql().match(var("r").isa("has-cluster"));
 
@@ -81,7 +81,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testResourceOutputNoResources() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
@@ -98,7 +98,7 @@ public class GraqlPrinterTest {
     @Test
     public void testResourceOutputWithResource() {
         Printer printer = Printers.graql(
-                rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
+                true, rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
         );
 
         Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
@@ -113,7 +113,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testEmptyResult() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Answer emptyResult = new QueryAnswer();
 
@@ -122,7 +122,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testType() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Type production = rule.graph().getEntityType("production");
 
@@ -138,7 +138,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testEntityType() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Type entity = rule.graph().admin().getMetaEntityType();
 
@@ -153,7 +153,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testConcept() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Type concept = rule.graph().admin().getMetaConcept();
 
@@ -163,5 +163,25 @@ public class GraqlPrinterTest {
         assertThat(conceptString, containsString("concept"));
         assertThat(conceptString, not(containsString("sub")));
         assertThat(conceptString, not(containsString("isa")));
+    }
+
+    @Test
+    public void whenPrintingWithColorizeTrue_ResultIsColored(){
+        Printer printer = Printers.graql(true);
+
+        Type production = rule.graph().getEntityType("production");
+
+        String productionString = printer.graqlString(production);
+        assertThat(productionString, containsString("\u001B"));
+    }
+
+    @Test
+    public void whenPrintingWitholorizeFalse_ResultIsNotColored(){
+        Printer printer = Printers.graql(false);
+
+        Type production = rule.graph().getEntityType("production");
+
+        String productionString = printer.graqlString(production);
+        assertThat(productionString, not(containsString("\u001B")));
     }
 }

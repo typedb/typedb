@@ -159,7 +159,12 @@ public class GraknSessionImpl implements GraknSession {
      * @return  A new or existing grakn graph factory with the defined name holding the graph in memory
      */
     private static ConfiguredFactory configureGraphFactoryInMemory(String keyspace){
-        InternalFactory factory = FactoryBuilder.getGraknGraphFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, null);
+        Properties inMemoryProperties = new Properties();
+        inMemoryProperties.put(AbstractGraknGraph.SHARDING_THRESHOLD, 100_000);
+        inMemoryProperties.put(AbstractGraknGraph.NORMAL_CACHE_TIMEOUT_MS, 30_000);
+        inMemoryProperties.put(AbstractGraknGraph.BATCH_CACHE_TIMEOUT_MS, 120_000);
+
+        InternalFactory factory = FactoryBuilder.getGraknGraphFactory(TinkerInternalFactory.class.getName(), keyspace, Grakn.IN_MEMORY, inMemoryProperties);
         return new ConfiguredFactory(TINKER_GRAPH_COMPUTER, factory);
     }
 

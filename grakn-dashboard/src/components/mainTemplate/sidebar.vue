@@ -87,29 +87,29 @@ li {
 </style>
 
 <script>
-import User from '../../js/User.js';
+import User from '../../js/User';
 
 
 export default {
-    props: ['showSideBar'],
-    data: function() {
-        return {
-            isUserAuth: User.isAuthenticated(),
-        }
+  props: ['showSideBar'],
+  data() {
+    return {
+      isUserAuth: User.isAuthenticated(),
+    };
+  },
+  created() {},
+  mounted() {
+    this.$nextTick(() => {
+    });
+  },
+  methods: {
+    openSignUp() {
+      $('.modal-wrapper').toggleClass('open');
     },
-    created: function() {},
-    mounted: function() {
-        this.$nextTick(function() {
-        })
+    logout() {
+      User.logout();
+      this.$router.push('/login');
     },
-    methods: {
-        openSignUp() {
-            $('.modal-wrapper').toggleClass('open');
-        },
-        logout() {
-            User.logout();
-            this.$router.push("/login");
-        }
-    }
-}
+  },
+};
 </script>

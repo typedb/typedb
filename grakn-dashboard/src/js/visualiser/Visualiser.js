@@ -272,9 +272,9 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-  addNode(href, bp, ap, ls, cn) {
-    if (!this.nodeExists(bp.id)) {
-      const colorObj = this.style.getNodeColour(bp.type, bp.baseType);
+  addNode(nodeBaseProperties, nodeResources, nodeLinks, clickedNodeId) {
+    if (!this.nodeExists(nodeBaseProperties.id)) {
+      const colorObj = this.style.getNodeColour(nodeBaseProperties.type, nodeBaseProperties.baseType);
       const highlightObj = {
         highlight: Object.assign(colorObj.highlight, {
           border: colorObj.highlight.background,
@@ -284,35 +284,32 @@ export default class Visualiser {
         hover: highlightObj.highlight,
       };
       this.nodes.add({
-        id: bp.id,
-        href,
-        label: this.generateLabel(bp.type, ap, bp.label, bp.baseType),
-        baseLabel: bp.label,
-        type: bp.type,
-        title: bp.type,
-        baseType: bp.baseType,
+        id: nodeBaseProperties.id,
+        href: nodeBaseProperties.href,
+        label: this.generateLabel(nodeBaseProperties.type, nodeResources, nodeBaseProperties.label, nodeBaseProperties.baseType),
+        baseLabel: nodeBaseProperties.label,
+        type: nodeBaseProperties.type,
+        baseType: nodeBaseProperties.baseType,
         color: Object.assign(colorObj, {
           border: colorObj.background,
         }, highlightObj, hoverObj),
-        font: this.style.getNodeFont(bp.type, bp.baseType),
-        shape: this.style.getNodeShape(bp.baseType),
-        size: this.style.getNodeSize(bp.baseType),
-        selected: false,
-        explore: bp.explore,
-        properties: ap,
-        links: ls,
+        font: this.style.getNodeFont(nodeBaseProperties.type, nodeBaseProperties.baseType),
+        shape: this.style.getNodeShape(nodeBaseProperties.baseType),
+        size: this.style.getNodeSize(nodeBaseProperties.baseType),
+        explore: nodeBaseProperties.explore,
+        properties: nodeResources,
+        links: nodeLinks,
       });
       this.nodes.flush();
-    } else if (bp.id !== cn && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
+    } else if (nodeBaseProperties.id !== clickedNodeId && User.getFreezeNodes()) { // If node already in graph and it's not the node clicked by user, unlock it
       this.updateNode({
-        id: bp.id,
+        id: nodeBaseProperties.id,
         fixed: {
           x: false,
           y: false,
         },
       });
     }
-
     return this;
   }
 
@@ -334,10 +331,11 @@ export default class Visualiser {
     });
   }
     /**
-     * Add edge between two nodes with @label. This can be called at any time *after* render().
+     * Add edge between two nodes with @label, only if both nodes exist in the graph and they are not alreay connected.
+     * This can be called at any time *after* render().
      */
   addEdge(fromNode, toNode, label) {
-    if (!this.alreadyConnected(fromNode, toNode)) {
+    if (this.nodeExists(fromNode) && this.nodeExists(toNode) && !this.alreadyConnected(fromNode, toNode, label)) {
       this.edges.add({
         from: fromNode,
         to: toNode,
@@ -531,13 +529,13 @@ export default class Visualiser {
     /**
      * Check if two nodes (a,b) are already connected by an edge.
      */
-  alreadyConnected(a, b) {
-    if (!(a in this.nodes._data && b in this.nodes._data)) {
+  alreadyConnected(a, b, label) {
+    if (!(this.nodes.get(a) && this.nodes.get(b))) {
       return false;
     }
 
-    return _.contains(_.values(this.edges._data)
-            .map(x => Visualiser.matching(a, b, x.to, x.from)),
+    return _.contains(_.values(this.edges.get())
+            .map(x => (Visualiser.matching(a, b, x.to, x.from)&&label===x.label)),
             true);
   }
 

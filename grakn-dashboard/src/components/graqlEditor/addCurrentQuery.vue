@@ -70,6 +70,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
   background-color: #494b54;
   overflow: scroll;
   -moz-user-select: none;
+  user-select: none;
   -ms-overflow-style: none;
   overflow: -moz-scrollbars-none;
 }
@@ -149,53 +150,54 @@ div>span {
 </style>
 
 <script>
-import FavQueries from '../../js/FavQueries.js'
 import Prism from 'prismjs';
-import * as PGraqlLang from '../../js/prismGraql.js';
+
+import FavQueries from '../../js/FavQueries';
+import * as PGraqlLang from '../../js/prismGraql';
 
 
 export default {
-    name: "addQueryButton",
-    props: ['currentQuery'],
-    data() {
-        return {
-            showToolTip: false,
-            currentQueryName: "",
-            highlightedQuery: undefined
-        }
-    },
+  name: 'addQueryButton',
+  props: ['currentQuery'],
+  data() {
+    return {
+      showToolTip: false,
+      currentQueryName: '',
+      highlightedQuery: undefined,
+    };
+  },
 
-    created() {},
-    directives: {
-        //Registering local directive to always force focus on query-name input
-        focus: {
-            inserted: function(el) {
-                el.focus()
-            }
-        }
+  created() {},
+  directives: {
+        // Registering local directive to always force focus on query-name input
+    focus: {
+      inserted(el) {
+        el.focus();
+      },
     },
-    mounted: function() {
-        this.$nextTick(function() {
+  },
+  mounted() {
+    this.$nextTick(() => {
             // code for previous attach() method.
-        });
+    });
+  },
+
+  methods: {
+    showToolTipFn() {
+      if (!this.showToolTip) {
+        if (this.currentQuery === '') return;
+        this.highlightedQuery = Prism.highlight(this.currentQuery, PGraqlLang.default);
+      }
+      this.showToolTip = !this.showToolTip;
+    },
+    addQuery() {
+      FavQueries.addFavQuery(this.currentQueryName, this.currentQuery);
+      toastr.success('New query saved!');
+      this.showToolTip = false;
+      this.currentQueryName = '';
+      this.$emit('new-query-saved');
     },
 
-    methods: {
-        showToolTipFn() {
-            if (!this.showToolTip) {
-                if (this.currentQuery === "") return;
-                this.highlightedQuery = Prism.highlight(this.currentQuery, PGraqlLang.default);
-            }
-            this.showToolTip = !this.showToolTip;
-        },
-        addQuery() {
-            FavQueries.addFavQuery(this.currentQueryName, this.currentQuery);
-            toastr.success("New query saved!");
-            this.showToolTip = false;
-            this.currentQueryName = "";
-            this.$emit('new-query-saved');
-        }
-
-    }
-}
+  },
+};
 </script>

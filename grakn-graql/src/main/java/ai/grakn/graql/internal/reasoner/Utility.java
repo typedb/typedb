@@ -37,7 +37,6 @@ import ai.grakn.graql.internal.pattern.property.IdProperty;
 import ai.grakn.graql.internal.pattern.property.LabelProperty;
 import ai.grakn.graql.internal.pattern.property.ValueProperty;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
@@ -150,8 +149,8 @@ public class Utility {
      * @param parent reasoner query the mapped predicate should belong to
      * @return set of mapped ValuePredicates
      */
-    public static Set<Predicate> getValuePredicates(VarName valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
-        Set<Predicate> predicates = new HashSet<>();
+    public static Set<ValuePredicate> getValuePredicates(VarName valueVariable, VarAdmin valueVar, Set<VarAdmin> vars, ReasonerQuery parent){
+        Set<ValuePredicate> predicates = new HashSet<>();
         if(valueVar.isUserDefinedName()){
             vars.stream()
                     .filter(v -> v.getVarName().equals(valueVariable))
@@ -237,23 +236,23 @@ public class Utility {
      * @param role input role type
      * @return set of all non-meta super types of the role
      */
-    public static Set<RoleType> getSuperTypes(RoleType role){
-        Set<RoleType> superTypes = new HashSet<>();
-        RoleType superRole = role.superType();
-        while(!Schema.MetaSchema.isMetaLabel(superRole.getLabel())) {
-            superTypes.add(superRole);
-            superRole = superRole.superType();
+    public static Set<Type> getSuperTypes(Type role){
+        Set<Type> superTypes = new HashSet<>();
+        Type superType = role.superType();
+        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())) {
+            superTypes.add(superType);
+            superType = superType.superType();
         }
         return superTypes;
     }
 
     /**
-     * @param roleTypes entry role type set
-     * @return non-meta role types from within the provided set of role types
+     * @param types entry type set
+     * @return top non-meta types from within the provided set of role types
      */
-    public static Set<RoleType> getTopRoles(Set<RoleType> roleTypes) {
-        return roleTypes.stream()
-                .filter(rt -> Sets.intersection(getSuperTypes(rt), roleTypes).isEmpty())
+    public static Set<Type> getTopTypes(Set<? extends Type> types) {
+        return types.stream()
+                .filter(rt -> Sets.intersection(getSuperTypes(rt), types).isEmpty())
                 .collect(toSet());
     }
 
@@ -438,9 +437,24 @@ public class Utility {
     /**
      * @param parent type
      * @param child type
-     * @return true if child is subtype of parent
+     * @return true if child is a subtype of parent
      */
     public static boolean checkTypesCompatible(Type parent, Type child) {
-        return parent.equals(child) || parent.subTypes().contains(child);
+        if(Schema.MetaSchema.isMetaLabel(parent.getLabel())) return true;
+        Type superType = child;
+        while(!Schema.MetaSchema.isMetaLabel(superType.getLabel())){
+            if (superType.equals(parent)) return true;
+            superType = superType.superType();
+        }
+        return false;
+    }
+
+    /**
+     * @param parent type
+     * @param child type
+     * @return true if types do not belong to the same type hierarchy
+     */
+    public static boolean checkTypesDisjoint(Type parent, Type child) {
+        return !checkTypesCompatible(parent, child) && !checkTypesCompatible(child, parent);
     }
 }

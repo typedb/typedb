@@ -44,25 +44,11 @@ import static ai.grakn.graql.internal.util.StringConverter.valueToString;
  */
 class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
-    /**
-     * @param keyword a keyword to color-code using ANSI colors
-     * @return the keyword, color-coded
-     */
-    private static String colorKeyword(String keyword) {
-        return ANSI.color(keyword, ANSI.BLUE);
-    }
-
-    /**
-     * @param type a type to color-code using ANSI colors
-     * @return the type, color-coded
-     */
-    private static String colorType(Type type) {
-        return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
-    }
-
     private final ResourceType[] resourceTypes;
+    private final boolean colorize;
 
-    GraqlPrinter(ResourceType... resourceTypes) {
+    GraqlPrinter(boolean colorize, ResourceType... resourceTypes) {
+        this.colorize = colorize;
         this.resourceTypes = resourceTypes;
     }
 
@@ -190,6 +176,33 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     .andThen(graqlString(true, entry.getValue()));
         } else {
             return sb -> sb.append(object.toString());
+        }
+    }
+
+
+    /**
+     * Color-codes the keyword if colorization enabled
+     * @param keyword a keyword to color-code using ANSI colors
+     * @return the keyword, color-coded
+     */
+    private String colorKeyword(String keyword) {
+        if(colorize) {
+            return ANSI.color(keyword, ANSI.BLUE);
+        } else {
+            return keyword;
+        }
+    }
+
+    /**
+     * Color-codes the given type if colorization enabled
+     * @param type a type to color-code using ANSI colors
+     * @return the type, color-coded
+     */
+    private String colorType(Type type) {
+        if(colorize) {
+            return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
+        } else {
+            return typeLabelToString(type.getLabel());
         }
     }
 }

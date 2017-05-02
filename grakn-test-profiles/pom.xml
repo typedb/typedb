@@ -14,9 +14,8 @@
     <packaging>pom</packaging>
 
     <properties>
-        <grakn.test-profile>tinker</grakn.test-profile>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
-        <docker-tests>true</docker-tests>
+        <skip-docker-tests>true</skip-docker-tests>
     </properties>
 
     <build>
@@ -52,6 +51,7 @@
                     <systemPropertyVariables>
                         <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -61,8 +61,12 @@
     <profiles>
         <profile>
             <id>tinker</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
             <properties>
                 <grakn.test-profile>tinker</grakn.test-profile>
+                <grakn.skip-bash-tests>true</grakn.skip-bash-tests>
             </properties>
         </profile>
 
@@ -107,7 +111,7 @@
         <profile>
             <id>docker</id>
             <properties>
-                <docker-tests>false</docker-tests>
+                <skip-docker-tests>false</skip-docker-tests>
             </properties>
             <build>
                 <plugins>

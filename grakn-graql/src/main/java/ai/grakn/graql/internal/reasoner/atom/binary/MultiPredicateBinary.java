@@ -25,11 +25,9 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,23 +37,21 @@ import java.util.stream.Collectors;
  * Base implementation for binary atoms with multiple predicate.
  * </p>
  *
+ * @param <T> type of the contained predicate
+ *
  * @author Kasper Piskorski
  *
  */
-public abstract class MultiPredicateBinary extends BinaryBase {
-    private final  Set<Predicate> multiPredicate = new HashSet<>();
+public abstract class MultiPredicateBinary<T extends Predicate> extends BinaryBase {
+    private final Set<T> multiPredicate = new HashSet<>();
 
-    protected MultiPredicateBinary(VarAdmin pattern, Set<Predicate> preds, ReasonerQuery par) {
+    protected MultiPredicateBinary(VarAdmin pattern, Set<T> preds, ReasonerQuery par) {
         super(pattern, par);
         this.multiPredicate.addAll(preds);
         this.typeId = extractTypeId(atomPattern.asVar());
     }
 
-    protected MultiPredicateBinary(MultiPredicateBinary a) {
-        super(a);
-        a.getMultiPredicate().forEach(pred -> multiPredicate.add((Predicate) AtomicFactory.create(pred, getParentQuery())));
-        this.typeId = a.getTypeId() != null? ConceptId.of(a.getTypeId().getValue()) : null;
-    }
+    protected MultiPredicateBinary(MultiPredicateBinary<T> a) {super(a);}
 
     protected abstract ConceptId extractTypeId(VarAdmin var);
 
@@ -65,7 +61,7 @@ public abstract class MultiPredicateBinary extends BinaryBase {
         multiPredicate.forEach(pred -> pred.setParentQuery(q));
     }
 
-    public Set<Predicate> getMultiPredicate() { return multiPredicate;}
+    public Set<T> getMultiPredicate() { return multiPredicate;}
 
     @Override
     public PatternAdmin getCombinedPattern() {
@@ -75,20 +71,6 @@ public abstract class MultiPredicateBinary extends BinaryBase {
                 .collect(Collectors.toSet());
         vars.add(super.getPattern().asVar());
         return Patterns.conjunction(vars);
-    }
-
-    @Override
-    protected boolean predicatesEquivalent(BinaryBase at) {
-        MultiPredicateBinary atom = (MultiPredicateBinary) at;
-        for (Predicate predicate : getMultiPredicate()) {
-            Iterator<Predicate> objIt = atom.getMultiPredicate().iterator();
-            boolean predicateHasEquivalent = false;
-            while (objIt.hasNext() && !predicateHasEquivalent) {
-                predicateHasEquivalent = predicate.isEquivalent(objIt.next());
-            }
-            if (!predicateHasEquivalent) return false;
-        }
-        return true;
     }
 
     private int multiPredicateEquivalenceHashCode(){

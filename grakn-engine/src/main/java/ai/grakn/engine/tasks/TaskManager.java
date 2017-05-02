@@ -40,10 +40,16 @@ import ai.grakn.engine.TaskId;
  */
 public interface TaskManager extends AutoCloseable {
     /**
-     * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds.
+     * Schedule a {@link BackgroundTask} for execution, giving it priority to run after all other tasks
      * @param taskState Task to execute
      */
-    void addTask(TaskState taskState);
+    void addLowPriorityTask(TaskState taskState, TaskConfiguration configuration);
+
+    /**
+     * Schedule a {@link BackgroundTask} for execution, giving it priority to run before all other tasks
+     * @param taskState Task to execute
+     */
+    void addHighPriorityTask(TaskState taskState, TaskConfiguration configuration);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

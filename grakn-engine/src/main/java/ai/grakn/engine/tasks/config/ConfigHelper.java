@@ -18,9 +18,9 @@
 
 package ai.grakn.engine.tasks.config;
 
-import ai.grakn.engine.tasks.TaskIdDeserializer;
-import ai.grakn.engine.tasks.TaskIdSerializer;
-import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.TaskConfiguration;
+import ai.grakn.engine.tasks.TaskConfigurationDeserializer;
+import ai.grakn.engine.tasks.TaskConfigurationSerializer;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateDeserializer;
 import ai.grakn.engine.tasks.TaskStateSerializer;
@@ -43,7 +43,7 @@ import java.util.Properties;
  */
 public class ConfigHelper {
 
-    public static Consumer<TaskId, TaskState> kafkaConsumer(String groupId) {
+    public static Consumer<TaskState, TaskConfiguration> kafkaConsumer(String groupId) {
         Properties properties = new Properties();
         properties.putAll(GraknEngineConfig.getInstance().getProperties());
 
@@ -54,18 +54,19 @@ public class ConfigHelper {
 
         // The max poll time should be set to its largest value
         // Our task runners will only poll again after the tasks have completed
+        //TODO Make this number more reasonable
         properties.put("max.poll.interval.ms", Integer.MAX_VALUE);
 
         // Max poll records should be set to one: each TaskRunner should only handle one record at a time
         properties.put("max.poll.records", "1");
 
-        return new KafkaConsumer<>(properties, new TaskIdDeserializer(), new TaskStateDeserializer());
+        return new KafkaConsumer<>(properties, new TaskStateDeserializer(), new TaskConfigurationDeserializer());
     }
 
-    public static Producer<TaskId, TaskState> kafkaProducer() {
+    public static Producer<TaskState, TaskConfiguration> kafkaProducer() {
         Properties properties = new Properties();
         properties.putAll(GraknEngineConfig.getInstance().getProperties());
 
-        return new KafkaProducer<>(properties, new TaskIdSerializer(), new TaskStateSerializer());
+        return new KafkaProducer<>(properties, new TaskStateSerializer(), new TaskConfigurationSerializer());
     }
 }

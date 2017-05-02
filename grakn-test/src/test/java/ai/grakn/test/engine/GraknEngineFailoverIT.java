@@ -27,7 +27,6 @@ import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.storage.TaskStateZookeeperStore;
 import ai.grakn.exception.EngineStorageException;
-import ai.grakn.generator.TaskStates.NewTask;
 import ai.grakn.test.DistributionContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
 import com.google.common.collect.ImmutableList;
@@ -49,6 +48,7 @@ import java.util.Set;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.engine.TaskStatus.STOPPED;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -80,7 +80,7 @@ public class GraknEngineFailoverIT {
     }
 
     @Property(trials=10)
-    public void whenSubmittingTasksToOneEngine_TheyComplete(List<@NewTask TaskState> tasks1) throws Exception {
+    public void whenSubmittingTasksToOneEngine_TheyComplete(List<TaskState> tasks1) throws Exception {
         // Create & Send tasks to rest api
         Set<TaskId> tasks = sendTasks(engine1.port(), tasks1);
 
@@ -94,7 +94,7 @@ public class GraknEngineFailoverIT {
 
     @Property(trials=10)
     public void whenSubmittingTasksToTwoEngines_TheyComplete(
-            List<@NewTask TaskState> tasks1, List<@NewTask TaskState> tasks2) throws Exception {
+            List<TaskState> tasks1, List<TaskState> tasks2) throws Exception {
         // Create & Send tasks to rest api
         Set<TaskId> taskIds1 = sendTasks(engine1.port(), tasks1);
         Set<TaskId> taskIds2 = sendTasks(engine2.port(), tasks2);
@@ -110,15 +110,14 @@ public class GraknEngineFailoverIT {
         assertTasksCompletedWithCorrectStatus(allTasks);
     }
 
-    @Ignore //Failing randomly - may be a race condition
     @Property(trials=1)
     public void whenSubmittingTasksToOneEngineAndRandomlyKillingTheOthers_TheyComplete(
-            @Size(min=1000, max=5000) List<@NewTask TaskState> tasks) throws Exception {
+            @Size(min=1000, max=5000) List<TaskState> tasks) throws Exception {
 
         Set<TaskId> taskIds = sendTasks(engine1.port(), tasks);
 
         // Randomly restart one of the other engines until all of the tasks are done
-        int lowerBoundMs = 3000;
+        int lowerBoundMs = 5000;
         Random random = new Random();
         List<DistributionContext> enginesToKill = ImmutableList.of(engine2, engine3);
         do{
@@ -154,7 +153,7 @@ public class GraknEngineFailoverIT {
                 t.creator(),
                 t.schedule().runAt(),
                 t.schedule().interval().orElse(null),
-                t.configuration())).collect(toSet());
+                configuration(t).json())).collect(toSet());
     }
 
     private static void waitForStatus(Set<TaskId> taskIds, TaskStatus... status) {

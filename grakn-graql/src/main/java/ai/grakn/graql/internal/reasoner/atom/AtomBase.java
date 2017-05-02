@@ -58,6 +58,7 @@ public abstract class AtomBase implements Atomic {
     protected AtomBase(AtomBase a) {
         this.atomPattern = a.atomPattern;
         this.varName = atomPattern.asVar().getVarName();
+        this.parent = a.getParentQuery();
     }
 
     @Override

@@ -374,13 +374,13 @@ class GraqlSession {
 
     private Printer getPrinter(ResourceType... resources) {
         switch (outputFormat) {
-            case "graql":
-            default:
-                return Printers.graql(resources);
             case "json":
                 return Printers.json();
             case "hal":
                 return Printers.hal();
+            case "graql":
+            default:
+                return Printers.graql(true, resources);
         }
     }
 }

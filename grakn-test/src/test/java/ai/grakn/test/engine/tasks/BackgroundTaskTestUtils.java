@@ -21,27 +21,26 @@ package ai.grakn.test.engine.tasks;
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.mock.FailingMockTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
-import ai.grakn.migration.base.Migrator;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Sets;
 import java.time.Duration;
 import java.time.Instant;
-import mjson.Json;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +52,6 @@ import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.generate;
-import static org.junit.Assert.fail;
 
 /**
  * Class holding useful methods for use throughout background task tests
@@ -62,16 +60,12 @@ public class BackgroundTaskTestUtils {
 
     private final static Logger LOG = LoggerFactory.getLogger(BackgroundTaskTestUtils.class);
 
-    public static Set<TaskState> createTasks(int n) {
-        return generate(() -> createTask(ShortExecutionMockTask.class)).limit(n).collect(toSet());
-    }
-
-    public static Set<TaskState> createScheduledTasks(int n) {
-        return generate(() -> createTask(ShortExecutionMockTask.class).markScheduled()).limit(n).collect(toSet());
-    }
-
     public static Set<TaskState> createRunningTasks(int n, EngineID engineID) {
         return generate(() -> createTask(ShortExecutionMockTask.class).markRunning(engineID)).limit(n).collect(toSet());
+    }
+
+    public static TaskConfiguration configuration(TaskState taskState){
+        return TaskConfiguration.of(Json.object("id", taskState.getId().getValue()));
     }
 
     public static TaskState createTask() {
@@ -83,13 +77,7 @@ public class BackgroundTaskTestUtils {
     }
 
     public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule) {
-        return createTask(clazz, schedule, Json.object());
-    }
-
-    public static TaskState createTask(Class<? extends BackgroundTask> clazz, TaskSchedule schedule, Json configuration) {
-        TaskState taskState = TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule, configuration);
-        configuration.set("id", taskState.getId().getValue());
-        return taskState;
+        return TaskState.of(clazz, BackgroundTaskTestUtils.class.getName(), schedule);
     }
 
     public static void waitForDoneStatus(TaskStateStorage storage, Collection<TaskState> tasks) {
@@ -110,7 +98,7 @@ public class BackgroundTaskTestUtils {
 
         while(true) {
             long duration = Duration.between(initial, Instant.now()).toMillis();
-            if (duration > 60000){
+            if (duration > 120000){
                 TaskStatus finalStatus = storage.containsTask(task) ? storage.getState(task).status() : null;
                 LOG.warn("Waiting for status of " + task + " to be any of " + status + ", but status is " + finalStatus);
                 initial = Instant.now();

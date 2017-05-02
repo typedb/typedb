@@ -45,8 +45,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 public class TaskStates extends Generator<TaskState> {
 
-    private boolean newTask = false;
-
     // TODO: make this generate more classes
     @SuppressWarnings("unchecked")
     private Class<? extends BackgroundTask>[] classes = new Class[] {
@@ -61,14 +59,6 @@ public class TaskStates extends Generator<TaskState> {
     public TaskState generate(SourceOfRandomness random, GenerationStatus status) {
         Class<? extends BackgroundTask> taskClass = random.choose(classes);
 
-        TaskId taskId;
-
-        if (newTask) {
-            taskId = TaskId.generate();
-        } else {
-            taskId = TaskId.of(random.choose(ImmutableSet.of("A", "B", "C")));
-        }
-
         // TODO: Make this generate random task statuses
 
         String creator = gen().type(String.class).generate(random, status);
@@ -78,25 +68,11 @@ public class TaskStates extends Generator<TaskState> {
         // A bit in the past, because Instant is not monotonic
         TaskSchedule schedule = TaskSchedule.at(Instant.now().minusSeconds(60));
 
-        Json configuration = Json.object();
-        TaskState taskState = TaskState.of(taskClass, creator, schedule, configuration, taskId);
-        configuration.set("id", taskState.getId().getValue());
-        return taskState;
-    }
-
-    public void configure(NewTask newTask) {
-        this.newTask = newTask.value();
+        return TaskState.of(taskClass, creator, schedule);
     }
 
     public void configure(WithClass withClass) {
         this.classes = withClass.value();
-    }
-
-    @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})
-    @Retention(RUNTIME)
-    @GeneratorConfiguration
-    public @interface NewTask {
-        boolean value() default true;
     }
 
     @Target({PARAMETER, FIELD, ANNOTATION_TYPE, TYPE_USE})

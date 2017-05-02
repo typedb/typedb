@@ -81,20 +81,6 @@ public class GenealogyTest {
     }
 
     @Test
-    public void testNonEquals(){
-        String queryString= "match " +
-                "$w isa wedding has confidence 'high';" +
-                "$rel1 (happening: $w, protagonist: $s1) isa event-protagonist;" +
-                "$rel1 has event-role 'spouse';"+
-                "$rel2 (happening: $w, protagonist: $s2) isa event-protagonist;" +
-                "$rel2 has event-role 'spouse';" +
-                "$s1 != $s2;select $s1, $s2;";
-        MatchQuery query = iqb.parse(queryString);
-        QueryAnswers answers = queryAnswers(query);
-        assertTrue(!hasDuplicates(answers));
-    }
-
-    @Test
     public void testSpecificPerson(){
         Concept concept = Sets.newHashSet(genealogyGraph.graph().graql().infer(false).<MatchQuery>parse("match $x isa person;"))
                 .iterator().next()

@@ -21,15 +21,14 @@ package ai.grakn.engine.loader;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.cache.EngineCacheProvider;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.QueryBuilder;
-import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +60,7 @@ public class LoaderTask implements BackgroundTask {
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, Json configuration) {
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         attemptInsertions(
                 getKeyspace(configuration),
                 getInserts(configuration));
@@ -109,7 +108,8 @@ public class LoaderTask implements BackgroundTask {
             inserts.forEach(q -> q.withGraph(graph).execute());
 
             // commit the transaction
-            graph.admin().commit(EngineCacheProvider.getCache());
+            //TODO This commit uses the rest API, it shouldn't
+            graph.commit();
         } catch (GraknValidationException e) {
             //If it's a validation exception there is no point in re-trying
             throwException(FAILED_VALIDATION.getMessage(e.getMessage()), inserts);
@@ -159,10 +159,10 @@ public class LoaderTask implements BackgroundTask {
      * @param configuration JSONObject containing configuration
      * @return insert queries from the configuration
      */
-    private Collection<InsertQuery> getInserts(Json configuration){
-        if(configuration.has(TASK_LOADER_INSERTS)){
+    private Collection<InsertQuery> getInserts(TaskConfiguration configuration){
+        if(configuration.json().has(TASK_LOADER_INSERTS)){
             List<String> inserts = new ArrayList<>();
-            configuration.at(TASK_LOADER_INSERTS).asJsonList().forEach(i -> inserts.add(i.asString()));
+            configuration.json().at(TASK_LOADER_INSERTS).asJsonList().forEach(i -> inserts.add(i.asString()));
 
             return inserts.stream()
                     .map(builder::<InsertQuery>parse)
@@ -177,9 +177,9 @@ public class LoaderTask implements BackgroundTask {
      * @param configuration JSONObject containing configuration
      * @return keyspace from the configuration
      */
-    private String getKeyspace(Json configuration){
-        if(configuration.has(KEYSPACE)){
-            return configuration.at(KEYSPACE).asString();
+    private String getKeyspace(TaskConfiguration configuration){
+        if(configuration.json().has(KEYSPACE)){
+            return configuration.json().at(KEYSPACE).asString();
         }
 
         //TODO default graph name

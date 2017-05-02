@@ -770,7 +770,7 @@ public class MatchQueryTest {
     @Test
     public void testResultsString() {
         MatchQuery query = qb.match(var("x").isa("movie"));
-        List<String> resultsString = query.resultsString(Printers.graql()).collect(toList());
+        List<String> resultsString = query.resultsString(Printers.graql(false)).collect(toList());
         assertThat(resultsString, everyItem(allOf(containsString("$x"), containsString("movie"), containsString(";"))));
     }
 

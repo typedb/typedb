@@ -47,6 +47,7 @@ start)
     else
         # engine has not already started
         echo -n "Starting engine"
+        cd "${GRAKN_HOME}"
         if [[ "$FOREGROUND" = true ]]; then
             java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}/bin" -Dgrakn.conf="${GRAKN_CONFIG}" ai.grakn.engine.GraknEngineServer
         else

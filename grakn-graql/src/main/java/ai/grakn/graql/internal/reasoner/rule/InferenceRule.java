@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.reasoner.rule;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
@@ -31,12 +32,16 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
-import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
+import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
+import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
+import java.util.Map;
 import javafx.util.Pair;
 
 import java.util.Objects;
@@ -65,12 +70,9 @@ public class InferenceRule {
         body = new ReasonerQueryImpl(conjunction(rule.getLHS().admin()), graph);
         head = new ReasonerAtomicQuery(conjunction(rule.getRHS().admin()), graph);
 
-        //if head query is a relation query, require roles to be specified
-        if (head.getAtom().isRelation()){
-            Relation headAtom = (Relation) head.getAtom();
-            if (headAtom.getRoleVarTypeMap().keySet().size() < headAtom.getRelationPlayers().size()) {
-                throw new IllegalArgumentException(ErrorMessage.HEAD_ROLES_MISSING.getMessage(this.toString()));
-            }
+        //run time check for head atom validity
+        if (!getHead().getAtom().isAllowedToFormRuleHead()){
+            throw new IllegalArgumentException(ErrorMessage.DISALLOWED_ATOM_IN_RULE_HEAD.getMessage(getHead().getAtom(), this.toString()));
         }
     }
 
@@ -117,11 +119,15 @@ public class InferenceRule {
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
 
-    /**rule needs to be materialised if head atom requires materialisation or if its head contains only fresh variables
+    /**
+     * rule requires materialisation in the context of resolving parentatom
+     * if parent atom requires materialisation, head atom requires materialisation or if the head contains only fresh variables
+     *
      * @return true if the rule needs to be materialised
      */
-    public boolean requiresMaterialisation(){
-        return getHead().getAtom().requiresMaterialisation()
+    public boolean requiresMaterialisation(Atom parentAtom){
+        return parentAtom.requiresMaterialisation()
+            || getHead().getAtom().requiresMaterialisation()
             || hasDisconnectedHead();}
 
     /**
@@ -150,14 +156,32 @@ public class InferenceRule {
      */
     public  InferenceRule propagateConstraints(Atom parentAtom){
         if (!parentAtom.isRelation() && !parentAtom.isResource()) return this;
-        Set<Predicate> predicates = parentAtom.getPredicates().stream()
-                .collect(toSet());
-        Set<Atom> types = parentAtom.getTypeConstraints().stream()
-                .collect(toSet());
 
-        head.addAtomConstraints(predicates);
-        body.addAtomConstraints(predicates);
-        body.addAtomConstraints(types.stream().filter(type -> !body.containsEquivalentAtom(type)).collect(toSet()));
+        Set<IdPredicate> idPredicates = parentAtom.getIdPredicates();
+        body.addAtomConstraints(idPredicates);
+        head.addAtomConstraints(idPredicates);
+
+        //only transfer value predicates if head has a user specified value variable
+        Atom headAtom = head.getAtom();
+        if(headAtom.isResource() && ((Resource) headAtom).getMultiPredicate().isEmpty()){
+            Set<ValuePredicate> valuePredicates = parentAtom.getValuePredicates();
+            head.addAtomConstraints(valuePredicates);
+            body.addAtomConstraints(valuePredicates);
+        }
+
+        Set<TypeAtom> types = parentAtom.getTypeConstraints().stream()
+                .collect(toSet());
+        Set<VarName> typeVars = types.stream().map(Atom::getVarName).collect(toSet());
+        Map<VarName, Type> varTypeMap = parentAtom.getParentQuery().getVarTypeMap();
+
+        //remove less specific types if present
+        body.getTypeConstraints().stream()
+                .filter(type -> typeVars.contains(type.getVarName()))
+                .filter(type -> !type.equals(varTypeMap.get(type.getVarName())))
+                .filter(type -> type.getType().subTypes().contains(varTypeMap.get(type.getVarName())))
+                .forEach(body::removeAtomic);
+
+        body.addAtomConstraints(types.stream().filter(type -> !body.getTypeConstraints().contains(type)).collect(toSet()));
         return this;
     }
 

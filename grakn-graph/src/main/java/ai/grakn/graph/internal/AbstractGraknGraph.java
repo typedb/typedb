@@ -40,7 +40,6 @@ import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.exception.MoreThanOneConceptException;
 import ai.grakn.factory.SystemKeyspace;
-import ai.grakn.graph.admin.ConceptCache;
 import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.graph.internal.computer.GraknSparkComputer;
 import ai.grakn.graql.QueryBuilder;
@@ -51,13 +50,15 @@ import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import java.util.Objects;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.javatuples.Pair;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,8 +70,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -78,6 +80,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * <p>
@@ -95,15 +98,23 @@ import static ai.grakn.graph.internal.RelationImpl.generateNewHash;
  */
 public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph, GraknAdmin {
     protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
+
+    //TODO: Is this the correct place for these config paths
+    //----------------------------- Config Paths
+    public static final String SHARDING_THRESHOLD = "graph.sharding-threshold";
+    public static final String NORMAL_CACHE_TIMEOUT_MS = "graph.ontology-cache-timeout-ms";
+    public static final String BATCH_CACHE_TIMEOUT_MS = "graph.batch.ontology-cache-timeout-ms";
+
+    //----------------------------- Graph Shared Variable
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
+    private final long shardingFactor;
+    private final Cache<TypeLabel, Type> cachedOntology;
 
-    //TODO: Make this a config option
-    private final long shardingFactor = 100_000;
-
+    //----------------------------- Transaction Thread Bound
     private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
@@ -111,18 +122,22 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
     private final ThreadLocal<Map<TypeLabel, Type>> localCloneCache = new ThreadLocal<>();
 
-    private Cache<TypeLabel, Type> cachedOntology = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterAccess(10, TimeUnit.MINUTES)
-            .build();
-
-    public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
+    public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled, Properties properties) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
+        shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
+
         elementFactory = new ElementFactory(this);
 
         localIsOpen.set(true);
+
+        int cacheTimeout = Integer.parseInt(
+                properties.get(batchLoadingEnabled ? BATCH_CACHE_TIMEOUT_MS : NORMAL_CACHE_TIMEOUT_MS).toString());
+        cachedOntology = CacheBuilder.newBuilder()
+                .maximumSize(1000)
+                .expireAfterWrite(cacheTimeout, TimeUnit.MILLISECONDS)
+                .build();
 
         if(initialiseMetaConcepts()) commitTransactionInternal();
 
@@ -338,7 +353,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @param conceptLog The thread bound concept log to read the snapshot into.
      */
     private void loadOntologyCacheIntoTransactionCache(ConceptLog conceptLog){
-        ConcurrentMap<TypeLabel, Type> cachedOntologySnapshot = getCachedOntology().asMap();
+        ImmutableMap<TypeLabel, Type> cachedOntologySnapshot = ImmutableMap.copyOf(getCachedOntology().asMap());
 
         //Read central cache into conceptLog cloning only base concepts. Sets clones later
         for (Type type : cachedOntologySnapshot.values()) {
@@ -347,7 +362,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         //Iterate through cached clones completing the cloning process.
         //This part has to be done in a separate iteration otherwise we will infinitely recurse trying to clone everything
-        for (Type type : getCloneCache().values()) {
+        for (Type type : ImmutableSet.copyOf(getCloneCache().values())) {
             //noinspection unchecked
             ((TypeImpl) type).copyCachedConcepts(cachedOntologySnapshot.get(type.getLabel()));
         }
@@ -385,14 +400,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return the set of concepts deep cloned
      */
     <X extends Type> Set<X> clone(Set<X> types){
-        return types.stream().map(this::clone).collect(Collectors.toSet());
+        return types.stream().map(this::clone).collect(toSet());
     }
 
     void checkOntologyMutation(){
         checkMutation();
-        if(isBatchLoadingEnabled()){
-            throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
-        }
+        //if(isBatchLoadingEnabled()){
+        //    throw new GraphRuntimeException(ErrorMessage.SCHEMA_LOCKED.getMessage());
+        //}
     }
 
     void checkMutation(){
@@ -730,14 +745,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      */
     @Override
     public void clear() {
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
         innerClear();
-    }
-
-    @Override
-    public void clear(ConceptCache conceptCache) {
-        innerClear();
-        conceptCache.clearAllJobs(getKeyspace());
     }
 
     private void innerClear(){
@@ -752,7 +760,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public void close(){
-        close(false);
+        close(false, false);
     }
 
     @Override
@@ -762,18 +770,21 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @Override
     public void commit() throws GraknValidationException{
-        close(true);
+        close(true, true);
     }
 
-    private void close(boolean commitRequired){
-        if(isClosed()) return;
-
+    private Optional<String> close(boolean commitRequired, boolean submitLogs){
+        Optional<String> logs = Optional.empty();
+        if(isClosed()) return logs;
         String closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("closed", getKeyspace());
 
         try{
             if(commitRequired) {
                 closeMessage = ErrorMessage.GRAPH_CLOSED_ON_ACTION.getMessage("committed", getKeyspace());
-                commit(this::submitCommitLogs);
+                logs = commitWithLogs();
+                if(logs.isPresent() && submitLogs) {
+                    LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, logs.get()) + "]");
+                }
                 getConceptLog().writeToCentralCache(true);
             } else {
                 getConceptLog().writeToCentralCache(isReadOnly());
@@ -781,6 +792,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         } finally {
             closeTransaction(closeMessage);
         }
+        return logs;
     }
 
     private void closeTransaction(String closedReason){
@@ -788,26 +800,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             graph.tx().close();
         } catch (UnsupportedOperationException e) {
             //Ignored for Tinker
+        } finally {
+            localClosedReason.set(closedReason);
+            localIsOpen.remove();
+            localConceptLog.remove();
         }
-        localClosedReason.set(closedReason);
-        localIsOpen.remove();
-        localConceptLog.remove();
-    }
-
-    /**
-     * Commits the graph and adds concepts for post processing directly to the cache bypassing the REST API.
-     *
-     * @param conceptCache The concept Cache to store concepts in for processing later
-     * @throws GraknValidationException when the graph does not conform to the object concept
-     */
-    @Override
-    public void commit(ConceptCache conceptCache) throws GraknValidationException{
-        commit((castings, resources) -> {
-            if(conceptCache != null) {
-                castings.forEach(pair -> conceptCache.addJobCasting(getKeyspace(), pair.getValue0(), pair.getValue1()));
-                resources.forEach(pair -> conceptCache.addJobResource(getKeyspace(), pair.getValue0(), pair.getValue1()));
-            }
-        });
     }
 
     /**
@@ -816,18 +813,19 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @throws GraknValidationException when the graph does not conform to the object concept
      */
     @Override
-    public void commitNoLogs() throws GraknValidationException {
-        commit((x, y) -> {});
+    public Optional<String> commitNoLogs() throws GraknValidationException {
+        return close(true, false);
     }
 
+    //TODO: Kill this method
     public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
         validateGraph();
 
         Set<Pair<String, ConceptId>> castings = getConceptLog().getModifiedCastings().stream().
-                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(Collectors.toSet());
+                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(toSet());
 
         Set<Pair<String, ConceptId>> resources = getConceptLog().getModifiedResources().stream().
-                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(Collectors.toSet());
+                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(toSet());
 
 
         LOG.trace("Graph is valid. Committing graph . . . ");
@@ -844,6 +842,29 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
+    private Optional<String> commitWithLogs() throws GraknValidationException {
+        validateGraph();
+
+        boolean submissionNeeded = !getConceptLog().getInstanceCount().isEmpty() ||
+                !getConceptLog().getModifiedCastings().isEmpty() ||
+                !getConceptLog().getModifiedResources().isEmpty();
+        JSONObject conceptLog = getConceptLog().getFormattedLog();
+
+        LOG.trace("Graph is valid. Committing graph . . . ");
+        commitTransactionInternal();
+
+        //TODO: Kill when analytics no longer needs this
+        GraknSparkComputer.refresh();
+
+        LOG.trace("Graph committed.");
+
+        //No post processing should ever be done for the system keyspace
+        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && submissionNeeded) {
+            return Optional.of(conceptLog.toString());
+        }
+        return Optional.empty();
+    }
+
     void commitTransactionInternal(){
         try {
             getTinkerPopGraph().tx().commit();
@@ -851,7 +872,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //IGNORED
         }
     }
-
 
     void validateGraph() throws GraknValidationException {
         Validator validator = new Validator(this);
@@ -866,37 +886,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
-    private void submitCommitLogs(Set<Pair<String, ConceptId>> castings, Set<Pair<String, ConceptId>> resources){
-        //Concepts In Need of Inspection
-        JSONArray conceptsForInspection = new JSONArray();
-        loadCommitLogConcepts(conceptsForInspection, Schema.BaseType.CASTING, castings);
-        loadCommitLogConcepts(conceptsForInspection, Schema.BaseType.RESOURCE, resources);
-
-        //Types with instance changes
-        JSONArray typesWithInstanceChanges = new JSONArray();
-        getConceptLog().getInstanceCount().entrySet().forEach(entry -> {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put(REST.Request.COMMIT_LOG_TYPE_NAME, entry.getKey().getValue());
-            jsonObject.put(REST.Request.COMMIT_LOG_INSTANCE_COUNT, entry.getValue());
-            typesWithInstanceChanges.put(jsonObject);
-        });
-
-        //Final Commit Log
-        JSONObject postObject = new JSONObject();
-        postObject.put(REST.Request.COMMIT_LOG_FIXING, conceptsForInspection);
-        postObject.put(REST.Request.COMMIT_LOG_COUNTING, typesWithInstanceChanges);
-
-        LOG.debug("Response from engine [" + EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString()) + "]");
-    }
-    private void loadCommitLogConcepts(JSONArray jsonArray, Schema.BaseType baseType, Set<Pair<String, ConceptId>> concepts){
-        concepts.forEach(concept -> {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put(REST.Request.COMMIT_LOG_TYPE, baseType.name());
-            jsonObject.put(REST.Request.COMMIT_LOG_INDEX, concept.getValue0());
-            jsonObject.put(REST.Request.COMMIT_LOG_ID, concept.getValue1().getValue());
-            jsonArray.put(jsonObject);
-        });
-    }
     private String getCommitLogEndPoint(){
         if(Grakn.IN_MEMORY.equals(engine)) {
             return Grakn.IN_MEMORY;
@@ -915,22 +904,32 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * Merges the provided duplicate castings.
      *
      * @param castingVertexIds The vertex Ids of the duplicate castings
-     * @return if castings were merged and a commit is required.
+     * @return if castings were merged, a commit is required and the casting index exists
      */
     @Override
+    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
-        Set<CastingImpl> castings = castingVertexIds.stream().
-                map(id -> this.<CastingImpl>getConceptRawId(id.getValue())).collect(Collectors.toSet());
-        if(castings.size() >= 1){
-            //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
-            CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
-            castings.remove(mainCasting);
+        Set<CastingImpl> duplicated = castingVertexIds.stream()
+                .map(id -> this.<CastingImpl>getConceptRawId(id.getValue()))
+                //filter non-null, will be null if previously deleted/merged
+                .filter(Objects::nonNull)
+                .collect(toSet());
 
+        //This is done to ensure we merge into the indexed casting. Needs to be cleaned up though
+        CastingImpl mainCasting = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        duplicated.remove(mainCasting);
+
+        if(duplicated.size() > 0){
             //Fix the duplicates
-            Set<Relation> duplicateRelations = mergeCastings(mainCasting, castings);
+            Set<Relation> duplicateRelations = mergeCastings(mainCasting, duplicated);
 
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
+
+            //TODO Why do we need to restore the index if it has not changed?
+            //Restore the index
+            String newIndex = mainCasting.getIndex();
+            mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
             return true;
         }
@@ -995,15 +994,20 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if a commit is required.
      */
     @Override
+    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
-        Set<ResourceImpl> duplicates = resourceVertexIds.stream().
-                map(id -> this.<ResourceImpl>getConceptRawId(id.getValue())).collect(Collectors.toSet());
+        Set<ResourceImpl> duplicates = resourceVertexIds.stream()
+                .map(id -> this.<ResourceImpl>getConceptRawId(id.getValue()))
+                //filter non-null, will be null if previously deleted/merged
+                .filter(Objects::nonNull)
+                .collect(toSet());
 
-        if(duplicates.size() >= 1){
-            //This is done to ensure we merge into the indexed resource. Needs to be cleaned up though
-            ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
-            duplicates.remove(mainResource);
+        //The "main resource" will be the one returned by the index
+        ResourceImpl<?> mainResource = getConcept(Schema.ConceptProperty.INDEX, index, true);
+        duplicates.remove(mainResource);
 
+        //Remove any resources associated with this index that are not the main resource
+        if(duplicates.size() > 0){
             Iterator<ResourceImpl> it = duplicates.iterator();
 
             while(it.hasNext()){
@@ -1024,6 +1028,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                 otherResource.deleteNode();
             }
 
+            //Restore the index
+            //TODO Why do we need to do this
             String newIndex = mainResource.getIndex();
             mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 
@@ -1087,6 +1093,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
                    type.setInstanceCount(0L);
                    type.createShard();
                }
+
+
            }
        });
     }
