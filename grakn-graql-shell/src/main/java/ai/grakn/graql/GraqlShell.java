@@ -136,7 +136,7 @@ public class GraqlShell {
     );
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
-    private static final String HISTORY_FILENAME = "/graql-history";
+    private static final String HISTORY_FILENAME = System.getProperty("user.home") + "/.graql-history";
 
     private static final String DEFAULT_EDITOR = "vim";
 
@@ -443,7 +443,7 @@ public class GraqlShell {
 
     private boolean setupHistory() throws IOException {
         // Create history file
-        File historyFile = new File(System.getProperty("java.io.tmpdir") + historyFilename);
+        File historyFile = new File(historyFilename);
         boolean fileCreated = historyFile.createNewFile();
         FileHistory history = new FileHistory(historyFile);
         console.setHistory(history);
