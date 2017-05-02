@@ -506,7 +506,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             else{
                 if (ruleIterator.hasNext()) {
                     currentRule = ruleIterator.next();
-                    LOG.debug("Created resolution plan for rule " + currentRule.getRuleId());
                     LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
                     LOG.debug(currentRule.getBody().getResolutionPlan());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
@@ -521,7 +520,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Answer sub = queryIterator.next()
                     .merge(getIdPredicateAnswer())
                     .filterVars(getVarNames());
+            //if (currentRule == null || sub.getExplanation().isEmpty()){
+            if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(ReasonerAtomicQuery.this));
             if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
+
             return cache.recordAnswerWithUnifier(ReasonerAtomicQuery.this, sub, cacheUnifier);
         }
 
