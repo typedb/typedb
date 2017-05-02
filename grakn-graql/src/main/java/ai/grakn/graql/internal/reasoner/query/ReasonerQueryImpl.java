@@ -685,7 +685,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         QueryAnswerIterator(){
             this.cache = new QueryCache<>();
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
-            LOG.trace(ReasonerQueryImpl.this.getResolutionPlan());
+            LOG.debug(ReasonerQueryImpl.this.getResolutionPlan());
         }
 
         /**

@@ -51,6 +51,7 @@
                     <systemPropertyVariables>
                         <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

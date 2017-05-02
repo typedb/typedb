@@ -89,8 +89,8 @@ public class GeoInferenceTest {
         QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
 
         assertEquals(answers, explicitAnswers);
-        //assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
         assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));

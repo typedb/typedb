@@ -57,12 +57,16 @@ person plays located-subject;
 "acquaintance" sub role, is-abstract;
 "acquaintance1" sub acquaintance;
 "acquaintance2" sub acquaintance;
-"knows" sub relation, relates acquaintance1, relates acquaintance2;
+"knows" sub relation,
+    relates acquaintance1,
+    relates acquaintance2;
 person plays acquaintance1, plays acquaintance2;
 
 "student" sub role;
 "enrolled-university" sub role;
-"attends" sub relation, relates student, relates enrolled-university;
+"attends" sub relation,
+    relates student,
+    relates enrolled-university;
 person plays student;
 university plays enrolled-university;
 
