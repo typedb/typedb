@@ -96,7 +96,6 @@ public class GeoGraph extends TestGraph {
         UW = putEntity(graph, "University-of-Warsaw", university, key.getLabel());
         PW = putEntity(graph, "Warsaw-Polytechnics", university, key.getLabel());
 
-
         England = putEntity(graph, "England", country, key.getLabel());
         GreaterLondon = putEntity(graph, "GreaterLondon", region, key.getLabel());
         London = putEntity(graph, "London", city, key.getLabel());
@@ -115,7 +114,6 @@ public class GeoGraph extends TestGraph {
         Italy = putEntity(graph, "Italy", country, key.getLabel());
         Lombardy = putEntity(graph, "Lombardy", region, key.getLabel());
         Milan = putEntity(graph, "Milan", city, key.getLabel());
-        
     }
 
     @Override
@@ -130,7 +128,6 @@ public class GeoGraph extends TestGraph {
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, Silesia)
                 .addRolePlayer(entityLocation, Poland);
-
 
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, Warsaw)

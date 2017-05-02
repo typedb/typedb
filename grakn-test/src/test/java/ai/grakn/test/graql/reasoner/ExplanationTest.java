@@ -87,6 +87,16 @@ public class ExplanationTest {
         Answer answer4 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), europe));
 
         List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
+        answers.stream()
+                .filter(a -> !a.getExplanation().isLookupExplanation())
+                .flatMap(a -> a.getExplicitPath().stream())
+                .forEach(a -> {
+                    if (!isExplanationConsistentWithAnswer(a))
+                        System.out.println();
+
+                    assertTrue(isExplanationConsistentWithAnswer(a));
+                }
+                );
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
