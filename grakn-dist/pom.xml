@@ -107,6 +107,12 @@
             <groupId>ai.grakn</groupId>
             <artifactId>titan-factory</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.orbit</groupId>
+                    <artifactId>javax.servlet</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Cassandra uses airline for command line parsing -->
