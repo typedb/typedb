@@ -216,7 +216,8 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
-                sendBatchRequest(uriString, cmd.getOptionValue("b"), keyspace, cmd.getOptionValue("a", Integer.toString(0)), cmd.getOptionValue("s", Integer.toString(0)));
+                sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"),
+                        cmd.getOptionValue("a", Integer.toString(0)), cmd.getOptionValue("s", Integer.toString(0)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -271,10 +272,9 @@ public class GraqlShell {
             return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(String uriString, String graqlPath, String keyspace, String activeTasks, String batchSize) throws IOException {
+    private static void sendBatchRequest(LoaderClient loaderClient, String graqlPath, String activeTasks, String batchSize) throws IOException {
         AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
-        LoaderClient loaderClient = new LoaderClient(keyspace, uriString).setRetryPolicy(true);
         if (Integer.parseInt(activeTasks)!=0) loaderClient.setNumberActiveTasks(Integer.parseInt(activeTasks));
         if (Integer.parseInt(activeTasks)!=0) loaderClient.setBatchSize(Integer.parseInt(batchSize));
 

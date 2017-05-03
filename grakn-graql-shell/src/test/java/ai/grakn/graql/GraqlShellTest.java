@@ -19,6 +19,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.client.LoaderClient;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.Before;
@@ -31,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import static ai.grakn.util.REST.RemoteShell.ACTION;
 import static ai.grakn.util.REST.RemoteShell.ACTION_END;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -42,9 +44,10 @@ public class GraqlShellTest {
     private GraqlClient client;
     private final String expectedVersion = "graql-9.9.9";
     private static final String historyFile = "/graql-test-history";
+    private LoaderClient loaderClient;
 
     @Before
-    public void createMock() {
+    public void createMocks() {
         client = mock(GraqlClient.class);
 
         when(client.connect(any(), any())).thenAnswer(inv -> {
@@ -57,6 +60,10 @@ public class GraqlShellTest {
 
             return session;
         });
+
+        loaderClient = mock(LoaderClient.class);
+
+        when(client.loaderClient(anyString(), anyString())).thenReturn(loaderClient);
     }
 
    @Test
@@ -72,7 +79,14 @@ public class GraqlShellTest {
     }
 
     @Test
-    public void testActiveArgWithoutBatchArg() throws IOException {
-        GraqlShell.runShell(new String[]{"-s", "100", "-b", "afile.txt"}, expectedVersion, historyFile, client);
+    public void testBatchArgsReachLoaderClient() throws IOException {
+        String testFilePath = GraqlShellTest.class.getClassLoader().getResource("test-query.gql").getPath();
+        int batchSize = 100;
+        int activeTasks = 1000;
+        GraqlShell.runShell(new String[]{"-s", String.valueOf(batchSize), "-a", String.valueOf(activeTasks), "-b", testFilePath}, expectedVersion, historyFile, client);
+        verify(loaderClient).setNumberActiveTasks(activeTasks);
+        verify(loaderClient).setBatchSize(batchSize);
     }
+
+
 }
