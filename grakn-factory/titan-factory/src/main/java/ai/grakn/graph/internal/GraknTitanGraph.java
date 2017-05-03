@@ -49,11 +49,8 @@ import java.util.function.Supplier;
  * @author fppt
  */
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
-    private final StandardTitanGraph rootGraph;
-
     public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading, Properties properties){
         super(graph, name, engineUrl, batchLoading, properties);
-        this.rootGraph = (StandardTitanGraph) graph;
     }
 
     /**
@@ -76,18 +73,18 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     @Override
     public boolean isConnectionClosed() {
-        return rootGraph.isClosed();
+        return getTinkerPopGraph().isClosed();
     }
 
     @Override
     public int numOpenTx() {
-        return rootGraph.getOpenTxs();
+        return ((StandardTitanGraph) getTinkerPopGraph()).getOpenTxs();
     }
 
     @Override
     protected void clearGraph() {
-        rootGraph.close();
-        TitanCleanup.clear(rootGraph);
+        getTinkerPopGraph().close();
+        TitanCleanup.clear(getTinkerPopGraph());
     }
 
     @Override
