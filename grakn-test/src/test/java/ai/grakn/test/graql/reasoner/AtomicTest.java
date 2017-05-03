@@ -311,7 +311,7 @@ public class AtomicTest {
     @Test //should assign (role: $x, role: $y) which is compatible with 2 rules
     public void testRuleApplicability_MatchAllAtom(){
         GraknGraph graph = ruleApplicabilitySet.graph();
-        String relationString = "{($x, $y, $z);$y isa entity1; $z isa entity2;}";
+        String relationString = "{($x, $y);}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(2, relation.getApplicableRules().size());
     }
@@ -353,7 +353,7 @@ public class AtomicTest {
         GraknGraph graph = ruleApplicabilitySet.graph();
         String relationString = "{(role1: $x1, role2: $x2, role2: $x3);}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
-        assertEquals(2, relation.getApplicableRules().size());
+        assertEquals(1, relation.getApplicableRules().size());
     }
 
     @Test

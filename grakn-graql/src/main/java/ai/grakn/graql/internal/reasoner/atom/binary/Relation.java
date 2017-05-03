@@ -704,6 +704,7 @@ public class Relation extends TypeAtom {
                                 });
 
                         //if roleTypeLabel is meta then look at constraints from types
+                        /*
                         if (isMetaRole){
                             VarName parentRolePlayer = prp.getRolePlayer().getVarName();
                             Map<VarName, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
@@ -721,6 +722,7 @@ public class Relation extends TypeAtom {
                                 }
                             }
                         }
+                        */
                     }
 
                 });
