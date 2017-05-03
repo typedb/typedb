@@ -78,7 +78,7 @@ public class ResourceTypeTest extends GraphTestBase{
     }
 
     @Test
-    public void whenSettingRegexOnResourceTypeWithReourceNotMatchingRegex_Throw(){
+    public void whenSettingRegexOnResourceTypeWithResourceNotMatchingRegex_Throw(){
         Resource<String> thing = resourceType.putResource("1");
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.getId(), thing.getValue(), resourceType.getLabel()));
