@@ -26,7 +26,6 @@ import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.engine.TaskStatus;
-import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.ConceptNotUniqueException;
@@ -127,11 +126,20 @@ public class PostProcessingIT {
         assertTrue("Failed at breaking graph", graphIsBroken(session));
 
         // Check graph fixed
-        Set<TaskState> runningPPTasks;
+        boolean tasksStillRunning;
         do{
             Thread.sleep(1000);
-            runningPPTasks = engine.getTaskManager().storage().getTasks(TaskStatus.RUNNING, PostProcessingTask.class.getName(), CommitLogController.class.getName(), null, 0, 0);
-        } while(!runningPPTasks.isEmpty());
+
+            Set<TaskState> runningPPTasks = engine.getTaskManager().storage().getTasks(null, PostProcessingTask.class.getName(), null, null, 0, 0);
+            tasksStillRunning = false;
+            for (TaskState runningPPTask : runningPPTasks) {
+                if(!runningPPTask.status().equals(TaskStatus.STOPPED)){
+                    tasksStillRunning = true;
+                    break;
+                }
+            }
+
+        } while(tasksStillRunning);
 
         assertFalse("Failed at fixing graph", graphIsBroken(session));
 
