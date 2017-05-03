@@ -80,6 +80,7 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
         //Close the system graph if possible
         if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
             GraknTitanGraph system = (GraknTitanGraph) FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, getEngineUrl(), getProperties()).open(GraknTxType.READ);
+            system.close();
             if (!system.isSessionClosed() && system.numOpenTx() == 0) {
                 system.closeSession();
             }
