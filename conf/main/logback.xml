@@ -77,15 +77,6 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <!--Client side migration should print debug-->
-    <logger name="ai.grakn.migration.base.Migrator" level="DEBUG">
-        <appender-ref ref="MAIN"/>
-    </logger>
-
-    <logger name="ai.grakn.client.LoaderClient" level="DEBUG">
-        <appender-ref ref="MAIN"/>
-    </logger>
-
     <!--Post Processing logs go to separate log file-->
     <logger name="ai.grakn.engine.postprocessing" level="${grakn.log.level:-INFO}" additivity="false">
         <appender-ref ref="POST-PROCESSING"/>
