@@ -106,6 +106,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Graph Shared Variable
     private final String keyspace;
     private final String engine;
+    private final Properties properties;
     private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
@@ -124,6 +125,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
+        this.properties = properties;
         shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
 
         elementFactory = new ElementFactory(this);
@@ -167,6 +169,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
+    String getEngineUrl(){
+        return engine;
+    }
+
+    Properties getProperties(){
+        return properties;
+    }
+
     @Override
     public String getKeyspace(){
         return keyspace;
@@ -180,7 +190,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean isClosed(){
         return !getBooleanFromLocalThread(localIsOpen);
     }
-    public abstract boolean isConnectionClosed();
+    public abstract boolean isSessionClosed();
 
     @Override
     public boolean implicitConceptsVisible(){

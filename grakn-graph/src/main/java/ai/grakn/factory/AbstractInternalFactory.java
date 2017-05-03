@@ -116,7 +116,7 @@ abstract class AbstractInternalFactory<M extends AbstractGraknGraph<G>, G extend
                 throw new GraphRuntimeException(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(graknGraph.getKeyspace()));
             }
 
-            if(graknGraph.isConnectionClosed()){
+            if(graknGraph.isSessionClosed()){
                 graknGraph = buildGraknGraphFromTinker(getTinkerPopGraph(batchLoading), batchLoading);
             }
         }

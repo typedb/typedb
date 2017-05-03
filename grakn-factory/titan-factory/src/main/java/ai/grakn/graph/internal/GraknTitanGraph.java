@@ -21,6 +21,8 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknLockingException;
+import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -72,7 +74,18 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public boolean isConnectionClosed() {
+    public void closeSession(){
+        super.closeSession();
+
+        //Close the system graph if possible
+        GraknTitanGraph system = (GraknTitanGraph) FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, getEngineUrl(), getProperties()).open(GraknTxType.READ);
+        if(!system.isSessionClosed() && system.numOpenTx() == 1){
+            system.closeSession();
+        }
+    }
+
+    @Override
+    public boolean isSessionClosed() {
         return getTinkerPopGraph().isClosed();
     }
 
