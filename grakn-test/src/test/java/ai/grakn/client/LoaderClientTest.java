@@ -99,7 +99,7 @@ public class LoaderClientTest {
     }
 
     @Test
-    public void whenTaskCompletionFunctionThrowsError_ErrorIsLogged(){
+    public void whenSingleQueryLoadedAndTaskCompletionFunctionThrowsError_ErrorIsLogged(){
         // Mock the Logger
         Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LoaderClient.class);
         Appender<ILoggingEvent> mockAppender = mock(Appender.class);
@@ -117,6 +117,24 @@ public class LoaderClientTest {
 
         // Verify that the logger received the failed log message
         verify(mockAppender).doAppend(argThat(argument -> argument.getFormattedMessage().contains("error in callback")));
+    }
+
+    @Test
+    public void whenSingleQueryLoaded_TaskCompletionExecutesExactlyOnce(){
+        AtomicInteger tasksCompleted = new AtomicInteger(0);
+
+        // Create a LoaderClient with a callback that will fail
+        LoaderClient loader = loader();
+        loader.setTaskCompletionConsumer((json) -> tasksCompleted.incrementAndGet());
+
+        // Load some queries
+        generate(this::query).limit(1).forEach(loader::add);
+
+        // Wait for queries to finish
+        loader.waitToFinish();
+
+        // Verify that the logger received the failed log message
+        assertEquals(1, tasksCompleted.get());
     }
 
     @Test
