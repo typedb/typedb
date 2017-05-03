@@ -36,14 +36,12 @@ import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.query.Queries;
 import ai.grakn.graql.internal.util.AdminConverter;
-import ai.grakn.graql.internal.util.CommonUtil;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -58,7 +56,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<String> resultsString(Printer printer) {
-        return streamWithVarNames().map(printer::graqlString);
+        return stream().map(printer::graqlString);
     }
 
     @Override
@@ -72,13 +70,8 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final List<Map<String, Concept>> execute() {
+    public final List<Answer> execute() {
         return stream().collect(toList());
-    }
-
-    @Override
-    public final List<Map<VarName, Concept>> results() {
-        return streamWithVarNames().collect(toList());
     }
 
     /**
@@ -89,18 +82,8 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     public abstract Stream<Answer> stream(Optional<GraknGraph> graph);
 
     @Override
-    public final Stream<Map<VarName, Concept>> streamWithVarNames() {
-        return stream(Optional.empty()).map(Answer::map);
-    }
-
-    @Override
-    public final Stream<Answer> streamWithAnswers(){
+    public final Stream<Answer> stream() {
         return stream(Optional.empty());
-    }
-
-    @Override
-    public final Stream<Map<String, Concept>> stream() {
-        return streamWithVarNames().map(CommonUtil::resultVarNameToString);
     }
 
     @Override
@@ -124,7 +107,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate) {
+    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 
@@ -140,11 +123,12 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final Stream<Concept> get(String name) {
+        VarName var = VarName.of(name);
         return stream().map(result -> {
-            if (!result.containsKey(name)) {
+            if (!result.containsKey(var)) {
                 throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(VarName.of(name)));
             }
-            return result.get(name);
+            return result.get(var);
         });
     }
 

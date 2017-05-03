@@ -23,6 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Order;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -32,7 +33,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -94,14 +94,14 @@ public class MatchQueryTest {
         int size = graph.graql().match(var("x").isa("genre")).execute().size();
         size *= size;
 
-        List<Map<String, Concept>> result1 = graph.graql().match(
+        List<Answer> result1 = graph.graql().match(
                 var("x").isa("genre"),
                 var("x").isa("genre"),
                 var("x").isa("genre"),
                 var("y").isa("genre")).distinct().execute();
         assertEquals(size, result1.size());
 
-        List<Map<String, Concept>> result2 = graph.graql().match(
+        List<Answer> result2 = graph.graql().match(
                 var().isa("genre"),
                 var().isa("genre"),
                 var().isa("genre"),
@@ -109,12 +109,12 @@ public class MatchQueryTest {
                 var().isa("genre")).distinct().execute();
         assertEquals(1, result2.size());
 
-        List<Map<String, Concept>> result3 = graph.graql().match(
+        List<Answer> result3 = graph.graql().match(
                 var("x").isa("genre"),
                 var("y").isa("genre")).distinct().execute();
         assertEquals(size, result3.size());
 
-        List<Map<String, Concept>> result4 = graph.graql().match(
+        List<Answer> result4 = graph.graql().match(
                 var().isa("genre"),
                 var("x").isa("genre"),
                 var("y").isa("genre")).distinct().execute();

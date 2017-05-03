@@ -19,11 +19,10 @@
 package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * A query for inserting data.
@@ -37,7 +36,7 @@ import java.util.Map;
  *
  * @author Felix Chapman
  */
-public interface InsertQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
+public interface InsertQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
      * @param graph the graph to execute the query on

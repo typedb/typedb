@@ -23,6 +23,7 @@ import ai.grakn.concept.Instance;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.VarName;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.hamcrest.Description;
@@ -61,9 +62,9 @@ public class GraknMatchers {
      * Create a matcher to test against the results of a Graql query.
      */
     public static Matcher<MatchQuery> results(
-            Matcher<? extends Iterable<? extends Map<? extends String, ? extends MatchableConcept>>> matcher
+            Matcher<? extends Iterable<? extends Map<? extends VarName, ? extends MatchableConcept>>> matcher
     ) {
-        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<? extends String, ? extends MatchableConcept>>>(matcher) {
+        return new PropertyMatcher<MatchQuery, Iterable<? extends Map<? extends VarName, ? extends MatchableConcept>>>(matcher) {
 
             @Override
             public String getName() {
@@ -71,8 +72,8 @@ public class GraknMatchers {
             }
 
             @Override
-            Iterable<? extends Map<String, ? extends MatchableConcept>> transform(MatchQuery item) {
-                return item.stream().map(m -> Maps.transformValues(m, MatchableConcept::new)).collect(toList());
+            Iterable<? extends Map<VarName, ? extends MatchableConcept>> transform(MatchQuery item) {
+                return item.stream().map(m -> Maps.transformValues(m.map(), MatchableConcept::new)).collect(toList());
             }
         };
     }

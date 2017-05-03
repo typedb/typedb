@@ -20,6 +20,7 @@ package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeLabel;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryBuilderImpl;
@@ -219,7 +220,7 @@ public class Graql {
     /**
      * Create an aggregate that will sum the values of a variable.
      */
-    public static Aggregate<Map<VarName, Concept>, Number> sum(String name) {
+    public static Aggregate<Answer, Number> sum(String name) {
         return Aggregates.sum(VarName.of(name));
     }
 
@@ -227,7 +228,7 @@ public class Graql {
      * Create an aggregate that will find the maximum of a variable's values.
      * @param name the variable to find the maximum of
      */
-    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> max(String name) {
+    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(String name) {
         return Aggregates.max(VarName.of(name));
     }
 
@@ -235,7 +236,7 @@ public class Graql {
      * Create an aggregate that will find the minimum of a variable's values.
      * @param name the variable to find the maximum of
      */
-    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> min(String name) {
+    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(String name) {
         return Aggregates.min(VarName.of(name));
     }
 
@@ -243,7 +244,7 @@ public class Graql {
      * Create an aggregate that will find the mean of a variable's values.
      * @param name the variable to find the mean of
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> mean(String name) {
+    public static Aggregate<Answer, Optional<Double>> mean(String name) {
         return Aggregates.mean(VarName.of(name));
     }
 
@@ -251,7 +252,7 @@ public class Graql {
      * Create an aggregate that will find the median of a variable's values.
      * @param name the variable to find the median of
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Number>> median(String name) {
+    public static Aggregate<Answer, Optional<Number>> median(String name) {
         return Aggregates.median(VarName.of(name));
     }
 
@@ -259,7 +260,7 @@ public class Graql {
      * Create an aggregate that will find the unbiased sample standard deviation of a variable's values.
      * @param name the variable to find the standard deviation of
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> std(String name) {
+    public static Aggregate<Answer, Optional<Double>> std(String name) {
         return Aggregates.std(VarName.of(name));
     }
 
@@ -267,7 +268,7 @@ public class Graql {
      * Create an aggregate that will group a query by a variable name.
      * @param varName the variable name to group results by
      */
-    public static Aggregate<Map<VarName, Concept>, Map<Concept, List<Map<VarName, Concept>>>> group(String varName) {
+    public static Aggregate<Answer, Map<Concept, List<Answer>>> group(String varName) {
         return group(varName, Aggregates.list());
     }
 
@@ -277,8 +278,8 @@ public class Graql {
      * @param aggregate the aggregate to apply to each group
      * @param <T> the type the aggregate returns
      */
-    public static <T> Aggregate<Map<VarName, Concept>, Map<Concept, T>> group(
-            String varName, Aggregate<? super Map<VarName, Concept>, T> aggregate) {
+    public static <T> Aggregate<Answer, Map<Concept, T>> group(
+            String varName, Aggregate<? super Answer, T> aggregate) {
         return Aggregates.group(VarName.of(varName), aggregate);
     }
 

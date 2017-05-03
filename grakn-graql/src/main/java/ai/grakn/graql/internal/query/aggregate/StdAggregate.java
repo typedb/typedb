@@ -19,10 +19,9 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -31,7 +30,7 @@ import static java.lang.Math.sqrt;
 /**
  * Aggregate that finds the unbiased sample standard deviation of a match query.
  */
-class StdAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Double>> {
+class StdAggregate extends AbstractAggregate<Answer, Optional<Double>> {
 
     private final VarName varName;
 
@@ -40,7 +39,7 @@ class StdAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Dou
     }
 
     @Override
-    public Optional<Double> apply(Stream<? extends Map<VarName, Concept>> stream) {
+    public Optional<Double> apply(Stream<? extends Answer> stream) {
         Stream<Double> numStream = stream.map(result -> result.get(varName).<Number>asResource().getValue().doubleValue());
 
         Iterable<Double> data = numStream::iterator;
