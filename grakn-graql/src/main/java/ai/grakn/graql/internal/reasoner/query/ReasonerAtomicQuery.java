@@ -174,19 +174,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Stream<Answer> lookup(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
-        return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
+        AnswerExplanation exp = new LookupExplanation(this);
+        Stream<Answer> answerStream = queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
+        return answerStream.map(a -> a.explain(exp));
     }
 
     private Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
-        return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
+        AnswerExplanation exp = new LookupExplanation(this);
+        Pair<Stream<Answer>, ? extends Unifier> streamPair = queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
+        return new Pair<>(streamPair.getKey().map(a -> a.explain(exp)), streamPair.getValue());
     }
 
     private Stream<Answer> DBlookup() {
-        AnswerExplanation exp = new LookupExplanation(this);
-        return getMatchQuery().admin().streamWithVarNames()
-                .map(QueryAnswer::new)
-                .map(a -> a.explain(exp));
+        return getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
     }
 
     /**
@@ -521,7 +522,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                     .merge(getIdPredicateAnswer())
                     .filterVars(getVarNames());
             //if (currentRule == null || sub.getExplanation().isEmpty()){
-            if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(ReasonerAtomicQuery.this));
+            //if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(ReasonerAtomicQuery.this));
             if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
 
             return cache.recordAnswerWithUnifier(ReasonerAtomicQuery.this, sub, cacheUnifier);
