@@ -111,7 +111,7 @@ public class GraqlController {
                 throw new GraknEngineServerException(405, "Only \"read-only\" queries are allowed.");
             }
             //Do not return directly inside the try block otherwise open transactions will not autocommit and close properly.
-            responseBody = respond(request, query, response);
+            responseBody = respond(request, query, response, graph);
         }
 
         return responseBody;
@@ -191,7 +191,7 @@ public class GraqlController {
      * @param response response to the client
      * @return formatted result of the executed query
      */
-    private Json respond(Request request, Query<?> query, Response response){
+    private Json respond(Request request, Query<?> query, Response response, GraknGraph graph){
 
         Json body = Json.object(ORIGINAL_QUERY, query.toString());
 
@@ -217,6 +217,8 @@ public class GraqlController {
             default:
                 throw new GraknEngineServerException(406, UNSUPPORTED_CONTENT_TYPE, acceptType);
         }
+
+        graph.commit();
 
         response.type(acceptType);
         response.body(body.toString());
