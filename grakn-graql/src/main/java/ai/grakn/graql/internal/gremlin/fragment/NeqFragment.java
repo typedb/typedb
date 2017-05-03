@@ -45,7 +45,8 @@ class NeqFragment extends AbstractFragment {
 
     @Override
     public double fragmentCost(double previousCost) {
-        return previousCost;
+        // This is arbitrary - we imagine about half the results are filtered out
+        return previousCost / 2.0;
     }
 
     @Override
