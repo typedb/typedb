@@ -117,7 +117,7 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
                 // Exponential back-off: sleep longer and longer when receiving the same tasks
                 long timeSinceLastHandledTask = between(timeTaskLastHandled, now()).toMillis();
                 if (timeSinceLastHandledTask >= MAX_TIME_SINCE_HANDLED_BEFORE_BACKOFF) {
-                    LOG.debug("has been  " + timeSinceLastHandledTask + " ms since handled task, sleeping for " + BACKOFF + "ms");
+                    LOG.trace("has been  " + timeSinceLastHandledTask + " ms since handled task, sleeping for " + BACKOFF + "ms");
                     Thread.sleep(BACKOFF);
                 }
             } catch (Throwable throwable){
