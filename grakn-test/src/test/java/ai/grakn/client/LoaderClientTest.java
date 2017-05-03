@@ -23,6 +23,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.manager.StandaloneTaskManager;
@@ -70,6 +71,7 @@ public class LoaderClientTest {
         configureSpark(spark, PORT);
 
         new TasksController(spark, manager);
+        new CommitLogController(spark, manager);
 
         spark.awaitInitialization();
     }

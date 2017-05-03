@@ -223,13 +223,16 @@ public class LoaderClient {
 
             status
             // Unblock and log errors when task completes
-            .whenComplete((result, error) -> {
+            .handle((result, error) -> {
                 unblock(status);
 
                 // Log any errors
                 if(error != null){
                     LOG.error("Error", error);
-                }})
+                }
+
+                return result;
+            })
             // Execute registered completion function
             .thenAcceptAsync(onCompletionOfTask)
             // Log errors in completion function
