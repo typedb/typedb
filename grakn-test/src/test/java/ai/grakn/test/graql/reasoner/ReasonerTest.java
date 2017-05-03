@@ -19,7 +19,6 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Rule;
 import ai.grakn.concept.RuleType;
@@ -31,12 +30,12 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.internal.reasoner.Utility;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -766,7 +765,7 @@ public class ReasonerTest {
         String queryString = "match $p isa person, has age $a;$pr isa product;($p, $pr) isa recommendation;order by $a;";
         MatchQuery query = snbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
-        List<Map<String, Concept>> answers = query.execute();
+        List<Answer> answers = query.execute();
         assertEquals(answers.iterator().next().get("a").asResource().getValue().toString(), "19");
     }
 
@@ -776,9 +775,9 @@ public class ReasonerTest {
         MatchQuery query = nonMaterialisedSnbGraph.graph().graql().infer(true).materialise(false).parse(queryString);
 
         final int offset = 4;
-        List<Map<String, Concept>> fullAnswers = query.execute();
-        List<Map<String, Concept>> answers = query.orderBy(VarName.of("a")).execute();
-        List<Map<String, Concept>> answers2 = query.orderBy(VarName.of("a")).offset(offset).execute();
+        List<Answer> fullAnswers = query.execute();
+        List<Answer> answers = query.orderBy(VarName.of("a")).execute();
+        List<Answer> answers2 = query.orderBy(VarName.of("a")).offset(offset).execute();
 
         assertEquals(fullAnswers.size(), answers2.size() + offset);
         assertEquals(answers.size(), answers2.size() + offset);
@@ -978,7 +977,7 @@ public class ReasonerTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
+        return new QueryAnswers(query.admin().stream().collect(toSet()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

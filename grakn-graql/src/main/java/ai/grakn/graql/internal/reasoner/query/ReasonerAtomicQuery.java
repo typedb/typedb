@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -30,6 +29,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -174,20 +174,18 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     public Stream<Answer> lookup(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
-        AnswerExplanation exp = new LookupExplanation(this);
-        Stream<Answer> answerStream = queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
-        return answerStream.map(a -> a.explain(exp));
+        return queryVisited ? cache.getAnswerStream(this) : DBlookup(cache);
     }
 
     private Pair<Stream<Answer>, Unifier> lookupWithUnifier(Cache<ReasonerAtomicQuery, ?> cache) {
         boolean queryVisited = cache.contains(this);
-        AnswerExplanation exp = new LookupExplanation(this);
-        Pair<Stream<Answer>, ? extends Unifier> streamPair = queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
-        return new Pair<>(streamPair.getKey().map(a -> a.explain(exp)), streamPair.getValue());
+        return queryVisited ? cache.getAnswerStreamWithUnifier(this) : new Pair<>(DBlookup(), new UnifierImpl());
     }
 
     private Stream<Answer> DBlookup() {
-        return getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
+        return getMatchQuery().admin().stream()
+                .map(QueryAnswer::new)
+                .map(a -> a.explain(new LookupExplanation(this)));
     }
 
     /**
@@ -201,10 +199,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private Stream<Answer> insert() {
-        InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
-        return insert.stream()
-                .map(m -> m.entrySet().stream().collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
-                .map(QueryAnswer::new);
+        return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
     }
 
     private Stream<Answer> materialiseDirect() {
@@ -346,7 +341,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
+            return this.getMatchQuery().admin().stream().map(QueryAnswer::new);
         } else {
             return new QueryAnswerIterator(materialise, explanation, cache, dCache).hasStream();
         }
@@ -521,9 +516,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Answer sub = queryIterator.next()
                     .merge(getIdPredicateAnswer())
                     .filterVars(getVarNames());
-            //if (currentRule == null || sub.getExplanation().isEmpty()){
-            //if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(ReasonerAtomicQuery.this));
-            if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
+
+            //assign appropriate explanation
+            if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(ReasonerAtomicQuery.this));
+            else sub = sub.explain(new RuleExplanation(currentRule));
 
             return cache.recordAnswerWithUnifier(ReasonerAtomicQuery.this, sub, cacheUnifier);
         }
