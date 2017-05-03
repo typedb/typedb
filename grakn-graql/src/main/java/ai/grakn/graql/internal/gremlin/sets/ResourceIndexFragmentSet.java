@@ -53,27 +53,29 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
     static boolean applyResourceIndexOptimisation(
             Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
 
-        ValueFragmentSet valueSet = anyEqualsValueFragment(fragmentSets);
-        if (valueSet == null) return false;
+        Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
-        VarName resource = valueSet.resource();
+        for (ValueFragmentSet valueSet : valueSets) {
+            VarName resource = valueSet.resource();
 
-        IsaFragmentSet isaSet = typeInformationOf(resource, fragmentSets);
-        if (isaSet == null) return false;
+            IsaFragmentSet isaSet = typeInformationOf(resource, fragmentSets);
+            if (isaSet == null) continue;
 
-        VarName type = isaSet.type();
+            VarName type = isaSet.type();
 
-        LabelFragmentSet nameSet = typeLabelOf(type, fragmentSets);
-        if (nameSet == null) return false;
+            LabelFragmentSet nameSet = typeLabelOf(type, fragmentSets);
+            if (nameSet == null) continue;
 
-        TypeLabel typeLabel = nameSet.label();
+            TypeLabel typeLabel = nameSet.label();
 
-        Type typeConcept = graph.getType(typeLabel);
-        if (typeConcept != null && typeConcept.subTypes().size() > 1) return false;
+            Type typeConcept = graph.getType(typeLabel);
+            if (typeConcept != null && typeConcept.subTypes().size() > 1) continue;
 
-        optimise(fragmentSets, valueSet, isaSet, nameSet.label());
+            optimise(fragmentSets, valueSet, isaSet, nameSet.label());
+            return true;
+        }
 
-        return true;
+        return false;
     }
 
     private static void optimise(
@@ -91,12 +93,9 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
         fragmentSets.add(indexFragmentSet);
     }
 
-    @Nullable
-    private static ValueFragmentSet anyEqualsValueFragment(Collection<EquivalentFragmentSet> fragmentSets) {
+    private static Stream<ValueFragmentSet> equalsValueFragments(Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(ValueFragmentSet.class, fragmentSets)
-                .filter(valueFragmentSet -> valueFragmentSet.predicate().equalsValue().isPresent())
-                .findAny()
-                .orElse(null);
+                .filter(valueFragmentSet -> valueFragmentSet.predicate().equalsValue().isPresent());
     }
 
     @Nullable
