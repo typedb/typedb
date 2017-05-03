@@ -19,63 +19,62 @@
 
 package ai.grakn.graql.internal.gremlin.sets;
 
+import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A query can use a shortcut edge traversal when the following criteria are met:
  *
  * <ol>
- *  <li>There is a {@link CastingFragmentSet} from {@code r} to {@code xc}</li>
- *  <li>There is a {@link CastingFragmentSet} from {@code r} to {@code yc}</li>
- *  <li>There is a {@link RolePlayerFragmentSet} from {@code xc} to {@code x}</li>
- *  <li>There is a {@link RolePlayerFragmentSet} from {@code yc} to {@code y}</li>
- *  <li>There is a {@link NeqFragmentSet} between {@code xc} and {@code yc}</li>
- *  <li>{@code r} does not have a user-defined variable name</li>
+ *  <li>There is a {@link CastingFragmentSet} from {@code r} to {@code c}</li>
+ *  <li>There is a {@link RolePlayerFragmentSet} from {@code c} to {@code x}</li>
+ *  <li>If there is a {@link IsaFragmentSet} from {@code c} to {@code C}, then {@code C} must have a
+ *  {@link LabelFragmentSet}</li>
+ *  <li>If there is a {@link IsaFragmentSet} from {@code r} to {@code R} then {@code R} must have no direct
+ *  sub-types</li>
  * </ol>
  *
  * And optionally:
  *
  * <ol>
- *  <li>There is a {@link IsaFragmentSet} from {@code xc} to a type {@link VarName} with a {@link LabelFragmentSet}</li>
- *  <li>There is a {@link IsaFragmentSet} from {@code yc} to a type {@link VarName} with a {@link LabelFragmentSet}</li>
- *  <li>There is a {@link IsaFragmentSet} from {@code r} to a type {@link VarName} with a {@link LabelFragmentSet}</li>
+ *  <li>There is a {@link IsaFragmentSet} from {@code c} to a type with a {@link LabelFragmentSet} and no direct
+ *  sub-types</li>
+ *  <li>There is a {@link IsaFragmentSet} from {@code r} to a type with a {@link LabelFragmentSet}</li>
  * </ol>
  *
- * We assume that {@code xc} and {@code yc} are otherwise never referred to in the query, since they are castings,
- * so the user cannot refer to them.
+ * We assume that {@code c} is otherwise never referred to in the query, since it's a casting.
  *
- * When these criteria are met, all the fragments can be replaced with a {@link ShortcutFragmentSet} from {@code x}
- * to {@code y}, with optionally specified role- and relation-types.
+ * When these criteria are met, all the fragments can be replaced with a {@link ShortcutFragmentSet} from {@code r}
+ * to {@code x}, with optionally specified role- and relation-types.
  *
  * @author Felix Chapman
  */
 class ShortcutFragmentSet extends EquivalentFragmentSet {
 
     ShortcutFragmentSet(
-            Optional<TypeLabel> roleTypeA, VarName rolePlayerA,
-            Optional<TypeLabel> roleTypeB, VarName rolePlayerB, Optional<TypeLabel> relationType) {
+            VarName relation, VarName edge, VarName rolePlayer, Optional<TypeLabel> roleType,
+            Optional<TypeLabel> relationType) {
         super(
-                Fragments.shortcut(relationType, roleTypeA, roleTypeB, rolePlayerA, rolePlayerB),
-                Fragments.shortcut(relationType, roleTypeB, roleTypeA, rolePlayerB, rolePlayerA)
+                Fragments.inShortcut(rolePlayer, edge, relation, roleType, relationType),
+                Fragments.outShortcut(relation, edge, rolePlayer, roleType, relationType)
         );
     }
 
-    static boolean applyShortcutOptimisation(Collection<EquivalentFragmentSet> fragmentSets) {
-        Iterable<VarName> relations = fragmentSetOfType(CastingFragmentSet.class, fragmentSets)
-                .map(CastingFragmentSet::relation)::iterator;
+    static boolean applyShortcutOptimisation(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
+        Iterable<CastingFragmentSet> castingFragmentSets =
+                fragmentSetOfType(CastingFragmentSet.class, fragmentSets)::iterator;
 
-        for (VarName relation : relations) {
-            if (attemptOptimiseRelation(fragmentSets, relation)) {
+        for (CastingFragmentSet castingFragmentSet : castingFragmentSets) {
+            if (attemptOptimiseCasting(fragmentSets, graph, castingFragmentSet)) {
                 return true;
             }
         }
@@ -83,23 +82,11 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         return false;
     }
 
-    private static boolean attemptOptimiseRelation(Collection<EquivalentFragmentSet> fragmentSets, VarName relation) {
-        List<CastingFragmentSet> castings = fragmentSetOfType(CastingFragmentSet.class, fragmentSets)
-                .filter(casting -> casting.relation().equals(relation))
-                .collect(toList());
+    private static boolean attemptOptimiseCasting(Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph, CastingFragmentSet castingFragmentSet) {
+        VarName relation = castingFragmentSet.relation();
+        VarName casting = castingFragmentSet.casting();
 
-        if (castings.size() != 2) return false;
-
-        CastingFragmentSet castingFragmentX = castings.get(0);
-        CastingFragmentSet castingFragmentY = castings.get(1);
-
-        VarName castingX = castingFragmentX.casting();
-        VarName castingY = castingFragmentY.casting();
-
-        RolePlayerFragmentSet rolePlayerFragmentX = findRolePlayerFragmentSet(fragmentSets, castingX);
-        RolePlayerFragmentSet rolePlayerFragmentY = findRolePlayerFragmentSet(fragmentSets, castingY);
-
-        NeqFragmentSet distinctCasting = findNeqFragmentSet(fragmentSets, castingX, castingY);
+        RolePlayerFragmentSet rolePlayerFragmentSet = findRolePlayerFragmentSet(fragmentSets, casting);
 
         // Try and get type of relation
         Optional<IsaFragmentSet> relIsaFragment = fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
@@ -108,62 +95,35 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Optional<TypeLabel> relType = relIsaFragment
                 .map(IsaFragmentSet::type)
-                .flatMap(type -> fragmentSetOfType(LabelFragmentSet.class, fragmentSets).filter(labelFragmentSet -> labelFragmentSet.type().equals(type)).map(LabelFragmentSet::label).findAny());
+                .flatMap(type -> fragmentSetOfType(LabelFragmentSet.class, fragmentSets).filter(labelFragmentSet -> labelFragmentSet.type().equals(type)).map(LabelFragmentSet::label).findAny())
+                .filter(type -> !hasDirectSubTypes(graph, type));
 
-        if (relIsaFragment.isPresent() && !relType.isPresent()) {
-            return false;
-        }
-
-        // Try and get role of X
-        Optional<IsaCastingsFragmentSet> castingXIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
-                .filter(isaFragmentSet -> isaFragmentSet.casting().equals(castingX))
+        // Try and get role type
+        Optional<IsaCastingsFragmentSet> castingIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
+                .filter(isaFragmentSet -> isaFragmentSet.casting().equals(casting))
                 .findAny();
 
-        Optional<TypeLabel> roleX = castingXIsaFragment
+        Optional<TypeLabel> roleType = castingIsaFragment
                 .map(IsaCastingsFragmentSet::roleType)
                 .flatMap(type -> fragmentSetOfType(LabelFragmentSet.class, fragmentSets).filter(labelFragmentSet -> labelFragmentSet.type().equals(type)).map(LabelFragmentSet::label).findAny());
 
-        if (castingXIsaFragment.isPresent() && !roleX.isPresent()) {
+        if (castingIsaFragment.isPresent() && !roleType.isPresent()) {
             return false;
         }
 
-        // Try and get role of Y
-        Optional<IsaCastingsFragmentSet> castingYIsaFragment = fragmentSetOfType(IsaCastingsFragmentSet.class, fragmentSets)
-                .filter(isaFragmentSet -> isaFragmentSet.casting().equals(castingY))
-                .findAny();
-
-        Optional<TypeLabel> roleY = castingYIsaFragment
-                .map(IsaCastingsFragmentSet::roleType)
-                .flatMap(type -> fragmentSetOfType(LabelFragmentSet.class, fragmentSets).filter(labelFragmentSet -> labelFragmentSet.type().equals(type)).map(LabelFragmentSet::label).findAny());
-
-        if (castingYIsaFragment.isPresent() && !roleY.isPresent()) {
+        // We can't use the shortcut edge in the presence of role-type hierarchies, because we don't know precisely
+        // which type the shortcut edge label will have.
+        if (roleType.isPresent() && hasDirectSubTypes(graph, roleType.get())) {
             return false;
         }
 
-        fragmentSets.remove(castingFragmentX);
-        fragmentSets.remove(castingFragmentY);
-        fragmentSets.remove(rolePlayerFragmentX);
-        fragmentSets.remove(rolePlayerFragmentY);
-        fragmentSets.remove(distinctCasting);
+        fragmentSets.remove(castingFragmentSet);
+        fragmentSets.remove(rolePlayerFragmentSet);
+        castingIsaFragment.ifPresent(fragmentSets::remove);
 
-        relIsaFragment.ifPresent(fragmentSets::remove);
-        castingXIsaFragment.ifPresent(fragmentSets::remove);
-        castingYIsaFragment.ifPresent(fragmentSets::remove);
-
-        VarName rolePlayerX = rolePlayerFragmentX.rolePlayer();
-        VarName rolePlayerY = rolePlayerFragmentY.rolePlayer();
-        fragmentSets.add(new ShortcutFragmentSet(roleX, rolePlayerX, roleY, rolePlayerY, relType));
+        VarName rolePlayer = rolePlayerFragmentSet.rolePlayer();
+        fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleType, relType));
         return true;
-    }
-
-    private static NeqFragmentSet findNeqFragmentSet(
-            Collection<EquivalentFragmentSet> fragmentSets, VarName varX, VarName varY) {
-        // We can assume that this fragment set must exist
-        //noinspection OptionalGetWithoutIsPresent
-        return fragmentSetOfType(NeqFragmentSet.class, fragmentSets)
-                .filter(neq -> neq.isBetween(varX, varY))
-                .findAny()
-                .get();
     }
 
     private static RolePlayerFragmentSet findRolePlayerFragmentSet(

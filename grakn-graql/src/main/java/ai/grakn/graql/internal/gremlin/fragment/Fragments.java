@@ -41,11 +41,16 @@ public class Fragments {
 
     private Fragments() {}
 
-    public static Fragment shortcut(
-            Optional<TypeLabel> relationType, Optional<TypeLabel> roleStart, Optional<TypeLabel> roleEnd,
-            VarName start, VarName end
-    ) {
-        return new ShortcutFragment(relationType, roleStart, roleEnd, start, end);
+    public static Fragment inShortcut(
+            VarName rolePlayer, VarName edge, VarName relation,
+            Optional<TypeLabel> roleType, Optional<TypeLabel> relationType) {
+        return new InShortcutFragment(rolePlayer, edge, relation, roleType, relationType);
+    }
+
+    public static Fragment outShortcut(
+            VarName relation, VarName edge, VarName rolePlayer,
+            Optional<TypeLabel> roleType, Optional<TypeLabel> relationType) {
+        return new OutShortcutFragment(relation, edge, rolePlayer, roleType, relationType);
     }
 
     public static Fragment inSub(VarName start, VarName end) {

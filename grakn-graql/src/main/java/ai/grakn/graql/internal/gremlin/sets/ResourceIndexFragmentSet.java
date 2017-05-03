@@ -20,7 +20,6 @@
 package ai.grakn.graql.internal.gremlin.sets;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
@@ -30,6 +29,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
 
 /**
  * A query can use a more-efficient resource index traversal when the following criteria are met:
@@ -69,8 +69,7 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
 
         TypeLabel typeLabel = nameSet.label();
 
-        Type typeConcept = graph.getType(typeLabel);
-        if (typeConcept != null && typeConcept.subTypes().size() > 1) return false;
+        if (hasDirectSubTypes(graph, typeLabel)) return false;
 
         optimise(fragmentSets, valueSet, isaSet, nameSet.label());
 

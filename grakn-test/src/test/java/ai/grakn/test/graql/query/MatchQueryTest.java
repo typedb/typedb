@@ -30,6 +30,7 @@ import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
+import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
@@ -159,6 +160,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
@@ -884,6 +886,18 @@ public class MatchQueryTest {
         query.forEach(result -> {
             assertNotEquals(result.get("x"), result.get("y"));
         });
+    }
+
+    @Test
+    public void whenQueryingForSuperRelationType_ReturnResults() {
+        AskQuery query = qb.match(var().isa("relation").rel("x").rel("y")).ask();
+        assertTrue("Query had no results", query.execute());
+    }
+
+    @Test
+    public void whenQueryingForSuperRoleType_ReturnResults() {
+        AskQuery query = qb.match(var().rel("role", "x").rel("y")).ask();
+        assertTrue("Query had no results", query.execute());
     }
 
     @Test

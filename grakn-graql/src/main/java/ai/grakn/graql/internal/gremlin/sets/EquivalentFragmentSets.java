@@ -22,6 +22,7 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
@@ -76,16 +77,9 @@ public class EquivalentFragmentSets {
 
     /**
      * An {@link EquivalentFragmentSet} that indicates a shortcut edge between two role-players.
-     * @param roleTypeA an optional role-type for {@param rolePlayerA}
-     * @param rolePlayerA a role-player variable label
-     * @param roleTypeB an optional role-type for {@param rolePlayerB}
-     * @param rolePlayerB a role-player variable label
-     * @param relationType an optional relation-type for the shortcut
      */
-    public static EquivalentFragmentSet shortcut(
-            Optional<TypeLabel> roleTypeA, VarName rolePlayerA,
-            Optional<TypeLabel> roleTypeB, VarName rolePlayerB, Optional<TypeLabel> relationType) {
-        return new ShortcutFragmentSet(roleTypeA, rolePlayerA, roleTypeB, rolePlayerB, relationType);
+    public static EquivalentFragmentSet shortcut(VarName relation, VarName edge, VarName rolePlayer) {
+        return new ShortcutFragmentSet(relation, edge, rolePlayer, Optional.empty(), Optional.empty());
     }
 
     /**
@@ -185,7 +179,7 @@ public class EquivalentFragmentSets {
         // TODO: Create a real interface for these when there are more of them
         ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
                 () -> applyResourceIndexOptimisation(fragmentSets, graph),
-                () -> applyShortcutOptimisation(fragmentSets)
+                () -> applyShortcutOptimisation(fragmentSets, graph)
         );
 
         // Repeatedly apply optimisations until they don't alter the query
@@ -202,5 +196,10 @@ public class EquivalentFragmentSets {
     static <T extends EquivalentFragmentSet> Stream<T> fragmentSetOfType(
             Class<T> clazz, Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
+    }
+
+    static boolean hasDirectSubTypes(GraknGraph graph, TypeLabel label) {
+        Type type = graph.getType(label);
+        return type != null && type.subTypes().size() != 1;
     }
 }
