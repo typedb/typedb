@@ -35,6 +35,7 @@ import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
+import ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.CommonUtil;
@@ -51,7 +52,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.casting;
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.distinctCasting;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isaCastings;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static ai.grakn.graql.internal.reasoner.Utility.getUserDefinedIdPredicate;
@@ -121,7 +121,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
                         .filter(otherName -> !otherName.equals(castingName))
-                        .map(otherName -> distinctCasting(castingName, otherName))
+                        .map(otherName -> EquivalentFragmentSets.neq(castingName, otherName))
         ).collect(toImmutableSet());
 
         return Sets.union(traversals, distinctCastingTraversals);
