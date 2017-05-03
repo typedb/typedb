@@ -106,6 +106,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Graph Shared Variable
     private final String keyspace;
     private final String engine;
+    private final Properties properties;
     private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
@@ -124,6 +125,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
+        this.properties = properties;
         shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
 
         elementFactory = new ElementFactory(this);
@@ -167,6 +169,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
+    String getEngineUrl(){
+        return engine;
+    }
+
+    Properties getProperties(){
+        return properties;
+    }
+
     @Override
     public String getKeyspace(){
         return keyspace;
@@ -180,7 +190,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean isClosed(){
         return !getBooleanFromLocalThread(localIsOpen);
     }
-    public abstract boolean isConnectionClosed();
+    public abstract boolean isSessionClosed();
 
     @Override
     public boolean implicitConceptsVisible(){
@@ -268,19 +278,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     public G getTinkerPopGraph(){
-        if(isClosed()){
-            String reason = localClosedReason.get();
-            if(reason == null){
-                throw new GraphRuntimeException(ErrorMessage.GRAPH_CLOSED.getMessage(getKeyspace()));
-            } else {
-                throw new GraphRuntimeException(reason);
-            }
-        }
         return graph;
     }
 
     @Override
     public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
+        operateOnOpenGraph(() -> null); //This is to check if the graph is open
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
         return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph()).V();
     }
@@ -416,7 +419,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     Vertex addVertex(Schema.BaseType baseType){
-        Vertex vertex = getTinkerPopGraph().addVertex(baseType.name());
+        Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.ConceptProperty.ID.name(), vertex.id().toString());
         return vertex;
     }
@@ -434,6 +437,26 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = concept.getVertex();
         }
         return vertex;
+    }
+
+    /**
+     * An operation on the graph which requires it to be open.
+     *
+     * @param supplier The operation to be performed on the graph
+     * @throws GraphRuntimeException if the graph is closed.
+     * @return The result of the operation on the graph.
+     */
+    private <X> X operateOnOpenGraph(Supplier<X> supplier){
+        if(isClosed()){
+            String reason = localClosedReason.get();
+            if(reason == null){
+                throw new GraphRuntimeException(ErrorMessage.GRAPH_CLOSED.getMessage(getKeyspace()));
+            } else {
+                throw new GraphRuntimeException(reason);
+            }
+        }
+
+        return supplier.get();
     }
 
     @Override
@@ -753,7 +776,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //This is overridden by vendors for more efficient clearing approaches
     protected void clearGraph(){
-        getTinkerPopGraph().traversal().V().drop().iterate();
+        operateOnOpenGraph(() -> getTinkerPopGraph().traversal().V().drop().iterate());
+    }
+
+    @Override
+    public void closeSession(){
+        try {
+            getTinkerPopGraph().close();
+            localClosedReason.set(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
+        } catch (Exception e) {
+            throw new GraphRuntimeException("Unable to close graph [" + getKeyspace() + "]", e);
+        }
     }
 
     @Override
