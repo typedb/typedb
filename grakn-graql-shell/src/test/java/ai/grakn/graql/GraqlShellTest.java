@@ -70,4 +70,9 @@ public class GraqlShellTest {
         GraqlShell.runShell(new String[]{"-r", "1.2.3.4:5678"}, expectedVersion, historyFile, client);
         verify(client).connect(any(), eq(URI.create("ws://1.2.3.4:5678/shell/remote")));
     }
+
+    @Test
+    public void testActiveArgWithoutBatchArg() throws IOException {
+        GraqlShell.runShell(new String[]{"-s", "100", "-b", "afile.txt"}, expectedVersion, historyFile, client);
+    }
 }

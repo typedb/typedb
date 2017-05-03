@@ -275,8 +275,8 @@ public class GraqlShell {
         AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
         LoaderClient loaderClient = new LoaderClient(keyspace, uriString).setRetryPolicy(true);
-        if (Integer.valueOf(activeTasks)!=0) loaderClient.setNumberActiveTasks(Integer.valueOf(activeTasks));
-        if (Integer.valueOf(activeTasks)!=0) loaderClient.setBatchSize(Integer.valueOf(batchSize));
+        if (Integer.parseInt(activeTasks)!=0) loaderClient.setNumberActiveTasks(Integer.parseInt(activeTasks));
+        if (Integer.parseInt(activeTasks)!=0) loaderClient.setBatchSize(Integer.parseInt(batchSize));
 
         loaderClient.setTaskCompletionConsumer((json) -> {
             TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
