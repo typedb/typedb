@@ -109,8 +109,8 @@ public class GraknSessionImpl implements GraknSession {
 
         //Close the main graph connections
         try {
-            if(graph != null && !graph.isClosed()) ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
-            if(graphBatch != null && !graphBatch.isClosed()) ((AbstractGraknGraph) graphBatch).getTinkerPopGraph().close();
+            if(graph != null) ((AbstractGraknGraph) graph).getTinkerPopGraph().close();
+            if(graphBatch != null) ((AbstractGraknGraph) graphBatch).getTinkerPopGraph().close();
         } catch (Exception e) {
             throw new GraphRuntimeException("Could not close graph.", e);
         }
