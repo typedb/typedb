@@ -18,20 +18,18 @@
 
 package ai.grakn.graql.internal.query;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AskQueryAdmin;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -63,7 +61,7 @@ public class Queries {
         return new DeleteQueryImpl(deleters, matchQuery);
     }
 
-    public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<VarName, Concept>, T> aggregate) {
+    public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Answer, T> aggregate) {
         return new AggregateQueryImpl<>(matchQuery, aggregate);
     }
 }

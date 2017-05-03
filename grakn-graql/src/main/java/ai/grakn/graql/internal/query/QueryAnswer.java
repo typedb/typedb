@@ -14,9 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package ai.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.query;
 
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
@@ -29,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -86,6 +88,11 @@ public class QueryAnswer implements Answer {
     public Set<Map.Entry<VarName, Concept>> entrySet(){ return map.entrySet();}
 
     @Override
+    public Concept get(String var) {
+        return map.get(VarName.of(var));
+    }
+
+    @Override
     public Concept get(VarName var){ return map.get(var);}
 
     @Override
@@ -111,6 +118,11 @@ public class QueryAnswer implements Answer {
 
     @Override
     public int size(){ return map.size();}
+
+    @Override
+    public void forEach(BiConsumer<? super VarName, ? super Concept> consumer) {
+        map.forEach(consumer);
+    }
 
     @Override
     public Answer merge(Answer a2, boolean mergeExplanation){

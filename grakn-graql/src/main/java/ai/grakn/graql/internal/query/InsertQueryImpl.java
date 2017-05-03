@@ -19,15 +19,14 @@
 package ai.grakn.graql.internal.query;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.InsertQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
-import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
 import ai.grakn.graql.internal.util.CommonUtil;
 import ai.grakn.util.ErrorMessage;
@@ -35,7 +34,6 @@ import com.google.common.collect.ImmutableCollection;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -92,13 +90,13 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public List<Map<String, Concept>> execute() {
+    public List<Answer> execute() {
         return stream().collect(Collectors.toList());
     }
 
     @Override
     public Stream<String> resultsString(Printer printer) {
-        return streamWithVarNames().map(printer::graqlString);
+        return stream().map(printer::graqlString);
     }
 
     @Override
@@ -107,19 +105,14 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
-        return streamWithVarNames().map(CommonUtil::resultVarNameToString);
-    }
-
-    @Override
-    public Stream<Map<VarName, Concept>> streamWithVarNames() {
+    public Stream<Answer> stream() {
         GraknGraph theGraph =
                 getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theGraph);
 
         return matchQuery.map(
-                query -> query.streamWithVarNames().map(executor::insertAll)
+                query -> query.stream().map(executor::insertAll)
         ).orElseGet(
                 () -> Stream.of(executor.insertAll())
         );
