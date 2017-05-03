@@ -20,8 +20,6 @@
 
     <property name="graknLogFileName" value="grakn.log"/>
     <property name="graknPPLogFileName" value="grakn-postprocessing.log"/>
-    <property name="defaultLogPattern" value="%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
-    <property name="defaultFileNamePattern" value="%d{yyyy-MM}.%i.log"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -32,12 +30,12 @@
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${grakn.log.dirs}/${graknLogFileName}</file>
         <encoder>
-            <pattern>${defaultLogPattern}</pattern>
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
             <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${graknLogFileName}-${defaultFileNamePattern}</fileNamePattern>
+            <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
@@ -48,10 +46,10 @@
     <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${grakn.log.dirs}/${graknPPLogFileName}</file>
         <encoder>
-            <pattern>${defaultLogPattern}</pattern>
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${graknPPLogFileName}-${defaultFileNamePattern}</fileNamePattern>
+            <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
@@ -89,7 +87,7 @@
     </logger>
 
     <!--Post Processing logs go to separate log file-->
-    <logger name="ai.grakn.engine.postprocessing" level="${grakn.log.level:-INFO}">
+    <logger name="ai.grakn.engine.postprocessing" level="${grakn.log.level:-INFO}" additivity="false">
         <appender-ref ref="POST-PROCESSING"/>
     </logger>
 
