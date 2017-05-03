@@ -221,6 +221,7 @@ public class AtomicQueryTest {
         assertTrue(Sets.intersection(unifier.keySet(), Sets.newHashSet(VarName.of("x"), VarName.of("y"))).isEmpty());
     }
 
+    @Ignore
     @Test
     public void testWhenUnifiyingBinaryRelationWithTypes_SomeVarsHaveTypes_UnifierMatchesTypes(){
         GraknGraph graph =  unificationWithTypesSet.graph();
@@ -238,6 +239,7 @@ public class AtomicQueryTest {
         assertTrue(unifier.containsAll(correctUnifier));
     }
 
+    @Ignore
     @Test
     public void testWhenUnifiyingBinaryRelationWithTypes_AllVarsHaveTypes_UnifierMatchesTypes(){
         GraknGraph graph =  unificationWithTypesSet.graph();
@@ -255,6 +257,7 @@ public class AtomicQueryTest {
         assertTrue(unifier.containsAll(correctUnifier));
     }
 
+    @Ignore
     @Test
     public void testWhenUnifiyingTernaryRelationWithTypes__SomeVarsHaveTypes_UnifierMatchesTypes(){
         GraknGraph graph =  unificationWithTypesSet.graph();
@@ -273,6 +276,7 @@ public class AtomicQueryTest {
         assertTrue(unifier.containsAll(correctUnifier));
     }
 
+    @Ignore
     @Test
     public void testWhenUnifiyingTernaryRelationWithTypes__AllVarsHaveTypes_UnifierMatchesTypes(){
         GraknGraph graph =  unificationWithTypesSet.graph();
