@@ -37,12 +37,14 @@ import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+
+import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 
 /**
  *
@@ -146,15 +148,14 @@ public abstract class Atom extends AtomBase {
     @Override
     public boolean isRecursive(){
         if (isResource() || getType() == null) return false;
-        boolean atomRecursive = false;
-
         Type type = getType();
-        Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
-        Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
-
-        for(Rule rule : presentInConclusion)
-            atomRecursive |= presentInHypothesis.contains(rule);
-        return atomRecursive;
+        return getPotentialRules().stream()
+                .map(rule -> new InferenceRule(rule, graph()))
+                .filter(rule -> rule.getBody().selectAtoms().stream()
+                        .filter(at -> Objects.nonNull(at.getType()))
+                        .filter(at -> checkTypesCompatible(type, at.getType())).findFirst().isPresent())
+                .filter(this::isRuleApplicable)
+                .findFirst().isPresent();
     }
 
     /**

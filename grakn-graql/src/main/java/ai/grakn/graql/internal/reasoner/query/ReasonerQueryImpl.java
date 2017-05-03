@@ -23,14 +23,15 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -50,6 +51,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -65,8 +68,6 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -534,7 +535,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         // the mapping function is declared separately to please the Eclipse compiler
         Function<IdPredicate, Concept> f = p -> graph().getConcept(p.getPredicate());
-        
+
         return new QueryAnswer(predicates.stream()
                 .collect(Collectors.toMap(IdPredicate::getVarName, f))
         );
@@ -685,7 +686,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         QueryAnswerIterator(){
             this.cache = new QueryCache<>();
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
-            LOG.trace(ReasonerQueryImpl.this.getResolutionPlan());
+            LOG.debug(ReasonerQueryImpl.this.getResolutionPlan());
         }
 
         /**

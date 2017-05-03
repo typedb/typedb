@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.query.aggregate;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
@@ -36,25 +37,25 @@ import static java.util.stream.Collectors.toList;
  * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
-class GroupAggregate<T> extends AbstractAggregate<Map<VarName, Concept>, Map<Concept, T>> {
+class GroupAggregate<T> extends AbstractAggregate<Answer, Map<Concept, T>> {
 
     private final VarName varName;
-    private final Aggregate<? super Map<VarName, Concept>, T> innerAggregate;
+    private final Aggregate<? super Answer, T> innerAggregate;
 
-    GroupAggregate(VarName varName, Aggregate<? super Map<VarName, Concept>, T> innerAggregate) {
+    GroupAggregate(VarName varName, Aggregate<? super Answer, T> innerAggregate) {
         this.varName = varName;
         this.innerAggregate = innerAggregate;
     }
 
     @Override
-    public Map<Concept, T> apply(Stream<? extends Map<VarName, Concept>> stream) {
-        Collector<Map<VarName, Concept>, ?, T> applyAggregate =
+    public Map<Concept, T> apply(Stream<? extends Answer> stream) {
+        Collector<Answer, ?, T> applyAggregate =
                 collectingAndThen(toList(), list -> innerAggregate.apply(list.stream()));
 
         return stream.collect(groupingBy(this::getConcept, applyAggregate));
     }
 
-    private @Nonnull Concept getConcept(Map<VarName, Concept> result) {
+    private @Nonnull Concept getConcept(Answer result) {
         Concept concept = result.get(varName);
         if (concept == null) {
             throw new IllegalArgumentException(VARIABLE_NOT_IN_QUERY.getMessage(varName));

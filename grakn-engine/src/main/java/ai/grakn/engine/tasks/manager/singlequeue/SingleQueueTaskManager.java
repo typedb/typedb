@@ -30,7 +30,6 @@ import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
-import ai.grakn.engine.tasks.config.ZookeeperPaths;
 import ai.grakn.engine.tasks.manager.ZookeeperConnection;
 import ai.grakn.engine.util.EngineID;
 import com.google.common.base.Charsets;
@@ -41,7 +40,6 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,12 +54,8 @@ import static ai.grakn.engine.tasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.tasks.config.KafkaTerms.HIGH_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.LOW_PRIORITY_TASKS_TOPIC;
 import static ai.grakn.engine.tasks.config.KafkaTerms.TASK_RUNNER_GROUP;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.SINGLE_ENGINE_WATCH_PATH;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED;
-import static ai.grakn.engine.tasks.config.ZookeeperPaths.TASKS_STOPPED_PREFIX;
 import static ai.grakn.engine.tasks.manager.ExternalStorageRebalancer.rebalanceListener;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static java.lang.String.format;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.generate;
@@ -80,6 +74,8 @@ public class SingleQueueTaskManager implements TaskManager {
     private final static String TASK_RUNNER_THREAD_POOL_NAME = "task-runner-pool-%s";
     private final static int CAPACITY = GraknEngineConfig.getInstance().getAvailableThreads();
     private final static int TIME_UNTIL_BACKOFF = 60_000;
+    private final static String TASKS_STOPPED = "/stopped/%s";
+    private final static String TASKS_STOPPED_PREFIX = "/stopped";
 
     private final Producer<TaskState, TaskConfiguration> producer;
     private final ZookeeperConnection zookeeper;
@@ -123,8 +119,6 @@ public class SingleQueueTaskManager implements TaskManager {
         //TODO check that the number of partitions is at least the capacity
         this.producer = kafkaProducer();
 
-        registerSelfForFailover(engineId, zookeeper);
-
         // Create thread pool for the task runners
         ThreadFactory taskRunnerPoolFactory = new ThreadFactoryBuilder()
                 .setNameFormat(TASK_RUNNER_THREAD_POOL_NAME)
@@ -138,8 +132,8 @@ public class SingleQueueTaskManager implements TaskManager {
         this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
 
-        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + PostProcessingTask.LOCK_KEY));
-        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, ZookeeperPaths.LOCK + "/" + UpdatingInstanceCountTask.LOCK_KEY));
+        LockProvider.add(PostProcessingTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, PostProcessingTask.LOCK_KEY));
+        LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, UpdatingInstanceCountTask.LOCK_KEY));
 
         LOG.debug("TaskManager started");
     }
@@ -200,7 +194,7 @@ public class SingleQueueTaskManager implements TaskManager {
     public void stopTask(TaskId id) {
         byte[] serializedId = id.getValue().getBytes(zkCharset);
         try {
-            zookeeper.connection().create().creatingParentsIfNeeded().forPath(format(TASKS_STOPPED, id), serializedId);
+            zookeeper.connection().create().creatingParentsIfNeeded().forPath(String.format(TASKS_STOPPED, id), serializedId);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -232,7 +226,7 @@ public class SingleQueueTaskManager implements TaskManager {
      * @return true if the task has been marked stopped
      */
     boolean isTaskMarkedStopped(TaskId taskId) {
-        return stoppedTasks.getCurrentData(format(TASKS_STOPPED, taskId)) != null;
+        return stoppedTasks.getCurrentData(String.format(TASKS_STOPPED, taskId)) != null;
     }
 
     /**
@@ -254,20 +248,5 @@ public class SingleQueueTaskManager implements TaskManager {
      */
     private SingleQueueTaskRunner newTaskRunner(EngineID engineId, String priority){
         return new SingleQueueTaskRunner(this, engineId, offsetStorage, TIME_UNTIL_BACKOFF, newConsumer(priority));
-    }
-
-    /**
-     * Register this instance of Engine in Zookeeper to monitor its status
-     *
-     * @param engineId identifier of this instance of engine, which will be registered in Zookeeper
-     * @param zookeeper connection to zookeeper
-     * @throws Exception when there is an issue contacting or writing to zookeeper
-     */
-    private void registerSelfForFailover(EngineID engineId, ZookeeperConnection zookeeper) throws Exception {
-        zookeeper.connection()
-                .create()
-                .creatingParentContainersIfNeeded()
-                .withMode(CreateMode.EPHEMERAL)
-                .forPath(format(SINGLE_ENGINE_WATCH_PATH, engineId.value()));
     }
 }

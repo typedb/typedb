@@ -29,6 +29,7 @@
                     <systemPropertyVariables>
                         <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>
                     <!-- uncomment the following to be able to run only specific packages with
                         for example -DtestGroup=ai/grakn/test/migration/sql
@@ -51,6 +52,7 @@
                     <systemPropertyVariables>
                         <grakn.conf>../conf/test/${grakn.test-profile}/grakn.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
+                        <logback.configurationFile>../conf/test/logback-test.xml</logback.configurationFile>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

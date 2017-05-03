@@ -21,7 +21,6 @@ package ai.grakn.graql.internal.reasoner.query;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.graql.Graql;
-import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
@@ -30,6 +29,7 @@ import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
@@ -184,7 +184,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private Stream<Answer> DBlookup() {
         AnswerExplanation exp = new LookupExplanation(this);
-        return getMatchQuery().admin().streamWithVarNames()
+        return getMatchQuery().admin().stream()
                 .map(QueryAnswer::new)
                 .map(a -> a.explain(exp));
     }
@@ -200,10 +200,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * execute insert on the query and return inserted answers
      */
     private Stream<Answer> insert() {
-        InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph());
-        return insert.stream()
-                .map(m -> m.entrySet().stream().collect(Collectors.toMap(k -> VarName.of(k.getKey()), Map.Entry::getValue)))
-                .map(QueryAnswer::new);
+        return Graql.insert(getPattern().getVars()).withGraph(graph()).stream();
     }
 
     private Stream<Answer> materialiseDirect() {
@@ -345,7 +342,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     public Stream<Answer> resolve(boolean materialise, boolean explanation, LazyQueryCache<ReasonerAtomicQuery> cache, LazyQueryCache<ReasonerAtomicQuery> dCache) {
         if (!this.getAtom().isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
+            return this.getMatchQuery().admin().stream().map(QueryAnswer::new);
         } else {
             return new QueryAnswerIterator(materialise, explanation, cache, dCache).hasStream();
         }
@@ -506,7 +503,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             else{
                 if (ruleIterator.hasNext()) {
                     currentRule = ruleIterator.next();
-                    LOG.trace(currentRule.getBody().getResolutionPlan());
+                    LOG.debug("Created resolution plan for rule: " + currentRule.getHead().getAtom() + ", id: " + currentRule.getRuleId());
+                    LOG.debug(currentRule.getBody().getResolutionPlan());
                     queryIterator = currentRule.getBody().iterator(new QueryAnswer(), subGoals, cache);
                     return hasNext();
                 }

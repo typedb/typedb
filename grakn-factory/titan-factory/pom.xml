@@ -128,14 +128,6 @@
                     <artifactId>javax.servlet-api</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>org.glassfish</groupId>
-                    <artifactId>javax.servlet</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.jetty.orbit</groupId>
-                    <artifactId>javax.servlet</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-log4j12</artifactId>
                 </exclusion>
@@ -162,14 +154,6 @@
                 <exclusion>
                     <groupId>javax.servlet</groupId>
                     <artifactId>javax.servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.glassfish</groupId>
-                    <artifactId>javax.servlet</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.jetty.orbit</groupId>
-                    <artifactId>javax.servlet</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

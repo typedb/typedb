@@ -30,13 +30,16 @@ import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.engine.postprocessing.PostProcessing;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
+import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
 import com.google.common.collect.Sets;
 import java.util.Set;
+import mjson.Json;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -50,13 +53,13 @@ import org.junit.Test;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static ai.grakn.test.engine.postprocessing.PostProcessingTestUtils.createDuplicateResource;
+import static ai.grakn.util.REST.Request.KEYSPACE;
 import static ai.grakn.util.Schema.ConceptProperty.INDEX;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 public class PostProcessingTest {
-    private PostProcessing postProcessing = PostProcessing.getInstance();
 
     private GraknSession session;
 
@@ -109,7 +112,7 @@ public class PostProcessingTest {
         ConceptId otherInstanceId3 = instance3.getId();
         ConceptId otherInstanceId4 = instance4.getId();
 
-        graph.commit();
+        graph.admin().commitNoLogs();
 
         graph = factory.open(GraknTxType.WRITE);
 
@@ -131,12 +134,31 @@ public class PostProcessingTest {
         merged.addAll(castings1);
         merged.addAll(castings2);
 
+        // Casting sets as ConceptIds
+        Set<String> castingConcepts = merged.stream().map(c -> c.id().toString()).collect(toSet());
+
+        graph.close();
+
         //Now fix everything
-        postProcessing.performCastingFix(graph.getKeyspace(), castingIndex,
-                merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()));
+        PostProcessingTask task = new PostProcessingTask();
+        task.setTimeLapse(0);
+        TaskConfiguration configuration = TaskConfiguration.of(
+                Json.object(
+                        KEYSPACE, graph.getKeyspace(),
+                        REST.Request.COMMIT_LOG_FIXING, Json.object(
+                                Schema.BaseType.CASTING.name(), Json.object(castingIndex, castingConcepts),
+                                Schema.BaseType.RESOURCE.name(), Json.object()
+                        ))
+        );
+
+        task.start(null, configuration);
+
+        graph = session.open(GraknTxType.READ);
 
         //Check it's all fixed
         assertEquals(4, ((AbstractGraknGraph) graph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+
+        graph.close();
     }
 
     private Set<Vertex> buildDuplicateCasting(GraknGraph graph, ConceptId relationTypeId, ConceptId mainRoleTypeId, ConceptId mainInstanceId, ConceptId otherRoleTypeId, ConceptId otherInstanceId) throws Exception {
@@ -182,14 +204,13 @@ public class PostProcessingTest {
     public void testMergeDuplicateResources() throws GraknValidationException, InterruptedException {
         String value = "1";
         String sample = "Sample";
-        //ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
         GraknGraph graph = session.open(GraknTxType.WRITE);
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
 
         Resource<String> resource = resourceType.putResource(value);
-        graph.commit();
+        graph.admin().commitNoLogs();
         graph = session.open(GraknTxType.WRITE);
 
         assertEquals(1, resourceType.instances().size());
@@ -211,11 +232,32 @@ public class PostProcessingTest {
         merged.addAll(resource3);
         merged.addAll(resource4);
 
+        graph.close();
+
         //Now fix everything
-        postProcessing.performResourceFix(graph.getKeyspace(),resourceIndex,
-                merged.stream().map(c -> ConceptId.of(c.id().toString())).collect(toSet()));
+
+        // Casting sets as ConceptIds
+        Set<String> resourceConcepts = merged.stream().map(c -> c.id().toString()).collect(toSet());
+
+        //Now fix everything
+        PostProcessingTask task = new PostProcessingTask();
+        task.setTimeLapse(0);
+        TaskConfiguration configuration = TaskConfiguration.of(
+                Json.object(
+                        KEYSPACE, graph.getKeyspace(),
+                        REST.Request.COMMIT_LOG_FIXING, Json.object(
+                                Schema.BaseType.CASTING.name(), Json.object(),
+                                Schema.BaseType.RESOURCE.name(), Json.object(resourceIndex, resourceConcepts)
+                        ))
+        );
+
+        task.start(null, configuration);
+
+        graph = session.open(GraknTxType.READ);
 
         //Check it's fixed
         assertEquals(1, graph.getResourceType(sample).instances().size());
+
+        graph.close();
     }
 }

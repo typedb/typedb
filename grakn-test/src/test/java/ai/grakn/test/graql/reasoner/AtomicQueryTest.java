@@ -36,7 +36,7 @@ import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
@@ -168,8 +168,8 @@ public class AtomicQueryTest {
         QueryBuilder qb = graph.graql().infer(false);
         MatchQuery query = qb.parse(queryString);
         MatchQuery query2 = qb.parse(queryString2);
-        Set<Answer> answers = query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet());
-        Set<Answer> fullAnswers = query2.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet());
+        Set<Answer> answers = query.admin().stream().collect(toSet());
+        Set<Answer> fullAnswers = query2.admin().stream().collect(toSet());
         Atom mappedAtom = new ReasonerAtomicQuery(conjunction(query.admin().getPattern()), graph).getAtom();
         Atom unmappedAtom = new ReasonerAtomicQuery(conjunction(query2.admin().getPattern()), graph).getAtom();
 

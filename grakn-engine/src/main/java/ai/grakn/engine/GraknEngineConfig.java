@@ -72,6 +72,7 @@ public class GraknEngineConfig {
     public static final String USE_ZOOKEEPER_STORAGE = "taskmanager.storage.zk";
 
     public static final String ZK_SERVERS = "tasks.zookeeper.servers";
+    public static final String ZK_NAMESPACE = "tasks.zookeeper.namespace";
     public static final String ZK_SESSION_TIMEOUT = "tasks.zookeeper.session_timeout_ms";
     public static final String ZK_CONNECTION_TIMEOUT = "tasks.zookeeper.connection_timeout_ms";
     public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";

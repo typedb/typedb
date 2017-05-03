@@ -24,7 +24,7 @@ import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.migration.owl.OwlModel;
 import com.google.common.collect.Sets;
@@ -41,8 +41,6 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -218,6 +216,6 @@ public class TestReasoning extends TestOwlGraknBase {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
+        return new QueryAnswers(query.admin().stream().collect(toSet()));
     }
 }
