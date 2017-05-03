@@ -52,8 +52,6 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
     private Iterator<Answer> queryIterator;
     private final Iterator<Answer> atomicQueryIterator;
 
-    private static final Logger LOG = LoggerFactory.getLogger(ReasonerQueryImplIterator.class);
-
     ReasonerQueryImplIterator(ReasonerQueryImpl query,
                               Answer sub,
                               Set<ReasonerAtomicQuery> subGoals,
@@ -67,8 +65,6 @@ class ReasonerQueryImplIterator extends ReasonerQueryIterator {
         queryPrime.addSubstitution(sub);
         Atom topAtom = queryPrime.getTopAtom();
         ReasonerAtomicQuery q = new ReasonerAtomicQuery(topAtom);
-
-        LOG.debug("top atom: " + topAtom);
 
         boolean isAtomic = queryPrime.isAtomic();
         if (!isAtomic) queryPrime.removeAtom(topAtom);
