@@ -21,6 +21,7 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknLockingException;
+import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -90,8 +91,25 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     @Override
     public void commitTransactionInternal(){
+        executeLockingMethod(super::commitTransactionInternal);
+    }
+
+    @Override
+    Vertex addVertex(Schema.BaseType baseType){
+        final Vertex[] v = new Vertex[1];
+        executeLockingMethod(() -> v[0] = super.addVertex(baseType));
+        return v[0];
+    }
+
+    /**
+     * Executes a method which has the potential to throw a {@link TemporaryLockingException} or a {@link PermanentLockingException}.
+     * If the exception is thrown it is wrapped in a {@link GraknBackendException} so that the transaction can be retried.
+     *
+     * @param method The locking method to execute
+     */
+    private void executeLockingMethod(Runnable method){
         try {
-            super.commitTransactionInternal();
+            method.run();
         } catch (TitanException e){
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw new GraknLockingException(e);

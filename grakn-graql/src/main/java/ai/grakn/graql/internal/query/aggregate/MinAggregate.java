@@ -18,10 +18,9 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -30,7 +29,7 @@ import static java.util.Comparator.naturalOrder;
 /**
  * Aggregate that finds minimum of a match query.
  */
-class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<VarName, Concept>, Optional<T>> {
+class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Answer, Optional<T>> {
 
     private final VarName varName;
 
@@ -39,7 +38,7 @@ class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<VarNam
     }
 
     @Override
-    public Optional<T> apply(Stream<? extends Map<VarName, Concept>> stream) {
+    public Optional<T> apply(Stream<? extends Answer> stream) {
         return stream.map(this::getValue).min(naturalOrder());
     }
 
@@ -48,7 +47,7 @@ class MinAggregate<T extends Comparable<T>> extends AbstractAggregate<Map<VarNam
         return "min " + varName;
     }
 
-    private T getValue(Map<VarName, Concept> result) {
+    private T getValue(Answer result) {
         return result.get(varName).<T>asResource().getValue();
     }
 

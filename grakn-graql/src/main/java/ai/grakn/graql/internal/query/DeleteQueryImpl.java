@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.DeleteQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.DeleteQueryAdmin;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -34,12 +34,10 @@ import com.google.common.collect.ImmutableSet;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static ai.grakn.util.ErrorMessage.NO_PATTERNS;
 import static ai.grakn.util.ErrorMessage.VARIABLE_NOT_IN_QUERY;
-import static java.util.stream.Collectors.toList;
 
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
@@ -63,7 +61,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public Void execute() {
-        List<Map<VarName, Concept>> results = matchQuery.streamWithVarNames().collect(toList());
+        List<Answer> results = matchQuery.execute();
         results.forEach(this::deleteResult);
         return null;
     }
@@ -89,7 +87,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
         return this;
     }
 
-    private void deleteResult(Map<VarName, Concept> result) {
+    private void deleteResult(Answer result) {
         for (VarAdmin deleter : deleters) {
             Concept concept = result.get(deleter.getVarName());
 

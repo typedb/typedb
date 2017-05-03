@@ -18,11 +18,10 @@
 
 package ai.grakn.graql.internal.query.aggregate;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -31,7 +30,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds median of a match query.
  */
-class MedianAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<Number>> {
+class MedianAggregate extends AbstractAggregate<Answer, Optional<Number>> {
 
     private final VarName varName;
 
@@ -40,7 +39,7 @@ class MedianAggregate extends AbstractAggregate<Map<VarName, Concept>, Optional<
     }
 
     @Override
-    public Optional<Number> apply(Stream<? extends Map<VarName, Concept>> stream) {
+    public Optional<Number> apply(Stream<? extends Answer> stream) {
         List<Number> results = stream
                 .map(result -> ((Number) result.get(varName).asResource().getValue()))
                 .sorted()

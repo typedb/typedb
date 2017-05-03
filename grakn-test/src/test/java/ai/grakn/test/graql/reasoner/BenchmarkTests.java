@@ -26,6 +26,7 @@ import ai.grakn.graphs.TransitivityChainGraph;
 import ai.grakn.graphs.TransitivityMatrixGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.graql.admin.VarAdmin;
@@ -36,7 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -97,12 +97,12 @@ public class BenchmarkTests {
         MatchQuery query = iqb.parse(queryString);
 
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> execute = query.execute();
+        List<Answer> execute = query.execute();
         System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
 
         int limit = 100;
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> results = query.limit(limit).execute();
+        List<Answer> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -160,18 +160,18 @@ public class BenchmarkTests {
         MatchQuery query2 = iqb.parse(queryString2);
 
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> execute = query.execute();
+        List<Answer> execute = query.execute();
         assertEquals(execute.size(), N*N/2 + N/2);
         System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
 
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> execute2 = query2.execute();
+        List<Answer> execute2 = query2.execute();
         assertEquals(execute2.size(), N);
         System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
 
         int limit = 10;
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> results = query.limit(limit).execute();
+        List<Answer> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
 
@@ -234,20 +234,20 @@ public class BenchmarkTests {
         MatchQuery query3 = iqb.parse(queryString3);
 
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> execute = query.execute();
+        List<Answer> execute = query.execute();
         System.out.println("full result computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
 
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> execute2 = query2.execute();
+        List<Answer> execute2 = query2.execute();
         System.out.println("computeTime with resource: " + (System.currentTimeMillis() - startTime) + " results: " + execute2.size());
 
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> execute3 = query3.execute();
+        List<Answer> execute3 = query3.execute();
         System.out.println("computeTime with specific substitution: " + (System.currentTimeMillis() - startTime) + " results: " + execute3.size());
 
         int limit = 100;
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> results = query.limit(limit).execute();
+        List<Answer> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }
@@ -295,12 +295,12 @@ public class BenchmarkTests {
         MatchQuery query = iqb.parse(queryString);
 
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> execute = query.execute();
+        List<Answer> execute = query.execute();
         System.out.println("computeTime: " + (System.currentTimeMillis() - startTime) + " results: " + execute.size());
 
         int limit = 10;
         startTime = System.currentTimeMillis();
-        List<Map<String, Concept>> results = query.limit(limit).execute();
+        List<Answer> results = query.limit(limit).execute();
         long answerTime = System.currentTimeMillis() - startTime;
         System.out.println("limit " + limit + " results = " + results.size() + " answerTime: " + answerTime);
     }

@@ -30,6 +30,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
 import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
@@ -731,7 +732,7 @@ public class QueryParserTest {
         assertEquals(query, parse(query).toString());
     }
 
-    class GetAny extends AbstractAggregate<Map<VarName, Concept>, Concept> {
+    class GetAny extends AbstractAggregate<Answer, Concept> {
 
         private final VarName varName;
 
@@ -741,7 +742,7 @@ public class QueryParserTest {
 
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         @Override
-        public Concept apply(Stream<? extends Map<VarName, Concept>> stream) {
+        public Concept apply(Stream<? extends Answer> stream) {
             return stream.findAny().get().get(varName);
         }
 
