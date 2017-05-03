@@ -28,7 +28,8 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.stream.Stream;
+
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
 
 /**
  * A query can use a more-efficient resource index traversal when the following criteria are met:
@@ -112,10 +113,5 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
                 .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
                 .findAny()
                 .orElse(null);
-    }
-
-    private static <T extends EquivalentFragmentSet> Stream<T> fragmentSetOfType(
-            Class<T> clazz, Collection<EquivalentFragmentSet> fragmentSets) {
-        return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 }

@@ -26,11 +26,15 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import com.google.common.collect.ImmutableList;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.applyResourceIndexOptimisation;
+import static ai.grakn.graql.internal.gremlin.sets.ShortcutFragmentSet.applyShortcutOptimisation;
 
 /**
  * Factory class for producing instances of {@link EquivalentFragmentSet}.
@@ -185,11 +189,25 @@ public class EquivalentFragmentSets {
     public static void optimiseFragmentSets(
             Collection<EquivalentFragmentSet> fragmentSets, GraknGraph graph) {
 
+        // TODO: Create a real interface for these when there are more of them
+        ImmutableList<Supplier<Boolean>> optimisations = ImmutableList.of(
+                () -> applyResourceIndexOptimisation(fragmentSets, graph),
+                () -> applyShortcutOptimisation(fragmentSets)
+        );
+
         // Repeatedly apply optimisations until they don't alter the query
         boolean changed = true;
 
         while (changed) {
-            changed = applyResourceIndexOptimisation(fragmentSets, graph);
+            changed = false;
+            for (Supplier<Boolean> optimisation : optimisations) {
+                changed |= optimisation.get();
+            }
         }
+    }
+
+    static <T extends EquivalentFragmentSet> Stream<T> fragmentSetOfType(
+            Class<T> clazz, Collection<EquivalentFragmentSet> fragmentSets) {
+        return fragmentSets.stream().filter(clazz::isInstance).map(clazz::cast);
     }
 }
