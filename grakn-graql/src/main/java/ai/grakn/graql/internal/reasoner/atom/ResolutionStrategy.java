@@ -32,12 +32,12 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each partial substitution a given atom has
      */
-    public static final int PARTIAL_SUBSTITUTION = 25;
+    public static final int PARTIAL_SUBSTITUTION = 30;
 
     /**
      * priority modifier for each rule that is applicable to a given atom
      */
-    public static final int APPLICABLE_RULE = -5;
+    public static final int APPLICABLE_RULE = -2;
 
     /**
      * priority modifier if a given atom is a resource atom
@@ -50,9 +50,16 @@ public final class ResolutionStrategy {
     public static final int IS_TYPE_ATOM = 0;
 
     /**
+     * priority modifier if a given atom is a type atom without specific type
+     * NB: atom satisfying this criterion should be resolved last
+     * NB: not integer min as could have overflow
+     */
+    public static final int NON_SPECIFIC_TYPE_ATOM = -1000;
+
+    /**
      * priority modifier if a given atom is recursive atom
      */
-    public static final int RECURSIVE_ATOM = -10;
+    public static final int RECURSIVE_ATOM = -15;
 
     /**
      * priority modifier for guard (type atom) the atom has
@@ -67,7 +74,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each specific value predicate a given atom (resource) has
      */
-    public static final int SPECIFIC_VALUE_PREDICATE = 10;
+    public static final int SPECIFIC_VALUE_PREDICATE = 20;
 
     /**
      * priority modifier for each non-specific value predicate a given atom (resource) has
@@ -76,12 +83,14 @@ public final class ResolutionStrategy {
 
     /**
      * priority modifier for each value predicate with variable
+     * NB: atom satisfying this criterion should be resolved last
+     * NB: not integer min as could have overflow
      */
-    public static final int VARIABLE_VALUE_PREDICATE = -25;
+    public static final int VARIABLE_VALUE_PREDICATE = -1000;
 
     /**
      * priority modifier if a given atom is a relation atom
      */
-    public static final int IS_RELATION_ATOM = 3;
+    public static final int IS_RELATION_ATOM = 2;
 }
 
