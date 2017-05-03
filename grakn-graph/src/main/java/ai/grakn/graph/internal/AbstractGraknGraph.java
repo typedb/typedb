@@ -770,6 +770,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
+    public void closeSession(){
+        try {
+            getTinkerPopGraph().close();
+            localClosedReason.set(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
+        } catch (Exception e) {
+            throw new GraphRuntimeException("Unable to close graph [" + getKeyspace() + "]", e);
+        }
+    }
+
+    @Override
     public void close(){
         close(false, false);
     }

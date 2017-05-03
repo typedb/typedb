@@ -32,6 +32,7 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Properties;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -91,14 +92,15 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
 
     @Override
     public void commitTransactionInternal(){
-        executeLockingMethod(super::commitTransactionInternal);
+        executeLockingMethod(() -> {
+            super.commitTransactionInternal();
+            return null;
+        });
     }
 
     @Override
     Vertex addVertex(Schema.BaseType baseType){
-        final Vertex[] v = new Vertex[1];
-        executeLockingMethod(() -> v[0] = super.addVertex(baseType));
-        return v[0];
+        return executeLockingMethod(() -> super.addVertex(baseType));
     }
 
     /**
@@ -107,9 +109,9 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
      *
      * @param method The locking method to execute
      */
-    private void executeLockingMethod(Runnable method){
+    private <X> X executeLockingMethod(Supplier<X> method){
         try {
-            method.run();
+            return method.get();
         } catch (TitanException e){
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw new GraknLockingException(e);
