@@ -25,8 +25,6 @@ import ai.grakn.graql.internal.reasoner.iterator.ReasonerQueryIterator;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
