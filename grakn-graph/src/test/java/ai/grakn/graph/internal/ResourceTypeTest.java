@@ -99,4 +99,18 @@ public class ResourceTypeTest extends GraphTestBase{
         assertEquals(c2, t2.getResource("2"));
         assertNull(t2.getResource("1"));
     }
+
+    @Test
+    public void whenCreatingMultipleResourceTypesWithDifferentRegexes_EnsureAllRegexesAreChecked(){
+        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING).setRegex("[b]");
+        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").superType(t1);
+
+        //Valid Resource
+        t2.putResource("b");
+
+        //Invalid Resource
+        expectedException.expect(InvalidConceptValueException.class);
+        expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("a"), containsString(t1.getLabel().getValue())));
+        t2.putResource("a");
+    }
 }
