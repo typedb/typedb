@@ -69,10 +69,11 @@ class ResourceIndexFragmentSet extends EquivalentFragmentSet {
             TypeLabel typeLabel = nameSet.label();
 
             Type typeConcept = graph.getType(typeLabel);
-            if (typeConcept != null && typeConcept.subTypes().size() > 1) continue;
 
-            optimise(fragmentSets, valueSet, isaSet, nameSet.label());
-            return true;
+            if (typeConcept == null || typeConcept.subTypes().size() <= 1) {
+                optimise(fragmentSets, valueSet, isaSet, nameSet.label());
+                return true;
+            }
         }
 
         return false;
