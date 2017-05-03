@@ -60,7 +60,7 @@ import static java.util.stream.Collectors.toSet;
  * @author Denis Lobanov, alexandraorth
  */
 public class PostProcessingTask implements BackgroundTask {
-    public static final String LOCK_KEY = "post-processing-lock";
+    public static final String LOCK_KEY = "/post-processing-lock";
 
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
 
