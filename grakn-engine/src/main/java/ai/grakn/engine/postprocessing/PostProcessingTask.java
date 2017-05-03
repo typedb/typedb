@@ -125,7 +125,7 @@ public class PostProcessingTask implements BackgroundTask {
             runPostProcessingJob((graph) -> postProcessingMethod.apply(graph, conceptIndex.getKey(), conceptIds),
                     keyspace, conceptIndex.getKey(), conceptIds);
 
-            LOG.info(JOB_FINISHED, type, conceptIndex, keyspace);
+            LOG.info(JOB_FINISHED, type, conceptIndex.getKey(), keyspace);
         }
     }
 
