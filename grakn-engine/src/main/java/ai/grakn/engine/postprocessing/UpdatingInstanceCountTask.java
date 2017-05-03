@@ -51,7 +51,7 @@ import static java.util.stream.Collectors.toMap;
  * @author fppt
  */
 public class UpdatingInstanceCountTask extends LockingBackgroundTask {
-    public static final String LOCK_KEY = "updating-instance-count-lock";
+    public static final String LOCK_KEY = "/updating-instance-count-lock";
     private static final Logger LOG = LoggerFactory.getLogger(UpdatingInstanceCountTask.class);
 
     @Override
