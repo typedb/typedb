@@ -113,4 +113,28 @@ public class ResourceTypeTest extends GraphTestBase{
         expectedException.expectMessage(CoreMatchers.allOf(containsString("[b]"), containsString("a"), containsString(t1.getLabel().getValue())));
         t2.putResource("a");
     }
+
+    @Test
+    public void whenSettingTheSuperTypeOfAStringResourceType_EnsureAllRegexesAreAppliedToResources(){
+        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING).setRegex("[b]");
+        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]");
+
+        //Future Invalid
+        Resource<String> resource = t2.putResource("a");
+
+        expectedException.expect(InvalidConceptValueException.class);
+        expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[b]", resource.getId(), resource.getValue(), t1.getLabel()));
+        t2.superType(t1);
+    }
+
+    @Test
+    public void whenSettingRegexOfSuperType_EnsureAllRegexesAreApplied(){
+        ResourceType<String> t1 = graknGraph.putResourceType("t1", ResourceType.DataType.STRING);
+        ResourceType<String> t2 = graknGraph.putResourceType("t2", ResourceType.DataType.STRING).setRegex("[abc]").superType(t1);
+        Resource<String> resource = t2.putResource("a");
+
+        expectedException.expect(InvalidConceptValueException.class);
+        expectedException.expectMessage(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[b]", resource.getId(), resource.getValue(), t1.getLabel()));
+        t1.setRegex("[b]");
+    }
 }
