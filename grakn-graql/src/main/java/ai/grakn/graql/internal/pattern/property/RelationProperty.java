@@ -34,7 +34,6 @@ import ai.grakn.graql.admin.RelationPlayer;
 import ai.grakn.graql.admin.UniqueVarProperty;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import ai.grakn.graql.internal.gremlin.ShortcutTraversal;
 import ai.grakn.graql.internal.query.InsertQueryExecutor;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.util.CommonUtil;
@@ -84,26 +83,6 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     @Override
     public void buildString(StringBuilder builder) {
         builder.append("(").append(relationPlayers.stream().map(Object::toString).collect(joining(", "))).append(")");
-    }
-
-    @Override
-    public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        relationPlayers.forEach(relationPlayer -> {
-            Optional<VarAdmin> roleType = relationPlayer.getRoleType();
-
-            if (roleType.isPresent()) {
-                Optional<TypeLabel> roleTypeLabel = roleType.get().getTypeLabel();
-
-                if (roleTypeLabel.isPresent()) {
-                    shortcutTraversal.addRel(roleTypeLabel.get(), relationPlayer.getRolePlayer().getVarName());
-                } else {
-                    shortcutTraversal.setInvalid();
-                }
-
-            } else {
-                shortcutTraversal.addRel(relationPlayer.getRolePlayer().getVarName());
-            }
-        });
     }
 
     @Override
