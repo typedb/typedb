@@ -88,5 +88,4 @@ public class GraqlShellTest {
         verify(loaderClient).setBatchSize(batchSize);
     }
 
-
 }

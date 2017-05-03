@@ -169,8 +169,8 @@ public class GraqlShell {
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("r", "uri", true, "uri to factory to engine");
         options.addOption("b", "batch", true, "graql file path to batch load");
-        options.addOption("s", "size", true, "the size of the batches");
-        options.addOption("a", "active", true, "the number of active tasks");
+        options.addOption("s", "size", true, "the size of the batches (must be used with -b)");
+        options.addOption("a", "active", true, "the number of active tasks (must be used with -b)");
         options.addOption("o", "output", true, "output format for results");
         options.addOption("u", "user", true, "username to sign in");
         options.addOption("p", "pass", true, "password to sign in");
@@ -216,10 +216,14 @@ public class GraqlShell {
 
         if (cmd.hasOption("b")) {
             try {
+                int activeTasks = Integer.parseInt(cmd.getOptionValue("a"));
+                int batchSize = Integer.parseInt(cmd.getOptionValue("s"));
                 sendBatchRequest(client.loaderClient(keyspace, uriString), cmd.getOptionValue("b"),
-                        cmd.getOptionValue("a", Integer.toString(0)), cmd.getOptionValue("s", Integer.toString(0)));
+                        activeTasks, batchSize);
             } catch (IOException e) {
                 throw new RuntimeException(e);
+            } catch (NumberFormatException e) {
+                printUsage(options, "Cannot cast argument to an integer "+e.getMessage());
             }
             return;
         } else if (cmd.hasOption("a") || cmd.hasOption("s")) {
@@ -272,11 +276,11 @@ public class GraqlShell {
             return lines.stream().collect(joining("\n"));
     }
 
-    private static void sendBatchRequest(LoaderClient loaderClient, String graqlPath, String activeTasks, String batchSize) throws IOException {
+    private static void sendBatchRequest(LoaderClient loaderClient, String graqlPath, int activeTasks, int batchSize) throws IOException {
         AtomicInteger numberBatchesCompleted = new AtomicInteger(0);
 
-        if (Integer.parseInt(activeTasks)!=0) loaderClient.setNumberActiveTasks(Integer.parseInt(activeTasks));
-        if (Integer.parseInt(activeTasks)!=0) loaderClient.setBatchSize(Integer.parseInt(batchSize));
+        loaderClient.setNumberActiveTasks(activeTasks);
+        loaderClient.setBatchSize(batchSize);
 
         loaderClient.setTaskCompletionConsumer((json) -> {
             TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
