@@ -22,13 +22,21 @@ package ai.grakn.graql.internal.gremlin.sets;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * @author Felix Chapman
  */
 class NeqFragmentSet extends EquivalentFragmentSet {
 
+    private final ImmutableSet<VarName> vars;
+
     NeqFragmentSet(VarName varA, VarName varB) {
-        super(Fragments.distinctCasting(varA, varB), Fragments.distinctCasting(varB, varA));
+        super(Fragments.neq(varA, varB), Fragments.neq(varB, varA));
+        vars = ImmutableSet.of(varA, varB);
+    }
+
+    boolean isBetween(VarName varA, VarName varB) {
+        return vars.equals(ImmutableSet.of(varA, varB));
     }
 }

@@ -39,8 +39,8 @@ import static java.util.stream.Collectors.toList;
  *  <li>There is a {@link CastingFragmentSet} from {@code r} to {@code yc}</li>
  *  <li>There is a {@link RolePlayerFragmentSet} from {@code xc} to {@code x}</li>
  *  <li>There is a {@link RolePlayerFragmentSet} from {@code yc} to {@code y}</li>
- *  <li>There is a {@link DistinctCastingFragmentSet} between {@code xc} and {@code yc}</li>
- *  <li>{@code r} is otherwise never referred to in the query</li>
+ *  <li>There is a {@link NeqFragmentSet} between {@code xc} and {@code yc}</li>
+ *  <li>{@code r} does not have a user-defined variable name</li>
  * </ol>
  *
  * And optionally:
@@ -55,7 +55,7 @@ import static java.util.stream.Collectors.toList;
  * so the user cannot refer to them.
  *
  * When these criteria are met, all the fragments can be replaced with a {@link ShortcutFragmentSet} from {@code x}
- * to {@code y} via {@code r}, with optionally specified role- and relation-types.
+ * to {@code y}, with optionally specified role- and relation-types.
  *
  * @author Felix Chapman
  */
@@ -99,7 +99,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         RolePlayerFragmentSet rolePlayerFragmentX = findRolePlayerFragmentSet(fragmentSets, castingX);
         RolePlayerFragmentSet rolePlayerFragmentY = findRolePlayerFragmentSet(fragmentSets, castingY);
 
-        DistinctCastingFragmentSet distinctCasting = findDistinctCastingFragmentSet(fragmentSets, castingX, castingY);
+        NeqFragmentSet distinctCasting = findNeqFragmentSet(fragmentSets, castingX, castingY);
 
         // Try and get type of relation
         Optional<IsaFragmentSet> relIsaFragment = fragmentSetOfType(IsaFragmentSet.class, fragmentSets)
@@ -156,12 +156,12 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         return true;
     }
 
-    private static DistinctCastingFragmentSet findDistinctCastingFragmentSet(
-            Collection<EquivalentFragmentSet> fragmentSets, VarName castingX, VarName castingY) {
+    private static NeqFragmentSet findNeqFragmentSet(
+            Collection<EquivalentFragmentSet> fragmentSets, VarName varX, VarName varY) {
         // We can assume that this fragment set must exist
         //noinspection OptionalGetWithoutIsPresent
-        return fragmentSetOfType(DistinctCastingFragmentSet.class, fragmentSets)
-                .filter(distinct -> distinct.isBetween(castingX, castingY))
+        return fragmentSetOfType(NeqFragmentSet.class, fragmentSets)
+                .filter(neq -> neq.isBetween(varX, varY))
                 .findAny()
                 .get();
     }
