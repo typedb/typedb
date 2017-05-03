@@ -32,12 +32,12 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each partial substitution a given atom has
      */
-    public static final int PARTIAL_SUBSTITUTION = 25;
+    public static final int PARTIAL_SUBSTITUTION = 30;
 
     /**
      * priority modifier for each rule that is applicable to a given atom
      */
-    public static final int APPLICABLE_RULE = -5;
+    public static final int APPLICABLE_RULE = 1;
 
     /**
      * priority modifier if a given atom is a resource atom
@@ -57,7 +57,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for guard (type atom) the atom has
      */
-    public static final int GUARD = 1;
+    public static final int GUARD = 3;
 
     /**
      * priority modifier for guard (type atom) the atom has
@@ -77,7 +77,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each value predicate with variable
      */
-    public static final int VARIABLE_VALUE_PREDICATE = -25;
+    public static final int VARIABLE_VALUE_PREDICATE = -30;
 
     /**
      * priority modifier if a given atom is a relation atom
