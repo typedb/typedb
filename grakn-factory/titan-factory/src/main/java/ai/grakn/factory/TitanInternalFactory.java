@@ -57,7 +57,7 @@ import static java.util.Arrays.stream;
  *
  * @author fppt
  */
-class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
+public class TitanInternalFactory extends AbstractInternalFactory<GraknTitanGraph, TitanGraph> {
     private final static String DEFAULT_CONFIG = "backend-default";
 
     TitanInternalFactory(String keyspace, String engineUrl, Properties properties) {
