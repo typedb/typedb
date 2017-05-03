@@ -30,14 +30,14 @@
     </appender>
 
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.dirs}/${graknLogFileName}</file>{
+        <file>${grakn.log.dirs}/${graknLogFileName}</file>
         <encoder>
             <pattern>${defaultLogPattern}</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
             <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${graknLogFileName}-%d{defaultFileNamePattern}</fileNamePattern>
+            <fileNamePattern>${graknLogFileName}-${defaultFileNamePattern}</fileNamePattern>
             <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
@@ -46,12 +46,12 @@
     </appender>
 
     <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.dirs}/${graknPPLogFileName}</file>{
+        <file>${grakn.log.dirs}/${graknPPLogFileName}</file>
         <encoder>
             <pattern>${defaultLogPattern}</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>${graknPPLogFileName}-${defaultFileNamePattern</fileNamePattern>
+            <fileNamePattern>${graknPPLogFileName}-${defaultFileNamePattern}</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
