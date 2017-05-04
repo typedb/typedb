@@ -22,15 +22,22 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.Reasoner;
+import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
+import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import java.util.HashSet;
+import java.util.Set;
 import mjson.Json;
 import spark.Request;
 import spark.Response;
@@ -43,6 +50,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.READ;
+import static ai.grakn.GraknTxType.WRITE;
 import static ai.grakn.engine.controller.ConceptController.mandatoryRequestParameter;
 import static ai.grakn.engine.controller.ConceptController.retrieveExistingConcept;
 import static ai.grakn.engine.controller.ConceptController.validateRequest;
@@ -200,8 +208,27 @@ public class DashboardController {
     private Boolean precomputeInferences(Request request, Response response) {
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
 
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
-            Reasoner.precomputeInferences(graph);
+        try{
+            GraknGraph graph = factory.getGraph(keyspace, WRITE);
+            LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
+            LazyQueryCache<ReasonerAtomicQuery> dCache = new LazyQueryCache<>();
+            Set<ReasonerAtomicQuery> subGoals = new HashSet<>();
+            for(Rule rl : Reasoner.getRules(graph)){
+                InferenceRule rule = new InferenceRule(rl, graph);
+                ReasonerAtomicQuery atomicQuery = new ReasonerAtomicQuery(rule.getHead());
+                int iter = 0;
+                long dAns = 0;
+                Set<ReasonerAtomicQuery> SG;
+                do {
+                    SG = new HashSet<>(subGoals);
+                    Set<Answer> answers = atomicQuery.answerStream(SG, cache, dCache, true, false, iter != 0).collect(Collectors.toSet());
+                    dAns = cache.answerSize(SG) - dAns;
+                    graph.commit();
+                    graph = factory.getGraph(keyspace, WRITE);
+                    iter++;
+                } while (dAns != 0);
+                subGoals.addAll(SG);
+            }
 
             response.status(200);
 
