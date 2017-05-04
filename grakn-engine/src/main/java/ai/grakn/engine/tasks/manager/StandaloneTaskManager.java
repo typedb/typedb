@@ -50,10 +50,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
-import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.CREATED;
-import static ai.grakn.engine.TaskStatus.RUNNING;
-
 /**
  * <p>
  * In-memory task manager to schedule and execute tasks. By default this task manager uses an in-memory
@@ -132,7 +128,7 @@ public class StandaloneTaskManager implements TaskManager {
             }
 
             // Kill the currently running task if it is running
-            else if (state.status() == RUNNING && runningTasks.containsKey(id)) {
+            else if (state.status() == TaskStatus.RUNNING && runningTasks.containsKey(id)) {
                 LOG.info("Stopping running task {}", id);
 
                 // Stop the task
@@ -227,7 +223,7 @@ public class StandaloneTaskManager implements TaskManager {
      * @return If the given task can run
      */
     private boolean taskShouldRun(TaskState task){
-        return task.status() == CREATED || task.schedule().isRecurring() && task.status() == COMPLETED;
+        return task.status() == TaskStatus.CREATED || task.schedule().isRecurring() && task.status() == TaskStatus.COMPLETED;
     }
 
     /**
@@ -239,7 +235,7 @@ public class StandaloneTaskManager implements TaskManager {
      * @return If the given task can resume
      */
     private boolean taskShouldResume(TaskState task){
-        return task.status() == RUNNING;
+        return task.status() == TaskStatus.RUNNING;
     }
 
     private Consumer<TaskCheckpoint> saveCheckpoint(TaskState state) {
