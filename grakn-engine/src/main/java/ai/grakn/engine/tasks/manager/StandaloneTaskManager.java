@@ -102,6 +102,7 @@ public class StandaloneTaskManager implements TaskManager {
     public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
+        scheduledTasks.clear();
         runningTasks.clear();
         LockProvider.clear();
     }
