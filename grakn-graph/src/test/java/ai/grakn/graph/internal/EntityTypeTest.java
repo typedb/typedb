@@ -38,6 +38,7 @@ import java.util.Set;
 
 import static ai.grakn.util.ErrorMessage.CANNOT_BE_KEY_AND_RESOURCE;
 import static ai.grakn.util.ErrorMessage.CANNOT_DELETE;
+import static ai.grakn.util.ErrorMessage.ID_ALREADY_TAKEN;
 import static ai.grakn.util.ErrorMessage.META_TYPE_IMMUTABLE;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
@@ -65,6 +66,14 @@ public class EntityTypeTest extends GraphTestBase{
         middle1.superType(top);
         middle2.superType(top);
         middle3.superType(top);
+    }
+
+    @Test
+    public void whenCreatingEntityTypeUsingLabelTakenByAnotherType_Throw(){
+        RoleType original = graknGraph.putRoleType("Role Type");
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(ID_ALREADY_TAKEN.getMessage(original.getLabel(), original.toString()));
+        graknGraph.putEntityType(original.getLabel());
     }
 
     @Test
