@@ -275,7 +275,7 @@ public class ReasonerTest {
         Pattern head = and(snbGraph.graph().graql().parsePatterns("$x has firstname 'Bob';"));
         snbGraph.graph().admin().getMetaRuleInference().putRule(body, head);
 
-        Reasoner.commitGraph(snbGraph.graph());
+        snbGraph.graph().commit();
         snbGraph.graph(); //Reopen transaction
 
         QueryBuilder qb = snbGraph.graph().graql().infer(true).materialise(false);

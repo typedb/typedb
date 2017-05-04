@@ -30,15 +30,18 @@ import java.util.Set;
 import static ai.grakn.graql.Graql.var;
 
 /**
+ *
  * <p>
  * Class providing reasoning utility functions.
  * </p>
  *
  * @author Kasper Piskorski
+ *
  */
 public class Reasoner {
 
     /**
+     *
      * @param graph to be checked against
      * @return set of inference rule contained in the graph
      */
@@ -47,6 +50,7 @@ public class Reasoner {
     }
 
     /**
+     *
      * @param graph to be checked against
      * @return true if at least one inference rule is present in the graph
      */

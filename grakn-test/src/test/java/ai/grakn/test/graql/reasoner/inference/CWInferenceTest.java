@@ -20,6 +20,7 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.RuleType;
+import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
@@ -217,7 +218,7 @@ public class CWInferenceTest {
         Pattern R6_LHS = and(localGraph.graql().parsePatterns("$x isa region;"));
         Pattern R6_RHS = and(localGraph.graql().parsePatterns("$x isa country;"));
         inferenceRule.putRule(R6_LHS, R6_RHS);
-        Reasoner.commitGraph(localGraph);
+        localGraph.commit();
 
         String queryString = "match $x isa criminal;";
         String explicitQuery = "match " +
