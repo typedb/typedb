@@ -2,32 +2,30 @@ insert
 
 #Roles
 
-friend1 sub role;
-friend2 sub role;
+friend sub role;
 
 #Entities
 
 person sub entity
-    plays friend1
-    plays friend2;
+    plays friend;
 
 #Relations
 
 knows-trans sub relation
-    relates friend1
-    relates friend2;
+    relates friend;
+
 knows sub knows-trans
-    relates friend1
-    relates friend2;
+    relates friend;
 
 #Rules
 
 $rule0 isa inference-rule
     lhs {
-        (friend1:$x, friend2:$y);
-        (friend1:$y, friend2:$z); }
+        (friend:$x, friend:$y);
+        (friend:$y, friend:$z);
+    }
     rhs {
-        (friend1:$x, friend2:$z) isa knows-trans;
+        (friend:$x, friend:$z) isa knows-trans;
     };
 
 #Data
@@ -37,6 +35,7 @@ $p2 isa person;
 $p3 isa person;
 $p4 isa person;
 
-(friend1:$p1, friend2:$p2) isa knows;
-(friend1:$p2, friend2:$p3) isa knows;
-(friend1:$p3, friend2:$p4) isa knows;
+(friend:$p1, friend:$p2) isa knows;
+(friend:$p2, friend:$p3) isa knows;
+(friend:$p3, friend:$p4) isa knows;
+

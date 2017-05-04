@@ -25,14 +25,15 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
-import java.time.Duration;
-import java.time.Instant;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -52,8 +53,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class PostProcessingIT {
-
-    private static final Duration MAX_DURATION = Duration.ofMinutes(1);
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
@@ -127,10 +126,20 @@ public class PostProcessingIT {
         assertTrue("Failed at breaking graph", graphIsBroken(session));
 
         // Check graph fixed
-        Instant start = Instant.now();
-        while(graphIsBroken(session) && Duration.between(start, Instant.now()).compareTo(MAX_DURATION) < 0){
+        boolean tasksStillRunning;
+        do{
             Thread.sleep(1000);
-        }
+
+            Set<TaskState> runningPPTasks = engine.getTaskManager().storage().getTasks(null, PostProcessingTask.class.getName(), null, null, 0, 0);
+            tasksStillRunning = false;
+            for (TaskState runningPPTask : runningPPTasks) {
+                if(!runningPPTask.status().equals(TaskStatus.STOPPED)){
+                    tasksStillRunning = true;
+                    break;
+                }
+            }
+
+        } while(tasksStillRunning);
 
         assertFalse("Failed at fixing graph", graphIsBroken(session));
 
