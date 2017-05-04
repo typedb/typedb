@@ -74,7 +74,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public ResourceType<D> superType(ResourceType<D> superType){
-        checkInstancesMatchRegex(superType.getLabel(), superType.getRegex());
+        ((ResourceTypeImpl<D>) superType).superTypeSet().forEach(st -> checkInstancesMatchRegex(st.getLabel(), st.getRegex()));
         return super.superType(superType);
     }
 
