@@ -221,7 +221,7 @@ public class DashboardController {
                 Set<ReasonerAtomicQuery> SG;
                 do {
                     SG = new HashSet<>(subGoals);
-                    Set<Answer> answers = atomicQuery.answerStream(SG, cache, dCache, true, false, iter != 0).collect(Collectors.toSet());
+                    atomicQuery.answerStream(SG, cache, dCache, true, false, iter != 0).collect(Collectors.toSet());
                     dAns = cache.answerSize(SG) - dAns;
                     graph.commit();
                     graph = factory.getGraph(keyspace, WRITE);
