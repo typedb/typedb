@@ -27,6 +27,7 @@ import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
 import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.generator.TaskManagers;
 import ai.grakn.generator.TaskStates;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
@@ -40,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import mjson.Json;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -87,6 +89,11 @@ public class TaskManagerTest {
 
     @ClassRule
     public static EngineContext kafka = EngineContext.startKafkaServer();
+
+    @AfterClass
+    public static void closeTaskManagers(){
+        TaskManagers.closeAndClear();
+    }
 
     @Property(trials=10)
     public void afterRunning_AllNonFailingTasksAreRecordedAsCompleted(List<TaskState> tasks, TaskManager manager) {

@@ -36,7 +36,12 @@ public class TaskManagers extends Generator<TaskManager> {
             StandaloneTaskManager.class, SingleQueueTaskManager.class
     };
 
-    private Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
+    private static Map<Class<? extends TaskManager>, TaskManager> taskManagers = new HashMap<>();
+
+    public static void closeAndClear(){
+        taskManagers.values().forEach(TaskManager::close);
+        taskManagers.clear();
+    }
 
     public TaskManagers(){
         super(TaskManager.class);
