@@ -101,15 +101,6 @@ export default {
       requestType: 'POST',
     });
   },
-            /**
-             * Pre materialise
-             */
-  preMaterialiseAll() {
-    this.request({
-      url: `/graph/precomputeInferences?keyspace=${User.getCurrentKeySpace()}`,
-      contentType: 'application/text',
-    });
-  },
 
             /**
              * Send graql shell command to engine. Returns a string representing shell output.
