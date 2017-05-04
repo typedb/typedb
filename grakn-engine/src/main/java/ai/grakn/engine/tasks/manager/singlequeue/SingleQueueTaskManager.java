@@ -97,7 +97,7 @@ public class SingleQueueTaskManager implements TaskManager {
      *  + Create and run an instance of SingleQueueTaskRunner
      *  + Add oneself to the leader elector by instantiating failoverelector
      */
-    public SingleQueueTaskManager(EngineID engineId) throws Exception {
+    public SingleQueueTaskManager(EngineID engineId) {
         this.zookeeper = new ZookeeperConnection();
         this.storage = chooseStorage(properties, zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);

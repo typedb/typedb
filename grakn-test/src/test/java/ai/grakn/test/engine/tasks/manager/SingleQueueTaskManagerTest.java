@@ -16,7 +16,7 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.test.engine.tasks.manager.singlequeue;
+package ai.grakn.test.engine.tasks.manager;
 
 import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.tasks.TaskManager;
