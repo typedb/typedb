@@ -79,10 +79,10 @@ public class AtomicTest {
     public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql");
 
     @ClassRule
-    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet18.gql");
+    public static final GraphContext ruleApplicabilityInstanceTypesSet = GraphContext.preLoad("testSet19.gql");
 
     @ClassRule
-    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet21.gql");
+    public static final GraphContext ruleApplicabilitySingleRoleSet = GraphContext.preLoad("testSet22.gql");
 
     @BeforeClass
     public static void onStartup() throws Exception {
@@ -354,6 +354,14 @@ public class AtomicTest {
         String relationString = "{(role1: $x1, role2: $x2, role2: $x3);}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(1, relation.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_TypePreventsFromApplyingTheRule(){
+        GraknGraph graph = ruleApplicabilitySet.graph();
+        String relationString = "{($x, $y);$x isa entity6;}";
+        Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
+        assertEquals(0, relation.getApplicableRules().size());
     }
 
     @Test //test rule applicability for atom with unspecified roles with missing relation players but with possible ambiguous role mapping

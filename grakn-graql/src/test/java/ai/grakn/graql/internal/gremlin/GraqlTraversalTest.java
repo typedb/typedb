@@ -48,8 +48,6 @@ import static ai.grakn.graql.Graql.and;
 import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.gremlin.GraqlMatchers.feature;
-import static ai.grakn.graql.internal.gremlin.GraqlMatchers.satisfies;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.id;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inIsa;

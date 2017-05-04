@@ -20,7 +20,7 @@ package ai.grakn.engine.controller;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.ComputeQuery;
 import ai.grakn.graql.InsertQuery;

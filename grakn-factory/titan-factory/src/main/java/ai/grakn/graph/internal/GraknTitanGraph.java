@@ -21,6 +21,8 @@ package ai.grakn.graph.internal;
 import ai.grakn.GraknTxType;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknLockingException;
+import ai.grakn.factory.FactoryBuilder;
+import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -32,6 +34,7 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Properties;
+import java.util.function.Supplier;
 
 /**
  * <p>
@@ -48,11 +51,8 @@ import java.util.Properties;
  * @author fppt
  */
 public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
-    private final StandardTitanGraph rootGraph;
-
     public GraknTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading, Properties properties){
         super(graph, name, engineUrl, batchLoading, properties);
-        this.rootGraph = (StandardTitanGraph) graph;
     }
 
     /**
@@ -74,31 +74,46 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
     }
 
     @Override
-    public boolean isConnectionClosed() {
-        return rootGraph.isClosed();
+    public void closeSession(){
+        super.closeSession();
+
+        //Close the system graph if possible
+        if(!getKeyspace().equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME)) {
+            GraknTitanGraph system = (GraknTitanGraph) FactoryBuilder.getFactory(SystemKeyspace.SYSTEM_GRAPH_NAME, getEngineUrl(), getProperties()).open(GraknTxType.READ);
+            system.close();
+            if (!system.isSessionClosed() && system.numOpenTx() == 0) {
+                system.closeSession();
+            }
+        }
+    }
+
+    @Override
+    public boolean isSessionClosed() {
+        return getTinkerPopGraph().isClosed();
     }
 
     @Override
     public int numOpenTx() {
-        return rootGraph.getOpenTxs();
+        return ((StandardTitanGraph) getTinkerPopGraph()).getOpenTxs();
     }
 
     @Override
     protected void clearGraph() {
-        rootGraph.close();
-        TitanCleanup.clear(rootGraph);
+        getTinkerPopGraph().close();
+        TitanCleanup.clear(getTinkerPopGraph());
     }
 
     @Override
     public void commitTransactionInternal(){
-        executeLockingMethod(super::commitTransactionInternal);
+        executeLockingMethod(() -> {
+            super.commitTransactionInternal();
+            return null;
+        });
     }
 
     @Override
     Vertex addVertex(Schema.BaseType baseType){
-        final Vertex[] v = new Vertex[1];
-        executeLockingMethod(() -> v[0] = super.addVertex(baseType));
-        return v[0];
+        return executeLockingMethod(() -> super.addVertex(baseType));
     }
 
     /**
@@ -107,9 +122,9 @@ public class GraknTitanGraph extends AbstractGraknGraph<TitanGraph> {
      *
      * @param method The locking method to execute
      */
-    private void executeLockingMethod(Runnable method){
+    private <X> X executeLockingMethod(Supplier<X> method){
         try {
-            method.run();
+            return method.get();
         } catch (TitanException e){
             if(e.isCausedBy(TemporaryLockingException.class) || e.isCausedBy(PermanentLockingException.class)){
                 throw new GraknLockingException(e);

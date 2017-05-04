@@ -28,6 +28,8 @@ entity4 sub entity
 entity5 sub entity
     plays role1;
 
+entity6 sub entity;
+
 #Relations
 
 relation1 sub relation

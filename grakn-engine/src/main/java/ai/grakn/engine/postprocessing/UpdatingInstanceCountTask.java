@@ -24,7 +24,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.engine.tasks.storage.LockingBackgroundTask;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -51,7 +51,7 @@ import static java.util.stream.Collectors.toMap;
  * @author fppt
  */
 public class UpdatingInstanceCountTask extends LockingBackgroundTask {
-    public static final String LOCK_KEY = "updating-instance-count-lock";
+    public static final String LOCK_KEY = "/updating-instance-count-lock";
     private static final Logger LOG = LoggerFactory.getLogger(UpdatingInstanceCountTask.class);
 
     @Override

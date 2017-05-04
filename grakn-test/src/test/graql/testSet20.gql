@@ -7,9 +7,9 @@ role2 sub role;
 
 #Entities
 
-entity1 sub entity;
-sub-entity1 sub entity1;
-entity2 sub entity;
+entity1 sub entity
+	plays role1
+	plays role2;
 
 #Relations
 
@@ -29,12 +29,15 @@ relation2 sub relation
 
 isa inference-rule
 	lhs {
-		$x isa entity2;
+		(role1:$x, role2:$y) isa relation2;
 	}
 	rhs {
-		$x isa sub-entity1;
+		(role1:$x, role2:$y) isa sub-relation1;
 	};
 
 #Data
 
-$x isa entity2;
+$x isa entity1;
+$y isa entity1;
+
+(role1:$x, role2:$y) isa relation2;

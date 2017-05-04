@@ -87,70 +87,75 @@ public class GeoGraph extends TestGraph {
     @Override
     public void buildInstances(GraknGraph graph) {
         Europe = putEntity(graph, "Europe", continent, key.getLabel());
-        NorthAmerica = putEntity(graph, "NorthAmerica", continent, key.getLabel());
+
         Poland = putEntity(graph, "Poland", country, key.getLabel());
-        England = putEntity(graph, "England", country, key.getLabel());
-        Germany = putEntity(graph, "Germany", country, key.getLabel());
-        France = putEntity(graph, "France", country, key.getLabel());
-        Italy = putEntity(graph, "Italy", country, key.getLabel());
         Masovia = putEntity(graph, "Masovia", region, key.getLabel());
         Silesia = putEntity(graph, "Silesia", region, key.getLabel());
-        GreaterLondon = putEntity(graph, "GreaterLondon", region, key.getLabel());
-        Bavaria = putEntity(graph, "Bavaria", region, key.getLabel());
-        IleDeFrance = putEntity(graph, "IleDeFrance", region, key.getLabel());
-        Lombardy = putEntity(graph, "Lombardy", region, key.getLabel());
         Warsaw = putEntity(graph, "Warsaw", city, key.getLabel());
         Wroclaw = putEntity(graph, "Wroclaw", city, key.getLabel());
-        London = putEntity(graph, "London", city, key.getLabel());
-        Munich = putEntity(graph, "Munich", city, key.getLabel());
-        Paris = putEntity(graph, "Paris", city, key.getLabel());
-        Milan = putEntity(graph, "Milan", city, key.getLabel());
         UW = putEntity(graph, "University-of-Warsaw", university, key.getLabel());
         PW = putEntity(graph, "Warsaw-Polytechnics", university, key.getLabel());
+
+        England = putEntity(graph, "England", country, key.getLabel());
+        GreaterLondon = putEntity(graph, "GreaterLondon", region, key.getLabel());
+        London = putEntity(graph, "London", city, key.getLabel());
         Imperial = putEntity(graph, "Imperial College London", university, key.getLabel());
         UCL = putEntity(graph, "University College London", university, key.getLabel());
+
+        Germany = putEntity(graph, "Germany", country, key.getLabel());
+        Bavaria = putEntity(graph, "Bavaria", region, key.getLabel());
+        Munich = putEntity(graph, "Munich", city, key.getLabel());
         UniversityOfMunich = putEntity(graph, "University of Munich", university, key.getLabel());
+
+        France = putEntity(graph, "France", country, key.getLabel());
+        IleDeFrance = putEntity(graph, "IleDeFrance", region, key.getLabel());
+        Paris = putEntity(graph, "Paris", city, key.getLabel());
+
+        Italy = putEntity(graph, "Italy", country, key.getLabel());
+        Lombardy = putEntity(graph, "Lombardy", region, key.getLabel());
+        Milan = putEntity(graph, "Milan", city, key.getLabel());
     }
 
     @Override
     public void buildRelations(GraknGraph graph) {
+        isLocatedIn.addRelation()
+                .addRolePlayer(geoEntity, Poland)
+                .addRolePlayer(entityLocation, Europe);
+        isLocatedIn.addRelation()
+                .addRolePlayer(geoEntity, Masovia)
+                .addRolePlayer(entityLocation, Poland);
+
+        isLocatedIn.addRelation()
+                .addRolePlayer(geoEntity, Silesia)
+                .addRolePlayer(entityLocation, Poland);
+
+        isLocatedIn.addRelation()
+                .addRolePlayer(geoEntity, Warsaw)
+                .addRolePlayer(entityLocation, Masovia);
+        isLocatedIn.addRelation()
+                .addRolePlayer(geoEntity, Wroclaw)
+                .addRolePlayer(entityLocation, Silesia);
+
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, PW)
                 .addRolePlayer(entityLocation, Warsaw);
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, UW)
                 .addRolePlayer(entityLocation, Warsaw);
+
+
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, Imperial)
                 .addRolePlayer(entityLocation, London);
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, UCL)
                 .addRolePlayer(entityLocation, London);
-
-        isLocatedIn.addRelation()
-                .addRolePlayer(geoEntity, Warsaw)
-                .addRolePlayer(entityLocation, Masovia);
-        isLocatedIn.addRelation()
-                .addRolePlayer(geoEntity, Masovia)
-                .addRolePlayer(entityLocation, Poland);
-        isLocatedIn.addRelation()
-                .addRolePlayer(geoEntity, Wroclaw)
-                .addRolePlayer(entityLocation, Silesia);
-        isLocatedIn.addRelation()
-                .addRolePlayer(geoEntity, Silesia)
-                .addRolePlayer(entityLocation, Poland);
-
-
-        isLocatedIn.addRelation()
-                .addRolePlayer(geoEntity, Poland)
-                .addRolePlayer(entityLocation, Europe);
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, London)
                 .addRolePlayer(entityLocation, GreaterLondon);
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, GreaterLondon)
                 .addRolePlayer(entityLocation, England);
-
         isLocatedIn.addRelation()
                 .addRolePlayer(geoEntity, England)
                .addRolePlayer(entityLocation, Europe);

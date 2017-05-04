@@ -183,10 +183,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     private Stream<Answer> DBlookup() {
-        AnswerExplanation exp = new LookupExplanation(this);
         return getMatchQuery().admin().stream()
                 .map(QueryAnswer::new)
-                .map(a -> a.explain(exp));
+                .map(a -> a.explain(new LookupExplanation(this)));
     }
 
     /**
@@ -517,7 +516,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
             Answer sub = queryIterator.next()
                     .merge(getIdPredicateAnswer())
                     .filterVars(getVarNames());
-            if (currentRule != null) sub = sub.explain(new RuleExplanation(currentRule));
+
+            //assign appropriate explanation
+            if (sub.getExplanation().isLookupExplanation()) sub = sub.explain(new LookupExplanation(ReasonerAtomicQuery.this));
+            else sub = sub.explain(new RuleExplanation(currentRule));
+
             return cache.recordAnswerWithUnifier(ReasonerAtomicQuery.this, sub, cacheUnifier);
         }
 

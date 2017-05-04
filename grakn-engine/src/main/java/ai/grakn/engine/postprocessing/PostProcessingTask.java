@@ -25,7 +25,7 @@ import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
 import java.util.Optional;
@@ -60,9 +60,12 @@ import static java.util.stream.Collectors.toSet;
  * @author Denis Lobanov, alexandraorth
  */
 public class PostProcessingTask implements BackgroundTask {
-    public static final String LOCK_KEY = "post-processing-lock";
+    public static final String LOCK_KEY = "/post-processing-lock";
 
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
+
+    private static final String PP_RUN = "Post processing Job should run [{}] time elapsed [{}]";
+    private static final String JOB_FINISHED = "Post processing Job [{}] completed on index [{}] on graph [{}]";
 
     private static final long MAX_RETRY = 10;
     private long maxTimeLapse = GraknEngineConfig.getInstance().getPropertyAsLong(POST_PROCESSING_DELAY);
@@ -77,11 +80,12 @@ public class PostProcessingTask implements BackgroundTask {
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Instant lastJobAdded = Instant.ofEpochMilli(lastPPTaskCreated.get());
         long timeElapsed = Duration.between(lastJobAdded, now()).toMillis();
+        boolean ppShouldRun = timeElapsed > maxTimeLapse;
 
-        LOG.trace("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
+        LOG.info(PP_RUN, ppShouldRun, timeElapsed);
 
         // Only try to run if enough time has passed
-        if(timeElapsed > maxTimeLapse){
+        if(ppShouldRun){
             String keyspace = configuration.json().at(KEYSPACE).asString();
 
             applyPPToMapEntry(configuration, Schema.BaseType.CASTING.name(), keyspace, PostProcessingTask::runCastingFix);
@@ -114,12 +118,14 @@ public class PostProcessingTask implements BackgroundTask {
         Json innerConfig = configuration.json().at(COMMIT_LOG_FIXING);
         Map<String, Json> conceptsByIndex = innerConfig.at(type).asJsonMap();
 
-        for(Map.Entry<String, Json> castingIndex:conceptsByIndex.entrySet()){
+        for(Map.Entry<String, Json> conceptIndex:conceptsByIndex.entrySet()){
             // Turn json
-            Set<ConceptId> conceptIds = castingIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
+            Set<ConceptId> conceptIds = conceptIndex.getValue().asList().stream().map(ConceptId::of).collect(toSet());
 
-            runPostProcessingJob((graph) -> postProcessingMethod.apply(graph, castingIndex.getKey(), conceptIds),
-                    keyspace, castingIndex.getKey(), conceptIds);
+            runPostProcessingJob((graph) -> postProcessingMethod.apply(graph, conceptIndex.getKey(), conceptIds),
+                    keyspace, conceptIndex.getKey(), conceptIds);
+
+            LOG.info(JOB_FINISHED, type, conceptIndex.getKey(), keyspace);
         }
     }
 
