@@ -92,6 +92,6 @@ public final class ResolutionStrategy {
      * NB: not integer min as could have overflow
      */
     public static final int VARIABLE_VALUE_PREDICATE = -1000;
-    
+
 }
 
