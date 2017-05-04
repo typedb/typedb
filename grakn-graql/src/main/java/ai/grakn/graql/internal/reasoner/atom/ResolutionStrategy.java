@@ -57,9 +57,11 @@ public final class ResolutionStrategy {
     /**
      * priority modifier if a given atom is a type atom without specific type
      * NB: atom satisfying this criterion should be resolved last
-     * NB: not integer min as could have overflow
      */
     public static final int NON_SPECIFIC_TYPE_ATOM = -1000;
+
+
+    public static final int RULE_RESOLVABLE_ATOM = -15;
 
     /**
      * priority modifier if a given atom is recursive atom
@@ -89,7 +91,6 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each value predicate with variable
      * NB: atom satisfying this criterion should be resolved last
-     * NB: not integer min as could have overflow
      */
     public static final int VARIABLE_VALUE_PREDICATE = -1000;
 
