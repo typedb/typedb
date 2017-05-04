@@ -19,10 +19,14 @@
 package ai.grakn.test.engine.tasks.manager;
 
 import ai.grakn.engine.TaskStatus;
+import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskManager;
+import ai.grakn.engine.tasks.TaskSchedule;
 import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.mock.EndlessExecutionMockTask;
+import ai.grakn.engine.tasks.mock.MockBackgroundTask;
 import ai.grakn.engine.tasks.mock.ShortExecutionMockTask;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.generator.TaskStates;
 import ai.grakn.test.EngineContext;
 import ai.grakn.test.engine.tasks.BackgroundTaskTestUtils;
@@ -32,33 +36,40 @@ import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import mjson.Json;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import static ai.grakn.engine.TaskStatus.COMPLETED;
-import static ai.grakn.engine.TaskStatus.FAILED;
-import static ai.grakn.engine.TaskStatus.STOPPED;
 import static ai.grakn.engine.tasks.TaskSchedule.now;
 import static ai.grakn.engine.tasks.TaskSchedule.recurring;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.cancelledTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
+import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskResumes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.failingTasks;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
+import static java.time.Duration.between;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -68,6 +79,11 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(JUnitQuickcheck.class)
 public class TaskManagerTest {
+
+    @Before
+    public void clearAllTasks(){
+        MockBackgroundTask.clearTasks();
+    }
 
     @ClassRule
     public static EngineContext kafka = EngineContext.startKafkaServer();
@@ -92,7 +108,7 @@ public class TaskManagerTest {
         waitForDoneStatus(manager.storage(), tasks);
 
         failingTasks(tasks).forEach(task ->
-                assertThat("Task " + task + " should have failed.", manager.storage().getState(task).status(), is(FAILED))
+                assertThat("Task " + task + " should have failed.", manager.storage().getState(task).status(), is(TaskStatus.FAILED))
         );
     }
 
@@ -117,7 +133,7 @@ public class TaskManagerTest {
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
-        assertStatus(manager, task, STOPPED);
+        assertStatus(manager, task, TaskStatus.STOPPED);
     }
 
     @Property(trials=10)
@@ -142,7 +158,7 @@ public class TaskManagerTest {
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
-        assertStatus(manager, task, STOPPED);
+        assertStatus(manager, task, TaskStatus.STOPPED);
     }
 
     @Property(trials=10)
@@ -164,7 +180,7 @@ public class TaskManagerTest {
 
         waitForDoneStatus(manager.storage(), ImmutableList.of(task));
 
-        assertStatus(manager, task, COMPLETED, FAILED);
+        assertStatus(manager, task, COMPLETED, TaskStatus.FAILED);
     }
 
     @Property(trials=10)
@@ -216,6 +232,135 @@ public class TaskManagerTest {
 
         assertThat(timesRecurringTaskCompleted.get(), greaterThanOrEqualTo(expectedTimesRecurringTaskCompleted));
     }
+
+    @Property(trials=10)
+    public void whenRecurringTaskSubmitted_ItExecutesMoreThanOnce(
+            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
+
+        final int numberOfExecutions = 5;
+        final AtomicInteger startedCounter = new AtomicInteger(0);
+
+        whenTaskStarts(taskId -> {
+                    int numberTimesExecuted = startedCounter.incrementAndGet();
+                    if(numberTimesExecuted == numberOfExecutions){
+                        manager.stopTask(taskId);
+                    }
+                }
+        );
+
+        // Make task recurring
+        task.schedule(TaskSchedule.recurring(Instant.now(), Duration.ofMillis(100)));
+
+        // Execute task and wait for it to complete
+        manager.addLowPriorityTask(task, configuration(task));
+        waitForStatus(manager.storage(), ImmutableList.of(task), TaskStatus.STOPPED);
+
+        // Assert correct results
+        assertThat(manager.storage().getState(task.getId()).status(), is(TaskStatus.STOPPED));
+        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
+    }
+
+    @Property(trials=10)
+    public void whenRecurringTaskSubmitted_ThereIsAnIntervalBetweenExecutions(
+            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
+
+        final int numberOfExecutions = 5;
+        final Duration interval = Duration.ofMillis(100);
+        final Instant[] lastExecutionTime = {null};
+        final AtomicInteger startedCounter = new AtomicInteger(0);
+
+        whenTaskStarts(taskId -> {
+            if(lastExecutionTime[0] != null) {
+                assertThat(between(lastExecutionTime[0], Instant.now()), greaterThanOrEqualTo(interval));
+            }
+
+            // Store the previous execution time for next round
+            lastExecutionTime[0] = manager.storage().getState(taskId).schedule().runAt();
+
+            // Stop the recurring task so this test does not run forever
+            if(startedCounter.incrementAndGet() == numberOfExecutions){
+                manager.stopTask(taskId);
+            }
+        });
+
+        // Make task recurring
+        task.schedule(TaskSchedule.recurring(interval));
+
+        // Execute task and wait for it to complete
+        manager.addLowPriorityTask(task, configuration(task));
+        waitForStatus(manager.storage(), ImmutableList.of(task), TaskStatus.STOPPED, TaskStatus.FAILED);
+
+        // Assert correct results
+        assertStatus(manager, task, TaskStatus.STOPPED);
+        assertThat(startedCounter.get(), equalTo(numberOfExecutions));
+    }
+
+    @Property(trials=10)
+    public void whenRecurringTaskThrowsException_ItStopsExecuting(
+            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
+
+        final int expectedExecutionsBeforeFailure = 1;
+        final AtomicInteger startedCounter = new AtomicInteger(0);
+
+        whenTaskStarts(taskId -> {
+            startedCounter.incrementAndGet();
+            throw new RuntimeException();
+        });
+
+        // Make task recurring
+        task.schedule(TaskSchedule.recurring(Duration.ofMillis(1)));
+
+        // Execute task and wait for it to complete
+        manager.addLowPriorityTask(task, configuration(task));
+        waitForDoneStatus(manager.storage(), ImmutableList.of(task));
+
+        // Assert correct state
+        assertStatus(manager, task, TaskStatus.FAILED);
+        assertThat(startedCounter.get(), equalTo(expectedExecutionsBeforeFailure));
+    }
+
+    @Property(trials=10)
+    public void whenATaskIsRestartedAfterExecution_ItIsResumed(
+            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
+        ShortExecutionMockTask.resumedCounter.set(0);
+
+        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
+        task.markRunning(EngineID.me()).checkpoint(checkpoint);
+
+        manager.addLowPriorityTask(task, configuration(task));
+        waitForDoneStatus(manager.storage(), ImmutableList.of(task));
+
+        assertEquals(1, ShortExecutionMockTask.resumedCounter.get());
+    }
+
+    @Property(trials=10)
+    public void whenATaskIsRestartedAfterExecution_ItIsResumedFromLastCheckpoint(
+            @TaskStates.WithClass(ShortExecutionMockTask.class) TaskState task, TaskManager manager) {
+        TaskCheckpoint checkpoint = TaskCheckpoint.of(Json.object("checkpoint", true));
+        task.markRunning(EngineID.me()).checkpoint(checkpoint);
+
+        whenTaskResumes((c) -> assertThat(c, equalTo(checkpoint)));
+
+        // Execute task and wait for it to complete
+        manager.addLowPriorityTask(task, configuration(task));
+        waitForDoneStatus(manager.storage(), ImmutableList.of(task));
+
+        // Assert that status is not FAILED
+        assertStatus(manager, task, TaskStatus.COMPLETED);
+    }
+
+    @Property(trials=10)
+    public void whenATaskIsStoppedDuringExecution_ItSavesItsLastCheckpoint(
+            @TaskStates.WithClass(EndlessExecutionMockTask.class) TaskState task, TaskManager manager) {
+        whenTaskStarts(manager::stopTask);
+
+        manager.addLowPriorityTask(task, configuration(task));
+
+        waitForDoneStatus(manager.storage(), ImmutableList.of(task));
+
+        assertThat(manager.storage().getState(task.getId()).checkpoint(), notNullValue());
+    }
+
 
     private void assertStatus(TaskManager manager, TaskState task, TaskStatus... status) {
         assertTrue("Task not in storage", manager.storage().containsTask(task.getId()));

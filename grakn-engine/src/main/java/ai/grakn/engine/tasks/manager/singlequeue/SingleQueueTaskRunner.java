@@ -218,6 +218,11 @@ public class SingleQueueTaskRunner implements Runnable, AutoCloseable {
             if(taskShouldResume(task)){
                 LOG.debug("{}\tresuming ", task);
 
+                //Mark as running
+                task.markRunning(engineID);
+
+                putState(task);
+
                 completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
             } else {
                 //Mark as running

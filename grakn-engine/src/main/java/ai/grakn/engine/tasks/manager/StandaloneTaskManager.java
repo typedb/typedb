@@ -21,6 +21,7 @@ package ai.grakn.engine.tasks.manager;
 
 import ai.grakn.engine.GraknEngineConfig;
 import ai.grakn.engine.TaskId;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.lock.LockProvider;
 import ai.grakn.engine.lock.NonReentrantLock;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
@@ -34,6 +35,8 @@ import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.engine.tasks.TaskStateStorage;
 import ai.grakn.engine.tasks.storage.TaskStateInMemoryStore;
 import ai.grakn.engine.util.EngineID;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +53,6 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.TaskStatus.COMPLETED;
 import static ai.grakn.engine.TaskStatus.CREATED;
 import static ai.grakn.engine.TaskStatus.RUNNING;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * <p>
@@ -67,6 +69,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class StandaloneTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(StandaloneTaskManager.class);
 
+    private final Map<TaskId, ScheduledFuture> scheduledTasks;
     private final Map<TaskId, BackgroundTask> runningTasks;
 
     private final TaskStateStorage storage;
@@ -80,6 +83,7 @@ public class StandaloneTaskManager implements TaskManager {
         this.engineID = engineId;
 
         runningTasks = new ConcurrentHashMap<>();
+        scheduledTasks = new ConcurrentHashMap<>();
 
         storage = new TaskStateInMemoryStore();
         stateUpdateLock = new NonReentrantLock();
@@ -120,7 +124,7 @@ public class StandaloneTaskManager implements TaskManager {
         try {
 
             // Task has not been run- Mark the task as stopped and it will not run when picked up by the executor
-            if (shouldRunTask(state)) {
+            if (taskShouldRun(state)) {
                 LOG.info("Stopping a currently scheduled task {}", id);
 
                 state.markStopped();
@@ -134,12 +138,15 @@ public class StandaloneTaskManager implements TaskManager {
                 runningTasks.get(id).stop();
 
                 state.markStopped();
-            } else {
-                LOG.warn("Task not running {}, was not stopped", id);
             }
 
+            // Nothing was stopped, warn the user
+            else {
+                LOG.warn("Task not running {}, was not stopped", id);
+            }
         } finally {
             saveState(state);
+            cancelTask(state);
         }
     }
 
@@ -157,55 +164,98 @@ public class StandaloneTaskManager implements TaskManager {
 
         Runnable taskExecution = submitTaskForExecution(taskState, taskConfiguration);
 
+        ScheduledFuture future;
         if(schedule.isRecurring()){
-            schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), MILLISECONDS);
+            future = schedulingService.scheduleAtFixedRate(taskExecution, delay, schedule.interval().get().toMillis(), TimeUnit.MILLISECONDS);
         } else {
-            schedulingService.schedule(taskExecution, delay, MILLISECONDS);
+            future = schedulingService.schedule(taskExecution, delay, TimeUnit.MILLISECONDS);
         }
+
+        scheduledTasks.put(taskState.getId(), future);
     }
 
     private Runnable executeTask(TaskState task, TaskConfiguration configuration) {
         return () -> {
             try {
-                task.markRunning(engineID);
-
-                saveState(task);
-
                 BackgroundTask runningTask = task.taskClass().newInstance();
                 runningTasks.put(task.getId(), runningTask);
 
-                boolean completed = runningTask.start(saveCheckpoint(task), configuration);
+                boolean completed;
+
+                if(taskShouldResume(task)){
+                    completed = runningTask.resume(saveCheckpoint(task), task.checkpoint());
+                } else {
+                    //Mark as running
+                    task.markRunning(engineID);
+
+                    saveState(task);
+
+                    completed = runningTask.start(saveCheckpoint(task), configuration);
+                }
 
                 if (completed) {
                     task.markCompleted();
                 } else {
                     task.markStopped();
                 }
-            }
-            catch (Throwable throwable) {
-                LOG.error("error", throwable);
+            } catch (Throwable throwable) {
+                LOG.error(throwable.getMessage());
                 task.markFailed(throwable);
             } finally {
                 saveState(task);
                 runningTasks.remove(task.getId());
+
+                cancelTask(task);
             }
         };
     }
 
     private Runnable submitTaskForExecution(TaskState taskState, TaskConfiguration configuration) {
         return () -> {
-            if (shouldRunTask(storage.getState(taskState.getId()))) {
+            TaskState stateFromStorage = storage.getState(taskState.getId());
+            if (taskShouldRun(stateFromStorage) || taskShouldResume(taskState)) {
                 executorService.submit(executeTask(taskState, configuration));
             }
         };
     }
 
-    private boolean shouldRunTask(TaskState state){
-        return state.status() == CREATED || state.schedule().isRecurring() && state.status() == COMPLETED;
+    /**
+     * Determine if the task should be run. Tasks should run from the beginning
+     * when they are CREATED or recurring and COMPLETED
+     * @param task Task that should be checked
+     * @return If the given task can run
+     */
+    private boolean taskShouldRun(TaskState task){
+        return task.status() == CREATED || task.schedule().isRecurring() && task.status() == COMPLETED;
+    }
+
+    /**
+     * Tasks should resume from the last checkpoint when they are in the RUNNING state.
+     * This status should be taken from the latest snapshot of task state in storage.
+     *
+     * Recurring tasks should
+     * @param task Task that should be checked
+     * @return If the given task can resume
+     */
+    private boolean taskShouldResume(TaskState task){
+        return task.status() == RUNNING;
     }
 
     private Consumer<TaskCheckpoint> saveCheckpoint(TaskState state) {
         return checkpoint -> saveState(state.checkpoint(checkpoint));
+    }
+
+    private void cancelTask(TaskState task){
+        // If stopped or failed, always cancel and clear the task
+        if(task.status() == TaskStatus.STOPPED || task.status() == TaskStatus.FAILED){
+            scheduledTasks.get(task.getId()).cancel(true);
+            scheduledTasks.remove(task.getId());
+        }
+
+        // Only clear COMPLETED tasks if they are not recurring
+        if(task.status() == TaskStatus.COMPLETED && !task.schedule().isRecurring()){
+            scheduledTasks.remove(task.getId());
+        }
     }
 
     private void saveState(TaskState taskState){
