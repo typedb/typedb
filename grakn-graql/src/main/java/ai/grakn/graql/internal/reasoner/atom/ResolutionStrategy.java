@@ -93,6 +93,5 @@ public final class ResolutionStrategy {
      * NB: atom satisfying this criterion should be resolved last
      */
     public static final int VARIABLE_VALUE_PREDICATE = -1000;
-
 }
 
