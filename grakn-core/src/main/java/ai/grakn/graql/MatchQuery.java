@@ -20,11 +20,11 @@ package ai.grakn.graql;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.MatchQueryAdmin;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author Felix Chapman
  */
-public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
+public interface MatchQuery extends Query<List<Answer>>, Streamable<Answer> {
 
     /**
      * @param names an array of variable names to select
@@ -153,7 +153,7 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param <S> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
-    <S> AggregateQuery<S> aggregate(Aggregate<? super Map<VarName, Concept>, S> aggregate);
+    <S> AggregateQuery<S> aggregate(Aggregate<? super Answer, S> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query

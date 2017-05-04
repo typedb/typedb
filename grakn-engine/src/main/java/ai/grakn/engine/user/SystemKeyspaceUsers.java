@@ -22,12 +22,13 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.factory.SystemKeyspace;
 import ai.grakn.graql.AskQuery;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Answer;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,7 +114,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
         Var resource = var("property");
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             MatchQuery query = graph.graql().match(lookup.has(RESOURCE.getLabel(), resource));
-            List<Map<String, Concept>> L = query.execute();
+            List<Answer> L = query.execute();
             if (L.isEmpty()) {
                 return Json.nil();
             }
@@ -141,7 +142,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
     @Override
     public boolean validateUser(String username, String passwordClient) {
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
-            List<Map<String, Concept>> results = graph.graql().match(
+            List<Answer> results = graph.graql().match(
                     var("salt").isa(USER_SALT),
                     var("stored-password").isa(USER_PASSWORD),
                     var("entity").isa(USER_ENTITY).
@@ -175,7 +176,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
         Var lookup = var("entity").isa(USER_ENTITY);
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             MatchQuery query = graph.graql().match(lookup.has(USER_NAME, var("username"))).limit(limit).offset(offset);
-            List<Map<String, Concept>> L = query.execute();
+            List<Answer> L = query.execute();
             Json all = Json.array();
             L.forEach(concepts -> {
                 String username = concepts.get("username").asResource().getValue().toString();
@@ -200,7 +201,7 @@ public class SystemKeyspaceUsers extends UsersHandler {
         Var lookup = var("entity").isa(USER_ENTITY).has(USER_NAME, username);
         try (GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(SystemKeyspace.SYSTEM_GRAPH_NAME, GraknTxType.WRITE)) {
             MatchQuery query = graph.graql().match(lookup);
-            List<Map<String, Concept>> results = query.execute();
+            List<Answer> results = query.execute();
             boolean exists = !results.isEmpty();
             results.forEach(map -> {
                 map.forEach( (k,v) -> {

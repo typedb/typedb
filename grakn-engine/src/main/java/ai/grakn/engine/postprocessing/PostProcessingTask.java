@@ -54,9 +54,12 @@ import static java.util.stream.Collectors.toSet;
  * @author Denis Lobanov, alexandraorth
  */
 public class PostProcessingTask extends AbstractGraphMutationTask {
-    public static final String LOCK_KEY = "post-processing-lock";
+    public static final String LOCK_KEY = "/post-processing-lock";
 
     private static final Logger LOG = LoggerFactory.getLogger(PostProcessingTask.class);
+
+    private static final String PP_RUN = "Post processing Job should run [{}] time elapsed [{}]";
+    private static final String JOB_FINISHED = "Post processing Job [{}] completed on index [{}] on graph [{}]";
 
     private long maxTimeLapse = GraknEngineConfig.getInstance().getPropertyAsLong(POST_PROCESSING_DELAY);
 
@@ -70,8 +73,9 @@ public class PostProcessingTask extends AbstractGraphMutationTask {
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Instant lastJobAdded = Instant.ofEpochMilli(lastPPTaskCreated.get());
         long timeElapsed = Duration.between(lastJobAdded, now()).toMillis();
+        boolean ppShouldRun = timeElapsed > maxTimeLapse;
 
-        LOG.trace("Checking post processing should run: " + (timeElapsed >= maxTimeLapse));
+        LOG.info(PP_RUN, ppShouldRun, timeElapsed);
 
         // Only try to run if enough time has passed
         if(timeElapsed >= maxTimeLapse){
@@ -116,6 +120,8 @@ public class PostProcessingTask extends AbstractGraphMutationTask {
                             throw new RuntimeException(message);
                         });
             }
+
+            LOG.info(JOB_FINISHED, type, conceptIndex.getKey(), graph.getKeyspace());
         }
     }
 

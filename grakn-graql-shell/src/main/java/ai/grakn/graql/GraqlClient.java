@@ -18,6 +18,7 @@
 
 package ai.grakn.graql;
 
+import ai.grakn.client.LoaderClient;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
@@ -60,5 +61,9 @@ class GraqlClient {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public LoaderClient loaderClient(String keyspace, String uriString) {
+        return new LoaderClient(keyspace, uriString).setRetryPolicy(true);
     }
 }

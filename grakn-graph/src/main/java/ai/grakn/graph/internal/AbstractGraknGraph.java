@@ -52,13 +52,11 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.util.Objects;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.javatuples.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,11 +68,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -108,6 +106,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------- Graph Shared Variable
     private final String keyspace;
     private final String engine;
+    private final Properties properties;
     private final boolean batchLoadingEnabled;
     private final G graph;
     private final ElementFactory elementFactory;
@@ -126,6 +125,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
+        this.properties = properties;
         shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
 
         elementFactory = new ElementFactory(this);
@@ -169,6 +169,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
 
+    String getEngineUrl(){
+        return engine;
+    }
+
+    Properties getProperties(){
+        return properties;
+    }
+
     @Override
     public String getKeyspace(){
         return keyspace;
@@ -182,7 +190,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     public boolean isClosed(){
         return !getBooleanFromLocalThread(localIsOpen);
     }
-    public abstract boolean isConnectionClosed();
+    public abstract boolean isSessionClosed();
 
     @Override
     public boolean implicitConceptsVisible(){
@@ -270,19 +278,12 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     public G getTinkerPopGraph(){
-        if(isClosed()){
-            String reason = localClosedReason.get();
-            if(reason == null){
-                throw new GraphRuntimeException(ErrorMessage.GRAPH_CLOSED.getMessage(getKeyspace()));
-            } else {
-                throw new GraphRuntimeException(reason);
-            }
-        }
         return graph;
     }
 
     @Override
     public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
+        operateOnOpenGraph(() -> null); //This is to check if the graph is open
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
         return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph()).V();
     }
@@ -418,7 +419,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     Vertex addVertex(Schema.BaseType baseType){
-        Vertex vertex = getTinkerPopGraph().addVertex(baseType.name());
+        Vertex vertex = operateOnOpenGraph(() -> getTinkerPopGraph().addVertex(baseType.name()));
         vertex.property(Schema.ConceptProperty.ID.name(), vertex.id().toString());
         return vertex;
     }
@@ -436,6 +437,26 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             vertex = concept.getVertex();
         }
         return vertex;
+    }
+
+    /**
+     * An operation on the graph which requires it to be open.
+     *
+     * @param supplier The operation to be performed on the graph
+     * @throws GraphRuntimeException if the graph is closed.
+     * @return The result of the operation on the graph.
+     */
+    private <X> X operateOnOpenGraph(Supplier<X> supplier){
+        if(isClosed()){
+            String reason = localClosedReason.get();
+            if(reason == null){
+                throw new GraphRuntimeException(ErrorMessage.GRAPH_CLOSED.getMessage(getKeyspace()));
+            } else {
+                throw new GraphRuntimeException(reason);
+            }
+        }
+
+        return supplier.get();
     }
 
     @Override
@@ -755,7 +776,17 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     //This is overridden by vendors for more efficient clearing approaches
     protected void clearGraph(){
-        getTinkerPopGraph().traversal().V().drop().iterate();
+        operateOnOpenGraph(() -> getTinkerPopGraph().traversal().V().drop().iterate());
+    }
+
+    @Override
+    public void closeSession(){
+        try {
+            getTinkerPopGraph().close();
+            localClosedReason.set(ErrorMessage.SESSION_CLOSED.getMessage(getKeyspace()));
+        } catch (Exception e) {
+            throw new GraphRuntimeException("Unable to close graph [" + getKeyspace() + "]", e);
+        }
     }
 
     @Override
@@ -815,31 +846,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public Optional<String> commitNoLogs() throws GraknValidationException {
         return close(true, false);
-    }
-
-    //TODO: Kill this method
-    public void commit(BiConsumer<Set<Pair<String, ConceptId>>, Set<Pair<String,ConceptId>>> conceptLogger) throws GraknValidationException {
-        validateGraph();
-
-        Set<Pair<String, ConceptId>> castings = getConceptLog().getModifiedCastings().stream().
-                map(casting -> new Pair<>(casting.getIndex(), casting.getId())).collect(toSet());
-
-        Set<Pair<String, ConceptId>> resources = getConceptLog().getModifiedResources().stream().
-                map(resource -> new Pair<>(resource.getIndex(), resource.getId())).collect(toSet());
-
-
-        LOG.trace("Graph is valid. Committing graph . . . ");
-        commitTransactionInternal();
-
-        //TODO: Kill when analytics no longer needs this
-        GraknSparkComputer.refresh();
-
-        LOG.trace("Graph committed.");
-
-        //No post processing should ever be done for the system keyspace
-        if(!keyspace.equalsIgnoreCase(SystemKeyspace.SYSTEM_GRAPH_NAME) && (!castings.isEmpty() || !resources.isEmpty())) {
-            conceptLogger.accept(castings, resources);
-        }
     }
 
     private Optional<String> commitWithLogs() throws GraknValidationException {
@@ -907,7 +913,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return if castings were merged, a commit is required and the casting index exists
      */
     @Override
-    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateCastings(String index, Set<ConceptId> castingVertexIds){
         Set<CastingImpl> duplicated = castingVertexIds.stream()
                 .map(id -> this.<CastingImpl>getConceptRawId(id.getValue()))
@@ -926,7 +931,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             //Remove Redundant Relations
             duplicateRelations.forEach(relation -> ((ConceptImpl) relation).deleteNode());
 
-            //TODO Why do we need to restore the index if it has not changed?
             //Restore the index
             String newIndex = mainCasting.getIndex();
             mainCasting.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
@@ -994,7 +998,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
      * @return True if a commit is required.
      */
     @Override
-    //TODO Is the second argument ever greater than one
     public boolean fixDuplicateResources(String index, Set<ConceptId> resourceVertexIds){
         Set<ResourceImpl> duplicates = resourceVertexIds.stream()
                 .map(id -> this.<ResourceImpl>getConceptRawId(id.getValue()))
@@ -1029,7 +1032,6 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             }
 
             //Restore the index
-            //TODO Why do we need to do this
             String newIndex = mainResource.getIndex();
             mainResource.getVertex().property(Schema.ConceptProperty.INDEX.name(), newIndex);
 

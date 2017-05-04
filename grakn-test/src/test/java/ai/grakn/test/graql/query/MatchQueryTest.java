@@ -28,11 +28,13 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.pattern.property.LhsProperty;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
@@ -53,7 +55,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -161,6 +162,9 @@ import static org.junit.Assert.assertThat;
 
 @SuppressWarnings({"OptionalGetWithoutIsPresent", "unchecked"})
 public class MatchQueryTest {
+
+    private final VarName x = VarName.of("x");
+    private final VarName y = VarName.of("y");
 
     private QueryBuilder qb;
 
@@ -427,15 +431,15 @@ public class MatchQueryTest {
     public void testVariablesEverywhere() {
         MatchQuery query = qb.match(
                 var()
-                        .rel(label("production-with-genre"), var("x").isa(var("y").sub(label("production"))))
+                        .rel(label("production-with-genre"), var(x).isa(var(y).sub(label("production"))))
                         .rel(var().has("name", "crime"))
         );
 
         assertThat(query, results(containsInAnyOrder(
-                allOf(hasEntry(is("x"), godfather), hasEntry(is("y"), production)),
-                allOf(hasEntry(is("x"), godfather), hasEntry(is("y"), movie)),
-                allOf(hasEntry(is("x"), heat),      hasEntry(is("y"), production)),
-                allOf(hasEntry(is("x"), heat),      hasEntry(is("y"), movie))
+                allOf(hasEntry(is(x), godfather), hasEntry(is(y), production)),
+                allOf(hasEntry(is(x), godfather), hasEntry(is(y), movie)),
+                allOf(hasEntry(is(x), heat),      hasEntry(is(y), production)),
+                allOf(hasEntry(is(x), heat),      hasEntry(is(y), movie))
         )));
     }
 
@@ -602,7 +606,7 @@ public class MatchQueryTest {
     @Test
     public void testMatchQueryExecuteAndParallelStream() {
         MatchQuery query = qb.match(var("x").isa("movie"));
-        List<Map<String, Concept>> list = query.execute();
+        List<Answer> list = query.execute();
         assertEquals(list, query.parallelStream().collect(toList()));
     }
 
@@ -676,7 +680,7 @@ public class MatchQueryTest {
     public void testAllGreaterThanResources() {
         MatchQuery query = qb.match(var("x").val(gt(var("y"))));
 
-        List<Map<String, Concept>> results = query.execute();
+        List<Answer> results = query.execute();
 
         assertThat(results, hasSize(greaterThan(10)));
 
@@ -704,7 +708,7 @@ public class MatchQueryTest {
                 var("x").val(lte(var("y")))
         );
 
-        List<Map<String, Concept>> results = query.execute();
+        List<Answer> results = query.execute();
 
         assertThat(results, hasSize(greaterThan(5)));
 
@@ -786,8 +790,8 @@ public class MatchQueryTest {
     @Test
     public void whenMatchingHas_ThenTheResultOnlyContainsTheExpectedVariables() {
         MatchQuery query = qb.match(var("x").has("name"));
-        for (Map<String, Concept> result : query) {
-            assertEquals(result.keySet(), ImmutableSet.of("x"));
+        for (Answer result : query) {
+            assertEquals(result.keySet(), ImmutableSet.of(VarName.of("x")));
         }
     }
 
@@ -820,7 +824,7 @@ public class MatchQueryTest {
     public void testHideImplicitTypesTwice() {
         MatchQuery query1 = qb.match(var("x").sub("concept"));
         assertThat(query1, variable("x", allOf((Matcher) hasItem(movie), not((Matcher) hasItem(hasTitle)))));
-        List<Map<String, Concept>> results1 = query1.execute();
+        List<Answer> results1 = query1.execute();
 
         String keyspace = movieGraph.graph().getKeyspace();
         movieGraph.graph().close();
@@ -833,7 +837,7 @@ public class MatchQueryTest {
     @Test
     public void testQueryNoVariables() {
         MatchQuery query = qb.match(var().isa("movie"));
-        List<Map<String, Concept>> results = query.execute();
+        List<Answer> results = query.execute();
         assertThat(results, allOf(
                 (Matcher) everyItem(not(hasKey(anything()))),
                 hasSize(movies.size())
@@ -847,8 +851,8 @@ public class MatchQueryTest {
 
     @Test
     public void whenQueryDoesNotSpecifyRole_ResultIsTheSameAsSpecifyingMetaRole() {
-        Set<Map<String, Concept>> withoutRole = qb.match(var().rel("x").isa("has-cast")).stream().collect(toSet());
-        Set<Map<String, Concept>> withRole = qb.match(var().rel("role", "x").isa("has-cast")).stream().collect(toSet());
+        Set<Answer> withoutRole = qb.match(var().rel("x").isa("has-cast")).stream().collect(toSet());
+        Set<Answer> withRole = qb.match(var().rel("role", "x").isa("has-cast")).stream().collect(toSet());
 
         assertEquals(withoutRole, withRole);
     }
@@ -861,8 +865,8 @@ public class MatchQueryTest {
         );
 
         assertThat(query, results(containsInAnyOrder(
-                allOf(hasEntry(is("x"), hocusPocus), hasEntry(is("y"), theMuppets)),
-                allOf(hasEntry(is("x"), theMuppets), hasEntry(is("y"), hocusPocus))
+                allOf(hasEntry(is(x), hocusPocus), hasEntry(is(y), theMuppets)),
+                allOf(hasEntry(is(x), theMuppets), hasEntry(is(y), hocusPocus))
         )));
     }
 

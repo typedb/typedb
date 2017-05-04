@@ -27,6 +27,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import ai.grakn.graql.internal.pattern.Patterns;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -45,7 +46,6 @@ import static ai.grakn.graql.Graql.eq;
 import static ai.grakn.graql.Graql.gt;
 import static ai.grakn.graql.Graql.or;
 import static ai.grakn.graql.Graql.var;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.id;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inCasting;
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.inRelates;
@@ -148,16 +148,16 @@ public class GraqlTraversalTest {
         VarName c2 = VarName.of("c2");
         VarName r = VarName.of("r");
 
-        Fragment distinctCasting = distinctCasting(c2, c1);
+        Fragment neq = Fragments.neq(c2, c1);
         Fragment inRolePlayer = inRolePlayer(x, c1);
         Fragment inCasting = inCasting(c1, r);
         Fragment outCasting = outCasting(r, c2);
         Fragment outRolePlayer = outRolePlayer(c2, y);
 
         GraqlTraversal distinctEarly =
-                traversal(xId, inRolePlayer, inCasting, outCasting, distinctCasting, outRolePlayer);
+                traversal(xId, inRolePlayer, inCasting, outCasting, neq, outRolePlayer);
         GraqlTraversal distinctLate =
-                traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, distinctCasting);
+                traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, neq);
 
         assertFaster(distinctEarly, distinctLate);
     }

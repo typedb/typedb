@@ -28,12 +28,14 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.AnswerExplanation;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
+import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.test.GraphContext;
 import com.google.common.collect.ImmutableMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -84,7 +86,11 @@ public class ExplanationTest {
         Answer answer3 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
         Answer answer4 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), europe));
 
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
+        List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
+        answers.stream()
+                .filter(a -> !a.getExplanation().isLookupExplanation())
+                .flatMap(a -> a.getExplicitPath().stream())
+                .forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
@@ -106,14 +112,17 @@ public class ExplanationTest {
         assertTrue(queryAnswer2.getExplanation().isRuleExplanation());
         assertEquals(2, getLookupExplanations(queryAnswer2).size());
         assertEquals(2, queryAnswer2.getExplicitPath().size());
+        queryAnswer2.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
 
         assertTrue(queryAnswer3.getExplanation().isRuleExplanation());
         assertEquals(2, getRuleExplanations(queryAnswer3).size());
         assertEquals(3, queryAnswer3.getExplicitPath().size());
+        queryAnswer3.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
 
         assertTrue(queryAnswer4.getExplanation().isRuleExplanation());
         assertEquals(3, getRuleExplanations(queryAnswer4).size());
         assertEquals(4, queryAnswer4.getExplicitPath().size());
+        queryAnswer4.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
     }
 
     @Test
@@ -125,7 +134,11 @@ public class ExplanationTest {
         Answer answer1 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), polibuda, VarName.of("y"), poland));
         Answer answer2 = new QueryAnswer(ImmutableMap.of(VarName.of("x"), uw, VarName.of("y"), poland));
 
-        List<Answer> answers = iqb.<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toList());
+        List<Answer> answers = iqb.<MatchQuery>parse(queryString).execute();
+        answers.stream()
+                .filter(a -> !a.getExplanation().isLookupExplanation())
+                .flatMap(a -> a.getExplicitPath().stream())
+                .forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
 
         Answer queryAnswer1 = findAnswer(answer1, answers);
         Answer queryAnswer2 = findAnswer(answer2, answers);
@@ -140,8 +153,11 @@ public class ExplanationTest {
 
         assertEquals(4, getLookupExplanations(queryAnswer1).size());
         assertEquals(4, queryAnswer1.getExplicitPath().size());
+        queryAnswer1.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
+
         assertEquals(4, getLookupExplanations(queryAnswer2).size());
         assertEquals(4, queryAnswer2.getExplicitPath().size());
+        queryAnswer2.getExplicitPath().forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
     }
 
     @Test
@@ -152,7 +168,7 @@ public class ExplanationTest {
                 "$y id '" + europe.getId() + "';";
 
         MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
+        List<Answer> answers = query.admin().execute();
         assertEquals(answers.size(), 1);
 
         Answer answer = answers.iterator().next();
@@ -160,6 +176,7 @@ public class ExplanationTest {
         assertEquals(2, answer.getExplanation().getAnswers().size());
         assertEquals(3, getRuleExplanations(answer).size());
         assertEquals(4, answer.getExplicitPath().size());
+        answers.stream().flatMap(a -> a.getExplicitPath().stream()).forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
     }
 
     @Test
@@ -172,8 +189,9 @@ public class ExplanationTest {
                 "select $y;";
 
         MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
+        List<Answer> answers = query.admin().execute();
         assertEquals(answers.size(), 1);
+        answers.stream().flatMap(a -> a.getExplicitPath().stream()).forEach(a -> assertTrue(isExplanationConsistentWithAnswer(a)));
     }
 
     @Test
@@ -184,7 +202,7 @@ public class ExplanationTest {
                 "$y id '" + uw.getId() + "';";
 
         MatchQuery query = iqb.parse(queryString);
-        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
+        List<Answer> answers = query.admin().execute();
         assertEquals(answers.size(), 0);
     }
 
@@ -201,7 +219,7 @@ public class ExplanationTest {
                 "$y id '" + a2.getId() + "';";
 
         MatchQuery query = eiqb.parse(queryString);
-        List<Answer> answers = query.admin().streamWithAnswers().collect(Collectors.toList());
+        List<Answer> answers = query.admin().execute();
         assertEquals(answers.size(), 0);
     }
 
@@ -223,5 +241,12 @@ public class ExplanationTest {
     private Set<AnswerExplanation> getLookupExplanations(Answer a){
         return a.getExplanations().stream().filter(AnswerExplanation::isLookupExplanation).collect(Collectors.toSet());
     }
+
+    private boolean isExplanationConsistentWithAnswer(Answer a){
+        ReasonerQuery query = a.getExplanation().getQuery();
+        Set<VarName> vars = query != null? query.getVarNames() : new HashSet<>();
+        return a.map().keySet().containsAll(vars);
+    }
+
 
 }

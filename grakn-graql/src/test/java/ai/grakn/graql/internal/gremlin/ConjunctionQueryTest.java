@@ -113,6 +113,19 @@ public class ConjunctionQueryTest {
     }
 
     @Test
+    public void whenVarCanUseResourceIndexAndThereIsAnotherVarThatCannot_UseResourceIndex() {
+        assertThat(
+                and(var(x).isa(resourceTypeWithoutSubTypes).val(literalValue), var(y).val(literalValue)),
+                usesResourceIndex()
+        );
+
+        assertThat(
+                and(var(y).isa(resourceTypeWithoutSubTypes).val(literalValue), var(x).val(literalValue)),
+                usesResourceIndex(y, literalValue)
+        );
+    }
+
+    @Test
     public void whenVarRefersToATypeWithSubtypes_DoNotUseResourceIndex() {
         assertThat(var(x).isa(resourceTypeWithSubTypes).val(literalValue), not(usesResourceIndex()));
     }

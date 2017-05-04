@@ -40,13 +40,6 @@ import static ai.grakn.graql.internal.gremlin.sets.ResourceIndexFragmentSet.appl
 public class EquivalentFragmentSets {
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates two castings are unique
-     */
-    public static EquivalentFragmentSet distinctCasting(VarName castingA, VarName castingB) {
-        return new DistinctCastingFragmentSet(castingA, castingB);
-    }
-
-    /**
      * An {@link EquivalentFragmentSet} that indicates a variable is a type whose instances play a role.
      * @param type a type variable label
      * @param roleType a role type variable label

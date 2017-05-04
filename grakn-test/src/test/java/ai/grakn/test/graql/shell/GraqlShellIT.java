@@ -81,7 +81,7 @@ public class GraqlShellIT {
     private static PrintStream trueOut;
     private static PrintStream trueErr;
     private static final String expectedVersion = "graql-9.9.9";
-    private static final String historyFile = "/graql-test-history";
+    private static final String historyFile = System.getProperty("java.io.tmpdir") + "/graql-test-history";
 
     private static final ImmutableList<String> keyspaces =
             ImmutableList.of(GraqlShell.DEFAULT_KEYSPACE, "foo", "bar", "batch");

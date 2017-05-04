@@ -118,10 +118,6 @@ public class Fragments {
         return new OutRolePlayerFragment(start, end);
     }
 
-    public static Fragment distinctCasting(VarName start, VarName otherCastingName) {
-        return new DistinctCastingFragment(start, otherCastingName);
-    }
-
     public static Fragment id(VarName start, ConceptId id) {
         return new IdFragment(start, id);
     }

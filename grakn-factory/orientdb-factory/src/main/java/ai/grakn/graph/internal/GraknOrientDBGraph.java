@@ -63,7 +63,7 @@ public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
     }
 
     @Override
-    public boolean isConnectionClosed() {
+    public boolean isSessionClosed() {
         //TODO: determine if the connection is closed
         return false;
     }

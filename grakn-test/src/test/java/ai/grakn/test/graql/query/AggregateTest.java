@@ -24,6 +24,7 @@ import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.AggregateQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.matcher.MovieMatchers;
 import org.junit.Assert;
@@ -72,10 +73,10 @@ public class AggregateTest {
 
     @Test
     public void testGroup() {
-        AggregateQuery<Map<Concept, List<Map<VarName, Concept>>>> groupQuery =
+        AggregateQuery<Map<Concept, List<Answer>>> groupQuery =
                 qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(group("x"));
 
-        Map<Concept, List<Map<VarName, Concept>>> groups = groupQuery.execute();
+        Map<Concept, List<Answer>> groups = groupQuery.execute();
 
         Assert.assertEquals(MovieMatchers.movies.size(), groups.size());
 

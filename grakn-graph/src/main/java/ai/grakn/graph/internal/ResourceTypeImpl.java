@@ -20,6 +20,7 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.InvalidConceptValueException;
 import ai.grakn.util.ErrorMessage;
 import ai.grakn.util.Schema;
@@ -68,6 +69,16 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     }
 
     /**
+     * This method is overridden so that we can check that the regex of the new super type (if it has a regex)
+     * can be applied to all the existing instances.
+     */
+    @Override
+    public ResourceType<D> superType(ResourceType<D> superType){
+        ((ResourceTypeImpl<D>) superType).superTypeSet().forEach(st -> checkInstancesMatchRegex(st.getLabel(), st.getRegex()));
+        return super.superType(superType);
+    }
+
+    /**
      * @param regex The regular expression which instances of this resource must conform to.
      * @return The Resource Type itself.
      */
@@ -77,6 +88,19 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
             throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(getLabel()));
         }
 
+        checkInstancesMatchRegex(getLabel(), regex);
+
+        return setProperty(Schema.ConceptProperty.REGEX, regex);
+    }
+
+    /**
+     * Checks that existing instances match the provided regex.
+     *
+     * @throws InvalidConceptValueException when an instance does not match the provided regex
+     * @param label The label of the resource type which either contains or will contain this regex
+     * @param regex The regex to check against
+     */
+    private void checkInstancesMatchRegex(TypeLabel label, String regex){
         if(regex != null) {
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher;
@@ -84,12 +108,10 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
                 String value = (String) resource.getValue();
                 matcher = pattern.matcher(value);
                 if(!matcher.matches()){
-                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, getLabel()));
+                    throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, resource.getId(), value, label));
                 }
             }
         }
-
-        return setProperty(Schema.ConceptProperty.REGEX, regex);
     }
 
     @SuppressWarnings("unchecked")

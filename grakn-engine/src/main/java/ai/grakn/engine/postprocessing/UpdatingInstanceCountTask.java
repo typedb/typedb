@@ -44,7 +44,7 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
  */
 public class UpdatingInstanceCountTask extends AbstractLockingGraphMutationTask {
 
-    public static final String LOCK_KEY = "updating-instance-count-lock";
+    public static final String LOCK_KEY = "/updating-instance-count-lock";
 
     @Override
     protected String getLockingKey() {

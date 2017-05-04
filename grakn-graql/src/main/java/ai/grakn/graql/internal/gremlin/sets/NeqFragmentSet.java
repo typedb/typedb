@@ -29,6 +29,6 @@ import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 class NeqFragmentSet extends EquivalentFragmentSet {
 
     NeqFragmentSet(VarName varA, VarName varB) {
-        super(Fragments.distinctCasting(varA, varB), Fragments.distinctCasting(varB, varA));
+        super(Fragments.neq(varA, varB), Fragments.neq(varB, varA));
     }
 }

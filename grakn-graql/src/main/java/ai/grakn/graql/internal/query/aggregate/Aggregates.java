@@ -22,6 +22,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.graql.Aggregate;
 import ai.grakn.graql.NamedAggregate;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.List;
@@ -40,7 +41,7 @@ public class Aggregates {
     /**
      * Aggregate that finds mean of a match query.
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> mean(VarName varName) {
+    public static Aggregate<Answer, Optional<Double>> mean(VarName varName) {
         return new MeanAggregate(varName);
     }
 
@@ -55,7 +56,7 @@ public class Aggregates {
      * Aggregate that groups results of a match query by variable name
      * @param varName the variable name to group results by
      */
-    public static Aggregate<Map<VarName, Concept>, Map<Concept, List<Map<VarName, Concept>>>> group(VarName varName) {
+    public static Aggregate<Answer, Map<Concept, List<Answer>>> group(VarName varName) {
         return group(varName, list());
     }
 
@@ -63,8 +64,8 @@ public class Aggregates {
      * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
      * @param <T> the type of each group
      */
-    public static <T> Aggregate<Map<VarName, Concept>, Map<Concept, T>> group(
-            VarName varName, Aggregate<? super Map<VarName, Concept>, T> innerAggregate
+    public static <T> Aggregate<Answer, Map<Concept, T>> group(
+            VarName varName, Aggregate<? super Answer, T> innerAggregate
     ) {
         return new GroupAggregate<>(varName, innerAggregate);
     }
@@ -80,28 +81,28 @@ public class Aggregates {
     /**
      * Aggregate that finds maximum of a match query.
      */
-    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> max(VarName varName) {
+    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> max(VarName varName) {
         return new MaxAggregate<>(varName);
     }
 
     /**
      * Aggregate that finds median of a match query.
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Number>> median(VarName varName) {
+    public static Aggregate<Answer, Optional<Number>> median(VarName varName) {
         return new MedianAggregate(varName);
     }
 
     /**
      * Aggregate that finds the unbiased sample standard deviation of a match query
      */
-    public static Aggregate<Map<VarName, Concept>, Optional<Double>> std(VarName varName) {
+    public static Aggregate<Answer, Optional<Double>> std(VarName varName) {
         return new StdAggregate(varName);
     }
 
     /**
      * Aggregate that finds minimum of a match query.
      */
-    public static <T extends Comparable<T>> Aggregate<Map<VarName, Concept>, Optional<T>> min(VarName varName) {
+    public static <T extends Comparable<T>> Aggregate<Answer, Optional<T>> min(VarName varName) {
         return new MinAggregate<>(varName);
     }
 
@@ -119,7 +120,7 @@ public class Aggregates {
     /**
      * Aggregate that sums results of a match query.
      */
-    public static Aggregate<Map<VarName, Concept>, Number> sum(VarName varName) {
+    public static Aggregate<Answer, Number> sum(VarName varName) {
         return new SumAggregate(varName);
     }
 }
