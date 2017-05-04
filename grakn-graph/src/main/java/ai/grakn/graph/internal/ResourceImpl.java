@@ -94,22 +94,32 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      */
     private Resource<D> setValue(D value) {
         try {
-            ResourceType<D> resourceType = type();
+            checkConformsToRegexes(value);
 
-            //Not checking the datatype because the regex will always be null for non strings.
-            String regex = resourceType.getRegex();
-            if (regex != null && !Pattern.matches(regex, (String) value)) {
-                throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, getId(), value, type().getLabel()));
-            }
-
+            ResourceTypeImpl<D> resourceType = (ResourceTypeImpl<D>) type();
             Schema.ConceptProperty property = dataType().getConceptProperty();
-
             //noinspection unchecked
             setImmutableProperty(property, castValue(value), getProperty(property), (v) -> resourceType.getDataType().getPersistenceValue((D) v));
 
             return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getLabel(), value.toString()));
         } catch (ClassCastException e) {
             throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
+        }
+    }
+
+    /**
+     * Checks if all the regex's of the types of this resource conforms to the value provided.
+     *
+     * @throws InvalidConceptValueException when the value does not conform to the regex of its types
+     * @param value The value to check the regexes against.
+     */
+    private void checkConformsToRegexes(D value){
+        //Not checking the datatype because the regex will always be null for non strings.
+        for (ResourceType rt : ((ResourceTypeImpl<D>) type()).superTypeSet()) {
+            String regex = rt.getRegex();
+            if (regex != null && !Pattern.matches(regex, (String) value)) {
+                throw new InvalidConceptValueException(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage(regex, getId(), value, rt.getLabel()));
+            }
         }
     }
 
