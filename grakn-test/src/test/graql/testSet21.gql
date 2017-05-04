@@ -2,40 +2,39 @@ insert
 
 #Roles
 
-friend sub role;
+role1 sub role;
+role2 sub role;
 
 #Entities
 
-person sub entity
-    plays friend;
+entity1 sub entity;
+sub-entity1 sub entity1;
+entity2 sub entity;
 
 #Relations
 
-knows-trans sub relation
-    relates friend;
+relation1 sub relation
+	relates role1
+	relates role2;
 
-knows sub knows-trans
-    relates friend;
+sub-relation1 sub relation1
+	relates role1
+	relates role2;
+
+relation2 sub relation
+    relates role1
+    relates role2;
 
 #Rules
 
-$rule0 isa inference-rule
-    lhs {
-        (friend:$x, friend:$y);
-        (friend:$y, friend:$z);
-    }
-    rhs {
-        (friend:$x, friend:$z) isa knows-trans;
-    };
+isa inference-rule
+	lhs {
+		$x isa entity2;
+	}
+	rhs {
+		$x isa sub-entity1;
+	};
 
 #Data
 
-$p1 isa person;
-$p2 isa person;
-$p3 isa person;
-$p4 isa person;
-
-(friend:$p1, friend:$p2) isa knows;
-(friend:$p2, friend:$p3) isa knows;
-(friend:$p3, friend:$p4) isa knows;
-
+$x isa entity2;

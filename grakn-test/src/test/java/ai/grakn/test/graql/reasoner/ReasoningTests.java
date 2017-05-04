@@ -21,8 +21,10 @@ package ai.grakn.test.graql.reasoner;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.GraphContext;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -33,6 +35,7 @@ import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -112,6 +115,9 @@ public class ReasoningTests {
     @ClassRule
     public static final GraphContext testSet24 = GraphContext.preLoad("testSet24.gql");
 
+    @ClassRule
+    public static final GraphContext testSet25 = GraphContext.preLoad("testSet25.gql");
+
     @Before
     public void onStartup() throws Exception {
         assumeTrue(usingTinker());
@@ -131,9 +137,9 @@ public class ReasoningTests {
         QueryAnswers answers2 = queryAnswers(qb.parse(query2String));
 
         assertNotEquals(answers1.size() * answers2.size(), 0);
-        answers1.forEach(x -> Assert.assertTrue(x.keySet().size() ==1));
-        answers2.forEach(x -> answers1.forEach(y -> Assert.assertTrue(x.values().containsAll(y.values()))));
-        answers2.forEach(x -> Assert.assertTrue(x.keySet().size() ==2));
+        answers1.forEach(x -> assertTrue(x.keySet().size() ==1));
+        answers2.forEach(x -> answers1.forEach(y -> assertTrue(x.values().containsAll(y.values()))));
+        answers2.forEach(x -> assertTrue(x.keySet().size() ==2));
 
     }
 
@@ -175,8 +181,8 @@ public class ReasoningTests {
         QueryAnswers answers = queryAnswers(iqb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(qb.parse(explicitQuery));
 
-        Assert.assertTrue(!answers2.containsAll(answers));
-        Assert.assertTrue(!answers.isEmpty());
+        assertTrue(!answers2.containsAll(answers));
+        assertTrue(!answers.isEmpty());
         assertEquals(answers2.size(), 3);
     }
 
@@ -204,7 +210,7 @@ public class ReasoningTests {
         QueryBuilder qb = testSet8.graph().graql().infer(true);
         String queryString = "match (role2:$x, role3:$y) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
-        answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
+        answers.forEach(y -> assertTrue(y.values().size()<=1));
     }
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
@@ -212,7 +218,7 @@ public class ReasoningTests {
         QueryBuilder qb = testSet9.graph().graql().infer(true);
         String queryString = "match (role1:$x, role1:$y) isa relation2;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
-        answers.forEach(y -> Assert.assertTrue(y.values().size()<=1));
+        answers.forEach(y -> assertTrue(y.values().size()<=1));
     }
 
     @Test //Expected result: The query should return a single match
@@ -281,13 +287,13 @@ public class ReasoningTests {
         String queryString2 = "match $x isa res2;";
         QueryAnswers answers2 = queryAnswers(qb.parse(queryString2));
         assertEquals(answers2.size(), 1);
-        Assert.assertTrue(answers2.iterator().next().get(VarName.of("x")).isResource());
+        assertTrue(answers2.iterator().next().get(VarName.of("x")).isResource());
         String queryString3 = "match $x isa res1; $y isa res2;";
         QueryAnswers answers3 = queryAnswers(qb.parse(queryString3));
         assertEquals(answers3.size(), 1);
 
-        Assert.assertTrue(answers3.iterator().next().get(VarName.of("x")).isResource());
-        Assert.assertTrue(answers3.iterator().next().get(VarName.of("y")).isResource());
+        assertTrue(answers3.iterator().next().get(VarName.of("x")).isResource());
+        assertTrue(answers3.iterator().next().get(VarName.of("y")).isResource());
     }
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
@@ -298,9 +304,9 @@ public class ReasoningTests {
         assertEquals(answers1.size(), 1);
         answers1.forEach(ans ->
                 {
-                    Assert.assertTrue(ans.get(VarName.of("x")).isEntity());
-                    Assert.assertTrue(ans.get(VarName.of("y")).isResource());
-                    Assert.assertTrue(ans.get(VarName.of("z")).isRelation());
+                    assertTrue(ans.get(VarName.of("x")).isEntity());
+                    assertTrue(ans.get(VarName.of("y")).isResource());
+                    assertTrue(ans.get(VarName.of("z")).isRelation());
                 }
         );
         String queryString2 = "match $x isa relation1, has res1 $y;";
@@ -308,8 +314,8 @@ public class ReasoningTests {
         assertEquals(answers2.size(), 1);
         answers2.forEach(ans ->
                 {
-                    Assert.assertTrue(ans.get(VarName.of("x")).isRelation());
-                    Assert.assertTrue(ans.get(VarName.of("y")).isResource());
+                    assertTrue(ans.get(VarName.of("x")).isRelation());
+                    assertTrue(ans.get(VarName.of("y")).isResource());
                 }
         );
     }
@@ -317,14 +323,30 @@ public class ReasoningTests {
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingResources4() {
         QueryBuilder qb = testSet17.graph().graql().infer(true);
-        String queryString1 = "match $x isa general-entity has res2 $r;";
+        String queryString1 = "match $x has res2 $r;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString1));
         assertEquals(answers.size(), 1);
     }
 
+    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void inferringSpecificResourceValue() {
+        QueryBuilder qb = testSet18.graph().graql().infer(true);
+        String queryString = "match $x has res1 'value';";
+        String queryString2 = "match $x has res1 $r;";
+        MatchQuery query = qb.parse(queryString);
+        MatchQuery query2 = qb.parse(queryString2);
+        List<Answer> answers = query.execute();
+        List<Answer> answers2 = query2.execute();
+        List<Answer> requeriedAnswers = query.execute();
+        assertEquals(answers.size(), 2);
+        assertEquals(answers.size(), answers2.size());
+        assertEquals(answers.size(), requeriedAnswers.size());
+        assertTrue(answers.containsAll(requeriedAnswers));
+    }
+
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected(){
-        QueryBuilder qb = testSet18.graph().graql().infer(true);
+        QueryBuilder qb = testSet19.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa entity1;" +
@@ -338,7 +360,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Single answer obtained only if the rule query containing super type is correctly executed.
     public void instanceTypeHierarchyRespected2(){
-        QueryBuilder qb = testSet18.graph().graql().infer(true);
+        QueryBuilder qb = testSet19.graph().graql().infer(true);
         String queryString = "match " +
                 "$x isa entity1;" +
                 "$y isa subEntity1;" +
@@ -353,7 +375,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverRelationHierarchy(){
-        QueryBuilder qb = testSet19.graph().graql().infer(true);
+        QueryBuilder qb = testSet20.graph().graql().infer(true);
         String queryString = "match (role1: $x, role2: $y) isa relation1;";
         String queryString2 = "match (role1: $x, role2: $y) isa sub-relation1;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
@@ -364,7 +386,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverEntityHierarchy(){
-        QueryBuilder qb = testSet20.graph().graql().infer(true);
+        QueryBuilder qb = testSet21.graph().graql().infer(true);
         String queryString = "match $x isa entity1;";
         String queryString2 = "match $x isa sub-entity1;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
@@ -375,7 +397,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Returns db and inferred relations + their inverses and relations with self for all entities
     public void reasoningWithRepeatingRoles(){
-        QueryBuilder qb = testSet21.graph().graql().infer(true);
+        QueryBuilder qb = testSet22.graph().graql().infer(true);
         String queryString = "match (friend:$x1, friend:$x2) isa knows-trans;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 16);
@@ -383,7 +405,7 @@ public class ReasoningTests {
 
     @Test //Expected result: The same set of results is always returned
     public void reasoningWithLimitHigherThanNumberOfResultsReturnsConsistentResults(){
-        QueryBuilder qb = testSet22.graph().graql().infer(true);
+        QueryBuilder qb = testSet23.graph().graql().infer(true);
         String queryString = "match (friend1:$x1, friend2:$x2) isa knows-trans;limit 60;";
         QueryAnswers oldAnswers = queryAnswers(qb.parse(queryString));
         for(int i = 0; i < 5 ; i++) {
@@ -395,8 +417,8 @@ public class ReasoningTests {
 
     @Test //Expected result: Relations between all entity instances including relation between each instance and itself
     public void reasoningWithEntityTypes() {
-        QueryBuilder qb = testSet23.graph().graql().infer(true);
-        QueryBuilder qbm = testSet23.graph().graql().infer(true).materialise(true);
+        QueryBuilder qb = testSet24.graph().graql().infer(true);
+        QueryBuilder qbm = testSet24.graph().graql().infer(true).materialise(true);
         String queryString = "match (role1:$x1, role2:$x2) isa relation1;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         QueryAnswers answers2 = queryAnswers(qbm.parse(queryString));
@@ -407,7 +429,7 @@ public class ReasoningTests {
 
     @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
     public void reasoningWithResourceValueComparison() {
-        QueryBuilder qb = testSet24.graph().graql().infer(true);
+        QueryBuilder qb = testSet25.graph().graql().infer(true);
         String queryString = "match (predecessor:$x1, successor:$x2) isa message-succession;";
         QueryAnswers answers = queryAnswers(qb.parse(queryString));
         assertEquals(answers.size(), 10);
