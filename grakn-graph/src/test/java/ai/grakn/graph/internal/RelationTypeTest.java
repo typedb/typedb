@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class RelationTypeTest extends GraphTestBase{
@@ -43,7 +42,7 @@ public class RelationTypeTest extends GraphTestBase{
         RelationType relationType = graknGraph.putRelationType("c1");
         RoleType role1 = graknGraph.putRoleType("c2");
         RoleType role2 = graknGraph.putRoleType("c3");
-        assertThat(relationType.relates(), is(empty()));
+        assertThat(relationType.relates(), empty());
 
         relationType.relates(role1).relates(role2);
         assertThat(relationType.relates(), containsInAnyOrder(role1, role2));
