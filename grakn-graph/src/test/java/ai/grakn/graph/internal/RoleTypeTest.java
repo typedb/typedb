@@ -45,16 +45,6 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testOverrideFail(){
-        RelationType relationType = graknGraph.putRelationType("original");
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage("original", relationType.toString()));
-
-        graknGraph.putRoleType("original");
-    }
-
-    @Test
     public void testRoleTypeLabel(){
         RoleType roleType = graknGraph.putRoleType("test");
         assertEquals("test", roleType.getLabel().getValue());
