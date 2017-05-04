@@ -102,20 +102,6 @@ public class SingleQueueTaskManager implements TaskManager {
         this.storage = chooseStorage(properties, zookeeper);
         this.offsetStorage = new ExternalOffsetStorage(zookeeper);
 
-        stoppedTasks = new PathChildrenCache(zookeeper.connection(), TASKS_STOPPED_PREFIX, true);
-        stoppedTasks.getListenable().addListener((client, event) -> {
-            if (event.getType() == CHILD_ADDED) {
-                TaskId id = TaskId.of(new String(event.getData().getData(), zkCharset));
-                LOG.debug("Attempting to stop task {}", id);
-                taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
-            }
-        });
-        try {
-            stoppedTasks.start();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
         //TODO check that the number of partitions is at least the capacity
         this.producer = kafkaProducer();
 
@@ -131,6 +117,21 @@ public class SingleQueueTaskManager implements TaskManager {
 
         this.taskRunners = Stream.concat(highPriorityTaskRunners.stream(), lowPriorityTaskRunners.stream()).collect(toSet());
         this.taskRunners.forEach(taskRunnerThreadPool::submit);
+
+        stoppedTasks = new PathChildrenCache(zookeeper.connection(), TASKS_STOPPED_PREFIX, true);
+        stoppedTasks.getListenable().addListener((client, event) -> {
+            if (event.getType() == CHILD_ADDED) {
+                TaskId id = TaskId.of(new String(event.getData().getData(), zkCharset));
+                LOG.debug("Attempting to stop task {}", id);
+                System.out.println(taskRunners);
+                taskRunners.forEach(taskRunner -> taskRunner.stopTask(id));
+            }
+        });
+        try {
+            stoppedTasks.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         LockProvider.add(PostProcessingTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, PostProcessingTask.LOCK_KEY));
         LockProvider.add(UpdatingInstanceCountTask.LOCK_KEY, () -> new ZookeeperLock(zookeeper, UpdatingInstanceCountTask.LOCK_KEY));
