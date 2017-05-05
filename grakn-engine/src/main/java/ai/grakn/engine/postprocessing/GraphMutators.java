@@ -21,12 +21,10 @@ package ai.grakn.engine.postprocessing;
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.GraknEngineConfig;
-import ai.grakn.engine.tasks.BackgroundTask;
-import ai.grakn.engine.tasks.TaskCheckpoint;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknValidationException;
-import ai.grakn.factory.EngineGraknGraphFactory;
 import ai.grakn.util.ErrorMessage;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -37,7 +35,7 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
 
 /**
  * <p>
- *     Abstract task for executing a graph mutation task multiple times should a {@link GraknBackendException} occur.
+ *     Abstract class containing utilities for graph mutations
  * </p>
  *
  * <p>
@@ -46,33 +44,46 @@ import static ai.grakn.util.REST.Request.KEYSPACE;
  *
  * @author alexandraorth, fppt
  */
-public abstract class AbstractGraphMutationTask implements BackgroundTask {
+public abstract class GraphMutators {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AbstractGraphMutationTask.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraphMutators.class);
     private static final int MAX_RETRY = GraknEngineConfig.getInstance().getPropertyAsInt(LOADER_REPEAT_COMMITS);
 
     /**
-     * Implementation should mutate the given graph using the given task configuration
      *
-     * @param graph Graph object on which to perform mutations
-     * @return Implementation of the graph mutating code
+     * @param configuration
+     * @return
      */
-    public abstract boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
+    protected static String getKeyspace(TaskConfiguration configuration){
+        return configuration.json().at(KEYSPACE).asString();
+    }
 
     /**
-     *  Template method calls the abstract method {@link #runGraphMutatingTask(GraknGraph, Consumer, TaskConfiguration)}
      *
-     *  May execute the method up to {@literal MAX_RETRIES} number of times if GraknBackendExceptions
-     *  are thrown. Any other exception will cause the method to return.
+     * @param configuration
+     * @param mutatingFunction
+     * @return
      */
-    @Override
-    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration){
-        String keyspace = configuration.json().at(KEYSPACE).asString();
+    public static void runGraphMutationWithRetry(TaskConfiguration configuration, Consumer<GraknGraph> mutatingFunction){
+        String keyspace = getKeyspace(configuration);
 
+        runGraphMutationWithRetry(keyspace, mutatingFunction);
+    }
+
+    /**
+     *
+     *
+     * @param keyspace Keyspace on which to create the graph
+     * @param mutatingFunction Function that accepts a graph object and will mutate the given graph
+     * @return
+     */
+    protected static void runGraphMutationWithRetry(String keyspace, Consumer<GraknGraph> mutatingFunction){
         for(int retry = 0; retry < MAX_RETRY; retry++) {
             try(GraknGraph graph = EngineGraknGraphFactory.getInstance().getGraph(keyspace, GraknTxType.BATCH))  {
 
-                return runGraphMutatingTask(graph, saveCheckpoint, configuration);
+                mutatingFunction.accept(graph);
+
+                return;
             } catch (GraknBackendException e){
                 // retry...
                 LOG.debug(ErrorMessage.GRAPH_MUTATION_ERROR.getMessage(e.getMessage()), e);
@@ -86,21 +97,6 @@ public abstract class AbstractGraphMutationTask implements BackgroundTask {
         }
 
         throw new RuntimeException(ErrorMessage.UNABLE_TO_MUTATE_GRAPH.getMessage(keyspace));
-    }
-
-    @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Graph mutation task cannot be stopped while in progress");
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Graph mutation task cannot be paused");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        return false;
     }
 
     /**

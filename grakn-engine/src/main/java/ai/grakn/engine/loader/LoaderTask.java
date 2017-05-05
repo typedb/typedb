@@ -19,7 +19,8 @@
 package ai.grakn.engine.loader;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.engine.postprocessing.AbstractGraphMutationTask;
+import ai.grakn.engine.postprocessing.GraphMutators;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 import ai.grakn.graql.Graql;
@@ -42,13 +43,32 @@ import static ai.grakn.util.REST.Request.TASK_LOADER_INSERTS;
  *
  * @author Alexandra Orth
  */
-public class LoaderTask extends AbstractGraphMutationTask {
+public class LoaderTask implements BackgroundTask {
 
     private final QueryBuilder builder = Graql.withoutGraph().infer(false);
 
     @Override
-    public boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
-        return insertQueriesInOneTransaction(graph, getInserts(configuration));
+    public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+        GraphMutators.runGraphMutationWithRetry(configuration, (graph) ->
+                insertQueriesInOneTransaction(graph, getInserts(configuration))
+        );
+
+        return true;
+    }
+
+    @Override
+    public boolean stop() {
+        throw new UnsupportedOperationException("Loader task cannot be stopped while in progress");
+    }
+
+    @Override
+    public void pause() {
+        throw new UnsupportedOperationException("Loader task cannot be paused");
+    }
+
+    @Override
+    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
+        throw new UnsupportedOperationException("Loader task cannot be resumed");
     }
 
     /**

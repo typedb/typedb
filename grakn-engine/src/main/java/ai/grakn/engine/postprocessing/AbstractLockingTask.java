@@ -19,6 +19,7 @@
 package ai.grakn.engine.postprocessing;
 
 import ai.grakn.engine.lock.LockProvider;
+import ai.grakn.engine.tasks.BackgroundTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
 
@@ -36,7 +37,7 @@ import java.util.function.Consumer;
  *
  * @author alexandraorth, fppt
  */
-public abstract class AbstractLockingGraphMutationTask extends AbstractGraphMutationTask {
+public abstract class AbstractLockingTask implements BackgroundTask {
 
     @Override
     public boolean start(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
@@ -47,15 +48,39 @@ public abstract class AbstractLockingGraphMutationTask extends AbstractGraphMuta
 
         // When you have the lock, run the job and then release the lock
         try {
-            return super.start(saveCheckpoint, configuration);
+            return runLockingBackgroundTask(saveCheckpoint, configuration);
         } finally {
             engineLock.unlock();
         }
     }
+
+    @Override
+    public boolean stop() {
+        throw new UnsupportedOperationException("Locking task cannot be stopped while in progress");
+    }
+
+    @Override
+    public void pause() {
+        throw new UnsupportedOperationException("Locking task cannot be paused");
+    }
+
+    @Override
+    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
+        throw new UnsupportedOperationException("Locking task cannot be resumed");
+    }
+
 
     /**
      *
      * @return The key used to acquire the lock needed before running this job
      */
     protected abstract String getLockingKey();
+
+    /**
+     *
+     * @param saveCheckpoint
+     * @param configuration
+     * @return
+     */
+    abstract boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration);
 }

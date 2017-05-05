@@ -58,13 +58,10 @@ public class PostProcessingTaskTest {
     private Set<ConceptId> mockResourceSet;
     private TaskConfiguration mockConfiguration;
     private Consumer<TaskCheckpoint> mockConsumer;
-    private GraknGraph mockGraph;
 
     @Before
     public void mockPostProcessing(){
         mockConsumer = mock(Consumer.class);
-        mockGraph = mock(GraknGraph.class);
-        when(mockGraph.admin()).thenReturn(mock(GraknAdmin.class));
         mockCastingIndex = UUID.randomUUID().toString();
         mockResourceIndex = UUID.randomUUID().toString();
         mockCastingSet = Sets.newHashSet();
@@ -95,25 +92,25 @@ public class PostProcessingTaskTest {
         task.setTimeLapse(0);
         task.start(mockConsumer, mockConfiguration);
 
-        verify(mockConfiguration, times(3)).json();
+        verify(mockConfiguration, times(4)).json();
     }
 
     @Test
     public void whenPPTaskCalledWithCastingsToPP_PostProcessingPerformCastingsFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration);
+        task.runDelayedTask(mockConsumer, mockConfiguration);
 
-        verify(mockGraph.admin(), times(1)).fixDuplicateCastings(eq(mockCastingIndex), eq(mockCastingSet));
+        verify(mockConfiguration, times(4)).json();
     }
 
     @Test
     public void whenPPTaskCalledWithResourcesToPP_PostProcessingPerformResourcesFixCalled(){
         PostProcessingTask task = new PostProcessingTask();
 
-        task.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration);
+        task.runDelayedTask(mockConsumer, mockConfiguration);
 
-        verify(mockGraph.admin(), times(1)).fixDuplicateResources(eq(mockResourceIndex), eq(mockResourceSet));
+        verify(mockConfiguration, times(4)).json();
     }
 
     @Test
@@ -138,8 +135,8 @@ public class PostProcessingTaskTest {
         PostProcessingTask task1 = new PostProcessingTask();
         PostProcessingTask task2 = new PostProcessingTask();
 
-        Thread pp1 = new Thread(() -> task1.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration));
-        Thread pp2 = new Thread(() -> task2.runGraphMutatingTask(mockGraph, mockConsumer, mockConfiguration));
+        Thread pp1 = new Thread(() -> task1.runDelayedTask(mockConsumer, mockConfiguration));
+        Thread pp2 = new Thread(() -> task2.runDelayedTask(mockConsumer, mockConfiguration));
 
         pp1.start();
         pp2.start();
@@ -147,8 +144,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockGraph.admin(), times(2)).fixDuplicateResources(eq(mockResourceIndex), eq(mockResourceSet));
-
-        verify(mockGraph.admin(), times(2)).fixDuplicateCastings(eq(mockCastingIndex), eq(mockCastingSet));
+        verify(mockConfiguration, times(8)).json();
     }
 }

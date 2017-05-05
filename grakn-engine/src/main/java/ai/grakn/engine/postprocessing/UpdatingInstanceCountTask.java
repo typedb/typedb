@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -42,7 +41,7 @@ import static ai.grakn.util.REST.Request.COMMIT_LOG_TYPE_NAME;
  *
  * @author fppt
  */
-public class UpdatingInstanceCountTask extends AbstractLockingGraphMutationTask {
+public class UpdatingInstanceCountTask extends AbstractLockingTask {
 
     public static final String LOCK_KEY = "/updating-instance-count-lock";
 
@@ -52,28 +51,15 @@ public class UpdatingInstanceCountTask extends AbstractLockingGraphMutationTask 
     }
 
     @Override
-    public boolean runGraphMutatingTask(GraknGraph graph, Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
+    public boolean runLockingBackgroundTask(Consumer<TaskCheckpoint> saveCheckpoint, TaskConfiguration configuration) {
         Map<TypeLabel, Long> jobs = getJobsFromConfiguration(configuration);
 
-        graph.admin().updateTypeShards(jobs);
-        graph.admin().commitNoLogs();
+        GraphMutators.runGraphMutationWithRetry(configuration, (graph) -> {
+            graph.admin().updateTypeShards(jobs);
+            graph.admin().commitNoLogs();
+        });
 
         return true;
-    }
-
-    @Override
-    public boolean stop() {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void pause() {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public boolean resume(Consumer<TaskCheckpoint> saveCheckpoint, TaskCheckpoint lastCheckpoint) {
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     private Map<TypeLabel, Long> getJobsFromConfiguration(TaskConfiguration configuration){
