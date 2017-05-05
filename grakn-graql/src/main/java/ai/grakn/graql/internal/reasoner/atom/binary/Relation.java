@@ -646,7 +646,9 @@ public class Relation extends TypeAtom {
         Map<VarName, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap();
         Map<VarName, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap();
 
-        Set<RoleType> rolesAvailable = childRoleRPMap.keySet();
+        RoleType metaRole = graph().admin().getMetaRoleType();
+        Set<RoleType> relationRoles = new HashSet<>(getType().asRelationType().relates());
+        Set<RoleType> childRoles = new HashSet<>(childRoleRPMap.keySet());
 
         parentAtom.getRelationPlayers().stream()
                 .filter(prp -> prp.getRoleType().isPresent())
@@ -662,9 +664,15 @@ public class Relation extends TypeAtom {
                         VarName parentRolePlayer = prp.getRolePlayer().getVarName();
                         Type parentType = parentVarTypeMap.get(parentRolePlayer);
 
+                        Set<RoleType> typeRoles = parentType != null? new HashSet<>(parentType.plays()) : new HashSet<>();
+                        boolean isTypeCompatible = parentType == null || !Sets.intersection(relationRoles, typeRoles).isEmpty();
+
                         Set<RoleType> possibleRoles = parentType != null?
-                                Sets.intersection(new HashSet<>(rolesAvailable), new HashSet<>(parentType.plays())) :
-                                new HashSet<>(rolesAvailable);
+                                (isTypeCompatible? Sets.intersection(childRoles, typeRoles) : new HashSet<>() ) :
+                                childRoles;
+
+                        if(isTypeCompatible) possibleRoles.add(metaRole);
+
                         Set<RoleType> compatibleChildRoles = isMetaRole? possibleRoles : Sets.intersection(new HashSet<>(parentRole.subTypes()), possibleRoles);
 
                         compatibleChildRoles.stream()
