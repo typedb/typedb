@@ -18,7 +18,6 @@
 
 package ai.grakn.migration.base;
 
-import ai.grakn.engine.TaskStatus;
 import ai.grakn.client.LoaderClient;
 import ai.grakn.exception.GraqlTemplateParsingException;
 import ai.grakn.graql.Graql;
@@ -163,16 +162,11 @@ public class Migrator {
      */
     private Consumer<Json> recordMigrationStates(){
         return (Json json) -> {
-            TaskStatus status = TaskStatus.valueOf(json.at("status").asString());
-            Json configuration = Json.read(json.at("configuration").asString());
-            int batch = configuration.at("batchNumber").asInteger();
-
             numberBatchesCompleted.incrementAndGet();
 
             long timeElapsedSeconds = (System.currentTimeMillis() - startTime)/1000;
             long numberQueriesCompleted = numberBatchesCompleted.get() * batchSize;
 
-            LOG.info(format("Status of batch [%s]: %s", batch, status));
             LOG.info(format("Number queries submitted: %s", numberQueriesSubmitted.get()));
             LOG.info(format("Number batches completed: %s", numberBatchesCompleted.get()));
             LOG.info(format("~Number queries completed: %s", numberQueriesCompleted));

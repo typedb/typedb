@@ -18,21 +18,19 @@
 
 package ai.grakn.test.graql.printer;
 
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.Type;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Printer;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.printer.Printers;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.test.GraphContext;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static ai.grakn.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -48,7 +46,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testRelationOutput() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         MatchQuery query = rule.graph().graql().match(var("r").isa("has-cast")
                 .rel(var().has("name", "Al Pacino"))
@@ -65,7 +63,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void whenGettingOutputForRelation_TheResultShouldHaveCommasBetweenRolePlayers() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         MatchQuery query = rule.graph().graql().match(var("r").isa("has-cluster"));
 
@@ -83,7 +81,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testResourceOutputNoResources() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
 
@@ -100,7 +98,7 @@ public class GraqlPrinterTest {
     @Test
     public void testResourceOutputWithResource() {
         Printer printer = Printers.graql(
-                rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
+                true, rule.graph().getResourceType("title"), rule.graph().getResourceType("tmdb-vote-count"), rule.graph().getResourceType("name")
         );
 
         Instance godfather = rule.graph().getResourceType("title").getResource("Godfather").owner();
@@ -115,16 +113,16 @@ public class GraqlPrinterTest {
 
     @Test
     public void testEmptyResult() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
-        Map<String, Concept> emptyResult = Maps.newHashMap();
+        Answer emptyResult = new QueryAnswer();
 
         assertEquals("{}", printer.graqlString(emptyResult));
     }
 
     @Test
     public void testType() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Type production = rule.graph().getEntityType("production");
 
@@ -140,7 +138,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testEntityType() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Type entity = rule.graph().admin().getMetaEntityType();
 
@@ -155,7 +153,7 @@ public class GraqlPrinterTest {
 
     @Test
     public void testConcept() {
-        Printer printer = Printers.graql();
+        Printer printer = Printers.graql(true);
 
         Type concept = rule.graph().admin().getMetaConcept();
 
@@ -165,5 +163,25 @@ public class GraqlPrinterTest {
         assertThat(conceptString, containsString("concept"));
         assertThat(conceptString, not(containsString("sub")));
         assertThat(conceptString, not(containsString("isa")));
+    }
+
+    @Test
+    public void whenPrintingWithColorizeTrue_ResultIsColored(){
+        Printer printer = Printers.graql(true);
+
+        Type production = rule.graph().getEntityType("production");
+
+        String productionString = printer.graqlString(production);
+        assertThat(productionString, containsString("\u001B"));
+    }
+
+    @Test
+    public void whenPrintingWitholorizeFalse_ResultIsNotColored(){
+        Printer printer = Printers.graql(false);
+
+        Type production = rule.graph().getEntityType("production");
+
+        String productionString = printer.graqlString(production);
+        assertThat(productionString, not(containsString("\u001B")));
     }
 }

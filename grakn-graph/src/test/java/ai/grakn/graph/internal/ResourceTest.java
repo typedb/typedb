@@ -32,20 +32,19 @@ import static ai.grakn.util.ErrorMessage.INVALID_DATATYPE;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class ResourceTest extends GraphTestBase{
     @Test
-    public void testDataType() throws Exception {
+    public void whenCreatingResource_EnsureTheResourcesDataTypeIsTheSameAsItsType() throws Exception {
         ResourceType<String> resourceType = graknGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
         Resource resource = resourceType.putResource("resource");
         assertEquals(ResourceType.DataType.STRING, resource.dataType());
     }
 
     @Test
-    public void testOwnerInstances() throws Exception {
+    public void whenAttachingResourcesToInstances_EnsureInstancesAreReturnedAsOwners() throws Exception {
         EntityType randomThing = graknGraph.putEntityType("A Thing");
         ResourceType<String> resourceType = graknGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
         RelationType hasResource = graknGraph.putRelationType("Has Resource");
@@ -55,10 +54,10 @@ public class ResourceTest extends GraphTestBase{
         Instance jennifer = randomThing.addEntity();
         Instance bob = randomThing.addEntity();
         Instance alice = randomThing.addEntity();
-        Resource birthDate = resourceType.putResource("10/10/10");
+        Resource<String> birthDate = resourceType.putResource("10/10/10");
         hasResource.relates(resourceRole).relates(actorRole);
 
-        assertEquals(0, birthDate.ownerInstances().size());
+        assertThat(birthDate.ownerInstances(), empty());
 
         hasResource.addRelation().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, pacino);
@@ -69,15 +68,13 @@ public class ResourceTest extends GraphTestBase{
         hasResource.addRelation().
                 addRolePlayer(resourceRole, birthDate).addRolePlayer(actorRole, alice);
 
-        assertEquals(4, birthDate.ownerInstances().size());
-        assertTrue(birthDate.ownerInstances().contains(pacino));
-        assertTrue(birthDate.ownerInstances().contains(jennifer));
-        assertTrue(birthDate.ownerInstances().contains(bob));
-        assertTrue(birthDate.ownerInstances().contains(alice));
+        assertThat(birthDate.ownerInstances(), containsInAnyOrder(pacino, jennifer, bob, alice));
     }
 
+    // this is due to the generic of getResourcesByValue
+    @SuppressWarnings("unchecked")
     @Test
-    public void checkResourceDataTypes(){
+    public void whenCreatingResources_EnsureDataTypesAreEnforced(){
         ResourceType<String> strings = graknGraph.putResourceType("String Type", ResourceType.DataType.STRING);
         ResourceType<Long> longs = graknGraph.putResourceType("Long Type", ResourceType.DataType.LONG);
         ResourceType<Double> doubles = graknGraph.putResourceType("Double Type", ResourceType.DataType.DOUBLE);
@@ -87,11 +84,6 @@ public class ResourceTest extends GraphTestBase{
         Resource<Long> resource2 = longs.putResource(1L);
         Resource<Double> resource3 = doubles.putResource(1.0);
         Resource<Boolean> resource4 = booleans.putResource(true);
-
-        Resource<String> resource5 = strings.putResource("5");
-        Resource<Long> resource6 = longs.putResource(1L);
-        Resource<Double> resource7 = doubles.putResource(1.0);
-        Resource<Boolean> resource8 = booleans.putResource(true);
 
         assertEquals("1", graknGraph.<Resource>getConcept(resource1.getId()).getValue());
         assertEquals(1L, graknGraph.<Resource>getConcept(resource2.getId()).getValue());
@@ -103,51 +95,20 @@ public class ResourceTest extends GraphTestBase{
         assertThat(graknGraph.<Resource>getConcept(resource3.getId()).getValue(), instanceOf(Double.class));
         assertThat(graknGraph.<Resource>getConcept(resource4.getId()).getValue(), instanceOf(Boolean.class));
 
-        assertEquals(1, graknGraph.getResourcesByValue("1").size());
-        assertEquals(1, graknGraph.getResourcesByValue(1L).size());
-        assertEquals(1, graknGraph.getResourcesByValue(1.0).size());
-        assertEquals(1, graknGraph.getResourcesByValue(true).size());
+        assertThat(graknGraph.getResourcesByValue("1"), containsInAnyOrder(resource1));
+        assertThat(graknGraph.getResourcesByValue(1L), containsInAnyOrder(resource2));
+        assertThat(graknGraph.getResourcesByValue(1.0), containsInAnyOrder(resource3));
+        assertThat(graknGraph.getResourcesByValue(true), containsInAnyOrder(resource4));
     }
 
     // this is deliberately an incorrect type for the test
     @SuppressWarnings("unchecked")
     @Test
-    public void setInvalidResourceTest (){
+    public void whenCreatingResourceWithAnInvalidDataType_Throw(){
         ResourceType longResourceType = graknGraph.putResourceType("long", ResourceType.DataType.LONG);
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()));
         longResourceType.putResource("Invalid Thing");
-    }
-
-    @Test
-    public void datatypeTest2(){
-        ResourceType<Double> doubleResourceType = graknGraph.putResourceType("doubleType", ResourceType.DataType.DOUBLE);
-        Resource thing = doubleResourceType.putResource(2.0);
-        assertEquals(2.0, thing.getValue());
-    }
-
-    @Test
-    public void testToString() {
-        ResourceType<String> concept = graknGraph.putResourceType("a", ResourceType.DataType.STRING);
-        Resource<String> concept2 = concept.putResource("concept2");
-        assertTrue(concept2.toString().contains("Value"));
-    }
-
-    // this is deliberately an incorrect type for the test
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testInvalidDataType(){
-        ResourceType stringResourceType = graknGraph.putResourceType("Strung", ResourceType.DataType.STRING);
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(INVALID_DATATYPE.getMessage("1", String.class.getName()));
-        stringResourceType.putResource(1L);
-    }
-
-    @Test
-    public void testNonUniqueResource(){
-        ResourceType<String> resourceType = graknGraph.putResourceType("A resourceType", ResourceType.DataType.STRING);
-        Resource resource = resourceType.putResource("A Thing");
-        assertNull(resource.owner());
     }
 
     @Test

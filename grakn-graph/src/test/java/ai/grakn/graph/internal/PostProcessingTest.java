@@ -27,6 +27,8 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
+import com.google.common.collect.ImmutableSet;
+import java.util.UUID;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -37,6 +39,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -234,5 +237,35 @@ public class PostProcessingTest extends GraphTestBase{
         assertEquals(0L, t1.getInstanceCount());
         assertEquals(4L, t2.getInstanceCount());
         assertEquals(5L, t3.getInstanceCount());
+    }
+
+    @Test
+    public void whenPostProcessingCastingThatDoesNotExist_FixDuplicateCastingsReturnsFalse(){
+        String invalidCastingIndex = UUID.randomUUID().toString();
+
+        assertFalse("Fix duplicate castings returns false",
+                graknGraph.fixDuplicateCastings(invalidCastingIndex, ImmutableSet.of(ConceptId.of(invalidCastingIndex))));
+    }
+
+    @Test
+    public void whenPostProcessingCastingThatExistsButNoDuplicate_FixDuplicateCastingsReturnsFalse(){
+        CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
+
+        assertFalse("Fix duplicate castings returns false",
+                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId())));
+    }
+
+    @Test
+    public void whenPostProcessingCastingThatExistsAndDuplicate_FixDuplicateCastingsReturnsTrue(){
+        CastingImpl validCasting = (CastingImpl) instance1.castings().iterator().next();
+        ConceptId otherCasting = ConceptId.of(buildDuplicateCastingWithNewRelation(validCasting, relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3).getId().getValue());
+        assertEquals(2, instance1.castings().size());
+
+        assertTrue("Fix duplicate castings returns true",
+                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(validCasting.getId()))
+                        ||
+                graknGraph.fixDuplicateCastings(validCasting.getIndex(), ImmutableSet.of(otherCasting)));
+
+        assertEquals(1, instance1.castings().size());
     }
 }

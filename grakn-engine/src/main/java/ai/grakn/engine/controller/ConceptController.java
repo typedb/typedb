@@ -24,7 +24,7 @@ import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Type;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
@@ -107,7 +107,7 @@ public class ConceptController {
             response.type(APPLICATION_HAL);
             response.status(200);
 
-            body.set(RESPONSE,renderHALConceptData(concept, separationDegree, keyspace, offset, limit));
+            body.set(RESPONSE,Json.read(renderHALConceptData(concept, separationDegree, keyspace, offset, limit)));
 
             return body;
         }

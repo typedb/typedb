@@ -75,6 +75,7 @@
         <csv.version>1.4</csv.version>
         <jool.version>3.8.5</jool.version>
         <cassandra-unit.version>2.1.9.2</cassandra-unit.version>
+        <cassandra-all.version>2.1.17</cassandra-all.version>
         <h2-database.version>1.4.192</h2-database.version>
         <hermit.version>1.3.8.500</hermit.version>
         <owl-api.version>5.0.2</owl-api.version>
@@ -221,6 +222,17 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>${cassandra-all.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>it.unimi.dsi</groupId>
+                    <artifactId>fastutil</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
@@ -325,7 +337,7 @@
                 <version>2.19.1</version>
                 <configuration>
                     <systemProperties>
-                        <logback.configurationFile>${main.basedir}/conf/test/logback.xml</logback.configurationFile>
+                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
                     </systemProperties>
                 </configuration>
                 <executions>
@@ -343,7 +355,7 @@
                 <version>2.19.1</version>
                 <configuration>
                     <systemProperties>
-                        <logback.configurationFile>${main.basedir}/conf/test/logback.xml</logback.configurationFile>
+                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
                     </systemProperties>
                 </configuration>
             </plugin>

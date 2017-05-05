@@ -49,6 +49,13 @@ public class Client {
         }
     };
 
+    final ResponseHandler<String> asStringHandler = response -> {
+        try(BufferedReader reader = new BufferedReader(
+                new InputStreamReader(response.getEntity().getContent(), StandardCharsets.UTF_8))){
+            return reader.lines().collect(joining("\n"));
+        }
+    };
+    
 
     /**
      * Check if Grakn Engine has been started

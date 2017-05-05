@@ -24,7 +24,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Printer;
-import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.internal.util.ANSI;
 import ai.grakn.graql.internal.util.CommonUtil;
 
@@ -44,25 +44,11 @@ import static ai.grakn.graql.internal.util.StringConverter.valueToString;
  */
 class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
-    /**
-     * @param keyword a keyword to color-code using ANSI colors
-     * @return the keyword, color-coded
-     */
-    private static String colorKeyword(String keyword) {
-        return ANSI.color(keyword, ANSI.BLUE);
-    }
-
-    /**
-     * @param type a type to color-code using ANSI colors
-     * @return the type, color-coded
-     */
-    private static String colorType(Type type) {
-        return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
-    }
-
     private final ResourceType[] resourceTypes;
+    private final boolean colorize;
 
-    GraqlPrinter(ResourceType... resourceTypes) {
+    GraqlPrinter(boolean colorize, ResourceType... resourceTypes) {
+        this.colorize = colorize;
         this.resourceTypes = resourceTypes;
     }
 
@@ -164,23 +150,21 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
 
     @Override
     public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Map<?, ?> map) {
-        if (!map.entrySet().isEmpty()) {
-            Map.Entry<?, ?> entry = map.entrySet().iterator().next();
+        return graqlString(inner, map.entrySet());
+    }
 
-            // If this looks like a graql result, assume the key is a variable name
-            if (entry.getKey() instanceof VarName && entry.getValue() instanceof Concept) {
-                return sb -> {
-                    map.forEach((name, concept) ->
-                            sb.append(name).append(" ").append(graqlString(concept)).append("; ")
-                    );
-                    return sb;
-                };
+    @Override
+    public Function<StringBuilder, StringBuilder> graqlString(boolean inner, Answer answer) {
+        return sb -> {
+            if (answer.isEmpty()) {
+                sb.append("{}");
             } else {
-                return graqlString(inner, map.entrySet());
+                answer.forEach((name, concept) ->
+                        sb.append(name).append(" ").append(graqlString(concept)).append("; ")
+                );
             }
-        } else {
-            return sb -> sb.append("{}");
-        }
+            return sb;
+        };
     }
 
     @Override
@@ -192,6 +176,33 @@ class GraqlPrinter implements Printer<Function<StringBuilder, StringBuilder>> {
                     .andThen(graqlString(true, entry.getValue()));
         } else {
             return sb -> sb.append(object.toString());
+        }
+    }
+
+
+    /**
+     * Color-codes the keyword if colorization enabled
+     * @param keyword a keyword to color-code using ANSI colors
+     * @return the keyword, color-coded
+     */
+    private String colorKeyword(String keyword) {
+        if(colorize) {
+            return ANSI.color(keyword, ANSI.BLUE);
+        } else {
+            return keyword;
+        }
+    }
+
+    /**
+     * Color-codes the given type if colorization enabled
+     * @param type a type to color-code using ANSI colors
+     * @return the type, color-coded
+     */
+    private String colorType(Type type) {
+        if(colorize) {
+            return ANSI.color(typeLabelToString(type.getLabel()), ANSI.PURPLE);
+        } else {
+            return typeLabelToString(type.getLabel());
         }
     }
 }

@@ -17,6 +17,10 @@
   -->
 
 <configuration debug="false">
+
+    <property name="graknLogFileName" value="grakn.log"/>
+    <property name="graknPPLogFileName" value="grakn-postprocessing.log"/>
+
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%msg%n</pattern>
@@ -24,67 +28,58 @@
     </appender>
 
     <appender name="MAIN" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.file.main}</file>
+        <file>${grakn.log.dirs}/${graknLogFileName}</file>
+        <encoder>
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
             <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${grakn.log.file.main}-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <fileNamePattern>${graknLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
-        <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
     </appender>
 
     <appender name="POST-PROCESSING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.file.postprocessing}</file>
+        <file>${grakn.log.dirs}/${graknPPLogFileName}</file>
+        <encoder>
+            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
-            <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${grakn.log.file.postprocessing}-%d{yyyy-MM}.%i.log</fileNamePattern>
-            <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
+            <fileNamePattern>${graknPPLogFileName}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>
         </rollingPolicy>
-        <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
     </appender>
 
-    <root level="INFO">
-        <!--<appender-ref ref="STDOUT"/>-->
-    </root>
+    <root level="INFO"/>
+
     <logger name="org.eclipse.jetty" level="${jetty.log.level:-ERROR}">
         <appender-ref ref="${jetty.log.appender:-MAIN}"/>
     </logger>
 
+    <!--All GRAKN logs go to main log file-->
     <logger name="ai.grakn" level="${grakn.log.level:-INFO}">
         <appender-ref ref="MAIN"/>
     </logger>
 
-    <logger name="${grakn.log.name.postprocessing}" level="${grakn.log.level:-INFO}">
-        <appender-ref ref="POST-PROCESSING"/>
-    </logger>
-
-    <!--ASCII TEXT-->
+    <!--Only show ERROR logs from apache classes-->
     <logger name="org.apache" level="ERROR">
         <appender-ref ref="MAIN"/>
     </logger>
 
+    <!--GRAKN ASCII text on startup goes to Standard Out-->
     <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="ai.grakn.migration.base.Migrator" level="DEBUG">
-        <appender-ref ref="MAIN"/>
-    </logger>
-
-    <logger name="ai.grakn.client.LoaderClient" level="DEBUG">
-        <appender-ref ref="MAIN"/>
+    <!--Post Processing logs go to separate log file-->
+    <logger name="ai.grakn.engine.postprocessing" level="${grakn.log.level:-INFO}" additivity="false">
+        <appender-ref ref="POST-PROCESSING"/>
     </logger>
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->

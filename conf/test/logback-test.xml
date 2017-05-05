@@ -14,7 +14,9 @@
   ~
   ~ You should have received a copy of the GNU General Public License
   ~ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+  ~
   -->
+
 <configuration>
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -31,6 +33,11 @@
     </logger>
 
     <logger name="ai.grakn.engine.GraknEngineServer" level="WARN">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <!--Set the SingleQueueTaskRunner log level to WARN so it does not overwhelm travis and jenkins-->
+    <logger name="ai.grakn.engine.tasks.manager.singlequeue.SingleQueueTaskRunner" level="WARN">
         <appender-ref ref="STDOUT"/>
     </logger>
 </configuration>

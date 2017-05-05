@@ -58,23 +58,21 @@ const NodeLabelPanel = require('./nodeLabelPanel.vue');
 const AnalyticsPanel = require('./analyticsResultsContainer.vue');
 
 export default {
-    name: "FooterBar",
-    components:{
-      NodeLabelPanel,
-      AnalyticsPanel
-    },
-    data: function() {
-        return {}
-    },
-    created: function() {},
-    mounted: function() {
-        this.$nextTick(function() {
+  name: 'FooterBar',
+  components: {
+    NodeLabelPanel,
+    AnalyticsPanel,
+  },
+  data() {
+    return {};
+  },
+  created() {},
+  mounted() {
+    this.$nextTick(() => {
 
-        })
-    },
-    methods: {
-
-
-    }
-}
+    });
+  },
+  methods: {
+  },
+};
 </script>

@@ -28,7 +28,7 @@
     <fileSets>
         <fileSet>
             <outputDirectory>/</outputDirectory>
-            <directory>${project.parent.basedir}</directory>
+            <directory>${main.basedir}</directory>
             <includes>
                 <include>CHANGELOG</include>
                 <include>LICENSE.txt</include>
@@ -37,7 +37,7 @@
         </fileSet>
         <fileSet>
             <outputDirectory>src</outputDirectory>
-            <directory>${project.parent.basedir}/</directory>
+            <directory>${main.basedir}/</directory>
             <includes>
                 <include>pom.xml</include>
                 <include>LICENSE.txt</include>
@@ -62,14 +62,14 @@
         </fileSet>
         <fileSet>
             <outputDirectory>docs/api</outputDirectory>
-            <directory>${project.parent.basedir}/target/apidocs/</directory>
+            <directory>${main.basedir}/target/apidocs/</directory>
             <includes>
                 <include>**</include>
             </includes>
         </fileSet>
         <fileSet>
             <outputDirectory>docs/rest-api</outputDirectory>
-            <directory>${project.parent.basedir}/grakn-engine/target/jaxrs-raml/</directory>
+            <directory>${main.basedir}/grakn-engine/target/jaxrs-raml/</directory>
             <includes>
                 <include>engine-apis.html</include>
             </includes>
@@ -97,14 +97,14 @@
         </fileSet>
         <fileSet>
             <outputDirectory>conf</outputDirectory>
-            <directory>${project.parent.basedir}/conf/</directory>
+            <directory>${main.basedir}/conf/</directory>
             <includes>
                 <include>**</include>
             </includes>
         </fileSet>
         <fileSet>
             <outputDirectory>assets</outputDirectory>
-            <directory>${project.parent.basedir}/grakn-dashboard/static</directory>
+            <directory>${main.basedir}/grakn-dashboard/static</directory>
             <includes>
                 <include>**</include>
             </includes>

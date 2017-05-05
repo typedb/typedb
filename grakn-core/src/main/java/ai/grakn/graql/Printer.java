@@ -19,6 +19,7 @@
 package ai.grakn.graql;
 
 import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.Answer;
 
 import java.util.Collection;
 import java.util.Map;
@@ -64,6 +65,8 @@ public interface Printer<T> {
             return graqlString(inner, (Optional<?>) object);
         } else if (object instanceof Collection) {
             return graqlString(inner, (Collection<?>) object);
+        } else if (object instanceof Answer) {
+            return graqlString(inner, (Answer) object);
         } else if (object instanceof Map) {
             return graqlString(inner, (Map<?, ?>) object);
         } else {
@@ -117,6 +120,16 @@ public interface Printer<T> {
      * @return the map as a builder
      */
     T graqlString(boolean inner, Map<?, ?> map);
+
+    /**
+     * Convert any {@link Answer} into a builder
+     * @param inner whether this map is within a collection
+     * @param answer the answer to convert into a builder
+     * @return the map as a builder
+     */
+    default T graqlString(boolean inner, Answer answer) {
+        return graqlString(inner, answer.map());
+    }
 
     /**
      * Default conversion behaviour if none of the more specific methods can be used

@@ -39,10 +39,12 @@ import static org.junit.Assume.assumeThat;
  */
 public class PropertyUtil {
 
+    @SuppressWarnings("unchecked")
     public static Collection<Type> directSubTypes(GraknGraph graph, Type type) {
-        return withImplicitConceptsVisible(graph, g ->
-                type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList())
+        Object ret = withImplicitConceptsVisible(graph, g ->
+            type.subTypes().stream().filter(subType -> type.equals(subType.superType())).collect(toList())
         );
+        return (Collection<Type>)ret;
     }
 
     public static Collection<Type> indirectSuperTypes(Type type) {

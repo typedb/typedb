@@ -28,6 +28,7 @@ entity4 sub entity
 entity5 sub entity
     plays role1;
 
+entity6 sub entity;
 
 #Relations
 
@@ -54,5 +55,14 @@ isa inference-rule
 	}
 	rhs {
 		(role1:$x, role2:$y, role3: $z) isa relation1;
+	};
+
+isa inference-rule
+	lhs {
+		(role1: $x, role2: $y) isa binary;
+		(role1: $y, role2: $z) isa binary;
+	}
+	rhs {
+		(role1:$x, role2:$y, role2: $z) isa relation2;
 	};
 

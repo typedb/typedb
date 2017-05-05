@@ -19,17 +19,19 @@
 package ai.grakn.graql.internal.reasoner.query;
 
 import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.PatternAdmin;
-import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.Utility;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -49,6 +51,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -61,10 +65,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
@@ -179,21 +182,31 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     /**
-     * @return atom that should be prioritised for resolution
-     */
-    Atom getTopAtom() {
-        List<Atom> orderedAtoms = selectAtoms().stream()
-                .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
-                .collect(Collectors.toList());
-        return orderedAtoms.stream().findFirst().orElse(null);
-    }
-
-    /**
      * @return atom set constituting this query
      */
     @Override
     public Set<Atomic> getAtoms() {
         return Sets.newHashSet(atomSet);
+    }
+
+    private List<Atom> getPrioritisedAtoms(){
+        return selectAtoms().stream()
+                .sorted(Comparator.comparing(Atom::resolutionPriority).reversed())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * @return atom that should be prioritised for resolution
+     */
+    Atom getTopAtom() {
+        return getPrioritisedAtoms().stream().findFirst().orElse(null);
+    }
+
+    /**
+     * @return resolution plan in a form a atom[priority]->... string
+     */
+    String getResolutionPlan(){
+        return getPrioritisedAtoms().stream().map(at -> at + "[" + at.resolutionPriority()+ "]").collect(Collectors.joining(" -> "));
     }
 
     /**
@@ -520,8 +533,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
                 .collect(Collectors.toSet());
         predicates.addAll(getIdPredicates());
 
+        // the mapping function is declared separately to please the Eclipse compiler
+        Function<IdPredicate, Concept> f = p -> graph().getConcept(p.getPredicate());
+
         return new QueryAnswer(predicates.stream()
-                .collect(Collectors.toMap(IdPredicate::getVarName, p -> graph().getConcept(p.getPredicate())))
+                .collect(Collectors.toMap(IdPredicate::getVarName, f))
         );
     }
 
@@ -621,9 +637,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
     @Override
     public Stream<Answer> resolve(boolean materialise, boolean explanation) {
-        if (!this.isRuleResolvable()) {
-            return this.getMatchQuery().admin().streamWithVarNames().map(QueryAnswer::new);
-        }
         if (materialise || requiresMaterialisation()) {
             return resolve(materialise, explanation, new LazyQueryCache<>(explanation), new LazyQueryCache<>(explanation));
         } else {
@@ -670,10 +683,10 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         private final QueryCache<ReasonerAtomicQuery> cache;
         private Iterator<Answer> answerIterator;
 
-        QueryAnswerIterator(){ this(new QueryCache<>());}
-        QueryAnswerIterator(QueryCache<ReasonerAtomicQuery> qc){
-            this.cache = qc;
+        QueryAnswerIterator(){
+            this.cache = new QueryCache<>();
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
+            LOG.debug(ReasonerQueryImpl.this.getResolutionPlan());
         }
 
         /**

@@ -20,22 +20,20 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.graphs.GeoGraph;
 import ai.grakn.graql.Graql;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.VarName;
-import ai.grakn.graql.internal.reasoner.query.QueryAnswer;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
-import ai.grakn.graphs.GeoGraph;
-import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.test.GraphContext;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static ai.grakn.test.GraknTestEnv.usingTinker;
+import java.util.stream.Collectors;
 
+import static ai.grakn.test.GraknTestEnv.usingTinker;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -89,8 +87,8 @@ public class GeoInferenceTest {
         QueryAnswers explicitAnswers = queryAnswers(qb.parse(explicitQuery));
 
         assertEquals(answers, explicitAnswers);
-        //assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
-        //assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(false).parse(queryString), qb.parse(explicitQuery));
+        assertQueriesEqual(iqb.materialise(true).parse(queryString), qb.parse(explicitQuery));
 
         assertQueriesEqual(iqb.materialise(false).parse(queryString2), qb.parse(explicitQuery2));
         assertQueriesEqual(iqb.materialise(true).parse(queryString2), qb.parse(explicitQuery2));
@@ -256,7 +254,7 @@ public class GeoInferenceTest {
         QueryBuilder iqb = geoGraph.graph().graql().infer(true);
         String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in;";
 
-        QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().streamWithAnswers().collect(Collectors.toSet()));
+        QueryAnswers answers = new QueryAnswers(iqb.materialise(false).<MatchQuery>parse(queryString).admin().stream().collect(Collectors.toSet()));
         QueryAnswers answers2 = queryAnswers(iqb.materialise(true).parse(queryString));
         assertEquals(answers.size(), 51);
         assertEquals(answers, answers2);
@@ -304,7 +302,7 @@ public class GeoInferenceTest {
     }
 
     private QueryAnswers queryAnswers(MatchQuery query) {
-        return new QueryAnswers(query.admin().streamWithVarNames().map(QueryAnswer::new).collect(toSet()));
+        return new QueryAnswers(query.admin().stream().collect(toSet()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

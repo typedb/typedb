@@ -53,6 +53,7 @@ public enum ErrorMessage {
     ROLE_TYPE_ERROR("The role type [%s] cannot play itself"),
     BACKEND_EXCEPTION("Unknown Backend Exception."),
     GRAPH_CLOSED("The Graph for keyspace [%s] is closed"),
+    SESSION_CLOSED("The session for graph [%s] was closed"),
     GRAPH_CLOSED_ON_ACTION("The transaction was %s and closed graph [%s]. Use the session to get a new transaction for the graph."),
     TRANSACTIONS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
@@ -173,8 +174,8 @@ public enum ErrorMessage {
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
-    POSTPROCESSING_ERROR("Unexpected error during post processing on Job [%s] fix due to [%s]"),
-    UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concepts [%s] part of job [%s] due to several repeating errors"),
+    POSTPROCESSING_ERROR("Unexpected error during post processing due to [%s]"),
+    UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concepts [%s] due to several repeating errors"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host. Message:[%s] \n Transaction string: [%s] "),

@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graphs.MovieGraph;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
@@ -117,7 +117,7 @@ public class GraqlControllerTest {
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.READ)).thenReturn(mockGraph);
+        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
     }
 
     @AfterClass

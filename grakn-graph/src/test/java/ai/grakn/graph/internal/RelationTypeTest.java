@@ -20,78 +20,34 @@ package ai.grakn.graph.internal;
 
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.ConceptException;
-import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collection;
-
-import static ai.grakn.util.ErrorMessage.ID_ALREADY_TAKEN;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertThat;
 
 public class RelationTypeTest extends GraphTestBase{
-    private RelationType relationType;
-    private RoleType role1;
-    private RoleType role2;
-    private RoleType role3;
-
-    @Before
-    public void setUp() throws ConceptException {
-        //Building
-        relationType = graknGraph.putRelationType("relationTypes");
-        role1 = graknGraph.putRoleType("role1");
-        role2 = graknGraph.putRoleType("role2");
-        role3 = graknGraph.putRoleType("role3");
-
-        relationType.relates(role1);
-        relationType.relates(role2);
-        relationType.relates(role3);
+    @Test
+    public void whenGettingTheRolesOfRelationTypes_AllTheRolesAreReturned() throws Exception {
+        RelationType relationType = graknGraph.putRelationType("relationTypes");
+        RoleType role1 = graknGraph.putRoleType("role1");
+        RoleType role2 = graknGraph.putRoleType("role2");
+        RoleType role3 = graknGraph.putRoleType("role3");
+        relationType.relates(role1).relates(role2).relates(role3);
+        assertThat(relationType.relates(), containsInAnyOrder(role1, role2, role3));
     }
 
     @Test
-    public void updateBaseTypeCheck(){
-        RelationType relationType = graknGraph.putRelationType("Test");
-        RelationType relationType2 = graknGraph.putRelationType("Test");
-        assertEquals(relationType, relationType2);
+    public void whenMutatingRolesOfRelationType_EnsureRelationTypeRolesAreAlwaysUpdated(){
+        RelationType relationType = graknGraph.putRelationType("c1");
+        RoleType role1 = graknGraph.putRoleType("c2");
+        RoleType role2 = graknGraph.putRoleType("c3");
+        assertThat(relationType.relates(), empty());
+
+        relationType.relates(role1).relates(role2);
+        assertThat(relationType.relates(), containsInAnyOrder(role1, role2));
+
+        relationType.deleteRelates(role1);
+        assertThat(relationType.relates(), containsInAnyOrder(role2));
     }
-
-    @Test
-    public void overrideFail(){
-        RoleType original = graknGraph.putRoleType("Role Type");
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(ID_ALREADY_TAKEN.getMessage(original.getLabel(), original.toString()));
-
-        graknGraph.putRelationType(original.getLabel());
-    }
-
-    @Test
-    public void testGetRoles() throws Exception {
-        Collection<RoleType> roles = relationType.relates();
-        assertEquals(3, roles.size());
-        assertTrue(roles.contains(role1));
-        assertTrue(roles.contains(role2));
-        assertTrue(roles.contains(role3));
-    }
-
-    @Test
-    public void testRoleType(){
-        RelationType c1 = graknGraph.putRelationType("c1");
-        RoleType c2 = graknGraph.putRoleType("c2");
-        RoleType c3 = graknGraph.putRoleType("c3");
-        assertTrue(c2.relationTypes().isEmpty());
-
-        c1.relates(c2);
-        c1.relates(c3);
-        assertTrue(c1.relates().contains(c2));
-        assertTrue(c1.relates().contains(c3));
-
-        c1.deleteRelates(c2);
-        assertFalse(c1.relates().contains(c2));
-        assertTrue(c1.relates().contains(c3));
-    }
-
-
 }

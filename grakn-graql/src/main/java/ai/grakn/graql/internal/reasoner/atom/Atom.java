@@ -34,16 +34,17 @@ import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
+import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
 
 /**
  *
@@ -58,6 +59,7 @@ public abstract class Atom extends AtomBase {
 
     protected Type type = null;
     protected ConceptId typeId = null;
+    protected int priority = Integer.MAX_VALUE;
 
     protected Atom(VarAdmin pattern, ReasonerQuery par) { super(pattern, par);}
     protected Atom(Atom a) {
@@ -95,11 +97,17 @@ public abstract class Atom extends AtomBase {
      * @return measure of priority with which this atom should be resolved
      */
     public int resolutionPriority(){
-        int priority = 0;
-        Set<IdPredicate> partialSubstitutions = getPartialSubstitutions();
-        if (!partialSubstitutions.isEmpty()){
-            priority += partialSubstitutions.size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
+        if (priority == Integer.MAX_VALUE) {
+            priority = 0;
+            priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
             priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
+            priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
+            Set<VarName> otherVars = getParentQuery().getAtoms().stream()
+                    .filter(a -> a != this)
+                    .flatMap(at -> at.getVarNames().stream())
+                    .collect(Collectors.toSet());
+            priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
+            priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
         }
         return priority;
     }
@@ -140,15 +148,14 @@ public abstract class Atom extends AtomBase {
     @Override
     public boolean isRecursive(){
         if (isResource() || getType() == null) return false;
-        boolean atomRecursive = false;
-
         Type type = getType();
-        Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
-        Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
-
-        for(Rule rule : presentInConclusion)
-            atomRecursive |= presentInHypothesis.contains(rule);
-        return atomRecursive;
+        return getPotentialRules().stream()
+                .map(rule -> new InferenceRule(rule, graph()))
+                .filter(rule -> rule.getBody().selectAtoms().stream()
+                        .filter(at -> Objects.nonNull(at.getType()))
+                        .filter(at -> checkTypesCompatible(type, at.getType())).findFirst().isPresent())
+                .filter(this::isRuleApplicable)
+                .findFirst().isPresent();
     }
 
     /**
@@ -238,10 +245,11 @@ public abstract class Atom extends AtomBase {
     public Set<TypeAtom> getMappedTypeConstraints() { return new HashSet<>();}
     public Set<Unifier> getPermutationUnifiers(Atom headAtom){ return new HashSet<>();}
 
+    //TODO move down to relation only
     /**
      * @return map of role type- (var name, var type) pairs
      */
-    public Map<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() { return new HashMap<>();}
+    public Multimap<RoleType, Pair<VarName, Type>> getRoleVarTypeMap() { return ArrayListMultimap.create();}
 
     /**
      * infers types (type, role types) fo the atom if applicable/possible

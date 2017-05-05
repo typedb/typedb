@@ -56,6 +56,7 @@ import static ai.grakn.engine.tasks.mock.MockBackgroundTask.completedTasks;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskFinishes;
 import static ai.grakn.engine.tasks.mock.MockBackgroundTask.whenTaskStarts;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.completableTasks;
+import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.configuration;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForDoneStatus;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.waitForStatus;
@@ -97,7 +98,7 @@ public class SingleQueueTaskManagerTest {
 
     @Property(trials=10)
     public void afterSubmitting_AllTasksAreCompleted(List<TaskState> tasks){
-        tasks.forEach(taskManager::addLowPriorityTask);
+        tasks.forEach((taskState) -> taskManager.addLowPriorityTask(taskState, configuration(taskState)));
         waitForStatus(taskManager.storage(), tasks, COMPLETED, FAILED);
 
         assertEquals(completableTasks(tasks), completedTasks());
@@ -108,7 +109,7 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsNotExecuted(TaskState task) {
         taskManager.stopTask(task.getId());
 
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -120,7 +121,7 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskBeforeItsExecuted_TheTaskIsMarkedAsStopped(TaskState task) {
         taskManager.stopTask(task.getId());
 
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -132,7 +133,7 @@ public class SingleQueueTaskManagerTest {
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> taskManager.stopTask(id));
 
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -145,7 +146,7 @@ public class SingleQueueTaskManagerTest {
             @WithClass(EndlessExecutionMockTask.class) TaskState task) {
         whenTaskStarts(id -> taskManager.stopTask(id));
 
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -156,7 +157,7 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskAfterExecution_TheTaskIsNotCancelled(TaskState task) {
         whenTaskFinishes(id -> taskManager.stopTask(id));
 
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -167,7 +168,7 @@ public class SingleQueueTaskManagerTest {
     public void whenStoppingATaskAfterExecution_TheTaskIsMarkedAsCompleted(TaskState task) {
         whenTaskFinishes(id -> taskManager.stopTask(id));
 
-        taskManager.addLowPriorityTask(task);
+        taskManager.addLowPriorityTask(task, configuration(task));
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(task));
 
@@ -180,8 +181,8 @@ public class SingleQueueTaskManagerTest {
 
         TaskState highPriorityTask = createTask(ShortExecutionMockTask.class, now());
 
-        manyTasks.forEach(taskManager::addLowPriorityTask);
-        taskManager.addHighPriorityTask(highPriorityTask);
+        manyTasks.forEach((taskState) -> taskManager.addLowPriorityTask(taskState, configuration(taskState)));
+        taskManager.addHighPriorityTask(highPriorityTask, configuration(highPriorityTask));
 
         waitForDoneStatus(taskManager.storage(), ImmutableList.of(highPriorityTask));
         waitForDoneStatus(taskManager.storage(), manyTasks);
@@ -214,8 +215,8 @@ public class SingleQueueTaskManagerTest {
             }
         });
 
-        manyTasks.forEach(taskManager::addLowPriorityTask);
-        taskManager.addHighPriorityTask(recurringTask);
+        manyTasks.forEach((taskState) -> taskManager.addLowPriorityTask(taskState, configuration(taskState)));
+        taskManager.addHighPriorityTask(recurringTask, configuration(recurringTask));
 
         Thread.sleep(sleepDur.toMillis());
 

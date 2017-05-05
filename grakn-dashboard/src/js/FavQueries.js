@@ -27,7 +27,7 @@ export default {
     const queries = localStorage.getItem(QUERIES_LS_KEY);
     const currentKeyspace = User.getCurrentKeySpace();
 
-    if (queries === null) {
+    if (queries == null) {
       localStorage.setItem(QUERIES_LS_KEY, JSON.stringify({ [currentKeyspace]: {} }));
       return {};
     }

@@ -80,6 +80,7 @@ public class EngineContext extends ExternalResource {
         return server.getTaskManager();
     }
 
+    //TODO Rename this method to "sessionWithNewKeyspace"
     public GraknSession factoryWithNewKeyspace() {
         return Grakn.session("localhost:" + port, randomKeyspace());
     }

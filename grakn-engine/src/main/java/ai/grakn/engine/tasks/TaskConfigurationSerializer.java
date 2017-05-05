@@ -16,22 +16,34 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.graphs;
+package ai.grakn.engine.tasks;
 
-import ai.grakn.GraknGraph;
-import ai.grakn.example.PokemonGraphFactory;
+import ai.grakn.engine.TaskId;
+import org.apache.kafka.common.serialization.Serializer;
 
-import java.util.function.Consumer;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
-public class PokemonGraph extends TestGraph {
+/**
+ * <p>
+ * Implementation of {@link org.apache.kafka.common.serialization.Serializer} that allows usage of {@link TaskId} as
+ * kafka queue keys
+ * </p>
+ *
+ * @author alexandraorth
+ */
+public class TaskConfigurationSerializer implements Serializer<TaskConfiguration> {
 
-    public static Consumer<GraknGraph> get(){
-        return new MovieGraph().build();
+    @Override
+    public void configure(Map<String, ?> configs, boolean isKey) {
+
     }
 
     @Override
-    public void buildOntology(GraknGraph graph) {
-        PokemonGraphFactory.loadGraph(graph);
-        graph.commit();
+    public byte[] serialize(String topic, TaskConfiguration data) {
+        return data.json().toString().getBytes(StandardCharsets.UTF_8);
     }
+
+    @Override
+    public void close() {}
 }

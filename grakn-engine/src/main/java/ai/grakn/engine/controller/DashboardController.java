@@ -23,7 +23,7 @@ import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
 import ai.grakn.graql.internal.reasoner.Reasoner;
@@ -31,15 +31,16 @@ import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 import mjson.Json;
 import spark.Request;
 import spark.Response;
 import spark.Service;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static ai.grakn.GraknTxType.READ;
 import static ai.grakn.engine.controller.ConceptController.mandatoryRequestParameter;
@@ -184,7 +185,7 @@ public class DashboardController {
 
             int limitEmbedded = queryParameter(request, REST.Request.Graql.LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
-            body.set(RESPONSE, explanationAnswersToHAL(((MatchQuery) query).admin().streamWithAnswers(), limitEmbedded));
+            body.set(RESPONSE, explanationAnswersToHAL(((MatchQuery) query).admin().stream(), limitEmbedded));
         }
         response.status(200);
         response.body(body.toString());

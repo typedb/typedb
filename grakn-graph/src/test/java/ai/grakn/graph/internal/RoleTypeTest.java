@@ -29,10 +29,12 @@ import ai.grakn.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 public class RoleTypeTest extends GraphTestBase {
     private RoleType roleType;
@@ -45,67 +47,30 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testOverrideFail(){
-        RelationType relationType = graknGraph.putRelationType("original");
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(ErrorMessage.ID_ALREADY_TAKEN.getMessage("original", relationType.toString()));
-
-        graknGraph.putRoleType("original");
-    }
-
-    @Test
-    public void testRoleTypeLabel(){
-        RoleType roleType = graknGraph.putRoleType("test");
-        assertEquals("test", roleType.getLabel().getValue());
-    }
-
-    @Test
-    public void testGetRelation() throws Exception {
+    public void whenGettingTheRelationTypesARoleIsInvolvedIn_ReturnTheRelationTypes() throws Exception {
+        assertThat(roleType.relationTypes(), empty());
         relationType.relates(roleType);
-        assertEquals(relationType, roleType.relationTypes().iterator().next());
+        assertThat(roleType.relationTypes(), containsInAnyOrder(relationType));
     }
 
     @Test
-    public void testGetRelationFailNoRelationShip() throws Exception {
-        assertTrue(roleType.relationTypes().isEmpty());
-    }
-
-    @Test
-    public void testRoleTypeCannotPlayItself(){
+    public void whenSettingRoleTypeToPlayItself_Throw(){
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(ErrorMessage.ROLE_TYPE_ERROR.getMessage(roleType.getLabel()));
-
         roleType.plays(roleType);
     }
 
     @Test
-    public void testRolePlayerConceptType(){
+    public void whenGettingTypeEntityTypesAllowedToPlayARole_ReturnTheEntityTypes(){
         Type type1 = graknGraph.putEntityType("CT1").plays(roleType);
         Type type2 = graknGraph.putEntityType("CT2").plays(roleType);
         Type type3 = graknGraph.putEntityType("CT3").plays(roleType);
         Type type4 = graknGraph.putEntityType("CT4").plays(roleType);
-
-        assertEquals(4, roleType.playedByTypes().size());
-        assertTrue(roleType.playedByTypes().contains(type1));
-        assertTrue(roleType.playedByTypes().contains(type2));
-        assertTrue(roleType.playedByTypes().contains(type3));
-        assertTrue(roleType.playedByTypes().contains(type4));
+        assertThat(roleType.playedByTypes(), containsInAnyOrder(type1, type2, type3, type4));
     }
 
     @Test
-    public void testPlayedByTypes(){
-        RoleType crewMember = graknGraph.putRoleType("crew-member").setAbstract(true);
-        EntityType human = graknGraph.putEntityType("human").plays(crewMember);
-        EntityType person = graknGraph.putEntityType("person").superType(human);
-
-        assertEquals(2, crewMember.playedByTypes().size());
-        assertTrue(crewMember.playedByTypes().contains(human));
-        assertTrue(crewMember.playedByTypes().contains(person));
-    }
-
-    @Test
-    public  void testGetInstancesTest(){
+    public void whenGettingInstancesOfARoleType_EnsureNothingIsReturned(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         RelationType relationType = graknGraph.putRelationType("relationTypes").relates(roleA).relates(roleB);
@@ -116,28 +81,17 @@ public class RoleTypeTest extends GraphTestBase {
         Entity c = entityType.addEntity();
         Entity d = entityType.addEntity();
 
-        relationType.addRelation().
-                addRolePlayer(roleA, a).
-                addRolePlayer(roleB, b);
+        relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
+        relationType.addRelation().addRolePlayer(roleA, c).addRolePlayer(roleB, d);
+        relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, c);
+        relationType.addRelation().addRolePlayer(roleA, c).addRolePlayer(roleB, b);
 
-        relationType.addRelation().
-                addRolePlayer(roleA, c).
-                addRolePlayer(roleB, d);
-
-        relationType.addRelation().
-                addRolePlayer(roleA, a).
-                addRolePlayer(roleB, c);
-
-        relationType.addRelation().
-                addRolePlayer(roleA, c).
-                addRolePlayer(roleB, b);
-
-        assertEquals(roleA.instances().size(), 0);
-        assertEquals(roleB.instances().size(), 0);
+        assertThat(roleA.instances(), empty());
+        assertThat(roleB.instances(), empty());
     }
 
     @Test
-    public void testDeleteRoleTypeWithPlays(){
+    public void whenDeletingRoleTypeWithTypesWhichCanPlayIt_Throw(){
         assertNotNull(graknGraph.getRoleType("RoleType"));
         graknGraph.getRoleType("RoleType").delete();
         assertNull(graknGraph.getRoleType("RoleType"));
@@ -152,7 +106,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testDeleteRoleTypeWithRelates(){
+    public void whenDeletingRoleTypeWithRelationTypes_Throw(){
         RoleType roleType2 = graknGraph.putRoleType("New Role Type");
         graknGraph.putRelationType("Thing").relates(roleType2).relates(roleType);
 
@@ -163,7 +117,7 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testDeleteRoleTypeWithPlayers(){
+    public void whenDeletingRoleTypeWithRolePlayers_Throw(){
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         RelationType relationType = graknGraph.putRelationType("relationTypes");
@@ -172,9 +126,7 @@ public class RoleTypeTest extends GraphTestBase {
         Entity a = entityType.addEntity();
         Entity b = entityType.addEntity();
 
-        relationType.addRelation().
-                addRolePlayer(roleA, a).
-                addRolePlayer(roleB, b);
+        relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(ErrorMessage.CANNOT_DELETE.getMessage(roleA.getLabel()));
@@ -183,36 +135,28 @@ public class RoleTypeTest extends GraphTestBase {
     }
 
     @Test
-    public void testSharingRole() throws GraknValidationException {
+    public void whenAddingRoleTypeToMultipleRelationTypes_EnsureItLinkedToBothRelationTypes() throws GraknValidationException {
         RoleType roleA = graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         relationType.relates(roleA).relates(roleType);
         RelationType relationType2 = graknGraph.putRelationType("relationType2").relates(roleB).relates(roleType);
         graknGraph.commit();
 
-        assertEquals(1, roleA.relationTypes().size());
-        assertEquals(1, roleB.relationTypes().size());
-        assertTrue(roleA.relationTypes().contains(relationType));
-        assertTrue(roleB.relationTypes().contains(relationType2));
-
-        assertEquals(2, roleType.relationTypes().size());
-        assertTrue(roleType.relationTypes().contains(relationType));
-        assertTrue(roleType.relationTypes().contains(relationType2));
+        assertThat(roleA.relationTypes(), containsInAnyOrder(relationType));
+        assertThat(roleB.relationTypes(), containsInAnyOrder(relationType2));
+        assertThat(roleType.relationTypes(), containsInAnyOrder(relationType, relationType2));
     }
 
     @Test
-    public void testCastingsAreReturnedFromRoleType(){
+    public void whenAddingRolePlayers_EnsureTheTypeOfTheResultingCastingIsTheRoleType(){
         RoleTypeImpl roleA = (RoleTypeImpl) graknGraph.putRoleType("roleA");
         RoleType roleB = graknGraph.putRoleType("roleB");
         EntityType entityType = graknGraph.putEntityType("entityType");
         Entity a = entityType.addEntity();
         Entity b = entityType.addEntity();
 
-        relationType.addRelation().
-                addRolePlayer(roleA, a).
-                addRolePlayer(roleB, b);
+        relationType.addRelation().addRolePlayer(roleA, a).addRolePlayer(roleB, b);
 
-        assertEquals(1, roleA.castings().size());
         CastingImpl casting = roleA.castings().iterator().next();
         assertEquals(roleA, casting.type());
     }

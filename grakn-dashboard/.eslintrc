@@ -1,18 +1,26 @@
-module.exports = {
+{
     "extends": "airbnb-base",
+    "parser": "babel-eslint",
     "plugins": [
         "import",
-        "html"
+        "html",
+        "flowtype",
+        "vue"
     ],
     "globals": {
         "window": true,
         "localStorage": true,
         "$": true,
         "visualiser": true,
-        "vis":true,
-        "XMLHttpRequest":true,
+        "vis": true,
+        "XMLHttpRequest": true,
+        "document": true,
+        "toastr": true
     },
     "rules": {
+        "flowtype/define-flow-type": 1,
+        "flowtype/use-flow-type": 1,
+        "no-use-before-define": ["error", { "functions": false, "classes": true }],
         "no-plusplus": [
             1,
             {
@@ -30,4 +38,4 @@ module.exports = {
             }
         ]
     }
-};
+}

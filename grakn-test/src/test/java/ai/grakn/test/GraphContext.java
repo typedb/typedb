@@ -20,7 +20,7 @@ package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknTxType;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;

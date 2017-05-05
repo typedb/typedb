@@ -22,6 +22,7 @@ import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
+import ai.grakn.graql.internal.query.QueryAnswer;
 import com.google.common.collect.Maps;
 import java.util.Collection;
 import java.util.HashSet;

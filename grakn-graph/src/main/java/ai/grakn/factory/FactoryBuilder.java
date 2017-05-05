@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author fppt
  */
-class FactoryBuilder {
+public class FactoryBuilder {
     private static final String FACTORY = "factory.internal";
     private static final Map<String, InternalFactory> openFactories = new ConcurrentHashMap<>();
 
@@ -51,7 +51,7 @@ class FactoryBuilder {
         throw new UnsupportedOperationException();
     }
 
-    static InternalFactory getFactory(String keyspace, String engineUrl, Properties properties){
+    public static InternalFactory getFactory(String keyspace, String engineUrl, Properties properties){
         try{
             String factoryType;
             if (!Grakn.IN_MEMORY.equals(engineUrl)) {
@@ -114,7 +114,9 @@ class FactoryBuilder {
     /**
      * Clears all connections.
      */
-    static void refresh(){
+    //TODO Should this close each of the factories (and wait for all open transactions to be closed?)
+    //TODO Calling this from within the code causes a memory leak
+    public static void refresh(){
         openFactories.clear();
     }
 }

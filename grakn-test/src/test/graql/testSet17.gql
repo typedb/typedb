@@ -14,10 +14,10 @@ res2 sub resource datatype boolean;
 
 isa inference-rule
 lhs {
-$x isa general-entity, has res1 > 0;
+    $x isa general-entity, has res1 > 0;
 }
 rhs {
-$x has res2 true;
+    $x has res2 true;
 };
 
 #Data

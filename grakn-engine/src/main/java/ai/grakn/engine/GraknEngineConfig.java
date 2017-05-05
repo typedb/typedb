@@ -53,24 +53,15 @@ public class GraknEngineConfig {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
     public static final String POST_PROCESSING_DELAY = "backgroundTasks.post-processing-delay";
-    public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
-    public static final String LOGGING_FILE_PATH_MAIN = "logging.file.main";
-    public static final String LOGGING_LEVEL = "logging.level";
+    public static final String LOGGING_FILE_PATH_MAIN = "log.dirs";
+    public static final String LOGGING_LEVEL = "log.level";
 
-    public static final String CURRENT_DIR_SYSTEM_PROPERTY = "grakn.dir";
-    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "grakn.conf";
-    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN = "grakn.log.file.main";
-    public static final String LOG_LEVEL_SYSTEM_PROPERTY = "grakn.log.level";
-
-    //Post Processing Logging
-    public static final String LOG_NAME_POSTPROCESSING_PROPERTY = "grakn.log.name.postprocessing";
-    public static final String LOG_NAME_POSTPROCESSING_DEFAULT = "post-processing";
-    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING = "grakn.log.file.postprocessing";
-    public static final String LOGGING_FILE_PATH_POST_PROCESSING = "logging.file.postprocessing";
-
-    public static final String POST_PROCESSING_THREADS = "postprocessing.threads";
+    private static final String SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY = "grakn.dir";
+    private static final String SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE = "grakn.conf";
+    private static final String SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY = "grakn.log.dirs";
+    private static final String SYSTEM_PROPERTY_GRAKN_LOG_LEVEL = "grakn.log.level";
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
@@ -79,12 +70,11 @@ public class GraknEngineConfig {
     public static final String USE_ZOOKEEPER_STORAGE = "taskmanager.storage.zk";
 
     public static final String ZK_SERVERS = "tasks.zookeeper.servers";
+    public static final String ZK_NAMESPACE = "tasks.zookeeper.namespace";
     public static final String ZK_SESSION_TIMEOUT = "tasks.zookeeper.session_timeout_ms";
     public static final String ZK_CONNECTION_TIMEOUT = "tasks.zookeeper.connection_timeout_ms";
     public static final String ZK_BACKOFF_BASE_SLEEP_TIME = "tasks.zookeeper.backoff.base_sleep";
     public static final String ZK_BACKOFF_MAX_RETRIES = "tasks.zookeeper.backoff.max_retries";
-
-    public static final String TASKRUNNER_POLLING_FREQ = "tasks.runner.polling-frequency";
 
     private Logger LOG;
 
@@ -123,7 +113,7 @@ public class GraknEngineConfig {
      * If it is not set, it sets it to the default one.
      */
     private void setConfigFilePath() {
-        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : GraknEngineConfig.DEFAULT_CONFIG_FILE;
+        configFilePath = (System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) != null) ? System.getProperty(SYSTEM_PROPERTY_GRAKN_CONFIGURATION_FILE) : GraknEngineConfig.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute()) {
             configFilePath = getProjectPath() + configFilePath;
         }
@@ -141,9 +131,7 @@ public class GraknEngineConfig {
             System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
         }
 
-        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN, getPath(LOGGING_FILE_PATH_MAIN));
-        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_POST_PROCESSING, getPath(LOGGING_FILE_PATH_POST_PROCESSING));
-        System.setProperty(LOG_NAME_POSTPROCESSING_PROPERTY, LOG_NAME_POSTPROCESSING_DEFAULT);
+        System.setProperty(SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY, getPath(LOGGING_FILE_PATH_MAIN));
 
         setLogLevel();
 
@@ -161,8 +149,8 @@ public class GraknEngineConfig {
      * otherwise it will be used the one specified in the config file.
      */
     private void setLogLevel() {
-        if (System.getProperty(LOG_LEVEL_SYSTEM_PROPERTY) == null) {
-            System.setProperty(LOG_LEVEL_SYSTEM_PROPERTY, prop.getProperty(LOGGING_LEVEL));
+        if (System.getProperty(SYSTEM_PROPERTY_GRAKN_LOG_LEVEL) == null) {
+            System.setProperty(SYSTEM_PROPERTY_GRAKN_LOG_LEVEL, prop.getProperty(LOGGING_LEVEL));
         }
     }
 
@@ -191,7 +179,7 @@ public class GraknEngineConfig {
      * @return The path to the grakn.log file in use.
      */
     public String getLogFilePath() {
-        return System.getProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY_MAIN);
+        return System.getProperty(SYSTEM_PROPERTY_GRAKN_LOG_DIRECTORY);
     }
 
     /**
@@ -224,11 +212,11 @@ public class GraknEngineConfig {
      * user.dir folder.
      */
     private static String getProjectPath() {
-        if (System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) == null) {
-            System.setProperty(CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir"));
+        if (System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) == null) {
+            System.setProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY, System.getProperty("user.dir"));
         }
 
-        return System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) + "/";
+        return System.getProperty(SYSTEM_PROPERTY_GRAKN_CURRENT_DIRECTORY) + "/";
     }
 
     /**

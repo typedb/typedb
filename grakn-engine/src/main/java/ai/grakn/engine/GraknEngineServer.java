@@ -30,7 +30,7 @@ import ai.grakn.engine.tasks.TaskManager;
 import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.JWTHandler;
 import ai.grakn.exception.GraknEngineServerException;
-import ai.grakn.factory.EngineGraknGraphFactory;
+import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.util.REST;
 import mjson.Json;
 import org.apache.http.entity.ContentType;

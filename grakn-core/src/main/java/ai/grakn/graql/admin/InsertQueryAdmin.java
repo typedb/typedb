@@ -19,17 +19,13 @@
 package ai.grakn.graql.admin;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.concept.Concept;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
-import ai.grakn.graql.VarName;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting and manipulating an InsertQuery
@@ -37,8 +33,6 @@ import java.util.stream.Stream;
  * @author Felix CHapman
  */
 public interface InsertQueryAdmin extends InsertQuery {
-
-    Stream<Map<VarName, Concept>> streamWithVarNames();
 
     /**
      * @return the match query that this insert query is using, if it was provided one

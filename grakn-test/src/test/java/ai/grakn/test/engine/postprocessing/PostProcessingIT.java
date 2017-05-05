@@ -25,16 +25,15 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.EntityType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.TaskStatus;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
+import ai.grakn.engine.tasks.TaskState;
 import ai.grakn.exception.ConceptNotUniqueException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.Schema;
 import com.thinkaurelius.titan.core.SchemaViolationException;
-import mjson.Json;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -42,42 +41,27 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static ai.grakn.test.GraknTestEnv.usingTinker;
-import static ai.grakn.util.REST.Request.COMMIT_LOG_FIXING;
-import static ai.grakn.util.REST.Request.KEYSPACE;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class PostProcessingTestIT {
-
-    private GraknSession factory;
-    private GraknGraph graph;
+public class PostProcessingIT {
 
     @ClassRule
     public static final EngineContext engine = EngineContext.startInMemoryServer();
 
-    @Before
-    public void setUp() throws Exception {
-        factory = engine.factoryWithNewKeyspace();
-        graph = factory.open(GraknTxType.WRITE);
-    }
-
-    @After
-    public void takeDown() throws InterruptedException {
-        graph.close();
-    }
-
     @Test
     public void checkThatDuplicateResourcesAtLargerScaleAreMerged() throws GraknValidationException, ExecutionException, InterruptedException {
         assumeFalse(usingTinker());
+
+        GraknSession session = engine.factoryWithNewKeyspace();
 
         int transactionSize = 50;
         int numAttempts = 200;
@@ -93,28 +77,28 @@ public class PostProcessingTestIT {
         ExecutorService pool = Executors.newFixedThreadPool(40);
         Set<Future> futures = new HashSet<>();
 
-        //Create Simple Ontology
-        for(int i = 0; i < numEntTypes; i ++){
-            EntityType entityType = graph.putEntityType("ent" + i);
-            for(int j = 0; j < numEntVar; j ++){
-                entityType.addEntity();
+        try (GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            //Create Simple Ontology
+            for (int i = 0; i < numEntTypes; i++) {
+                EntityType entityType = graph.putEntityType("ent" + i);
+                for (int j = 0; j < numEntVar; j++) {
+                    entityType.addEntity();
+                }
             }
-        }
 
-        for(int i = 0; i < numResTypes; i ++){
-            ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
-            for(int j = 0; j < numEntTypes; j ++){
-                graph.getEntityType("ent" + j).resource(rt);
+            for (int i = 0; i < numResTypes; i++) {
+                ResourceType<Integer> rt = graph.putResourceType("res" + i, ResourceType.DataType.INTEGER);
+                for (int j = 0; j < numEntTypes; j++) {
+                    graph.getEntityType("ent" + j).resource(rt);
+                }
             }
-        }
-        graph.commit();
 
-        //Try to force duplicate resources
-        Set<Json> jsonLogs = ConcurrentHashMap.newKeySet();
+            graph.commit();
+        }
 
         for(int i = 0; i < numAttempts; i++){
             futures.add(pool.submit(() -> {
-                try(GraknGraph graph = factory.open(GraknTxType.WRITE)){
+                try(GraknGraph graph = session.open(GraknTxType.WRITE)){
                     Random r = new Random();
 
                     for(int j = 0; j < transactionSize; j ++) {
@@ -126,7 +110,8 @@ public class PostProcessingTestIT {
                     }
 
                     Thread.sleep((long) Math.floor(Math.random() * 1000));
-                    jsonLogs.add(createPPJobsFromCommitLogs(graph.getKeyspace(), graph.admin().commitNoLogs().get()));
+
+                    graph.commit();
                 } catch (InterruptedException | SchemaViolationException | ConceptNotUniqueException | GraknValidationException e ) {
                     //IGNORED
                 }
@@ -137,49 +122,50 @@ public class PostProcessingTestIT {
             future.get();
         }
 
-
         //Check current broken state of graph
-        graph = factory.open(GraknTxType.WRITE);
-        assertTrue("Failed at breaking graph", graphIsBroken(graph));
+        assertTrue("Failed at breaking graph", graphIsBroken(session));
 
-        //TODO: Find a better way of doing this
-        jsonLogs.forEach(log -> {
-            PostProcessingTask ppTask = new PostProcessingTask();
-            ppTask.runLockingBackgroundTask(null, log);
-        });
+        // Check graph fixed
+        boolean tasksStillRunning;
+        do{
+            Thread.sleep(1000);
 
-        //Check current broken state of graph
-        graph.close();
-        factory.close();
-        graph = factory.open(GraknTxType.WRITE);
+            Set<TaskState> runningPPTasks = engine.getTaskManager().storage().getTasks(null, PostProcessingTask.class.getName(), null, null, 0, 0);
+            tasksStillRunning = false;
+            for (TaskState runningPPTask : runningPPTasks) {
+                if(!runningPPTask.status().equals(TaskStatus.STOPPED)){
+                    tasksStillRunning = true;
+                    break;
+                }
+            }
 
-        assertFalse("Failed at fixing graph", graphIsBroken(graph));
+        } while(tasksStillRunning);
 
-        //Check the resource indices are working
-        for (Object object : graph.admin().getMetaResourceType().instances()) {
-            Resource resource = (Resource) object;
-            String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
-            assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+        assertFalse("Failed at fixing graph", graphIsBroken(session));
+
+        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            //Check the resource indices are working
+            for (Object object : graph.admin().getMetaResourceType().instances()) {
+                Resource resource = (Resource) object;
+                String index = Schema.generateResourceIndex(resource.type().getLabel(), resource.getValue().toString());
+                assertEquals(resource, ((AbstractGraknGraph<?>) graph).getConcept(Schema.ConceptProperty.INDEX, index));
+            }
         }
-    }
-    private Json createPPJobsFromCommitLogs(String keyspace, String commitLog){
-        Json postProcessingConfiguration = Json.object();
-        postProcessingConfiguration.set(KEYSPACE, keyspace);
-        postProcessingConfiguration.set(COMMIT_LOG_FIXING, Json.read(commitLog).at(COMMIT_LOG_FIXING));
-        return postProcessingConfiguration;
     }
 
     @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
-    private boolean graphIsBroken(GraknGraph graph){
-        Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
-        for (ResourceType<?> resourceType : resourceTypes) {
-            if(!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
-                Set<Integer> foundValues = new HashSet<>();
-                for (Resource<?> resource : resourceType.instances()) {
-                    if (foundValues.contains(resource.getValue())) {
-                        return true;
-                    } else {
-                        foundValues.add((Integer) resource.getValue());
+    private boolean graphIsBroken(GraknSession session){
+        try(GraknGraph graph = session.open(GraknTxType.WRITE)) {
+            Collection<ResourceType<?>> resourceTypes = graph.admin().getMetaResourceType().subTypes();
+            for (ResourceType<?> resourceType : resourceTypes) {
+                if (!Schema.MetaSchema.RESOURCE.getLabel().equals(resourceType.getLabel())) {
+                    Set<Integer> foundValues = new HashSet<>();
+                    for (Resource<?> resource : resourceType.instances()) {
+                        if (foundValues.contains(resource.getValue())) {
+                            return true;
+                        } else {
+                            foundValues.add((Integer) resource.getValue());
+                        }
                     }
                 }
             }

@@ -38,7 +38,6 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class TaskStateInMemoryStoreTest {
@@ -159,6 +158,6 @@ public class TaskStateInMemoryStoreTest {
     }
 
     public TaskState task(){
-        return TaskState.of(ShortExecutionMockTask.class, this.getClass().getName(), TaskSchedule.now(), null);
+        return TaskState.of(ShortExecutionMockTask.class, this.getClass().getName(), TaskSchedule.now());
     }
 }
