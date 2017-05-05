@@ -97,7 +97,7 @@ public class StandaloneTaskManager implements TaskManager {
     @Override
     public void close(){
         executorService.shutdown();
-        schedulingService.shutdown();
+        schedulingService.shutdownNow();
         scheduledTasks.clear();
         runningTasks.clear();
         LockProvider.clear();

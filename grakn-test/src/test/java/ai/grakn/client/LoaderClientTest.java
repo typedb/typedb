@@ -53,7 +53,7 @@ import static org.mockito.Mockito.*;
 public class LoaderClientTest {
 
     private static final int PORT = 4567;
-    private static TaskManager manager = new StandaloneTaskManager(EngineID.me());
+    private static TaskManager manager;
     private static Service spark;
 
     @Rule
@@ -64,6 +64,7 @@ public class LoaderClientTest {
         spark = Service.ignite();
         configureSpark(spark, PORT);
 
+        manager = new StandaloneTaskManager(EngineID.me());
         new TasksController(spark, manager);
 
         spark.awaitInitialization();
