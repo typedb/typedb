@@ -39,7 +39,4 @@ class NeqPredicate extends ComparatorPredicate {
     <V> P<V> gremlinPredicate(V value) {
         return P.neq(value);
     }
-
-    @Override
-    public boolean isCompatibleWith(ValuePredicateAdmin p) { return !this.equals(p);}
 }

@@ -71,9 +71,4 @@ class EqPredicate extends ComparatorPredicate {
     public int hashCode() {
         return super.hashCode() + 37;
     }
-
-    @Override
-    protected boolean isCompatibleWithEqPredicate(EqPredicate p) {
-        return this.equals(p);
-    }
 }

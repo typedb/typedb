@@ -83,7 +83,10 @@ class RegexPredicate implements ValuePredicateAdmin {
     }
 
     @Override
-    public boolean isCompatibleWith(ValuePredicateAdmin predicate) {
-        return false;
+    public boolean isCompatibleWith(ValuePredicateAdmin predicate){
+        if (!(predicate instanceof EqPredicate)) return false;
+        EqPredicate p = (EqPredicate) predicate;
+        Object pVal = p.getValue().orElse(null);
+        return pVal == null || regexPredicate().test(pVal);
     }
 }

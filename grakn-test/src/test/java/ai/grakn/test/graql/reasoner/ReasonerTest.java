@@ -207,11 +207,7 @@ public class ReasonerTest {
 
     @Test
     public void testAddingRuleWithNonSpecificResourceInTheHeadNotAllowed() {
-<<<<<<< HEAD
-        GraknGraph graph = testGraph.graph();
-=======
         GraknGraph graph = testGeoGraph.graph();
->>>>>>> e3dc265c2960db31d97548be7be3e85cb6fe6da4
         Pattern body = Graql.and(graph.graql().parsePatterns("$x isa country;"));
         Pattern head = Graql.and(graph.graql().parsePatterns("$x has name contains 'land';"));
         exception.expect(IllegalArgumentException.class);

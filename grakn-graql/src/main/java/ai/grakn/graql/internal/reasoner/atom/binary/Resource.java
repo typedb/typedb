@@ -95,7 +95,8 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
             Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
             while (parentIt.hasNext() && !predicateCompatible) {
-                predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
+                ValuePredicate parentPredicate = parentIt.next();
+                predicateCompatible = parentPredicate.getPredicate().isCompatibleWith(childPredicate.getPredicate());
             }
             if (!predicateCompatible) return false;
         }
