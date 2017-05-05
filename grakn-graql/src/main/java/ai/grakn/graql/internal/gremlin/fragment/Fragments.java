@@ -23,12 +23,15 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 
+import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
 import static ai.grakn.util.Schema.ConceptProperty.TYPE;
 import static ai.grakn.util.Schema.EdgeLabel.SUB;
 
@@ -172,5 +175,14 @@ public class Fragments {
     static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
         // These traversals make sure to only navigate types by checking they do not have a `TYPE` property
         return traversal.union(__.not(__.has(TYPE.name())), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
+    }
+
+    static String displayOptionalTypeLabel(Optional<TypeLabel> typeLabel) {
+        return typeLabel.map(label -> " " + typeLabelToString(label)).orElse("");
+    }
+
+    static void applyTypeLabelToTraversal(
+            GraphTraversal<Vertex, Edge> traversal, Schema.EdgeProperty property, Optional<TypeLabel> typeLabel) {
+        typeLabel.ifPresent(label -> traversal.has(property.name(), label.getValue()));
     }
 }

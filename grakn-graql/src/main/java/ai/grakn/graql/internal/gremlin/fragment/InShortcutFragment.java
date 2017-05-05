@@ -27,7 +27,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.util.StringConverter.typeLabelToString;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.applyTypeLabelToTraversal;
+import static ai.grakn.graql.internal.gremlin.fragment.Fragments.displayOptionalTypeLabel;
 import static ai.grakn.util.Schema.EdgeLabel.SHORTCUT;
 import static ai.grakn.util.Schema.EdgeProperty.RELATION_TYPE_LABEL;
 import static ai.grakn.util.Schema.EdgeProperty.ROLE_TYPE_LABEL;
@@ -50,15 +51,15 @@ class InShortcutFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.inE(SHORTCUT.getLabel()).as(edge.getValue());
-        roleType.ifPresent(rt -> edgeTraversal.has(ROLE_TYPE_LABEL.name(), rt.getValue()));
-        relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_LABEL.name(), rt.getValue()));
+        applyTypeLabelToTraversal(edgeTraversal, ROLE_TYPE_LABEL, roleType);
+        applyTypeLabelToTraversal(edgeTraversal, RELATION_TYPE_LABEL, relationType);
         edgeTraversal.otherV();
     }
 
     @Override
     public String getName() {
-        String rel = relationType.map(rt -> " " + typeLabelToString(rt)).orElse("");
-        String role = roleType.map(re -> " " + typeLabelToString(re)).orElse("");
+        String rel = displayOptionalTypeLabel(relationType);
+        String role = displayOptionalTypeLabel(roleType);
         return "<-[shortcut:" + edge.shortName() + rel + role + "]-";
     }
 
