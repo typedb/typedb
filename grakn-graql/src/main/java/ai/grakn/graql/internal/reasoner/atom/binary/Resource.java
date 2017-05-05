@@ -29,6 +29,7 @@ import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
+import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
@@ -64,8 +65,12 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
 
     @Override
     public String toString(){
-        String multiPredicateString = getMultiPredicate().isEmpty()? getValueVariable().toString() : getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
-        return getVarName() + " has " + getType().getLabel() + " " + multiPredicateString;
+        String multiPredicateString = getMultiPredicate().isEmpty()?
+                getValueVariable().toString() :
+                getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
+        return getVarName() + " has " + getType().getLabel() + " " +
+                multiPredicateString +
+                getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
 
     }
 
