@@ -149,10 +149,7 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     }
 
     @Override
-    public boolean requiresMaterialisation(){
-        //requires materialisation if value variable is user defined
-        return getMultiPredicate().isEmpty();
-    }
+    public boolean requiresMaterialisation(){ return true;}
 
     @Override
     public int resolutionPriority(){

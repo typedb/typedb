@@ -45,9 +45,8 @@ public interface ValuePredicateAdmin extends ValuePredicate {
     }
 
     /**
-     *
-     * @param predicate
-     * @return
+     * @param predicate to be compared in terms of compatibility
+     * @return true if compatible
      */
     boolean isCompatibleWith(ValuePredicateAdmin predicate);
 
