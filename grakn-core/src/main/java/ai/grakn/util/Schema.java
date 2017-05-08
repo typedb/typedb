@@ -175,8 +175,8 @@ public final class Schema {
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE_LABEL(String.class),
-        RELATION_TYPE_LABEL(String.class),
+        ROLE_TYPE_ID(Integer.class),
+        RELATION_TYPE_ID(Integer.class),
         REQUIRED(Boolean.class);
 
         private final Class dataType;
