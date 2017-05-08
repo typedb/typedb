@@ -36,9 +36,6 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
                 <div class="dd-item">
                   <div class="left"><input type="checkbox" v-model="materialiseReasoner" :disabled="!useReasoner"></div><div :class="{'grey':!useReasoner}" :disabled="!useReasoner" class="right">Materialise inference</div>
                 </div>
-                <div class="dd-item">
-                  <button @click="materialiseAll()" class="btn materialise">Materialise All</button>
-                </div>
                 <div class="divide"></div>
                 <div class="dd-item">
                   <div class="left">Query Limit:</div><div class="right"><input v-model="queryLimit" type="text" class="form-control" maxlength="3" size="4"></div>
@@ -115,18 +112,10 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>. -->
     padding: 10px;
 }
 
-.btn.materialise{
-  padding: 7px;
-  margin:0;
-  line-height: 20px;
-  margin: auto;
-}
-
 </style>
 
 <script>
 import User from '../../js/User';
-import EngineClient from '../../js/EngineClient';
 
 export default {
   name: 'QuerySettings',
@@ -178,10 +167,7 @@ export default {
   methods: {
     closeSettings() {
       this.showSettings = false;
-    },
-    materialiseAll() {
-      EngineClient.preMaterialiseAll();
-    },
+    }
   },
 };
 </script>
