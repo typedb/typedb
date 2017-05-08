@@ -87,4 +87,13 @@ public class TypeLabel implements Comparable<TypeLabel>, Serializable {
     public static TypeLabel of(String value){
         return new TypeLabel(value);
     }
+
+    //TODO: Change this to be something that won't risk collisions
+    /**
+     *
+     * @return The integer id which represents this type
+     */
+    public int getId(){
+        return label.hashCode();
+    }
 }

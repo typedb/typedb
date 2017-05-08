@@ -303,10 +303,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     }
 
     @Override
-    public <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value) {
+    public <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value) {
         return getConcept(key, value, isBatchLoadingEnabled());
     }
-    private  <T extends Concept> T  getConcept(Schema.ConceptProperty key, String value, Boolean byPassDuplicates) {
+    private  <T extends Concept> T  getConcept(Schema.ConceptProperty key, Object value, Boolean byPassDuplicates) {
         Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
         if(vertices.hasNext()){
@@ -426,10 +426,11 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     private Vertex putVertex(TypeLabel label, Schema.BaseType baseType){
         Vertex vertex;
-        ConceptImpl concept = getConcept(Schema.ConceptProperty.TYPE_LABEL, label.getValue());
+        ConceptImpl concept = getConcept(Schema.ConceptProperty.TYPE_ID, label.getId());
         if(concept == null) {
             vertex = addVertex(baseType);
             vertex.property(Schema.ConceptProperty.TYPE_LABEL.name(), label.getValue());
+            vertex.property(Schema.ConceptProperty.TYPE_ID.name(), label.getId());
         } else {
             if(!baseType.equals(concept.getBaseType())) {
                 throw new ConceptNotUniqueException(concept, label.getValue());
