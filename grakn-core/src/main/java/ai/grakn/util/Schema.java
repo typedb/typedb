@@ -150,7 +150,7 @@ public final class Schema {
         TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
 
         //Other Properties
-        TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
+        INSTANCE_TYPE_ID(Integer.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), INSTANCE_COUNT(Long.class),
         RULE_LHS(String.class), RULE_RHS(String.class), CURRENT_SHARD(String.class),
 

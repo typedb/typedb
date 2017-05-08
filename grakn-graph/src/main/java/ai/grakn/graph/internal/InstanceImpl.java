@@ -58,7 +58,11 @@ import java.util.stream.Collectors;
  *           For example {@link ai.grakn.concept.EntityType} or {@link RelationType}
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T> implements Instance {
-    private ComponentCache<TypeLabel> cachedInternalType = new ComponentCache<>(() -> TypeLabel.of(getProperty(Schema.ConceptProperty.TYPE)));
+    private ComponentCache<TypeLabel> cachedInternalType = new ComponentCache<>(() -> {
+        int typeId = getProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID);
+        Type type = getGraknGraph().getConcept(Schema.ConceptProperty.TYPE_ID, typeId);
+        return type.getLabel();
+    });
 
     private ComponentCache<V> cachedType = new ComponentCache<>(() -> {
         ConceptImpl<?> currentType = (ConceptImpl) this.getOutgoingNeighbours(Schema.EdgeLabel.ISA).findFirst().orElse(null);
@@ -259,7 +263,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     private T setInternalType(TypeLabel type){
         cachedInternalType.set(type);
-        return setProperty(Schema.ConceptProperty.TYPE, type.getValue());
+        return setProperty(Schema.ConceptProperty.INSTANCE_TYPE_ID, type.getId());
     }
 
     /**
