@@ -28,7 +28,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.Reasoner;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.cache.LazyQueryCache;
 import ai.grakn.graql.internal.reasoner.explanation.RuleExplanation;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswerStream;
@@ -133,7 +133,7 @@ public class LazyTest {
 
         LazyQueryCache<ReasonerAtomicQuery> cache = new LazyQueryCache<>();
         query.lookup(cache);
-        InferenceRule rule = new InferenceRule(Reasoner.getRules(graph).iterator().next(), graph);
+        InferenceRule rule = new InferenceRule(ReasonerUtils.getRules(graph).iterator().next(), graph);
 
         Set<VarName> joinVars = Sets.intersection(query.getVarNames(), query2.getVarNames());
         Stream<Answer> join = join(
