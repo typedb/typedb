@@ -227,6 +227,7 @@ public abstract class Atom extends AtomBase {
         Set<TypeAtom> relevantTypes = new HashSet<>();
         //ids from indirect types
         ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
+                .filter(atom -> atom != this)
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
         return relevantTypes;
