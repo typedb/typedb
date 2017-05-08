@@ -147,7 +147,7 @@ public final class Schema {
      */
     public enum ConceptProperty {
         //Unique Properties
-        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class),
+        TYPE_LABEL(String.class), INDEX(String.class), ID(String.class), TYPE_ID(Integer.class),
 
         //Other Properties
         TYPE(String.class), IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_SHARD(Boolean.class),
