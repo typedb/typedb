@@ -100,14 +100,16 @@ public abstract class Atom extends AtomBase {
         if (priority == Integer.MAX_VALUE) {
             priority = 0;
             priority += getPartialSubstitutions().size() * ResolutionStrategy.PARTIAL_SUBSTITUTION;
-            priority += getApplicableRules().size() * ResolutionStrategy.APPLICABLE_RULE;
+            priority += isRuleResolvable()? ResolutionStrategy.RULE_RESOLVABLE_ATOM : 0;
+            priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+
             priority += getTypeConstraints().size() * ResolutionStrategy.GUARD;
             Set<VarName> otherVars = getParentQuery().getAtoms().stream()
                     .filter(a -> a != this)
                     .flatMap(at -> at.getVarNames().stream())
                     .collect(Collectors.toSet());
             priority += Sets.intersection(getVarNames(), otherVars).size() * ResolutionStrategy.BOUND_VARIABLE;
-            priority += isRecursive()? ResolutionStrategy.RECURSIVE_ATOM : 0;
+
         }
         return priority;
     }
@@ -225,6 +227,7 @@ public abstract class Atom extends AtomBase {
         Set<TypeAtom> relevantTypes = new HashSet<>();
         //ids from indirect types
         ((ReasonerQueryImpl) getParentQuery()).getTypeConstraints().stream()
+                .filter(atom -> atom != this)
                 .filter(atom -> containsVar(atom.getVarName()))
                 .forEach(relevantTypes::add);
         return relevantTypes;

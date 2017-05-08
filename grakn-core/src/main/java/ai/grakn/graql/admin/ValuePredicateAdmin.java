@@ -45,6 +45,12 @@ public interface ValuePredicateAdmin extends ValuePredicate {
     }
 
     /**
+     * @param predicate to be compared in terms of compatibility
+     * @return true if compatible
+     */
+    boolean isCompatibleWith(ValuePredicateAdmin predicate);
+
+    /**
      * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
      */
     default Optional<Object> equalsValue() {
