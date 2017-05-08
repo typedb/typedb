@@ -46,7 +46,7 @@ public class Utility {
      * @return the type
      */
     static TypeLabel getVertexType(Vertex vertex) {
-        return TypeLabel.of(vertex.value(Schema.ConceptProperty.TYPE.name()));
+        return TypeLabel.of(vertex.value(Schema.ConceptProperty.INSTANCE_TYPE_ID.name()));
     }
 
     /**
