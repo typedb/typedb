@@ -27,3 +27,4 @@ const store = {
 };
 
 export default store;
+export const EventHub = store.eventHub;

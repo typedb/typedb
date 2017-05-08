@@ -33,7 +33,8 @@ import * as API from '../util/HALTerms';
  * Nodes and edges can be added at any time.
  */
 export default class Visualiser {
-  constructor() {
+  constructor(graphOffsetTop) {
+    this.graphOffsetTop = graphOffsetTop;
     this.nodes = new vis.DataSet([], {
       queue: { delay: 800 },
     });
@@ -220,11 +221,10 @@ export default class Visualiser {
     this.releaseNodes(this.nodes.getIds());
   }
 
-    // Methods used to fix and release nodes when one or more are dragged //
+    // Methods used to fix and release nodes when one or more are dragged /
 
   fixNodes(nodeIds) {
     if (new Date() - this.lastFixTime > 100) {
-            // this.network.storePositions();
       this.lastFixTime = new Date();
       if (nodeIds !== undefined) {
         nodeIds.forEach(nodeId => this.fixSingleNode(nodeId));
@@ -334,7 +334,7 @@ export default class Visualiser {
      * Add edge between two nodes with @label, only if both nodes exist in the graph and they are not alreay connected.
      * This can be called at any time *after* render().
      */
-  addEdge(fromNode, toNode, label) {
+  addEdge(fromNode:string, toNode:string, label:string) {
     if (this.nodeExists(fromNode) && this.nodeExists(toNode) && !this.alreadyConnected(fromNode, toNode, label)) {
       this.edges.add({
         from: fromNode,
@@ -346,6 +346,13 @@ export default class Visualiser {
           to: (label !== 'relates'),
         },
       });
+      const connectingEdge = this.edgesBetweenTwoNodes(fromNode, toNode);
+      // If there are multiple edges connecting the same 2 nodes make the edges smooth so that the labels are visible
+      if (connectingEdge.length > 1) {
+        connectingEdge.forEach((edgeId) => {
+          this.edges.update({ id: edgeId, smooth: { enabled: true, type: 'dynamic' } });
+        });
+      }
     }
     return this;
   }
@@ -353,10 +360,11 @@ export default class Visualiser {
     /**
      * Delete a node and its edges
      */
-  deleteNode(id) {
+  deleteNode(id:string) {
     if (this.nodeExists(id)) {
       this.deleteEdges(id);
       this.nodes.remove(id);
+      this.flushUpdates();
     }
     return this;
   }
@@ -383,7 +391,7 @@ export default class Visualiser {
   }
 
   getNode(id) {
-    return this.nodes._data[id];
+    return this.nodes.get(id);
   }
 
   getAllNodeProperties(id) {
@@ -527,24 +535,33 @@ export default class Visualiser {
   }
 
     /**
-     * Check if two nodes (a,b) are already connected by an edge.
+     * Check if two nodes (a,b) exist and if they are already connected by an edge.
      */
   alreadyConnected(a, b, label) {
     if (!(this.nodes.get(a) && this.nodes.get(b))) {
       return false;
     }
 
-    return _.contains(_.values(this.edges.get())
-            .map(x => (Visualiser.matching(a, b, x.to, x.from)&&label===x.label)),
+    const intersection = this.edgesBetweenTwoNodes(a, b);
+
+    return _.contains(_.values(intersection)
+            .map((x) => {
+              const edge = this.edges.get(x);
+              return Visualiser.matching(a, b, edge.to, edge.from) && label === edge.label;
+            }),
             true);
+  }
+
+  edgesBetweenTwoNodes(a, b) {
+    return _.intersection(this.network.getConnectedEdges(a), this.network.getConnectedEdges(b));
   }
 
     /**
      * Delete all edges connected to node id
      */
   deleteEdges(id) {
-    this.edges.forEach((x) => {
-      if (x.to === id || x.from === id) this.edges.remove(x.id);
+    this.network.getConnectedEdges(id).forEach((edgeId) => {
+      this.edges.remove(edgeId);
     });
   }
 
@@ -584,6 +601,18 @@ export default class Visualiser {
   updateNode(obj) {
     this.nodes.update(obj);
     this.nodes.flush();
+  }
+
+  checkSelectionRectangleStatus(node, eventKeys, param) {
+      // If we were drawing rectangle and we click again we stop the drawing and compute selected nodes
+    if (this.draggingRect) {
+      this.draggingRect = false;
+      this.resetRectangle();
+      this.network.redraw();
+    } else if (eventKeys.ctrlKey && node === undefined) {
+      this.draggingRect = true;
+      this.startRectangle(param.pointer.canvas.x, param.pointer.canvas.y - this.graphOffsetTop);
+    }
   }
 
 }

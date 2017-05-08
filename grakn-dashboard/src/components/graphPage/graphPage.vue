@@ -47,6 +47,7 @@ along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 // Modules
 import GraphPageState from '../../js/state/graphPageState';
 import CanvasHandler from './modules/CanvasHandler';
+import Visualiser from '../../js/visualiser/Visualiser';
 
 // Sub-components
 import NodePanel from './nodePanel.vue';
@@ -64,8 +65,6 @@ export default {
   },
   data() {
     return {
-      state: GraphPageState,
-      canvasHandler: {},
       selectedNodeLabel: undefined,
       codeMirror: {},
       selectedNodeObject: undefined,
@@ -78,33 +77,33 @@ export default {
   },
 
   created() {
-    this.canvasHandler = new CanvasHandler(this.state);
-
     // Register listened on State events
-    this.state.eventHub.$on('clear-page', this.onClear);
+    GraphPageState.eventHub.$on('clear-page', this.onClear);
     // Events from canvasHandler
-    this.state.eventHub.$on('show-node-panel', this.onShowNodePanel);
-    this.state.eventHub.$on('hover-node', this.onHoverNode);
-    this.state.eventHub.$on('blur-node', this.onBlurNode);
-    this.state.eventHub.$on('close-context', () => { this.showContextMenu = false; });
-    this.state.eventHub.$on('close-tooltip', () => { this.showToolTip = false; });
+    GraphPageState.eventHub.$on('show-node-panel', this.onShowNodePanel);
+    GraphPageState.eventHub.$on('hover-node', this.onHoverNode);
+    GraphPageState.eventHub.$on('blur-node', this.onBlurNode);
+    GraphPageState.eventHub.$on('close-context', () => { this.showContextMenu = false; });
+    GraphPageState.eventHub.$on('close-tooltip', () => { this.showToolTip = false; });
   },
   beforeDestroy() {
     // Destroy listeners when component is destroyed - although it never gets destroyed for now. [keep-alive]
-    this.state.eventHub.$off('clear-page', this.onClear);
+    GraphPageState.eventHub.$off('clear-page', this.onClear);
   },
   mounted() {
     this.$nextTick(function nextTickVisualiser() {
       const graph = this.$refs.graph;
       const graphDiv = document.getElementById('graph-div');
       this.graphOffsetTop = graphDiv.getBoundingClientRect().top + document.body.scrollTop;
-      this.canvasHandler.renderGraph(graph, this.graphOffsetTop);
+
+      window.visualiser = new Visualiser(this.graphOffsetTop);
+      CanvasHandler.initialise(graph);
     });
   },
 
   methods: {
     fetchFilteredRelations(href) {
-      this.canvasHandler.fetchFilteredRelations(href);
+      CanvasHandler.fetchFilteredRelations(href);
       this.showContextMenu = false;
     },
     onShowNodePanel(nodeObject) {
@@ -145,11 +144,11 @@ export default {
 
     emitInjectQuery(query) {
       this.showContextMenu = false;
-      this.state.eventHub.$emit('inject-query', query);
+      GraphPageState.eventHub.$emit('inject-query', query);
     },
 
     onLoadResourceOwners(resourceId) {
-      this.canvasHandler.loadResourceOwners(resourceId);
+      CanvasHandler.loadResourceOwners(resourceId);
     },
 
   },
