@@ -483,9 +483,30 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void testRobertDeNiroNotRelatedToSelfWhenMetaRoleIsSpecified() {
+        // This can go wrong because one role-player may use a shortcut edge and the other may not
+        MatchQuery query = qb.match(
+                var().rel("role", "x").rel("actor", "y").isa("has-cast"),
+                var("y").has("name", "Robert de Niro")
+        ).select("x");
+
+        assertThat(query, variable("x", containsInAnyOrder(heat, neilMcCauley)));
+    }
+
+    @Test
     public void testKermitIsRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y").isa("has-cast"),
+                var("y").has("name", "Kermit The Frog")
+        ).select("x");
+
+        assertThat(query, variable("x", (Matcher) hasItem(kermitTheFrog)));
+    }
+
+    @Test
+    public void testKermitIsRelatedToSelfWhenMetaRoleIsSpecified() {
+        MatchQuery query = qb.match(
+                var().rel("role", "x").rel("y").isa("has-cast"),
                 var("y").has("name", "Kermit The Frog")
         ).select("x");
 
