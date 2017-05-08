@@ -215,6 +215,7 @@ public class LoaderClient {
 
         try {
             String taskId = executePost(getConfiguration(queries, batchNumber.incrementAndGet()));
+            System.out.println("sent " + taskId);
 
             CompletableFuture<Json> status = makeTaskCompletionFuture(taskId);
 
