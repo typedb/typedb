@@ -128,7 +128,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatch_QueryIsExecuted(){
         String query = "match $x isa person;";
-        sendMatch(query, APPLICATION_TEXT);
+        sendGET(query, APPLICATION_TEXT);
 
         verify(mockGraph.graql().materialise(anyBoolean()).infer(anyBoolean()))
                 .parse(argThat(argument -> argument.equals(query)));
@@ -136,7 +136,7 @@ public class GraqlControllerTest {
 
     @Test
     public void sendingGraqlMatch_ResponseStatusIs200(){
-        Response response = sendMatch(APPLICATION_TEXT);
+        Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -144,7 +144,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingMalformedGraqlMatch_ResponseStatusCodeIs400(){
         String query = "match $x isa ;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(400));
     }
@@ -152,7 +152,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingMalformedGraqlMatch_ResponseExceptionContainsSyntaxError(){
         String query = "match $x isa ;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(exception(response), containsString("syntax error"));
     }
@@ -161,14 +161,14 @@ public class GraqlControllerTest {
     @Test
     public void sendingMalformedGraqlMatch_ResponseExceptionDoesNotContainWordException(){
         String query = "match $x isa ;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(exception(response), not(containsString("Exception")));
     }
 
     @Test
     public void sendingGraqlMatchWithInvalidAcceptType_ResponseStatusIs406(){
-        Response response = sendMatch("invalid");
+        Response response = sendGET("invalid");
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(UNSUPPORTED_CONTENT_TYPE.getMessage("invalid")));
@@ -206,14 +206,14 @@ public class GraqlControllerTest {
 
     @Test
     public void sendingGraqlMatchWithReasonerTrue_ReasonerIsOnWhenExecuting(){
-        sendMatch("match $x isa person;", APPLICATION_TEXT, true, true, 0);
+        sendGET("match $x isa person;", APPLICATION_TEXT, true, true, 0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> arg));
     }
 
     @Test
     public void sendingGraqlMatchWithReasonerFalse_ReasonerIsOffWhenExecuting(){
-        sendMatch("match $x isa person;", APPLICATION_TEXT, false, true, 0);
+        sendGET("match $x isa person;", APPLICATION_TEXT, false, true, 0);
 
         verify(mockQueryBuilder).infer(booleanThat(arg -> !arg));
     }
@@ -231,14 +231,14 @@ public class GraqlControllerTest {
 
     @Test
     public void sendingGraqlMatchWithMaterialiseFalse_MaterialiseIsOffWhenExecuting(){
-        sendMatch("match $x isa person;", APPLICATION_TEXT, false, false, 0);
+        sendGET("match $x isa person;", APPLICATION_TEXT, false, false, 0);
 
         verify(mockQueryBuilder).materialise(booleanThat(arg -> !arg));
     }
 
     @Test
     public void sendingGraqlMatchWithMaterialiseTrue_MaterialiseIsOnWhenExecuting(){
-        sendMatch("match $x isa person;", APPLICATION_TEXT, false, true, 0);
+        sendGET("match $x isa person;", APPLICATION_TEXT, false, true, 0);
 
         verify(mockQueryBuilder).materialise(booleanThat(arg -> arg));
     }
@@ -246,7 +246,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatchWithHALTypeAndNumberEmbedded1_ResponsesContainAtMost1Concept(){
         Response response =
-                sendMatch("match $x isa person;", APPLICATION_HAL, false, true,1);
+                sendGET("match $x isa person;", APPLICATION_HAL, false, true,1);
 
         jsonResponse(response).asJsonList().forEach(e -> {
              assertThat(e.asJsonMap().get("_embedded").asJsonMap().size(), lessThanOrEqualTo(1));
@@ -256,7 +256,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatchWithHALType_ResponseIsCorrectHal(){
         String queryString = "match $x isa movie;";
-        Response response = sendMatch(queryString, APPLICATION_HAL);
+        Response response = sendGET(queryString, APPLICATION_HAL);
 
         Json expectedResponse = renderHALArrayData(
                 graphContext.graph().graql().parse(queryString), 0, -1);
@@ -265,14 +265,14 @@ public class GraqlControllerTest {
 
     @Test
     public void sendingGraqlMatchWithHALType_ResponseContentTypeIsHal(){
-        Response response = sendMatch(APPLICATION_HAL);
+        Response response = sendGET(APPLICATION_HAL);
 
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
 
     @Test
     public void sendingGraqlMatchWithHALTypeAndEmptyResponse_ResponseIsEmptyJsonArray(){
-        Response response = sendMatch("match $x isa runtime;", APPLICATION_HAL);
+        Response response = sendGET("match $x isa runtime;", APPLICATION_HAL);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
@@ -280,14 +280,14 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatchWithHALType_ResponseContainsOriginalQuery(){
         String query = "match $x isa person;";
-        Response response = sendMatch(APPLICATION_HAL);
+        Response response = sendGET(APPLICATION_HAL);
 
         assertThat(originalQuery(response), equalTo(query));
     }
 
     @Test
     public void sendingGraqlMatchWithTextType_ResponseContentTypeIsGraql(){
-        Response response = sendMatch(APPLICATION_TEXT);
+        Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
@@ -295,7 +295,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatchWithTextType_ResponseIsCorrectGraql(){
         String query = "match $x isa person;";
-        Response response = sendMatch(APPLICATION_TEXT);
+        Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(stringResponse(response).length(), greaterThan(0));
         assertThat(stringResponse(response), stringContainsInOrder(Collections.nCopies(10, "isa person")));
@@ -304,21 +304,21 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatchWithTextType_ResponseContainsOriginalQuery(){
         String query = "match $x isa person;";
-        Response response = sendMatch(APPLICATION_TEXT);
+        Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(originalQuery(response), equalTo(query));
     }
 
     @Test
     public void sendingGraqlMatchWithTextTypeAndEmptyResponse_ResponseIsEmptyString(){
-        Response response = sendMatch("match $x isa \"runtime\";", APPLICATION_TEXT);
+        Response response = sendGET("match $x isa \"runtime\";", APPLICATION_TEXT);
 
         assertThat(stringResponse(response), isEmptyString());
     }
 
     @Test
     public void sendingGraqlMatchWithGraqlJsonType_ResponseContentTypeIsGraqlJson(){
-        Response response = sendMatch(APPLICATION_JSON_GRAQL);
+        Response response = sendGET(APPLICATION_JSON_GRAQL);
 
         assertThat(response.contentType(), equalTo(APPLICATION_JSON_GRAQL));
     }
@@ -326,7 +326,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatchWithGraqlJsonType_ResponseIsCorrectGraql(){
         String query = "match $x isa person;";
-        Response response = sendMatch(APPLICATION_JSON_GRAQL);
+        Response response = sendGET(APPLICATION_JSON_GRAQL);
 
         Json expectedResponse = Json.read(
                 Printers.json().graqlString(graphContext.graph().graql().parse(query).execute()));
@@ -336,14 +336,14 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlMatchWithGraqlJsonType_ResponseContainsOriginalQuery(){
         String query = "match $x isa person;";
-        Response response = sendMatch(APPLICATION_JSON_GRAQL);
+        Response response = sendGET(APPLICATION_JSON_GRAQL);
 
         assertThat(originalQuery(response), equalTo(query));
     }
 
     @Test
     public void sendingGraqlMatchWithGraqlJsonTypeAndEmptyResponse_ResponseIsEmptyJsonObject(){
-        Response response = sendMatch("match $x isa \"runtime\";", APPLICATION_JSON_GRAQL);
+        Response response = sendGET("match $x isa \"runtime\";", APPLICATION_JSON_GRAQL);
 
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
@@ -351,7 +351,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlInsert_ResponseExceptionContainsReadOnlyAllowedMessage(){
         String query = "insert $x isa person;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(exception(response), containsString("read-only"));
     }
@@ -359,7 +359,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlInsert_ResponseStatusCodeIs405NotSupported(){
         String query = "insert $x isa person;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(405));
     }
@@ -367,7 +367,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlAggregateWithHalType_ResponseStatusCodeIs406(){
         String query = "match $x isa person; aggregate count;";
-        Response response = sendMatch(query, APPLICATION_HAL);
+        Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(406));
     }
@@ -375,7 +375,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlAggregateWithTextType_ResponseStatusIs200(){
         String query = "match $x isa person; aggregate count;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -383,7 +383,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlAggregateWithTextType_ResponseIsCorrect(){
         String query = "match $x isa person; aggregate count;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         int numberPeople = graphContext.graph().getEntityType("person").instances().size();
         assertThat(stringResponse(response), equalTo(Integer.toString(numberPeople)));
@@ -392,7 +392,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlAggregateWithTextType_ResponseContentTypeIsText(){
         String query = "match $x isa person; aggregate count;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
@@ -400,7 +400,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlCompute_ResponseContainsOriginalQuery(){
         String query = "compute count in person;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(originalQuery(response), equalTo(query));
     }
@@ -408,7 +408,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlComputeWithTextType_ResponseContentTypeIsText(){
         String query = "compute count in person;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.contentType(), equalTo(APPLICATION_TEXT));
     }
@@ -416,7 +416,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlComputeWithTextType_ResponseStatusIs200(){
         String query = "compute count in person;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -424,7 +424,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlComputeWithTextType_ResponseIsCorrect(){
         String query = "compute count in person;";
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         int numberPeople = graphContext.graph().getEntityType("person").instances().size();
         assertThat(stringResponse(response), equalTo(Integer.toString(numberPeople)));
@@ -433,7 +433,7 @@ public class GraqlControllerTest {
     @Test
     public void sendingGraqlComputeWithHALType_ResponseStatusIs406(){
         String query = "compute count in person;";
-        Response response = sendMatch(query, APPLICATION_HAL);
+        Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(406));
         assertThat(exception(response), containsString(APPLICATION_HAL));
@@ -447,7 +447,7 @@ public class GraqlControllerTest {
         String toId = graphContext.graph().getResourcesByValue("Kermit The Frog").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendMatch(query, APPLICATION_TEXT);
+        Response response = sendGET(query, APPLICATION_TEXT);
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(stringResponse(response), containsString("isa has-cast"));
@@ -461,7 +461,7 @@ public class GraqlControllerTest {
         String toId = graphContext.graph().getResourcesByValue("Kermit The Frog").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendMatch(query, APPLICATION_HAL);
+        Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
@@ -474,7 +474,7 @@ public class GraqlControllerTest {
         String toId = graphContext.graph().getResourcesByValue("Kermit The Frog").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendMatch(query, APPLICATION_HAL);
+        Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(200));
     }
@@ -487,7 +487,7 @@ public class GraqlControllerTest {
         String toId = graphContext.graph().getResourcesByValue("Kermit The Frog").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendMatch(query, APPLICATION_HAL);
+        Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(jsonResponse(response).asJsonList().size(), greaterThan(0));
     }
@@ -498,22 +498,22 @@ public class GraqlControllerTest {
         String toId = graphContext.graph().getResourcesByValue("Kermit The Frog").iterator().next().owner().getId().getValue();
 
         String query = String.format("compute path from \"%s\" to \"%s\";", fromId, toId);
-        Response response = sendMatch(query, APPLICATION_HAL);
+        Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(jsonResponse(response), equalTo(Json.array()));
     }
 
-    private Response sendMatch(String acceptType){
-        return sendMatch("match $x isa person;", acceptType, false, false, -1);
+    private Response sendGET(String acceptType){
+        return sendGET("match $x isa person;", acceptType, false, false, -1);
     }
 
-    private Response sendMatch(String match, String acceptType){
-        return sendMatch(match, acceptType, false, false, -1);
+    private Response sendGET(String match, String acceptType){
+        return sendGET(match, acceptType, false, false, -1);
     }
 
-    private Response sendMatch(String match, String acceptType, boolean reasonser,
-                               boolean materialise, int limitEmbedded){
+    private Response sendGET(String match, String acceptType, boolean reasonser,
+                             boolean materialise, int limitEmbedded){
         return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, match)
                 .queryParam(INFER, reasonser)
