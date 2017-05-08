@@ -413,16 +413,6 @@ public class Relation extends TypeAtom {
     }
 
     @Override
-    public boolean containsVar(VarName name) {
-        boolean varFound = false;
-        Iterator<RelationPlayer> it = getRelationPlayers().iterator();
-        while (it.hasNext() && !varFound) {
-            varFound = it.next().getRolePlayer().getVarName().equals(name);
-        }
-        return varFound;
-    }
-
-    @Override
     public void unify(Unifier mappings) {
         super.unify(mappings);
         modifyRelationPlayers(c -> {

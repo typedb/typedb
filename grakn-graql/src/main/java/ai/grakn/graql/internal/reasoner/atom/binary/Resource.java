@@ -31,6 +31,7 @@ import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.ValuePredicate;
+import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 
@@ -66,7 +67,6 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     public String toString(){
         String multiPredicateString = getMultiPredicate().isEmpty()? getValueVariable().toString() : getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getType().getLabel() + " " + multiPredicateString;
-
     }
 
     @Override
@@ -96,7 +96,8 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
             Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
             while (parentIt.hasNext() && !predicateCompatible) {
-                predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
+                ValuePredicate parentPredicate = parentIt.next();
+                predicateCompatible = parentPredicate.getPredicate().isCompatibleWith(childPredicate.getPredicate());
             }
             if (!predicateCompatible) return false;
         }
@@ -154,19 +155,28 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     @Override
     public int resolutionPriority(){
         int priority = super.resolutionPriority();
+        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
         Set<ValuePredicateAdmin> vps = getValuePredicates().stream().map(ValuePredicate::getPredicate).collect(Collectors.toSet());
 
         priority += ResolutionStrategy.IS_RESOURCE_ATOM;
 
-        for(ValuePredicateAdmin vp : vps){
-            if (vp.isSpecific()){
-                priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
-            } else if (vp.getInnerVar().isPresent()) {
-                priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
-            } else {
-                priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+        if (vps.isEmpty()){
+            if (parent.getIdPredicate(getValueVariable()) != null) priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+            else priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+        } else {
+            for (ValuePredicateAdmin vp : vps) {
+                if (vp.isSpecific()) {
+                    priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                } else if (vp.getInnerVar().isPresent()) {
+                    VarAdmin innerVar = vp.getInnerVar().orElse(null);
+                    if (parent.getIdPredicate(innerVar.getVarName()) != null) priority += ResolutionStrategy.SPECIFIC_VALUE_PREDICATE;
+                    else priority += ResolutionStrategy.VARIABLE_VALUE_PREDICATE;
+                } else {
+                    priority += ResolutionStrategy.NON_SPECIFIC_VALUE_PREDICATE;
+                }
             }
         }
+
         return priority;
     }
 
