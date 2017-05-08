@@ -58,7 +58,6 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jayway.restassured</groupId>
@@ -197,6 +196,23 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <systemProperties>
+                        <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <grakn.test.timerecord.file>${main.basedir}/test-timings.csv</grakn.test.timerecord.file>
+                    </systemProperties>
+                    <properties>
+                        <property>
+                            <name>listener</name>
+                            <value>ai.grakn.test.listener.TimingListener</value>
+                        </property>
+                    </properties>
+                </configuration>
+            </plugin>            
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
