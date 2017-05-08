@@ -24,6 +24,7 @@ import ai.grakn.concept.TypeLabel;
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -109,6 +110,11 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         if (castingIsaFragment.isPresent() && !roleType.isPresent()) {
             return false;
+        }
+
+        // When the meta role-type is specified, it's the same as not specifying the role at all
+        if (roleType.isPresent() && roleType.get().equals(Schema.MetaSchema.ROLE.getLabel())) {
+            roleType = Optional.empty();
         }
 
         // We can't use the shortcut edge in the presence of role-type hierarchies, because we don't know precisely
