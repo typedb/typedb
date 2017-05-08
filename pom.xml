@@ -193,6 +193,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>ai.grakn</groupId>
+            <artifactId>grakn-test-tools</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>${mockito.version}</version>
@@ -356,7 +362,14 @@
                 <configuration>
                     <systemProperties>
                         <logback.configurationFile>${main.basedir}/conf/test/logback-test.xml</logback.configurationFile>
+                        <grakn.test.timerecord.file>${main.basedir}test-timings.csv</grakn.test.timerecord.file>
                     </systemProperties>
+                    <properties>
+                        <property>
+                            <name>listener</name>
+                            <value>ai.grakn.test.listener.TimingListener</value>
+                        </property>
+                    </properties>
                 </configuration>
             </plugin>
             <plugin>

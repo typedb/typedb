@@ -5,6 +5,9 @@
 .idea/
 *.iml
 *.geany
+.classpath
+.project
+.settings
 
 # Compiled files #
 out/
