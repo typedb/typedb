@@ -24,10 +24,12 @@ import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
 import java.util.stream.Collectors;
 
 /**
@@ -74,6 +76,14 @@ public class TypeAtom extends Binary{
 
     @Override
     public boolean isType(){ return true;}
+
+    @Override
+    public boolean isRuleApplicable(InferenceRule child) {
+        Atom ruleAtom = child.getHead().getAtom();
+        return ruleAtom.isType()
+                && this.getType() != null
+                && this.getType().subTypes().contains(ruleAtom.getType());
+    }
 
     @Override
     public boolean isSelectable() {

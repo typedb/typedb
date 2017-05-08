@@ -58,7 +58,6 @@ import javafx.util.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -286,26 +285,23 @@ public class Relation extends TypeAtom {
         return roleTypeMap;
     }
 
-    //rule is applicable if it is unifiable
+    //rule head atom is applicable if it is unifiable
     private boolean isRuleApplicableViaAtom(Relation headAtom) {
         return headAtom.getRelationPlayers().size() >= this.getRelationPlayers().size()
             && headAtom.getRelationPlayerMappings(this).size() == this.getRolePlayers().size();
     }
 
     @Override
-    protected boolean isRuleApplicable(InferenceRule child) {
+    public boolean isRuleApplicable(InferenceRule child) {
         Atom ruleAtom = child.getRuleConclusionAtom();
-        if (!(ruleAtom instanceof Relation)) return false;
+        if (!(ruleAtom.isRelation())) return false;
 
         Relation headAtom = (Relation) ruleAtom;
         Type type = getType();
-        //Case: relation without type - match all
-        if (type == null) {
-            Relation atomWithType = ((Relation) AtomicFactory.create(this, this.getParentQuery())).addType(headAtom.getType());
-            return atomWithType.isRuleApplicableViaAtom(headAtom);
-        } else {
-            return isRuleApplicableViaAtom(headAtom);
-        }
+
+        Relation atomWithType = type == null?
+                ((Relation) AtomicFactory.create(this, this.getParentQuery())).addType(headAtom.getType()) : this;
+        return atomWithType.isRuleApplicableViaAtom(headAtom);
     }
 
     /**
