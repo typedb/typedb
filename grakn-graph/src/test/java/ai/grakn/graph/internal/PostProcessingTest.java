@@ -28,7 +28,6 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.concept.TypeLabel;
 import ai.grakn.util.Schema;
 import com.google.common.collect.ImmutableSet;
-import java.util.UUID;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -38,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -92,10 +92,10 @@ public class PostProcessingTest extends GraphTestBase{
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleType.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getLabel().getId());
 
         edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(Schema.EdgeProperty.ROLE_TYPE_LABEL.name(), mainRoleType.getId());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE_ID.name(), mainRoleType.getLabel().getId());
 
         return graknGraph.admin().buildConcept(castingVertex);
     }
