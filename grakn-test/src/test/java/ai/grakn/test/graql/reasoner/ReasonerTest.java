@@ -34,8 +34,7 @@ import ai.grakn.graql.admin.Answer;
 import ai.grakn.graql.admin.Conjunction;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
-import ai.grakn.graql.internal.reasoner.Reasoner;
-import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
@@ -119,7 +118,7 @@ public class ReasonerTest {
         Pattern head = and(graph.graql().parsePatterns("(member-location: $x, container-location: $x1) isa sublocate;"));
 
         InferenceRule R2 = new InferenceRule(graph.admin().getMetaRuleInference().putRule(body, head), graph);
-        Rule rule = Utility.createSubPropertyRule(parent, child, roleMap, graph);
+        Rule rule = ReasonerUtils.createSubPropertyRule(parent, child, roleMap, graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -129,7 +128,7 @@ public class ReasonerTest {
     @Test
     public void testTransitiveRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
-        Rule rule = Utility.createTransitiveRule(
+        Rule rule = ReasonerUtils.createTransitiveRule(
                 graph.getRelationType("sublocate"),
                 graph.getRoleType("member-location").getLabel(),
                 graph.getRoleType("container-location").getLabel(),
@@ -149,7 +148,7 @@ public class ReasonerTest {
     @Test
     public void testReflexiveRuleCreation() {
         GraknGraph graph = testSnbGraph.graph();
-        Rule rule = Utility.createReflexiveRule(
+        Rule rule = ReasonerUtils.createReflexiveRule(
                 graph.getRelationType("knows"),
                 graph.getRoleType("acquaintance1").getLabel(),
                 graph.getRoleType("acquaintance2").getLabel(),
@@ -175,7 +174,7 @@ public class ReasonerTest {
         chain.put(resides, new Pair<>(graph.getRoleType("located-subject").getLabel(), graph.getRoleType("subject-location").getLabel()));
         chain.put(sublocate, new Pair<>(graph.getRoleType("member-location").getLabel(), graph.getRoleType("container-location").getLabel()));
 
-        Rule rule = Utility.createPropertyChainRule(
+        Rule rule = ReasonerUtils.createPropertyChainRule(
                 resides,
                 graph.getRoleType("located-subject").getLabel(),
                 graph.getRoleType("subject-location").getLabel(),
@@ -627,7 +626,7 @@ public class ReasonerTest {
     @Ignore
     @Test
     public void testReasoningWithRuleContainingVarContraction(){
-        Utility.createReflexiveRule(
+        ReasonerUtils.createReflexiveRule(
                 snbGraph.graph().getRelationType("knows"),
                 snbGraph.graph().getRoleType("acquaintance1").getLabel(),
                 snbGraph.graph().getRoleType("acquaintance2").getLabel(),
@@ -643,7 +642,7 @@ public class ReasonerTest {
     @Test
     //propagated sub [x/Bob] prevents from capturing the right inference
     public void testReasoningWithRuleContainingVarContraction2(){
-        Utility.createReflexiveRule(
+        ReasonerUtils.createReflexiveRule(
                 snbGraph.graph().getRelationType("knows"),
                 snbGraph.graph().getRoleType("acquaintance1").getLabel(),
                 snbGraph.graph().getRoleType("acquaintance2").getLabel(),

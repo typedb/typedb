@@ -32,7 +32,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.property.IsaProperty;
 import ai.grakn.graql.internal.pattern.property.RelationProperty;
-import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomBase;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
@@ -58,7 +58,6 @@ import javafx.util.Pair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,13 +66,13 @@ import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.internal.reasoner.Utility.capture;
-import static ai.grakn.graql.internal.reasoner.Utility.checkTypesDisjoint;
-import static ai.grakn.graql.internal.reasoner.Utility.getCompatibleRelationTypes;
-import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
-import static ai.grakn.graql.internal.reasoner.Utility.roleToRelationTypes;
-import static ai.grakn.graql.internal.reasoner.Utility.typeToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesDisjoint;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getCompatibleRelationTypes;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.roleToRelationTypes;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.typeToRelationTypes;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static java.util.stream.Collectors.toSet;
 
@@ -357,7 +356,7 @@ public class Relation extends TypeAtom {
     private void inferRelationTypeFromTypes() {
         //look at available role types
         Type type = null;
-        Set<Type> compatibleTypes = Utility.getTopTypes(
+        Set<Type> compatibleTypes = ReasonerUtils.getTopTypes(
                 getCompatibleRelationTypes(getExplicitRoleTypes(), roleToRelationTypes)
         );
         if (compatibleTypes.size() == 1) type = compatibleTypes.iterator().next();
@@ -556,9 +555,9 @@ public class Relation extends TypeAtom {
                     VarName varName = casting.getRolePlayer().getVarName();
                     Type type = varTypeMap.get(varName);
                     if (type != null && !Schema.MetaSchema.isMetaLabel(type.getLabel())) {
-                        mappings.put(casting, Utility.getCompatibleRoleTypes(type, possibleRoles));
+                        mappings.put(casting, ReasonerUtils.getCompatibleRoleTypes(type, possibleRoles));
                     } else {
-                        mappings.put(casting, Utility.getTopTypes(possibleRoles).stream().map(t -> (RoleType) t).collect(toSet()));
+                        mappings.put(casting, ReasonerUtils.getTopTypes(possibleRoles).stream().map(t -> (RoleType) t).collect(toSet()));
                     }
                 });
 
