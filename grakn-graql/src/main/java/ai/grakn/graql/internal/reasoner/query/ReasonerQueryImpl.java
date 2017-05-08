@@ -113,6 +113,11 @@ public class ReasonerQueryImpl implements ReasonerQuery {
     }
 
     @Override
+    public String toString(){
+        return getAtoms().stream().filter(Atomic::isAtom).map(Atomic::toString).collect(Collectors.joining(", "));
+    }
+
+    @Override
     public ReasonerQuery copy() {
         return new ReasonerQueryImpl(this);
     }
@@ -133,11 +138,6 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
         for (Integer hash : hashes) hashCode = hashCode * 37 + hash;
         return hashCode;
-    }
-
-    @Override
-    public String toString() {
-        return getPattern().toString();
     }
 
     private void inferTypes() {
@@ -685,8 +685,8 @@ public class ReasonerQueryImpl implements ReasonerQuery {
 
         QueryAnswerIterator(){
             this.cache = new QueryCache<>();
+            LOG.trace(ReasonerQueryImpl.this.getResolutionPlan());
             this.answerIterator = new ReasonerQueryImplIterator(ReasonerQueryImpl.this, new QueryAnswer(), new HashSet<>(), cache);
-            LOG.debug(ReasonerQueryImpl.this.getResolutionPlan());
         }
 
         /**

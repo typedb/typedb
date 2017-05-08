@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineConfig;
+import ai.grakn.engine.postprocessing.AbstractDelayedTask;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.postprocessing.UpdatingInstanceCountTask;
 import ai.grakn.engine.tasks.TaskConfiguration;
@@ -110,7 +111,7 @@ public class CommitLogController {
 
 
         //TODO: Get rid of this update
-        PostProcessingTask.lastPPTaskCreated.set(System.currentTimeMillis());
+        AbstractDelayedTask.lastDelayedTaskCreated.set(System.currentTimeMillis());
 
         // Send two tasks to the pipeline
         manager.addLowPriorityTask(postProcessingTask, TaskConfiguration.of(postProcessingConfiguration));

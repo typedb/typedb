@@ -830,7 +830,9 @@ public class ReasonerTest {
 
     @Test
     public void testReasoningWithQueryContainingResourceComparison2(){
-        String queryString = "match $p has name $name, has age $x;$p2 has name 'Denis', has age $y;$x val < $y;" +
+        String queryString = "match " +
+                "$p has name $name, has age $x;$x val < $y;" +
+                "$p2 has name 'Denis', has age $y;" +
                 "$t isa tag;($p, $t) isa recommendation; select $p, $name, $x, $t;";
         String explicitQuery = "match " +
                 "$p isa person, has age $x, has name $name;$t isa tag, has name $yName;" +

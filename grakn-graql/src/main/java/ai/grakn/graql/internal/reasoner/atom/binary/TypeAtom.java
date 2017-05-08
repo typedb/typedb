@@ -28,6 +28,7 @@ import ai.grakn.graql.internal.reasoner.atom.ResolutionStrategy;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.ReasonerQueryImpl;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -46,7 +47,8 @@ public class TypeAtom extends Binary{
 
     @Override
     public String toString(){
-        return (getType() != null? getType().getLabel() : "") + "(" + getVarName() + ")";
+        String typeString = (getType() != null? getType().getLabel() : "") + "(" + getVarName() + ")";
+        return typeString + getIdPredicates().stream().map(IdPredicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
@@ -98,6 +100,7 @@ public class TypeAtom extends Binary{
     public int resolutionPriority(){
         int priority = super.resolutionPriority();
         priority += ResolutionStrategy.IS_TYPE_ATOM;
+        priority += getType() == null? ResolutionStrategy.NON_SPECIFIC_TYPE_ATOM : 0;
         return priority;
     }
 

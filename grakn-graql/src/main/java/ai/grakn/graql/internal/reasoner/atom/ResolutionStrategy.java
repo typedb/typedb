@@ -37,7 +37,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each rule that is applicable to a given atom
      */
-    public static final int APPLICABLE_RULE = 1;
+    public static final int APPLICABLE_RULE = -1;
 
     /**
      * priority modifier if a given atom is a resource atom
@@ -50,14 +50,28 @@ public final class ResolutionStrategy {
     public static final int IS_TYPE_ATOM = 0;
 
     /**
+     * priority modifier if a given atom is a relation atom
+     */
+    public static final int IS_RELATION_ATOM = 2;
+
+    /**
+     * priority modifier if a given atom is a type atom without specific type
+     * NB: atom satisfying this criterion should be resolved last
+     */
+    public static final int NON_SPECIFIC_TYPE_ATOM = -1000;
+
+
+    public static final int RULE_RESOLVABLE_ATOM = -15;
+
+    /**
      * priority modifier if a given atom is recursive atom
      */
-    public static final int RECURSIVE_ATOM = -10;
+    public static final int RECURSIVE_ATOM = -5;
 
     /**
      * priority modifier for guard (type atom) the atom has
      */
-    public static final int GUARD = 3;
+    public static final int GUARD = 1;
 
     /**
      * priority modifier for guard (type atom) the atom has
@@ -67,7 +81,7 @@ public final class ResolutionStrategy {
     /**
      * priority modifier for each specific value predicate a given atom (resource) has
      */
-    public static final int SPECIFIC_VALUE_PREDICATE = 10;
+    public static final int SPECIFIC_VALUE_PREDICATE = 20;
 
     /**
      * priority modifier for each non-specific value predicate a given atom (resource) has
@@ -76,12 +90,8 @@ public final class ResolutionStrategy {
 
     /**
      * priority modifier for each value predicate with variable
+     * NB: atom satisfying this criterion should be resolved last
      */
-    public static final int VARIABLE_VALUE_PREDICATE = -30;
-
-    /**
-     * priority modifier if a given atom is a relation atom
-     */
-    public static final int IS_RELATION_ATOM = 3;
+    public static final int VARIABLE_VALUE_PREDICATE = -1000;
 }
 
