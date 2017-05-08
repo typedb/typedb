@@ -67,7 +67,6 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
     public String toString(){
         String multiPredicateString = getMultiPredicate().isEmpty()? getValueVariable().toString() : getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getType().getLabel() + " " + multiPredicateString;
-
     }
 
     @Override
@@ -97,7 +96,8 @@ public class Resource extends MultiPredicateBinary<ValuePredicate>{
             Iterator<ValuePredicate> parentIt = getMultiPredicate().iterator();
             boolean predicateCompatible = false;
             while (parentIt.hasNext() && !predicateCompatible) {
-                predicateCompatible = childPredicate.getPredicateValue().equals(parentIt.next().getPredicateValue());
+                ValuePredicate parentPredicate = parentIt.next();
+                predicateCompatible = parentPredicate.getPredicate().isCompatibleWith(childPredicate.getPredicate());
             }
             if (!predicateCompatible) return false;
         }

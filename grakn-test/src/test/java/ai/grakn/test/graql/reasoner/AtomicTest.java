@@ -35,6 +35,7 @@ import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.binary.Relation;
+import ai.grakn.graql.internal.reasoner.atom.binary.Resource;
 import ai.grakn.graql.internal.reasoner.query.ReasonerAtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.UnifierImpl;
 import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
@@ -74,6 +75,9 @@ public class AtomicTest {
 
     @ClassRule
     public static final GraphContext ruleApplicabilitySet = GraphContext.preLoad("ruleApplicabilityTest.gql");
+
+    @ClassRule
+    public static final GraphContext resourceApplicabilitySet = GraphContext.preLoad("resourceApplicabilityTest.gql");
 
     @ClassRule
     public static final GraphContext ruleApplicabilitySetWithTypes = GraphContext.preLoad("ruleApplicabilityTestWithTypes.gql");
@@ -419,6 +423,92 @@ public class AtomicTest {
                 "}";
         Relation relation = (Relation) new ReasonerAtomicQuery(conjunction(relationString, graph), graph).getAtom();
         assertEquals(0, relation.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_ResourceDouble(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
+        String resourceString = "{$x has res-double > 3.0;}";
+        String resourceString2 = "{$x has res-double > 4.0;}";
+        String resourceString3 = "{$x has res-double < 3.0;}";
+        String resourceString4 = "{$x has res-double < 4.0;}";
+        String resourceString5 = "{$x has res-double >= 5;}";
+        String resourceString6 = "{$x has res-double <= 5;}";
+        String resourceString7 = "{$x has res-double = 3.14;}";
+        String resourceString8 = "{$x has res-double != 5;}";
+        Resource resource = (Resource) new ReasonerAtomicQuery(conjunction(resourceString, graph), graph).getAtom();
+        Resource resource2 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString2, graph), graph).getAtom();
+        Resource resource3 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString3, graph), graph).getAtom();
+        Resource resource4 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString4, graph), graph).getAtom();
+        Resource resource5 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString5, graph), graph).getAtom();
+        Resource resource6 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString6, graph), graph).getAtom();
+        Resource resource7 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString7, graph), graph).getAtom();
+        Resource resource8 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString8, graph), graph).getAtom();
+        assertEquals(1, resource.getApplicableRules().size());
+        assertEquals(0, resource2.getApplicableRules().size());
+        assertEquals(0, resource3.getApplicableRules().size());
+        assertEquals(1, resource4.getApplicableRules().size());
+        assertEquals(0, resource5.getApplicableRules().size());
+        assertEquals(1, resource6.getApplicableRules().size());
+        assertEquals(1, resource7.getApplicableRules().size());
+        assertEquals(1, resource8.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_ResourceLong(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
+        String resourceString = "{$x has res-long > 100;}";
+        String resourceString2 = "{$x has res-long > 150;}";
+        String resourceString3 = "{$x has res-long < 100;}";
+        String resourceString4 = "{$x has res-long < 200;}";
+        String resourceString5 = "{$x has res-long >= 130;}";
+        String resourceString6 = "{$x has res-long <= 130;}";
+        String resourceString7 = "{$x has res-long = 123;}";
+        String resourceString8 = "{$x has res-long != 200;}";
+        Resource resource = (Resource) new ReasonerAtomicQuery(conjunction(resourceString, graph), graph).getAtom();
+        Resource resource2 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString2, graph), graph).getAtom();
+        Resource resource3 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString3, graph), graph).getAtom();
+        Resource resource4 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString4, graph), graph).getAtom();
+        Resource resource5 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString5, graph), graph).getAtom();
+        Resource resource6 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString6, graph), graph).getAtom();
+        Resource resource7 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString7, graph), graph).getAtom();
+        Resource resource8 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString8, graph), graph).getAtom();
+        assertEquals(1, resource.getApplicableRules().size());
+        assertEquals(0, resource2.getApplicableRules().size());
+        assertEquals(0, resource3.getApplicableRules().size());
+        assertEquals(1, resource4.getApplicableRules().size());
+        assertEquals(0, resource5.getApplicableRules().size());
+        assertEquals(1, resource6.getApplicableRules().size());
+        assertEquals(1, resource7.getApplicableRules().size());
+        assertEquals(1, resource8.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_ResourceString(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
+        String resourceString = "{$x has res-string contains 'ing';}";
+        String resourceString2 = "{$x has res-string 'test';}";
+        String resourceString3 = "{$x has res-string /.*(fast|string).*/;}";
+        String resourceString4 = "{$x has res-string /.*/;}";
+        Resource resource = (Resource) new ReasonerAtomicQuery(conjunction(resourceString, graph), graph).getAtom();
+        Resource resource2 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString2, graph), graph).getAtom();
+        Resource resource3 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString3, graph), graph).getAtom();
+        Resource resource4 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString4, graph), graph).getAtom();
+        assertEquals(1, resource.getApplicableRules().size());
+        assertEquals(0, resource2.getApplicableRules().size());
+        assertEquals(1, resource3.getApplicableRules().size());
+        assertEquals(1, resource4.getApplicableRules().size());
+    }
+
+    @Test
+    public void testRuleApplicability_ResourceBoolean(){
+        GraknGraph graph = resourceApplicabilitySet.graph();
+        String resourceString = "{$x has res-boolean 'true';}";
+        String resourceString2 = "{$x has res-boolean 'false';}";
+        Resource resource = (Resource) new ReasonerAtomicQuery(conjunction(resourceString, graph), graph).getAtom();
+        Resource resource2 = (Resource) new ReasonerAtomicQuery(conjunction(resourceString2, graph), graph).getAtom();
+        assertEquals(1, resource.getApplicableRules().size());
+        assertEquals(0, resource2.getApplicableRules().size());
     }
 
     @Test

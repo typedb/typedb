@@ -81,4 +81,12 @@ class RegexPredicate implements ValuePredicateAdmin {
     public int hashCode() {
         return pattern != null ? pattern.hashCode() : 0;
     }
+
+    @Override
+    public boolean isCompatibleWith(ValuePredicateAdmin predicate){
+        if (!(predicate instanceof EqPredicate)) return false;
+        EqPredicate p = (EqPredicate) predicate;
+        Object pVal = p.equalsValue().orElse(null);
+        return pVal == null || regexPredicate().test(pVal);
+    }
 }
