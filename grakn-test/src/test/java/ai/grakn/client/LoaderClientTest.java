@@ -36,6 +36,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static java.util.stream.Stream.generate;
 import static org.mockito.Mockito.*;
 
+@Ignore
 public class LoaderClientTest {
 
     private static final int PORT = 4567;
