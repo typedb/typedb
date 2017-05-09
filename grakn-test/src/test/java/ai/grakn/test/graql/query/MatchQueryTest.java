@@ -51,13 +51,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -171,8 +169,6 @@ public class MatchQueryTest {
     private final VarName y = VarName.of("y");
 
     private QueryBuilder qb;
-
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
     @ClassRule
     public static final GraphContext movieGraph = GraphContext.preLoad(MovieGraph.get());
