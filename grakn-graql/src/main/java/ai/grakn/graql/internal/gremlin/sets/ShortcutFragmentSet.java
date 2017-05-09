@@ -29,8 +29,8 @@ import ai.grakn.util.Schema;
 import java.util.Collection;
 import java.util.Optional;
 
-import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasDirectSubTypes;
 
 /**
  * A query can use a shortcut edge traversal when the following criteria are met:
@@ -96,7 +96,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Optional<TypeLabel> relType = relIsaFragment
                 .map(IsaFragmentSet::type)
-                .flatMap(type -> fragmentSetOfType(LabelFragmentSet.class, fragmentSets).filter(labelFragmentSet -> labelFragmentSet.type().equals(type)).map(LabelFragmentSet::label).findAny())
+                .flatMap(type -> findTypeLabel(fragmentSets, type))
                 .filter(type -> !hasDirectSubTypes(graph, type));
 
         // Try and get role type
@@ -106,7 +106,7 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
 
         Optional<TypeLabel> roleType = castingIsaFragment
                 .map(IsaCastingsFragmentSet::roleType)
-                .flatMap(type -> fragmentSetOfType(LabelFragmentSet.class, fragmentSets).filter(labelFragmentSet -> labelFragmentSet.type().equals(type)).map(LabelFragmentSet::label).findAny());
+                .flatMap(type -> findTypeLabel(fragmentSets, type));
 
         if (castingIsaFragment.isPresent() && !roleType.isPresent()) {
             return false;
@@ -130,6 +130,13 @@ class ShortcutFragmentSet extends EquivalentFragmentSet {
         VarName rolePlayer = rolePlayerFragmentSet.rolePlayer();
         fragmentSets.add(new ShortcutFragmentSet(relation, casting, rolePlayer, roleType, relType));
         return true;
+    }
+
+    private static Optional<TypeLabel> findTypeLabel(Collection<EquivalentFragmentSet> fragmentSets, VarName type) {
+        return fragmentSetOfType(LabelFragmentSet.class, fragmentSets)
+                .filter(labelFragmentSet -> labelFragmentSet.type().equals(type))
+                .map(LabelFragmentSet::label)
+                .findAny();
     }
 
     private static RolePlayerFragmentSet findRolePlayerFragmentSet(
