@@ -310,9 +310,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             ontologyInitialised = true;
         }
 
-        //Copy the ontology to the caches
+        //Copy entire ontology to the cache
         getMetaConcept().subTypes().forEach(type -> {
-            cachedLabels.put(type.getLabel(), type.getTypeId());
+            getCachedLabels().put(type.getLabel(), type.getTypeId());
+            getCachedOntology().put(type.getLabel(), type);
             getConceptLog().cacheConcept((ConceptImpl) type);
         });
 
