@@ -51,7 +51,7 @@ public class TimingListener extends RunListener {
         try {
             String line = description.getTestClass().getPackage().getName() + "," + 
                           description.getTestClass().getSimpleName() + "," + 
-                          description.getMethodName() + ", " + time;                          
+                          description.getMethodName() + "," + time;                          
             Files.write(Paths.get(timeLogFile), Collections.singleton(line), APPEND, CREATE);
         } catch (IOException e) {
             System.err.println("Failed to write test time to file " + timeLogFile);
