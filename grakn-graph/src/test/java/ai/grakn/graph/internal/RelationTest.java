@@ -19,8 +19,8 @@
 package ai.grakn.graph.internal;
 
 import ai.grakn.Grakn;
-import ai.grakn.GraknTxType;
 import ai.grakn.GraknGraph;
+import ai.grakn.GraknTxType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.Entity;
@@ -212,10 +212,15 @@ public class RelationTest extends GraphTestBase{
         Relation relation1 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
         Relation relation2 = relationType.addRelation().addRolePlayer(roleType1, instance1).addRolePlayer(roleType2, instance2);
 
-        expectedException.expect(GraknValidationException.class);
-        expectedException.expectMessage(VALIDATION_RELATION_DUPLICATE.getMessage(relation2.toString()));
-
-        graknGraph.commit();
+        String exceptionThrown = null;
+        try{
+            graknGraph.commit();
+        } catch(GraknValidationException e){
+            exceptionThrown = e.getMessage();
+        }
+        boolean flag = exceptionThrown != null && (exceptionThrown.contains(VALIDATION_RELATION_DUPLICATE.getMessage(relation1.toString())) ||
+                exceptionThrown.contains(VALIDATION_RELATION_DUPLICATE.getMessage(relation2.toString())));
+        assertTrue("Incorrect exception thrown expected: \n [" + VALIDATION_RELATION_DUPLICATE.getMessage("Something") + "] but got: \n [" + exceptionThrown +  "]", flag);
     }
 
     @Test

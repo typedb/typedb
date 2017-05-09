@@ -643,6 +643,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         }
     }
     private <T extends Type> T getType(TypeLabel label, Schema.BaseType baseType){
+        operateOnOpenGraph(() -> null); //Makes sure the graph is open
+
         Type type = buildType(label, ()-> {
             Optional<Integer> id = getId(label);
             if (id.isPresent()) {
