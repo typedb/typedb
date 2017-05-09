@@ -114,8 +114,8 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final Cache<TypeLabel, Type> cachedOntology;
 
     //----------------------------- Transaction Thread Bound
-    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
+    private final ThreadLocal<Boolean> localShowImplicitStructures = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsOpen = new ThreadLocal<>();
     private final ThreadLocal<Boolean> localIsReadOnly = new ThreadLocal<>();
     private final ThreadLocal<String> localClosedReason = new ThreadLocal<>();
@@ -143,6 +143,14 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
         this.batchLoadingEnabled = batchLoadingEnabled;
         localShowImplicitStructures.set(false);
+    }
+
+    @Override
+    public Optional<Integer> getId(TypeLabel label){
+        if(getConceptLog().isTypeCached(label)){
+            return Optional.of(((TypeImpl<?, ?>)getConceptLog().getCachedType(label)).getTypeId());
+        }
+        return Optional.empty();
     }
 
     /**
