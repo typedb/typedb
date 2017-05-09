@@ -65,7 +65,7 @@ import static org.junit.Assume.assumeFalse;
 public class GraqlShellIT {
 
     @ClassRule
-    public static final DistributionContext dist = DistributionContext.startSingleQueueEngineProcess().inheritIO(false);
+    public static final DistributionContext dist = DistributionContext.startInMemoryEngineProcess().inheritIO(false);
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
