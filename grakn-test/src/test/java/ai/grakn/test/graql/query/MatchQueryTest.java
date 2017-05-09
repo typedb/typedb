@@ -52,6 +52,8 @@ import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -329,7 +331,7 @@ public class MatchQueryTest {
     @Test
     public void testResourceMatchQuery() throws ParseException {
         MatchQuery query = qb.match(
-                var("x").has("release-date", DATE_FORMAT.parse("Mon Mar 03 00:00:00 BST 1986").getTime())
+                var("x").has("release-date", LocalDate.of(1986, 3, 3).atStartOfDay())
         );
 
         assertThat(query, variable("x", contains(spy)));
@@ -364,7 +366,7 @@ public class MatchQueryTest {
     @Test
     public void testDatePredicateQuery() throws ParseException {
         MatchQuery query = qb.match(
-                var("x").has("release-date", gte(DATE_FORMAT.parse("Tue Jun 23 12:34:56 GMT 1984").getTime()))
+                var("x").has("release-date", gte(LocalDateTime.of(1984, 6, 23, 12, 34, 56)))
         );
 
         assertThat(query, variable("x", containsInAnyOrder(spy, theMuppets, chineseCoffee)));
@@ -516,16 +518,19 @@ public class MatchQueryTest {
     @Test
     public void testMatchDataType() {
         MatchQuery query = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
-        assertThat(query, variable("x", containsInAnyOrder(tmdbVoteAverage)));
+        assertThat(query, variable("x", contains(tmdbVoteAverage)));
 
         query = qb.match(var("x").datatype(ResourceType.DataType.LONG));
-        assertThat(query, variable("x", containsInAnyOrder(tmdbVoteCount, runtime, releaseDate)));
+        assertThat(query, variable("x", containsInAnyOrder(tmdbVoteCount, runtime)));
 
         query = qb.match(var("x").datatype(ResourceType.DataType.BOOLEAN));
         assertThat(query, variable("x", empty()));
 
         query = qb.match(var("x").datatype(ResourceType.DataType.STRING));
+
         assertThat(query, variable("x", containsInAnyOrder(title, gender, realName, name)));
+        query = qb.match(var("x").datatype(ResourceType.DataType.DATE));
+        assertThat(query, variable("x", contains(releaseDate)));
     }
 
     @Test

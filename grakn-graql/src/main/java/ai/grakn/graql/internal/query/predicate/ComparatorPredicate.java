@@ -31,6 +31,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -39,6 +40,7 @@ import static ai.grakn.concept.ResourceType.DataType.SUPPORTED_TYPES;
 
 abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
+    private final Optional<Object> originalValue;
     private final Optional<Object> value;
     private final Optional<VarAdmin> var;
 
@@ -54,12 +56,20 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      */
     ComparatorPredicate(Object value) {
         if (value instanceof VarAdmin) {
+            this.originalValue = Optional.empty();
             this.value = Optional.empty();
             this.var = Optional.of((VarAdmin) value);
         } else {
+            this.originalValue = Optional.of(value);
+
             // Convert integers to longs for consistency
             if (value instanceof Integer) {
                 value = ((Integer) value).longValue();
+            }
+
+            // Convert dates to epoch time to reflect how they are stored
+            if (value instanceof LocalDateTime) {
+                value = ResourceType.DataType.DATE.getPersistenceValue((LocalDateTime) value);
             }
 
             this.value = Optional.of(value);
@@ -71,6 +81,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
      * @param var the variable that this predicate is testing against
      */
     ComparatorPredicate(Var var) {
+        this.originalValue = Optional.empty();
         this.value = Optional.empty();
         this.var = Optional.of(var.admin());
     }
@@ -141,7 +152,7 @@ abstract class ComparatorPredicate implements ValuePredicateAdmin {
 
         value.ifPresent(theValue -> {
             // Compare to a given value
-            ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(theValue.getClass().getTypeName());
+            ResourceType.DataType<?> dataType = SUPPORTED_TYPES.get(originalValue.get().getClass().getTypeName());
             Schema.ConceptProperty property = dataType.getConceptProperty();
             traversal.has(property.name(), gremlinPredicate(theValue));
         });
