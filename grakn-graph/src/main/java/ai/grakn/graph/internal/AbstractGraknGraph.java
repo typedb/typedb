@@ -310,7 +310,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             ontologyInitialised = true;
         }
 
-        //Copy entire ontology to the cache
+        //Copy entire ontology to the cache. This may be a bad idea as it will slow down graph initialisation
         getMetaConcept().subTypes().forEach(type -> {
             getCachedLabels().put(type.getLabel(), type.getTypeId());
             getCachedOntology().put(type.getLabel(), type);
