@@ -53,6 +53,7 @@ class ConceptLog {
     //Caches any concept which has been touched before
     private final Map<ConceptId, ConceptImpl> conceptCache = new HashMap<>();
     private final Map<TypeLabel, TypeImpl> typeCache = new HashMap<>();
+    private final Map<TypeLabel, Integer> labelCache = new HashMap<>();
 
     //We Track Modified Concepts For Validation
     private final Set<ConceptImpl> modifiedConcepts = new HashSet<>();
@@ -83,6 +84,7 @@ class ConceptLog {
         //When a commit has occurred or a graph is read only all types can be overridden this is because we know they are valid.
         if(isSafe){
             graknGraph.getCachedOntology().putAll(typeCache);
+            graknGraph.getCachedLabels().putAll(labelCache);
         }
 
         //When a commit has not occurred some checks are required
@@ -186,6 +188,7 @@ class ConceptLog {
         if(concept.isType()){
             TypeImpl type = (TypeImpl) concept;
             typeCache.put(type.getLabel(), type);
+            if(!type.isShard()) labelCache.put(type.getLabel(), type.getTypeId());
         }
     }
 
@@ -230,6 +233,10 @@ class ConceptLog {
     <X extends Type> X getCachedType(TypeLabel label){
         //noinspection unchecked
         return (X) typeCache.get(label);
+    }
+
+    Integer convertLabelToId(TypeLabel label){
+        return labelCache.get(label);
     }
 
     void addedInstance(TypeLabel name){

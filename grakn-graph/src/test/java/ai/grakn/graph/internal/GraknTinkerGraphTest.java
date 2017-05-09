@@ -28,7 +28,6 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,8 +46,11 @@ public class GraknTinkerGraphTest extends GraphTestBase{
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 20; i ++){
-            futures.add(pool.submit(this::addRandomEntityType));
+            futures.add(pool.submit(this::addRandomEntity));
         }
+
+        graknGraph.putEntityType("Thing");
+        graknGraph.commit();
 
         futures.forEach(future -> {
             try {
@@ -57,11 +59,14 @@ public class GraknTinkerGraphTest extends GraphTestBase{
                 ignored.printStackTrace();
             }
         });
-        assertEquals(21, graknGraph.admin().getMetaEntityType().subTypes().size());
+
+        graknGraph = (AbstractGraknGraph<?>) Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE);
+        assertEquals(20, graknGraph.getEntityType("Thing").instances().size());
     }
-    private synchronized void addRandomEntityType(){
+    private synchronized void addRandomEntity(){
         try(GraknGraph graph = Grakn.session(Grakn.IN_MEMORY, graknGraph.getKeyspace()).open(GraknTxType.WRITE)){
-            graph.putEntityType(UUID.randomUUID().toString());
+            graph.putEntityType("Thing").addEntity();
+            graph.commit();
         }
     }
 

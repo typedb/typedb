@@ -72,6 +72,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -112,6 +113,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     private final ElementFactory elementFactory;
     private final long shardingFactor;
     private final Cache<TypeLabel, Type> cachedOntology;
+    private final Map<TypeLabel, Integer> cachedLabels; //This cannot expire
 
     //----------------------------- Transaction Thread Bound
     private final ThreadLocal<ConceptLog> localConceptLog = new ThreadLocal<>();
@@ -126,6 +128,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         this.keyspace = keyspace;
         this.engine = engine;
         this.properties = properties;
+        cachedLabels = new ConcurrentHashMap<>();
         shardingFactor = Long.parseLong(properties.get(SHARDING_THRESHOLD).toString());
 
         elementFactory = new ElementFactory(this);
@@ -148,7 +151,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
     @Override
     public Optional<Integer> convertToId(TypeLabel label){
         if(getConceptLog().isTypeCached(label)){
-            return Optional.of(getConceptLog().getCachedType(label).getTypeId());
+            return Optional.of(getConceptLog().convertLabelToId(label));
         }
         return Optional.empty();
     }
@@ -213,6 +216,10 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
         return cachedOntology;
     }
 
+    Map<TypeLabel, Integer> getCachedLabels(){
+        return cachedLabels;
+    }
+
     ConceptLog getConceptLog() {
         return getObjectFromThreadLocal(localConceptLog, () -> {
             ConceptLog conceptLog = new ConceptLog(this);
@@ -271,6 +278,7 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
 
     @SuppressWarnings("unchecked")
     private boolean initialiseMetaConcepts(){
+        boolean ontologyInitialised = false;
         if(isMetaOntologyNotInitialised()){
             Vertex type = addTypeVertex(Schema.MetaSchema.CONCEPT.getId(), Schema.MetaSchema.CONCEPT.getLabel(), Schema.BaseType.TYPE);
             Vertex entityType = addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
@@ -299,15 +307,16 @@ public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph,
             createMetaShard(inferenceRuleType, Schema.BaseType.RULE_TYPE);
             createMetaShard(constraintRuleType, Schema.BaseType.RULE_TYPE);
 
-            //Add Meta Ontology To Cache
-            for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
-                getConceptLog().cacheConcept(getType(metaSchema.getId()));
-            }
-
-            return true;
+            ontologyInitialised = true;
         }
 
-        return false;
+        //Copy the ontology to the caches
+        getMetaConcept().subTypes().forEach(type -> {
+            cachedLabels.put(type.getLabel(), type.getTypeId());
+            getConceptLog().cacheConcept((ConceptImpl) type);
+        });
+
+        return ontologyInitialised;
     }
     private void createMetaShard(Vertex metaNode, Schema.BaseType baseType){
         Vertex metaShard = addVertex(baseType);
