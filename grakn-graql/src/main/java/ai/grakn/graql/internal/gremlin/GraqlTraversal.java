@@ -78,6 +78,10 @@ public class GraqlTraversal {
         return graph.admin().getTinkerTraversal().limit(1).union(traversals);
     }
 
+    public ImmutableSet<ImmutableList<Fragment>> fragments() {
+        return fragments;
+    }
+
     /**
      * @return a gremlin traversal that represents this inner query
      */
@@ -137,13 +141,14 @@ public class GraqlTraversal {
         fragment.getEnd().ifPresent(end -> {
             if (!names.contains(end)) {
                 // This variable name has not been encountered before, remember it and use the 'as' step
-                names.add(end);
                 traversal.as(end.getValue());
             } else {
                 // This variable name has been encountered before, confirm it is the same
                 traversal.where(P.eq(end.getValue()));
             }
         });
+
+        names.addAll(fragment.getVariableNames());
     }
 
     /**

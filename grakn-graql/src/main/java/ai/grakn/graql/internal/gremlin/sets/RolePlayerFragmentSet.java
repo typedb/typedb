@@ -30,7 +30,20 @@ import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
  */
 class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
+    private final VarName casting;
+    private final VarName rolePlayer;
+
     RolePlayerFragmentSet(VarName casting, VarName rolePlayer) {
         super(outRolePlayer(casting, rolePlayer), inRolePlayer(rolePlayer, casting));
+        this.casting = casting;
+        this.rolePlayer = rolePlayer;
+    }
+
+    public VarName casting() {
+        return casting;
+    }
+
+    public VarName rolePlayer() {
+        return rolePlayer;
     }
 }

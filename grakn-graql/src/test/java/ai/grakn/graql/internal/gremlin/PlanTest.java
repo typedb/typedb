@@ -21,6 +21,7 @@ package ai.grakn.graql.internal.gremlin;
 
 import ai.grakn.graql.VarName;
 import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -28,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static ai.grakn.graql.internal.gremlin.fragment.Fragments.outIsa;
-import static ai.grakn.graql.internal.gremlin.fragment.Fragments.shortcut;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
@@ -45,12 +45,15 @@ public class PlanTest {
         Fragment outIsa = outIsa(y, a);
         outIsa.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
-        Fragment shortcut = shortcut(Optional.empty(), Optional.empty(), Optional.empty(), y, z);
-        shortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
+        Fragment inShortcut = Fragments.inShortcut(y, VarName.anon(), x, Optional.empty(), Optional.empty());
+        Fragment outShortcut = Fragments.outShortcut(x, VarName.anon(), z, Optional.empty(), Optional.empty());
+        inShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
+        outShortcut.setEquivalentFragmentSet(mock(EquivalentFragmentSet.class));
 
         Plan plan = Plan.base();
         plan.tryPush(outIsa);
-        plan.tryPush(shortcut);
+        plan.tryPush(inShortcut);
+        plan.tryPush(outShortcut);
 
         List<Fragment> fragments = plan.fragments();
 
