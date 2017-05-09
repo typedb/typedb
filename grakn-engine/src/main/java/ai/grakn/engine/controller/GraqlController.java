@@ -40,7 +40,6 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 import javax.ws.rs.POST;
 import mjson.Json;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.entity.ContentType;
 import spark.Request;
 import spark.Response;
@@ -198,7 +197,6 @@ public class GraqlController {
      * @param response response to the client
      */
     private static void handleGraqlSyntaxError(Exception exception, Response response){
-        ExceptionUtils.getFullStackTrace(exception);
         response.status(400);
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());

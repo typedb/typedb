@@ -33,7 +33,6 @@ import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
 import ai.grakn.util.REST;
 import mjson.Json;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -227,7 +226,6 @@ public class GraknEngineServer implements AutoCloseable {
      * @param response response to the client
      */
     private static void handleGraknServerError(Exception exception, Response response){
-        ExceptionUtils.getFullStackTrace(exception);
         response.status(((GraknEngineServerException) exception).getStatus());
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
@@ -239,7 +237,6 @@ public class GraknEngineServer implements AutoCloseable {
      * @param response response to the client
      */
     private static void handleInternalError(Exception exception, Response response){
-        ExceptionUtils.getFullStackTrace(exception);
         response.status(500);
         response.body(Json.object("exception", exception.getMessage()).toString());
         response.type(ContentType.APPLICATION_JSON.getMimeType());
