@@ -19,7 +19,6 @@
 package ai.grakn.test.engine.controller;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknTxType;
 import ai.grakn.engine.controller.GraqlController;
 import ai.grakn.engine.controller.SystemController;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
@@ -28,6 +27,8 @@ import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.printer.Printers;
 import ai.grakn.test.GraphContext;
 import ai.grakn.test.engine.controller.TasksControllerTest.JsonMapper;
+import ai.grakn.util.REST;
+import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import java.util.Collections;
 import mjson.Json;
@@ -35,28 +36,30 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 
+import org.junit.runners.MethodSorters;
 import spark.Service;
 
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALArrayData;
 import static ai.grakn.test.GraknTestEnv.usingTitan;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_QUERY_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.MISSING_QUERY_POST_BODY;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Graql.INFER;
 import static ai.grakn.util.REST.Request.Graql.LIMIT_EMBEDDED;
 import static ai.grakn.util.REST.Request.Graql.MATERIALISE;
 import static ai.grakn.util.REST.Request.Graql.QUERY;
 import static ai.grakn.util.REST.Request.KEYSPACE;
+import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_JSON_GRAQL;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_TEXT;
 import static ai.grakn.util.REST.Response.ContentType.APPLICATION_HAL;
 import static ai.grakn.util.REST.Response.EXCEPTION;
 import static ai.grakn.util.REST.Response.Graql.ORIGINAL_QUERY;
 import static ai.grakn.util.REST.Response.Graql.RESPONSE;
-import static ai.grakn.util.REST.WebPath.Graph.GRAQL;
-import static com.jayway.restassured.RestAssured.with;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -70,11 +73,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.booleanThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+//TODO Run in name order until TP Bug #13730 Fixed
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class GraqlControllerTest {
 
     private static final String HOST = "localhost";
@@ -117,7 +124,7 @@ public class GraqlControllerTest {
         when(mockGraph.getKeyspace()).thenReturn("randomKeyspace");
         when(mockGraph.graql()).thenReturn(mockQueryBuilder);
 
-        when(mockFactory.getGraph(mockGraph.getKeyspace(), GraknTxType.WRITE)).thenReturn(mockGraph);
+        when(mockFactory.getGraph(eq(mockGraph.getKeyspace()), any())).thenReturn(mockGraph);
     }
 
     @AfterClass
@@ -176,32 +183,32 @@ public class GraqlControllerTest {
 
     @Test
     public void GETGraqlMatchWithNoKeyspace_ResponseStatusIs400(){
-        Response response = with().get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+        Response response = RestAssured.with().get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(KEYSPACE)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(KEYSPACE)));
     }
 
     @Test
     public void GETGraqlMatchWithNoQuery_ResponseStatusIs400(){
-        Response response = with()
+        Response response = RestAssured.with()
                 .queryParam(KEYSPACE, mockGraph.getKeyspace())
-                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(QUERY)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(QUERY)));
     }
 
     @Test
     public void GETGraqlMatchNoMaterialise_ResponseStatusIs400(){
-        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, "match $x isa person;")
                 .queryParam(INFER, true)
                 .accept(APPLICATION_TEXT)
-                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(MATERIALISE)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(MATERIALISE)));
     }
 
     @Test
@@ -220,13 +227,13 @@ public class GraqlControllerTest {
 
     @Test
     public void GETGraqlMatchWithNoInfer_ResponseStatusIs400(){
-        Response response = with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        Response response = RestAssured.with().queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, "match $x isa person;")
                 .accept(APPLICATION_TEXT)
-                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
 
         assertThat(response.statusCode(), equalTo(400));
-        assertThat(exception(response), containsString(MISSING_MANDATORY_PARAMETERS.getMessage(INFER)));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(INFER)));
     }
 
     @Test
@@ -280,7 +287,7 @@ public class GraqlControllerTest {
     @Test
     public void GETGraqlMatchWithHALType_ResponseContainsOriginalQuery(){
         String query = "match $x isa person;";
-        Response response = sendGET(APPLICATION_HAL);
+        Response response = sendGET(query, APPLICATION_HAL);
 
         assertThat(originalQuery(response), equalTo(query));
     }
@@ -294,7 +301,6 @@ public class GraqlControllerTest {
 
     @Test
     public void GETGraqlMatchWithTextType_ResponseIsCorrectGraql(){
-        String query = "match $x isa person;";
         Response response = sendGET(APPLICATION_TEXT);
 
         assertThat(stringResponse(response).length(), greaterThan(0));
@@ -439,8 +445,9 @@ public class GraqlControllerTest {
         assertThat(exception(response), containsString(APPLICATION_HAL));
     }
 
+    //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void GETGraqlComputePathWithTextType_ResponseIsCorrect(){
+    public void ZGETGraqlComputePathWithTextType_ResponseIsCorrect(){
         assumeTrue(usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
@@ -453,8 +460,9 @@ public class GraqlControllerTest {
         assertThat(stringResponse(response), containsString("isa has-cast"));
     }
 
+    //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void GETGraqlComputePathWithHALType_ResponseContentTypeIsHAL(){
+    public void ZGETGraqlComputePathWithHALType_ResponseContentTypeIsHAL(){
         assumeTrue(usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
@@ -466,8 +474,9 @@ public class GraqlControllerTest {
         assertThat(response.contentType(), equalTo(APPLICATION_HAL));
     }
 
+    //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void GETGraqlComputePathWithHALType_ResponseStatusIs200(){
+    public void ZGETGraqlComputePathWithHALType_ResponseStatusIs200(){
         assumeTrue(usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
@@ -479,8 +488,9 @@ public class GraqlControllerTest {
         assertThat(response.statusCode(), equalTo(200));
     }
 
+    //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void GETGraqlComputePathWithHALType_ResponseIsCorrect(){
+    public void ZGETGraqlComputePathWithHALType_ResponseIsCorrect(){
         assumeTrue(usingTitan());
 
         String fromId = graphContext.graph().getResourcesByValue("The Muppets").iterator().next().owner().getId().getValue();
@@ -492,8 +502,9 @@ public class GraqlControllerTest {
         assertThat(jsonResponse(response).asJsonList().size(), greaterThan(0));
     }
 
+    //TODO Prefix with Z to run last until TP Bug #13730 Fixed
     @Test
-    public void GETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson(){
+    public void ZGETGraqlComputePathWithHALTypeAndNoPath_ResponseIsEmptyJson(){
         String fromId = graphContext.graph().getResourcesByValue("Marlon Brando").iterator().next().owner().getId().getValue();
         String toId = graphContext.graph().getResourcesByValue("Kermit The Frog").iterator().next().owner().getId().getValue();
 
@@ -502,6 +513,132 @@ public class GraqlControllerTest {
 
         assertThat(response.statusCode(), equalTo(200));
         assertThat(jsonResponse(response), equalTo(Json.array()));
+    }
+
+    @Test
+    public void POSTGraqlInsert_GraphCommitCalled(){
+        String query = "insert $x isa person;";
+        sendPOST(query);
+
+        verify(mockGraph, times(1)).commit();
+    }
+
+    @Test
+    public void POSTMalformedGraqlQuery_ResponseStatusIs400(){
+        String query = "insert $x isa ;";
+        Response response = sendPOST(query);
+
+        assertThat(response.statusCode(), equalTo(400));
+    }
+
+    @Test
+    public void POSTMalformedGraqlQuery_ResponseExceptionContainsSyntaxError(){
+        String query = "insert $x isa ;";
+        Response response = sendPOST(query);
+
+        assertThat(exception(response), containsString("syntax error"));
+    }
+
+    @Test
+    public void POSTWithNoKeyspace_ResponseStatusIs400(){
+        String query = "insert $x isa person;";
+
+        Response response = RestAssured.with()
+                .body(query)
+                .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+
+        assertThat(response.statusCode(), equalTo(400));
+        assertThat(exception(response), containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(KEYSPACE)));
+    }
+
+    @Test
+    public void POSTWithNoQueryInBody_ResponseIs400(){
+        Response response = RestAssured.with()
+                .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+
+        assertThat(response.statusCode(), equalTo(400));
+        assertThat(exception(response), containsString(MISSING_QUERY_POST_BODY.getMessage()));
+    }
+
+    @Test
+    public void POSTGraqlMatch_ResponseStatusCodeIs405NotSupported(){
+        Response response = sendPOST("match $x isa name;");
+
+        assertThat(response.statusCode(), equalTo(405));
+    }
+
+    @Test
+    public void POSTGraqlMatch_ResponseExceptionContainsInsertOnlyAllowedMessage(){
+        Response response = sendPOST("match $x isa name;");
+
+        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
+    }
+
+    @Test
+    public void POSTGraqlDelete_ResponseStatusCodeIs405NotSupported(){
+        Response response = sendPOST("match $x isa name; delete $x;");
+
+        assertThat(response.statusCode(), equalTo(405));
+    }
+
+    @Test
+    public void POSTGraqlDelete_ResponseExceptionContainsInsertOnlyAllowedMessage(){
+        Response response = sendPOST("match $x isa name; delete $x;");
+
+        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
+    }
+
+    @Test
+    public void POSTGraqlCompute_ResponseStatusCodeIs405NotSupported(){
+        Response response = sendPOST("compute count in name;");
+
+        assertThat(response.statusCode(), equalTo(405));
+    }
+
+    @Test
+    public void POSTGraqlCompute_ResponseExceptionContainsInsertOnlyAllowedMessage(){
+        Response response = sendPOST("compute count in name;");
+
+        assertThat(exception(response), containsString("Only INSERT queries are allowed."));
+    }
+
+    @Test
+    public void POSTGraqlInsert_ResponseStatusIs200(){
+        String query = "insert $x isa person;";
+        Response response = sendPOST(query);
+
+        assertThat(response.statusCode(), equalTo(200));
+    }
+
+    @Test
+    public void POSTGraqlInsert_ResponseContentTypeIsJson(){
+        Response response = sendPOST("insert $x isa movie;");
+
+        assertThat(response.contentType(), equalTo(APPLICATION_JSON));
+    }
+
+    @Test
+    public void POSTGraqlInsert_ResponseContainsOriginalQuery(){
+        String query = "insert $x isa person;";
+        Response response = sendPOST(query);
+
+        assertThat(originalQuery(response), equalTo(query));
+    }
+
+    @Test
+    public void POSTGraqlInsert_ResponseContainsCorrectNumberOfIds(){
+        String query = "insert $x isa person;";
+        Response response = sendPOST(query);
+
+        assertThat(1, equalTo(jsonResponse(response).asJsonList().size()));
+    }
+
+    @Test
+    public void POSTGraqlInsertWithOntology_GraphCommitIsCalled(){
+        String query = "insert thing sub entity;";
+        Response response = sendPOST(query);
+
+        verify(mockGraph, times(1)).commit();
     }
 
     private Response sendGET(String acceptType){
@@ -514,13 +651,21 @@ public class GraqlControllerTest {
 
     private Response sendGET(String match, String acceptType, boolean reasonser,
                              boolean materialise, int limitEmbedded){
-        return with().queryParam(KEYSPACE, mockGraph.getKeyspace())
+        return RestAssured.with()
+                .queryParam(KEYSPACE, mockGraph.getKeyspace())
                 .queryParam(QUERY, match)
                 .queryParam(INFER, reasonser)
                 .queryParam(MATERIALISE, materialise)
                 .queryParam(LIMIT_EMBEDDED, limitEmbedded)
                 .accept(acceptType)
-                .get(String.format("http://%s:%s%s", HOST, PORT, GRAQL));
+                .get(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
+    }
+
+    private Response sendPOST(String query){
+        return RestAssured.with()
+                .queryParam(KEYSPACE, mockGraph.getKeyspace())
+                .body(query)
+                .post(String.format("http://%s:%s%s", HOST, PORT, REST.WebPath.Graph.GRAQL));
     }
 
     protected static String exception(Response response){

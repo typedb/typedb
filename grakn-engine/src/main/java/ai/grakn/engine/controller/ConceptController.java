@@ -43,7 +43,7 @@ import static ai.grakn.engine.controller.GraqlController.getAcceptType;
 import static ai.grakn.engine.controller.GraqlController.mandatoryQueryParameter;
 import static ai.grakn.engine.controller.GraqlController.queryParameter;
 import static ai.grakn.graql.internal.hal.HALBuilder.renderHALConceptData;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_QUERY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.NO_CONCEPT_IN_KEYSPACE;
 import static ai.grakn.util.ErrorMessage.UNSUPPORTED_CONTENT_TYPE;
 import static ai.grakn.util.REST.Request.Concept.LIMIT_EMBEDDED;
@@ -167,7 +167,7 @@ public class ConceptController {
      */
     static String mandatoryRequestParameter(Request request, String parameter){
         return Optional.ofNullable(request.params(parameter)).orElseThrow(() ->
-                new GraknEngineServerException(400, MISSING_MANDATORY_PARAMETERS, parameter));
+                new GraknEngineServerException(400, MISSING_MANDATORY_QUERY_PARAMETERS, parameter));
     }
 
     /**

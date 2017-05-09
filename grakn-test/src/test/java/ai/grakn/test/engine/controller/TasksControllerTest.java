@@ -35,7 +35,6 @@ import com.jayway.restassured.specification.RequestSpecification;
 import mjson.Json;
 import org.apache.http.entity.ContentType;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import spark.Service;
@@ -48,7 +47,7 @@ import java.util.Map;
 import static ai.grakn.engine.GraknEngineServer.configureSpark;
 import static ai.grakn.engine.TaskStatus.FAILED;
 import static ai.grakn.test.engine.tasks.BackgroundTaskTestUtils.createTask;
-import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_PARAMETERS;
+import static ai.grakn.util.ErrorMessage.MISSING_MANDATORY_QUERY_PARAMETERS;
 import static ai.grakn.util.ErrorMessage.UNAVAILABLE_TASK_CLASS;
 import static ai.grakn.util.REST.Request.ID_PARAMETER;
 import static ai.grakn.util.REST.Request.TASK_CLASS_NAME_PARAMETER;
@@ -166,7 +165,7 @@ public class TasksControllerTest {
         );
 
         String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
-        assertThat(exception, containsString(MISSING_MANDATORY_PARAMETERS.getMessage(TASK_CLASS_NAME_PARAMETER)));
+        assertThat(exception, containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(TASK_CLASS_NAME_PARAMETER)));
         assertThat(response.statusCode(), equalTo(400));
     }
 
@@ -180,7 +179,7 @@ public class TasksControllerTest {
         );
 
         String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
-        assertThat(exception, containsString(MISSING_MANDATORY_PARAMETERS.getMessage(TASK_CREATOR_PARAMETER)));
+        assertThat(exception, containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(TASK_CREATOR_PARAMETER)));
         assertThat(response.statusCode(), equalTo(400));
     }
 
@@ -194,7 +193,7 @@ public class TasksControllerTest {
         );
 
         String exception = response.getBody().as(Json.class, jsonMapper).at("exception").asString();
-        assertThat(exception, containsString(MISSING_MANDATORY_PARAMETERS.getMessage(TASK_RUN_AT_PARAMETER)));
+        assertThat(exception, containsString(MISSING_MANDATORY_QUERY_PARAMETERS.getMessage(TASK_RUN_AT_PARAMETER)));
         assertThat(response.statusCode(), equalTo(400));
     }
 
