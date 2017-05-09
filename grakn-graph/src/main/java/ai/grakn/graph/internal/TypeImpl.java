@@ -201,7 +201,7 @@ class TypeImpl<T extends Type, V extends Instance> extends ConceptImpl<T> implem
      */
     @Override
     public Integer getTypeId(){
-        return getProperty(Schema.ConceptProperty.TYPE_ID);
+        return cachedTypeId;
     }
 
     @Override
