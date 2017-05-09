@@ -22,11 +22,10 @@ import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.concept.RoleType;
-import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.engine.factory.EngineGraknGraphFactory;
+import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Query;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.util.REST;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -64,11 +63,11 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * <p>
- *     Private endpoints used by dashboard to query by concept type.
+ * Private endpoints used by dashboard to query by concept type.
  * </p>
- *
  * <p>
- *     This class should be thought of as a workplace/staging point for potential future user-facing endpoints.
+ * <p>
+ * This class should be thought of as a workplace/staging point for potential future user-facing endpoints.
  * </p>
  *
  * @author alexandraorth
@@ -76,19 +75,18 @@ import static java.util.stream.Collectors.toList;
 @Path("/dashboard")
 public class DashboardController {
 
-    private static final String RELATION_TYPES = REST.WebPath.Graph.GRAQL+"?query=match $a isa %s id '%s'; ($a,$b) isa %s; limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
-    private static final String ENTITY_TYPES = REST.WebPath.Graph.GRAQL+"?query=match $a isa %s id '%s'; $b isa %s; ($a,$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
-    private static final String ROLE_TYPES = REST.WebPath.Graph.GRAQL+"?query=match $a isa %s id '%s'; ($a,%s:$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
+    private static final String RELATION_TYPES = REST.WebPath.Graph.GRAQL + "?query=match $a isa %s id '%s'; ($a,$b) isa %s; limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
+    private static final String ENTITY_TYPES = REST.WebPath.Graph.GRAQL + "?query=match $a isa %s id '%s'; $b isa %s; ($a,$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
+    private static final String ROLE_TYPES = REST.WebPath.Graph.GRAQL + "?query=match $a isa %s id '%s'; ($a,%s:$b); limit %s;&keyspace=%s&limitEmbedded=%s&infer=true&materialise=false";
 
     private final EngineGraknGraphFactory factory;
 
-    public DashboardController(EngineGraknGraphFactory factory, Service spark){
+    public DashboardController(EngineGraknGraphFactory factory, Service spark) {
         this.factory = factory;
 
-        spark.get(REST.WebPath.Dashboard.TYPES + ID_PARAMETER,         this::typesOfConcept);
-        spark.get(REST.WebPath.Dashboard.EXPLORE + ID_PARAMETER,       this::exploreConcept);
-        spark.get(REST.WebPath.Dashboard.EXPLAIN,       this::explainConcept);
-        spark.get(REST.WebPath.Dashboard.PRECOMPUTE,    this::precomputeInferences);
+        spark.get(REST.WebPath.Dashboard.TYPES + ID_PARAMETER, this::typesOfConcept);
+        spark.get(REST.WebPath.Dashboard.EXPLORE + ID_PARAMETER, this::exploreConcept);
+        spark.get(REST.WebPath.Dashboard.EXPLAIN, this::explainConcept);
     }
 
     @GET
@@ -96,12 +94,12 @@ public class DashboardController {
     @ApiOperation(
             value = "Return the HAL Explore representation for the given concept.")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = IDENTIFIER,      value = "Identifier of the concept.", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = KEYSPACE,        value = "Name of graph to use.", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = IDENTIFIER, value = "Identifier of the concept.", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use.", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = OFFSET_EMBEDDED, value = "Offset to begin at for embedded HAL concepts.", required = true, dataType = "boolean", paramType = "query"),
-            @ApiImplicitParam(name = LIMIT_EMBEDDED,  value = "Limit on the number of embedded HAL concepts.", required = true, dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = LIMIT_EMBEDDED, value = "Limit on the number of embedded HAL concepts.", required = true, dataType = "boolean", paramType = "query")
     })
-    private Json exploreConcept(Request request, Response response){
+    private Json exploreConcept(Request request, Response response) {
         validateRequest(request);
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
@@ -109,13 +107,13 @@ public class DashboardController {
         int offset = queryParameter(request, OFFSET_EMBEDDED).map(Integer::parseInt).orElse(0);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
 
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
+        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
             Concept concept = retrieveExistingConcept(graph, conceptId);
             Json body = Json.object();
 
             response.type(APPLICATION_HAL);
             response.status(200);
-            body.set(RESPONSE,Json.read(HALExploreConcept(concept, keyspace, offset, limit)));
+            body.set(RESPONSE, Json.read(HALExploreConcept(concept, keyspace, offset, limit)));
             response.body(body.toString());
 
             return body;
@@ -130,17 +128,17 @@ public class DashboardController {
                     "- roleTypes played by all the other role players in all the relations the current concept takes part in" +
                     "- entityTypes that can play the roleTypes")
     @ApiImplicitParams({
-            @ApiImplicitParam(name = IDENTIFIER,      value = "Identifier of the concept", required = true, dataType = "string", paramType = "path"),
-            @ApiImplicitParam(name = KEYSPACE,        value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = IDENTIFIER, value = "Identifier of the concept", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = KEYSPACE, value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
     })
-    private Json typesOfConcept(Request request, Response response){
+    private Json typesOfConcept(Request request, Response response) {
         validateRequest(request);
 
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
         int limit = queryParameter(request, LIMIT_EMBEDDED).map(Integer::parseInt).orElse(-1);
         ConceptId conceptId = ConceptId.of(mandatoryRequestParameter(request, ID_PARAMETER));
 
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
+        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
             Concept concept = retrieveExistingConcept(graph, conceptId);
             Json body = Json.object();
             Json responseField = Json.object();
@@ -154,7 +152,7 @@ public class DashboardController {
                 );
             }
             response.status(200);
-            body.set(RESPONSE,responseField);
+            body.set(RESPONSE, responseField);
             response.body(body.toString());
 
             return body;
@@ -175,11 +173,11 @@ public class DashboardController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         Json body = Json.object();
 
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
+        try (GraknGraph graph = factory.getGraph(keyspace, READ)) {
             Query<?> query = graph.graql().infer(true).parse(queryString);
             body.set(ORIGINAL_QUERY, query.toString());
 
-            if(!(query instanceof MatchQuery)){
+            if (!(query instanceof MatchQuery)) {
                 throw new GraknEngineServerException(405, EXPLAIN_ONLY_MATCH, query.getClass().getName());
             }
 
@@ -191,24 +189,6 @@ public class DashboardController {
         response.body(body.toString());
 
         return body;
-    }
-
-    @GET
-    @Path("/precomputeInferences")
-    @ApiOperation(value = "Pre materialise results of all the rules on the graph.")
-    @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
-    private Boolean precomputeInferences(Request request, Response response) {
-        String keyspace = mandatoryQueryParameter(request, KEYSPACE);
-
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
-            Reasoner.precomputeInferences(graph);
-
-            response.status(200);
-
-            return true;
-        } catch (RuntimeException e) {
-            throw new GraknEngineServerException(500, e);
-        }
     }
 
     private static List<Json> getRelationTypes(Collection<RoleType> roleTypesPlayerByConcept, Concept concept, int limit, String keyspace) {

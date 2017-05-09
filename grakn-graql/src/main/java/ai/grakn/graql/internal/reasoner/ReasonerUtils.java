@@ -69,9 +69,28 @@ import static java.util.stream.Collectors.toSet;
  * @author Kasper Piskorski
  *
  */
-public class Utility {
+public class ReasonerUtils {
 
     private static final String CAPTURE_MARK = "captured-";
+
+    /**
+     *
+     * @param graph to be checked against
+     * @return set of inference rule contained in the graph
+     */
+    public static Set<Rule> getRules(GraknGraph graph) {
+        return new HashSet<>(graph.admin().getMetaRuleInference().instances());
+    }
+
+    /**
+     *
+     * @param graph to be checked against
+     * @return true if at least one inference rule is present in the graph
+     */
+    public static boolean hasRules(GraknGraph graph) {
+        TypeLabel inferenceRule = Schema.MetaSchema.INFERENCE_RULE.getLabel();
+        return graph.graql().infer(false).match(var("x").isa(Graql.label(inferenceRule))).ask().execute();
+    }
 
     /**
      * Capture a variable name, by prepending a constant to the name

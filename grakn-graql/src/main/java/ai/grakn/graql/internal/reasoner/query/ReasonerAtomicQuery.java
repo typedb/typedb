@@ -60,8 +60,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static ai.grakn.graql.internal.reasoner.Utility.getListPermutations;
-import static ai.grakn.graql.internal.reasoner.Utility.getUnifiersFromPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getListPermutations;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUnifiersFromPermutations;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.entityTypeFilter;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.knownFilterWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.permuteFunction;

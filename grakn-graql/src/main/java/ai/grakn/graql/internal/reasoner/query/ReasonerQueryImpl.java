@@ -32,7 +32,7 @@ import ai.grakn.graql.admin.Unifier;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.internal.pattern.Patterns;
 import ai.grakn.graql.internal.query.QueryAnswer;
-import ai.grakn.graql.internal.reasoner.Utility;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.Atom;
 import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.atom.NotEquals;
@@ -69,7 +69,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static ai.grakn.graql.internal.reasoner.Utility.uncapture;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.uncapture;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.join;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.joinWithInverse;
 import static ai.grakn.graql.internal.reasoner.query.QueryAnswerStream.nonEqualsFilter;
@@ -353,7 +353,7 @@ public class ReasonerQueryImpl implements ReasonerQuery {
         Unifier newMappings = new UnifierImpl();
         //find and resolve captures
         // TODO: This could cause bugs if a user has a variable including the word "capture"
-        getVarNames().stream().filter(Utility::isCaptured)
+        getVarNames().stream().filter(ReasonerUtils::isCaptured)
                 .forEach(cap -> {
                     VarName old = uncapture(cap);
                     VarName fresh = VarName.anon();

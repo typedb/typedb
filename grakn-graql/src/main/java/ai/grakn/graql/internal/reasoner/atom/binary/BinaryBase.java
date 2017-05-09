@@ -31,7 +31,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.capture;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.capture;
 
 /**
  *

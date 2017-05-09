@@ -39,7 +39,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.hasScope;
-import static ai.grakn.graql.internal.reasoner.Utility.getIdPredicate;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getIdPredicate;
 
 /**
  * Represents the {@code has-scope} property on a {@link Relation}.

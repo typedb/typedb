@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.casting;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.isaCastings;
 import static ai.grakn.graql.internal.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static ai.grakn.graql.internal.reasoner.Utility.getUserDefinedIdPredicate;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.getUserDefinedIdPredicate;
 import static ai.grakn.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;

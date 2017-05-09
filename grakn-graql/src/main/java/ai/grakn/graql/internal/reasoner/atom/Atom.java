@@ -24,9 +24,9 @@ import ai.grakn.concept.Type;
 import ai.grakn.graql.admin.Atomic;
 import ai.grakn.graql.admin.ReasonerQuery;
 import ai.grakn.graql.admin.Unifier;
-import ai.grakn.graql.internal.reasoner.Reasoner;
 import ai.grakn.graql.admin.VarAdmin;
 import ai.grakn.graql.VarName;
+import ai.grakn.graql.internal.reasoner.ReasonerUtils;
 import ai.grakn.graql.internal.reasoner.atom.binary.TypeAtom;
 import ai.grakn.graql.internal.reasoner.atom.predicate.IdPredicate;
 import ai.grakn.graql.internal.reasoner.atom.predicate.Predicate;
@@ -44,7 +44,7 @@ import javafx.util.Pair;
 import java.util.HashSet;
 import java.util.Set;
 
-import static ai.grakn.graql.internal.reasoner.Utility.checkTypesCompatible;
+import static ai.grakn.graql.internal.reasoner.ReasonerUtils.checkTypesCompatible;
 
 /**
  *
@@ -123,7 +123,7 @@ public abstract class Atom extends AtomBase {
         Type type = getType();
         return type != null ?
                 type.subTypes().stream().flatMap(t -> t.getRulesOfConclusion().stream()).collect(Collectors.toSet()) :
-                Reasoner.getRules(graph());
+                ReasonerUtils.getRules(graph());
     }
 
     /**
