@@ -22,7 +22,7 @@ public class InPlaysFragmentTest {
     @SuppressWarnings("unchecked")
     public void testApplyTraversalFollowsSubsDownwards() {
         GraphTraversal<Vertex, Vertex> traversal = __.V();
-        fragment.applyTraversal(traversal, );
+        fragment.applyTraversal(traversal, null);
 
         // Make sure we traverse plays and downwards subs once
         assertThat(traversal, is(__.V()
