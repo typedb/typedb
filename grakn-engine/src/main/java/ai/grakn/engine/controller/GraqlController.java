@@ -113,20 +113,32 @@ public class GraqlController {
         String queryString = mandatoryQueryParameter(request, QUERY);
         boolean infer = parseBoolean(mandatoryQueryParameter(request, INFER));
         boolean materialise = parseBoolean(mandatoryQueryParameter(request, MATERIALISE));
+        String acceptType = getAcceptType(request);
 
-        try(GraknGraph graph = factory.getGraph(keyspace, READ)){
+        try(GraknGraph graph = factory.getGraph(keyspace, WRITE)){
             Query<?> query = graph.graql().materialise(materialise).infer(infer).parse(queryString);
 
             if(!readOnly(query)){
                 throw new GraknEngineServerException(405, "Only \"read-only\" queries are allowed.");
             }
 
-            return respond(response, query, executeReadQuery(request, query, response));
+            if(!validContentType(acceptType, query)){
+                throw new GraknEngineServerException(406, INVALID_CONTENT_TYPE, query.getClass().getName(), acceptType);
+            }
+
+            Json responseBody = executeReadQuery(request, query, acceptType);
+            return respond(response, query, acceptType, responseBody);
         }
     }
 
     @POST
     @Path("/")
+    @ApiOperation(
+            value = "Executes graql insert query on the server and returns the IDs of the inserted concepts.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = KEYSPACE,    value = "Name of graph to use", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = QUERY,       value = "Match query to execute", required = true, dataType = "string", paramType = "body"),
+    })
     private Json executeGraqlPOST(Request request, Response response){
         String queryString = mandatoryBody(request);
         String keyspace = mandatoryQueryParameter(request, KEYSPACE);
@@ -138,12 +150,11 @@ public class GraqlController {
                 throw new GraknEngineServerException(405, "Only INSERT queries are allowed.");
             }
 
-            Json responseBody = executeInsertQuery(query);
+            Json responseBody = executeInsertQuery((InsertQuery) query);
 
             graph.commit();
 
-            response.type(APPLICATION_JSON);
-            return respond(response, query, responseBody);
+            return respond(response, query, APPLICATION_JSON, responseBody);
         }
     }
 
@@ -230,12 +241,14 @@ public class GraqlController {
      * Format the response with the correct content type based on the request.
      *
      * @param query query to be executed
+     * @param contentType content type being provided in the response
      * @param response response to the client
      * @return formatted result of the executed query
      */
-    private Json respond(Response response, Query<?> query, Json responseBody){
+    private Json respond(Response response, Query<?> query, String contentType, Json responseBody){
         responseBody.set(ORIGINAL_QUERY, query.toString());
 
+        response.type(contentType);
         response.body(responseBody.toString());
         response.status(200);
 
@@ -243,11 +256,12 @@ public class GraqlController {
     }
 
     /**
+     * Execute an insert query on the server and return a Json object with the Ids of the inserted elements.
      *
-     * @param query
+     * @param query insert query to be executed
      */
-    private Json executeInsertQuery(Query<?> query){
-        Collection<String> concepts = ((InsertQuery) query).execute().stream()
+    private Json executeInsertQuery(InsertQuery query){
+        Collection<String> concepts = query.execute().stream()
                 .flatMap(answer -> answer.values().stream())
                 .map(Concept::getId)
                 .map(ConceptId::getValue)
@@ -257,19 +271,13 @@ public class GraqlController {
     }
 
     /**
+     * Execute a read query and return a response in the format specified by the request.
      *
-     * @param request
-     * @param query
-     * @param response
+     * @param request information about the HTTP request
+     * @param query read query to be executed
+     * @param acceptType response format that the client will accept
      */
-    private Json executeReadQuery(Request request, Query<?> query, Response response){
-        String acceptType = getAcceptType(request);
-        if(!validContentType(acceptType, query)){
-            throw new GraknEngineServerException(406, INVALID_CONTENT_TYPE, query.getClass().getName(), acceptType);
-        }
-
-        response.type(acceptType);
-
+    private Json executeReadQuery(Request request, Query<?> query, String acceptType){
         switch (acceptType){
             case APPLICATION_TEXT:
                 return Json.object(RESPONSE, formatAsGraql(Printers.graql(false), query));
