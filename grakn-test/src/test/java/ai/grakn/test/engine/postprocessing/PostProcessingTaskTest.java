@@ -18,12 +18,10 @@
 
 package ai.grakn.test.engine.postprocessing;
 
-import ai.grakn.GraknGraph;
 import ai.grakn.concept.ConceptId;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.tasks.TaskCheckpoint;
 import ai.grakn.engine.tasks.TaskConfiguration;
-import ai.grakn.graph.admin.GraknAdmin;
 import ai.grakn.test.EngineContext;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
@@ -38,11 +36,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import static ai.grakn.util.REST.Request.KEYSPACE;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -81,7 +75,7 @@ public class PostProcessingTaskTest {
 
         task.start(mockConsumer, mockConfiguration);
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(6)).json();
     }
 
     @Test
@@ -90,7 +84,7 @@ public class PostProcessingTaskTest {
 
         task.start(mockConsumer, mockConfiguration);
 
-        verify(mockConfiguration, times(4)).json();
+        verify(mockConfiguration, times(6)).json();
     }
 
     @Test
@@ -108,6 +102,6 @@ public class PostProcessingTaskTest {
         pp1.join();
         pp2.join();
 
-        verify(mockConfiguration, times(8)).json();
+        verify(mockConfiguration, times(12)).json();
     }
 }
