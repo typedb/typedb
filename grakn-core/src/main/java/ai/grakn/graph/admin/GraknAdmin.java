@@ -126,6 +126,15 @@ public interface GraknAdmin {
     //------------------------------------- Admin Specific Operations ----------------------------------
 
     /**
+     * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
+     * so be sure to use the correct graph when performing the mapping.
+     *
+     * @param label The label to be converted to the id
+     * @return The matching type id if it is found
+     */
+    Optional<Integer> getId(TypeLabel label);
+
+    /**
      * Commits to the graph without submitting any commit logs.
      * @return the commit log that would have been submitted if it is needed.
      * @throws GraknValidationException when the graph does not conform to the object concept

@@ -100,7 +100,6 @@ public interface Type extends Concept {
     Type deleteScope(Instance scope);
 
     //------------------------------------- Accessors ---------------------------------
-
     /**
      * Returns the unique label of this Type.
      *
